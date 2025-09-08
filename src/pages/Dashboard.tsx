@@ -35,9 +35,20 @@ const Dashboard = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error obteniendo perfil:', profileError);
+        throw profileError;
+      }
+
+      if (!profileData) {
+        console.warn('No se encontró perfil para el usuario');
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
       setProfile(profileData);
 
       // Obtener datos específicos según el rol
@@ -46,19 +57,25 @@ const Dashboard = () => {
           .from('clientes')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (clienteError && clienteError.code !== 'PGRST116') throw clienteError;
-        setUserSpecificData(clienteData);
+        if (clienteError) {
+          console.error('Error obteniendo datos de cliente:', clienteError);
+        } else {
+          setUserSpecificData(clienteData);
+        }
       } else if (profileData.role === 'proveedor') {
         const { data: proveedorData, error: proveedorError } = await supabase
           .from('proveedores')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (proveedorError && proveedorError.code !== 'PGRST116') throw proveedorError;
-        setUserSpecificData(proveedorData);
+        if (proveedorError) {
+          console.error('Error obteniendo datos de proveedor:', proveedorError);
+        } else {
+          setUserSpecificData(proveedorData);
+        }
       }
     } catch (error: any) {
       toast({

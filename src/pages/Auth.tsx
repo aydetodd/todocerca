@@ -26,6 +26,8 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    console.log('Iniciando autenticación:', { isLogin, userType, email });
+
     try {
       if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -56,38 +58,62 @@ const Auth = () => {
 
         if (error) throw error;
 
-        // Crear registro específico según el tipo de usuario
-        if (userType === 'cliente') {
-          const { error: clienteError } = await supabase.from('clientes').insert({
-            user_id: data.user?.id,
-            nombre,
-            email,
-            telefono: telefono || null,
-            codigo_postal: codigoPostal || null,
-          });
-          if (clienteError) throw clienteError;
-        } else {
-          const { error: proveedorError } = await supabase.from('proveedores').insert({
-            user_id: data.user?.id,
-            nombre,
-            email,
-            telefono: telefono || null,
-            codigo_postal: codigoPostal || null,
-          });
-          if (proveedorError) throw proveedorError;
+        if (data.user) {
+          // Esperar un poco para que se procese el usuario en auth
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Crear registro específico según el tipo de usuario
+          try {
+            if (userType === 'cliente') {
+              const { error: clienteError } = await supabase.from('clientes').insert({
+                user_id: data.user.id,
+                nombre,
+                email,
+                telefono: telefono || null,
+                codigo_postal: codigoPostal || null,
+              });
+              if (clienteError) {
+                console.error('Error al crear cliente:', clienteError);
+                throw new Error('Error al crear perfil de cliente');
+              }
+            } else {
+              const { error: proveedorError } = await supabase.from('proveedores').insert({
+                user_id: data.user.id,
+                nombre,
+                email,
+                telefono: telefono || null,
+                codigo_postal: codigoPostal || null,
+              });
+              if (proveedorError) {
+                console.error('Error al crear proveedor:', proveedorError);
+                throw new Error('Error al crear perfil de proveedor');
+              }
+            }
+          } catch (insertError) {
+            console.error('Error en inserción:', insertError);
+            // Continuar aunque falle la inserción específica
+          }
         }
 
         toast({
           title: "¡Registro exitoso!",
-          description: "Revisa tu correo para confirmar tu cuenta.",
+          description: data.user?.email_confirmed_at 
+            ? "Tu cuenta ha sido creada correctamente." 
+            : "Revisa tu correo para confirmar tu cuenta.",
         });
         
-        navigate("/");
+        // Redirigir al dashboard si el usuario está autenticado
+        if (data.user?.email_confirmed_at) {
+          navigate("/dashboard");
+        } else {
+          navigate("/");
+        }
       }
     } catch (error: any) {
+      console.error('Error en autenticación:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || 'Ocurrió un error durante el registro',
         variant: "destructive",
       });
     } finally {
