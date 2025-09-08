@@ -20,8 +20,12 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline">Iniciar Sesión</Button>
-            <Button>Registrarse</Button>
+            <Button variant="outline" onClick={() => window.location.href = "/auth"}>
+              Iniciar Sesión
+            </Button>
+            <Button onClick={() => window.location.href = "/auth"}>
+              Registrarse
+            </Button>
           </div>
         </div>
       </header>

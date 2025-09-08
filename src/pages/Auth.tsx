@@ -1,0 +1,223 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { MapPin, User, Store } from "lucide-react";
+
+const Auth = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [codigoPostal, setCodigoPostal] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
+  
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión correctamente.",
+        });
+        navigate("/");
+      } else {
+        // Registro
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              nombre,
+              role: userType,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        // Crear registro específico según el tipo de usuario
+        if (userType === 'cliente') {
+          const { error: clienteError } = await supabase.from('clientes').insert({
+            user_id: data.user?.id,
+            nombre,
+            email,
+            telefono: telefono || null,
+            codigo_postal: codigoPostal || null,
+          });
+          if (clienteError) throw clienteError;
+        } else {
+          const { error: proveedorError } = await supabase.from('proveedores').insert({
+            user_id: data.user?.id,
+            nombre,
+            email,
+            telefono: telefono || null,
+            codigo_postal: codigoPostal || null,
+          });
+          if (proveedorError) throw proveedorError;
+        }
+
+        toast({
+          title: "¡Registro exitoso!",
+          description: "Revisa tu correo para confirmar tu cuenta.",
+        });
+        
+        navigate("/");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <MapPin className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
+          </div>
+          <p className="text-muted-foreground">
+            {isLogin ? "Inicia sesión en tu cuenta" : "Crea tu cuenta"}
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {isLogin ? "Iniciar Sesión" : "Registrarse"}
+            </CardTitle>
+            <CardDescription>
+              {isLogin 
+                ? "Ingresa tus credenciales para continuar" 
+                : "Completa los datos para crear tu cuenta"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAuth} className="space-y-4">
+              {!isLogin && (
+                <>
+                  <Tabs value={userType} onValueChange={(value) => setUserType(value as 'cliente' | 'proveedor')} className="mb-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="cliente" className="flex items-center space-x-2">
+                        <User className="h-4 w-4" />
+                        <span>Cliente</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="proveedor" className="flex items-center space-x-2">
+                        <Store className="h-4 w-4" />
+                        <span>Proveedor</span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  <div>
+                    <Label htmlFor="nombre">Nombre completo</Label>
+                    <Input
+                      id="nombre"
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <Label htmlFor="email">Correo electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {!isLogin && (
+                <>
+                  <div>
+                    <Label htmlFor="telefono">Teléfono (opcional)</Label>
+                    <Input
+                      id="telefono"
+                      type="tel"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="codigoPostal">Código postal (opcional)</Label>
+                    <Input
+                      id="codigoPostal"
+                      type="text"
+                      value={codigoPostal}
+                      onChange={(e) => setCodigoPostal(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-primary hover:underline"
+              >
+                {isLogin 
+                  ? "¿No tienes cuenta? Regístrate" 
+                  : "¿Ya tienes cuenta? Inicia sesión"
+                }
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
