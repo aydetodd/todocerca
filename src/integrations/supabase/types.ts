@@ -14,16 +14,732 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          is_product: boolean
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_product?: boolean
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_product?: boolean
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          codigo_postal: string | null
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          telefono: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          codigo_postal?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nombre: string
+          telefono?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          codigo_postal?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          telefono?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fotos_productos: {
+        Row: {
+          created_at: string
+          es_principal: boolean
+          id: string
+          nombre_archivo: string
+          producto_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          es_principal?: boolean
+          id?: string
+          nombre_archivo: string
+          producto_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          es_principal?: boolean
+          id?: string
+          nombre_archivo?: string
+          producto_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_productos_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_postings: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean | null
+          latitude: number | null
+          location: string | null
+          longitude: number | null
+          profile_id: string
+          requirements: string | null
+          salary_range: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          profile_id: string
+          requirements?: string | null
+          salary_range?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          profile_id?: string
+          requirements?: string | null
+          salary_range?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listings: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          is_free: boolean | null
+          latitude: number | null
+          longitude: number | null
+          price: number | null
+          profile_id: string
+          title: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_free?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          price?: number | null
+          profile_id: string
+          title: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_free?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          price?: number | null
+          profile_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          order_index: number | null
+          provider_id: string
+          service_product_id: string | null
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          provider_id: string
+          service_product_id?: string | null
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          provider_id?: string
+          service_product_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_service_product_id_fkey"
+            columns: ["service_product_id"]
+            isOneToOne: false
+            referencedRelation: "services_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          precio: number
+          proveedor_id: string
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          precio: number
+          proveedor_id: string
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          precio?: number
+          proveedor_id?: string
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          codigo_postal: string | null
+          consecutive_number: number
+          created_at: string
+          id: string
+          nombre: string
+          phone: string | null
+          postal_code: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          telefono: string | null
+          updated_at: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"] | null
+          verification_code: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          codigo_postal?: string | null
+          consecutive_number?: number
+          created_at?: string
+          id?: string
+          nombre: string
+          phone?: string | null
+          postal_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          telefono?: string | null
+          updated_at?: string
+          user_id: string
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verification_code?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          codigo_postal?: string | null
+          consecutive_number?: number
+          created_at?: string
+          id?: string
+          nombre?: string
+          phone?: string | null
+          postal_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          telefono?: string | null
+          updated_at?: string
+          user_id?: string
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verification_code?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      proveedores: {
+        Row: {
+          codigo_postal: string | null
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          telefono: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          codigo_postal?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nombre: string
+          telefono?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          codigo_postal?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          telefono?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      provider_categories: {
+        Row: {
+          category_id: string
+          id: string
+          provider_id: string
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          provider_id: string
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          provider_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_categories_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      providers: {
+        Row: {
+          availability_status:
+            | Database["public"]["Enums"]["availability_status"]
+            | null
+          business_address: string
+          business_name: string
+          business_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          professional_document_url: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          availability_status?:
+            | Database["public"]["Enums"]["availability_status"]
+            | null
+          business_address: string
+          business_name: string
+          business_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          professional_document_url?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          availability_status?:
+            | Database["public"]["Enums"]["availability_status"]
+            | null
+          business_address?: string
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          professional_document_url?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "providers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services_products: {
+        Row: {
+          category_id: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          is_available: boolean | null
+          name: string
+          price: number | null
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean | null
+          name: string
+          price?: number | null
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean | null
+          name?: string
+          price?: number | null
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_products_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          end_date: string | null
+          id: string
+          payment_method: string | null
+          profile_id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          payment_method?: string | null
+          profile_id: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          payment_method?: string | null
+          profile_id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_devices: {
+        Row: {
+          accepted: boolean | null
+          device_name: string | null
+          group_id: string
+          id: string
+          is_active: boolean | null
+          last_updated: string | null
+          latitude: number | null
+          longitude: number | null
+          profile_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          device_name?: string | null
+          group_id: string
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          profile_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          device_name?: string | null
+          group_id?: string
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_devices_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_devices_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_groups: {
+        Row: {
+          created_at: string
+          id: string
+          max_devices: number | null
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_devices?: number | null
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_devices?: number | null
+          name?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_groups_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      availability_status: "disponible" | "ocupado" | "no_disponible"
+      subscription_status: "activa" | "vencida" | "pendiente"
+      user_role: "admin" | "cliente" | "proveedor"
+      user_type: "cliente" | "proveedor" | "empresa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +866,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      availability_status: ["disponible", "ocupado", "no_disponible"],
+      subscription_status: ["activa", "vencida", "pendiente"],
+      user_role: ["admin", "cliente", "proveedor"],
+      user_type: ["cliente", "proveedor", "empresa"],
+    },
   },
 } as const
