@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { MapPin, User, Store } from "lucide-react";
 
 const Auth = () => {
@@ -21,6 +22,14 @@ const Auth = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +50,6 @@ const Auth = () => {
           title: "¡Bienvenido!",
           description: "Has iniciado sesión correctamente.",
         });
-        navigate("/");
       } else {
         // Registro
         const { data, error } = await supabase.auth.signUp({
@@ -59,54 +67,20 @@ const Auth = () => {
         if (error) throw error;
 
         if (data.user) {
-          // Esperar un poco para que se procese el usuario en auth
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log('Usuario registrado:', data.user.id);
 
-          // Crear registro específico según el tipo de usuario
-          try {
-            if (userType === 'cliente') {
-              const { error: clienteError } = await supabase.from('clientes').insert({
-                user_id: data.user.id,
-                nombre,
-                email,
-                telefono: telefono || null,
-                codigo_postal: codigoPostal || null,
-              });
-              if (clienteError) {
-                console.error('Error al crear cliente:', clienteError);
-                throw new Error('Error al crear perfil de cliente');
-              }
-            } else {
-              const { error: proveedorError } = await supabase.from('proveedores').insert({
-                user_id: data.user.id,
-                nombre,
-                email,
-                telefono: telefono || null,
-                codigo_postal: codigoPostal || null,
-              });
-              if (proveedorError) {
-                console.error('Error al crear proveedor:', proveedorError);
-                throw new Error('Error al crear perfil de proveedor');
-              }
-            }
-          } catch (insertError) {
-            console.error('Error en inserción:', insertError);
-            // Continuar aunque falle la inserción específica
+          toast({
+            title: "¡Registro exitoso!",
+            description: data.user.email_confirmed_at 
+              ? "Tu cuenta ha sido creada correctamente." 
+              : "Revisa tu correo para confirmar tu cuenta.",
+          });
+          
+          // La navegación se manejará automáticamente por el hook useAuth
+          if (!data.user.email_confirmed_at) {
+            // Si necesita confirmación por email, ir a la página principal
+            navigate("/");
           }
-        }
-
-        toast({
-          title: "¡Registro exitoso!",
-          description: data.user?.email_confirmed_at 
-            ? "Tu cuenta ha sido creada correctamente." 
-            : "Revisa tu correo para confirmar tu cuenta.",
-        });
-        
-        // Redirigir al dashboard si el usuario está autenticado
-        if (data.user?.email_confirmed_at) {
-          navigate("/dashboard");
-        } else {
-          navigate("/");
         }
       }
     } catch (error: any) {

@@ -5,15 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { MapPin, LogOut, CreditCard, Package, Users, ShoppingCart } from "lucide-react";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    getProfile();
+  }, [user, navigate]);
 
   useEffect(() => {
     getProfile();
@@ -21,14 +30,7 @@ const Dashboard = () => {
 
   async function getProfile() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-
-      setUser(user);
+      if (!user) return;
 
       // Obtener perfil
       const { data: profileData, error: profileError } = await supabase
@@ -88,17 +90,9 @@ const Dashboard = () => {
     }
   }
 
-  async function signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      navigate("/");
-    }
+  async function handleSignOut() {
+    await signOut();
+    navigate("/");
   }
 
   if (loading) {
@@ -127,7 +121,7 @@ const Dashboard = () => {
             <Badge variant={isProvider ? "default" : "secondary"}>
               {isProvider ? "Proveedor" : "Cliente"}
             </Badge>
-            <Button variant="outline" onClick={signOut}>
+            <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar Sesión
             </Button>
