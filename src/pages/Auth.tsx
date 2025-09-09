@@ -35,7 +35,8 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    console.log('Iniciando autenticación:', { isLogin, userType, email });
+    console.log('🔐 Form submitted:', { isLogin, userType, email, password: password ? 'set' : 'empty' });
+    console.log('🔐 Form data:', { nombre, telefono, codigoPostal });
 
     try {
       if (isLogin) {
