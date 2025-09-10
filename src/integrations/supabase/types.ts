@@ -126,25 +126,34 @@ export type Database = {
       }
       fotos_productos: {
         Row: {
+          alt_text: string | null
           created_at: string
           es_principal: boolean
+          file_size: number | null
           id: string
+          mime_type: string | null
           nombre_archivo: string
           producto_id: string
           url: string
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string
           es_principal?: boolean
+          file_size?: number | null
           id?: string
+          mime_type?: string | null
           nombre_archivo: string
           producto_id: string
           url: string
         }
         Update: {
+          alt_text?: string | null
           created_at?: string
           es_principal?: boolean
+          file_size?: number | null
           id?: string
+          mime_type?: string | null
           nombre_archivo?: string
           producto_id?: string
           url?: string
@@ -317,38 +326,78 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       productos: {
         Row: {
+          category_id: string | null
           created_at: string
           descripcion: string | null
           id: string
+          is_available: boolean | null
+          keywords: string | null
           nombre: string
           precio: number
           proveedor_id: string
           stock: number
+          unit: string | null
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
+          is_available?: boolean | null
+          keywords?: string | null
           nombre: string
           precio: number
           proveedor_id: string
           stock?: number
+          unit?: string | null
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
+          is_available?: boolean | null
+          keywords?: string | null
           nombre?: string
           precio?: number
           proveedor_id?: string
           stock?: number
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "productos_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "productos_proveedor_id_fkey"
             columns: ["proveedor_id"]

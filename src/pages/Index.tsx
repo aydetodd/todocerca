@@ -1,9 +1,22 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Search, Users, Package, Wrench, ShoppingCart } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { ArrowRight, Search, Users, ShoppingCart, Package, Wrench } from 'lucide-react';
 
-const Index = () => {
+export default function Index() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   const categories = [
     { name: "Servicios", icon: Wrench, color: "bg-blue-100 text-blue-800", count: "120+" },
     { name: "Productos", icon: Package, color: "bg-green-100 text-green-800", count: "250+" },
@@ -11,66 +24,76 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <MapPin className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
+            <ShoppingCart className="h-8 w-8 text-primary" />
+            <span className="text-xl font-bold">ToDoCerca</span>
           </div>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => window.location.href = "/auth"}>
-              Iniciar Sesión
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/search')}>
+              Buscar
             </Button>
-            <Button onClick={() => window.location.href = "/auth"}>
-              Registrarse
+            <Button onClick={() => navigate('/auth')}>
+              Iniciar Sesión
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-5xl font-bold text-foreground mb-6">
-            Encuentra todo lo que necesitas <span className="text-primary">cerca de ti</span>
-          </h2>
+      <div className="container mx-auto px-4">
+        {/* Hero Section */}
+        <section className="text-center py-20">
+          <Badge variant="secondary" className="mb-4">
+            Conectando productores locales con consumidores
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Encuentra productos
+            <span className="text-primary"> cerca de ti</span>
+          </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Conectamos a clientes con proveedores locales. Descubre servicios, productos y comercios en tu área.
+            Descubre productos frescos y servicios de calidad en tu comunidad. 
+            Conecta directamente con proveedores locales.
           </p>
           
           {/* Search Bar */}
-          <div className="max-w-md mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <input 
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground"
-                placeholder="¿Qué estás buscando?"
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="¿Qué productos buscas? (ej: tomate, frutas, lácteos)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-12 text-lg"
               />
-              <Button className="absolute right-1 top-1 bottom-1">Buscar</Button>
+              <Button type="submit" size="lg" className="h-12 px-8">
+                <Search className="h-5 w-5 mr-2" />
+                Buscar
+              </Button>
             </div>
+          </form>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
+              Registrarse como Proveedor
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button variant="outline" size="lg" className="text-lg px-8" onClick={() => navigate('/search')}>
+              Explorar productos
+            </Button>
           </div>
+        </section>
 
-          <div className="flex justify-center items-center space-x-4 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>+500 usuarios registrados</span>
-            <span>•</span>
-            <MapPin className="h-4 w-4" />
-            <span>Cobertura local</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center text-foreground mb-12">
+        {/* Categories */}
+        <section className="py-16">
+          <h3 className="text-3xl font-bold text-center mb-12">
             Explora por Categorías
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/search')}>
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                     <category.icon className="h-8 w-8 text-primary" />
@@ -88,30 +111,28 @@ const Index = () => {
               </Card>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-4">¿Eres proveedor?</h3>
-          <p className="text-xl mb-8 opacity-90">
-            Únete a nuestra plataforma y llega a más clientes en tu área
-          </p>
-          <Button size="lg" variant="secondary">
-            Registrar mi Negocio
-          </Button>
-        </div>
-      </section>
+        {/* CTA Section */}
+        <section className="py-16 bg-primary text-primary-foreground rounded-lg">
+          <div className="text-center px-8">
+            <h3 className="text-3xl font-bold mb-4">¿Eres proveedor?</h3>
+            <p className="text-xl mb-8 opacity-90">
+              Únete a nuestra plataforma y llega a más clientes en tu área
+            </p>
+            <Button size="lg" variant="secondary" onClick={() => navigate('/auth')}>
+              Registrar mi Negocio
+            </Button>
+          </div>
+        </section>
+      </div>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
+      <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; 2024 TodoCerca. Conectando comunidades locales.</p>
         </div>
       </footer>
     </div>
   );
-};
-
-export default Index;
+}

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, User, Store } from "lucide-react";
+import ProviderRegistration from "@/components/ProviderRegistration";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -19,6 +20,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
+  const [showProviderRegistration, setShowProviderRegistration] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,17 +72,25 @@ const Auth = () => {
         if (data.user) {
           console.log('Usuario registrado:', data.user.id);
 
-          toast({
-            title: "¡Registro exitoso!",
-            description: data.user.email_confirmed_at 
-              ? "Tu cuenta ha sido creada correctamente." 
-              : "Revisa tu correo para confirmar tu cuenta.",
-          });
-          
-          // La navegación se manejará automáticamente por el hook useAuth
-          if (!data.user.email_confirmed_at) {
-            // Si necesita confirmación por email, ir a la página principal
-            navigate("/");
+          if (userType === 'proveedor') {
+            setShowProviderRegistration(true);
+            toast({
+              title: "¡Cuenta creada!",
+              description: "Ahora registra tus productos para completar tu perfil de proveedor",
+            });
+          } else {
+            toast({
+              title: "¡Registro exitoso!",
+              description: data.user.email_confirmed_at 
+                ? "Tu cuenta ha sido creada correctamente." 
+                : "Revisa tu correo para confirmar tu cuenta.",
+            });
+            
+            // La navegación se manejará automáticamente por el hook useAuth
+            if (!data.user.email_confirmed_at) {
+              // Si necesita confirmación por email, ir a la página principal
+              navigate("/");
+            }
           }
         }
       }
@@ -95,6 +105,20 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleProviderRegistrationComplete = () => {
+    setShowProviderRegistration(false);
+    navigate('/dashboard');
+  };
+
+  if (showProviderRegistration) {
+    return (
+      <ProviderRegistration
+        onComplete={handleProviderRegistrationComplete}
+        userData={{ email, nombre, telefono, codigoPostal }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
