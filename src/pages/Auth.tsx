@@ -35,17 +35,50 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 handleAuth called!');
+    console.log('📋 Form state:', { 
+      isLogin, 
+      userType, 
+      email: email ? 'filled' : 'empty', 
+      password: password ? 'filled' : 'empty',
+      nombre: nombre ? 'filled' : 'empty',
+      telefono: telefono ? 'filled' : 'empty',
+      codigoPostal: codigoPostal ? 'filled' : 'empty'
+    });
+    
+    // Basic validation
+    if (!email || !password) {
+      console.log('❌ Missing email or password');
+      toast({
+        title: "Error",
+        description: "Email y contraseña son obligatorios",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!isLogin && !nombre) {
+      console.log('❌ Missing nombre for registration');
+      toast({
+        title: "Error", 
+        description: "El nombre es obligatorio para el registro",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-
-    console.log('🔐 Form submitted:', { isLogin, userType, email, password: password ? 'set' : 'empty' });
-    console.log('🔐 Form data:', { nombre, telefono, codigoPostal });
+    console.log('⏳ Starting authentication process...');
 
     try {
       if (isLogin) {
+        console.log('🔑 Attempting login...');
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+
+        console.log('🔑 Login result:', { data: data?.user ? 'user found' : 'no user', error });
 
         if (error) throw error;
 
@@ -54,6 +87,9 @@ const Auth = () => {
           description: "Has iniciado sesión correctamente.",
         });
       } else {
+        console.log('📝 Attempting registration...');
+        console.log('📝 Registration data:', { email, userType, nombre });
+        
         // Registro
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -67,18 +103,25 @@ const Auth = () => {
           },
         });
 
+        console.log('📝 Registration result:', { 
+          user: data?.user ? 'user created' : 'no user', 
+          error: error ? error.message : 'none' 
+        });
+
         if (error) throw error;
 
         if (data.user) {
-          console.log('Usuario registrado:', data.user.id);
+          console.log('✅ User registered successfully:', data.user.id);
 
           if (userType === 'proveedor') {
+            console.log('🏢 Setting up provider registration...');
             setShowProviderRegistration(true);
             toast({
               title: "¡Cuenta creada!",
               description: "Ahora registra tus productos para completar tu perfil de proveedor",
             });
           } else {
+            console.log('👤 Client registration completed');
             toast({
               title: "¡Registro exitoso!",
               description: data.user.email_confirmed_at 
@@ -92,16 +135,20 @@ const Auth = () => {
               navigate("/");
             }
           }
+        } else {
+          console.log('❌ No user data returned from registration');
+          throw new Error('No se pudo crear la cuenta');
         }
       }
     } catch (error: any) {
-      console.error('Error en autenticación:', error);
+      console.error('💥 Authentication error:', error);
       toast({
         title: "Error",
-        description: error.message || 'Ocurrió un error durante el registro',
+        description: error.message || 'Ocurrió un error durante el proceso',
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Authentication process finished');
       setLoading(false);
     }
   };
@@ -222,7 +269,12 @@ const Auth = () => {
                 </>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+                onClick={() => console.log('🔲 Submit button clicked!')}
+              >
                 {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
               </Button>
             </form>
