@@ -146,7 +146,14 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   };
 
   const handleSubmit = async () => {
+    console.log('🚀 Starting handleSubmit...');
+    console.log('📝 Step 1 validation:', validateStep1());
+    console.log('📝 Step 2 validation:', validateStep2());
+    console.log('📦 Provider data:', providerData);
+    console.log('🛍️ Products data:', products);
+    
     if (!validateStep1() || !validateStep2()) {
+      console.log('❌ Validation failed');
       toast({
         title: "Error",
         description: "Por favor completa todos los campos obligatorios",
@@ -158,14 +165,19 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     setLoading(true);
     try {
       // 1. Get current user
+      console.log('👤 Getting current user...');
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('👤 Current user:', currentUser);
+      
       if (!currentUser) throw new Error('Usuario no autenticado');
 
       // 2. Create provider record
+      console.log('🏢 Creating provider record...');
       const providerDataWithUserId = {
         ...providerData,
         user_id: currentUser.id
       };
+      console.log('🏢 Provider data with user ID:', providerDataWithUserId);
 
       const { data: providerRecord, error: providerError } = await supabase
         .from('proveedores')
@@ -173,12 +185,19 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         .select()
         .single();
 
-      if (providerError) throw providerError;
+      if (providerError) {
+        console.error('❌ Provider error:', providerError);
+        throw providerError;
+      }
 
-      console.log('Provider created:', providerRecord);
+      console.log('✅ Provider created:', providerRecord);
 
       // 2. Create products
-      for (const product of products) {
+      console.log('🛍️ Creating products...');
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        console.log(`📦 Processing product ${i + 1}/${products.length}:`, product);
+        
         const productData = {
           nombre: product.nombre,
           descripcion: product.descripcion,
@@ -190,6 +209,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           stock: 0,
           is_available: true,
         };
+        console.log('📦 Product data to insert:', productData);
 
         const { data: productRecord, error: productError } = await supabase
           .from('productos')
@@ -197,25 +217,36 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           .select()
           .single();
 
-        if (productError) throw productError;
+        if (productError) {
+          console.error('❌ Product error:', productError);
+          throw productError;
+        }
+
+        console.log('✅ Product created:', productRecord);
 
         // 3. Upload photo if exists
         if (product.photo) {
+          console.log('📸 Uploading photo for product:', productRecord.id);
           const fileExt = product.photo.name.split('.').pop();
           const fileName = `${productRecord.id}.${fileExt}`;
           const filePath = `${providerRecord.user_id}/${fileName}`;
 
+          console.log('📸 Photo upload path:', filePath);
           const { error: uploadError } = await supabase.storage
             .from('product-photos')
             .upload(filePath, product.photo);
 
-          if (!uploadError) {
+          if (uploadError) {
+            console.error('❌ Photo upload error:', uploadError);
+          } else {
+            console.log('✅ Photo uploaded successfully');
             const { data: { publicUrl } } = supabase.storage
               .from('product-photos')
               .getPublicUrl(filePath);
 
+            console.log('📸 Public URL:', publicUrl);
             // Save photo record
-            await supabase
+            const { error: photoRecordError } = await supabase
               .from('fotos_productos')
               .insert({
                 producto_id: productRecord.id,
@@ -226,24 +257,35 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
                 mime_type: product.photo.type,
                 file_size: product.photo.size,
               });
+            
+            if (photoRecordError) {
+              console.error('❌ Photo record error:', photoRecordError);
+            } else {
+              console.log('✅ Photo record saved');
+            }
           }
+        } else {
+          console.log('📸 No photo for this product');
         }
       }
 
+      console.log('🎉 All products and photos processed successfully');
       toast({
         title: "¡Registro exitoso!",
         description: `Se registraron ${products.length} productos correctamente`,
       });
 
+      console.log('🎯 Calling onComplete...');
       onComplete();
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('💥 Registration error:', error);
       toast({
         title: "Error",
-        description: "Hubo un problema al registrar tus productos",
+        description: `Hubo un problema al registrar tus productos: ${error.message}`,
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
