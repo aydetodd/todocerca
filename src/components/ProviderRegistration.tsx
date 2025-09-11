@@ -149,14 +149,33 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     console.log('🚀 Starting handleSubmit...');
     console.log('📝 Step 1 validation:', validateStep1());
     console.log('📝 Step 2 validation:', validateStep2());
-    console.log('📦 Provider data:', providerData);
-    console.log('🛍️ Products data:', products);
+    console.log('📦 Provider data before processing:', JSON.stringify(providerData, null, 2));
+    console.log('🛍️ Products data before processing:', JSON.stringify(products, null, 2));
     
-    if (!validateStep1() || !validateStep2()) {
-      console.log('❌ Validation failed');
+    if (!validateStep1()) {
+      console.log('❌ Step 1 validation failed');
+      console.log('Required fields - nombre:', !!providerData.nombre, 'email:', !!providerData.email, 'telefono:', !!providerData.telefono);
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
+        description: "Por favor completa todos los campos de información del proveedor",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!validateStep2()) {
+      console.log('❌ Step 2 validation failed');
+      products.forEach((p, i) => {
+        console.log(`Product ${i + 1}:`, {
+          nombre: !!p.nombre,
+          descripcion: !!p.descripcion,
+          precio: p.precio > 0,
+          category_id: !!p.category_id
+        });
+      });
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos de los productos",
         variant: "destructive",
       });
       return;
@@ -166,10 +185,18 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     try {
       // 1. Get current user
       console.log('👤 Getting current user...');
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      console.log('👤 Current user:', currentUser);
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      console.log('👤 Current user result:', { user: currentUser, error: userError });
       
-      if (!currentUser) throw new Error('Usuario no autenticado');
+      if (userError) {
+        console.error('❌ User fetch error:', userError);
+        throw new Error(`Error al obtener usuario: ${userError.message}`);
+      }
+      
+      if (!currentUser) {
+        console.error('❌ No current user found');
+        throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+      }
 
       // 2. Create provider record
       console.log('🏢 Creating provider record...');
@@ -177,7 +204,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         ...providerData,
         user_id: currentUser.id
       };
-      console.log('🏢 Provider data with user ID:', providerDataWithUserId);
+      console.log('🏢 Provider data with user ID:', JSON.stringify(providerDataWithUserId, null, 2));
 
       const { data: providerRecord, error: providerError } = await supabase
         .from('proveedores')
@@ -185,12 +212,24 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         .select()
         .single();
 
+      console.log('🏢 Provider insert result:', { data: providerRecord, error: providerError });
+
       if (providerError) {
-        console.error('❌ Provider error:', providerError);
-        throw providerError;
+        console.error('❌ Provider insert error details:', {
+          message: providerError.message,
+          details: providerError.details,
+          hint: providerError.hint,
+          code: providerError.code
+        });
+        throw new Error(`Error al crear proveedor: ${providerError.message}`);
       }
 
-      console.log('✅ Provider created:', providerRecord);
+      if (!providerRecord) {
+        console.error('❌ No provider record returned');
+        throw new Error('No se pudo crear el registro de proveedor');
+      }
+
+      console.log('✅ Provider created successfully:', providerRecord);
 
       // 2. Create products
       console.log('🛍️ Creating products...');
