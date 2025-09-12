@@ -14,19 +14,17 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
-      navigate("/auth");
+      navigate("/auth", { replace: true });
       return;
     }
     getProfile();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    getProfile();
-  }, []);
 
   async function getProfile() {
     try {

@@ -25,14 +25,14 @@ const Auth = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user && !showProviderRegistration && !skipAutoRedirect) {
+    if (!authLoading && user && !showProviderRegistration && !skipAutoRedirect) {
       navigate("/dashboard");
     }
-  }, [user, navigate, showProviderRegistration, skipAutoRedirect]);
+  }, [user, authLoading, navigate, showProviderRegistration, skipAutoRedirect]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
