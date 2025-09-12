@@ -28,10 +28,10 @@ const Auth = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (user && !showProviderRegistration) {
       navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, navigate, showProviderRegistration]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,12 +114,23 @@ const Auth = () => {
           console.log('✅ User registered successfully:', data.user.id);
 
           if (userType === 'proveedor') {
-            console.log('🏢 Setting up provider registration...');
-            setShowProviderRegistration(true);
-            toast({
-              title: "¡Cuenta creada!",
-              description: "Ahora registra tus productos para completar tu perfil de proveedor",
-            });
+            console.log('🏢 Handling provider post-signup...');
+            if (data.session) {
+              console.log('🟢 Session present after signup, opening ProviderRegistration');
+              setShowProviderRegistration(true);
+              toast({
+                title: "¡Cuenta creada!",
+                description: "Completa tu perfil de proveedor.",
+              });
+            } else {
+              console.log('🟠 No session after signup, requiring email confirmation/login before provider setup');
+              toast({
+                title: "Verifica tu correo",
+                description: "Confirma tu email e inicia sesión para completar tu perfil de proveedor.",
+              });
+              setIsLogin(true);
+              navigate("/");
+            }
           } else {
             console.log('👤 Client registration completed');
             toast({
