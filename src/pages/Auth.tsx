@@ -293,14 +293,16 @@ const Auth = () => {
                 </>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-                onClick={() => console.log('🔲 Submit button clicked!')}
-              >
-                {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
-              </Button>
+              <div className="pt-4 pb-8">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                  onClick={() => console.log('🔲 Submit button clicked!')}
+                >
+                  {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
