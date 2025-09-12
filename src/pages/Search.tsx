@@ -32,7 +32,7 @@ interface Category {
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,7 +88,7 @@ export default function Search() {
       }
 
       // Add category filter
-      if (selectedCategory) {
+      if (selectedCategory && selectedCategory !== 'all') {
         query = query.eq('category_id', selectedCategory);
       }
 
@@ -117,7 +117,7 @@ export default function Search() {
       // Update URL params
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.set('q', searchTerm.trim());
-      if (selectedCategory) params.set('category', selectedCategory);
+      if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
       setSearchParams(params);
 
     } catch (error) {
@@ -139,7 +139,7 @@ export default function Search() {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
+    setSelectedCategory('all');
     setProducts([]);
     setSearchParams({});
   };
@@ -168,7 +168,7 @@ export default function Search() {
                     <SelectValue placeholder="Categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las categorías</SelectItem>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
