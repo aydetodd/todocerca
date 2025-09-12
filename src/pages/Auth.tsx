@@ -21,6 +21,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
   const [showProviderRegistration, setShowProviderRegistration] = useState(false);
+  const [skipAutoRedirect, setSkipAutoRedirect] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,10 +29,10 @@ const Auth = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user && !showProviderRegistration) {
+    if (user && !showProviderRegistration && !skipAutoRedirect) {
       navigate("/dashboard");
     }
-  }, [user, navigate, showProviderRegistration]);
+  }, [user, navigate, showProviderRegistration, skipAutoRedirect]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +87,37 @@ const Auth = () => {
           title: "¡Bienvenido!",
           description: "Has iniciado sesión correctamente.",
         });
+
+        // Post-login flow for providers: check if they need to complete provider registration
+        try {
+          setSkipAutoRedirect(true);
+          const role = data.user?.user_metadata?.role;
+          const userId = data.user?.id;
+          if (role === 'proveedor' && userId) {
+            const { data: existingProvider, error: providerLookupError } = await supabase
+              .from('proveedores')
+              .select('id')
+              .eq('user_id', userId)
+              .maybeSingle();
+            if (providerLookupError) {
+              console.log('⚠️ Provider lookup error (non-fatal):', providerLookupError);
+            }
+            if (!existingProvider) {
+              setShowProviderRegistration(true);
+              toast({
+                title: "Completa tu perfil de proveedor",
+                description: "Registra tus productos para comenzar.",
+              });
+            } else {
+              setSkipAutoRedirect(false);
+            }
+          } else {
+            setSkipAutoRedirect(false);
+          }
+        } catch (e) {
+          console.log('⚠️ Post-login provider flow error:', e);
+          setSkipAutoRedirect(false);
+        }
       } else {
         console.log('📝 Attempting registration...');
         console.log('📝 Registration data:', { email, userType, nombre });
@@ -166,6 +198,7 @@ const Auth = () => {
 
   const handleProviderRegistrationComplete = () => {
     setShowProviderRegistration(false);
+    setSkipAutoRedirect(false);
     navigate('/dashboard');
   };
 
