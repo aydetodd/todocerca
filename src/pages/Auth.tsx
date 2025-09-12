@@ -190,6 +190,19 @@ const Auth = () => {
           <p className="text-muted-foreground">
             {isLogin ? "Inicia sesión en tu cuenta" : "Crea tu cuenta"}
           </p>
+          
+          {/* Toggle Login/Register Button - Moved to top */}
+          <div className="mt-6">
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-primary hover:underline font-medium text-lg"
+            >
+              {isLogin 
+                ? "¿No tienes cuenta? Regístrate" 
+                : "¿Ya tienes cuenta? Inicia sesión"
+              }
+            </button>
+          </div>
         </div>
 
         <Card>
@@ -289,18 +302,6 @@ const Auth = () => {
                 {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
               </Button>
             </form>
-
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-primary hover:underline"
-              >
-                {isLogin 
-                  ? "¿No tienes cuenta? Regístrate" 
-                  : "¿Ya tienes cuenta? Inicia sesión"
-                }
-              </button>
-            </div>
           </CardContent>
         </Card>
       </div>
