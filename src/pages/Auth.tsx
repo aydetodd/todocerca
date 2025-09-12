@@ -169,6 +169,76 @@ const Auth = () => {
     navigate('/dashboard');
   };
 
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Ingresa tu correo electrónico",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Correo reenviado!",
+        description: "Revisa tu bandeja de entrada y spam",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Ingresa tu correo electrónico",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Correo enviado!",
+        description: "Revisa tu correo para restablecer tu contraseña",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showProviderRegistration) {
     return (
       <ProviderRegistration
@@ -302,6 +372,30 @@ const Auth = () => {
                 >
                   {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
                 </Button>
+
+                {/* Botones de ayuda */}
+                {isLogin && (
+                  <div className="mt-4 space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={loading}
+                      onClick={handleResendConfirmation}
+                    >
+                      Reenviar confirmación
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      disabled={loading}
+                      onClick={handleForgotPassword}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Button>
+                  </div>
+                )}
               </div>
             </form>
           </CardContent>
