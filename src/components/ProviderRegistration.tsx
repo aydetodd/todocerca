@@ -18,8 +18,6 @@ interface Product {
   unit: string;
   category_id: string;
   keywords: string;
-  photo?: File;
-  photoPreview?: string;
 }
 
 interface Category {
@@ -87,10 +85,10 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   };
 
   const addProduct = () => {
-    if (products.length >= 50) {
+    if (products.length >= 500) {
       toast({
         title: "Límite alcanzado",
-        description: "No puedes registrar más de 50 productos",
+        description: "No puedes registrar más de 500 productos",
         variant: "destructive",
       });
       return;
@@ -124,15 +122,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     setProducts(products.map(p => 
       p.id === id ? { ...p, [field]: value } : p
     ));
-  };
-
-  const handlePhotoUpload = (id: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      updateProduct(id, 'photo', file);
-      updateProduct(id, 'photoPreview', e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const validateStep1 = () => {
@@ -262,60 +251,32 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         }
 
         console.log('✅ Product created:', productRecord);
-
-        // 3. Upload photo if exists
-        if (product.photo) {
-          console.log('📸 Uploading photo for product:', productRecord.id);
-          const fileExt = product.photo.name.split('.').pop();
-          const fileName = `${productRecord.id}.${fileExt}`;
-          const filePath = `${providerRecord.user_id}/${fileName}`;
-
-          console.log('📸 Photo upload path:', filePath);
-          const { error: uploadError } = await supabase.storage
-            .from('product-photos')
-            .upload(filePath, product.photo);
-
-          if (uploadError) {
-            console.error('❌ Photo upload error:', uploadError);
-          } else {
-            console.log('✅ Photo uploaded successfully');
-            const { data: { publicUrl } } = supabase.storage
-              .from('product-photos')
-              .getPublicUrl(filePath);
-
-            console.log('📸 Public URL:', publicUrl);
-            // Save photo record
-            const { error: photoRecordError } = await supabase
-              .from('fotos_productos')
-              .insert({
-                producto_id: productRecord.id,
-                url: publicUrl,
-                nombre_archivo: fileName,
-                es_principal: true,
-                alt_text: product.nombre,
-                mime_type: product.photo.type,
-                file_size: product.photo.size,
-              });
-            
-            if (photoRecordError) {
-              console.error('❌ Photo record error:', photoRecordError);
-            } else {
-              console.log('✅ Photo record saved');
-            }
-          }
-        } else {
-          console.log('📸 No photo for this product');
-        }
       }
 
-      console.log('🎉 All products and photos processed successfully');
-      toast({
-        title: "¡Registro exitoso!",
-        description: `Se registraron ${products.length} productos correctamente`,
-      });
+      console.log('🎉 All products processed successfully');
+      
+      // Redirect to payment
+      console.log('💳 Redirecting to payment...');
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout');
+      
+      if (checkoutError) {
+        throw new Error(`Error al crear sesión de pago: ${checkoutError.message}`);
+      }
 
-      console.log('🎯 Calling onComplete...');
-      onComplete();
+      if (checkoutData?.url) {
+        toast({
+          title: "¡Registro exitoso!",
+          description: `Se registraron ${products.length} productos. Redirigiendo al pago...`,
+        });
+        
+        // Open Stripe checkout in new tab
+        window.open(checkoutData.url, '_blank');
+        
+        // Call onComplete to update UI
+        onComplete();
+      } else {
+        throw new Error('No se pudo obtener la URL de pago');
+      }
     } catch (error) {
       console.error('💥 Registration error:', error);
       toast({
@@ -374,8 +335,8 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Productos ({products.length}/50)</h3>
-        <Button onClick={addProduct} disabled={products.length >= 50}>
+        <h3 className="text-lg font-medium">Productos ({products.length}/500)</h3>
+        <Button onClick={addProduct} disabled={products.length >= 500}>
           <Plus className="w-4 h-4 mr-2" />
           Agregar Producto
         </Button>
@@ -453,28 +414,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
                       <SelectItem value="caja">caja</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label>Foto</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handlePhotoUpload(product.id, file);
-                    }}
-                    className="flex-1"
-                  />
-                  {product.photoPreview && (
-                    <img
-                      src={product.photoPreview}
-                      alt="Preview"
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  )}
                 </div>
               </div>
 
