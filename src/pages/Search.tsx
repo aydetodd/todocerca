@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ interface MapProvider {
   }[];
 }
 
-const Search = () => {
+function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
@@ -99,12 +99,10 @@ const Search = () => {
         `)
         .eq('is_available', true);
 
-      // Add search term filter
       if (searchTerm.trim()) {
         query = query.or(`nombre.ilike.%${searchTerm}%,descripcion.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
       }
 
-      // Add category filter
       if (selectedCategory && selectedCategory !== 'all') {
         query = query.eq('category_id', selectedCategory);
       }
@@ -150,11 +148,9 @@ const Search = () => {
 
       if (providersError) throw providersError;
 
-      // Get products for each provider that match search
       if (providersData) {
         const providersWithProducts = await Promise.all(
           providersData.map(async (provider) => {
-            // Find proveedor record linked to this provider's profile
             const { data: proveedorData } = await supabase
               .from('proveedores')
               .select('id')
@@ -163,7 +159,6 @@ const Search = () => {
 
             if (!proveedorData) return null;
 
-            // Get products for this proveedor
             let productQuery = supabase
               .from('productos')
               .select('nombre, precio')
@@ -197,7 +192,6 @@ const Search = () => {
         setMapProviders(filteredProviders);
       }
 
-      // Update URL params
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.set('q', searchTerm.trim());
       if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
@@ -232,7 +226,6 @@ const Search = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Search Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-6">Buscar Productos</h1>
             
@@ -274,7 +267,6 @@ const Search = () => {
             </form>
           </div>
 
-          {/* Results */}
           <div className="space-y-6">
             {(products.length > 0 || mapProviders.length > 0) && (
               <Tabs defaultValue="products" className="w-full">
@@ -400,6 +392,6 @@ const Search = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Search;
+export default SearchPage;
