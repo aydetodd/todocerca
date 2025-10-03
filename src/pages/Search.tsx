@@ -45,7 +45,7 @@ interface MapProvider {
   }[];
 }
 
-export default function Search() {
+const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
@@ -400,4 +400,6 @@ export default function Search() {
       </div>
     </div>
   );
-}
+};
+
+export default Search;
