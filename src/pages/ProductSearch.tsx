@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search as SearchIcon, MapPin, Phone, Package } from 'lucide-react';
+import ProvidersMap from '@/components/ProvidersMap';
 
 interface SearchResult {
   product_name: string;
@@ -15,6 +16,23 @@ interface SearchResult {
   provider_name: string;
   provider_phone: string;
   provider_postal_code: string;
+  provider_id: string;
+  provider_address: string;
+  provider_latitude: number;
+  provider_longitude: number;
+}
+
+interface MapProvider {
+  id: string;
+  business_name: string;
+  business_address: string;
+  business_phone: string | null;
+  latitude: number;
+  longitude: number;
+  productos: {
+    nombre: string;
+    precio: number;
+  }[];
 }
 
 const ProductSearch = () => {
@@ -22,6 +40,7 @@ const ProductSearch = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -32,16 +51,19 @@ const ProductSearch = () => {
     setHasSearched(true);
     
     try {
-      // Search in productos table by name or keywords
+      // Search in productos table by name or keywords with provider location
       const { data: productos, error } = await supabase
         .from('productos')
         .select(`
+          id,
           nombre,
           descripcion,
           precio,
           stock,
           unit,
+          proveedor_id,
           proveedores (
+            id,
             nombre,
             telefono,
             codigo_postal
@@ -53,28 +75,86 @@ const ProductSearch = () => {
       if (error) {
         console.error('Error searching:', error);
         setResults([]);
+        setMapProviders([]);
         return;
       }
 
       if (productos && productos.length > 0) {
-        const formattedResults: SearchResult[] = productos.map((producto: any) => ({
-          product_name: producto.nombre || '',
-          product_description: producto.descripcion || '',
-          price: producto.precio || 0,
-          stock: producto.stock || 0,
-          unit: producto.unit || '',
-          provider_name: producto.proveedores?.nombre || '',
-          provider_phone: producto.proveedores?.telefono || '',
-          provider_postal_code: producto.proveedores?.codigo_postal || ''
-        }));
+        // Get unique provider IDs
+        const providerIds = [...new Set(productos.map((p: any) => p.proveedor_id))];
+        
+        // Fetch provider locations from providers table
+        const { data: providers, error: providersError } = await supabase
+          .from('providers')
+          .select('id, business_name, business_address, business_phone, latitude, longitude, profile_id')
+          .in('profile_id', providerIds);
+
+        if (providersError) {
+          console.error('Error fetching providers:', providersError);
+        }
+
+        // Create a map of proveedor_id to provider location data
+        const providerLocationMap = new Map();
+        if (providers) {
+          providers.forEach((p: any) => {
+            providerLocationMap.set(p.profile_id, p);
+          });
+        }
+
+        const formattedResults: SearchResult[] = productos.map((producto: any) => {
+          const locationData = providerLocationMap.get(producto.proveedor_id);
+          return {
+            product_name: producto.nombre || '',
+            product_description: producto.descripcion || '',
+            price: producto.precio || 0,
+            stock: producto.stock || 0,
+            unit: producto.unit || '',
+            provider_name: producto.proveedores?.nombre || '',
+            provider_phone: producto.proveedores?.telefono || '',
+            provider_postal_code: producto.proveedores?.codigo_postal || '',
+            provider_id: producto.proveedor_id || '',
+            provider_address: locationData?.business_address || '',
+            provider_latitude: locationData?.latitude || 0,
+            provider_longitude: locationData?.longitude || 0,
+          };
+        });
         
         setResults(formattedResults);
+
+        // Group products by provider for the map
+        const providerMap = new Map<string, MapProvider>();
+        
+        formattedResults.forEach((result) => {
+          if (result.provider_latitude && result.provider_longitude) {
+            if (!providerMap.has(result.provider_id)) {
+              providerMap.set(result.provider_id, {
+                id: result.provider_id,
+                business_name: result.provider_name,
+                business_address: result.provider_address,
+                business_phone: result.provider_phone || null,
+                latitude: result.provider_latitude,
+                longitude: result.provider_longitude,
+                productos: []
+              });
+            }
+            
+            const provider = providerMap.get(result.provider_id)!;
+            provider.productos.push({
+              nombre: result.product_name,
+              precio: result.price
+            });
+          }
+        });
+
+        setMapProviders(Array.from(providerMap.values()));
       } else {
         setResults([]);
+        setMapProviders([]);
       }
     } catch (error) {
       console.error('Error searching:', error);
       setResults([]);
+      setMapProviders([]);
     } finally {
       setLoading(false);
     }
@@ -118,11 +198,23 @@ const ProductSearch = () => {
         )}
 
         {results.length > 0 && (
-          <div className="space-y-4">
-            <p className="text-muted-foreground mb-4">
-              {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
-            </p>
-            {results.map((result, index) => (
+          <div className="space-y-6">
+            <div>
+              <p className="text-muted-foreground mb-4">
+                {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
+              </p>
+              
+              {mapProviders.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Ubicación de Proveedores</h2>
+                  <ProvidersMap providers={mapProviders} />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Detalles de Productos</h2>
+              {results.map((result, index) => (
               <Card key={index}>
                 <CardHeader>
                   <CardTitle className="flex items-start justify-between gap-4">
@@ -162,7 +254,8 @@ const ProductSearch = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
