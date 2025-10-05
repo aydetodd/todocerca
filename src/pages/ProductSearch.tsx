@@ -80,90 +80,42 @@ const ProductSearch = () => {
       }
 
       if (productos && productos.length > 0) {
-        // Get unique provider IDs from proveedores table
+        // Get unique provider IDs
         const proveedorIds = [...new Set(productos.map((p: any) => p.proveedor_id))];
         
-        // Fetch proveedores to get user_ids
+        // Fetch proveedores with all needed data including location
         const { data: proveedoresData, error: proveedoresError } = await supabase
           .from('proveedores')
-          .select('id, user_id')
+          .select('id, nombre, telefono, codigo_postal, business_address, business_phone, latitude, longitude')
           .in('id', proveedorIds);
 
         if (proveedoresError) {
           console.error('Error fetching proveedores:', proveedoresError);
         }
 
-        // Create map of proveedor_id to user_id
-        const proveedorUserMap = new Map();
+        // Create a map of proveedor_id to provider data
+        const providerLocationMap = new Map();
         if (proveedoresData) {
           proveedoresData.forEach((p: any) => {
-            proveedorUserMap.set(p.id, p.user_id);
-          });
-        }
-
-        // Get user_ids to fetch profiles
-        const userIds = Array.from(proveedorUserMap.values());
-        
-        // Fetch profiles to get profile_ids
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, user_id')
-          .in('user_id', userIds);
-
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-        }
-
-        // Create map of user_id to profile_id
-        const userProfileMap = new Map();
-        if (profilesData) {
-          profilesData.forEach((p: any) => {
-            userProfileMap.set(p.user_id, p.id);
-          });
-        }
-
-        // Get profile_ids to fetch providers with locations
-        const profileIds = Array.from(userProfileMap.values());
-        
-        // Fetch provider locations
-        const { data: providers, error: providersError } = await supabase
-          .from('providers')
-          .select('id, business_name, business_address, business_phone, latitude, longitude, profile_id')
-          .in('profile_id', profileIds);
-
-        if (providersError) {
-          console.error('Error fetching providers:', providersError);
-        }
-
-        // Create a map of proveedor_id to provider location data
-        const providerLocationMap = new Map();
-        if (providers) {
-          providers.forEach((provider: any) => {
-            // Find the proveedor_id that corresponds to this provider
-            proveedoresData?.forEach((prov: any) => {
-              const profileId = userProfileMap.get(prov.user_id);
-              if (profileId === provider.profile_id) {
-                providerLocationMap.set(prov.id, provider);
-              }
-            });
+            providerLocationMap.set(p.id, p);
           });
         }
 
         const formattedResults: SearchResult[] = productos.map((producto: any) => {
-          const locationData = providerLocationMap.get(producto.proveedor_id);
+          const proveedorData = providerLocationMap.get(producto.proveedor_id);
           return {
             product_name: producto.nombre || '',
             product_description: producto.descripcion || '',
             price: producto.precio || 0,
             stock: producto.stock || 0,
             unit: producto.unit || '',
-            provider_name: producto.proveedores?.nombre || '',
-            provider_phone: producto.proveedores?.telefono || '',
-            provider_postal_code: producto.proveedores?.codigo_postal || '',
+            provider_name: proveedorData?.nombre || producto.proveedores?.nombre || '',
+            provider_phone: proveedorData?.business_phone || proveedorData?.telefono || '',
+            provider_postal_code: proveedorData?.codigo_postal || '',
             provider_id: producto.proveedor_id || '',
-            provider_address: locationData?.business_address || '',
-            provider_latitude: locationData?.latitude || 0,
-            provider_longitude: locationData?.longitude || 0,
+            provider_address: proveedorData?.business_address || '',
+            provider_latitude: proveedorData?.latitude || 0,
+            provider_longitude: proveedorData?.longitude || 0,
           };
         });
         

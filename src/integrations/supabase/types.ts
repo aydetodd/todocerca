@@ -281,51 +281,6 @@ export type Database = {
           },
         ]
       }
-      photos: {
-        Row: {
-          caption: string | null
-          created_at: string
-          id: string
-          order_index: number | null
-          provider_id: string
-          service_product_id: string | null
-          url: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string
-          id?: string
-          order_index?: number | null
-          provider_id: string
-          service_product_id?: string | null
-          url: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string
-          id?: string
-          order_index?: number | null
-          provider_id?: string
-          service_product_id?: string | null
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "photos_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "photos_service_product_id_fkey"
-            columns: ["service_product_id"]
-            isOneToOne: false
-            referencedRelation: "services_products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       product_categories: {
         Row: {
           created_at: string
@@ -460,182 +415,51 @@ export type Database = {
       }
       proveedores: {
         Row: {
+          business_address: string | null
+          business_phone: string | null
           codigo_postal: string | null
           created_at: string
+          description: string | null
           email: string
           id: string
+          latitude: number | null
+          longitude: number | null
           nombre: string
           telefono: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          business_address?: string | null
+          business_phone?: string | null
           codigo_postal?: string | null
           created_at?: string
+          description?: string | null
           email: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nombre: string
           telefono?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          business_address?: string | null
+          business_phone?: string | null
           codigo_postal?: string | null
           created_at?: string
+          description?: string | null
           email?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nombre?: string
           telefono?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
-      }
-      provider_categories: {
-        Row: {
-          category_id: string
-          id: string
-          provider_id: string
-        }
-        Insert: {
-          category_id: string
-          id?: string
-          provider_id: string
-        }
-        Update: {
-          category_id?: string
-          id?: string
-          provider_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_categories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "provider_categories_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      providers: {
-        Row: {
-          availability_status:
-            | Database["public"]["Enums"]["availability_status"]
-            | null
-          business_address: string
-          business_name: string
-          business_phone: string | null
-          created_at: string
-          description: string | null
-          id: string
-          latitude: number | null
-          longitude: number | null
-          professional_document_url: string | null
-          profile_id: string
-          updated_at: string
-        }
-        Insert: {
-          availability_status?:
-            | Database["public"]["Enums"]["availability_status"]
-            | null
-          business_address: string
-          business_name: string
-          business_phone?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          professional_document_url?: string | null
-          profile_id: string
-          updated_at?: string
-        }
-        Update: {
-          availability_status?:
-            | Database["public"]["Enums"]["availability_status"]
-            | null
-          business_address?: string
-          business_name?: string
-          business_phone?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          professional_document_url?: string | null
-          profile_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "providers_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      services_products: {
-        Row: {
-          category_id: string
-          created_at: string
-          currency: string | null
-          description: string | null
-          id: string
-          is_available: boolean | null
-          name: string
-          price: number | null
-          provider_id: string
-          updated_at: string
-        }
-        Insert: {
-          category_id: string
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          is_available?: boolean | null
-          name: string
-          price?: number | null
-          provider_id: string
-          updated_at?: string
-        }
-        Update: {
-          category_id?: string
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          is_available?: boolean | null
-          name?: string
-          price?: number | null
-          provider_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "services_products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "services_products_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       subscriptions: {
         Row: {

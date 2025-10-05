@@ -48,6 +48,11 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     email: userData.email,
     telefono: userData.telefono,
     codigo_postal: userData.codigoPostal,
+    business_address: '',
+    business_phone: '',
+    description: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
   // Products data
@@ -125,7 +130,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   };
 
   const validateStep1 = () => {
-    return providerData.nombre && providerData.email && providerData.telefono;
+    return providerData.nombre && providerData.email && providerData.telefono && providerData.business_address;
   };
 
   const validateStep2 = () => {
@@ -329,6 +334,62 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           placeholder="12345"
         />
       </div>
+      <div>
+        <Label htmlFor="business_address">Dirección del Negocio *</Label>
+        <Textarea
+          id="business_address"
+          value={providerData.business_address}
+          onChange={(e) => setProviderData({...providerData, business_address: e.target.value})}
+          placeholder="Calle, número, colonia, ciudad, estado"
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label htmlFor="business_phone">Teléfono del Negocio</Label>
+        <Input
+          id="business_phone"
+          value={providerData.business_phone}
+          onChange={(e) => setProviderData({...providerData, business_phone: e.target.value})}
+          placeholder="Teléfono de contacto del negocio"
+        />
+      </div>
+      <div>
+        <Label htmlFor="description">Descripción del Negocio</Label>
+        <Textarea
+          id="description"
+          value={providerData.description}
+          onChange={(e) => setProviderData({...providerData, description: e.target.value})}
+          placeholder="Describe tu negocio, qué ofreces, horarios, etc."
+          rows={3}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="latitude">Latitud (opcional)</Label>
+          <Input
+            id="latitude"
+            type="number"
+            step="0.000001"
+            value={providerData.latitude || ''}
+            onChange={(e) => setProviderData({...providerData, latitude: e.target.value ? parseFloat(e.target.value) : null})}
+            placeholder="19.4326"
+          />
+        </div>
+        <div>
+          <Label htmlFor="longitude">Longitud (opcional)</Label>
+          <Input
+            id="longitude"
+            type="number"
+            step="0.000001"
+            value={providerData.longitude || ''}
+            onChange={(e) => setProviderData({...providerData, longitude: e.target.value ? parseFloat(e.target.value) : null})}
+            placeholder="-99.1332"
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        💡 Tip: Para obtener tus coordenadas, abre Google Maps, haz clic derecho en tu ubicación y copia las coordenadas.
+      </p>
     </div>
   );
 
