@@ -8,16 +8,17 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    hmr: {
+      overlay: false
+    }
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@radix-ui/react-tooltip'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    force: true,
+    exclude: ['@radix-ui/react-tooltip'],
   },
 }));
