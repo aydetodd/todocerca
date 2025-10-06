@@ -67,12 +67,14 @@ export default function DashboardMain() {
         </div>
       </header>
 
-      {/* Status Control */}
-      <StatusControl />
-
-      {/* Map */}
-      <div className="flex-1">
+      {/* Map with overlays */}
+      <div className="flex-1 relative">
         <RealtimeMap onOpenChat={handleOpenChat} />
+        
+        {/* Status Control Overlay - Top Right */}
+        <div className="absolute top-4 right-4 z-30">
+          <StatusControl />
+        </div>
       </div>
 
       {/* Floating Message Button */}

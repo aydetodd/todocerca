@@ -47,11 +47,10 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   return (
     <div 
-      className="fixed bottom-4 right-4 w-96 bg-background border rounded-lg shadow-2xl z-50"
-      style={{ height: window.innerWidth < 768 ? '600px' : '700px' }}
+      className="fixed inset-0 bg-background z-50 flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-amber-500 text-white rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b bg-amber-500 text-white">
         <h3 className="font-bold">
           {receiverName ? `Chat con ${receiverName}` : 'Mensajes'}
         </h3>
@@ -66,7 +65,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" style={{ height: 'calc(100% - 140px)' }} ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         {messages.map((msg) => {
           const isOwn = msg.sender_id === currentUserId;
           const isPanic = msg.is_panic;
