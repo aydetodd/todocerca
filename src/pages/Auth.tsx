@@ -80,7 +80,7 @@ const Auth = () => {
       if (isLogin) {
         console.log('🔑 Attempting login with phone...');
         
-        // Buscar el perfil por teléfono para obtener el user_id
+        // Buscar el perfil por teléfono para obtener el user_id y email real
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('user_id, consecutive_number')
@@ -93,26 +93,39 @@ const Auth = () => {
 
         console.log('📱 Profile found:', profileData.consecutive_number);
 
-        // Generar el email basado en el teléfono
-        const generatedEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        // Obtener el email real del usuario desde auth.users
+        const { data: { users }, error: usersError } = await supabase.auth.admin.getUserById(profileData.user_id);
         
-        // Intentar login con el email generado
+        let emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        
+        // Si encontramos el usuario en auth, usar su email real
+        if (!usersError && users && users.length > 0) {
+          emailToUse = users[0].email || emailToUse;
+          console.log('📧 Using email:', emailToUse);
+        }
+        
+        // Intentar login con el email correcto
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: generatedEmail,
+          email: emailToUse,
           password,
         });
 
         console.log('🔑 Login result:', { data: data?.user ? 'user found' : 'no user', error });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Teléfono o contraseña incorrectos');
+          }
+          throw error;
+        }
 
         // Mostrar el ID consecutivo
         setUserIdConsecutivo(profileData.consecutive_number);
         setShowIdConsecutivo(true);
 
         toast({
-          title: "Credenciales válidas",
-          description: `Tu ID es: ${profileData.consecutive_number}`,
+          title: "¡Bienvenido!",
+          description: `Tu número de usuario es: ${profileData.consecutive_number}`,
         });
 
         // Post-login flow for providers: check if they need to complete provider registration
