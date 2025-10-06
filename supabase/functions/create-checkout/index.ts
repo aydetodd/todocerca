@@ -28,6 +28,12 @@ serve(async (req) => {
 
     console.log("[CREATE-CHECKOUT] User authenticated:", user.email);
 
+    // Get optional coupon code from request body
+    const { couponCode } = await req.json().catch(() => ({}));
+    if (couponCode) {
+      console.log("[CREATE-CHECKOUT] Coupon code provided:", couponCode);
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
       apiVersion: "2025-08-27.basil" 
     });
@@ -43,7 +49,7 @@ serve(async (req) => {
     }
 
     // Create checkout session for annual subscription
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -55,7 +61,15 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?subscription=success`,
       cancel_url: `${req.headers.get("origin")}/dashboard?subscription=cancelled`,
-    });
+    };
+
+    // Add coupon if provided
+    if (couponCode) {
+      sessionConfig.discounts = [{ coupon: couponCode }];
+      console.log("[CREATE-CHECKOUT] Applying coupon:", couponCode);
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log("[CREATE-CHECKOUT] Checkout session created:", session.id);
 

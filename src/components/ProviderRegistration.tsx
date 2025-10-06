@@ -40,6 +40,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [couponCode, setCouponCode] = useState('');
   const { toast } = useToast();
 
   // Provider data
@@ -262,7 +263,10 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       
       // Redirect to payment
       console.log('💳 Redirecting to payment...');
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout');
+      const checkoutBody = couponCode ? { couponCode } : {};
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
+        body: checkoutBody
+      });
       
       if (checkoutError) {
         throw new Error(`Error al crear sesión de pago: ${checkoutError.message}`);
@@ -499,6 +503,21 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
             </div>
           </Card>
         ))}
+
+        <Card className="p-4 mt-6 bg-muted/30">
+          <div className="space-y-2">
+            <Label htmlFor="coupon">Código Promocional (Opcional)</Label>
+            <Input
+              id="coupon"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.trim())}
+              placeholder="Ingresa tu código promocional"
+            />
+            <p className="text-sm text-muted-foreground">
+              Si tienes un código promocional, ingrésalo aquí para aplicar descuentos
+            </p>
+          </div>
+        </Card>
       </div>
     </div>
   );
