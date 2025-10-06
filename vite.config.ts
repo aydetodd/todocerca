@@ -13,11 +13,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force single React instance
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
   },
   clearScreen: false,
   optimizeDeps: {
-    force: true,
+    include: ['react', 'react-dom', '@tanstack/react-query'],
     esbuildOptions: {
       target: 'esnext'
     }
