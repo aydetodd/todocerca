@@ -61,6 +61,8 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?subscription=success`,
       cancel_url: `${req.headers.get("origin")}/dashboard?subscription=cancelled`,
+      // Permitir completar checkout sin tarjeta cuando el total es $0
+      payment_method_collection: "if_required",
     };
 
     // Add coupon if provided
