@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
   },
   clearScreen: false,
   optimizeDeps: {
-    exclude: ['react', 'react-dom'],
+    exclude: ['react', 'react-dom', '@tanstack/react-query'],
   },
   build: {
     rollupOptions: {
