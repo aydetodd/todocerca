@@ -13,22 +13,18 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Force single React instance
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
-    dedupe: ['react', 'react-dom', '@tanstack/react-query'],
+    dedupe: ['react', 'react-dom'],
   },
   clearScreen: false,
   optimizeDeps: {
-    include: ['react', 'react-dom', '@tanstack/react-query'],
-    esbuildOptions: {
-      target: 'esnext'
-    }
+    exclude: ['react', 'react-dom'],
   },
   build: {
-    commonjsOptions: {
-      include: [/node_modules/]
-    }
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   }
 }));
