@@ -56,16 +56,16 @@ export const StatusControl = () => {
   };
 
   return (
-    <div className="relative flex flex-col gap-1.5 bg-slate-800/90 rounded-xl p-2 shadow-lg border border-slate-700">
+    <div className="relative flex flex-col gap-1 bg-black/80 rounded-full p-2 shadow-xl border border-gray-700 backdrop-blur-sm">
       {/* Green Light - Available */}
       <button
         onClick={() => updateStatus('available')}
         disabled={loading}
         className={`
-          w-8 h-8 rounded-full transition-all duration-300 border-2
+          w-7 h-7 rounded-full transition-all duration-300 border
           ${status === 'available' 
-            ? 'bg-green-500 border-green-300 shadow-[0_0_15px_rgba(34,197,94,0.8)]' 
-            : 'bg-green-900/30 border-green-900/50 hover:bg-green-900/50'
+            ? 'bg-green-400 border-green-200 shadow-[0_0_20px_rgba(34,197,94,0.9)] scale-110' 
+            : 'bg-green-950/40 border-green-950/60 hover:bg-green-950/60'
           }
         `}
         aria-label="Disponible"
@@ -76,10 +76,10 @@ export const StatusControl = () => {
         onClick={() => updateStatus('busy')}
         disabled={loading}
         className={`
-          w-8 h-8 rounded-full transition-all duration-300 border-2
+          w-7 h-7 rounded-full transition-all duration-300 border
           ${status === 'busy' 
-            ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_15px_rgba(234,179,8,0.8)]' 
-            : 'bg-yellow-900/30 border-yellow-900/50 hover:bg-yellow-900/50'
+            ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_20px_rgba(234,179,8,0.9)] scale-110' 
+            : 'bg-yellow-950/40 border-yellow-950/60 hover:bg-yellow-950/60'
           }
         `}
         aria-label="Ocupado"
@@ -90,10 +90,10 @@ export const StatusControl = () => {
         onClick={() => updateStatus('offline')}
         disabled={loading}
         className={`
-          w-8 h-8 rounded-full transition-all duration-300 border-2
+          w-7 h-7 rounded-full transition-all duration-300 border
           ${status === 'offline' 
-            ? 'bg-red-500 border-red-300 shadow-[0_0_15px_rgba(239,68,68,0.8)]' 
-            : 'bg-red-900/30 border-red-900/50 hover:bg-red-900/50'
+            ? 'bg-red-500 border-red-200 shadow-[0_0_20px_rgba(239,68,68,0.9)] scale-110' 
+            : 'bg-red-950/40 border-red-950/60 hover:bg-red-950/60'
           }
         `}
         aria-label="Desconectado"
