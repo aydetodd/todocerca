@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, Search, Store, User, LogOut, Package } from 'lucide-react';
+import { MapPin, Search, Store, User, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProfileData {
@@ -131,7 +131,7 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">ID de Usuario</p>
-                <p className="text-lg font-semibold text-primary">#{profile.consecutive_number}</p>
+                <p className="text-lg font-semibold text-primary">#{String(profile.consecutive_number).padStart(6, '0')}</p>
               </div>
               {profile.nombre !== profile.apodo && (
                 <div>
@@ -209,25 +209,6 @@ const Profile = () => {
                     <div>
                       <CardTitle>Mi Dashboard</CardTitle>
                       <CardDescription>Ver mi actividad</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            )}
-
-            {profile.role === 'proveedor' && (
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate('/dashboard-old')}
-              >
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <Package className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle>Mis Productos</CardTitle>
-                      <CardDescription>Administrar inventario</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
