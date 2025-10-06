@@ -177,7 +177,12 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         </div>
       `;
 
-      marker.bindPopup(popupContent);
+      marker.bindPopup(popupContent, {
+        closeButton: true,
+        autoClose: false,
+        closeOnClick: false,
+        maxWidth: 300
+      });
       markersRef.current[location.user_id] = marker;
     });
   }, [locations, currentUserId]);
