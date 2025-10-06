@@ -93,8 +93,8 @@ const Auth = () => {
 
         console.log('📱 Profile found:', profileData.consecutive_number);
 
-        // Usar el email guardado en el perfil, o generar uno basado en el teléfono si no existe
-        const emailToUse = profileData.email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        // Si el usuario proporcionó un email en el login, usarlo. Si no, usar el del perfil o generar uno
+        const emailToUse = email || profileData.email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
         console.log('📧 Using email:', emailToUse);
         
         // Intentar login con el email correcto
@@ -394,6 +394,22 @@ const Auth = () => {
                   required
                 />
               </div>
+
+              {isLogin && (
+                <div>
+                  <Label htmlFor="email">Email (opcional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si te registraste con un email, ingrésalo aquí
+                  </p>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="password">Contraseña *</Label>
