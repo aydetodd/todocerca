@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle, X } from 'lucide-react';
+import { Phone, MessageCircle, MessageSquare } from 'lucide-react';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -227,7 +227,7 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
                   <p className="text-sm font-semibold text-muted-foreground mb-3">Contactar</p>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
-                      className="flex-1"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
                       onClick={() => window.location.href = `tel:${selectedProduct.provider.business_phone}`}
                     >
                       <Phone className="w-4 h-4 mr-2" />
@@ -239,6 +239,13 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       WhatsApp
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+                      onClick={() => console.log('Abrir chat interno con:', selectedProduct.provider.id)}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Chat
                     </Button>
                   </div>
                 </div>
