@@ -139,8 +139,8 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {isProvider ? (
-          <ProductManagement proveedorId={userSpecificData?.id} />
+        {isProvider && userSpecificData?.id ? (
+          <ProductManagement proveedorId={userSpecificData.id} />
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
             {/* Explorar */}
