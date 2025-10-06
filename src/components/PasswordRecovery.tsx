@@ -13,13 +13,54 @@ interface PasswordRecoveryProps {
 }
 
 const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) => {
-  const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'phone' | null>(null);
+  const [step, setStep] = useState<'method' | 'phone' | 'code' | 'email-sent'>('method');
   const [phone, setPhone] = useState(initialPhone);
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const handleSendEmailRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Ingresa tu email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email enviado",
+        description: "Revisa tu correo para restablecer tu contraseña",
+      });
+
+      setStep('email-sent');
+    } catch (error: any) {
+      console.error('Error sending email recovery:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo enviar el email de recuperación",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,14 +179,78 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
               <CardTitle>Recuperar Contraseña</CardTitle>
             </div>
             <CardDescription>
-              {step === 'phone' 
-                ? "Ingresa tu número de teléfono para recibir un código"
-                : "Ingresa el código que recibiste por SMS"
-              }
+              {step === 'method' && "Elige cómo deseas recuperar tu contraseña"}
+              {step === 'phone' && "Ingresa tu número de teléfono para recibir un código"}
+              {step === 'code' && "Ingresa el código que recibiste por SMS"}
+              {step === 'email-sent' && "Revisa tu email para continuar"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'phone' ? (
+            {step === 'method' && (
+              <div className="space-y-4">
+                <Button
+                  onClick={() => {
+                    setRecoveryMethod('email');
+                    setStep('email-sent');
+                  }}
+                  className="w-full"
+                  variant="outline"
+                  type="button"
+                >
+                  Recuperar por Email (Recomendado)
+                </Button>
+                <Button
+                  onClick={() => {
+                    setRecoveryMethod('phone');
+                    setStep('phone');
+                  }}
+                  className="w-full"
+                  variant="outline"
+                  type="button"
+                >
+                  Recuperar por SMS
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Si registraste un email, usa esa opción. Si solo usaste teléfono, usa SMS.
+                </p>
+              </div>
+            )}
+
+            {step === 'email-sent' && recoveryMethod === 'email' && (
+              <form onSubmit={handleSendEmailRecovery} className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    required
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? "Enviando..." : "Enviar link de recuperación"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep('method')}
+                  disabled={loading}
+                >
+                  Volver
+                </Button>
+              </form>
+            )}
+
+            {step === 'phone' && (
               <form onSubmit={handleSendCode} className="space-y-4">
                 <div>
                   <Label htmlFor="phone">Número de teléfono</Label>
@@ -166,8 +271,20 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
                 >
                   {loading ? "Enviando..." : "Enviar código"}
                 </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep('method')}
+                  disabled={loading}
+                >
+                  Volver
+                </Button>
               </form>
-            ) : (
+            )}
+
+            {step === 'code' && (
               <form onSubmit={handleVerifyCode} className="space-y-4">
                 <div>
                   <Label htmlFor="code">Código de recuperación</Label>
@@ -224,6 +341,16 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
                     disabled={loading}
                   >
                     Reenviar código
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setStep('method')}
+                    disabled={loading}
+                  >
+                    Cambiar método
                   </Button>
                 </div>
               </form>

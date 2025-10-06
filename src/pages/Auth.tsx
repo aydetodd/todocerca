@@ -17,6 +17,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
+  const [email, setEmail] = useState("");
   const [codigoPostal, setCodigoPostal] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -146,14 +147,14 @@ const Auth = () => {
         }
       } else {
         console.log('📝 Attempting registration...');
-        console.log('📝 Registration data:', { telefono, userType, nombre });
+        console.log('📝 Registration data:', { telefono, userType, nombre, email });
         
-        // Generar email automático basado en el teléfono
-        const generatedEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        // Usar email proporcionado o generar automático basado en el teléfono
+        const finalEmail = email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
         
         // Registro
         const { data, error } = await supabase.auth.signUp({
-          email: generatedEmail,
+          email: finalEmail,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
@@ -162,6 +163,7 @@ const Auth = () => {
               apodo: apodo || nombre,
               role: userType,
               telefono,
+              email: email || null, // Guardar email real si existe
             },
           },
         });
@@ -354,6 +356,20 @@ const Auth = () => {
                       onChange={(e) => setApodo(e.target.value)}
                       placeholder="Dejá vacío para usar tu nombre"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email (opcional - para recuperar contraseña)</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Si proporcionas tu email, podrás recuperar tu contraseña fácilmente
+                    </p>
                   </div>
                 </>
               )}
