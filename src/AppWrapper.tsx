@@ -21,8 +21,8 @@ const queryClient = new QueryClient({
 
 export default function AppWrapper() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<DashboardMain />} />
@@ -35,7 +35,7 @@ export default function AppWrapper() {
           <Toaster />
           <Sonner />
         </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
