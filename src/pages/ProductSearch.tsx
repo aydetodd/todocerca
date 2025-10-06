@@ -34,6 +34,10 @@ interface MapProvider {
   productos: {
     nombre: string;
     precio: number;
+    descripcion: string;
+    stock: number;
+    unit: string;
+    categoria: string;
   }[];
 }
 
@@ -74,6 +78,10 @@ const ProductSearch = () => {
           stock,
           unit,
           proveedor_id,
+          category_id,
+          product_categories (
+            name
+          ),
           proveedores (
             id,
             nombre,
@@ -182,9 +190,19 @@ const ProductSearch = () => {
             }
             
             const provider = providerMap.get(result.provider_id)!;
+            // Get category name from productos data
+            const productoOriginal = availableProductos.find((p: any) => 
+              p.nombre === result.product_name && p.proveedor_id === result.provider_id
+            );
+            const categoryName = productoOriginal?.product_categories?.name || 'Sin categoría';
+            
             provider.productos.push({
               nombre: result.product_name,
-              precio: result.price
+              precio: result.price,
+              descripcion: result.product_description,
+              stock: result.stock,
+              unit: result.unit,
+              categoria: categoryName
             });
           }
         });
@@ -267,64 +285,6 @@ const ProductSearch = () => {
               )}
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Detalles de Productos</h2>
-              {results.map((result, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between gap-4">
-                    <span>{result.product_name}</span>
-                    <span className="text-primary font-bold whitespace-nowrap">
-                      ${result.price.toFixed(2)}{result.unit && `/${result.unit}`}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {result.product_description && (
-                      <p className="text-muted-foreground">{result.product_description}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Package className="w-4 h-4" />
-                      <span>Stock disponible: {result.stock}</span>
-                    </div>
-                    <div className="border-t pt-3 mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-sm">Proveedor</h4>
-                        <Badge variant={result.provider_status === 'available' ? 'default' : 'secondary'}>
-                          {result.provider_status === 'available' ? (
-                            <>
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Disponible
-                            </>
-                          ) : (
-                            <>
-                              Ocupado
-                            </>
-                          )}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-medium">{result.provider_name}</p>
-                        {result.provider_phone && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="w-4 h-4" />
-                            <span>{result.provider_phone}</span>
-                          </div>
-                        )}
-                        {result.provider_postal_code && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="w-4 h-4" />
-                            <span>CP: {result.provider_postal_code}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              ))}
-            </div>
           </div>
         )}
       </div>
