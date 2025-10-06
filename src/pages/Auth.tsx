@@ -12,17 +12,18 @@ import { MapPin, User, Store } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
-  const [telefono, setTelefono] = useState("");
   const [codigoPostal, setCodigoPostal] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
   const [showProviderRegistration, setShowProviderRegistration] = useState(false);
   const [skipAutoRedirect, setSkipAutoRedirect] = useState(false);
+  const [userIdConsecutivo, setUserIdConsecutivo] = useState<number | null>(null);
+  const [showIdConsecutivo, setShowIdConsecutivo] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,19 +42,18 @@ const Auth = () => {
     console.log('📋 Form state:', { 
       isLogin, 
       userType, 
-      email: email ? 'filled' : 'empty', 
+      telefono: telefono ? 'filled' : 'empty', 
       password: password ? 'filled' : 'empty',
       nombre: nombre ? 'filled' : 'empty',
-      telefono: telefono ? 'filled' : 'empty',
       codigoPostal: codigoPostal ? 'filled' : 'empty'
     });
     
     // Basic validation
-    if (!email || !password) {
-      console.log('❌ Missing email or password');
+    if (!telefono || !password) {
+      console.log('❌ Missing telefono or password');
       toast({
         title: "Error",
-        description: "Email y contraseña son obligatorios",
+        description: "Teléfono y contraseña son obligatorios",
         variant: "destructive",
       });
       return;
@@ -70,13 +70,32 @@ const Auth = () => {
     }
     
     setLoading(true);
+    setShowIdConsecutivo(false);
     console.log('⏳ Starting authentication process...');
 
     try {
       if (isLogin) {
-        console.log('🔑 Attempting login...');
+        console.log('🔑 Attempting login with phone...');
+        
+        // Buscar el perfil por teléfono para obtener el user_id
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, consecutive_number')
+          .eq('telefono', telefono)
+          .maybeSingle();
+
+        if (profileError || !profileData) {
+          throw new Error('Número de teléfono no encontrado');
+        }
+
+        console.log('📱 Profile found:', profileData.consecutive_number);
+
+        // Generar el email basado en el teléfono
+        const generatedEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        
+        // Intentar login con el email generado
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: generatedEmail,
           password,
         });
 
@@ -84,9 +103,13 @@ const Auth = () => {
 
         if (error) throw error;
 
+        // Mostrar el ID consecutivo
+        setUserIdConsecutivo(profileData.consecutive_number);
+        setShowIdConsecutivo(true);
+
         toast({
-          title: "¡Bienvenido!",
-          description: "Has iniciado sesión correctamente.",
+          title: "Credenciales válidas",
+          description: `Tu ID es: ${profileData.consecutive_number}`,
         });
 
         // Post-login flow for providers: check if they need to complete provider registration
@@ -121,11 +144,14 @@ const Auth = () => {
         }
       } else {
         console.log('📝 Attempting registration...');
-        console.log('📝 Registration data:', { email, userType, nombre });
+        console.log('📝 Registration data:', { telefono, userType, nombre });
+        
+        // Generar email automático basado en el teléfono
+        const generatedEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
         
         // Registro
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: generatedEmail,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
@@ -133,6 +159,7 @@ const Auth = () => {
               nombre,
               apodo: apodo || nombre,
               role: userType,
+              telefono,
             },
           },
         });
@@ -142,10 +169,25 @@ const Auth = () => {
           error: error ? error.message : 'none' 
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('already registered')) {
+            throw new Error('Este número de teléfono ya está registrado');
+          }
+          throw error;
+        }
 
         if (data.user) {
           console.log('✅ User registered successfully:', data.user.id);
+
+          // Actualizar el perfil con el teléfono
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ telefono })
+            .eq('user_id', data.user.id);
+
+          if (updateError) {
+            console.error('⚠️ Error updating profile with phone:', updateError);
+          }
 
           if (userType === 'proveedor') {
             console.log('🏢 Handling provider post-signup...');
@@ -157,10 +199,10 @@ const Auth = () => {
                 description: "Completa tu perfil de proveedor.",
               });
             } else {
-              console.log('🟠 No session after signup, requiring email confirmation/login before provider setup');
+              console.log('🟠 No session after signup, requiring confirmation/login before provider setup');
               toast({
-                title: "Verifica tu correo",
-                description: "Confirma tu email e inicia sesión para completar tu perfil de proveedor.",
+                title: "Cuenta creada",
+                description: "Inicia sesión para completar tu perfil de proveedor.",
               });
               setIsLogin(true);
               navigate("/");
@@ -169,16 +211,10 @@ const Auth = () => {
             console.log('👤 Client registration completed');
             toast({
               title: "¡Registro exitoso!",
-              description: data.user.email_confirmed_at 
-                ? "Tu cuenta ha sido creada correctamente." 
-                : "Revisa tu correo para confirmar tu cuenta.",
+              description: "Tu cuenta ha sido creada correctamente.",
             });
             
             // La navegación se manejará automáticamente por el hook useAuth
-            if (!data.user.email_confirmed_at) {
-              // Si necesita confirmación por email, ir a la página principal
-              navigate("/");
-            }
           }
         } else {
           console.log('❌ No user data returned from registration');
@@ -204,81 +240,41 @@ const Auth = () => {
     navigate('/dashboard');
   };
 
-  const handleResendConfirmation = async () => {
-    if (!email) {
+  const handleForgotPassword = async () => {
+    if (!telefono) {
       toast({
         title: "Error",
-        description: "Ingresa tu correo electrónico",
+        description: "Ingresa tu número de teléfono",
         variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "¡Correo reenviado!",
-        description: "Revisa tu bandeja de entrada y spam",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "Contacta soporte",
+      description: "Por favor contacta soporte para restablecer tu contraseña",
+    });
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
+  const handleProceedWithLogin = () => {
+    if (!showIdConsecutivo) {
       toast({
         title: "Error",
-        description: "Ingresa tu correo electrónico",
+        description: "Primero valida tus credenciales",
         variant: "destructive",
       });
       return;
     }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "¡Correo enviado!",
-        description: "Revisa tu correo para restablecer tu contraseña",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    
+    // El usuario ya está autenticado, solo redirigir
+    setSkipAutoRedirect(false);
   };
 
   if (showProviderRegistration) {
     return (
       <ProviderRegistration
         onComplete={handleProviderRegistrationComplete}
-        userData={{ email, nombre, telefono, codigoPostal }}
+        userData={{ email: `${telefono.replace(/\+/g, '')}@todocerca.app`, nombre, telefono, codigoPostal }}
       />
     );
   }
@@ -340,7 +336,7 @@ const Auth = () => {
                   </Tabs>
 
                   <div>
-                    <Label htmlFor="nombre">Nombre completo</Label>
+                    <Label htmlFor="nombre">Nombre completo *</Label>
                     <Input
                       id="nombre"
                       type="text"
@@ -364,18 +360,19 @@ const Auth = () => {
               )}
 
               <div>
-                <Label htmlFor="email">Correo electrónico</Label>
+                <Label htmlFor="telefono">Número de teléfono *</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="telefono"
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="5512345678"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">Contraseña *</Label>
                 <Input
                   id="password"
                   type="password"
@@ -386,51 +383,47 @@ const Auth = () => {
               </div>
 
               {!isLogin && (
-                <>
-                  <div>
-                    <Label htmlFor="telefono">Teléfono (opcional)</Label>
-                    <Input
-                      id="telefono"
-                      type="tel"
-                      value={telefono}
-                      onChange={(e) => setTelefono(e.target.value)}
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="codigoPostal">Código postal (opcional)</Label>
+                  <Input
+                    id="codigoPostal"
+                    type="text"
+                    value={codigoPostal}
+                    onChange={(e) => setCodigoPostal(e.target.value)}
+                  />
+                </div>
+              )}
 
-                  <div>
-                    <Label htmlFor="codigoPostal">Código postal (opcional)</Label>
-                    <Input
-                      id="codigoPostal"
-                      type="text"
-                      value={codigoPostal}
-                      onChange={(e) => setCodigoPostal(e.target.value)}
-                    />
-                  </div>
-                </>
+              {/* Mostrar ID consecutivo cuando las credenciales sean válidas */}
+              {isLogin && showIdConsecutivo && userIdConsecutivo && (
+                <div className="bg-primary/10 border border-primary rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Tu ID es:</p>
+                  <p className="text-3xl font-bold text-primary">{userIdConsecutivo}</p>
+                </div>
               )}
 
               <div className="pt-4 pb-8">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                  onClick={() => console.log('🔲 Submit button clicked!')}
-                >
-                  {loading ? "Procesando..." : (isLogin ? "Iniciar Sesión" : "Registrarse")}
-                </Button>
+                {isLogin && showIdConsecutivo ? (
+                  <Button 
+                    type="button"
+                    className="w-full" 
+                    onClick={handleProceedWithLogin}
+                  >
+                    Continuar al Dashboard
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
+                    {loading ? "Procesando..." : (isLogin ? "Validar Credenciales" : "Registrarse")}
+                  </Button>
+                )}
 
-                {/* Botones de ayuda */}
-                {isLogin && (
-                  <div className="mt-4 space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      disabled={loading}
-                      onClick={handleResendConfirmation}
-                    >
-                      Reenviar confirmación
-                    </Button>
+                {/* Botón de ayuda */}
+                {isLogin && !showIdConsecutivo && (
+                  <div className="mt-4">
                     <Button
                       type="button"
                       variant="ghost"
