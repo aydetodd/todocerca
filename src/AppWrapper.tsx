@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
 import ProductSearch from "./pages/ProductSearch";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -29,6 +30,7 @@ export default function AppWrapper() {
             <Route path="/" element={<Home />} />
             <Route path="/landing" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<DashboardMain />} />
             <Route path="/dashboard-old" element={<Dashboard />} />
             <Route path="/search" element={<ProductSearch />} />

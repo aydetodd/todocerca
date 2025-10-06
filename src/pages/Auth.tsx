@@ -35,7 +35,7 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && user && !showProviderRegistration && !skipAutoRedirect) {
-      navigate("/dashboard");
+      navigate("/profile");
     }
   }, [user, authLoading, navigate, showProviderRegistration, skipAutoRedirect]);
 
@@ -250,7 +250,7 @@ const Auth = () => {
   const handleProviderRegistrationComplete = () => {
     setShowProviderRegistration(false);
     setSkipAutoRedirect(false);
-    navigate('/dashboard');
+    navigate('/profile');
   };
 
   const handleForgotPassword = () => {
