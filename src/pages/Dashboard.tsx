@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, LogOut, Package, Users, ShoppingCart } from "lucide-react";
+import { MapPin, LogOut, Package, Users, ShoppingCart, Search } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 
 const Dashboard = () => {
@@ -130,70 +130,86 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            ¡Bienvenido, {profile?.nombre}!
-          </h2>
-          <p className="text-muted-foreground">
-            {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              ¡Bienvenido, {profile?.nombre}!
+            </h2>
+            <p className="text-muted-foreground">
+              {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
+            </p>
+          </div>
+          <Button size="lg" onClick={() => navigate("/search")}>
+            <Search className="h-4 w-4 mr-2" />
+            Buscar Productos
+          </Button>
         </div>
 
-        {isProvider && userSpecificData?.id ? (
-          <ProductManagement proveedorId={userSpecificData.id} />
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Explorar */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  <span>Explorar</span>
-                </CardTitle>
-                <CardDescription>Encuentra productos y servicios</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Button className="w-full" onClick={() => navigate("/")}>
-                    Ver Todos los Productos
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
-                    Buscar Servicios
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Explorar - Available for all users */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-5 w-5" />
+                <span>Buscar</span>
+              </CardTitle>
+              <CardDescription>Encuentra productos y servicios cerca de ti</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button className="w-full" onClick={() => navigate("/search")}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar Productos
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => navigate("/search?category=servicios")}>
+                  Buscar Servicios
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Mi Perfil */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Users className="h-5 w-5" />
-                  <span>Mi Perfil</span>
-                </CardTitle>
-                <CardDescription>Información de tu cuenta</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm font-medium">Email:</span>
-                    <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  </div>
-                  {userSpecificData?.telefono && (
-                    <div>
-                      <span className="text-sm font-medium">Teléfono:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
-                    </div>
-                  )}
-                  {userSpecificData?.codigo_postal && (
-                    <div>
-                      <span className="text-sm font-medium">Código Postal:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
-                    </div>
-                  )}
+          {/* Mi Perfil */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5" />
+                <span>Mi Perfil</span>
+              </CardTitle>
+              <CardDescription>Información de tu cuenta</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm font-medium">Email:</span>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <span className="text-sm font-medium">Rol:</span>
+                  <p className="text-sm text-muted-foreground">
+                    {isProvider ? "Proveedor" : "Cliente"}
+                  </p>
+                </div>
+                {userSpecificData?.telefono && (
+                  <div>
+                    <span className="text-sm font-medium">Teléfono:</span>
+                    <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
+                  </div>
+                )}
+                {userSpecificData?.codigo_postal && (
+                  <div>
+                    <span className="text-sm font-medium">Código Postal:</span>
+                    <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Product Management for Providers */}
+        {isProvider && userSpecificData?.id && (
+          <div className="mt-8">
+            <ProductManagement proveedorId={userSpecificData.id} />
           </div>
         )}
       </main>

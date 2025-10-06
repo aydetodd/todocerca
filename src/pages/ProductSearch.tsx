@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search as SearchIcon, MapPin, Phone, Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import ProvidersMap from '@/components/ProvidersMap';
 
 interface SearchResult {
@@ -20,6 +21,7 @@ interface SearchResult {
   provider_address: string;
   provider_latitude: number;
   provider_longitude: number;
+  provider_status: 'available' | 'busy';
 }
 
 interface MapProvider {
@@ -37,15 +39,25 @@ interface MapProvider {
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
+  useEffect(() => {
+    const query = searchParams.get('q');
+    if (query && query !== searchTerm) {
+      setSearchTerm(query);
+      handleSearch(null, query);
+    }
+  }, [searchParams]);
+
+  const handleSearch = async (e: React.FormEvent | null, query?: string) => {
+    if (e) e.preventDefault();
+    const term = query || searchTerm;
+    if (!term.trim()) return;
     
     setLoading(true);
     setHasSearched(true);
@@ -66,10 +78,11 @@ const ProductSearch = () => {
             id,
             nombre,
             telefono,
-            codigo_postal
+            codigo_postal,
+            user_id
           )
         `)
-        .or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`)
+        .or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`)
         .eq('is_available', true);
 
       if (error) {
@@ -80,29 +93,58 @@ const ProductSearch = () => {
       }
 
       if (productos && productos.length > 0) {
+        // Get unique provider user IDs to check their availability status
+        const userIds = [...new Set(productos.map((p: any) => p.proveedores?.user_id).filter(Boolean))];
+        
+        // Fetch profiles to get availability status
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, estado')
+          .in('user_id', userIds)
+          .in('estado', ['available', 'busy']);
+
+        const availableUserIds = new Set(profilesData?.map(p => p.user_id) || []);
+        
+        // Filter products to only include those from available/busy providers
+        const availableProductos = productos.filter((p: any) => 
+          p.proveedores?.user_id && availableUserIds.has(p.proveedores.user_id)
+        );
+
+        if (availableProductos.length === 0) {
+          setResults([]);
+          setMapProviders([]);
+          setLoading(false);
+          return;
+        }
+
         // Get unique provider IDs
-        const proveedorIds = [...new Set(productos.map((p: any) => p.proveedor_id))];
+        const proveedorIds = [...new Set(availableProductos.map((p: any) => p.proveedor_id))];
         
         // Fetch proveedores with all needed data including location
         const { data: proveedoresData, error: proveedoresError } = await supabase
           .from('proveedores')
-          .select('id, nombre, telefono, codigo_postal, business_address, business_phone, latitude, longitude')
+          .select('id, nombre, telefono, codigo_postal, business_address, business_phone, latitude, longitude, user_id')
           .in('id', proveedorIds);
 
         if (proveedoresError) {
           console.error('Error fetching proveedores:', proveedoresError);
         }
 
-        // Create a map of proveedor_id to provider data
+        // Create a map of proveedor_id to provider data with status
         const providerLocationMap = new Map();
+        const providerStatusMap = new Map();
+        
         if (proveedoresData) {
           proveedoresData.forEach((p: any) => {
             providerLocationMap.set(p.id, p);
+            const profile = profilesData?.find(prof => prof.user_id === p.user_id);
+            providerStatusMap.set(p.id, profile?.estado || 'offline');
           });
         }
 
-        const formattedResults: SearchResult[] = productos.map((producto: any) => {
+        const formattedResults: SearchResult[] = availableProductos.map((producto: any) => {
           const proveedorData = providerLocationMap.get(producto.proveedor_id);
+          const providerStatus = providerStatusMap.get(producto.proveedor_id) || 'offline';
           return {
             product_name: producto.nombre || '',
             product_description: producto.descripcion || '',
@@ -116,6 +158,7 @@ const ProductSearch = () => {
             provider_address: proveedorData?.business_address || '',
             provider_latitude: proveedorData?.latitude || 0,
             provider_longitude: proveedorData?.longitude || 0,
+            provider_status: providerStatus,
           };
         });
         
@@ -163,7 +206,13 @@ const ProductSearch = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Buscar Productos y Servicios</h1>
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+          <h1 className="text-3xl font-bold">Buscar Productos y Servicios</h1>
+        </div>
         
         <form onSubmit={handleSearch} className="mb-8">
           <div className="flex gap-4">
@@ -192,7 +241,11 @@ const ProductSearch = () => {
         {hasSearched && results.length === 0 && !loading && (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-muted-foreground">No se encontraron resultados para "{searchTerm}"</p>
+              <XCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No se encontraron resultados disponibles para "{searchTerm}"</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Los proveedores deben estar disponibles u ocupados para aparecer en los resultados
+              </p>
             </CardContent>
           </Card>
         )}
@@ -234,7 +287,21 @@ const ProductSearch = () => {
                       <span>Stock disponible: {result.stock}</span>
                     </div>
                     <div className="border-t pt-3 mt-3">
-                      <h4 className="font-semibold text-sm mb-2">Proveedor</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-sm">Proveedor</h4>
+                        <Badge variant={result.provider_status === 'available' ? 'default' : 'secondary'}>
+                          {result.provider_status === 'available' ? (
+                            <>
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Disponible
+                            </>
+                          ) : (
+                            <>
+                              Ocupado
+                            </>
+                          )}
+                        </Badge>
+                      </div>
                       <div className="space-y-1">
                         <p className="font-medium">{result.provider_name}</p>
                         {result.provider_phone && (
