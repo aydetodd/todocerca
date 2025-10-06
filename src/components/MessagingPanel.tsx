@@ -33,6 +33,12 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   const handleSend = async () => {
     if (!message.trim()) return;
+    
+    // Play send sound
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
     await sendMessage(message, receiverId);
     setMessage('');
   };
@@ -42,7 +48,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   return (
     <div 
-      className="fixed inset-0 bg-background z-50 flex flex-col"
+      className="fixed inset-0 bg-background z-[9999] flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-amber-500 text-white">

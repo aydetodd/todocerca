@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Request notification permission on load
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
 export interface Message {
   id: string;
   sender_id: string;
@@ -86,6 +91,21 @@ export const useRealtimeMessages = (receiverId?: string) => {
           };
 
           setMessages(prev => [...prev, messageWithSender]);
+
+          // Check if we're the receiver
+          const { data: { user } } = await supabase.auth.getUser();
+          const isForMe = !newMessage.receiver_id || newMessage.receiver_id === user?.id;
+
+          if (isForMe && newMessage.sender_id !== user?.id) {
+            // Browser notification if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Nuevo mensaje', {
+                body: newMessage.message,
+                icon: '/icon-192.png',
+                tag: 'message-notification'
+              });
+            }
+          }
 
           // Handle panic alerts
           if (newMessage.is_panic) {
