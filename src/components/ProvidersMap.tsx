@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageCircle, MessageSquare } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -24,6 +25,7 @@ interface Provider {
   business_phone: string | null;
   latitude: number;
   longitude: number;
+  user_id: string;
   productos: {
     nombre: string;
     precio: number;
@@ -107,7 +109,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             </button>
             <button 
-              onclick="window.openInternalChat('${provider.id}', '${provider.business_name}')"
+              onclick="window.openInternalChat('${provider.user_id}', '${provider.business_name}')"
               style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.875rem;"
               title="Mensaje"
             >
@@ -146,9 +148,12 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
       window.open(`https://wa.me/${formattedPhone}`, '_blank');
     };
 
-    (window as any).openInternalChat = (providerId: string, providerName: string) => {
+    (window as any).openInternalChat = (userId: string, providerName: string) => {
       if (onOpenChat) {
-        onOpenChat(providerId, providerName);
+        const provider = validProviders.find(p => p.user_id === userId);
+        if (provider) {
+          onOpenChat(provider.id, providerName);
+        }
       }
     };
 
@@ -250,9 +255,18 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
                     </Button>
                     <Button 
                       className="flex-1 bg-yellow-600 hover:bg-yellow-700"
-                      onClick={() => {
+                      onClick={async () => {
                         if (onOpenChat) {
-                          onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
+                          // Get user_id for the provider
+                          const { data: providerData } = await supabase
+                            .from('proveedores')
+                            .select('user_id')
+                            .eq('id', selectedProduct.provider.id)
+                            .single();
+                          
+                          if (providerData?.user_id) {
+                            onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
+                          }
                         }
                       }}
                     >

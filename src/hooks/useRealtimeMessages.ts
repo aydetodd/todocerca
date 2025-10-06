@@ -89,8 +89,9 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
           // Handle panic alerts
           if (newMessage.is_panic) {
-            // Play siren sound
-            const audio = new Audio('/siren.mp3');
+            // Play siren sound for panic
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.volume = 0.5;
             audio.play().catch(e => console.log('Audio play failed:', e));
             
             setTimeout(() => {
@@ -104,8 +105,9 @@ export const useRealtimeMessages = (receiverId?: string) => {
               variant: "destructive",
             });
           } else {
-            // Play notification sound
-            const audio = new Audio('/notification.mp3');
+            // Play notification sound for regular messages
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+            audio.volume = 0.3;
             audio.play().catch(e => console.log('Audio play failed:', e));
           }
         }

@@ -32,6 +32,7 @@ interface MapProvider {
   business_phone: string | null;
   latitude: number;
   longitude: number;
+  user_id: string;
   productos: {
     nombre: string;
     precio: number;
@@ -54,10 +55,19 @@ const ProductSearch = () => {
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
 
-  const handleOpenChat = (providerId: string, providerName: string) => {
-    setSelectedReceiverId(providerId);
-    setSelectedReceiverName(providerName);
-    setIsMessagingOpen(true);
+  const handleOpenChat = async (providerId: string, providerName: string) => {
+    // Get the user_id for this provider
+    const { data: providerData } = await supabase
+      .from('proveedores')
+      .select('user_id')
+      .eq('id', providerId)
+      .single();
+    
+    if (providerData?.user_id) {
+      setSelectedReceiverId(providerData.user_id);
+      setSelectedReceiverName(providerName);
+      setIsMessagingOpen(true);
+    }
   };
 
   useEffect(() => {
@@ -188,6 +198,7 @@ const ProductSearch = () => {
         formattedResults.forEach((result) => {
           if (result.provider_latitude && result.provider_longitude) {
             if (!providerMap.has(result.provider_id)) {
+              const proveedorData = providerLocationMap.get(result.provider_id);
               providerMap.set(result.provider_id, {
                 id: result.provider_id,
                 business_name: result.provider_name,
@@ -195,6 +206,7 @@ const ProductSearch = () => {
                 business_phone: result.provider_phone || null,
                 latitude: result.provider_latitude,
                 longitude: result.provider_longitude,
+                user_id: proveedorData?.user_id || '',
                 productos: []
               });
             }
