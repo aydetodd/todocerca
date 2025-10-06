@@ -18,5 +18,13 @@ export default defineConfig(({ mode }) => ({
   clearScreen: false,
   optimizeDeps: {
     force: true,
+    esbuildOptions: {
+      target: 'esnext'
+    }
   },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/]
+    }
+  }
 }));
