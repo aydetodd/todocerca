@@ -80,10 +80,10 @@ const Auth = () => {
       if (isLogin) {
         console.log('🔑 Attempting login with phone...');
         
-        // Buscar el perfil por teléfono para obtener el user_id y email real
+        // Buscar el perfil por teléfono para obtener el user_id, consecutive_number y email
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('user_id, consecutive_number')
+          .select('user_id, consecutive_number, email')
           .eq('telefono', telefono)
           .maybeSingle();
 
@@ -93,16 +93,9 @@ const Auth = () => {
 
         console.log('📱 Profile found:', profileData.consecutive_number);
 
-        // Obtener el email real del usuario desde auth.users
-        const { data: { users }, error: usersError } = await supabase.auth.admin.getUserById(profileData.user_id);
-        
-        let emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
-        
-        // Si encontramos el usuario en auth, usar su email real
-        if (!usersError && users && users.length > 0) {
-          emailToUse = users[0].email || emailToUse;
-          console.log('📧 Using email:', emailToUse);
-        }
+        // Usar el email guardado en el perfil, o generar uno basado en el teléfono si no existe
+        const emailToUse = profileData.email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        console.log('📧 Using email:', emailToUse);
         
         // Intentar login con el email correcto
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -196,14 +189,17 @@ const Auth = () => {
         if (data.user) {
           console.log('✅ User registered successfully:', data.user.id);
 
-          // Actualizar el perfil con el teléfono
+          // Actualizar el perfil con el teléfono y email
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({ telefono })
+            .update({ 
+              telefono,
+              email: email || null  // Guardar el email real si fue proporcionado
+            })
             .eq('user_id', data.user.id);
 
           if (updateError) {
-            console.error('⚠️ Error updating profile with phone:', updateError);
+            console.error('⚠️ Error updating profile with phone and email:', updateError);
           }
 
           if (userType === 'proveedor') {

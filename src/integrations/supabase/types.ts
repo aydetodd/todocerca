@@ -422,6 +422,7 @@ export type Database = {
           codigo_postal: string | null
           consecutive_number: number
           created_at: string
+          email: string | null
           estado: Database["public"]["Enums"]["user_status"] | null
           id: string
           nombre: string
@@ -440,6 +441,7 @@ export type Database = {
           codigo_postal?: string | null
           consecutive_number?: number
           created_at?: string
+          email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
           nombre: string
@@ -458,6 +460,7 @@ export type Database = {
           codigo_postal?: string | null
           consecutive_number?: number
           created_at?: string
+          email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
           nombre?: string
