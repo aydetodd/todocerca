@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, LogOut, CreditCard, Package, Users, ShoppingCart } from "lucide-react";
+import { MapPin, LogOut, Package, Users, ShoppingCart } from "lucide-react";
+import ProductManagement from "@/components/ProductManagement";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -139,85 +140,7 @@ const Dashboard = () => {
         </div>
 
         {isProvider ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Suscripción */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CreditCard className="h-5 w-5" />
-                  <span>Suscripción</span>
-                </CardTitle>
-                <CardDescription>Estado de tu plan</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <Badge variant="secondary" className="mb-4">
-                    Plan Gratuito
-                  </Badge>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Activa tu suscripción de $200/mes para registrar productos y servicios
-                  </p>
-                  <Button className="w-full" disabled>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Suscribirse ($200/mes)
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    *Disponible próximamente
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Productos */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Package className="h-5 w-5" />
-                  <span>Mis Productos</span>
-                </CardTitle>
-                <CardDescription>Gestiona tu inventario</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <div className="text-2xl font-bold text-foreground mb-2">0</div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Productos registrados
-                  </p>
-                  <Button variant="outline" disabled>
-                    Agregar Producto
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    *Requiere suscripción activa
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Servicios */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Users className="h-5 w-5" />
-                  <span>Mis Servicios</span>
-                </CardTitle>
-                <CardDescription>Administra tus servicios</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <div className="text-2xl font-bold text-foreground mb-2">0</div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Servicios disponibles
-                  </p>
-                  <Button variant="outline" disabled>
-                    Agregar Servicio
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    *Requiere suscripción activa
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <ProductManagement proveedorId={userSpecificData?.id} />
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
             {/* Explorar */}
