@@ -25,12 +25,23 @@ export default function DashboardMain() {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión correctamente",
-    });
-    navigate('/');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente",
+      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleOpenChat = (userId: string, apodo: string) => {
