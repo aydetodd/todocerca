@@ -38,19 +38,29 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
   const validProviders = providers.filter(p => p.latitude && p.longitude);
   console.log('✅ Proveedores válidos con coordenadas:', validProviders);
   
-  // Center map on Mexico City by default, or first provider if available
-  const defaultCenter: [number, number] = [19.4326, -99.1332];
-  const center: [number, number] = validProviders.length > 0
-    ? [validProviders[0].latitude, validProviders[0].longitude]
-    : defaultCenter;
+  if (validProviders.length === 0) {
+    return (
+      <div className="w-full h-[500px] rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">No hay proveedores con ubicación disponible</p>
+      </div>
+    );
+  }
   
-  console.log('🎯 Centro del mapa:', center, 'Zoom:', validProviders.length > 0 ? 12 : 5);
+  // Center map on first provider
+  const center: [number, number] = [validProviders[0].latitude, validProviders[0].longitude];
+  
+  console.log('🎯 Centro del mapa:', center, 'Proveedores a mostrar:', validProviders.length);
+
+  // Create a key based on providers to force remount when they change
+  const mapKey = validProviders.map(p => p.id).join('-');
 
   return (
     <div className="w-full h-[500px] rounded-lg overflow-hidden border">
       <MapContainer
+        key={mapKey}
         center={center}
-        zoom={validProviders.length > 0 ? 12 : 5}
+        zoom={12}
+        scrollWheelZoom={false}
         className="w-full h-full"
       >
         <TileLayer
