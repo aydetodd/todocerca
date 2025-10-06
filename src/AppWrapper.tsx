@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import DashboardMain from "./pages/DashboardMain";
 import ProductSearch from "./pages/ProductSearch";
 import NotFound from "./pages/NotFound";
 
@@ -22,7 +23,8 @@ export default function AppWrapper() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<DashboardMain />} />
+          <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/search" element={<ProductSearch />} />

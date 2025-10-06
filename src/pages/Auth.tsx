@@ -15,6 +15,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
+  const [apodo, setApodo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [codigoPostal, setCodigoPostal] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,6 +131,7 @@ const Auth = () => {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
               nombre,
+              apodo: apodo || nombre,
               role: userType,
             },
           },
@@ -345,6 +347,17 @@ const Auth = () => {
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="apodo">Apodo (opcional)</Label>
+                    <Input
+                      id="apodo"
+                      type="text"
+                      value={apodo}
+                      onChange={(e) => setApodo(e.target.value)}
+                      placeholder="Dejá vacío para usar tu nombre"
                     />
                   </div>
                 </>

@@ -9,43 +9,43 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 160 30% 12%;
+    --foreground: 20 14.3% 4.1%;
 
     --card: 0 0% 100%;
-    --card-foreground: 160 30% 12%;
+    --card-foreground: 20 14.3% 4.1%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 30% 12%;
+    --popover-foreground: 20 14.3% 4.1%;
 
-    --primary: 162 65% 38%;
+    --primary: 38 92% 50%; /* Amber/Yellow theme #F59E0B */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 156 48% 95%;
-    --secondary-foreground: 160 30% 12%;
+    --secondary: 43 100% 58%;
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 156 32% 96%;
-    --muted-foreground: 160 8% 45%;
+    --muted: 43 96% 95%;
+    --muted-foreground: 43 8% 46%;
 
-    --accent: 28 85% 58%;
+    --accent: 45 93% 47%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 156 25% 88%;
-    --input: 156 25% 90%;
-    --ring: 162 65% 38%;
+    --border: 43 20% 90%;
+    --input: 43 20% 90%;
+    --ring: 38 92% 50%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 158 48% 98%;
-    --sidebar-foreground: 160 20% 25%;
-    --sidebar-primary: 162 65% 38%;
+    --sidebar-background: 43 98% 98%;
+    --sidebar-foreground: 43 20% 25%;
+    --sidebar-primary: 38 92% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 156 40% 92%;
-    --sidebar-accent-foreground: 160 30% 12%;
-    --sidebar-border: 156 25% 85%;
-    --sidebar-ring: 162 65% 38%;
+    --sidebar-accent: 43 92% 92%;
+    --sidebar-accent-foreground: 20 14.3% 4.1%;
+    --sidebar-border: 43 25% 85%;
+    --sidebar-ring: 38 92% 50%;
   }
 
   .dark {

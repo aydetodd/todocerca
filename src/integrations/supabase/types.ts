@@ -281,6 +281,33 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_panic: boolean | null
+          message: string
+          receiver_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_panic?: boolean | null
+          message: string
+          receiver_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_panic?: boolean | null
+          message?: string
+          receiver_id?: string | null
+          sender_id?: string
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           created_at: string
@@ -364,9 +391,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          apodo: string | null
           codigo_postal: string | null
           consecutive_number: number
           created_at: string
+          estado: Database["public"]["Enums"]["user_status"] | null
           id: string
           nombre: string
           phone: string | null
@@ -380,9 +409,11 @@ export type Database = {
           verified: boolean | null
         }
         Insert: {
+          apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
           created_at?: string
+          estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
           nombre: string
           phone?: string | null
@@ -396,9 +427,11 @@ export type Database = {
           verified?: boolean | null
         }
         Update: {
+          apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
           created_at?: string
+          estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
           nombre?: string
           phone?: string | null
@@ -410,6 +443,30 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["user_type"] | null
           verification_code?: string | null
           verified?: boolean | null
+        }
+        Relationships: []
+      }
+      proveedor_locations: {
+        Row: {
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -612,6 +669,7 @@ export type Database = {
       availability_status: "disponible" | "ocupado" | "no_disponible"
       subscription_status: "activa" | "vencida" | "pendiente"
       user_role: "admin" | "cliente" | "proveedor"
+      user_status: "available" | "busy" | "offline"
       user_type: "cliente" | "proveedor" | "empresa"
     }
     CompositeTypes: {
@@ -743,6 +801,7 @@ export const Constants = {
       availability_status: ["disponible", "ocupado", "no_disponible"],
       subscription_status: ["activa", "vencida", "pendiente"],
       user_role: ["admin", "cliente", "proveedor"],
+      user_status: ["available", "busy", "offline"],
       user_type: ["cliente", "proveedor", "empresa"],
     },
   },
