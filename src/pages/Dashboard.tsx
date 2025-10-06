@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, LogOut, Package, Users, ShoppingCart, Search } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
+import { StatusControl } from "@/components/StatusControl";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -175,32 +176,39 @@ const Dashboard = () => {
                 <Users className="h-5 w-5" />
                 <span>Mi Perfil</span>
               </CardTitle>
-              <CardDescription>Información de tu cuenta</CardDescription>
+              <CardDescription>Información de tu cuenta y estado</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium">Email:</span>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium">Rol:</span>
-                  <p className="text-sm text-muted-foreground">
-                    {isProvider ? "Proveedor" : "Cliente"}
-                  </p>
-                </div>
-                {userSpecificData?.telefono && (
+              <div className="space-y-4">
+                <div className="space-y-2">
                   <div>
-                    <span className="text-sm font-medium">Teléfono:</span>
-                    <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
+                    <span className="text-sm font-medium">Email:</span>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
-                )}
-                {userSpecificData?.codigo_postal && (
                   <div>
-                    <span className="text-sm font-medium">Código Postal:</span>
-                    <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                    <span className="text-sm font-medium">Rol:</span>
+                    <p className="text-sm text-muted-foreground">
+                      {isProvider ? "Proveedor" : "Cliente"}
+                    </p>
                   </div>
-                )}
+                  {userSpecificData?.telefono && (
+                    <div>
+                      <span className="text-sm font-medium">Teléfono:</span>
+                      <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
+                    </div>
+                  )}
+                  {userSpecificData?.codigo_postal && (
+                    <div>
+                      <span className="text-sm font-medium">Código Postal:</span>
+                      <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Status Control */}
+                <div className="pt-4 border-t">
+                  <StatusControl />
+                </div>
               </div>
             </CardContent>
           </Card>
