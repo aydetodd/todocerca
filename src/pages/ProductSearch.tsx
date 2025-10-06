@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import ProvidersMap from '@/components/ProvidersMap';
+import { MessagingPanel } from '@/components/MessagingPanel';
 
 interface SearchResult {
   product_name: string;
@@ -49,6 +50,15 @@ const ProductSearch = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
+  const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+
+  const handleOpenChat = (providerId: string, providerName: string) => {
+    setSelectedReceiverId(providerId);
+    setSelectedReceiverName(providerName);
+    setIsMessagingOpen(true);
+  };
 
   useEffect(() => {
     const query = searchParams.get('q');
@@ -280,7 +290,7 @@ const ProductSearch = () => {
               {mapProviders.length > 0 && (
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">Ubicación de Proveedores</h2>
-                  <ProvidersMap providers={mapProviders} />
+                  <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
                 </div>
               )}
             </div>
@@ -288,6 +298,13 @@ const ProductSearch = () => {
           </div>
         )}
       </div>
+
+      <MessagingPanel
+        isOpen={isMessagingOpen}
+        onClose={() => setIsMessagingOpen(false)}
+        receiverId={selectedReceiverId}
+        receiverName={selectedReceiverName}
+      />
     </div>
   );
 };

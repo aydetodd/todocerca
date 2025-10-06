@@ -36,9 +36,10 @@ interface Provider {
 
 interface ProvidersMapProps {
   providers: Provider[];
+  onOpenChat?: (providerId: string, providerName: string) => void;
 }
 
-const ProvidersMap = ({ providers }: ProvidersMapProps) => {
+const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
@@ -141,12 +142,14 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
     };
 
     (window as any).openWhatsApp = (phone: string) => {
-      window.open(`https://wa.me/${phone}`, '_blank');
+      const formattedPhone = phone.startsWith('+') ? phone : `+52${phone}`;
+      window.open(`https://wa.me/${formattedPhone}`, '_blank');
     };
 
     (window as any).openInternalChat = (providerId: string, providerName: string) => {
-      console.log('Open chat with provider:', providerId, providerName);
-      // TODO: Implementar navegación al chat interno
+      if (onOpenChat) {
+        onOpenChat(providerId, providerName);
+      }
     };
 
     (window as any).showProductDetails = (providerId: string, productIndex: number) => {
@@ -235,14 +238,23 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
                     </Button>
                     <Button 
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => window.open(`https://wa.me/${selectedProduct.provider.business_phone}`, '_blank')}
+                      onClick={() => {
+                        const formattedPhone = selectedProduct.provider.business_phone.startsWith('+') 
+                          ? selectedProduct.provider.business_phone 
+                          : `+52${selectedProduct.provider.business_phone}`;
+                        window.open(`https://wa.me/${formattedPhone}`, '_blank');
+                      }}
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       WhatsApp
                     </Button>
                     <Button 
                       className="flex-1 bg-yellow-600 hover:bg-yellow-700"
-                      onClick={() => console.log('Abrir chat interno con:', selectedProduct.provider.id)}
+                      onClick={() => {
+                        if (onOpenChat) {
+                          onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
+                        }
+                      }}
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Chat
