@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, User, Store } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
+import PasswordRecovery from "@/components/PasswordRecovery";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -24,6 +25,7 @@ const Auth = () => {
   const [skipAutoRedirect, setSkipAutoRedirect] = useState(false);
   const [userIdConsecutivo, setUserIdConsecutivo] = useState<number | null>(null);
   const [showIdConsecutivo, setShowIdConsecutivo] = useState(false);
+  const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -240,20 +242,8 @@ const Auth = () => {
     navigate('/dashboard');
   };
 
-  const handleForgotPassword = async () => {
-    if (!telefono) {
-      toast({
-        title: "Error",
-        description: "Ingresa tu número de teléfono",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Contacta soporte",
-      description: "Por favor contacta soporte para restablecer tu contraseña",
-    });
+  const handleForgotPassword = () => {
+    setShowPasswordRecovery(true);
   };
 
   const handleProceedWithLogin = () => {
@@ -269,6 +259,15 @@ const Auth = () => {
     // El usuario ya está autenticado, solo redirigir
     setSkipAutoRedirect(false);
   };
+
+  if (showPasswordRecovery) {
+    return (
+      <PasswordRecovery
+        onBack={() => setShowPasswordRecovery(false)}
+        initialPhone={telefono}
+      />
+    );
+  }
 
   if (showProviderRegistration) {
     return (
