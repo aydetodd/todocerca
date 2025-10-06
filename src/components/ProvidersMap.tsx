@@ -61,7 +61,7 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
         center={center}
         zoom={12}
         scrollWheelZoom={false}
-        className="w-full h-full"
+        style={{ width: '100%', height: '100%' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
