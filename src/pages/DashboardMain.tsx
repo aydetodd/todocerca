@@ -5,6 +5,7 @@ import { MessageCircle, LogOut } from 'lucide-react';
 import { StatusControl } from '@/components/StatusControl';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
+import ProviderRegistration from '@/components/ProviderRegistration';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,17 +13,60 @@ export default function DashboardMain() {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+  const [showProviderRegistration, setShowProviderRegistration] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check auth
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        navigate('/auth');
-      }
-    });
+    checkUserStatus();
   }, [navigate]);
+
+  const checkUserStatus = async () => {
+    // Check auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // Check if user has a profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*, telefono, codigo_postal')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      toast({
+        title: "Error",
+        description: "No se encontró tu perfil",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
+    setUserProfile(profile);
+
+    // If user is a provider, check if they have completed their provider profile
+    if (profile.role === 'proveedor') {
+      const { data: proveedor } = await supabase
+        .from('proveedores')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!proveedor) {
+        // Provider hasn't completed registration
+        setShowProviderRegistration(true);
+        toast({
+          title: "Completa tu perfil",
+          description: "Necesitas completar tu registro de proveedor",
+        });
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -50,6 +94,30 @@ export default function DashboardMain() {
     setIsMessagingOpen(true);
   };
 
+  const handleProviderRegistrationComplete = () => {
+    setShowProviderRegistration(false);
+    checkUserStatus(); // Refresh status
+    toast({
+      title: "¡Registro completado!",
+      description: "Tu perfil de proveedor está listo",
+    });
+  };
+
+  // Show ProviderRegistration if provider hasn't completed profile
+  if (showProviderRegistration && userProfile) {
+    return (
+      <ProviderRegistration
+        onComplete={handleProviderRegistrationComplete}
+        userData={{
+          email: userProfile.user_id ? `${userProfile.telefono?.replace(/\+/g, '')}@todocerca.app` : '',
+          nombre: userProfile.nombre || '',
+          telefono: userProfile.telefono || '',
+          codigoPostal: userProfile.codigo_postal || '',
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -59,7 +127,7 @@ export default function DashboardMain() {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              onClick={() => navigate('/product-search')}
+              onClick={() => navigate('/search')}
               className="text-amber-500 bg-white hover:bg-amber-50"
             >
               Buscar Productos
