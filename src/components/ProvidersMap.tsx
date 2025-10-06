@@ -32,11 +32,15 @@ interface ProvidersMapProps {
 }
 
 const ProvidersMap = ({ providers }: ProvidersMapProps) => {
+  console.log('🗺️ ProvidersMap recibió proveedores:', providers);
+  
   // Center map on Mexico City by default, or first provider if available
   const defaultCenter: [number, number] = [19.4326, -99.1332];
   const center: [number, number] = providers.length > 0 && providers[0].latitude && providers[0].longitude
     ? [providers[0].latitude, providers[0].longitude]
     : defaultCenter;
+  
+  console.log('🎯 Centro del mapa:', center, 'Zoom:', providers.length > 0 ? 12 : 5);
 
   return (
     <div className="w-full h-[500px] rounded-lg overflow-hidden border">

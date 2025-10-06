@@ -189,7 +189,9 @@ const ProductSearch = () => {
           }
         });
 
-        setMapProviders(Array.from(providerMap.values()));
+        const providersArray = Array.from(providerMap.values());
+        console.log('📍 Proveedores para el mapa:', providersArray);
+        setMapProviders(providersArray);
       } else {
         setResults([]);
         setMapProviders([]);
