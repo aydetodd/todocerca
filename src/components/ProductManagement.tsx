@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Pencil, Trash2, Save, X, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -71,7 +73,25 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    checkUserRole();
   }, [proveedorId]);
+
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      setUserRole(profile?.role || null);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -223,6 +243,19 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
           <div className="text-center">Cargando productos...</div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Verificar si el usuario es proveedor
+  if (userRole && userRole !== 'proveedor') {
+    return (
+      <Alert className="max-w-2xl">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Solo los proveedores pueden gestionar productos. Si deseas ofrecer productos o servicios, 
+          contacta al administrador para actualizar tu cuenta a proveedor.
+        </AlertDescription>
+      </Alert>
     );
   }
 
