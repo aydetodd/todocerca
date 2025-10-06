@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -25,10 +26,11 @@ export default function AppWrapper() {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<DashboardMain />} />
+            <Route path="/" element={<Home />} />
             <Route path="/landing" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<DashboardMain />} />
+            <Route path="/dashboard-old" element={<Dashboard />} />
             <Route path="/search" element={<ProductSearch />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
