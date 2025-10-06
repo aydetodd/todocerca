@@ -179,8 +179,8 @@ const Dashboard = () => {
               <CardDescription>Información de tu cuenta y estado</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
+              <div className="flex items-start gap-4">
+                <div className="flex-1 space-y-2">
                   <div>
                     <span className="text-sm font-medium">Email:</span>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -205,8 +205,8 @@ const Dashboard = () => {
                   )}
                 </div>
                 
-                {/* Status Control */}
-                <div className="pt-4 border-t">
+                {/* Status Control - Traffic Light */}
+                <div className="flex-shrink-0">
                   <StatusControl />
                 </div>
               </div>
