@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -34,6 +34,7 @@ interface ProvidersMapProps {
 const ProvidersMap = ({ providers }: ProvidersMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; productIndex: number } | null>(null);
 
   console.log('🗺️ ProvidersMap recibió proveedores:', providers);
   
@@ -65,32 +66,89 @@ const ProvidersMap = ({ providers }: ProvidersMapProps) => {
     validProviders.forEach((provider) => {
       const marker = L.marker([provider.latitude, provider.longitude]).addTo(map);
       
+      const productsList = provider.productos.map((producto, idx) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-size: 0.875rem;">${producto.nombre}</span>
+          <button 
+            onclick="window.showProductDetails('${provider.id}', ${idx})"
+            style="color: #3b82f6; font-size: 0.75rem; text-decoration: underline; background: none; border: none; cursor: pointer; padding: 0; margin-left: 8px;"
+          >
+            Ver más...
+          </button>
+        </div>
+      `).join('');
+      
       const popupContent = `
-        <div style="padding: 8px;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 4px;">${provider.business_name}</h3>
-          <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 8px;">${provider.business_address}</p>
-          ${provider.business_phone ? `
-            <p style="font-size: 0.875rem; margin-bottom: 8px;">
-              <span style="font-weight: 500;">Teléfono:</span> ${provider.business_phone}
-            </p>
-          ` : ''}
+        <div style="padding: 12px; min-width: 250px;">
+          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px;">${provider.business_name}</h3>
+          
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button 
+              onclick="window.makeCall('${provider.business_phone}')"
+              style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.875rem;"
+              title="Llamar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </button>
+            <button 
+              onclick="window.openWhatsApp('${provider.business_phone}')"
+              style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.875rem;"
+              title="WhatsApp"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </button>
+            <button 
+              onclick="window.openInternalChat('${provider.id}', '${provider.business_name}')"
+              style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.875rem;"
+              title="Mensaje"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+          
           ${provider.productos.length > 0 ? `
-            <div>
-              <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 4px;">Productos encontrados:</p>
-              <ul style="font-size: 0.875rem;">
-                ${provider.productos.map(producto => `
-                  <li>${producto.nombre} - $${producto.precio}</li>
-                `).join('')}
-              </ul>
+            <div style="margin-top: 12px;">
+              <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos:</p>
+              <div style="max-height: 200px; overflow-y: auto;">
+                ${productsList}
+              </div>
             </div>
           ` : ''}
         </div>
       `;
       
-      marker.bindPopup(popupContent);
+      marker.bindPopup(popupContent, {
+        closeButton: true,
+        autoClose: false,
+        closeOnClick: false,
+        maxWidth: 350
+      });
     });
 
     mapRef.current = map;
+
+    // Add global functions for popup buttons
+    (window as any).makeCall = (phone: string) => {
+      window.location.href = `tel:${phone}`;
+    };
+
+    (window as any).openWhatsApp = (phone: string) => {
+      window.open(`https://wa.me/${phone}`, '_blank');
+    };
+
+    (window as any).openInternalChat = (providerId: string, providerName: string) => {
+      console.log('Open chat with provider:', providerId, providerName);
+      // TODO: Implementar navegación al chat interno
+    };
+
+    (window as any).showProductDetails = (providerId: string, productIndex: number) => {
+      const provider = validProviders.find(p => p.id === providerId);
+      if (provider && provider.productos[productIndex]) {
+        const product = provider.productos[productIndex];
+        alert(`Detalles del producto:\n\nNombre: ${product.nombre}\nPrecio: $${product.precio}\nProveedor: ${provider.business_name}`);
+        // TODO: Implementar modal con detalles completos del producto
+      }
+    };
 
     // Cleanup on unmount
     return () => {
