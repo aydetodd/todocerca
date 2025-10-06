@@ -95,6 +95,8 @@ export const useRealtimeLocations = () => {
         latitude,
         longitude,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) {
