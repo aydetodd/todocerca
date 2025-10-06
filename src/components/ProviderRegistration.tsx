@@ -69,7 +69,40 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
   useEffect(() => {
     fetchCategories();
+    getCurrentLocation();
   }, []);
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      console.log('Geolocalización no disponible');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log('📍 Ubicación obtenida:', { latitude, longitude });
+        setProviderData(prev => ({
+          ...prev,
+          latitude,
+          longitude
+        }));
+        toast({
+          title: "Ubicación obtenida",
+          description: "Se detectó tu ubicación automáticamente",
+        });
+      },
+      (error) => {
+        console.log('Error obteniendo ubicación:', error);
+        // No mostramos error al usuario para no ser intrusivos
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  };
 
   const fetchCategories = async () => {
     try {
@@ -367,33 +400,51 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="latitude">Latitud (opcional)</Label>
-          <Input
-            id="latitude"
-            type="number"
-            step="0.000001"
-            value={providerData.latitude || ''}
-            onChange={(e) => setProviderData({...providerData, latitude: e.target.value ? parseFloat(e.target.value) : null})}
-            placeholder="19.4326"
-          />
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <Label>Ubicación GPS</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={getCurrentLocation}
+            disabled={loading}
+          >
+            📍 Obtener ubicación actual
+          </Button>
         </div>
-        <div>
-          <Label htmlFor="longitude">Longitud (opcional)</Label>
-          <Input
-            id="longitude"
-            type="number"
-            step="0.000001"
-            value={providerData.longitude || ''}
-            onChange={(e) => setProviderData({...providerData, longitude: e.target.value ? parseFloat(e.target.value) : null})}
-            placeholder="-99.1332"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="latitude">Latitud</Label>
+            <Input
+              id="latitude"
+              type="number"
+              step="0.000001"
+              value={providerData.latitude || ''}
+              onChange={(e) => setProviderData({...providerData, latitude: e.target.value ? parseFloat(e.target.value) : null})}
+              placeholder="Se detectará automáticamente"
+              readOnly
+            />
+          </div>
+          <div>
+            <Label htmlFor="longitude">Longitud</Label>
+            <Input
+              id="longitude"
+              type="number"
+              step="0.000001"
+              value={providerData.longitude || ''}
+              onChange={(e) => setProviderData({...providerData, longitude: e.target.value ? parseFloat(e.target.value) : null})}
+              placeholder="Se detectará automáticamente"
+              readOnly
+            />
+          </div>
         </div>
+        {providerData.latitude && providerData.longitude && (
+          <p className="text-xs text-green-600">
+            ✓ Ubicación detectada correctamente
+          </p>
+        )}
       </div>
-      <p className="text-xs text-muted-foreground">
-        💡 Tip: Para obtener tus coordenadas, abre Google Maps, haz clic derecho en tu ubicación y copia las coordenadas.
-      </p>
     </div>
   );
 
