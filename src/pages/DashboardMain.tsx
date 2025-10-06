@@ -56,14 +56,23 @@ export default function DashboardMain() {
       <header className="bg-amber-500 text-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Todo Cerca</h1>
-          <Button 
-            variant="outline" 
-            onClick={handleLogout}
-            className="text-amber-500 bg-white hover:bg-amber-50"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Cerrar Sesión
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/product-search')}
+              className="text-amber-500 bg-white hover:bg-amber-50"
+            >
+              Buscar Productos
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="text-amber-500 bg-white hover:bg-amber-50"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -71,8 +80,8 @@ export default function DashboardMain() {
       <div className="flex-1 relative">
         <RealtimeMap onOpenChat={handleOpenChat} />
         
-        {/* Status Control Overlay - Top Right */}
-        <div className="absolute top-4 right-4 z-30">
+        {/* Status Control Overlay - Top Right with better visibility */}
+        <div className="absolute top-20 right-4 z-[1000] shadow-2xl">
           <StatusControl />
         </div>
       </div>
