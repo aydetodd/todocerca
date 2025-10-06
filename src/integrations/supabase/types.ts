@@ -308,6 +308,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_recovery_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          phone: string
+          used: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          phone: string
+          used?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          phone?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           created_at: string
