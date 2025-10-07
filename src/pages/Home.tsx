@@ -1,18 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { MapPin, Package, Users, Zap } from 'lucide-react';
+import UserRegistryReport from '@/components/UserRegistryReport';
 
 export default function Home() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [clickSequence, setClickSequence] = useState<string[]>([]);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
+
+  const handleSecretClick = (letter: string) => {
+    const newSequence = [...clickSequence, letter];
+    
+    if (newSequence.join('') === 'VOA') {
+      setShowReport(true);
+      setClickSequence([]);
+    } else if ('VOA'.startsWith(newSequence.join(''))) {
+      setClickSequence(newSequence);
+    } else {
+      setClickSequence([]);
+    }
+  };
 
   if (loading) {
     return (
@@ -111,9 +127,18 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-white border-t mt-16">
         <div className="container mx-auto px-4 py-6 text-center text-gray-600">
-          <p>© 2025 TodoCerca. Todos los derechos reservados.</p>
+          <p>
+            © 2025 TodoCerca. Todos los derechos reser
+            <span onClick={() => handleSecretClick('V')} className="cursor-default select-none">v</span>
+            <span onClick={() => handleSecretClick('O')} className="cursor-default select-none">o</span>
+            d
+            <span onClick={() => handleSecretClick('A')} className="cursor-default select-none">a</span>
+            s.
+          </p>
         </div>
       </footer>
+
+      <UserRegistryReport open={showReport} onOpenChange={setShowReport} />
     </div>
   );
 }
