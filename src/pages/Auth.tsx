@@ -202,6 +202,21 @@ const Auth = () => {
             console.error('⚠️ Error updating profile with phone and email:', updateError);
           }
 
+          // Enviar mensaje de bienvenida por WhatsApp
+          try {
+            await supabase.functions.invoke('send-whatsapp-welcome', {
+              body: {
+                phoneNumber: telefono,
+                userName: nombre,
+                userType: userType,
+              },
+            });
+            console.log('📱 WhatsApp welcome message sent');
+          } catch (whatsappError) {
+            console.error('⚠️ Error sending WhatsApp message:', whatsappError);
+            // No mostramos error al usuario, solo lo registramos
+          }
+
           if (userType === 'proveedor') {
             console.log('🏢 Handling provider post-signup...');
             if (data.session) {
@@ -209,13 +224,13 @@ const Auth = () => {
               setShowProviderRegistration(true);
               toast({
                 title: "¡Cuenta creada!",
-                description: "Completa tu perfil de proveedor.",
+                description: "Completa tu perfil de proveedor. Revisa tu WhatsApp para más información.",
               });
             } else {
               console.log('🟠 No session after signup, requiring confirmation/login before provider setup');
               toast({
                 title: "Cuenta creada",
-                description: "Inicia sesión para completar tu perfil de proveedor.",
+                description: "Inicia sesión para completar tu perfil de proveedor. Revisa tu WhatsApp.",
               });
               setIsLogin(true);
               navigate("/");
@@ -224,7 +239,7 @@ const Auth = () => {
             console.log('👤 Client registration completed');
             toast({
               title: "¡Registro exitoso!",
-              description: "Tu cuenta ha sido creada correctamente.",
+              description: "Tu cuenta ha sido creada. Revisa tu WhatsApp para más información.",
             });
             
             // La navegación se manejará automáticamente por el hook useAuth
