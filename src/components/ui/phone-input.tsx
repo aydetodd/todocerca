@@ -8,17 +8,18 @@ interface Country {
   flag: string;
   name: string;
   digits: number;
+  key: string; // Unique identifier
 }
 
 const countries: Country[] = [
-  { code: "+52", flag: "🇲🇽", name: "México", digits: 10 },
-  { code: "+1", flag: "🇺🇸", name: "Estados Unidos", digits: 10 },
-  { code: "+1", flag: "🇨🇦", name: "Canadá", digits: 10 },
-  { code: "+34", flag: "🇪🇸", name: "España", digits: 9 },
-  { code: "+54", flag: "🇦🇷", name: "Argentina", digits: 10 },
-  { code: "+57", flag: "🇨🇴", name: "Colombia", digits: 10 },
-  { code: "+56", flag: "🇨🇱", name: "Chile", digits: 9 },
-  { code: "+51", flag: "🇵🇪", name: "Perú", digits: 9 },
+  { code: "+52", flag: "🇲🇽", name: "México", digits: 10, key: "mx" },
+  { code: "+1", flag: "🇺🇸", name: "Estados Unidos", digits: 10, key: "us" },
+  { code: "+1", flag: "🇨🇦", name: "Canadá", digits: 10, key: "ca" },
+  { code: "+34", flag: "🇪🇸", name: "España", digits: 9, key: "es" },
+  { code: "+54", flag: "🇦🇷", name: "Argentina", digits: 10, key: "ar" },
+  { code: "+57", flag: "🇨🇴", name: "Colombia", digits: 10, key: "co" },
+  { code: "+56", flag: "🇨🇱", name: "Chile", digits: 9, key: "cl" },
+  { code: "+51", flag: "🇵🇪", name: "Perú", digits: 9, key: "pe" },
 ];
 
 interface PhoneInputProps {
@@ -96,7 +97,7 @@ export function PhoneInput({
           </SelectTrigger>
           <SelectContent>
             {countries.map((country) => (
-              <SelectItem key={`${country.code}-${country.name}`} value={country.code}>
+              <SelectItem key={country.key} value={country.code}>
                 <span className="flex items-center gap-2">
                   <span className="text-xl">{country.flag}</span>
                   <span>{country.name} ({country.code})</span>
