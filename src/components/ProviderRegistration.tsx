@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Upload, ArrowLeft, ArrowRight } from 'lucide-react';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface Product {
   id: string;
@@ -353,15 +354,13 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           placeholder="tu@email.com"
         />
       </div>
-      <div>
-        <Label htmlFor="telefono">Teléfono *</Label>
-        <Input
-          id="telefono"
-          value={providerData.telefono}
-          onChange={(e) => setProviderData({...providerData, telefono: e.target.value})}
-          placeholder="123-456-7890"
-        />
-      </div>
+      <PhoneInput
+        id="telefono"
+        value={providerData.telefono}
+        onChange={(value) => setProviderData({...providerData, telefono: value})}
+        label="Teléfono"
+        required
+      />
       <div>
         <Label htmlFor="codigo_postal">Código Postal</Label>
         <Input

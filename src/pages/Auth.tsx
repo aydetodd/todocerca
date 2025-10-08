@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MapPin, User, Store } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -398,17 +399,14 @@ const Auth = () => {
                 </>
               )}
 
-              <div>
-                <Label htmlFor="telefono">Número de teléfono *</Label>
-                <Input
-                  id="telefono"
-                  type="tel"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  placeholder="5512345678"
-                  required
-                />
-              </div>
+              <PhoneInput
+                id="telefono"
+                value={telefono}
+                onChange={setTelefono}
+                label="Número de teléfono"
+                required
+                placeholder="5512345678"
+              />
 
               {isLogin && (
                 <div>

@@ -31,7 +31,8 @@ serve(async (req) => {
     }
 
     // Format phone number for WhatsApp (must include country code)
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+52${phoneNumber}`;
+    // Phone number should already include country code from PhoneInput component
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     const whatsappTo = `whatsapp:${formattedPhone}`;
     const whatsappFrom = `whatsapp:${twilioPhoneNumber}`;
 

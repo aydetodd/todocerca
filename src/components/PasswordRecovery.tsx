@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface PasswordRecoveryProps {
   onBack: () => void;
@@ -252,17 +253,14 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
 
             {step === 'phone' && (
               <form onSubmit={handleSendCode} className="space-y-4">
-                <div>
-                  <Label htmlFor="phone">Número de teléfono</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="5512345678"
-                    required
-                  />
-                </div>
+                <PhoneInput
+                  id="phone"
+                  value={phone}
+                  onChange={setPhone}
+                  label="Número de teléfono"
+                  required
+                  placeholder="5512345678"
+                />
 
                 <Button 
                   type="submit" 
