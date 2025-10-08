@@ -126,16 +126,25 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         offline: '#ef4444'    // red
       };
 
-      const iconHtml = `
-        <div style="
-          background-color: ${colors[estado]};
-          width: ${isCurrentUser ? '30px' : '20px'};
-          height: ${isCurrentUser ? '30px' : '20px'};
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        "></div>
-      `;
+      const iconHtml = isCurrentUser 
+        ? `
+          <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+            <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
+                  fill="#3b82f6" 
+                  stroke="white" 
+                  stroke-width="2"/>
+          </svg>
+        `
+        : `
+          <div style="
+            background-color: ${colors[estado]};
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          "></div>
+        `;
 
       const icon = L.divIcon({
         html: iconHtml,
