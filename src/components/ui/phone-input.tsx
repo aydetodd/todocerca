@@ -89,10 +89,12 @@ export function PhoneInput({
         <Select value={selectedCountry} onValueChange={handleCountryChange}>
           <SelectTrigger className="w-[140px]">
             <SelectValue>
-              <span className="flex items-center gap-2">
-                <span className="text-xl">{selectedCountryData?.flag}</span>
-                <span>{selectedCountry}</span>
-              </span>
+              {selectedCountryData && (
+                <>
+                  <span className="text-xl">{selectedCountryData.flag}</span>
+                  <span className="ml-2">{selectedCountry}</span>
+                </>
+              )}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
