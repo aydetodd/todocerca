@@ -31,13 +31,12 @@ export const useRealtimeLocations = () => {
         return;
       }
 
-      // Fetch profiles for all users - only available and busy users
+      // Fetch profiles for all users
       const userIds = locationsData?.map(l => l.user_id) || [];
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('user_id, apodo, estado, telefono')
-        .in('user_id', userIds)
-        .in('estado', ['available', 'busy']);
+        .in('user_id', userIds);
 
       // Merge data
       const merged = locationsData?.map(loc => ({
@@ -45,7 +44,7 @@ export const useRealtimeLocations = () => {
         profiles: profilesData?.find(p => p.user_id === loc.user_id) || null
       })) || [];
 
-      // Only show users with available or busy status
+      // Show all users with profiles
       setLocations(merged.filter(l => l.profiles) as ProveedorLocation[]);
       setLoading(false);
     };
