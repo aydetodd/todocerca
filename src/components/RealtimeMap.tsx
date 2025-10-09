@@ -130,7 +130,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         ? `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
             <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
-                  fill="#3b82f6" 
+                  fill="${colors[estado]}" 
                   stroke="white" 
                   stroke-width="2"/>
           </svg>
