@@ -160,6 +160,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         <div class="p-3 min-w-[200px]">
           <h3 class="font-bold text-lg mb-2">${location.profiles.apodo || 'Usuario'}</h3>
           <p class="text-sm mb-3">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
+          ${!isCurrentUser ? `
           <div class="flex gap-2">
             <button 
               onclick="window.makeCall('${location.profiles.telefono}')"
@@ -183,6 +184,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
               Mensaje
             </button>
           </div>
+          ` : `<p class="text-sm text-gray-500">Tu ubicación actual</p>`}
         </div>
       `;
 
@@ -192,6 +194,12 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         closeOnClick: false,
         maxWidth: 300
       });
+
+      // Open popup on click
+      marker.on('click', () => {
+        marker.openPopup();
+      });
+
       markersRef.current[location.user_id] = marker;
     });
   }, [locations, currentUserId]);
