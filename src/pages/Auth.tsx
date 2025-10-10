@@ -125,7 +125,16 @@ const Auth = () => {
           if (error.message.includes('Invalid login credentials')) {
             throw new Error('Teléfono o contraseña incorrectos');
           }
+          if (error.message.includes('Email not confirmed')) {
+            throw new Error('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
+          }
           throw error;
+        }
+
+        // Verificar que el email esté confirmado
+        if (data.user && !data.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          throw new Error('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
         }
 
         // Mostrar el ID consecutivo
@@ -233,33 +242,22 @@ const Auth = () => {
             // No mostramos error al usuario, solo lo registramos
           }
 
-          if (userType === 'proveedor') {
-            console.log('🏢 Handling provider post-signup...');
-            if (data.session) {
-              console.log('🟢 Session present after signup, opening ProviderRegistration');
-              setShowProviderRegistration(true);
-              toast({
-                title: "¡Cuenta creada!",
-                description: "Completa tu perfil de proveedor. Revisa tu WhatsApp para más información.",
-              });
-            } else {
-              console.log('🟠 No session after signup, requiring confirmation/login before provider setup');
-              toast({
-                title: "Cuenta creada",
-                description: "Inicia sesión para completar tu perfil de proveedor. Revisa tu WhatsApp.",
-              });
-              setIsLogin(true);
-              navigate("/");
-            }
-          } else {
-            console.log('👤 Client registration completed');
-            toast({
-              title: "¡Registro exitoso!",
-              description: "Tu cuenta ha sido creada. Revisa tu WhatsApp para más información.",
-            });
-            
-            // La navegación se manejará automáticamente por el hook useAuth
-          }
+          // Mostrar mensaje de verificación de correo
+          const emailUsed = email || finalEmail;
+          toast({
+            title: "¡Cuenta creada!",
+            description: `Revisa tu correo ${emailUsed} para verificar tu cuenta antes de iniciar sesión.`,
+            duration: 8000,
+          });
+          
+          console.log('📧 Email verification required');
+          
+          // Cambiar a modo login para que el usuario inicie sesión después de verificar
+          setIsLogin(true);
+          
+          // Cerrar la sesión automática si existe (para forzar verificación)
+          await supabase.auth.signOut();
+          
         } else {
           console.log('❌ No user data returned from registration');
           throw new Error('No se pudo crear la cuenta');
