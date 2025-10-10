@@ -12,6 +12,8 @@ import { MapPin, User, Store } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -28,6 +30,8 @@ const Auth = () => {
   const [userIdConsecutivo, setUserIdConsecutivo] = useState<number | null>(null);
   const [showIdConsecutivo, setShowIdConsecutivo] = useState(false);
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedProhibitedContent, setAcceptedProhibitedContent] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -68,6 +72,17 @@ const Auth = () => {
       toast({
         title: "Error", 
         description: "El nombre es obligatorio para el registro",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validar que se aceptaron los términos al registrarse
+    if (!isLogin && (!acceptedTerms || !acceptedProhibitedContent)) {
+      console.log('❌ Terms not accepted');
+      toast({
+        title: "Error",
+        description: "Debes aceptar los Términos de Uso y la Política de Contenido Prohibido para registrarte",
         variant: "destructive",
       });
       return;
@@ -444,6 +459,114 @@ const Auth = () => {
                     value={codigoPostal}
                     onChange={(e) => setCodigoPostal(e.target.value)}
                   />
+                </div>
+              )}
+
+              {/* Términos Legales - Solo en registro */}
+              {!isLogin && (
+                <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/30">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">1. Declaración Legal</h3>
+                    <div className="text-sm text-muted-foreground space-y-1 mb-4">
+                      <p>Al registrarte en TodoCerca:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Confirmas que tienes 18+ años.</li>
+                        <li>Tú eres responsable de lo que publicas sea legal en México.</li>
+                        <li>No vendas armas, drogas, productos robados, medicinas sin receta, ni nada prohibido por la ley.</li>
+                        <li>TodoCerca solo conecta vecinos — no participa en tus transacciones.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">2. Términos de uso</h3>
+                    <div className="flex items-start space-x-3 mb-3">
+                      <Checkbox 
+                        id="terms"
+                        checked={acceptedTerms}
+                        onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
+                        ☑ Acepto los <span className="font-semibold">Términos de Uso</span>: Sé que TodoCerca solo es un directorio y no es responsable por transacciones, daños o problemas entre usuarios.
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">3. Política de Contenido Prohibido</h3>
+                    <div className="flex items-start space-x-3">
+                      <Checkbox 
+                        id="prohibited"
+                        checked={acceptedProhibitedContent}
+                        onCheckedChange={(checked) => setAcceptedProhibitedContent(checked as boolean)}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="prohibited" className="text-sm leading-relaxed cursor-pointer">
+                        ☑ Acepto la <span className="font-semibold">Política de Contenido Prohibido</span>: No publicaré armas, drogas, artículos falsificados, servicios sin licencia, ni nada ilegal según las leyes mexicanas.
+                      </Label>
+                    </div>
+                  </div>
+
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="terms-full">
+                      <AccordionTrigger className="text-sm font-medium">
+                        Ver Términos de Uso completos
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="text-sm text-muted-foreground space-y-2 p-2">
+                          <h4 className="font-semibold text-foreground">Términos de Uso – TodoCerca</h4>
+                          <ol className="list-decimal list-inside space-y-1 ml-2">
+                            <li>TodoCerca es un directorio comunitario gratuito para conectar vecinos.</li>
+                            <li>No somos parte en ninguna transacción entre usuarios.</li>
+                            <li>No garantizamos la calidad, legalidad ni seguridad de lo que se publica.</li>
+                            <li>Podemos suspender cualquier cuenta que viole las leyes mexicanas o nuestras reglas.</li>
+                            <li>Al usar la aplicación, aceptas que asumes los riesgos de tus interacciones.</li>
+                          </ol>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="prohibited-full">
+                      <AccordionTrigger className="text-sm font-medium">
+                        Ver Política de Contenido Prohibido completa
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="text-sm text-muted-foreground space-y-2 p-2">
+                          <h4 className="font-semibold text-foreground">Política de Contenido Prohibido – TodoCerca</h4>
+                          <ol className="list-decimal list-inside space-y-2 ml-2">
+                            <li>
+                              <span className="font-medium">Está prohibido publicar:</span>
+                              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                                <li>Armas, drogas, medicamentos sin receta, productos robados o falsificados.</li>
+                                <li>Servicios que requieren licencia (médicos, legales, construcción) sin acreditarla.</li>
+                              </ul>
+                            </li>
+                            <li>No se permite contenido fraudulento, engañoso o que viole derechos de terceros.</li>
+                            <li>Reportamos actividades ilegales a las autoridades competentes en México.</li>
+                          </ol>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="privacy">
+                      <AccordionTrigger className="text-sm font-medium">
+                        Ver Política de Privacidad
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="text-sm text-muted-foreground space-y-2 p-2">
+                          <h4 className="font-semibold text-foreground">Política de Privacidad – TodoCerca</h4>
+                          <ol className="list-decimal list-inside space-y-2 ml-2">
+                            <li>Recopilamos solo lo necesario: nombre, correo, ubicación y lo que publiques (para conectar vecinos).</li>
+                            <li>Tus datos no se venden ni se comparten con terceros, excepto si la ley lo exige (ej: autoridades mexicanas).</li>
+                            <li>Usamos Supabase (con servidores seguros) para almacenar su información, cumpliendo con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</li>
+                            <li>Puedes acceder, corregir o eliminar tus datos en cualquier momento desde tu perfil.</li>
+                            <li>Al registrarte, aceptas esta política y el uso de tu información para fines comunitarios locales.</li>
+                          </ol>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               )}
 
