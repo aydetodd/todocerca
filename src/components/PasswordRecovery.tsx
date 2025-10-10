@@ -15,7 +15,7 @@ interface PasswordRecoveryProps {
 
 const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) => {
   const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'phone' | null>(null);
-  const [step, setStep] = useState<'method' | 'phone' | 'code' | 'email-sent'>('method');
+  const [step, setStep] = useState<'method' | 'phone' | 'code' | 'email-form' | 'email-sent'>('method');
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -181,9 +181,10 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
             </div>
             <CardDescription>
               {step === 'method' && "Elige cómo deseas recuperar tu contraseña"}
+              {step === 'email-form' && "Ingresa tu correo electrónico registrado"}
+              {step === 'email-sent' && "Revisa tu email para continuar"}
               {step === 'phone' && "Ingresa tu número de teléfono para recibir un código"}
               {step === 'code' && "Ingresa el código que recibiste por SMS"}
-              {step === 'email-sent' && "Revisa tu email para continuar"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -192,13 +193,13 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
                 <Button
                   onClick={() => {
                     setRecoveryMethod('email');
-                    setStep('email-sent');
+                    setStep('email-form');
                   }}
                   className="w-full"
                   variant="outline"
                   type="button"
                 >
-                  Recuperar por Email (Recomendado)
+                  Recuperar por Email
                 </Button>
                 <Button
                   onClick={() => {
@@ -217,7 +218,7 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
               </div>
             )}
 
-            {step === 'email-sent' && recoveryMethod === 'email' && (
+            {step === 'email-form' && (
               <form onSubmit={handleSendEmailRecovery} className="space-y-4">
                 <div>
                   <Label htmlFor="email">Email</Label>
@@ -249,6 +250,36 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
                   Volver
                 </Button>
               </form>
+            )}
+
+            {step === 'email-sent' && (
+              <div className="space-y-4 text-center">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    📧 Hemos enviado un link de recuperación a <strong>{email}</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Revisa tu bandeja de entrada y haz clic en el enlace para restablecer tu contraseña.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Si no lo ves, revisa tu carpeta de spam.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep('email-form')}
+                >
+                  Enviar nuevamente
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={onBack}
+                >
+                  Volver al inicio
+                </Button>
+              </div>
             )}
 
             {step === 'phone' && (
