@@ -436,22 +436,6 @@ const Auth = () => {
                 placeholder="5512345678"
               />
 
-              {isLogin && (
-                <div>
-                  <Label htmlFor="email">Email (opcional)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Si te registraste con un email, ingrésalo aquí
-                  </p>
-                </div>
-              )}
-
               <div>
                 <Label htmlFor="password">Contraseña *</Label>
                 <Input
@@ -461,6 +445,17 @@ const Auth = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                {isLogin && (
+                  <div className="mt-2 text-right">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Términos Legales - Solo en registro */}
