@@ -97,14 +97,33 @@ const Auth = () => {
         console.log('🔑 Attempting login with phone...');
         
         // Buscar el perfil por teléfono para obtener el user_id, consecutive_number y email
-        const { data: profileData, error: profileError } = await supabase
+        // Intentar buscar con el formato completo primero
+        let profileData = null;
+        let profileError = null;
+        
+        const { data: fullFormatData, error: fullFormatError } = await supabase
           .from('profiles')
           .select('user_id, consecutive_number, email')
           .eq('telefono', telefono)
           .maybeSingle();
+        
+        if (fullFormatData) {
+          profileData = fullFormatData;
+        } else {
+          // Si no se encuentra, intentar buscar sin el código de país (solo los últimos 10 dígitos)
+          const phoneDigits = telefono.replace(/\D/g, '').slice(-10);
+          const { data: partialData, error: partialError } = await supabase
+            .from('profiles')
+            .select('user_id, consecutive_number, email, telefono')
+            .like('telefono', `%${phoneDigits}`)
+            .maybeSingle();
+          
+          profileData = partialData;
+          profileError = partialError;
+        }
 
         if (profileError || !profileData) {
-          throw new Error('Número de teléfono no encontrado');
+          throw new Error('Número de teléfono no encontrado. Verifica que ingresaste el número correcto.');
         }
 
         console.log('📱 Profile found:', profileData.consecutive_number);

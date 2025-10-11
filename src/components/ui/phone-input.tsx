@@ -115,7 +115,7 @@ export function PhoneInput({
           onChange={handleNumberChange}
           placeholder={placeholder}
           required={required}
-          className="flex-1"
+          className="flex-1 text-base font-semibold"
         />
       </div>
       <p className="text-xs text-muted-foreground mt-1">
