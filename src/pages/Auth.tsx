@@ -21,7 +21,6 @@ const Auth = () => {
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
   const [email, setEmail] = useState("");
-  const [codigoPostal, setCodigoPostal] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
@@ -32,6 +31,7 @@ const Auth = () => {
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedProhibitedContent, setAcceptedProhibitedContent] = useState(false);
+  const [wantsEmail, setWantsEmail] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -53,7 +53,7 @@ const Auth = () => {
       telefono: telefono ? 'filled' : 'empty', 
       password: password ? 'filled' : 'empty',
       nombre: nombre ? 'filled' : 'empty',
-      codigoPostal: codigoPostal ? 'filled' : 'empty'
+      apodo: apodo ? 'filled' : 'empty'
     });
     
     // Basic validation
@@ -67,11 +67,11 @@ const Auth = () => {
       return;
     }
     
-    if (!isLogin && !nombre) {
-      console.log('❌ Missing nombre for registration');
+    if (!isLogin && !apodo) {
+      console.log('❌ Missing apodo for registration');
       toast({
         title: "Error", 
-        description: "El nombre es obligatorio para el registro",
+        description: "El apodo es obligatorio para el registro",
         variant: "destructive",
       });
       return;
@@ -190,8 +190,8 @@ const Auth = () => {
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
-              nombre,
-              apodo: apodo || nombre,
+              nombre: nombre || apodo,
+              apodo,
               role: userType,
               telefono,
               email: email || null, // Guardar email real si existe
@@ -313,7 +313,7 @@ const Auth = () => {
     return (
       <ProviderRegistration
         onComplete={handleProviderRegistrationComplete}
-        userData={{ email: `${telefono.replace(/\+/g, '')}@todocerca.app`, nombre, telefono, codigoPostal }}
+        userData={{ email: `${telefono.replace(/\+/g, '')}@todocerca.app`, nombre: nombre || apodo, telefono }}
       />
     );
   }
@@ -375,39 +375,54 @@ const Auth = () => {
                   </Tabs>
 
                   <div>
-                    <Label htmlFor="nombre">Nombre completo *</Label>
-                    <Input
-                      id="nombre"
-                      type="text"
-                      value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="apodo">Apodo (opcional)</Label>
+                    <Label htmlFor="apodo">Apodo *</Label>
                     <Input
                       id="apodo"
                       type="text"
                       value={apodo}
                       onChange={(e) => setApodo(e.target.value)}
-                      placeholder="Dejá vacío para usar tu nombre"
+                      required
+                      placeholder="¿Cómo te llaman?"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email (opcional - para recuperar contraseña)</Label>
+                    <Label htmlFor="nombre">Nombre: Persona / Negocio / Empresa (opcional)</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@email.com"
+                      id="nombre"
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Nombre completo o de tu negocio"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Si proporcionas tu email, podrás recuperar tu contraseña fácilmente
-                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="wantsEmail"
+                        checked={wantsEmail}
+                        onCheckedChange={(checked) => {
+                          setWantsEmail(checked as boolean);
+                          if (!checked) setEmail("");
+                        }}
+                      />
+                      <Label htmlFor="wantsEmail" className="cursor-pointer">
+                        ¿Quieres escribir tu correo? Por si olvidas tu contraseña, ya que solo por este medio podrías recuperarla
+                      </Label>
+                    </div>
+                    
+                    {wantsEmail && (
+                      <div>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="tu@email.com"
+                        />
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -447,18 +462,6 @@ const Auth = () => {
                   required
                 />
               </div>
-
-              {!isLogin && (
-                <div>
-                  <Label htmlFor="codigoPostal">Código postal (opcional)</Label>
-                  <Input
-                    id="codigoPostal"
-                    type="text"
-                    value={codigoPostal}
-                    onChange={(e) => setCodigoPostal(e.target.value)}
-                  />
-                </div>
-              )}
 
               {/* Términos Legales - Solo en registro */}
               {!isLogin && (

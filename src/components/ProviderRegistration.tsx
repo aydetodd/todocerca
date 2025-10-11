@@ -33,7 +33,7 @@ interface ProviderRegistrationProps {
     email: string;
     nombre: string;
     telefono: string;
-    codigoPostal: string;
+    codigoPostal?: string;
   };
 }
 
