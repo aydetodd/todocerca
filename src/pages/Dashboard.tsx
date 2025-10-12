@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MapPin, LogOut, Package, Users, ShoppingCart, Search } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -216,6 +217,16 @@ const Dashboard = () => {
                     <div>
                       <span className="text-sm font-medium">Código Postal:</span>
                       <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                    </div>
+                  )}
+                  
+                  {/* QR Code Generator for Providers */}
+                  {isProvider && userSpecificData?.id && (
+                    <div className="pt-4">
+                      <QRCodeGenerator 
+                        proveedorId={userSpecificData.id} 
+                        businessName={userSpecificData.nombre || profile.nombre}
+                      />
                     </div>
                   )}
                 </div>

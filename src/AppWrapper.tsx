@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
 import ProductSearch from "./pages/ProductSearch";
 import Profile from "./pages/Profile";
+import ProviderProfile from "./pages/ProviderProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ export default function AppWrapper() {
             <Route path="/dashboard" element={<DashboardMain />} />
             <Route path="/dashboard-old" element={<Dashboard />} />
             <Route path="/search" element={<ProductSearch />} />
+            <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
