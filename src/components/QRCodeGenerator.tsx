@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Printer, QrCode } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Download, Printer, QrCode, X } from 'lucide-react';
 
 interface QRCodeGeneratorProps {
   proveedorId: string;
@@ -10,6 +10,7 @@ interface QRCodeGeneratorProps {
 }
 
 const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) => {
+  const [isOpen, setIsOpen] = useState(false);
   const profileUrl = `${window.location.origin}/proveedor/${proveedorId}`;
 
   const handleDownload = () => {
@@ -97,49 +98,66 @@ const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) =>
     }, 250);
   };
 
+  if (!isOpen) {
+    return (
+      <Button variant="outline" className="w-full" onClick={() => setIsOpen(true)}>
+        <QrCode className="h-4 w-4 mr-2" />
+        Generar Código QR
+      </Button>
+    );
+  }
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <QrCode className="h-4 w-4 mr-2" />
-          Generar Código QR
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Código QR de tu Negocio</DialogTitle>
-          <DialogDescription>
-            Descarga o imprime este código QR para que tus clientes escaneen y vean tu perfil
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col items-center space-y-4">
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="text-center text-lg">{businessName}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <QRCodeSVG
-                id="qr-code-svg"
-                value={profileUrl}
-                size={256}
-                level="H"
-                includeMargin={true}
-              />
-            </CardContent>
-          </Card>
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Descargar
-            </Button>
-            <Button variant="default" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80" onClick={() => setIsOpen(false)}>
+      <div className="relative w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Código QR de tu Negocio</CardTitle>
+                <CardDescription className="mt-2">
+                  Descarga o imprime este código QR para que tus clientes escaneen y vean tu perfil
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="absolute right-4 top-4"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-center text-lg">{businessName}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex justify-center">
+                <QRCodeSVG
+                  id="qr-code-svg"
+                  value={profileUrl}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </CardContent>
+            </Card>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Descargar
+              </Button>
+              <Button variant="default" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 
