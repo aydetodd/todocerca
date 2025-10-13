@@ -199,9 +199,10 @@ const ProviderProfile = () => {
       // Formatear mensaje para WhatsApp
       const message = formatWhatsAppMessage(pedido.numero_orden);
 
-      // Enviar por WhatsApp
+      // Enviar por WhatsApp - Asegurar código de país +52 para México
       const cleanPhone = provider.business_phone.replace(/\D/g, '');
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+      const phoneWithCountryCode = cleanPhone.startsWith('52') ? cleanPhone : `52${cleanPhone}`;
+      window.open(`https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`, '_blank');
 
       // Limpiar carrito y cerrar diálogo
       clearCart();
