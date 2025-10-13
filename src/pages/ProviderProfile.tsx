@@ -82,23 +82,37 @@ const ProviderProfile = () => {
 
       // If consecutiveNumber is provided (business name slug), lookup by name
       if (consecutiveNumber) {
-        // Convert slug back to searchable format (replace hyphens with spaces)
-        const searchName = consecutiveNumber.replace(/-/g, ' ');
+        // Función para crear slug (igual que en QRCodeGenerator)
+        const createSlug = (name: string) => {
+          return name
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '-');
+        };
 
-        // Search for provider by name (case-insensitive)
-        const { data: proveedorData, error: proveedorError } = await supabase
+        // Obtener todos los proveedores y buscar el que coincida con el slug
+        const { data: proveedores, error: proveedorError } = await supabase
           .from('proveedores')
-          .select('id, nombre')
-          .ilike('nombre', `%${searchName}%`)
-          .limit(1)
-          .single();
+          .select('id, nombre');
 
-        if (proveedorError || !proveedorData) {
-          console.error('Error buscando proveedor por nombre:', proveedorError);
+        if (proveedorError || !proveedores) {
+          console.error('Error buscando proveedores:', proveedorError);
           throw new Error('Proveedor no encontrado');
         }
 
-        actualProveedorId = proveedorData.id;
+        // Buscar el proveedor cuyo slug coincida
+        const proveedorEncontrado = proveedores.find(
+          p => createSlug(p.nombre) === consecutiveNumber
+        );
+
+        if (!proveedorEncontrado) {
+          throw new Error('Proveedor no encontrado');
+        }
+
+        actualProveedorId = proveedorEncontrado.id;
       }
 
       if (!actualProveedorId) {
