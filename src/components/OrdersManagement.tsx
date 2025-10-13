@@ -396,28 +396,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                     <div className="space-y-3">
                       <h4 className="font-semibold text-sm mb-3">Detalle del Pedido:</h4>
                       {(() => {
-                        // Primero consolidar todos los items del mismo producto con el mismo person_index
-                        const consolidatedByProduct = order.items_pedido.reduce((acc, item) => {
-                          const key = `${item.person_index ?? 0}-${item.productos.nombre}`;
-                          if (acc[key]) {
-                            acc[key].cantidad += item.cantidad;
-                            acc[key].subtotal += Number(item.subtotal);
-                          } else {
-                            acc[key] = {
-                              ...item,
-                              subtotal: Number(item.subtotal),
-                            };
-                          }
-                          return acc;
-                        }, {} as Record<string, OrderItem & { subtotal: number }>);
-
-                        // Luego agrupar por persona
-                        const itemsByPerson = Object.values(consolidatedByProduct).reduce((acc, item) => {
+                        // Agrupar items por persona
+                        const itemsByPerson = order.items_pedido.reduce((acc, item) => {
                           const personIdx = item.person_index ?? 0;
                           if (!acc[personIdx]) acc[personIdx] = [];
                           acc[personIdx].push(item);
                           return acc;
-                        }, {} as Record<number, Array<OrderItem & { subtotal: number }>>);
+                        }, {} as Record<number, OrderItem[]>);
 
                         const numPeople = Object.keys(itemsByPerson).length;
 
@@ -426,7 +411,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                             {Object.entries(itemsByPerson)
                               .sort(([a], [b]) => Number(a) - Number(b))
                               .map(([personIndex, items]) => {
-                                const personTotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+                                const personTotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
                                 
                                 return (
                                   <div key={personIndex} className="border-l-2 border-primary pl-3">
@@ -440,14 +425,14 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                                     )}
                                     <div className="space-y-1.5">
                                       {items.map((item, idx) => (
-                                        <div key={`${personIndex}-${item.productos.nombre}`} className="flex justify-between text-sm p-2 rounded bg-background border">
+                                        <div key={item.id} className="flex justify-between text-sm p-2 rounded bg-background border">
                                           <span className="flex items-center gap-2">
                                             <span className="font-medium">{item.cantidad}</span>
                                             <span className="text-muted-foreground">×</span>
                                             <span>{item.productos.nombre}</span>
                                             <span className="text-xs text-muted-foreground">({item.productos.unit})</span>
                                           </span>
-                                          <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                                          <span className="font-medium">{formatCurrency(Number(item.subtotal))}</span>
                                         </div>
                                       ))}
                                     </div>
