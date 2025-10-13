@@ -394,7 +394,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-sm">Productos:</h4>
+                      <h4 className="font-semibold text-sm mb-3">Detalle del Pedido:</h4>
                       {(() => {
                         // Agrupar items por persona
                         const itemsByPerson = order.items_pedido.reduce((acc, item) => {
@@ -406,38 +406,51 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
                         const numPeople = Object.keys(itemsByPerson).length;
 
-                        return Object.entries(itemsByPerson)
-                          .sort(([a], [b]) => Number(a) - Number(b))
-                          .map(([personIndex, items]) => {
-                            const personTotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
-                            return (
-                              <div key={personIndex} className="space-y-2">
-                                {numPeople > 1 && (
-                                  <div className="font-semibold text-sm text-primary mt-2">
-                                    Persona {Number(personIndex) + 1}:
+                        return (
+                          <div className="space-y-4">
+                            {Object.entries(itemsByPerson)
+                              .sort(([a], [b]) => Number(a) - Number(b))
+                              .map(([personIndex, items]) => {
+                                const personTotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
+                                return (
+                                  <div key={personIndex} className="border-l-2 border-primary pl-3">
+                                    {numPeople > 1 && (
+                                      <div className="font-bold text-sm text-primary mb-2 flex items-center gap-2">
+                                        <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                                          {Number(personIndex) + 1}
+                                        </span>
+                                        Persona {Number(personIndex) + 1}
+                                      </div>
+                                    )}
+                                    <div className="space-y-1.5">
+                                      {items.map((item, idx) => (
+                                        <div key={item.id} className="flex justify-between text-sm p-2 rounded bg-background border">
+                                          <span className="flex items-center gap-2">
+                                            <span className="text-muted-foreground text-xs">#{idx + 1}</span>
+                                            <span className="font-medium">{item.cantidad}</span>
+                                            <span className="text-muted-foreground">×</span>
+                                            <span>{item.productos.nombre}</span>
+                                            <span className="text-xs text-muted-foreground">({item.productos.unit})</span>
+                                          </span>
+                                          <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {numPeople > 1 && (
+                                      <div className="flex justify-between text-sm mt-2 pt-2 border-t font-semibold">
+                                        <span>Subtotal Persona {Number(personIndex) + 1}:</span>
+                                        <span className="text-primary">{formatCurrency(personTotal)}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                                {items.map((item) => (
-                                  <div key={item.id} className="flex justify-between text-sm bg-muted/50 p-2 rounded ml-2">
-                                    <span>
-                                      {item.cantidad}x {item.productos.nombre} ({item.productos.unit})
-                                    </span>
-                                    <span className="font-medium">{formatCurrency(item.subtotal)}</span>
-                                  </div>
-                                ))}
-                                {numPeople > 1 && (
-                                  <div className="flex justify-between text-sm ml-2 font-medium text-muted-foreground">
-                                    <span>Subtotal Persona {Number(personIndex) + 1}:</span>
-                                    <span>{formatCurrency(personTotal)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          });
+                                );
+                              })}
+                          </div>
+                        );
                       })()}
-                      <div className="flex justify-between pt-2 border-t font-bold">
-                        <span>Total del Pedido:</span>
-                        <span className="text-primary">{formatCurrency(order.total)}</span>
+                      <div className="flex justify-between pt-3 mt-3 border-t-2 border-primary font-bold text-base">
+                        <span>TOTAL DEL PEDIDO:</span>
+                        <span className="text-primary text-lg">{formatCurrency(order.total)}</span>
                       </div>
                     </div>
                   </CardContent>
