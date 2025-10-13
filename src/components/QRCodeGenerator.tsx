@@ -7,11 +7,16 @@ import { Download, Printer, QrCode, X } from 'lucide-react';
 interface QRCodeGeneratorProps {
   proveedorId: string;
   businessName: string;
+  consecutiveNumber?: string;
 }
 
-const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) => {
+const QRCodeGenerator = ({ proveedorId, businessName, consecutiveNumber }: QRCodeGeneratorProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const profileUrl = `${window.location.origin}/proveedor/${proveedorId}`;
+  
+  // Use todocerca.mx domain with consecutive number format (e.g., 000001p)
+  const profileUrl = consecutiveNumber 
+    ? `https://todocerca.mx/${consecutiveNumber}p`
+    : `${window.location.origin}/proveedor/${proveedorId}`;
 
   const handleDownload = () => {
     const svg = document.getElementById('qr-code-svg');

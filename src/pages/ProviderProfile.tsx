@@ -30,7 +30,7 @@ interface ProviderData {
 }
 
 const ProviderProfile = () => {
-  const { proveedorId } = useParams();
+  const { proveedorId, consecutiveNumber } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [provider, setProvider] = useState<ProviderData | null>(null);
@@ -39,17 +39,59 @@ const ProviderProfile = () => {
 
   useEffect(() => {
     loadProviderData();
-  }, [proveedorId]);
+  }, [proveedorId, consecutiveNumber]);
 
   const loadProviderData = async () => {
     try {
-      if (!proveedorId) return;
+      let actualProveedorId = proveedorId;
+
+      // If consecutiveNumber is provided (e.g., "000001p"), lookup the user_id first
+      if (consecutiveNumber) {
+        // Extract the numeric part from the consecutive number (remove 'p' suffix)
+        const numericPart = consecutiveNumber.replace(/p$/i, '');
+        const consecutiveNum = parseInt(numericPart, 10);
+
+        // Find the user_id from profiles table using consecutive_number
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('consecutive_number', consecutiveNum)
+          .eq('role', 'proveedor')
+          .single();
+
+        if (profileError) {
+          console.error('Error buscando perfil por número consecutivo:', profileError);
+          throw new Error('Proveedor no encontrado');
+        }
+
+        if (!profileData) {
+          throw new Error('Proveedor no encontrado');
+        }
+
+        // Now find the proveedor_id using the user_id
+        const { data: proveedorData, error: proveedorError } = await supabase
+          .from('proveedores')
+          .select('id')
+          .eq('user_id', profileData.user_id)
+          .single();
+
+        if (proveedorError) {
+          console.error('Error buscando proveedor:', proveedorError);
+          throw new Error('Proveedor no encontrado');
+        }
+
+        actualProveedorId = proveedorData.id;
+      }
+
+      if (!actualProveedorId) {
+        throw new Error('ID de proveedor no válido');
+      }
 
       // Cargar datos del proveedor
       const { data: providerData, error: providerError } = await supabase
         .from('proveedores')
         .select('*')
-        .eq('id', proveedorId)
+        .eq('id', actualProveedorId)
         .single();
 
       if (providerError) throw providerError;
@@ -59,7 +101,7 @@ const ProviderProfile = () => {
       const { data: productsData, error: productsError } = await supabase
         .from('productos')
         .select('*')
-        .eq('proveedor_id', proveedorId)
+        .eq('proveedor_id', actualProveedorId)
         .eq('is_available', true)
         .order('nombre');
 

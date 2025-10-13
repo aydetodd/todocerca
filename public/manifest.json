@@ -3,6 +3,7 @@
   "short_name": "TodoCerca",
   "description": "Encuentra productos y servicios locales cerca de ti",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a1612",
   "theme_color": "#2d9d78",

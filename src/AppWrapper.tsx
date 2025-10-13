@@ -36,6 +36,7 @@ export default function AppWrapper() {
             <Route path="/dashboard-old" element={<Dashboard />} />
             <Route path="/search" element={<ProductSearch />} />
             <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+            <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
