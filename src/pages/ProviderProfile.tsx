@@ -243,7 +243,21 @@ const ProviderProfile = () => {
   };
 
   const formatWhatsAppMessage = (numeroOrden: number) => {
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-MX', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const hora = now.toLocaleTimeString('es-MX', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
     let message = `🛒 *NUEVO PEDIDO #${numeroOrden}*\n\n`;
+    message += `📅 *Fecha:* ${fecha}\n`;
+    message += `🕐 *Hora:* ${hora}\n\n`;
     message += `👤 *Cliente:* ${customerName}\n`;
     message += `📱 *Teléfono:* ${customerPhone}\n`;
     message += `👥 *Personas en la mesa:* ${numPeople}\n\n`;
@@ -518,8 +532,6 @@ const ProviderProfile = () => {
               onRemoveItem={removeFromCart}
               onClearCart={clearCart}
               onCheckout={handleCheckout}
-              onAddPerson={handleAddPerson}
-              onRemovePerson={removePerson}
               total={getTotal()}
               itemCount={getItemCount()}
             />

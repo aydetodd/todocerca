@@ -12,8 +12,6 @@ interface ShoppingCartProps {
   onRemoveItem: (productId: string, personIndex: number) => void;
   onClearCart: () => void;
   onCheckout: () => void;
-  onAddPerson: () => void;
-  onRemovePerson: (personIndex: number) => void;
   total: number;
   itemCount: number;
 }
@@ -25,8 +23,6 @@ export const ShoppingCart = ({
   onRemoveItem,
   onClearCart,
   onCheckout,
-  onAddPerson,
-  onRemovePerson,
   total,
   itemCount,
 }: ShoppingCartProps) => {
@@ -71,17 +67,8 @@ export const ShoppingCart = ({
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-        <CardDescription className="flex items-center justify-between">
-          <span>Pedido para {numPeople} persona{numPeople > 1 ? 's' : ''}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAddPerson}
-            className="h-7"
-          >
-            <UserPlus className="h-3 w-3 mr-1" />
-            Agregar
-          </Button>
+        <CardDescription>
+          Pedido para {numPeople} persona{numPeople > 1 ? 's' : ''}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -89,21 +76,11 @@ export const ShoppingCart = ({
           <div className="space-y-6">
             {itemsByPerson.map(({ personIndex, items }) => (
               <div key={personIndex} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center mb-3">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     Persona {personIndex + 1}
                   </h3>
-                  {numPeople > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemovePerson(personIndex)}
-                      className="h-6 text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
                 </div>
                 
                 {items.length === 0 ? (
