@@ -411,7 +411,25 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                             {Object.entries(itemsByPerson)
                               .sort(([a], [b]) => Number(a) - Number(b))
                               .map(([personIndex, items]) => {
-                                const personTotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
+                                // Consolidar items del mismo producto
+                                const consolidatedItems = items.reduce((acc, item) => {
+                                  const existing = acc.find(i => i.productos.nombre === item.productos.nombre);
+                                  if (existing) {
+                                    existing.cantidad += item.cantidad;
+                                    existing.subtotal += Number(item.subtotal);
+                                    existing.ocurrencias = (existing.ocurrencias || 1) + 1;
+                                  } else {
+                                    acc.push({
+                                      ...item,
+                                      subtotal: Number(item.subtotal),
+                                      ocurrencias: 1
+                                    });
+                                  }
+                                  return acc;
+                                }, [] as Array<OrderItem & { ocurrencias?: number; subtotal: number }>);
+
+                                const personTotal = consolidatedItems.reduce((sum, item) => sum + item.subtotal, 0);
+                                
                                 return (
                                   <div key={personIndex} className="border-l-2 border-primary pl-3">
                                     {numPeople > 1 && (
@@ -423,14 +441,18 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                                       </div>
                                     )}
                                     <div className="space-y-1.5">
-                                      {items.map((item, idx) => (
-                                        <div key={item.id} className="flex justify-between text-sm p-2 rounded bg-background border">
+                                      {consolidatedItems.map((item, idx) => (
+                                        <div key={`${personIndex}-${item.productos.nombre}`} className="flex justify-between text-sm p-2 rounded bg-background border">
                                           <span className="flex items-center gap-2">
-                                            <span className="text-muted-foreground text-xs">#{idx + 1}</span>
                                             <span className="font-medium">{item.cantidad}</span>
                                             <span className="text-muted-foreground">×</span>
                                             <span>{item.productos.nombre}</span>
                                             <span className="text-xs text-muted-foreground">({item.productos.unit})</span>
+                                            {(item.ocurrencias ?? 0) > 1 && (
+                                              <Badge variant="outline" className="text-xs">
+                                                {item.ocurrencias} añadidos
+                                              </Badge>
+                                            )}
                                           </span>
                                           <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                                         </div>
