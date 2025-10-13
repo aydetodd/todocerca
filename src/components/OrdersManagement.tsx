@@ -35,6 +35,7 @@ interface OrderItem {
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
+  person_index?: number;
   productos: {
     nombre: string;
     unit: string;
@@ -129,6 +130,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
             cantidad,
             precio_unitario,
             subtotal,
+            person_index,
             productos (
               nombre,
               unit
@@ -391,18 +393,50 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <h4 className="font-semibold text-sm">Productos:</h4>
-                      {order.items_pedido.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm bg-muted/50 p-2 rounded">
-                          <span>
-                            {item.cantidad}x {item.productos.nombre} ({item.productos.unit})
-                          </span>
-                          <span className="font-medium">{formatCurrency(item.subtotal)}</span>
-                        </div>
-                      ))}
+                      {(() => {
+                        // Agrupar items por persona
+                        const itemsByPerson = order.items_pedido.reduce((acc, item) => {
+                          const personIdx = item.person_index ?? 0;
+                          if (!acc[personIdx]) acc[personIdx] = [];
+                          acc[personIdx].push(item);
+                          return acc;
+                        }, {} as Record<number, OrderItem[]>);
+
+                        const numPeople = Object.keys(itemsByPerson).length;
+
+                        return Object.entries(itemsByPerson)
+                          .sort(([a], [b]) => Number(a) - Number(b))
+                          .map(([personIndex, items]) => {
+                            const personTotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
+                            return (
+                              <div key={personIndex} className="space-y-2">
+                                {numPeople > 1 && (
+                                  <div className="font-semibold text-sm text-primary mt-2">
+                                    Persona {Number(personIndex) + 1}:
+                                  </div>
+                                )}
+                                {items.map((item) => (
+                                  <div key={item.id} className="flex justify-between text-sm bg-muted/50 p-2 rounded ml-2">
+                                    <span>
+                                      {item.cantidad}x {item.productos.nombre} ({item.productos.unit})
+                                    </span>
+                                    <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                                  </div>
+                                ))}
+                                {numPeople > 1 && (
+                                  <div className="flex justify-between text-sm ml-2 font-medium text-muted-foreground">
+                                    <span>Subtotal Persona {Number(personIndex) + 1}:</span>
+                                    <span>{formatCurrency(personTotal)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                      })()}
                       <div className="flex justify-between pt-2 border-t font-bold">
-                        <span>Total:</span>
+                        <span>Total del Pedido:</span>
                         <span className="text-primary">{formatCurrency(order.total)}</span>
                       </div>
                     </div>
