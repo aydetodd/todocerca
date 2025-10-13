@@ -155,23 +155,25 @@ export default function DashboardMain() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <MapPin className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Badge variant={isProvider ? "default" : "secondary"}>
-              {isProvider ? "Proveedor" : "Cliente"}
-            </Badge>
-            <Button variant="outline" onClick={() => navigate('/mapa')}>
-              <Map className="h-4 w-4 mr-2" />
-              Ver Mapa
-            </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant={isProvider ? "default" : "secondary"}>
+                {isProvider ? "Proveedor" : "Cliente"}
+              </Badge>
+              <Button variant="outline" size="sm" onClick={() => navigate('/mapa')}>
+                <Map className="h-4 w-4 mr-2" />
+                Ver Mapa
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
           </div>
         </div>
       </header>

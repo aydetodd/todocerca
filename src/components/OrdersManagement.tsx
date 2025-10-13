@@ -51,10 +51,10 @@ interface Order {
   notas: string | null;
   created_at: string;
   items_pedido: OrderItem[];
-  impreso: boolean;
-  pagado: boolean;
-  preparado: boolean;
-  entregado: boolean;
+  impreso?: boolean;
+  pagado?: boolean;
+  preparado?: boolean;
+  entregado?: boolean;
 }
 
 interface OrdersManagementProps {
@@ -321,8 +321,8 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex gap-3">
+                      <div className="flex gap-2 items-center flex-wrap">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
