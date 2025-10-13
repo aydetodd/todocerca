@@ -321,45 +321,67 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`p-2 ${order.impreso ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
-                            onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
-                            title={order.impreso ? 'Impreso ✓' : 'Marcar como impreso'}
-                          >
-                            <Printer className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`p-2 ${order.pagado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
-                            onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
-                            title={order.pagado ? 'Pagado ✓' : 'Marcar como pagado'}
-                          >
-                            <CreditCard className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`p-2 ${order.preparado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
-                            onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
-                            title={order.preparado ? 'Preparado ✓' : 'Marcar como preparado'}
-                          >
-                            <ChefHat className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`p-2 ${order.entregado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
-                            onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
-                            title={order.entregado ? 'Entregado ✓' : 'Marcar como entregado'}
-                          >
-                            <PackageCheck className="h-5 w-5" />
-                          </Button>
-                        </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+                            order.impreso 
+                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                          }`}
+                          onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
+                        >
+                          <Printer className={`h-5 w-5 ${order.impreso ? 'text-green-600' : 'text-yellow-600'}`} />
+                          <span className={`text-xs font-medium ${order.impreso ? 'text-green-700' : 'text-yellow-700'}`}>
+                            Impreso
+                          </span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+                            order.pagado 
+                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                          }`}
+                          onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
+                        >
+                          <CreditCard className={`h-5 w-5 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
+                          <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
+                            Pagado
+                          </span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+                            order.preparado 
+                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                          }`}
+                          onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
+                        >
+                          <ChefHat className={`h-5 w-5 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
+                          <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
+                            Preparado
+                          </span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+                            order.entregado 
+                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                          }`}
+                          onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
+                        >
+                          <PackageCheck className={`h-5 w-5 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
+                          <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
+                            Entregado
+                          </span>
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
