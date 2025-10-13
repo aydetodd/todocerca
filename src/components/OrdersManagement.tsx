@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useThermalPrinter } from '@/hooks/useThermalPrinter';
 import { ThermalPrinterControl } from '@/components/ThermalPrinterControl';
 import { OrderPrintButton } from '@/components/OrderPrintButton';
+import { formatCurrency } from '@/lib/utils';
 import { 
   ClipboardList, 
   User, 
@@ -314,12 +315,12 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                           <span>
                             {item.cantidad}x {item.productos.nombre} ({item.productos.unit})
                           </span>
-                          <span className="font-medium">${item.subtotal.toFixed(2)}</span>
+                          <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                         </div>
                       ))}
                       <div className="flex justify-between pt-2 border-t font-bold">
                         <span>Total:</span>
-                        <span className="text-primary">${order.total.toFixed(2)}</span>
+                        <span className="text-primary">{formatCurrency(order.total)}</span>
                       </div>
                     </div>
                   </CardContent>

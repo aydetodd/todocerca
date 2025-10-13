@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { CartItem } from '@/hooks/useShoppingCart';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatCurrency } from '@/lib/utils';
 
 interface ShoppingCartProps {
   cart: CartItem[];
@@ -94,7 +95,7 @@ export const ShoppingCart = ({
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-sm truncate">{item.nombre}</h4>
                           <p className="text-sm text-muted-foreground">
-                            ${item.precio} / {item.unit}
+                            {formatCurrency(item.precio)} / {item.unit}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <Button
@@ -120,7 +121,7 @@ export const ShoppingCart = ({
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-sm">
-                            ${(item.precio * item.cantidad).toFixed(2)}
+                            {formatCurrency(item.precio * item.cantidad)}
                           </p>
                           <Button
                             size="icon"
@@ -143,7 +144,7 @@ export const ShoppingCart = ({
       <CardFooter className="flex-col gap-4">
         <div className="w-full flex items-center justify-between text-lg font-bold">
           <span>Total:</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
         <Button className="w-full" size="lg" onClick={onCheckout}>
           <Send className="h-4 w-4 mr-2" />

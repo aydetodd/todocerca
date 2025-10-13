@@ -10,6 +10,7 @@ import { Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
+import { formatCurrency } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -300,14 +301,14 @@ const ProviderProfile = () => {
         
         personItems.forEach((item) => {
           message += `  • ${item.nombre}\n`;
-          message += `    ${item.cantidad} ${item.unit} × $${item.precio} = $${(item.precio * item.cantidad).toFixed(2)}\n`;
+          message += `    ${item.cantidad} ${item.unit} × ${formatCurrency(item.precio)} = ${formatCurrency(item.precio * item.cantidad)}\n`;
         });
         
         message += `\n`;
       }
     }
 
-    message += `💰 *Total: $${getTotal().toFixed(2)}*\n\n`;
+    message += `💰 *Total: ${formatCurrency(getTotal())}*\n\n`;
     message += `¡Gracias por tu pedido! 🙏`;
 
     return message;
@@ -436,7 +437,7 @@ const ProviderProfile = () => {
                             <div>
                               <h3 className="text-xl font-semibold">{product.nombre}</h3>
                               <p className="text-2xl font-bold text-primary mt-1">
-                                ${product.precio} / {product.unit}
+                                {formatCurrency(product.precio)} / {product.unit}
                               </p>
                             </div>
 
