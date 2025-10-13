@@ -13,9 +13,21 @@ interface QRCodeGeneratorProps {
 const QRCodeGenerator = ({ proveedorId, businessName, consecutiveNumber }: QRCodeGeneratorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   
-  // Use todocerca.mx domain with consecutive number format (e.g., 000001p)
+  // Create a URL-friendly slug from the business name
+  const createSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize('NFD') // Normalize to decompose accented characters
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .trim()
+      .replace(/\s+/g, '-'); // Replace spaces with hyphens
+  };
+  
+  // Use todocerca.mx domain with business name + consecutive number format
+  // Example: martin-alberto-villa-1p or frutas-frescas-23p
   const profileUrl = consecutiveNumber 
-    ? `https://todocerca.mx/${consecutiveNumber}p`
+    ? `https://todocerca.mx/${createSlug(businessName)}-${consecutiveNumber}p`
     : `${window.location.origin}/proveedor/${proveedorId}`;
 
   const handleDownload = () => {

@@ -72,11 +72,15 @@ const ProviderProfile = () => {
     try {
       let actualProveedorId = proveedorId;
 
-      // If consecutiveNumber is provided (e.g., "000001p"), lookup the user_id first
+      // If consecutiveNumber is provided (e.g., "000001p" or "martin-villa-1p"), lookup the user_id first
       if (consecutiveNumber) {
-        // Extract the numeric part from the consecutive number (remove 'p' suffix)
-        const numericPart = consecutiveNumber.replace(/p$/i, '');
-        const consecutiveNum = parseInt(numericPart, 10);
+        // Extract the numeric part from the consecutive number (remove 'p' suffix and any text before it)
+        // Handles both formats: "000001p" and "martin-alberto-villa-1p"
+        const match = consecutiveNumber.match(/(\d+)p$/i);
+        if (!match) {
+          throw new Error('Formato de URL inválido');
+        }
+        const consecutiveNum = parseInt(match[1], 10);
 
         // Find the user_id from profiles table using consecutive_number
         const { data: profileData, error: profileError } = await supabase
