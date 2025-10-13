@@ -163,7 +163,7 @@ const Profile = () => {
             {profile.role === 'proveedor' && (
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate('/dashboard-old')}
+                onClick={() => navigate('/dashboard')}
               >
                 <CardHeader>
                   <div className="flex items-center space-x-3">

@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
+import MapView from "./pages/MapView";
 import ProductSearch from "./pages/ProductSearch";
 import Profile from "./pages/Profile";
 import ProviderProfile from "./pages/ProviderProfile";
@@ -33,7 +34,7 @@ export default function AppWrapper() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<DashboardMain />} />
-            <Route path="/dashboard-old" element={<Dashboard />} />
+            <Route path="/mapa" element={<MapView />} />
             <Route path="/search" element={<ProductSearch />} />
             <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
             <Route path="/:consecutiveNumber" element={<ProviderProfile />} />

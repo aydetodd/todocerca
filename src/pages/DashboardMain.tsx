@@ -1,102 +1,122 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, LogOut } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, LogOut, Search, Users, Map } from 'lucide-react';
 import { StatusControl } from '@/components/StatusControl';
-import { RealtimeMap } from '@/components/RealtimeMap';
-import { MessagingPanel } from '@/components/MessagingPanel';
 import ProviderRegistration from '@/components/ProviderRegistration';
+import ProductManagement from '@/components/ProductManagement';
+import { OrdersManagement } from '@/components/OrdersManagement';
+import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardMain() {
-  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
-  const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
-  const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+  const [profile, setProfile] = useState<any>(null);
+  const [userSpecificData, setUserSpecificData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [showProviderRegistration, setShowProviderRegistration] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading, signOut } = useAuth();
+
+  // Format user ID with 6 digits and role suffix
+  const formatUserId = (consecutiveNumber: number, role: string) => {
+    const paddedNumber = String(consecutiveNumber).padStart(6, '0');
+    const suffix = role === 'proveedor' ? 'p' : 'c';
+    return `${paddedNumber}${suffix}`;
+  };
 
   useEffect(() => {
-    checkUserStatus();
-  }, [navigate]);
-
-  const checkUserStatus = async () => {
-    // Check auth
-    const { data: { user } } = await supabase.auth.getUser();
+    if (authLoading) return;
     if (!user) {
-      navigate('/auth');
+      navigate("/auth", { replace: true });
       return;
     }
+    getProfile();
+  }, [user, authLoading, navigate]);
 
-    // Check if user has a profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*, telefono, codigo_postal')
-      .eq('user_id', user.id)
-      .maybeSingle();
+  async function getProfile() {
+    try {
+      if (!user) return;
 
-    if (!profile) {
-      toast({
-        title: "Error",
-        description: "No se encontró tu perfil",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-
-    setUserProfile(profile);
-
-    // If user is a provider, check if they have completed their provider profile
-    if (profile.role === 'proveedor') {
-      const { data: proveedor } = await supabase
-        .from('proveedores')
-        .select('id')
+      // Obtener perfil
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!proveedor) {
-        // Provider hasn't completed registration
-        setShowProviderRegistration(true);
-        toast({
-          title: "Completa tu perfil",
-          description: "Necesitas completar tu registro de proveedor",
-        });
+      if (profileError) {
+        console.error('Error obteniendo perfil:', profileError);
+        throw profileError;
       }
-    }
-  };
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente",
-      });
-      navigate('/auth');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      if (!profileData) {
+        console.warn('No se encontró perfil para el usuario');
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Obtener datos específicos según el rol
+      if (profileData.role === 'cliente') {
+        const { data: clienteData, error: clienteError } = await supabase
+          .from('clientes')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (clienteError) {
+          console.error('Error obteniendo datos de cliente:', clienteError);
+        } else {
+          setUserSpecificData(clienteData);
+        }
+      } else if (profileData.role === 'proveedor') {
+        const { data: proveedorData, error: proveedorError } = await supabase
+          .from('proveedores')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (proveedorError) {
+          console.error('Error obteniendo datos de proveedor:', proveedorError);
+        } else {
+          setUserSpecificData(proveedorData);
+          
+          // Check if provider registration is incomplete
+          if (!proveedorData) {
+            setShowProviderRegistration(true);
+            toast({
+              title: "Completa tu perfil",
+              description: "Necesitas completar tu registro de proveedor",
+            });
+          }
+        }
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo cerrar la sesión",
+        description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  const handleOpenChat = (userId: string, apodo: string) => {
-    setSelectedReceiverId(userId);
-    setSelectedReceiverName(apodo);
-    setIsMessagingOpen(true);
-  };
+  async function handleSignOut() {
+    await signOut();
+    navigate("/");
+  }
 
   const handleProviderRegistrationComplete = () => {
     setShowProviderRegistration(false);
-    checkUserStatus(); // Refresh status
+    getProfile(); // Refresh status
     toast({
       title: "¡Registro completado!",
       description: "Tu perfil de proveedor está listo",
@@ -104,39 +124,51 @@ export default function DashboardMain() {
   };
 
   // Show ProviderRegistration if provider hasn't completed profile
-  if (showProviderRegistration && userProfile) {
+  if (showProviderRegistration && profile) {
     return (
       <ProviderRegistration
         onComplete={handleProviderRegistrationComplete}
         userData={{
-          email: userProfile.user_id ? `${userProfile.telefono?.replace(/\+/g, '')}@todocerca.app` : '',
-          nombre: userProfile.nombre || '',
-          telefono: userProfile.telefono || '',
-          codigoPostal: userProfile.codigo_postal || '',
+          email: profile.user_id ? `${profile.telefono?.replace(/\+/g, '')}@todocerca.app` : '',
+          nombre: profile.nombre || '',
+          telefono: profile.telefono || '',
+          codigoPostal: profile.codigo_postal || '',
         }}
       />
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isProvider = profile?.role === 'proveedor';
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-amber-500 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Todo Cerca</h1>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/search')}
-              className="text-amber-500 bg-white hover:bg-amber-50"
-            >
-              Buscar Productos
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <MapPin className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Badge variant={isProvider ? "default" : "secondary"}>
+              {isProvider ? "Proveedor" : "Cliente"}
+            </Badge>
+            <Button variant="outline" onClick={() => navigate('/mapa')}>
+              <Map className="h-4 w-4 mr-2" />
+              Ver Mapa
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="text-amber-500 bg-white hover:bg-amber-50"
-            >
+            <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar Sesión
             </Button>
@@ -144,36 +176,120 @@ export default function DashboardMain() {
         </div>
       </header>
 
-      {/* Map with overlays */}
-      <div className="flex-1 relative">
-        <RealtimeMap onOpenChat={handleOpenChat} />
-        
-        {/* Status Control Overlay - Top Right with better visibility */}
-        <div className="absolute top-20 right-4 z-[1000] shadow-2xl">
-          <StatusControl />
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              ¡Bienvenido, {profile?.nombre}!
+            </h2>
+            <p className="text-muted-foreground">
+              {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
+            </p>
+          </div>
+          <Button size="lg" onClick={() => navigate("/search")}>
+            <Search className="h-4 w-4 mr-2" />
+            Buscar Productos
+          </Button>
         </div>
-      </div>
 
-      {/* Floating Message Button */}
-      <Button
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-2xl bg-amber-500 hover:bg-amber-600 z-40"
-        size="icon"
-        onClick={() => {
-          setSelectedReceiverId(undefined);
-          setSelectedReceiverName(undefined);
-          setIsMessagingOpen(!isMessagingOpen);
-        }}
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Buscar - Available for all users */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-5 w-5" />
+                <span>Buscar</span>
+              </CardTitle>
+              <CardDescription>Encuentra productos y servicios cerca de ti</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button className="w-full" onClick={() => navigate("/search")}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar Productos
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => navigate("/search?category=servicios")}>
+                  Buscar Servicios
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Messaging Panel */}
-      <MessagingPanel 
-        isOpen={isMessagingOpen}
-        onClose={() => setIsMessagingOpen(false)}
-        receiverId={selectedReceiverId}
-        receiverName={selectedReceiverName}
-      />
+          {/* Mi Perfil */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5" />
+                <span>Mi Perfil</span>
+              </CardTitle>
+              <CardDescription>Información de tu cuenta y estado</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-4">
+                <div className="flex-1 space-y-2">
+                  {profile?.consecutive_number && (
+                    <div>
+                      <span className="text-sm font-medium">ID Usuario:</span>
+                      <p className="text-sm font-mono font-bold text-primary">
+                        {formatUserId(profile.consecutive_number, profile.role)}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-sm font-medium">Email:</span>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Rol:</span>
+                    <p className="text-sm text-muted-foreground">
+                      {isProvider ? "Proveedor" : "Cliente"}
+                    </p>
+                  </div>
+                  {userSpecificData?.telefono && (
+                    <div>
+                      <span className="text-sm font-medium">Teléfono:</span>
+                      <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
+                    </div>
+                  )}
+                  {userSpecificData?.codigo_postal && (
+                    <div>
+                      <span className="text-sm font-medium">Código Postal:</span>
+                      <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                    </div>
+                  )}
+                  
+                  {/* QR Code Generator for Providers */}
+                  {isProvider && userSpecificData?.id && (
+                    <div className="pt-4">
+                      <QRCodeGenerator 
+                        proveedorId={userSpecificData.id} 
+                        businessName={userSpecificData.nombre || profile.nombre}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Status Control - Traffic Light */}
+                <div className="flex-shrink-0">
+                  <StatusControl />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Product Management and Orders for Providers */}
+        {isProvider && userSpecificData?.id && (
+          <div className="mt-8 space-y-8">
+            <ProductManagement proveedorId={userSpecificData.id} />
+            <OrdersManagement 
+              proveedorId={userSpecificData.id} 
+              proveedorNombre={userSpecificData.nombre || profile.nombre}
+            />
+          </div>
+        )}
+      </main>
     </div>
   );
 }
