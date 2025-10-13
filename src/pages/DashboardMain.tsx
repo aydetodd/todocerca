@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, Map } from 'lucide-react';
-import { StatusControl } from '@/components/StatusControl';
+import { MapPin, LogOut, Search, Users, Map, Package, ClipboardList } from 'lucide-react';
 import ProviderRegistration from '@/components/ProviderRegistration';
-import ProductManagement from '@/components/ProductManagement';
-import { OrdersManagement } from '@/components/OrdersManagement';
-import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -195,7 +191,7 @@ export default function DashboardMain() {
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Buscar - Available for all users */}
           <Card>
             <CardHeader>
@@ -219,78 +215,60 @@ export default function DashboardMain() {
           </Card>
 
           {/* Mi Perfil */}
-          <Card>
+          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/mi-perfil')}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Users className="h-5 w-5" />
                 <span>Mi Perfil</span>
               </CardTitle>
-              <CardDescription>Información de tu cuenta y estado</CardDescription>
+              <CardDescription>Ver información de tu cuenta</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start gap-4">
-                <div className="flex-1 space-y-2">
-                  {profile?.consecutive_number && (
-                    <div>
-                      <span className="text-sm font-medium">ID Usuario:</span>
-                      <p className="text-sm font-mono font-bold text-primary">
-                        {formatUserId(profile.consecutive_number, profile.role)}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-sm font-medium">Email:</span>
-                    <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Rol:</span>
-                    <p className="text-sm text-muted-foreground">
-                      {isProvider ? "Proveedor" : "Cliente"}
-                    </p>
-                  </div>
-                  {userSpecificData?.telefono && (
-                    <div>
-                      <span className="text-sm font-medium">Teléfono:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
-                    </div>
-                  )}
-                  {userSpecificData?.codigo_postal && (
-                    <div>
-                      <span className="text-sm font-medium">Código Postal:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
-                    </div>
-                  )}
-                  
-                  {/* QR Code Generator for Providers */}
-                  {isProvider && userSpecificData?.id && (
-                    <div className="pt-4">
-                      <QRCodeGenerator 
-                        proveedorId={userSpecificData.id} 
-                        businessName={userSpecificData.nombre || profile.nombre}
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Status Control - Traffic Light */}
-                <div className="flex-shrink-0">
-                  <StatusControl />
-                </div>
-              </div>
+              <Button className="w-full">
+                <Users className="h-4 w-4 mr-2" />
+                Ver Perfil
+              </Button>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Product Management and Orders for Providers */}
-        {isProvider && userSpecificData?.id && (
-          <div className="mt-8 space-y-8">
-            <ProductManagement proveedorId={userSpecificData.id} />
-            <OrdersManagement 
-              proveedorId={userSpecificData.id} 
-              proveedorNombre={userSpecificData.nombre || profile.nombre}
-            />
-          </div>
-        )}
+          {/* Mis Productos - Solo para proveedores */}
+          {isProvider && (
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/mis-productos')}>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Package className="h-5 w-5" />
+                  <span>Mis Productos</span>
+                </CardTitle>
+                <CardDescription>Gestiona tu catálogo de productos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full">
+                  <Package className="h-4 w-4 mr-2" />
+                  Gestionar Productos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Gestión de Pedidos - Solo para proveedores */}
+          {isProvider && (
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/gestion-pedidos')}>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ClipboardList className="h-5 w-5" />
+                  <span>Mis Pedidos</span>
+                </CardTitle>
+                <CardDescription>Administra los pedidos de clientes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Ver Pedidos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </main>
     </div>
   );

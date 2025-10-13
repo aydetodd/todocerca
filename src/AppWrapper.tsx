@@ -12,6 +12,9 @@ import MapView from "./pages/MapView";
 import ProductSearch from "./pages/ProductSearch";
 import Profile from "./pages/Profile";
 import ProviderProfile from "./pages/ProviderProfile";
+import MiPerfil from "./pages/MiPerfil";
+import MisProductos from "./pages/MisProductos";
+import GestionPedidos from "./pages/GestionPedidos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -34,6 +37,9 @@ export default function AppWrapper() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<DashboardMain />} />
+            <Route path="/mi-perfil" element={<MiPerfil />} />
+            <Route path="/mis-productos" element={<MisProductos />} />
+            <Route path="/gestion-pedidos" element={<GestionPedidos />} />
             <Route path="/mapa" element={<MapView />} />
             <Route path="/search" element={<ProductSearch />} />
             <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
