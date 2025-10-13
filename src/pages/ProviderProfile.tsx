@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Phone, Mail, Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
+import { Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
-import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 import {
   Dialog,
   DialogContent,
@@ -259,8 +258,7 @@ const ProviderProfile = () => {
     message += `📅 *Fecha:* ${fecha}\n`;
     message += `🕐 *Hora:* ${hora}\n\n`;
     message += `👤 *Cliente:* ${customerName}\n`;
-    message += `📱 *Teléfono:* ${customerPhone}\n`;
-    message += `👥 *Personas en la mesa:* ${numPeople}\n\n`;
+    message += `📱 *Teléfono:* ${customerPhone}\n\n`;
 
     // Agrupar items por persona
     for (let personIndex = 0; personIndex < numPeople; personIndex++) {
@@ -381,73 +379,6 @@ const ProviderProfile = () => {
               </Card>
             )}
 
-            {/* Provider Info Card */}
-            <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-3xl">{provider.nombre}</CardTitle>
-                  {provider.description && (
-                    <CardDescription className="text-base mt-2">
-                      {provider.description}
-                    </CardDescription>
-                  )}
-                </div>
-                <Badge variant="default" className="text-lg px-4 py-2">
-                  Proveedor
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {provider.business_address && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium">Dirección</p>
-                    <p className="text-muted-foreground">{provider.business_address}</p>
-                  </div>
-                </div>
-              )}
-              {provider.business_phone && (
-                <div className="flex items-start gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium">Teléfono del negocio</p>
-                    <p className="text-muted-foreground">{provider.business_phone}</p>
-                  </div>
-                </div>
-              )}
-              {provider.email && (
-                <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium">Email</p>
-                    <p className="text-muted-foreground">{provider.email}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-2 pt-4">
-                {provider.business_phone && (
-                  <>
-                    <Button 
-                      onClick={() => handleCall(provider.business_phone)}
-                      className="flex-1"
-                    >
-                      <Phone className="h-4 w-4 mr-2" />
-                      Llamar
-                    </Button>
-                    <Button 
-                      onClick={() => handleWhatsApp(provider.business_phone)}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      WhatsApp
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Products Section */}
           <Card>
@@ -470,48 +401,46 @@ const ProviderProfile = () => {
                     {products.map((product) => (
                       <Card key={product.id}>
                         <CardContent className="p-6">
-                          <div className="grid md:grid-cols-[300px,1fr] gap-4">
-                            {/* Galería de fotos */}
+                          <div className="space-y-4">
                             <div>
-                              <ProductPhotoGallery productoId={product.id} />
+                              <h3 className="text-xl font-semibold">{product.nombre}</h3>
+                              <p className="text-2xl font-bold text-primary mt-1">
+                                ${product.precio} / {product.unit}
+                              </p>
                             </div>
 
-                            {/* Información del producto */}
-                            <div className="space-y-4">
-                              <div>
-                                <h3 className="text-xl font-semibold">{product.nombre}</h3>
-                                <p className="text-2xl font-bold text-primary mt-1">
-                                  ${product.precio} / {product.unit}
-                                </p>
-                              </div>
-
-                              {product.descripcion && (
-                                <p className="text-muted-foreground">
+                            {product.descripcion && (
+                              <details className="group">
+                                <summary className="cursor-pointer text-sm text-primary hover:underline list-none flex items-center gap-2">
+                                  Ver más
+                                  <span className="transition-transform group-open:rotate-180">▼</span>
+                                </summary>
+                                <p className="text-muted-foreground mt-2 text-sm">
                                   {product.descripcion}
                                 </p>
-                              )}
+                              </details>
+                            )}
 
-                               <div className="flex items-center gap-3">
-                                <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
-                                  Stock: {product.stock}
-                                </Badge>
-                                {product.stock > 0 && (
-                                  <Button
-                                    onClick={() => addToCart({
-                                      id: product.id,
-                                      nombre: product.nombre,
-                                      precio: product.precio,
-                                      unit: product.unit,
-                                      personIndex: selectedPersonIndex,
-                                    })}
-                                    size="lg"
-                                    className="flex-1"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Agregar para Persona {selectedPersonIndex + 1}
-                                  </Button>
-                                )}
-                              </div>
+                            <div className="flex items-center gap-3">
+                              <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
+                                Stock: {product.stock}
+                              </Badge>
+                              {product.stock > 0 && (
+                                <Button
+                                  onClick={() => addToCart({
+                                    id: product.id,
+                                    nombre: product.nombre,
+                                    precio: product.precio,
+                                    unit: product.unit,
+                                    personIndex: selectedPersonIndex,
+                                  })}
+                                  size="lg"
+                                  className="flex-1"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Agregar para Persona {selectedPersonIndex + 1}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardContent>
