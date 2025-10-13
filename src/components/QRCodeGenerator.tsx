@@ -23,9 +23,9 @@ const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) =>
       .replace(/\s+/g, '-'); // Replace spaces with hyphens
   };
   
-  // Use todocerca.mx domain with business name only
-  // Example: todocerca.mx/martin-alberto-villa
-  const profileUrl = `https://todocerca.mx/${createSlug(businessName)}`;
+  // Use current domain with business name slug
+  // This works in both development and production
+  const profileUrl = `${window.location.origin}/${createSlug(businessName)}`;
 
   const handleDownload = () => {
     const svg = document.getElementById('qr-code-svg');
