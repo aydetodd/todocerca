@@ -68,6 +68,11 @@ const ProviderProfile = () => {
     removePerson,
   } = useShoppingCart();
 
+  const handleAddPerson = () => {
+    addPerson();
+    setSelectedPersonIndex(numPeople); // Cambiar a la nueva persona
+  };
+
   useEffect(() => {
     loadProviderData();
   }, [proveedorId, consecutiveNumber]);
@@ -315,24 +320,47 @@ const ProviderProfile = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Selector de persona */}
             {products.length > 0 && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Agregando productos para:</span>
+              <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-full">
+                          <Users className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">Selecciona la persona</h3>
+                          <p className="text-sm text-muted-foreground">Los productos se agregarán a la persona seleccionada</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {Array.from({ length: numPeople }, (_, i) => (
                         <Button
                           key={i}
                           variant={selectedPersonIndex === i ? 'default' : 'outline'}
-                          size="sm"
+                          size="lg"
                           onClick={() => setSelectedPersonIndex(i)}
+                          className={selectedPersonIndex === i ? 'shadow-md scale-105' : ''}
                         >
+                          <Users className="h-4 w-4 mr-2" />
                           Persona {i + 1}
                         </Button>
                       ))}
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handleAddPerson}
+                        className="border-dashed border-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar persona
+                      </Button>
+                    </div>
+                    <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                      <p className="text-sm font-medium text-center">
+                        📝 Actualmente agregando para: <span className="text-primary font-bold">Persona {selectedPersonIndex + 1}</span>
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -490,7 +518,7 @@ const ProviderProfile = () => {
               onRemoveItem={removeFromCart}
               onClearCart={clearCart}
               onCheckout={handleCheckout}
-              onAddPerson={addPerson}
+              onAddPerson={handleAddPerson}
               onRemovePerson={removePerson}
               total={getTotal()}
               itemCount={getItemCount()}
