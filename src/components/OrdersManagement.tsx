@@ -16,7 +16,11 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle,
-  Package
+  Package,
+  Printer,
+  CreditCard,
+  ChefHat,
+  PackageCheck
 } from 'lucide-react';
 import {
   Select,
@@ -47,6 +51,10 @@ interface Order {
   notas: string | null;
   created_at: string;
   items_pedido: OrderItem[];
+  impreso: boolean;
+  pagado: boolean;
+  preparado: boolean;
+  entregado: boolean;
 }
 
 interface OrdersManagementProps {
@@ -160,6 +168,36 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       });
     } catch (error: any) {
       console.error('Error actualizando estado:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado del pedido',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const updateOrderStep = async (orderId: string, step: 'impreso' | 'pagado' | 'preparado' | 'entregado', value: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ [step]: value })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      const stepLabels = {
+        impreso: 'impreso',
+        pagado: 'pagado',
+        preparado: 'preparado',
+        entregado: 'entregado',
+      };
+
+      toast({
+        title: 'Estado actualizado',
+        description: `El pedido ha sido marcado como ${stepLabels[step]}`,
+      });
+    } catch (error: any) {
+      console.error('Error actualizando paso:', error);
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el estado del pedido',
@@ -283,27 +321,45 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <OrderPrintButton
-                          onPrint={(copies) => handlePrintOrder(order, copies)}
-                          disabled={!isConnected}
-                          isPrinting={isPrinting}
-                        />
-                        <Select
-                          value={order.estado}
-                          onValueChange={(value) => updateOrderStatus(order.id, value)}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendiente">Pendiente</SelectItem>
-                            <SelectItem value="en_preparacion">En Preparación</SelectItem>
-                            <SelectItem value="listo">Listo</SelectItem>
-                            <SelectItem value="entregado">Entregado</SelectItem>
-                            <SelectItem value="cancelado">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex gap-2 items-center">
+                        <div className="flex gap-3">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`p-2 ${order.impreso ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
+                            onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
+                            title={order.impreso ? 'Impreso ✓' : 'Marcar como impreso'}
+                          >
+                            <Printer className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`p-2 ${order.pagado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
+                            onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
+                            title={order.pagado ? 'Pagado ✓' : 'Marcar como pagado'}
+                          >
+                            <CreditCard className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`p-2 ${order.preparado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
+                            onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
+                            title={order.preparado ? 'Preparado ✓' : 'Marcar como preparado'}
+                          >
+                            <ChefHat className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`p-2 ${order.entregado ? 'text-green-500 hover:text-green-600' : 'text-yellow-500 hover:text-yellow-600'}`}
+                            onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
+                            title={order.entregado ? 'Entregado ✓' : 'Marcar como entregado'}
+                          >
+                            <PackageCheck className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>

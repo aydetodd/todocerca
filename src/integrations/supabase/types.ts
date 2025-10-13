@@ -385,10 +385,14 @@ export type Database = {
           cliente_nombre: string
           cliente_telefono: string
           created_at: string
+          entregado: boolean | null
           estado: string
           id: string
+          impreso: boolean | null
           notas: string | null
           numero_orden: number
+          pagado: boolean | null
+          preparado: boolean | null
           proveedor_id: string
           total: number
           updated_at: string
@@ -397,10 +401,14 @@ export type Database = {
           cliente_nombre: string
           cliente_telefono: string
           created_at?: string
+          entregado?: boolean | null
           estado?: string
           id?: string
+          impreso?: boolean | null
           notas?: string | null
           numero_orden?: number
+          pagado?: boolean | null
+          preparado?: boolean | null
           proveedor_id: string
           total?: number
           updated_at?: string
@@ -409,10 +417,14 @@ export type Database = {
           cliente_nombre?: string
           cliente_telefono?: string
           created_at?: string
+          entregado?: boolean | null
           estado?: string
           id?: string
+          impreso?: boolean | null
           notas?: string | null
           numero_orden?: number
+          pagado?: boolean | null
+          preparado?: boolean | null
           proveedor_id?: string
           total?: number
           updated_at?: string
