@@ -228,6 +228,7 @@ const ProviderProfile = () => {
         cantidad: item.cantidad,
         precio_unitario: item.precio,
         subtotal: item.precio * item.cantidad,
+        person_index: item.personIndex,
       }));
 
       const { error: itemsError } = await supabase

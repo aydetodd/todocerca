@@ -174,6 +174,7 @@ export type Database = {
           created_at: string
           id: string
           pedido_id: string
+          person_index: number
           precio_unitario: number
           producto_id: string
           subtotal: number
@@ -183,6 +184,7 @@ export type Database = {
           created_at?: string
           id?: string
           pedido_id: string
+          person_index?: number
           precio_unitario: number
           producto_id: string
           subtotal: number
@@ -192,6 +194,7 @@ export type Database = {
           created_at?: string
           id?: string
           pedido_id?: string
+          person_index?: number
           precio_unitario?: number
           producto_id?: string
           subtotal?: number
