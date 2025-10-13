@@ -187,6 +187,15 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       if (error) throw error;
 
+      // Actualizar el estado local inmediatamente
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId 
+            ? { ...order, [step]: value }
+            : order
+        )
+      );
+
       const stepLabels = {
         impreso: 'impreso',
         pagado: 'pagado',
