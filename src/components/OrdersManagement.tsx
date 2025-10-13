@@ -216,9 +216,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     );
   }
 
-  const pendingOrders = orders.filter(o => o.estado === 'pendiente').length;
-  const inProgressOrders = orders.filter(o => o.estado === 'en_preparacion').length;
-  const readyOrders = orders.filter(o => o.estado === 'listo').length;
+  const impresosCount = orders.filter(o => o.impreso).length;
+  const pagadosCount = orders.filter(o => o.pagado).length;
+  const preparadosCount = orders.filter(o => o.preparado).length;
+  const entregadosCount = orders.filter(o => o.entregado).length;
 
   const handlePrintOrder = async (order: Order, copies: number) => {
     const now = new Date();
@@ -266,25 +267,28 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       
       <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
               Gestión de Pedidos
             </CardTitle>
-            <CardDescription className="mt-2">
+            <CardDescription>
               {orders.length} {orders.length === 1 ? 'pedido total' : 'pedidos totales'}
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Badge variant="outline" className="bg-yellow-50">
-              {pendingOrders} Pendiente{pendingOrders !== 1 && 's'}
-            </Badge>
-            <Badge variant="outline" className="bg-blue-50">
-              {inProgressOrders} En preparación
+              {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>
             <Badge variant="outline" className="bg-green-50">
-              {readyOrders} Listo{readyOrders !== 1 && 's'}
+              {pagadosCount} Pagado{pagadosCount !== 1 && 's'}
+            </Badge>
+            <Badge variant="outline" className="bg-blue-50">
+              {preparadosCount} Preparado{preparadosCount !== 1 && 's'}
+            </Badge>
+            <Badge variant="outline" className="bg-purple-50">
+              {entregadosCount} Entregado{entregadosCount !== 1 && 's'}
             </Badge>
           </div>
         </div>
