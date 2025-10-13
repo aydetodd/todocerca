@@ -4,8 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Phone, Mail, Package, ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MapPin, Phone, Mail, Package, ArrowLeft, ShoppingCart, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
+import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Product {
   id: string;
@@ -36,6 +49,20 @@ const ProviderProfile = () => {
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getTotal,
+    getItemCount,
+  } = useShoppingCart();
 
   useEffect(() => {
     loadProviderData();
@@ -129,6 +156,111 @@ const ProviderProfile = () => {
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
   };
 
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      toast({
+        title: 'Carrito vacío',
+        description: 'Agrega productos antes de enviar el pedido',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setShowCheckoutDialog(true);
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast({
+        title: 'Datos incompletos',
+        description: 'Por favor ingresa tu nombre y teléfono',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!provider) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Crear el pedido en la base de datos
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .insert({
+          proveedor_id: provider.id,
+          cliente_nombre: customerName.trim(),
+          cliente_telefono: customerPhone.trim(),
+          total: getTotal(),
+          estado: 'pendiente',
+        })
+        .select()
+        .single();
+
+      if (pedidoError) throw pedidoError;
+
+      // Crear los items del pedido
+      const itemsToInsert = cart.map((item) => ({
+        pedido_id: pedido.id,
+        producto_id: item.id,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio,
+        subtotal: item.precio * item.cantidad,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('items_pedido')
+        .insert(itemsToInsert);
+
+      if (itemsError) throw itemsError;
+
+      // Formatear mensaje para WhatsApp
+      const message = formatWhatsAppMessage(pedido.numero_orden);
+
+      // Enviar por WhatsApp
+      const cleanPhone = provider.business_phone.replace(/\D/g, '');
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+
+      // Limpiar carrito y cerrar diálogo
+      clearCart();
+      setShowCheckoutDialog(false);
+      setCustomerName('');
+      setCustomerPhone('');
+
+      toast({
+        title: '¡Pedido enviado!',
+        description: `Tu pedido #${pedido.numero_orden} fue creado. Serás redirigido a WhatsApp.`,
+      });
+    } catch (error: any) {
+      console.error('Error creando pedido:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear el pedido. Intenta de nuevo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatWhatsAppMessage = (numeroOrden: number) => {
+    let message = `🛒 *NUEVO PEDIDO #${numeroOrden}*\n\n`;
+    message += `👤 *Cliente:* ${customerName}\n`;
+    message += `📱 *Teléfono:* ${customerPhone}\n\n`;
+    message += `📦 *Productos:*\n`;
+
+    cart.forEach((item, index) => {
+      message += `${index + 1}. ${item.nombre}\n`;
+      message += `   • Cantidad: ${item.cantidad} ${item.unit}\n`;
+      message += `   • Precio unitario: $${item.precio}\n`;
+      message += `   • Subtotal: $${(item.precio * item.cantidad).toFixed(2)}\n\n`;
+    });
+
+    message += `💰 *Total: $${getTotal().toFixed(2)}*\n\n`;
+    message += `¡Gracias por tu pedido! 🙏`;
+
+    return message;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -173,9 +305,12 @@ const ProviderProfile = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Provider Info Card */}
-          <Card>
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-3 gap-6">
+          {/* Columna principal - Productos */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Provider Info Card */}
+            <Card>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -244,48 +379,141 @@ const ProviderProfile = () => {
 
           {/* Products Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-6 w-6" />
-                Productos Disponibles
-              </CardTitle>
-              <CardDescription>
-                {products.length} {products.length === 1 ? 'producto disponible' : 'productos disponibles'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {products.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No hay productos disponibles en este momento
-                </p>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {products.map((product) => (
-                    <Card key={product.id}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{product.nombre}</CardTitle>
-                        <CardDescription>
-                          ${product.precio} / {product.unit}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {product.descripcion && (
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {product.descripcion}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
-                            Stock: {product.stock}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-6 w-6" />
+                  Productos Disponibles
+                </CardTitle>
+                <CardDescription>
+                  {products.length} {products.length === 1 ? 'producto disponible' : 'productos disponibles'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {products.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay productos disponibles en este momento
+                  </p>
+                ) : (
+                  <div className="grid gap-6">
+                    {products.map((product) => (
+                      <Card key={product.id}>
+                        <CardContent className="p-6">
+                          <div className="grid md:grid-cols-[300px,1fr] gap-4">
+                            {/* Galería de fotos */}
+                            <div>
+                              <ProductPhotoGallery productoId={product.id} />
+                            </div>
+
+                            {/* Información del producto */}
+                            <div className="space-y-4">
+                              <div>
+                                <h3 className="text-xl font-semibold">{product.nombre}</h3>
+                                <p className="text-2xl font-bold text-primary mt-1">
+                                  ${product.precio} / {product.unit}
+                                </p>
+                              </div>
+
+                              {product.descripcion && (
+                                <p className="text-muted-foreground">
+                                  {product.descripcion}
+                                </p>
+                              )}
+
+                              <div className="flex items-center gap-3">
+                                <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
+                                  Stock: {product.stock}
+                                </Badge>
+                                {product.stock > 0 && (
+                                  <Button
+                                    onClick={() => addToCart({
+                                      id: product.id,
+                                      nombre: product.nombre,
+                                      precio: product.precio,
+                                      unit: product.unit,
+                                    })}
+                                    size="lg"
+                                    className="flex-1"
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Agregar al Carrito
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar - Carrito */}
+          <div className="lg:col-span-1">
+            <ShoppingCartComponent
+              cart={cart}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeFromCart}
+              onClearCart={clearCart}
+              onCheckout={handleCheckout}
+              total={getTotal()}
+              itemCount={getItemCount()}
+            />
+          </div>
+        </div>
+
+        {/* Checkout Dialog */}
+        <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Pedido</DialogTitle>
+              <DialogDescription>
+                Ingresa tus datos para enviar el pedido por WhatsApp
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre completo</Label>
+                <Input
+                  id="name"
+                  placeholder="Juan Pérez"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono (con código de país)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="5215551234567"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              <div className="pt-4 border-t">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span>${getTotal().toFixed(2)}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowCheckoutDialog(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmitOrder} disabled={isSubmitting}>
+                {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         </div>
       </main>
     </div>

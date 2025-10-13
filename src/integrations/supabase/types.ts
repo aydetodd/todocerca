@@ -168,6 +168,51 @@ export type Database = {
           },
         ]
       }
+      items_pedido: {
+        Row: {
+          cantidad: number
+          created_at: string
+          id: string
+          pedido_id: string
+          precio_unitario: number
+          producto_id: string
+          subtotal: number
+        }
+        Insert: {
+          cantidad: number
+          created_at?: string
+          id?: string
+          pedido_id: string
+          precio_unitario: number
+          producto_id: string
+          subtotal: number
+        }
+        Update: {
+          cantidad?: number
+          created_at?: string
+          id?: string
+          pedido_id?: string
+          precio_unitario?: number
+          producto_id?: string
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_pedido_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_postings: {
         Row: {
           created_at: string
@@ -334,6 +379,53 @@ export type Database = {
           used?: boolean | null
         }
         Relationships: []
+      }
+      pedidos: {
+        Row: {
+          cliente_nombre: string
+          cliente_telefono: string
+          created_at: string
+          estado: string
+          id: string
+          notas: string | null
+          numero_orden: number
+          proveedor_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          cliente_nombre: string
+          cliente_telefono: string
+          created_at?: string
+          estado?: string
+          id?: string
+          notas?: string | null
+          numero_orden?: number
+          proveedor_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          cliente_nombre?: string
+          cliente_telefono?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          notas?: string | null
+          numero_orden?: number
+          proveedor_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_categories: {
         Row: {

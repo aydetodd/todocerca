@@ -10,6 +10,7 @@ import { MapPin, LogOut, Package, Users, ShoppingCart, Search } from "lucide-rea
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
+import { OrdersManagement } from "@/components/OrdersManagement";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -243,8 +244,9 @@ const Dashboard = () => {
 
         {/* Product Management for Providers */}
         {isProvider && userSpecificData?.id && (
-          <div className="mt-8">
+          <div className="mt-8 space-y-8">
             <ProductManagement proveedorId={userSpecificData.id} />
+            <OrdersManagement proveedorId={userSpecificData.id} />
           </div>
         )}
       </main>
