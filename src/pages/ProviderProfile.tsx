@@ -72,42 +72,21 @@ const ProviderProfile = () => {
     try {
       let actualProveedorId = proveedorId;
 
-      // If consecutiveNumber is provided (e.g., "000001p" or "martin-villa-1p"), lookup the user_id first
+      // If consecutiveNumber is provided (business name slug), lookup by name
       if (consecutiveNumber) {
-        // Extract the numeric part from the consecutive number (remove 'p' suffix and any text before it)
-        // Handles both formats: "000001p" and "martin-alberto-villa-1p"
-        const match = consecutiveNumber.match(/(\d+)p$/i);
-        if (!match) {
-          throw new Error('Formato de URL inválido');
-        }
-        const consecutiveNum = parseInt(match[1], 10);
+        // Convert slug back to searchable format (replace hyphens with spaces)
+        const searchName = consecutiveNumber.replace(/-/g, ' ');
 
-        // Find the user_id from profiles table using consecutive_number
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('consecutive_number', consecutiveNum)
-          .eq('role', 'proveedor')
-          .single();
-
-        if (profileError) {
-          console.error('Error buscando perfil por número consecutivo:', profileError);
-          throw new Error('Proveedor no encontrado');
-        }
-
-        if (!profileData) {
-          throw new Error('Proveedor no encontrado');
-        }
-
-        // Now find the proveedor_id using the user_id
+        // Search for provider by name (case-insensitive)
         const { data: proveedorData, error: proveedorError } = await supabase
           .from('proveedores')
-          .select('id')
-          .eq('user_id', profileData.user_id)
+          .select('id, nombre')
+          .ilike('nombre', `%${searchName}%`)
+          .limit(1)
           .single();
 
-        if (proveedorError) {
-          console.error('Error buscando proveedor:', proveedorError);
+        if (proveedorError || !proveedorData) {
+          console.error('Error buscando proveedor por nombre:', proveedorError);
           throw new Error('Proveedor no encontrado');
         }
 

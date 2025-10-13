@@ -7,10 +7,9 @@ import { Download, Printer, QrCode, X } from 'lucide-react';
 interface QRCodeGeneratorProps {
   proveedorId: string;
   businessName: string;
-  consecutiveNumber?: string;
 }
 
-const QRCodeGenerator = ({ proveedorId, businessName, consecutiveNumber }: QRCodeGeneratorProps) => {
+const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   
   // Create a URL-friendly slug from the business name
@@ -24,11 +23,9 @@ const QRCodeGenerator = ({ proveedorId, businessName, consecutiveNumber }: QRCod
       .replace(/\s+/g, '-'); // Replace spaces with hyphens
   };
   
-  // Use todocerca.mx domain with business name + consecutive number format
-  // Example: martin-alberto-villa-1p or frutas-frescas-23p
-  const profileUrl = consecutiveNumber 
-    ? `https://todocerca.mx/${createSlug(businessName)}-${consecutiveNumber}p`
-    : `${window.location.origin}/proveedor/${proveedorId}`;
+  // Use todocerca.mx domain with business name only
+  // Example: todocerca.mx/martin-alberto-villa
+  const profileUrl = `https://todocerca.mx/${createSlug(businessName)}`;
 
   const handleDownload = () => {
     const svg = document.getElementById('qr-code-svg');

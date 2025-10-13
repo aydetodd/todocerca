@@ -222,12 +222,11 @@ const Dashboard = () => {
                   )}
                   
                   {/* QR Code Generator for Providers */}
-                  {isProvider && userSpecificData?.id && profile?.consecutive_number && (
+                  {isProvider && userSpecificData?.id && (
                     <div className="pt-4">
                       <QRCodeGenerator 
                         proveedorId={userSpecificData.id} 
                         businessName={userSpecificData.nombre || profile.nombre}
-                        consecutiveNumber={String(profile.consecutive_number).padStart(6, '0')}
                       />
                     </div>
                   )}
