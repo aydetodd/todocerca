@@ -301,87 +301,88 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
               {orders.map((order) => (
                 <Card key={order.id} className="border-l-4" style={{ borderLeftColor: estadoColors[order.estado as keyof typeof estadoColors] }}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">
-                          Pedido #{order.numero_orden}
-                        </CardTitle>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {order.cliente_nombre}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {order.cliente_telefono}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(order.created_at).toLocaleString('es-MX')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                            order.impreso 
-                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
-                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
-                          }`}
-                          onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
-                        >
-                          <Printer className={`h-5 w-5 ${order.impreso ? 'text-green-600' : 'text-yellow-600'}`} />
-                          <span className={`text-xs font-medium ${order.impreso ? 'text-green-700' : 'text-yellow-700'}`}>
-                            Impreso
-                          </span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                            order.pagado 
-                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
-                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
-                          }`}
-                          onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
-                        >
-                          <CreditCard className={`h-5 w-5 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
-                          <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
-                            Pagado
-                          </span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                            order.preparado 
-                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
-                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
-                          }`}
-                          onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
-                        >
-                          <ChefHat className={`h-5 w-5 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
-                          <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
-                            Preparado
-                          </span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                            order.entregado 
-                              ? 'bg-green-100 border-green-500 hover:bg-green-200' 
-                              : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
-                          }`}
-                          onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
-                        >
-                          <PackageCheck className={`h-5 w-5 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
-                          <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
-                            Entregado
-                          </span>
-                        </Button>
+                    {/* Estados en fila horizontal */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`flex items-center justify-center gap-2 h-auto py-2 ${
+                          order.impreso 
+                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                        }`}
+                        onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
+                      >
+                        <Printer className={`h-4 w-4 ${order.impreso ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.impreso ? 'text-green-700' : 'text-yellow-700'}`}>
+                          Impreso
+                        </span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`flex items-center justify-center gap-2 h-auto py-2 ${
+                          order.pagado 
+                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                        }`}
+                        onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
+                      >
+                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
+                          Pagado
+                        </span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`flex items-center justify-center gap-2 h-auto py-2 ${
+                          order.preparado 
+                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                        }`}
+                        onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
+                      >
+                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
+                          Preparado
+                        </span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`flex items-center justify-center gap-2 h-auto py-2 ${
+                          order.entregado 
+                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                        }`}
+                        onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
+                      >
+                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
+                          Entregado
+                        </span>
+                      </Button>
+                    </div>
+
+                    {/* Información del pedido */}
+                    <div>
+                      <CardTitle className="text-lg">
+                        Pedido #{order.numero_orden}
+                      </CardTitle>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {order.cliente_nombre}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {order.cliente_telefono}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(order.created_at).toLocaleString('es-MX')}
+                        </span>
                       </div>
                     </div>
                   </CardHeader>
