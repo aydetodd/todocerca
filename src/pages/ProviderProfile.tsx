@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Phone, Mail, Package, ArrowLeft, ShoppingCart, Plus } from 'lucide-react';
+import { MapPin, Phone, Mail, Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
@@ -53,15 +53,19 @@ const ProviderProfile = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
 
   const {
     cart,
+    numPeople,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     getTotal,
     getItemCount,
+    addPerson,
+    removePerson,
   } = useShoppingCart();
 
   useEffect(() => {
@@ -236,15 +240,24 @@ const ProviderProfile = () => {
   const formatWhatsAppMessage = (numeroOrden: number) => {
     let message = `🛒 *NUEVO PEDIDO #${numeroOrden}*\n\n`;
     message += `👤 *Cliente:* ${customerName}\n`;
-    message += `📱 *Teléfono:* ${customerPhone}\n\n`;
-    message += `📦 *Productos:*\n`;
+    message += `📱 *Teléfono:* ${customerPhone}\n`;
+    message += `👥 *Personas en la mesa:* ${numPeople}\n\n`;
 
-    cart.forEach((item, index) => {
-      message += `${index + 1}. ${item.nombre}\n`;
-      message += `   • Cantidad: ${item.cantidad} ${item.unit}\n`;
-      message += `   • Precio unitario: $${item.precio}\n`;
-      message += `   • Subtotal: $${(item.precio * item.cantidad).toFixed(2)}\n\n`;
-    });
+    // Agrupar items por persona
+    for (let personIndex = 0; personIndex < numPeople; personIndex++) {
+      const personItems = cart.filter(item => item.personIndex === personIndex);
+      
+      if (personItems.length > 0) {
+        message += `👤 *Persona ${personIndex + 1}:*\n`;
+        
+        personItems.forEach((item) => {
+          message += `  • ${item.nombre}\n`;
+          message += `    ${item.cantidad} ${item.unit} × $${item.precio} = $${(item.precio * item.cantidad).toFixed(2)}\n`;
+        });
+        
+        message += `\n`;
+      }
+    }
 
     message += `💰 *Total: $${getTotal().toFixed(2)}*\n\n`;
     message += `¡Gracias por tu pedido! 🙏`;
@@ -300,6 +313,32 @@ const ProviderProfile = () => {
           <div className="grid lg:grid-cols-3 gap-6">
           {/* Columna principal - Productos */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Selector de persona */}
+            {products.length > 0 && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Agregando productos para:</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {Array.from({ length: numPeople }, (_, i) => (
+                        <Button
+                          key={i}
+                          variant={selectedPersonIndex === i ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedPersonIndex(i)}
+                        >
+                          Persona {i + 1}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Provider Info Card */}
             <Card>
             <CardHeader>
@@ -410,7 +449,7 @@ const ProviderProfile = () => {
                                 </p>
                               )}
 
-                              <div className="flex items-center gap-3">
+                               <div className="flex items-center gap-3">
                                 <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
                                   Stock: {product.stock}
                                 </Badge>
@@ -421,12 +460,13 @@ const ProviderProfile = () => {
                                       nombre: product.nombre,
                                       precio: product.precio,
                                       unit: product.unit,
+                                      personIndex: selectedPersonIndex,
                                     })}
                                     size="lg"
                                     className="flex-1"
                                   >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Agregar al Carrito
+                                    Agregar para Persona {selectedPersonIndex + 1}
                                   </Button>
                                 )}
                               </div>
@@ -445,10 +485,13 @@ const ProviderProfile = () => {
           <div className="lg:col-span-1">
             <ShoppingCartComponent
               cart={cart}
+              numPeople={numPeople}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
               onClearCart={clearCart}
               onCheckout={handleCheckout}
+              onAddPerson={addPerson}
+              onRemovePerson={removePerson}
               total={getTotal()}
               itemCount={getItemCount()}
             />
