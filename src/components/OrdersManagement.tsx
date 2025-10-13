@@ -180,6 +180,66 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
   const updateOrderStep = async (orderId: string, step: 'impreso' | 'pagado' | 'preparado' | 'entregado', value: boolean) => {
     try {
+      // Obtener el pedido actual
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      // Validar la secuencia lógica si se está activando (value = true)
+      if (value) {
+        if (step === 'pagado' && !order.impreso) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes marcar el pedido como "Impreso" primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+        if (step === 'preparado' && !order.pagado) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes marcar el pedido como "Pagado" primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+        if (step === 'entregado' && !order.preparado) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes marcar el pedido como "Preparado" primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
+      // Validar al desactivar: no se puede desactivar si hay pasos posteriores activos
+      if (!value) {
+        if (step === 'impreso' && (order.pagado || order.preparado || order.entregado)) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes desactivar los pasos posteriores primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+        if (step === 'pagado' && (order.preparado || order.entregado)) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes desactivar los pasos posteriores primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+        if (step === 'preparado' && order.entregado) {
+          toast({
+            title: 'Acción no permitida',
+            description: 'Debes desactivar "Entregado" primero',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('pedidos')
         .update({ [step]: value })
@@ -336,45 +396,54 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={!order.impreso && !order.pagado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.pagado 
                             ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : !order.impreso 
+                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
                       >
-                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : !order.impreso ? 'text-gray-400' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : !order.impreso ? 'text-gray-400' : 'text-yellow-700'}`}>
                           Pagado
                         </span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={!order.pagado && !order.preparado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.preparado 
                             ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : !order.pagado 
+                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
                       >
-                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : !order.pagado ? 'text-gray-400' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : !order.pagado ? 'text-gray-400' : 'text-yellow-700'}`}>
                           Preparado
                         </span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={!order.preparado && !order.entregado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.entregado 
                             ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            : !order.preparado 
+                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
                       >
-                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : !order.preparado ? 'text-gray-400' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : !order.preparado ? 'text-gray-400' : 'text-yellow-700'}`}>
                           Entregado
                         </span>
                       </Button>
