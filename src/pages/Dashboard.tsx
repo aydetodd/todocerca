@@ -245,7 +245,10 @@ const Dashboard = () => {
         {isProvider && userSpecificData?.id && (
           <div className="mt-8 space-y-8">
             <ProductManagement proveedorId={userSpecificData.id} />
-            <OrdersManagement proveedorId={userSpecificData.id} />
+            <OrdersManagement 
+              proveedorId={userSpecificData.id} 
+              proveedorNombre={userSpecificData.nombre || profile.nombre}
+            />
           </div>
         )}
       </main>

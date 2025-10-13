@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useThermalPrinter } from '@/hooks/useThermalPrinter';
+import { ThermalPrinterControl } from '@/components/ThermalPrinterControl';
+import { OrderPrintButton } from '@/components/OrderPrintButton';
 import { 
   ClipboardList, 
   User, 
@@ -47,6 +50,7 @@ interface Order {
 
 interface OrdersManagementProps {
   proveedorId: string;
+  proveedorNombre: string;
 }
 
 const estadoColors = {
@@ -65,10 +69,20 @@ const estadoLabels = {
   cancelado: 'Cancelado',
 };
 
-export const OrdersManagement = ({ proveedorId }: OrdersManagementProps) => {
+export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagementProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  const {
+    isConnected,
+    isConnecting,
+    isPrinting,
+    printer,
+    connectToPrinter,
+    disconnectPrinter,
+    printReceipt,
+  } = useThermalPrinter();
 
   useEffect(() => {
     loadOrders();
@@ -167,8 +181,51 @@ export const OrdersManagement = ({ proveedorId }: OrdersManagementProps) => {
   const inProgressOrders = orders.filter(o => o.estado === 'en_preparacion').length;
   const readyOrders = orders.filter(o => o.estado === 'listo').length;
 
+  const handlePrintOrder = async (order: Order, copies: number) => {
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-MX', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const hora = now.toLocaleTimeString('es-MX', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    const items = order.items_pedido.map(item => ({
+      personIndex: 0, // Por ahora todos en persona 0
+      nombre: item.productos.nombre,
+      cantidad: item.cantidad,
+      unit: item.productos.unit,
+      precio: item.precio_unitario,
+    }));
+
+    await printReceipt({
+      numero_orden: order.numero_orden,
+      fecha,
+      hora,
+      cliente_nombre: order.cliente_nombre,
+      cliente_telefono: order.cliente_telefono,
+      items,
+      total: order.total,
+      numPeople: 1,
+      proveedorNombre,
+    }, copies);
+  };
+
   return (
-    <Card>
+    <div className="space-y-6">
+      <ThermalPrinterControl
+        isConnected={isConnected}
+        isConnecting={isConnecting}
+        printerName={printer?.device.name}
+        onConnect={connectToPrinter}
+        onDisconnect={disconnectPrinter}
+      />
+      
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -225,21 +282,28 @@ export const OrdersManagement = ({ proveedorId }: OrdersManagementProps) => {
                           </span>
                         </div>
                       </div>
-                      <Select
-                        value={order.estado}
-                        onValueChange={(value) => updateOrderStatus(order.id, value)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendiente">Pendiente</SelectItem>
-                          <SelectItem value="en_preparacion">En Preparación</SelectItem>
-                          <SelectItem value="listo">Listo</SelectItem>
-                          <SelectItem value="entregado">Entregado</SelectItem>
-                          <SelectItem value="cancelado">Cancelado</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <OrderPrintButton
+                          onPrint={(copies) => handlePrintOrder(order, copies)}
+                          disabled={!isConnected}
+                          isPrinting={isPrinting}
+                        />
+                        <Select
+                          value={order.estado}
+                          onValueChange={(value) => updateOrderStatus(order.id, value)}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendiente">Pendiente</SelectItem>
+                            <SelectItem value="en_preparacion">En Preparación</SelectItem>
+                            <SelectItem value="listo">Listo</SelectItem>
+                            <SelectItem value="entregado">Entregado</SelectItem>
+                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -266,5 +330,6 @@ export const OrdersManagement = ({ proveedorId }: OrdersManagementProps) => {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
