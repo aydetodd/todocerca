@@ -78,10 +78,13 @@ const ProviderProfile = () => {
 
   const loadProviderData = async () => {
     try {
+      console.log('Params:', { proveedorId, consecutiveNumber });
       let actualProveedorId = proveedorId;
 
       // If consecutiveNumber is provided (business name slug), lookup by name
       if (consecutiveNumber) {
+        console.log('Buscando por consecutiveNumber:', consecutiveNumber);
+        
         // Función para crear slug (igual que en QRCodeGenerator)
         const createSlug = (name: string) => {
           return name
@@ -98,6 +101,8 @@ const ProviderProfile = () => {
           .from('proveedores')
           .select('id, nombre');
 
+        console.log('Proveedores encontrados:', proveedores);
+
         if (proveedorError || !proveedores) {
           console.error('Error buscando proveedores:', proveedorError);
           throw new Error('Proveedor no encontrado');
@@ -107,6 +112,8 @@ const ProviderProfile = () => {
         const proveedorEncontrado = proveedores.find(
           p => createSlug(p.nombre) === consecutiveNumber
         );
+
+        console.log('Proveedor encontrado:', proveedorEncontrado);
 
         if (!proveedorEncontrado) {
           throw new Error('Proveedor no encontrado');
@@ -119,14 +126,24 @@ const ProviderProfile = () => {
         throw new Error('ID de proveedor no válido');
       }
 
+      console.log('ID final del proveedor:', actualProveedorId);
+
       // Cargar datos del proveedor
       const { data: providerData, error: providerError } = await supabase
         .from('proveedores')
         .select('*')
         .eq('id', actualProveedorId)
-        .single();
+        .maybeSingle();
 
-      if (providerError) throw providerError;
+      if (providerError) {
+        console.error('Error cargando proveedor:', providerError);
+        throw providerError;
+      }
+      
+      if (!providerData) {
+        throw new Error('Proveedor no encontrado');
+      }
+      
       setProvider(providerData);
 
       // Cargar productos del proveedor
