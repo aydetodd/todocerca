@@ -56,8 +56,7 @@ export const ShoppingCart = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <CartIcon className="h-5 w-5" />
-            Pedido
-            <Badge variant="secondary">{itemCount}</Badge>
+            Carrito
           </CardTitle>
           <Button
             variant="ghost"
