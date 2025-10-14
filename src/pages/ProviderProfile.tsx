@@ -195,10 +195,10 @@ const ProviderProfile = () => {
   };
 
   const handleSubmitOrder = async () => {
-    if (!customerName.trim() || !customerPhone.trim()) {
+    if (!customerName.trim()) {
       toast({
         title: 'Datos incompletos',
-        description: 'Por favor ingresa tu nombre y teléfono',
+        description: 'Por favor ingresa tu nombre',
         variant: 'destructive',
       });
       return;
@@ -215,7 +215,7 @@ const ProviderProfile = () => {
         .insert({
           proveedor_id: provider.id,
           cliente_nombre: customerName.trim(),
-          cliente_telefono: customerPhone.trim(),
+          cliente_telefono: customerPhone.trim() || 'N/A',
           total: getTotal(),
           estado: 'pendiente',
         })
@@ -284,8 +284,7 @@ const ProviderProfile = () => {
     let message = `🛒 NUEVO PEDIDO #${numeroOrden}\n\n`;
     message += `📅 Fecha: ${fecha}\n`;
     message += `🕐 Hora: ${hora}\n\n`;
-    message += `👤 Cliente: ${customerName}\n`;
-    message += `📱 Teléfono: ${customerPhone}\n\n`;
+    message += `👤 Cliente: ${customerName}\n\n`;
 
     // Agrupar items por persona
     for (let personIndex = 0; personIndex < numPeople; personIndex++) {
@@ -500,27 +499,17 @@ const ProviderProfile = () => {
             <DialogHeader>
               <DialogTitle>Confirmar Pedido</DialogTitle>
               <DialogDescription>
-                Ingresa tus datos para enviar el pedido por mensaje interno al restaurante
+                Ingresa tu nombre para enviar el pedido al restaurante
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre completo</Label>
+                <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
-                  placeholder="Juan Pérez"
+                  placeholder="Juan"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono (con código de país)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="5215551234567"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
                 />
               </div>
               <div className="pt-4 border-t">
