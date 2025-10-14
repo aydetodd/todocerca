@@ -387,6 +387,7 @@ export type Database = {
         Row: {
           cliente_nombre: string
           cliente_telefono: string
+          cliente_user_id: string | null
           created_at: string
           entregado: boolean | null
           estado: string
@@ -403,6 +404,7 @@ export type Database = {
         Insert: {
           cliente_nombre: string
           cliente_telefono: string
+          cliente_user_id?: string | null
           created_at?: string
           entregado?: boolean | null
           estado?: string
@@ -419,6 +421,7 @@ export type Database = {
         Update: {
           cliente_nombre?: string
           cliente_telefono?: string
+          cliente_user_id?: string | null
           created_at?: string
           entregado?: boolean | null
           estado?: string

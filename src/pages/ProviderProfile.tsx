@@ -208,6 +208,9 @@ const ProviderProfile = () => {
     setIsSubmitting(true);
 
     try {
+      // Obtener el user_id del cliente si está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Crear el pedido en la base de datos
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
@@ -215,6 +218,7 @@ const ProviderProfile = () => {
           proveedor_id: provider.id,
           cliente_nombre: customerName.trim(),
           cliente_telefono: 'N/A',
+          cliente_user_id: user?.id || null,
           total: getTotal(),
           estado: 'pendiente',
         })
@@ -244,6 +248,18 @@ const ProviderProfile = () => {
 
       // Enviar por mensaje interno al proveedor
       await sendMessage(message, provider.user_id, false);
+
+      // Enviar copia al cliente si está autenticado
+      if (user) {
+        const clientMessage = `📋 *Confirmación de Pedido #${pedido.numero_orden}*\n\n` +
+          `🏪 Restaurante: ${provider.nombre}\n` +
+          `💰 Total: ${formatCurrency(getTotal())}\n` +
+          `📊 Estado: Pendiente\n\n` +
+          `🎉 Tu pedido ha sido enviado correctamente.\n` +
+          `El restaurante lo está preparando. ¡Gracias por tu compra!`;
+        
+        await sendMessage(clientMessage, user.id, false);
+      }
 
       // Cerrar diálogo (el carrito no se limpia automáticamente)
       setShowCheckoutDialog(false);
