@@ -250,8 +250,9 @@ const ProviderProfile = () => {
       setCustomerName('');
 
       toast({
-        title: '¡Pedido enviado!',
-        description: `Tu pedido #${pedido.numero_orden} fue enviado al restaurante por mensaje interno.`,
+        title: `✅ Pedido #${pedido.numero_orden} enviado`,
+        description: `Tu pedido fue enviado correctamente al restaurante. Número de pedido: #${pedido.numero_orden}`,
+        duration: 8000,
       });
     } catch (error: any) {
       console.error('Error creando pedido:', error);
