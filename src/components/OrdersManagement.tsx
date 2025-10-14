@@ -184,60 +184,40 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
 
-      // Validar la secuencia lógica si se está activando (value = true)
-      if (value) {
-        if (step === 'pagado' && !order.impreso) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes marcar el pedido como "Impreso" primero',
-            variant: 'destructive',
-          });
-          return;
-        }
-        if (step === 'preparado' && !order.pagado) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes marcar el pedido como "Pagado" primero',
-            variant: 'destructive',
-          });
-          return;
-        }
-        if (step === 'entregado' && !order.preparado) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes marcar el pedido como "Preparado" primero',
-            variant: 'destructive',
-          });
-          return;
-        }
+      // NO PERMITIR DESMARCAR - una vez verde, siempre verde
+      if (!value) {
+        toast({
+          title: 'No se puede regresar',
+          description: 'Una vez completado un paso, no se puede desmarcar',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      // Validar al desactivar: no se puede desactivar si hay pasos posteriores activos
-      if (!value) {
-        if (step === 'impreso' && (order.pagado || order.preparado || order.entregado)) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes desactivar los pasos posteriores primero',
-            variant: 'destructive',
-          });
-          return;
-        }
-        if (step === 'pagado' && (order.preparado || order.entregado)) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes desactivar los pasos posteriores primero',
-            variant: 'destructive',
-          });
-          return;
-        }
-        if (step === 'preparado' && order.entregado) {
-          toast({
-            title: 'Acción no permitida',
-            description: 'Debes desactivar "Entregado" primero',
-            variant: 'destructive',
-          });
-          return;
-        }
+      // Validar la secuencia lógica solo al activar
+      if (step === 'pagado' && !order.impreso) {
+        toast({
+          title: 'Acción no permitida',
+          description: 'Debes marcar el pedido como "Impreso" primero',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (step === 'preparado' && !order.pagado) {
+        toast({
+          title: 'Acción no permitida',
+          description: 'Debes marcar el pedido como "Pagado" primero',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (step === 'entregado' && !order.preparado) {
+        toast({
+          title: 'Acción no permitida',
+          description: 'Debes marcar el pedido como "Preparado" primero',
+          variant: 'destructive',
+        });
+        return;
       }
 
       const { error } = await supabase
@@ -381,9 +361,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={order.impreso}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.impreso 
-                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
@@ -396,10 +377,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!order.impreso && !order.pagado}
+                        disabled={order.pagado || !order.impreso}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.pagado 
-                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
                             : !order.impreso 
                             ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
@@ -414,10 +395,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!order.pagado && !order.preparado}
+                        disabled={order.preparado || !order.pagado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.preparado 
-                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
                             : !order.pagado 
                             ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
@@ -432,10 +413,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!order.preparado && !order.entregado}
+                        disabled={order.entregado || !order.preparado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.entregado 
-                            ? 'bg-green-100 border-green-500 hover:bg-green-200' 
+                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
                             : !order.preparado 
                             ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
