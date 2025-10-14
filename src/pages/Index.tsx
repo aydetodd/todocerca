@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search, Users, ShoppingCart, Package, Wrench } from 'lucide-react';
+import heroBackground from '@/assets/hero-gradient-background.jpg';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -43,48 +44,46 @@ export default function Index() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4">
-        {/* Hero Section */}
-        <section className="text-center py-20">
-          <Badge variant="secondary" className="mb-4">
+      {/* Hero Section with Background */}
+      <section 
+        className="relative text-center py-32 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroBackground})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/80 to-primary/80"></div>
+        <div className="relative z-10 container mx-auto px-4">
+          <Badge variant="secondary" className="mb-4 bg-white/20 text-white border-white/30">
             Conectando productores locales con consumidores
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Encuentra productos
-            <span className="text-primary"> cerca de ti</span>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+            Conectamos con
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Descubre productos frescos y servicios de calidad en tu comunidad. 
-            Conecta directamente con proveedores locales.
+          <p className="text-xl text-white mb-8 max-w-2xl mx-auto">
+            La plataforma líder para encontrar proveedores confiables y hacer crecer tu negocio
           </p>
           
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="¿Qué productos buscas? (ej: tomate, frutas, lácteos)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-12 text-lg"
-              />
-              <Button type="submit" size="lg" className="h-12 px-8">
-                <Search className="h-5 w-5 mr-2" />
-                Buscar
-              </Button>
-            </div>
-          </form>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
-              Registrarse como Proveedor
-              <ArrowRight className="ml-2 h-5 w-5" />
+          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-3xl mx-auto">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 bg-accent hover:bg-accent/90 text-white w-full sm:w-auto"
+              onClick={() => navigate('/auth')}
+            >
+              <Package className="mr-2 h-5 w-5" />
+              Registrar como Proveedor
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8" onClick={() => navigate('/search')}>
-              Explorar productos
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto" 
+              onClick={() => navigate('/search')}
+            >
+              <Users className="mr-2 h-5 w-5" />
+              Buscar Proveedores
             </Button>
           </div>
-        </section>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4">
 
         {/* Categories */}
         <section className="py-16">
@@ -114,13 +113,13 @@ export default function Index() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-16 bg-primary text-primary-foreground rounded-lg">
+        <section className="py-16 bg-gradient-to-r from-secondary to-primary text-white rounded-lg">
           <div className="text-center px-8">
             <h3 className="text-3xl font-bold mb-4">¿Eres proveedor?</h3>
             <p className="text-xl mb-8 opacity-90">
               Únete a nuestra plataforma y llega a más clientes en tu área
             </p>
-            <Button size="lg" variant="secondary" onClick={() => navigate('/auth')}>
+            <Button size="lg" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth')}>
               Registrar mi Negocio
             </Button>
           </div>

@@ -17,35 +17,35 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 20 14.3% 4.1%;
 
-    --primary: 38 92% 50%; /* Amber/Yellow theme #F59E0B */
+    --primary: 174 60% 48%; /* Teal/Turquoise theme #14B8A6 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 43 100% 58%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 217 91% 60%; /* Blue #3B82F6 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 43 96% 95%;
-    --muted-foreground: 43 8% 46%;
+    --muted: 174 40% 95%;
+    --muted-foreground: 174 8% 46%;
 
-    --accent: 45 93% 47%;
+    --accent: 174 80% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 43 20% 90%;
-    --input: 43 20% 90%;
-    --ring: 38 92% 50%;
+    --border: 174 20% 90%;
+    --input: 174 20% 90%;
+    --ring: 174 60% 48%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 43 98% 98%;
-    --sidebar-foreground: 43 20% 25%;
-    --sidebar-primary: 38 92% 50%;
+    --sidebar-background: 174 40% 98%;
+    --sidebar-foreground: 174 20% 25%;
+    --sidebar-primary: 174 60% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 43 92% 92%;
+    --sidebar-accent: 174 40% 92%;
     --sidebar-accent-foreground: 20 14.3% 4.1%;
-    --sidebar-border: 43 25% 85%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-border: 174 25% 85%;
+    --sidebar-ring: 174 60% 48%;
   }
 
   .dark {
