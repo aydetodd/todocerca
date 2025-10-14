@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
 import { formatCurrency } from '@/lib/utils';
@@ -48,6 +49,7 @@ const ProviderProfile = () => {
   const { proveedorId, consecutiveNumber } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const { sendMessage } = useRealtimeMessages();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +58,19 @@ const ProviderProfile = () => {
   const [customerName, setCustomerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
+
+  // Verificar autenticación al cargar
+  useEffect(() => {
+    if (!authLoading && !user) {
+      // Guardar la URL actual para redirigir después del login
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      toast({
+        title: "Registro requerido",
+        description: "Por favor regístrate o inicia sesión para hacer pedidos",
+      });
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate, toast]);
 
   const {
     cart,
