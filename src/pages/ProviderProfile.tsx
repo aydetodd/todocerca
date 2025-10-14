@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
 import { formatCurrency } from '@/lib/utils';
+import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import {
   Dialog,
   DialogContent,
@@ -40,12 +41,14 @@ interface ProviderData {
   description: string;
   latitude: number;
   longitude: number;
+  user_id: string;
 }
 
 const ProviderProfile = () => {
   const { proveedorId, consecutiveNumber } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { sendMessage } = useRealtimeMessages();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,20 +240,11 @@ const ProviderProfile = () => {
 
       if (itemsError) throw itemsError;
 
-      // Formatear mensaje para WhatsApp
-      const message = formatWhatsAppMessage(pedido.numero_orden);
+      // Formatear mensaje del pedido
+      const message = formatOrderMessage(pedido.numero_orden);
 
-      // Enviar por WhatsApp - Respetar el código de país del número registrado
-      // Extraer solo dígitos del número de teléfono
-      let phoneNumber = provider.business_phone.replace(/\D/g, '');
-      
-      // Si el número no tiene código de país (10 dígitos = número local)
-      // asumimos que es México y agregamos +52
-      if (phoneNumber.length === 10) {
-        phoneNumber = `52${phoneNumber}`;
-      }
-      
-      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+      // Enviar por mensaje interno al proveedor
+      await sendMessage(message, provider.user_id, false);
 
       // Limpiar carrito y cerrar diálogo
       clearCart();
@@ -260,7 +254,7 @@ const ProviderProfile = () => {
 
       toast({
         title: '¡Pedido enviado!',
-        description: `Tu pedido #${pedido.numero_orden} fue creado. Serás redirigido a WhatsApp.`,
+        description: `Tu pedido #${pedido.numero_orden} fue enviado al restaurante por mensaje interno.`,
       });
     } catch (error: any) {
       console.error('Error creando pedido:', error);
@@ -274,7 +268,7 @@ const ProviderProfile = () => {
     }
   };
 
-  const formatWhatsAppMessage = (numeroOrden: number) => {
+  const formatOrderMessage = (numeroOrden: number) => {
     const now = new Date();
     const fecha = now.toLocaleDateString('es-MX', { 
       weekday: 'long', 
@@ -287,18 +281,18 @@ const ProviderProfile = () => {
       minute: '2-digit' 
     });
 
-    let message = `🛒 *NUEVO PEDIDO #${numeroOrden}*\n\n`;
-    message += `📅 *Fecha:* ${fecha}\n`;
-    message += `🕐 *Hora:* ${hora}\n\n`;
-    message += `👤 *Cliente:* ${customerName}\n`;
-    message += `📱 *Teléfono:* ${customerPhone}\n\n`;
+    let message = `🛒 NUEVO PEDIDO #${numeroOrden}\n\n`;
+    message += `📅 Fecha: ${fecha}\n`;
+    message += `🕐 Hora: ${hora}\n\n`;
+    message += `👤 Cliente: ${customerName}\n`;
+    message += `📱 Teléfono: ${customerPhone}\n\n`;
 
     // Agrupar items por persona
     for (let personIndex = 0; personIndex < numPeople; personIndex++) {
       const personItems = cart.filter(item => item.personIndex === personIndex);
       
       if (personItems.length > 0) {
-        message += `👤 *Persona ${personIndex + 1}:*\n`;
+        message += `👤 Persona ${personIndex + 1}:\n`;
         
         personItems.forEach((item) => {
           message += `  • ${item.nombre}\n`;
@@ -309,7 +303,7 @@ const ProviderProfile = () => {
       }
     }
 
-    message += `💰 *Total: ${formatCurrency(getTotal())}*\n\n`;
+    message += `💰 Total: ${formatCurrency(getTotal())}\n\n`;
     message += `¡Gracias por tu pedido! 🙏`;
 
     return message;
@@ -506,7 +500,7 @@ const ProviderProfile = () => {
             <DialogHeader>
               <DialogTitle>Confirmar Pedido</DialogTitle>
               <DialogDescription>
-                Ingresa tus datos para enviar el pedido por WhatsApp
+                Ingresa tus datos para enviar el pedido por mensaje interno al restaurante
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
