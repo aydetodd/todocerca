@@ -246,8 +246,7 @@ const ProviderProfile = () => {
       // Enviar por mensaje interno al proveedor
       await sendMessage(message, provider.user_id, false);
 
-      // Limpiar carrito y cerrar diálogo
-      clearCart();
+      // Cerrar diálogo (el carrito no se limpia automáticamente)
       setShowCheckoutDialog(false);
       setCustomerName('');
       setCustomerPhone('');
