@@ -54,7 +54,6 @@ const ProviderProfile = () => {
   const [loading, setLoading] = useState(true);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
 
@@ -215,7 +214,7 @@ const ProviderProfile = () => {
         .insert({
           proveedor_id: provider.id,
           cliente_nombre: customerName.trim(),
-          cliente_telefono: customerPhone.trim() || 'N/A',
+          cliente_telefono: 'N/A',
           total: getTotal(),
           estado: 'pendiente',
         })
@@ -249,7 +248,6 @@ const ProviderProfile = () => {
       // Cerrar diálogo (el carrito no se limpia automáticamente)
       setShowCheckoutDialog(false);
       setCustomerName('');
-      setCustomerPhone('');
 
       toast({
         title: '¡Pedido enviado!',
