@@ -176,19 +176,13 @@ export default function DashboardMain() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              ¡Bienvenido, {profile?.nombre}!
-            </h2>
-            <p className="text-muted-foreground">
-              {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
-            </p>
-          </div>
-          <Button size="lg" onClick={() => navigate("/search")}>
-            <Search className="h-4 w-4 mr-2" />
-            Buscar Productos
-          </Button>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            ¡Bienvenido, {profile?.nombre}!
+          </h2>
+          <p className="text-muted-foreground">
+            {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -202,15 +196,10 @@ export default function DashboardMain() {
               <CardDescription>Encuentra productos y servicios cerca de ti</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <Button className="w-full" onClick={() => navigate("/search")}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Buscar Productos
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => navigate("/search?category=servicios")}>
-                  Buscar Servicios
-                </Button>
-              </div>
+              <Button className="w-full" onClick={() => navigate("/search")}>
+                <Search className="h-4 w-4 mr-2" />
+                Buscar Productos
+              </Button>
             </CardContent>
           </Card>
 
