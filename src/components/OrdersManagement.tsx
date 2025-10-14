@@ -194,32 +194,6 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
         return;
       }
 
-      // Validar la secuencia lógica solo al activar
-      if (step === 'pagado' && !order.impreso) {
-        toast({
-          title: 'Acción no permitida',
-          description: 'Debes marcar el pedido como "Impreso" primero',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (step === 'preparado' && !order.pagado) {
-        toast({
-          title: 'Acción no permitida',
-          description: 'Debes marcar el pedido como "Pagado" primero',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (step === 'entregado' && !order.preparado) {
-        toast({
-          title: 'Acción no permitida',
-          description: 'Debes marcar el pedido como "Preparado" primero',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('pedidos')
         .update({ [step]: value })
@@ -377,54 +351,48 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={order.pagado || !order.impreso}
+                        disabled={order.pagado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.pagado 
                             ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : !order.impreso 
-                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
                       >
-                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : !order.impreso ? 'text-gray-400' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : !order.impreso ? 'text-gray-400' : 'text-yellow-700'}`}>
+                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
                           Pagado
                         </span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={order.preparado || !order.pagado}
+                        disabled={order.preparado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.preparado 
                             ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : !order.pagado 
-                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
                       >
-                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : !order.pagado ? 'text-gray-400' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : !order.pagado ? 'text-gray-400' : 'text-yellow-700'}`}>
+                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
                           Preparado
                         </span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={order.entregado || !order.preparado}
+                        disabled={order.entregado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.entregado 
                             ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : !order.preparado 
-                            ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                             : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
                       >
-                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : !order.preparado ? 'text-gray-400' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : !order.preparado ? 'text-gray-400' : 'text-yellow-700'}`}>
+                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
                           Entregado
                         </span>
                       </Button>
