@@ -23,9 +23,8 @@ const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) =>
       .replace(/\s+/g, '-'); // Replace spaces with hyphens
   };
   
-  // Use current domain with business name slug
-  // This works in both development and production
-  const profileUrl = `${window.location.origin}/${createSlug(businessName)}`;
+  // Use todocerca.mx domain for QR code
+  const profileUrl = `https://todocerca.mx/${createSlug(businessName)}`;
 
   const handleDownload = () => {
     const svg = document.getElementById('qr-code-svg');
