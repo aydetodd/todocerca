@@ -328,19 +328,19 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="kg">Kilos</SelectItem>
-                      <SelectItem value="l">Litro</SelectItem>
+                      <SelectItem value="l">Litros</SelectItem>
                       <SelectItem value="pz">Piezas</SelectItem>
-                      <SelectItem value="m">Metro</SelectItem>
-                      <SelectItem value="paquete">Paquete</SelectItem>
-                      <SelectItem value="caja">Caja</SelectItem>
-                      <SelectItem value="bulto">Bulto</SelectItem>
-                      <SelectItem value="ton">Tonelada</SelectItem>
-                      <SelectItem value="g">Gramo</SelectItem>
-                      <SelectItem value="km">Kilómetro</SelectItem>
-                      <SelectItem value="cita">Cita</SelectItem>
-                      <SelectItem value="proceso">Proceso</SelectItem>
-                      <SelectItem value="evento">Evento</SelectItem>
-                      <SelectItem value="otros">Otros (explique en descripción)</SelectItem>
+                      <SelectItem value="m">Metros</SelectItem>
+                      <SelectItem value="paquete">Paquetes</SelectItem>
+                      <SelectItem value="caja">Cajas</SelectItem>
+                      <SelectItem value="bulto">Bultos</SelectItem>
+                      <SelectItem value="ton">Toneladas</SelectItem>
+                      <SelectItem value="g">Gramos</SelectItem>
+                      <SelectItem value="km">Kilómetros</SelectItem>
+                      <SelectItem value="cita">Citas</SelectItem>
+                      <SelectItem value="proceso">Procesos</SelectItem>
+                      <SelectItem value="evento">Eventos</SelectItem>
+                      <SelectItem value="otros">Otros</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
