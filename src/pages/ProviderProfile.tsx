@@ -512,7 +512,7 @@ const ProviderProfile = () => {
           </div>
 
           {/* Sidebar - Carrito */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-4">
             <ShoppingCartComponent
               cart={cart}
               numPeople={numPeople}
@@ -523,6 +523,24 @@ const ProviderProfile = () => {
               total={getTotal()}
               itemCount={getItemCount()}
             />
+            
+            {/* Botón para hacer otro pedido - visible siempre */}
+            {cart.length > 0 && (
+              <Button
+                onClick={() => {
+                  clearCart();
+                  setCustomerName('');
+                  toast({
+                    title: 'Carrito limpiado',
+                    description: 'Puedes hacer un nuevo pedido',
+                  });
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                🔄 Hacer otro pedido
+              </Button>
+            )}
           </div>
         </div>
 

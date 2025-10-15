@@ -521,12 +521,12 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                       <CardTitle className="text-lg">
                         Pedido #{order.numero_orden}
                       </CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {order.cliente_nombre}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 font-medium text-foreground">
                           <Phone className="h-3 w-3" />
                           {order.cliente_telefono}
                         </span>
