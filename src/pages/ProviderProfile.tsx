@@ -92,8 +92,14 @@ const ProviderProfile = () => {
   };
 
   useEffect(() => {
+    // Verificar autenticación primero
+    if (!user) {
+      navigate('/auth', { replace: true });
+      return;
+    }
+    
     loadProviderData();
-  }, [proveedorId, consecutiveNumber]);
+  }, [proveedorId, consecutiveNumber, user, navigate]);
 
   const loadProviderData = async () => {
     try {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, Map, ArrowLeft, Package, ClipboardList } from 'lucide-react';
+import { MapPin, LogOut, Search, Users, Map, ArrowLeft, Package, ClipboardList, Briefcase } from 'lucide-react';
 import { StatusControl } from '@/components/StatusControl';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,7 @@ export default function MiPerfil() {
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -100,6 +101,44 @@ export default function MiPerfil() {
     await signOut();
     navigate("/");
   }
+
+  async function handleUpgradeToProvider() {
+    try {
+      setUpgrading(true);
+      const { data, error } = await supabase.functions.invoke('upgrade-to-provider');
+      
+      if (error) throw error;
+      
+      if (data.url) {
+        window.open(data.url, '_blank');
+        toast({
+          title: "Redirigiendo a pago",
+          description: "Completa el pago para convertirte en proveedor",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
+  // Verificar si el upgrade fue exitoso
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgrade') === 'success') {
+      toast({
+        title: "¡Pago exitoso!",
+        description: "Contacta al administrador para activar tu cuenta de proveedor",
+      });
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, '', '/mi-perfil');
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -209,6 +248,23 @@ export default function MiPerfil() {
                   <div>
                     <span className="text-sm font-medium">Código Postal:</span>
                     <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                  </div>
+                )}
+                
+                {/* Botón para convertirse en proveedor si es cliente */}
+                {profile?.role === 'cliente' && (
+                  <div className="pt-4 border-t">
+                    <Button 
+                      onClick={handleUpgradeToProvider}
+                      disabled={upgrading}
+                      className="w-full"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      {upgrading ? 'Procesando...' : 'Convertirme en Proveedor ($200 MXN/año)'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Publica hasta 500 productos y servicios
+                    </p>
                   </div>
                 )}
                 

@@ -140,7 +140,7 @@ export const ShoppingCart = ({
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="flex-col gap-4">
+      <CardFooter className="flex-col gap-4 pb-24">
         <div className="w-full flex items-center justify-between text-lg font-bold">
           <span>Total:</span>
           <span>{formatCurrency(total)}</span>

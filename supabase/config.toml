@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.verify-recovery-code]
 verify_jwt = false
+
+[functions.upgrade-to-provider]
+verify_jwt = true
