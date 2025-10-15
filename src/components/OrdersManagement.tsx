@@ -20,7 +20,10 @@ import {
   Printer,
   CreditCard,
   ChefHat,
-  PackageCheck
+  PackageCheck,
+  Download,
+  RotateCcw,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   Select,
@@ -29,6 +32,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface OrderItem {
   id: string;
@@ -280,6 +294,66 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     }, copies);
   };
 
+  const handleExportToCSV = () => {
+    const csvContent = [
+      ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
+      ...orders.map(order => [
+        order.numero_orden,
+        order.cliente_nombre,
+        order.cliente_telefono,
+        new Date(order.created_at).toLocaleString('es-MX'),
+        order.total,
+        order.estado,
+        order.impreso ? 'Sí' : 'No',
+        order.pagado ? 'Sí' : 'No',
+        order.preparado ? 'Sí' : 'No',
+        order.entregado ? 'Sí' : 'No',
+        order.items_pedido.map(item => `${item.cantidad}x ${item.productos.nombre}`).join('; ')
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `pedidos-${proveedorNombre}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Exportación exitosa',
+      description: 'Los pedidos han sido exportados a CSV',
+    });
+  };
+
+  const handleResetOrders = async () => {
+    try {
+      // Resetear el sequence del número de orden
+      const { error } = await supabase.rpc('reset_order_sequence', {
+        proveedor_id_param: proveedorId
+      });
+
+      if (error) throw error;
+
+      // Recargar los pedidos
+      await loadOrders();
+
+      toast({
+        title: 'Contador reseteado',
+        description: 'El contador de pedidos ha sido reiniciado exitosamente',
+      });
+    } catch (error: any) {
+      console.error('Error reseteando pedidos:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo resetear el contador. Contacta con soporte.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ThermalPrinterControl
@@ -293,16 +367,60 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       <Card>
       <CardHeader>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              Gestión de Pedidos
-            </CardTitle>
-            <CardDescription>
-              {orders.length} {orders.length === 1 ? 'pedido total' : 'pedidos totales'}
-            </CardDescription>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Gestión de Pedidos
+              </CardTitle>
+              <CardDescription>
+                {orders.length} {orders.length === 1 ? 'pedido total' : 'pedidos totales'}
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportToCSV}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar CSV
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-destructive hover:text-destructive"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Resetear Contador
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción reiniciará el contador de números de pedido. 
+                      Te recomendamos exportar los pedidos actuales antes de continuar.
+                      Los pedidos existentes no se eliminarán, solo el contador comenzará desde 1.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleResetOrders}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Resetear
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Badge variant="outline" className="bg-yellow-50">
               {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>

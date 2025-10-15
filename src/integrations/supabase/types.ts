@@ -804,6 +804,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      reset_order_sequence: {
+        Args: { proveedor_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       availability_status: "disponible" | "ocupado" | "no_disponible"

@@ -59,6 +59,7 @@ const ProviderProfile = () => {
   const [customerName, setCustomerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
 
   // Verificar autenticación al cargar
   useEffect(() => {
@@ -280,10 +281,9 @@ const ProviderProfile = () => {
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
       window.open(whatsappUrl, '_blank');
 
-      // Cerrar diálogo (el carrito no se limpia automáticamente)
-      setShowCheckoutDialog(false);
-      setCustomerName('');
-
+      // Guardar número de orden y mantener diálogo abierto
+      setOrderNumber(pedido.numero_orden);
+      
       toast({
         title: `✅ Pedido #${pedido.numero_orden} enviado`,
         description: `Tu pedido fue enviado correctamente`,
@@ -530,39 +530,88 @@ const ProviderProfile = () => {
         <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirmar Pedido</DialogTitle>
+              <DialogTitle>
+                {orderNumber ? `✅ Pedido #${orderNumber} Confirmado` : 'Confirmar Pedido'}
+              </DialogTitle>
               <DialogDescription>
-                Ingresa tu nombre para enviar el pedido
+                {orderNumber 
+                  ? 'Tu pedido ha sido enviado exitosamente por WhatsApp'
+                  : 'Ingresa tu nombre para enviar el pedido'
+                }
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  placeholder="Juan"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                />
-              </div>
-              <div className="pt-4 border-t">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span>${getTotal().toFixed(2)}</span>
+            
+            {orderNumber ? (
+              <div className="space-y-4 py-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <p className="text-green-800 font-medium">
+                    Pedido #{orderNumber} enviado correctamente
+                  </p>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowCheckoutDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmitOrder} disabled={isSubmitting}>
-                {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
-              </Button>
+            ) : (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input
+                    id="name"
+                    placeholder="Juan"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="pt-4 border-t">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>${getTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              {orderNumber ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCheckoutDialog(false);
+                      setOrderNumber(null);
+                      setCustomerName('');
+                    }}
+                  >
+                    Cerrar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      clearCart();
+                      setShowCheckoutDialog(false);
+                      setOrderNumber(null);
+                      setCustomerName('');
+                      toast({
+                        title: 'Carrito limpiado',
+                        description: 'Puedes hacer un nuevo pedido',
+                      });
+                    }}
+                  >
+                    Hacer otro pedido
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCheckoutDialog(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSubmitOrder} disabled={isSubmitting}>
+                    {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
