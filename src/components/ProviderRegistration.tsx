@@ -503,15 +503,15 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
       <Card className="p-4 mt-6 bg-muted/30">
         <div className="space-y-2">
-          <Label htmlFor="coupon">Código Promocional (Opcional)</Label>
+          <Label htmlFor="coupon">Clave del Punto de Venta (Opcional)</Label>
           <Input
             id="coupon"
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.trim())}
-            placeholder="Ingresa tu código promocional"
+            placeholder="Ingresa la clave del punto de venta"
           />
           <p className="text-sm text-muted-foreground">
-            Si tienes un código promocional, ingrésalo aquí para aplicar descuentos
+            Si pagas en efectivo en un punto de venta, ingresa la clave que te proporcionen
           </p>
         </div>
       </Card>
@@ -541,14 +541,14 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
             {renderProducts()}
           </div>
 
-          {/* Cupón */}
+          {/* Clave del Punto de Venta */}
           <div>
-            <Label htmlFor="coupon">Código de Cupón (opcional)</Label>
+            <Label htmlFor="coupon">Clave del Punto de Venta (opcional)</Label>
             <Input
               id="coupon"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
-              placeholder="Ingresa tu código de cupón si tienes uno"
+              placeholder="Ingresa la clave del punto de venta"
             />
           </div>
 
