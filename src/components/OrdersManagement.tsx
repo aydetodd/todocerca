@@ -294,7 +294,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     }, copies);
   };
 
-  const handleExportToCSV = () => {
+  const handleExportToCSV = async () => {
     const csvContent = [
       ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Hora', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
       ...orders.map(order => [
@@ -323,10 +323,37 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     link.click();
     document.body.removeChild(link);
 
-    toast({
-      title: 'Exportación exitosa',
-      description: 'Los pedidos han sido exportados a CSV',
-    });
+    // Eliminar todos los pedidos después de exportar
+    try {
+      const { error: deleteError } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('proveedor_id', proveedorId);
+
+      if (deleteError) throw deleteError;
+
+      // Resetear el sequence del número de orden
+      const { error } = await supabase.rpc('reset_order_sequence', {
+        proveedor_id_param: proveedorId
+      });
+
+      if (error) throw error;
+
+      // Limpiar la pantalla
+      setOrders([]);
+
+      toast({
+        title: 'Exportación y limpieza exitosa',
+        description: 'Los pedidos han sido exportados y eliminados de la base de datos',
+      });
+    } catch (error: any) {
+      console.error('Error eliminando pedidos:', error);
+      toast({
+        title: 'CSV exportado',
+        description: 'El CSV se exportó pero hubo un error al eliminar los pedidos',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleResetOrders = async () => {
@@ -387,15 +414,37 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportToCSV}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Exportar CSV
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exportar CSV
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Exportar y limpiar pedidos?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción exportará todos los pedidos a un archivo CSV y luego ELIMINARÁ todos los pedidos de la base de datos.
+                      El contador de pedidos se reiniciará a 1.
+                      Asegúrate de guardar el archivo CSV ya que no podrás recuperar estos pedidos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleExportToCSV}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Exportar y Limpiar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

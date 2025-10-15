@@ -297,10 +297,11 @@ const ProviderProfile = () => {
 
       // Enviar por WhatsApp al proveedor
       const phoneNumber = provider.business_phone || provider.telefono;
-      // Extraer solo los dígitos y asegurar que tenga el formato correcto
+      // Extraer solo los dígitos y agregar código de país de México si no lo tiene
       const cleanPhone = phoneNumber.replace(/\D/g, '');
+      const fullPhone = cleanPhone.startsWith('52') ? cleanPhone : `52${cleanPhone}`;
       const whatsappMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
+      const whatsappUrl = `https://wa.me/${fullPhone}?text=${whatsappMessage}`;
       window.open(whatsappUrl, '_blank');
 
       // Guardar número de orden y mantener diálogo abierto
@@ -550,22 +551,26 @@ const ProviderProfile = () => {
                 itemCount={getItemCount()}
               />
               
-              {/* Botón para hacer otro pedido */}
-              <Button
-                onClick={() => {
-                  clearCart();
-                  setCustomerName('');
-                  setOrderNumber(null);
-                  toast({
-                    title: 'Carrito limpiado',
-                    description: 'Puedes hacer un nuevo pedido',
-                  });
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                🔄 Hacer otro pedido
-              </Button>
+              {/* Botón para hacer otro pedido - sticky en la parte superior */}
+              <Card className="sticky top-4 z-10 shadow-lg border-2 border-primary">
+                <CardContent className="p-4">
+                  <Button
+                    onClick={() => {
+                      clearCart();
+                      setCustomerName('');
+                      setOrderNumber(null);
+                      toast({
+                        title: 'Carrito limpiado',
+                        description: 'Puedes hacer un nuevo pedido',
+                      });
+                    }}
+                    variant="default"
+                    className="w-full"
+                  >
+                    🔄 Hacer otro pedido
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
