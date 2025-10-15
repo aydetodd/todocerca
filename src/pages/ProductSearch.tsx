@@ -306,6 +306,46 @@ const ProductSearch = () => {
                   <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
                 </div>
               )}
+
+              {/* Lista de proveedores */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold mb-4">Proveedores</h2>
+                {mapProviders.map((provider) => (
+                  <Card key={provider.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-xl">{provider.business_name}</CardTitle>
+                          {provider.business_address && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                              <MapPin className="h-3 w-3" />
+                              {provider.business_address}
+                            </p>
+                          )}
+                          {provider.business_phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                              <Phone className="h-3 w-3" />
+                              {provider.business_phone}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          {provider.productos.length} producto{provider.productos.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Button 
+                        className="w-full"
+                        onClick={() => navigate(`/proveedor/${provider.id}`)}
+                      >
+                        Ver productos y hacer pedido
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
           </div>
