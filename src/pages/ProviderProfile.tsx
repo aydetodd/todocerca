@@ -57,6 +57,7 @@ const ProviderProfile = () => {
   const [loading, setLoading] = useState(true);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
@@ -221,10 +222,10 @@ const ProviderProfile = () => {
   };
 
   const handleSubmitOrder = async () => {
-    if (!customerName.trim()) {
+    if (!customerName.trim() || !customerPhone.trim()) {
       toast({
         title: 'Datos incompletos',
-        description: 'Por favor ingresa tu nombre',
+        description: 'Por favor ingresa tu nombre y teléfono',
         variant: 'destructive',
       });
       return;
@@ -244,7 +245,7 @@ const ProviderProfile = () => {
         .insert({
           proveedor_id: provider.id,
           cliente_nombre: customerName.trim(),
-          cliente_telefono: 'N/A',
+          cliente_telefono: customerPhone.trim(),
           cliente_user_id: user?.id || null,
           total: getTotal(),
           estado: 'pendiente',
@@ -317,7 +318,8 @@ const ProviderProfile = () => {
     let message = `🛒 NUEVO PEDIDO #${numeroOrden}\n\n`;
     message += `📅 Fecha: ${fecha}\n`;
     message += `🕐 Hora: ${hora}\n\n`;
-    message += `👤 Cliente: ${customerName}\n\n`;
+    message += `👤 Cliente: ${customerName}\n`;
+    message += `📱 Teléfono: ${customerPhone}\n\n`;
 
     // Agrupar items por orden
     for (let personIndex = 0; personIndex < numPeople; personIndex++) {
@@ -530,6 +532,7 @@ const ProviderProfile = () => {
                 onClick={() => {
                   clearCart();
                   setCustomerName('');
+                  setCustomerPhone('');
                   toast({
                     title: 'Carrito limpiado',
                     description: 'Puedes hacer un nuevo pedido',
@@ -573,9 +576,19 @@ const ProviderProfile = () => {
                   <Label htmlFor="name">Nombre</Label>
                   <Input
                     id="name"
-                    placeholder="Juan"
+                    placeholder="Juan Pérez"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <Input
+                    id="phone"
+                    placeholder="3331234567"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -590,32 +603,17 @@ const ProviderProfile = () => {
             
             <DialogFooter className="gap-2">
               {orderNumber ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowCheckoutDialog(false);
-                      setOrderNumber(null);
-                      setCustomerName('');
-                    }}
-                  >
-                    Cerrar
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      clearCart();
-                      setShowCheckoutDialog(false);
-                      setOrderNumber(null);
-                      setCustomerName('');
-                      toast({
-                        title: 'Carrito limpiado',
-                        description: 'Puedes hacer un nuevo pedido',
-                      });
-                    }}
-                  >
-                    Hacer otro pedido
-                  </Button>
-                </>
+                <Button
+                  onClick={() => {
+                    setShowCheckoutDialog(false);
+                    setOrderNumber(null);
+                    setCustomerName('');
+                    setCustomerPhone('');
+                  }}
+                  className="w-full"
+                >
+                  Cerrar
+                </Button>
               ) : (
                 <>
                   <Button

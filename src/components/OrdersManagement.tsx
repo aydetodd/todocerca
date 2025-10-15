@@ -296,12 +296,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
   const handleExportToCSV = () => {
     const csvContent = [
-      ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
+      ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Hora', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
       ...orders.map(order => [
         order.numero_orden,
         order.cliente_nombre,
         order.cliente_telefono,
-        new Date(order.created_at).toLocaleString('es-MX'),
+        new Date(order.created_at).toLocaleDateString('es-MX'),
+        new Date(order.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
         order.total,
         order.estado,
         order.impreso ? 'Sí' : 'No',
@@ -330,6 +331,14 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
   const handleResetOrders = async () => {
     try {
+      // Eliminar todos los pedidos del proveedor
+      const { error: deleteError } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('proveedor_id', proveedorId);
+
+      if (deleteError) throw deleteError;
+
       // Resetear el sequence del número de orden
       const { error } = await supabase.rpc('reset_order_sequence', {
         proveedor_id_param: proveedorId
@@ -341,14 +350,14 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       await loadOrders();
 
       toast({
-        title: 'Contador reseteado',
-        description: 'El contador de pedidos ha sido reiniciado exitosamente',
+        title: 'Pedidos eliminados',
+        description: 'Todos los pedidos han sido eliminados y el contador reiniciado a 1',
       });
     } catch (error: any) {
       console.error('Error reseteando pedidos:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo resetear el contador. Contacta con soporte.',
+        description: 'No se pudo resetear los pedidos',
         variant: 'destructive',
       });
     }
@@ -402,9 +411,9 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta acción reiniciará el contador de números de pedido. 
+                      Esta acción eliminará TODOS los pedidos y reiniciará el contador a 1. 
                       Te recomendamos exportar los pedidos actuales antes de continuar.
-                      Los pedidos existentes no se eliminarán, solo el contador comenzará desde 1.
+                      Esta acción NO se puede deshacer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
