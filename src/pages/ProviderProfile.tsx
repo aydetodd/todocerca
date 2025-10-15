@@ -315,12 +315,12 @@ const ProviderProfile = () => {
     message += `🕐 Hora: ${hora}\n\n`;
     message += `👤 Cliente: ${customerName}\n\n`;
 
-    // Agrupar items por persona
+    // Agrupar items por orden
     for (let personIndex = 0; personIndex < numPeople; personIndex++) {
       const personItems = cart.filter(item => item.personIndex === personIndex);
       
       if (personItems.length > 0) {
-        message += `👤 Persona ${personIndex + 1}:\n`;
+        message += `📦 Orden ${personIndex + 1}:\n`;
         
         personItems.forEach((item) => {
           message += `  • ${item.nombre}\n`;
@@ -396,8 +396,8 @@ const ProviderProfile = () => {
                           <Users className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-lg">Selecciona la persona</h3>
-                          <p className="text-sm text-muted-foreground">Los productos se agregarán a la persona seleccionada</p>
+                          <h3 className="font-bold text-lg">Selecciona la orden</h3>
+                          <p className="text-sm text-muted-foreground">Los productos se agregarán a la orden seleccionada</p>
                         </div>
                       </div>
                     </div>
@@ -493,7 +493,7 @@ const ProviderProfile = () => {
                                   className="flex-1"
                                 >
                                   <Plus className="h-4 w-4 mr-2" />
-                                  Agregar para Persona {selectedPersonIndex + 1}
+                                  Agregar para Orden {selectedPersonIndex + 1}
                                 </Button>
                               )}
                             </div>
@@ -528,7 +528,7 @@ const ProviderProfile = () => {
             <DialogHeader>
               <DialogTitle>Confirmar Pedido</DialogTitle>
               <DialogDescription>
-                Ingresa tu nombre para enviar el pedido al restaurante
+                Ingresa tu nombre para enviar el pedido
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">

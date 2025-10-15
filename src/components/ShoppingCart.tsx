@@ -68,7 +68,7 @@ export const ShoppingCart = ({
           </Button>
         </div>
         <CardDescription>
-          Pedido para {numPeople} persona{numPeople > 1 ? 's' : ''}
+          Pedido con {numPeople} orden{numPeople > 1 ? 'es' : ''}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -79,7 +79,7 @@ export const ShoppingCart = ({
                 <div className="flex items-center mb-3">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    Persona {personIndex + 1}
+                    Orden {personIndex + 1}
                   </h3>
                 </div>
                 
