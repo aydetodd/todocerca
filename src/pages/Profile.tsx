@@ -145,7 +145,7 @@ const Profile = () => {
                   <p className="text-lg font-medium">{profile.telefono}</p>
                 </div>
               )}
-              {profile.email && (
+              {profile.email && !profile.email.endsWith('@todocerca.app') && (
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="text-lg font-medium">{profile.email}</p>

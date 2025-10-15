@@ -228,10 +228,12 @@ export default function MiPerfil() {
                   <span className="text-sm font-medium">Nombre:</span>
                   <p className="text-sm text-muted-foreground">{profile?.nombre}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium">Email:</span>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                </div>
+                {user?.email && !user.email.endsWith('@todocerca.app') && (
+                  <div>
+                    <span className="text-sm font-medium">Email:</span>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                )}
                 <div>
                   <span className="text-sm font-medium">Rol:</span>
                   <p className="text-sm text-muted-foreground">
