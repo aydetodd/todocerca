@@ -13,6 +13,7 @@ import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
 import { formatCurrency } from '@/lib/utils';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
+import { NavigationBar } from '@/components/NavigationBar';
 import {
   Dialog,
   DialogContent,
@@ -262,7 +263,9 @@ const ProviderProfile = () => {
       const message = formatOrderMessage(pedido.numero_orden);
 
       // Enviar por WhatsApp al proveedor
-      const cleanPhone = (provider.business_phone || provider.telefono).replace(/\D/g, '');
+      const phoneNumber = provider.business_phone || provider.telefono;
+      // Extraer solo los dígitos y asegurar que tenga el formato correcto
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
       const whatsappMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
       window.open(whatsappUrl, '_blank');
@@ -555,6 +558,7 @@ const ProviderProfile = () => {
         </Dialog>
         </div>
       </main>
+      <NavigationBar />
     </div>
   );
 };

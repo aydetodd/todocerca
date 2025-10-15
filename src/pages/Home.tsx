@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { MapPin, Package, Users, Zap } from 'lucide-react';
 import UserRegistryReport from '@/components/UserRegistryReport';
+import { NavigationBar } from '@/components/NavigationBar';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -139,6 +140,7 @@ export default function Home() {
       </footer>
 
       <UserRegistryReport open={showReport} onOpenChange={setShowReport} />
+      <NavigationBar />
     </div>
   );
 }

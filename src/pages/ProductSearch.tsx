@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
+import { NavigationBar } from '@/components/NavigationBar';
 
 interface SearchResult {
   product_name: string;
@@ -317,6 +318,7 @@ const ProductSearch = () => {
         receiverId={selectedReceiverId}
         receiverName={selectedReceiverName}
       />
+      <NavigationBar />
     </div>
   );
 };
