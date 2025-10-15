@@ -552,17 +552,41 @@ const ProviderProfile = () => {
               />
               
               {/* Botón para hacer otro pedido - sticky en la parte superior */}
-              <Card className="sticky top-4 z-10 shadow-lg border-2 border-primary">
+              <Card className="sticky top-20 z-10 shadow-lg border-2 border-primary mt-4">
                 <CardContent className="p-4">
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       clearCart();
                       setCustomerName('');
                       setOrderNumber(null);
-                      toast({
-                        title: 'Carrito limpiado',
-                        description: 'Puedes hacer un nuevo pedido',
-                      });
+                      
+                      // Borrar todas las órdenes y reiniciar el número de orden
+                      if (provider?.id) {
+                        try {
+                          await supabase
+                            .from('pedidos')
+                            .delete()
+                            .eq('proveedor_id', provider.id);
+                          
+                          await supabase.rpc('reset_order_sequence');
+                          
+                          toast({
+                            title: 'Nuevo pedido iniciado',
+                            description: 'Carrito limpiado y órdenes borradas',
+                          });
+                        } catch (error) {
+                          console.error('Error al limpiar órdenes:', error);
+                          toast({
+                            title: 'Carrito limpiado',
+                            description: 'Puedes hacer un nuevo pedido',
+                          });
+                        }
+                      } else {
+                        toast({
+                          title: 'Carrito limpiado',
+                          description: 'Puedes hacer un nuevo pedido',
+                        });
+                      }
                     }}
                     variant="default"
                     className="w-full"

@@ -316,8 +316,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    const now = new Date();
+    const dateTime = `${now.toISOString().split('T')[0]}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
     link.setAttribute('href', url);
-    link.setAttribute('download', `pedidos-${proveedorNombre}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `pedidos-${proveedorNombre}-${dateTime}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
