@@ -327,12 +327,20 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="kg">kg</SelectItem>
-                      <SelectItem value="g">g</SelectItem>
-                      <SelectItem value="l">l</SelectItem>
-                      <SelectItem value="ml">ml</SelectItem>
-                      <SelectItem value="pz">pz</SelectItem>
-                      <SelectItem value="caja">caja</SelectItem>
+                      <SelectItem value="kg">Kilos</SelectItem>
+                      <SelectItem value="l">Litro</SelectItem>
+                      <SelectItem value="pz">Piezas</SelectItem>
+                      <SelectItem value="m">Metro</SelectItem>
+                      <SelectItem value="paquete">Paquete</SelectItem>
+                      <SelectItem value="caja">Caja</SelectItem>
+                      <SelectItem value="bulto">Bulto</SelectItem>
+                      <SelectItem value="ton">Tonelada</SelectItem>
+                      <SelectItem value="g">Gramo</SelectItem>
+                      <SelectItem value="km">Kilómetro</SelectItem>
+                      <SelectItem value="cita">Cita</SelectItem>
+                      <SelectItem value="proceso">Proceso</SelectItem>
+                      <SelectItem value="evento">Evento</SelectItem>
+                      <SelectItem value="otros">Otros (explique en descripción)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
