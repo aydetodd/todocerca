@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,6 +43,7 @@ interface ProvidersMapProps {
 }
 
 const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
+  const navigate = useNavigate();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
@@ -76,11 +78,6 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     // Add markers
     validProviders.forEach((provider) => {
       const marker = L.marker([provider.latitude, provider.longitude]).addTo(map);
-      
-      // Navigate to provider profile on marker click
-      marker.on('click', () => {
-        window.location.href = `/proveedor/${provider.id}`;
-      });
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
@@ -122,9 +119,16 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
             </button>
           </div>
           
+          <button 
+            onclick="window.goToProviderProfile('${provider.id}')"
+            style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 12px; font-size: 0.875rem;"
+          >
+            🛒 Ver productos y hacer pedido
+          </button>
+          
           ${provider.productos.length > 0 ? `
             <div style="margin-top: 12px;">
-              <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos:</p>
+              <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos disponibles:</p>
               <div style="max-height: 200px; overflow-y: auto;">
                 ${productsList}
               </div>
@@ -160,6 +164,10 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
           onOpenChat(provider.id, providerName);
         }
       }
+    };
+
+    (window as any).goToProviderProfile = (providerId: string) => {
+      navigate(`/proveedor/${providerId}`);
     };
 
     (window as any).showProductDetails = (providerId: string, productIndex: number) => {
