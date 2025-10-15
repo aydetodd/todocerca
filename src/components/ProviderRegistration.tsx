@@ -38,21 +38,19 @@ interface ProviderRegistrationProps {
 }
 
 export default function ProviderRegistration({ onComplete, userData }: ProviderRegistrationProps) {
-  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [couponCode, setCouponCode] = useState('');
+  const [apodo, setApodo] = useState('');
   const { toast } = useToast();
 
-  // Provider data
+  // Provider data - simplified
   const [providerData, setProviderData] = useState({
-    nombre: userData.nombre,
-    email: userData.email,
+    nombre: '',  // Nombre del negocio (opcional)
+    email: '',   // Email (opcional)
     telefono: userData.telefono,
-    codigo_postal: userData.codigoPostal,
-    business_address: '',
-    business_phone: '',
-    description: '',
+    business_address: '',  // Dirección (opcional)
+    description: '',       // Descripción (opcional)
     latitude: null as number | null,
     longitude: null as number | null,
   });
@@ -164,11 +162,12 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     ));
   };
 
-  const validateStep1 = () => {
-    return providerData.nombre && providerData.email && providerData.telefono && providerData.business_address;
-  };
-
-  const validateStep2 = () => {
+  const validateForm = () => {
+    // Solo apodo y teléfono son obligatorios
+    if (!apodo || !providerData.telefono) {
+      return false;
+    }
+    // Validar productos
     return products.every(p => 
       p.nombre && p.descripcion && p.precio > 0 && p.category_id
     );
@@ -176,35 +175,12 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
   const handleSubmit = async () => {
     console.log('🚀 Starting handleSubmit...');
-    console.log('📝 Step 1 validation:', validateStep1());
-    console.log('📝 Step 2 validation:', validateStep2());
-    console.log('📦 Provider data before processing:', JSON.stringify(providerData, null, 2));
-    console.log('🛍️ Products data before processing:', JSON.stringify(products, null, 2));
     
-    if (!validateStep1()) {
-      console.log('❌ Step 1 validation failed');
-      console.log('Required fields - nombre:', !!providerData.nombre, 'email:', !!providerData.email, 'telefono:', !!providerData.telefono);
+    if (!validateForm()) {
+      console.log('❌ Validation failed');
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos de información del proveedor",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!validateStep2()) {
-      console.log('❌ Step 2 validation failed');
-      products.forEach((p, i) => {
-        console.log(`Product ${i + 1}:`, {
-          nombre: !!p.nombre,
-          descripcion: !!p.descripcion,
-          precio: p.precio > 0,
-          category_id: !!p.category_id
-        });
-      });
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos de los productos",
+        description: "Por favor completa los campos obligatorios (apodo, teléfono) y la información de los productos",
         variant: "destructive",
       });
       return;
@@ -227,10 +203,27 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      // 2. Create provider record
+      // 2. Actualizar perfil con apodo
+      console.log('👤 Updating profile with apodo...');
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ apodo })
+        .eq('user_id', currentUser.id);
+      
+      if (profileUpdateError) {
+        console.error('⚠️ Profile update error:', profileUpdateError);
+      }
+
+      // 3. Create provider record
       console.log('🏢 Creating provider record...');
       const providerDataWithUserId = {
-        ...providerData,
+        nombre: providerData.nombre || apodo, // Usar apodo si no hay nombre de negocio
+        email: providerData.email || userData.email,
+        telefono: providerData.telefono,
+        business_address: providerData.business_address,
+        description: providerData.description,
+        latitude: providerData.latitude,
+        longitude: providerData.longitude,
         user_id: currentUser.id
       };
       console.log('🏢 Provider data with user ID:', JSON.stringify(providerDataWithUserId, null, 2));
@@ -260,7 +253,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
       console.log('✅ Provider created successfully:', providerRecord);
 
-      // 2. Create products
+      // 4. Create products
       console.log('🛍️ Creating products...');
       for (let i = 0; i < products.length; i++) {
         const product = products[i];
@@ -333,121 +326,74 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     }
   };
 
-  const renderStep1 = () => (
+  const renderProviderInfo = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="nombre">Nombre del Negocio *</Label>
+        <Label htmlFor="apodo">Apodo / Nombre de Usuario *</Label>
+        <Input
+          id="apodo"
+          value={apodo}
+          onChange={(e) => setApodo(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="nombre">Nombre del Negocio (opcional)</Label>
         <Input
           id="nombre"
           value={providerData.nombre}
           onChange={(e) => setProviderData({...providerData, nombre: e.target.value})}
-          placeholder="Ej: Frutas y Verduras La Huerta"
         />
       </div>
       <div>
-        <Label htmlFor="email">Email *</Label>
+        <Label htmlFor="email">Email (opcional)</Label>
         <Input
           id="email"
           type="email"
           value={providerData.email}
           onChange={(e) => setProviderData({...providerData, email: e.target.value})}
-          placeholder="tu@email.com"
         />
       </div>
       <PhoneInput
         id="telefono"
         value={providerData.telefono}
         onChange={(value) => setProviderData({...providerData, telefono: value})}
-        label="Teléfono"
+        label="Teléfono *"
         required
       />
       <div>
-        <Label htmlFor="codigo_postal">Código Postal</Label>
-        <Input
-          id="codigo_postal"
-          value={providerData.codigo_postal}
-          onChange={(e) => setProviderData({...providerData, codigo_postal: e.target.value})}
-          placeholder="12345"
-        />
-      </div>
-      <div>
-        <Label htmlFor="business_address">Dirección del Negocio *</Label>
+        <Label htmlFor="business_address">Dirección del Negocio (opcional)</Label>
         <Textarea
           id="business_address"
           value={providerData.business_address}
           onChange={(e) => setProviderData({...providerData, business_address: e.target.value})}
-          placeholder="Calle, número, colonia, ciudad, estado"
-          rows={3}
+          rows={2}
         />
       </div>
       <div>
-        <Label htmlFor="business_phone">Teléfono del Negocio</Label>
-        <Input
-          id="business_phone"
-          value={providerData.business_phone}
-          onChange={(e) => setProviderData({...providerData, business_phone: e.target.value})}
-          placeholder="Teléfono de contacto del negocio"
-        />
-      </div>
-      <div>
-        <Label htmlFor="description">Descripción del Negocio</Label>
+        <Label htmlFor="description">Descripción del Negocio (opcional)</Label>
         <Textarea
           id="description"
           value={providerData.description}
           onChange={(e) => setProviderData({...providerData, description: e.target.value})}
-          placeholder="Describe tu negocio, qué ofreces, horarios, etc."
-          rows={3}
+          rows={2}
         />
       </div>
       <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <Label>Ubicación GPS</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={getCurrentLocation}
-            disabled={loading}
-          >
-            📍 Obtener ubicación actual
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="latitude">Latitud</Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="0.000001"
-              value={providerData.latitude || ''}
-              onChange={(e) => setProviderData({...providerData, latitude: e.target.value ? parseFloat(e.target.value) : null})}
-              placeholder="Se detectará automáticamente"
-              readOnly
-            />
-          </div>
-          <div>
-            <Label htmlFor="longitude">Longitud</Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="0.000001"
-              value={providerData.longitude || ''}
-              onChange={(e) => setProviderData({...providerData, longitude: e.target.value ? parseFloat(e.target.value) : null})}
-              placeholder="Se detectará automáticamente"
-              readOnly
-            />
-          </div>
-        </div>
-        {providerData.latitude && providerData.longitude && (
+        {providerData.latitude && providerData.longitude ? (
           <p className="text-xs text-green-600">
-            ✓ Ubicación detectada correctamente
+            ✓ Ubicación GPS detectada automáticamente
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            📍 Ubicación GPS se detectará automáticamente
           </p>
         )}
       </div>
     </div>
   );
 
-  const renderStep2 = () => (
+  const renderProducts = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Productos ({products.length}/500)</h3>
@@ -573,46 +519,48 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Registro de Proveedor - Paso {currentStep} de 2</CardTitle>
-          <div className="flex space-x-2">
-            <div className={`h-2 w-1/2 rounded ${currentStep >= 1 ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 w-1/2 rounded ${currentStep >= 2 ? 'bg-primary' : 'bg-muted'}`} />
-          </div>
+          <CardTitle>Registro de Proveedor</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Completa tu información y registra al menos un producto. Luego procederás al pago para activar tu cuenta.
+          </p>
         </CardHeader>
 
-        <CardContent>
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
+        <CardContent className="space-y-8">
+          {/* Información del Proveedor */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Información del Proveedor</h3>
+            {renderProviderInfo()}
+          </div>
 
-          <div className="flex justify-between mt-8">
+          {/* Productos */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Productos</h3>
+            {renderProducts()}
+          </div>
+
+          {/* Cupón */}
+          <div>
+            <Label htmlFor="coupon">Código de Cupón (opcional)</Label>
+            <Input
+              id="coupon"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="Ingresa tu código de cupón si tienes uno"
+            />
+          </div>
+
+          {/* Botón de envío */}
+          <div className="flex justify-end">
             <Button
-              variant="outline"
-              onClick={() => setCurrentStep(1)}
-              disabled={currentStep === 1}
+              onClick={handleSubmit}
+              disabled={loading || !validateForm()}
+              size="lg"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Anterior
+              {loading ? 'Procesando...' : 'Continuar al Pago ($200 MXN/año)'}
             </Button>
-
-            {currentStep === 1 ? (
-              <Button
-                onClick={() => setCurrentStep(2)}
-                disabled={!validateStep1()}
-              >
-                Siguiente
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={loading || !validateStep2()}
-              >
-                {loading ? 'Registrando...' : 'Completar Registro'}
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>

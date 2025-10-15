@@ -373,10 +373,10 @@ const Auth = () => {
           <div className="mt-6">
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline font-medium text-lg"
+              className="text-primary hover:underline font-bold text-xl underline decoration-2"
             >
               {isLogin 
-                ? "¿No tienes cuenta? Regístrate" 
+                ? <span>¿No tienes cuenta? <span className="text-2xl">Regístrate</span></span>
                 : "¿Ya tienes cuenta? Inicia sesión"
               }
             </button>
@@ -401,11 +401,19 @@ const Auth = () => {
                 <>
                   <Tabs value={userType} onValueChange={(value) => setUserType(value as 'cliente' | 'proveedor')} className="mb-4">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="cliente" className="flex items-center space-x-2">
+                      <TabsTrigger 
+                        value="cliente" 
+                        className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        {userType === 'cliente' && <span className="mr-1">✓</span>}
                         <User className="h-4 w-4" />
                         <span>Cliente</span>
                       </TabsTrigger>
-                      <TabsTrigger value="proveedor" className="flex items-center space-x-2">
+                      <TabsTrigger 
+                        value="proveedor" 
+                        className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        {userType === 'proveedor' && <span className="mr-1">✓</span>}
                         <Store className="h-4 w-4" />
                         <span>Proveedor</span>
                       </TabsTrigger>
@@ -420,7 +428,6 @@ const Auth = () => {
                       value={apodo}
                       onChange={(e) => setApodo(e.target.value)}
                       required
-                      placeholder="¿Cómo te llaman?"
                     />
                   </div>
 
@@ -431,7 +438,6 @@ const Auth = () => {
                       type="text"
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
-                      placeholder="Nombre completo o de tu negocio"
                     />
                   </div>
 
@@ -446,7 +452,7 @@ const Auth = () => {
                         }}
                       />
                       <Label htmlFor="wantsEmail" className="cursor-pointer">
-                        ¿Quieres escribir tu correo? Por si olvidas tu contraseña, ya que solo por este medio podrías recuperarla
+                        ¿Deseas agregar tu correo electrónico?
                       </Label>
                     </div>
                     
@@ -457,7 +463,6 @@ const Auth = () => {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="tu@email.com"
                         />
                       </div>
                     )}
