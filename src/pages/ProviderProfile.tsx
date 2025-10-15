@@ -550,23 +550,22 @@ const ProviderProfile = () => {
                 itemCount={getItemCount()}
               />
               
-              {/* Botón para hacer otro pedido - visible siempre después de enviar pedido */}
-              {cart.length > 0 && (
-                <Button
-                  onClick={() => {
-                    clearCart();
-                    setCustomerName('');
-                    toast({
-                      title: 'Carrito limpiado',
-                      description: 'Puedes hacer un nuevo pedido',
-                    });
-                  }}
-                  variant="outline"
-                  className="w-full"
-                >
-                  🔄 Hacer otro pedido
-                </Button>
-              )}
+              {/* Botón para hacer otro pedido */}
+              <Button
+                onClick={() => {
+                  clearCart();
+                  setCustomerName('');
+                  setOrderNumber(null);
+                  toast({
+                    title: 'Carrito limpiado',
+                    description: 'Puedes hacer un nuevo pedido',
+                  });
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                🔄 Hacer otro pedido
+              </Button>
             </div>
           </div>
         </div>

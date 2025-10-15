@@ -346,8 +346,8 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       if (error) throw error;
 
-      // Recargar los pedidos
-      await loadOrders();
+      // Limpiar la pantalla inmediatamente
+      setOrders([]);
 
       toast({
         title: 'Pedidos eliminados',
