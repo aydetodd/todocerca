@@ -258,23 +258,14 @@ const ProviderProfile = () => {
 
       if (itemsError) throw itemsError;
 
-      // Formatear mensaje del pedido
+      // Formatear mensaje del pedido para WhatsApp
       const message = formatOrderMessage(pedido.numero_orden);
 
-      // Enviar por mensaje interno al proveedor
-      await sendMessage(message, provider.user_id, false);
-
-      // Enviar copia al cliente si está autenticado
-      if (user) {
-        const clientMessage = `📋 *Confirmación de Pedido #${pedido.numero_orden}*\n\n` +
-          `🏪 Restaurante: ${provider.nombre}\n` +
-          `💰 Total: ${formatCurrency(getTotal())}\n` +
-          `📊 Estado: Pendiente\n\n` +
-          `🎉 Tu pedido ha sido enviado correctamente.\n` +
-          `El restaurante lo está preparando. ¡Gracias por tu compra!`;
-        
-        await sendMessage(clientMessage, user.id, false);
-      }
+      // Enviar por WhatsApp al proveedor
+      const cleanPhone = (provider.business_phone || provider.telefono).replace(/\D/g, '');
+      const whatsappMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
+      window.open(whatsappUrl, '_blank');
 
       // Cerrar diálogo (el carrito no se limpia automáticamente)
       setShowCheckoutDialog(false);
@@ -282,7 +273,7 @@ const ProviderProfile = () => {
 
       toast({
         title: `✅ Pedido #${pedido.numero_orden} enviado`,
-        description: `Tu pedido fue enviado correctamente al restaurante. Número de pedido: #${pedido.numero_orden}`,
+        description: `Tu pedido fue enviado correctamente`,
         duration: 8000,
       });
     } catch (error: any) {
@@ -411,7 +402,7 @@ const ProviderProfile = () => {
                           className={selectedPersonIndex === i ? 'shadow-md scale-105' : ''}
                         >
                           <Users className="h-4 w-4 mr-2" />
-                          Persona {i + 1}
+                          Orden {i + 1}
                         </Button>
                       ))}
                       <Button
@@ -421,12 +412,12 @@ const ProviderProfile = () => {
                         className="border-dashed border-2"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Agregar persona
+                        Agregar orden
                       </Button>
                     </div>
                     <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
                       <p className="text-sm font-medium text-center">
-                        📝 Actualmente agregando para: <span className="text-primary font-bold">Persona {selectedPersonIndex + 1}</span>
+                        📝 Actualmente agregando para: <span className="text-primary font-bold">Orden {selectedPersonIndex + 1}</span>
                       </p>
                     </div>
                   </div>
