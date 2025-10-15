@@ -64,14 +64,15 @@ const ProviderProfile = () => {
   useEffect(() => {
     if (!authLoading && !user) {
       // Guardar la URL actual para redirigir después del login
-      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      const currentPath = proveedorId ? `/proveedor/${proveedorId}` : window.location.pathname;
+      localStorage.setItem('redirectAfterLogin', currentPath);
       toast({
         title: "Registro requerido",
         description: "Por favor regístrate o inicia sesión para hacer pedidos",
       });
       navigate('/auth');
     }
-  }, [authLoading, user, navigate, toast]);
+  }, [authLoading, user, navigate, toast, proveedorId]);
 
   const {
     cart,
@@ -92,14 +93,17 @@ const ProviderProfile = () => {
   };
 
   useEffect(() => {
-    // Verificar autenticación primero
-    if (!user) {
-      navigate('/auth', { replace: true });
+    // Solo cargar datos si hay usuario
+    if (authLoading) {
       return;
     }
     
+    if (!user) {
+      return; // El useEffect anterior ya maneja la redirección
+    }
+    
     loadProviderData();
-  }, [proveedorId, consecutiveNumber, user, navigate]);
+  }, [proveedorId, consecutiveNumber, user, authLoading]);
 
   const loadProviderData = async () => {
     try {
