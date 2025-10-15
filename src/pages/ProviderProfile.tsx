@@ -57,8 +57,8 @@ const ProviderProfile = () => {
   const [loading, setLoading] = useState(true);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
 
@@ -105,7 +105,25 @@ const ProviderProfile = () => {
     }
     
     loadProviderData();
+    loadUserProfile();
   }, [proveedorId, consecutiveNumber, user, authLoading]);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('telefono')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error cargando perfil de usuario:', error);
+    }
+  };
 
   const loadProviderData = async () => {
     try {
@@ -222,16 +240,19 @@ const ProviderProfile = () => {
   };
 
   const handleSubmitOrder = async () => {
-    if (!customerName.trim() || !customerPhone.trim()) {
+    if (!customerName.trim()) {
       toast({
         title: 'Datos incompletos',
-        description: 'Por favor ingresa tu nombre y teléfono',
+        description: 'Por favor ingresa tu nombre',
         variant: 'destructive',
       });
       return;
     }
 
     if (!provider) return;
+
+    // Obtener el teléfono del perfil del usuario
+    const customerPhone = userProfile?.telefono || '';
 
     setIsSubmitting(true);
 
@@ -314,6 +335,8 @@ const ProviderProfile = () => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+
+    const customerPhone = userProfile?.telefono || '';
 
     let message = `🛒 NUEVO PEDIDO #${numeroOrden}\n\n`;
     message += `📅 Fecha: ${fecha}\n`;
@@ -515,35 +538,36 @@ const ProviderProfile = () => {
 
           {/* Sidebar - Carrito */}
           <div className="lg:col-span-1 space-y-4">
-            <ShoppingCartComponent
-              cart={cart}
-              numPeople={numPeople}
-              onUpdateQuantity={updateQuantity}
-              onRemoveItem={removeFromCart}
-              onClearCart={clearCart}
-              onCheckout={handleCheckout}
-              total={getTotal()}
-              itemCount={getItemCount()}
-            />
-            
-            {/* Botón para hacer otro pedido - visible siempre */}
-            {cart.length > 0 && (
-              <Button
-                onClick={() => {
-                  clearCart();
-                  setCustomerName('');
-                  setCustomerPhone('');
-                  toast({
-                    title: 'Carrito limpiado',
-                    description: 'Puedes hacer un nuevo pedido',
-                  });
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                🔄 Hacer otro pedido
-              </Button>
-            )}
+            <div className="space-y-4">
+              <ShoppingCartComponent
+                cart={cart}
+                numPeople={numPeople}
+                onUpdateQuantity={updateQuantity}
+                onRemoveItem={removeFromCart}
+                onClearCart={clearCart}
+                onCheckout={handleCheckout}
+                total={getTotal()}
+                itemCount={getItemCount()}
+              />
+              
+              {/* Botón para hacer otro pedido - visible siempre después de enviar pedido */}
+              {cart.length > 0 && (
+                <Button
+                  onClick={() => {
+                    clearCart();
+                    setCustomerName('');
+                    toast({
+                      title: 'Carrito limpiado',
+                      description: 'Puedes hacer un nuevo pedido',
+                    });
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  🔄 Hacer otro pedido
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -582,16 +606,6 @@ const ProviderProfile = () => {
                     disabled={isSubmitting}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    placeholder="3331234567"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </div>
                 <div className="pt-4 border-t">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total:</span>
@@ -608,7 +622,6 @@ const ProviderProfile = () => {
                     setShowCheckoutDialog(false);
                     setOrderNumber(null);
                     setCustomerName('');
-                    setCustomerPhone('');
                   }}
                   className="w-full"
                 >
