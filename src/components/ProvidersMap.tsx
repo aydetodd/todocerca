@@ -77,6 +77,11 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     validProviders.forEach((provider) => {
       const marker = L.marker([provider.latitude, provider.longitude]).addTo(map);
       
+      // Navigate to provider profile on marker click
+      marker.on('click', () => {
+        window.location.href = `/proveedor/${provider.id}`;
+      });
+      
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
           <span style="font-size: 0.875rem;">${producto.nombre}</span>
