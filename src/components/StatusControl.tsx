@@ -56,14 +56,14 @@ export const StatusControl = () => {
   };
 
   return (
-    <div className="relative flex flex-col gap-2 bg-gray-900/98 rounded-2xl p-3 shadow-2xl border-2 border-gray-600 backdrop-blur-md">
-      <p className="text-white text-xs font-semibold text-center mb-1">Estado</p>
+    <div className="relative flex flex-col gap-1 bg-gray-900/98 rounded-2xl p-2 shadow-2xl border-2 border-gray-600 backdrop-blur-md">
+      <p className="text-white text-xs font-semibold text-center mb-0.5">Estado</p>
       {/* Green Light - Available (Top) */}
       <button
         onClick={() => updateStatus('available')}
         disabled={loading}
         className={`
-          w-12 h-12 rounded-full transition-all duration-300 border-2
+          w-10 h-10 rounded-full transition-all duration-300 border-2
           ${status === 'available' 
             ? 'bg-green-500 border-green-300 shadow-[0_0_25px_rgba(34,197,94,1)] scale-110' 
             : 'bg-green-950/40 border-green-950/60 hover:bg-green-950/60'
@@ -78,7 +78,7 @@ export const StatusControl = () => {
         onClick={() => updateStatus('busy')}
         disabled={loading}
         className={`
-          w-12 h-12 rounded-full transition-all duration-300 border-2
+          w-10 h-10 rounded-full transition-all duration-300 border-2
           ${status === 'busy' 
             ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_25px_rgba(234,179,8,1)] scale-110' 
             : 'bg-yellow-950/40 border-yellow-950/60 hover:bg-yellow-950/60'
@@ -93,7 +93,7 @@ export const StatusControl = () => {
         onClick={() => updateStatus('offline')}
         disabled={loading}
         className={`
-          w-12 h-12 rounded-full transition-all duration-300 border-2
+          w-10 h-10 rounded-full transition-all duration-300 border-2
           ${status === 'offline' 
             ? 'bg-red-500 border-red-300 shadow-[0_0_25px_rgba(239,68,68,1)] scale-110' 
             : 'bg-red-950/40 border-red-950/60 hover:bg-red-950/60'
