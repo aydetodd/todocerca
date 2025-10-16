@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Pencil, Trash2, Save, X, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ interface Product {
   keywords: string;
   is_available: boolean;
   stock: number;
+  foto_url?: string;
 }
 
 interface Category {
@@ -57,6 +58,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -97,12 +100,23 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     try {
       const { data, error } = await supabase
         .from('productos')
-        .select('*')
+        .select(`
+          *,
+          fotos_productos(url, es_principal)
+        `)
         .eq('proveedor_id', proveedorId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      
+      // Agregar la URL de la foto principal a cada producto
+      const productsWithPhotos = (data || []).map((product: any) => ({
+        ...product,
+        foto_url: product.fotos_productos?.find((f: any) => f.es_principal)?.url || 
+                  product.fotos_productos?.[0]?.url || null,
+      }));
+      
+      setProducts(productsWithPhotos);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -154,7 +168,52 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         stock: 0,
       });
     }
+    setSelectedFile(null);
     setIsDialogOpen(true);
+  };
+
+  const uploadProductPhoto = async (productId: string, file: File) => {
+    try {
+      setUploadingPhoto(true);
+      
+      // Generar nombre único para el archivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productId}_${Date.now()}.${fileExt}`;
+      const filePath = `${proveedorId}/${fileName}`;
+
+      // Subir archivo a storage
+      const { error: uploadError } = await supabase.storage
+        .from('product-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-photos')
+        .getPublicUrl(filePath);
+
+      // Crear registro en fotos_productos
+      const { error: dbError } = await supabase
+        .from('fotos_productos')
+        .insert({
+          producto_id: productId,
+          url: publicUrl,
+          nombre_archivo: fileName,
+          es_principal: true,
+          mime_type: file.type,
+          file_size: file.size,
+        });
+
+      if (dbError) throw dbError;
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      throw error;
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -168,6 +227,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         return;
       }
 
+      let productId = editingProduct?.id;
+
       if (editingProduct) {
         // Update existing product
         const { error } = await supabase
@@ -177,20 +238,33 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
 
         if (error) throw error;
 
+        // Si hay una nueva foto, subirla
+        if (selectedFile) {
+          await uploadProductPhoto(editingProduct.id, selectedFile);
+        }
+
         toast({
           title: "Éxito",
           description: "Producto actualizado correctamente",
         });
       } else {
         // Create new product
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('productos')
           .insert({
             ...formData,
             proveedor_id: proveedorId,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+        productId = data.id;
+
+        // Si hay foto, subirla
+        if (selectedFile && productId) {
+          await uploadProductPhoto(productId, selectedFile);
+        }
 
         toast({
           title: "Éxito",
@@ -199,6 +273,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
       }
 
       setIsDialogOpen(false);
+      setSelectedFile(null);
       fetchProducts();
     } catch (error: any) {
       toast({
@@ -372,6 +447,33 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   placeholder="Ej: fresco, orgánico, temporada"
                 />
               </div>
+              <div>
+                <Label htmlFor="photo">Foto del Producto</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  {editingProduct?.foto_url && (
+                    <img 
+                      src={editingProduct.foto_url} 
+                      alt="Foto actual"
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                  {selectedFile && (
+                    <span className="text-sm text-muted-foreground">
+                      {selectedFile.name}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Formatos: JPG, PNG, WEBP. Máximo 5MB
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="stock">Stock</Label>
@@ -400,9 +502,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={handleSaveProduct}>
+              <Button onClick={handleSaveProduct} disabled={uploadingPhoto}>
                 <Save className="h-4 w-4 mr-2" />
-                Guardar
+                {uploadingPhoto ? 'Subiendo foto...' : 'Guardar'}
               </Button>
             </div>
           </DialogContent>
@@ -422,7 +524,21 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
-            <Card key={product.id}>
+            <Card key={product.id} className="overflow-hidden">
+              {product.foto_url && (
+                <div className="w-full h-48 bg-muted relative">
+                  <img 
+                    src={product.foto_url} 
+                    alt={product.nombre}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              {!product.foto_url && (
+                <div className="w-full h-48 bg-muted flex items-center justify-center">
+                  <Image className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span className="truncate">{product.nombre}</span>
