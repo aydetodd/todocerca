@@ -104,7 +104,8 @@ const ProductSearch = () => {
   const handleSearch = async (e: React.FormEvent | null, query?: string) => {
     if (e) e.preventDefault();
     const term = query || searchTerm;
-    if (!term.trim()) return;
+    // No buscar si el campo está vacío y la categoría es "todas"
+    if (!term.trim() && selectedCategory === 'todas') return;
     
     setLoading(true);
     setHasSearched(true);
@@ -133,8 +134,12 @@ const ProductSearch = () => {
             user_id
           )
         `)
-        .or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`)
         .eq('is_available', true);
+      
+      // Solo aplicar filtro de nombre/keywords si hay término de búsqueda
+      if (term.trim()) {
+        query = query.or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`);
+      }
       
       // Filtrar por categoría si no es "todas"
       if (selectedCategory !== 'todas') {
