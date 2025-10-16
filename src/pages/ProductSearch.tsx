@@ -10,6 +10,11 @@ import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 interface SearchResult {
   product_name: string;
   product_description: string;
@@ -55,6 +60,8 @@ const ProductSearch = () => {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('todas');
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -70,6 +77,21 @@ const ProductSearch = () => {
       setIsMessagingOpen(true);
     }
   };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('product_categories')
+        .select('id, name')
+        .order('name');
+      
+      if (data) {
+        setCategories(data);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const query = searchParams.get('q');
@@ -89,7 +111,7 @@ const ProductSearch = () => {
     
     try {
       // Search in productos table by name or keywords with provider location
-      const { data: productos, error } = await supabase
+      let query = supabase
         .from('productos')
         .select(`
           id,
@@ -113,6 +135,13 @@ const ProductSearch = () => {
         `)
         .or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`)
         .eq('is_available', true);
+      
+      // Filtrar por categoría si no es "todas"
+      if (selectedCategory !== 'todas') {
+        query = query.eq('category_id', selectedCategory);
+      }
+      
+      const { data: productos, error } = await query;
 
       if (error) {
         console.error('Error searching:', error);
@@ -257,7 +286,7 @@ const ProductSearch = () => {
           <h1 className="text-3xl font-bold">Buscar Productos y Servicios</h1>
         </div>
         
-        <form onSubmit={handleSearch} className="mb-8">
+        <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-4">
             <Input
               type="text"
@@ -272,6 +301,30 @@ const ProductSearch = () => {
             </Button>
           </div>
         </form>
+
+        {/* Categorías */}
+        <div className="mb-8">
+          <p className="text-sm font-medium mb-3">Categorías:</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedCategory === 'todas' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategory('todas')}
+              size="sm"
+            >
+              Todas
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category.id)}
+                size="sm"
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        </div>
 
         {!hasSearched && (
           <Card>

@@ -552,7 +552,7 @@ const ProviderProfile = () => {
               />
               
               {/* Botón para hacer otro pedido - sticky en la parte superior */}
-              <Card className="sticky top-20 z-10 shadow-lg border-2 border-primary mt-4">
+              <Card className="sticky top-28 z-10 shadow-lg border-2 border-primary mt-4">
                 <CardContent className="p-4">
                   <Button
                     onClick={async () => {
