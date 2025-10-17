@@ -31,21 +31,47 @@ export const useRealtimeLocations = () => {
         return;
       }
 
-      // Fetch profiles for all users - only available and busy users
+      // Fetch profiles for all users - only providers with available/busy status
       const userIds = locationsData?.map(l => l.user_id) || [];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, apodo, estado, telefono')
+        .select('id, user_id, apodo, estado, telefono, role')
         .in('user_id', userIds)
+        .eq('role', 'proveedor')
         .in('estado', ['available', 'busy']);
+
+      if (!profilesData || profilesData.length === 0) {
+        setLocations([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get profile IDs to check subscriptions
+      const profileIds = profilesData.map(p => p.id);
+      const { data: subscriptionsData } = await supabase
+        .from('subscriptions')
+        .select('profile_id, status, end_date')
+        .in('profile_id', profileIds)
+        .eq('status', 'activa');
+
+      // Filter profiles with active subscriptions
+      const profilesWithActiveSub = profilesData.filter(profile => {
+        const subscription = subscriptionsData?.find(s => s.profile_id === profile.id);
+        if (!subscription) return false;
+        // Check if subscription hasn't ended
+        if (subscription.end_date) {
+          return new Date(subscription.end_date) > new Date();
+        }
+        return true;
+      });
 
       // Merge data
       const merged = locationsData?.map(loc => ({
         ...loc,
-        profiles: profilesData?.find(p => p.user_id === loc.user_id) || null
+        profiles: profilesWithActiveSub?.find(p => p.user_id === loc.user_id) || null
       })) || [];
 
-      // Only show users with available or busy status
+      // Only show users with active subscription, provider role, and available/busy status
       setLocations(merged.filter(l => l.profiles) as ProveedorLocation[]);
       setLoading(false);
     };

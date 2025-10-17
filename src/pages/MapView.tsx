@@ -1,16 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Home } from 'lucide-react';
 import { StatusControl } from '@/components/StatusControl';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function MapView() {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [isProvider, setIsProvider] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user is a provider
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.role === 'proveedor') {
+        setIsProvider(true);
+
+        // Check for active subscription
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('status, end_date')
+          .eq('profile_id', profile.id)
+          .eq('status', 'activa')
+          .maybeSingle();
+
+        if (subscription) {
+          // Check if subscription hasn't ended
+          if (!subscription.end_date || new Date(subscription.end_date) > new Date()) {
+            setHasActiveSubscription(true);
+          }
+        }
+      }
+    };
+
+    checkSubscription();
+  }, []);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
@@ -39,10 +77,12 @@ export default function MapView() {
       <div className="flex-1 relative">
         <RealtimeMap onOpenChat={handleOpenChat} />
         
-        {/* Status Control Overlay - Top Right with better visibility */}
-        <div className="absolute top-20 right-4 z-[1000] shadow-2xl">
-          <StatusControl />
-        </div>
+        {/* Status Control Overlay - Only show for providers with active subscription */}
+        {isProvider && hasActiveSubscription && (
+          <div className="absolute top-20 right-4 z-[1000] shadow-2xl">
+            <StatusControl />
+          </div>
+        )}
       </div>
 
       {/* Floating Message Button */}
