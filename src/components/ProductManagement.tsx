@@ -176,6 +176,23 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     try {
       setUploadingPhoto(true);
       
+      // Validar tamaño del archivo (máximo 500KB)
+      const maxSize = 500 * 1024; // 500KB en bytes
+      if (file.size > maxSize) {
+        toast({
+          title: "Archivo muy grande",
+          description: "La foto no debe superar los 500KB. Por favor, comprime la imagen antes de subirla.",
+          variant: "destructive",
+        });
+        throw new Error('Archivo muy grande');
+      }
+
+      // Primero, marcar todas las fotos actuales como no principales
+      await supabase
+        .from('fotos_productos')
+        .update({ es_principal: false })
+        .eq('producto_id', productId);
+      
       // Generar nombre único para el archivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${productId}_${Date.now()}.${fileExt}`;
@@ -206,6 +223,11 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         });
 
       if (dbError) throw dbError;
+
+      toast({
+        title: "Éxito",
+        description: "Foto actualizada correctamente",
+      });
 
       return publicUrl;
     } catch (error) {
@@ -288,6 +310,27 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     if (!deleteProductId) return;
 
     try {
+      // Verificar si el producto tiene pedidos asociados
+      const { data: itemsPedido, error: checkError } = await supabase
+        .from('items_pedido')
+        .select('id')
+        .eq('producto_id', deleteProductId)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (itemsPedido && itemsPedido.length > 0) {
+        // El producto tiene pedidos asociados, no se puede eliminar
+        toast({
+          title: "No se puede eliminar",
+          description: "Este producto tiene pedidos asociados. En lugar de eliminarlo, puedes marcarlo como 'No disponible' para ocultarlo de las búsquedas.",
+          variant: "destructive",
+        });
+        setDeleteProductId(null);
+        return;
+      }
+
+      // Si no tiene pedidos, eliminar el producto
       const { error } = await supabase
         .from('productos')
         .delete()
@@ -308,6 +351,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         description: error.message,
         variant: "destructive",
       });
+      setDeleteProductId(null);
     }
   };
 
@@ -454,10 +498,25 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     id="photo"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const maxSize = 500 * 1024; // 500KB
+                        if (file.size > maxSize) {
+                          toast({
+                            title: "Archivo muy grande",
+                            description: "La foto no debe superar los 500KB. Por favor, comprime la imagen antes de subirla.",
+                            variant: "destructive",
+                          });
+                          e.target.value = ''; // Limpiar el input
+                          return;
+                        }
+                        setSelectedFile(file);
+                      }
+                    }}
                     className="flex-1"
                   />
-                  {editingProduct?.foto_url && (
+                  {editingProduct?.foto_url && !selectedFile && (
                     <img 
                       src={editingProduct.foto_url} 
                       alt="Foto actual"
@@ -465,14 +524,24 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     />
                   )}
                   {selectedFile && (
-                    <span className="text-sm text-muted-foreground">
-                      {selectedFile.name}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {(selectedFile.size / 1024).toFixed(0)}KB
+                      </span>
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos: JPG, PNG, WEBP. Máximo 5MB
+                  Formatos: JPG, PNG, WEBP. <strong>Máximo 500KB</strong>
                 </p>
+                {editingProduct?.foto_url && (
+                  <p className="text-xs text-primary mt-1">
+                    Selecciona una nueva foto para cambiar la actual
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
