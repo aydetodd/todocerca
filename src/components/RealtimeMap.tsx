@@ -104,15 +104,93 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
     return () => clearInterval(interval);
   }, [currentUserId, updateLocation]);
 
-  // Update markers
+  // Update markers including current user
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !currentUserId) return;
 
     // Clear old markers
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
 
-    // Add new markers
+    // Check if current user should be shown
+    const currentUserLocation = locations.find(loc => loc.user_id === currentUserId);
+    
+    // Get current user's profile even if not in locations
+    const addCurrentUserMarker = async () => {
+      if (!currentUserLocation) {
+        // Fetch current user's location and profile
+        const { data: locationData } = await supabase
+          .from('proveedor_locations')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .single();
+
+        if (locationData) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('apodo, estado, telefono')
+            .eq('user_id', currentUserId)
+            .single();
+
+          if (profileData) {
+            // Add current user marker
+            const estado = profileData.estado || 'offline';
+            const colors = {
+              available: '#22c55e',
+              busy: '#eab308',
+              offline: '#ef4444'
+            };
+
+            const iconHtml = `
+              <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
+                      fill="${colors[estado]}" 
+                      stroke="white" 
+                      stroke-width="2"/>
+              </svg>
+            `;
+
+            const icon = L.divIcon({
+              html: iconHtml,
+              className: 'custom-marker',
+              iconSize: [30, 30]
+            });
+
+            const marker = L.marker([Number(locationData.latitude), Number(locationData.longitude)], { icon })
+              .addTo(mapRef.current!);
+
+            const visibilityText = estado === 'offline' 
+              ? 'No visible para otros' 
+              : 'Visible para otros';
+            const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
+
+            const popupContent = `
+              <div class="p-3 min-w-[200px]">
+                <h3 class="font-bold text-lg mb-2">${profileData.apodo || 'Usuario'}</h3>
+                <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
+                <p class="text-xs mb-2" style="color: ${visibilityColor}">
+                  <strong>${visibilityText}</strong>
+                </p>
+                <p class="text-sm text-gray-500">Tu ubicación actual</p>
+              </div>
+            `;
+
+            marker.bindPopup(popupContent, {
+              closeButton: true,
+              autoClose: false,
+              closeOnClick: false,
+              maxWidth: 300
+            });
+
+            markersRef.current[currentUserId] = marker;
+          }
+        }
+      }
+    };
+
+    addCurrentUserMarker();
+
+    // Add other users' markers
     locations.forEach(location => {
       if (!location.profiles) return;
 
@@ -156,10 +234,20 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         .addTo(mapRef.current!);
 
       // Popup content
+      const visibilityText = isCurrentUser && estado === 'offline' 
+        ? 'No visible para otros' 
+        : isCurrentUser ? 'Visible para otros' : '';
+      const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
+
       const popupContent = `
         <div class="p-3 min-w-[200px]">
           <h3 class="font-bold text-lg mb-2">${location.profiles.apodo || 'Usuario'}</h3>
-          <p class="text-sm mb-3">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
+          <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
+          ${isCurrentUser ? `
+            <p class="text-xs mb-2" style="color: ${visibilityColor}">
+              <strong>${visibilityText}</strong>
+            </p>
+          ` : ''}
           ${!isCurrentUser ? `
           <div class="flex gap-2">
             <button 
