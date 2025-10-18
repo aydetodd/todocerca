@@ -9,6 +9,7 @@ import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, 
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
+import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 
 interface Category {
   id: string;
@@ -16,6 +17,7 @@ interface Category {
 }
 
 interface SearchResult {
+  product_id: string;
   product_name: string;
   product_description: string;
   price: number;
@@ -209,6 +211,7 @@ const ProductSearch = () => {
           const proveedorData = providerLocationMap.get(producto.proveedor_id);
           const providerStatus = providerStatusMap.get(producto.proveedor_id) || 'offline';
           return {
+            product_id: producto.id || '',
             product_name: producto.nombre || '',
             product_description: producto.descripcion || '',
             price: producto.precio || 0,
@@ -365,40 +368,61 @@ const ProductSearch = () => {
                 </div>
               )}
 
-              {/* Lista de proveedores */}
+              {/* Lista de productos */}
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold mb-4">Proveedores</h2>
-                {mapProviders.map((provider) => (
-                  <Card key={provider.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <h2 className="text-xl font-semibold mb-4">Productos Encontrados</h2>
+                {results.map((result, index) => (
+                  <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl">{provider.business_name}</CardTitle>
-                          {provider.business_address && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                              <MapPin className="h-3 w-3" />
-                              {provider.business_address}
-                            </p>
-                          )}
-                          {provider.business_phone && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                              <Phone className="h-3 w-3" />
-                              {provider.business_phone}
-                            </p>
-                          )}
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2">{result.product_name}</CardTitle>
+                          <p className="text-sm text-muted-foreground mb-3">{result.product_description}</p>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <Badge variant="default" className="text-lg">
+                              ${result.price.toFixed(2)} / {result.unit}
+                            </Badge>
+                            <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
+                              {result.stock > 0 ? (
+                                <>
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Stock: {result.stock}
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Sin stock
+                                </>
+                              )}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p className="font-medium">Proveedor: {result.provider_name}</p>
+                            {result.provider_address && (
+                              <p className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {result.provider_address}
+                              </p>
+                            )}
+                            {result.provider_phone && (
+                              <p className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {result.provider_phone}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Package className="h-3 w-3" />
-                          {provider.productos.length} producto{provider.productos.length !== 1 ? 's' : ''}
-                        </Badge>
+                        <div className="w-64 flex-shrink-0">
+                          <ProductPhotoGallery productoId={result.product_id} />
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <Button 
                         className="w-full"
-                        onClick={() => navigate(`/proveedor/${provider.id}`)}
+                        onClick={() => navigate(`/proveedor/${result.provider_id}`)}
                       >
-                        Ver productos y hacer pedido
+                        Ver más productos y hacer pedido
                       </Button>
                     </CardContent>
                   </Card>
