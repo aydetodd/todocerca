@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
+import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const { toast } = useToast();
 
@@ -168,70 +169,84 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         stock: 0,
       });
     }
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setIsDialogOpen(true);
   };
 
-  const uploadProductPhoto = async (productId: string, file: File) => {
+  const uploadProductPhotos = async (files: File[], productId: string, isFirstProduct: boolean = false): Promise<void> => {
     try {
       setUploadingPhoto(true);
       
-      // Validar tamaño del archivo (máximo 500KB)
-      const maxSize = 500 * 1024; // 500KB en bytes
-      if (file.size > maxSize) {
+      // Validar tamaño de cada archivo
+      const maxSize = 500 * 1024; // 500KB
+      const invalidFiles = files.filter(f => f.size > maxSize);
+      
+      if (invalidFiles.length > 0) {
         toast({
-          title: "Archivo muy grande",
-          description: "La foto no debe superar los 500KB. Por favor, comprime la imagen antes de subirla.",
+          title: "Archivos muy grandes",
+          description: `${invalidFiles.length} foto(s) superan los 500KB. Por favor, comprime las imágenes.`,
           variant: "destructive",
         });
-        throw new Error('Archivo muy grande');
+        throw new Error('Archivos muy grandes');
       }
 
-      // Primero, marcar todas las fotos actuales como no principales
-      await supabase
-        .from('fotos_productos')
-        .update({ es_principal: false })
-        .eq('producto_id', productId);
+      // Si es un producto nuevo o no tiene fotos, la primera será principal
+      let isFirstPhoto = isFirstProduct;
       
-      // Generar nombre único para el archivo
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${productId}_${Date.now()}.${fileExt}`;
-      const filePath = `${proveedorId}/${fileName}`;
+      if (!isFirstProduct) {
+        // Verificar si ya tiene fotos
+        const { data: existingPhotos } = await supabase
+          .from('fotos_productos')
+          .select('id')
+          .eq('producto_id', productId)
+          .limit(1);
+        
+        isFirstPhoto = !existingPhotos || existingPhotos.length === 0;
+      }
 
-      // Subir archivo a storage
-      const { error: uploadError } = await supabase.storage
-        .from('product-photos')
-        .upload(filePath, file);
+      // Subir cada foto
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${productId}_${Date.now()}_${i}.${fileExt}`;
+        const filePath = `${proveedorId}/${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('product-photos')
+          .upload(filePath, file);
 
-      // Obtener URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-photos')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      // Crear registro en fotos_productos
-      const { error: dbError } = await supabase
-        .from('fotos_productos')
-        .insert({
-          producto_id: productId,
-          url: publicUrl,
-          nombre_archivo: fileName,
-          es_principal: true,
-          mime_type: file.type,
-          file_size: file.size,
-        });
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-photos')
+          .getPublicUrl(filePath);
 
-      if (dbError) throw dbError;
+        // La primera foto será principal si no hay otras
+        const { error: dbError } = await supabase
+          .from('fotos_productos')
+          .insert({
+            producto_id: productId,
+            url: publicUrl,
+            nombre_archivo: fileName,
+            file_size: file.size,
+            mime_type: file.type,
+            es_principal: isFirstPhoto && i === 0,
+          });
+
+        if (dbError) throw dbError;
+      }
 
       toast({
         title: "Éxito",
-        description: "Foto actualizada correctamente",
+        description: `${files.length} foto(s) subida(s) correctamente`,
       });
-
-      return publicUrl;
     } catch (error) {
-      console.error('Error uploading photo:', error);
+      console.error('Error uploading photos:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron subir algunas fotos",
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setUploadingPhoto(false);
@@ -260,9 +275,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
 
         if (error) throw error;
 
-        // Si hay una nueva foto, subirla
-        if (selectedFile) {
-          await uploadProductPhoto(editingProduct.id, selectedFile);
+        // Si hay nuevas fotos, subirlas
+        if (selectedFiles.length > 0) {
+          await uploadProductPhotos(selectedFiles, editingProduct.id, false);
         }
 
         toast({
@@ -283,9 +298,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         if (error) throw error;
         productId = data.id;
 
-        // Si hay foto, subirla
-        if (selectedFile && productId) {
-          await uploadProductPhoto(productId, selectedFile);
+        // Si hay fotos, subirlas
+        if (selectedFiles.length > 0 && productId) {
+          await uploadProductPhotos(selectedFiles, productId, true);
         }
 
         toast({
@@ -295,7 +310,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
       }
 
       setIsDialogOpen(false);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       fetchProducts();
     } catch (error: any) {
       toast({
@@ -492,56 +507,69 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 />
               </div>
               <div>
-                <Label htmlFor="photo">Foto del Producto</Label>
-                <div className="flex items-center gap-4 mt-2">
+                <Label htmlFor="photos">Fotos del Producto</Label>
+                <div className="space-y-2 mt-2">
                   <Input
-                    id="photo"
+                    id="photos"
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const maxSize = 500 * 1024; // 500KB
-                        if (file.size > maxSize) {
-                          toast({
-                            title: "Archivo muy grande",
-                            description: "La foto no debe superar los 500KB. Por favor, comprime la imagen antes de subirla.",
-                            variant: "destructive",
-                          });
-                          e.target.value = ''; // Limpiar el input
-                          return;
-                        }
-                        setSelectedFile(file);
+                      const files = Array.from(e.target.files || []);
+                      const maxSize = 500 * 1024; // 500KB
+                      const validFiles = files.filter(f => f.size <= maxSize);
+                      const invalidFiles = files.filter(f => f.size > maxSize);
+                      
+                      if (invalidFiles.length > 0) {
+                        toast({
+                          title: "Algunos archivos muy grandes",
+                          description: `${invalidFiles.length} foto(s) superan los 500KB y no se seleccionaron.`,
+                          variant: "destructive",
+                        });
+                      }
+                      
+                      if (validFiles.length > 0) {
+                        setSelectedFiles(prev => [...prev, ...validFiles]);
                       }
                     }}
-                    className="flex-1"
                   />
-                  {editingProduct?.foto_url && !selectedFile && (
-                    <img 
-                      src={editingProduct.foto_url} 
-                      alt="Foto actual"
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  {selectedFile && (
-                    <div className="flex flex-col items-end">
-                      <span className="text-sm text-muted-foreground">
-                        {selectedFile.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {(selectedFile.size / 1024).toFixed(0)}KB
-                      </span>
+                  
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        {selectedFiles.length} foto(s) seleccionada(s)
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Preview ${index + 1}`}
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                            <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 text-center">
+                              {(file.size / 1024).toFixed(0)}KB
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                  )}
+                  
+                  {editingProduct && (
+                    <ProductPhotoGallery productoId={editingProduct.id} />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos: JPG, PNG, WEBP. <strong>Máximo 500KB</strong>
+                  Formatos: JPG, PNG, WEBP. <strong>Máximo 500KB por foto</strong>. Puedes subir múltiples fotos.
                 </p>
-                {editingProduct?.foto_url && (
-                  <p className="text-xs text-primary mt-1">
-                    Selecciona una nueva foto para cambiar la actual
-                  </p>
-                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
