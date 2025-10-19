@@ -34,13 +34,19 @@ export const ProductPhotoCarousel = ({ productoId }: ProductPhotoCarouselProps) 
 
   const loadPhotos = async () => {
     try {
+      console.log('🖼️ Cargando fotos para producto:', productoId);
       const { data, error } = await supabase
         .from('fotos_productos')
         .select('id, url, alt_text, es_principal')
         .eq('producto_id', productoId)
         .order('es_principal', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error cargando fotos:', error);
+        throw error;
+      }
+      
+      console.log('📸 Fotos encontradas:', data?.length || 0, data);
       
       if (data && data.length > 0) {
         setPhotos(data);
