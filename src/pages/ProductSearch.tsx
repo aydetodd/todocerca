@@ -9,7 +9,7 @@ import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, 
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
-import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
+import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
 
 interface Category {
   id: string;
@@ -413,7 +413,7 @@ const ProductSearch = () => {
                           </div>
                         </div>
                         <div className="w-64 flex-shrink-0">
-                          <ProductPhotoGallery productoId={result.product_id} />
+                          <ProductPhotoCarousel productoId={result.product_id} />
                         </div>
                       </div>
                     </CardHeader>
