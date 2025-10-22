@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List } from 'lucide-react';
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -361,73 +362,89 @@ const ProductSearch = () => {
                 {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
               </p>
               
-              {mapProviders.length > 0 && (
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Ubicación de Proveedores</h2>
-                  <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
-                </div>
-              )}
+              <Tabs defaultValue="mapa" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+                  <TabsTrigger value="mapa" className="flex items-center gap-2">
+                    <Map className="h-4 w-4" />
+                    Ver Mapa
+                  </TabsTrigger>
+                  <TabsTrigger value="lista" className="flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    Ver Listado
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Lista de productos */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold mb-4">Productos Encontrados</h2>
-                {results.map((result, index) => (
-                  <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl mb-2">{result.product_name}</CardTitle>
-                          <p className="text-sm text-muted-foreground mb-3">{result.product_description}</p>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            <Badge variant="default" className="text-lg">
-                              ${result.price.toFixed(2)} / {result.unit}
-                            </Badge>
-                            <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
-                              {result.stock > 0 ? (
-                                <>
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Stock: {result.stock}
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Sin stock
-                                </>
-                              )}
-                            </Badge>
+                <TabsContent value="mapa" className="mt-0">
+                  {mapProviders.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4">Ubicación de Proveedores</h2>
+                      <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="lista" className="mt-0">
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold mb-4">Productos Encontrados</h2>
+                    {results.map((result, index) => (
+                      <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1">
+                              <CardTitle className="text-xl mb-2">{result.product_name}</CardTitle>
+                              <p className="text-sm text-muted-foreground mb-3">{result.product_description}</p>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                <Badge variant="default" className="text-lg">
+                                  ${result.price.toFixed(2)} / {result.unit}
+                                </Badge>
+                                <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
+                                  {result.stock > 0 ? (
+                                    <>
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Stock: {result.stock}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Sin stock
+                                    </>
+                                  )}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p className="font-medium">Proveedor: {result.provider_name}</p>
+                                {result.provider_address && (
+                                  <p className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {result.provider_address}
+                                  </p>
+                                )}
+                                {result.provider_phone && (
+                                  <p className="flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {result.provider_phone}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="w-64 flex-shrink-0">
+                              <ProductPhotoCarousel productoId={result.product_id} />
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p className="font-medium">Proveedor: {result.provider_name}</p>
-                            {result.provider_address && (
-                              <p className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {result.provider_address}
-                              </p>
-                            )}
-                            {result.provider_phone && (
-                              <p className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {result.provider_phone}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="w-64 flex-shrink-0">
-                          <ProductPhotoCarousel productoId={result.product_id} />
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Button 
-                        className="w-full"
-                        onClick={() => navigate(`/proveedor/${result.provider_id}`)}
-                      >
-                        Ver más productos y hacer pedido
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        </CardHeader>
+                        <CardContent>
+                          <Button 
+                            className="w-full"
+                            onClick={() => navigate(`/proveedor/${result.provider_id}`)}
+                          >
+                            Ver más productos y hacer pedido
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
 
           </div>
