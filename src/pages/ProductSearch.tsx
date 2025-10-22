@@ -197,20 +197,20 @@ const ProductSearch = () => {
         }
 
         // Create a map of proveedor_id to provider data with status
-        const providerLocationMap = new Map();
-        const providerStatusMap = new Map();
+        const providerLocationMap: Record<string, any> = {};
+        const providerStatusMap: Record<string, string> = {};
         
         if (proveedoresData) {
           proveedoresData.forEach((p: any) => {
-            providerLocationMap.set(p.id, p);
+            providerLocationMap[p.id] = p;
             const profile = profilesData?.find(prof => prof.user_id === p.user_id);
-            providerStatusMap.set(p.id, profile?.estado || 'offline');
+            providerStatusMap[p.id] = profile?.estado || 'offline';
           });
         }
 
         const formattedResults: SearchResult[] = availableProductos.map((producto: any) => {
-          const proveedorData = providerLocationMap.get(producto.proveedor_id);
-          const providerStatus = providerStatusMap.get(producto.proveedor_id) || 'offline';
+          const proveedorData = providerLocationMap[producto.proveedor_id];
+          const providerStatus = providerStatusMap[producto.proveedor_id] || 'offline';
           return {
             product_id: producto.id || '',
             product_name: producto.nombre || '',
@@ -225,20 +225,20 @@ const ProductSearch = () => {
             provider_address: proveedorData?.business_address || '',
             provider_latitude: proveedorData?.latitude || 0,
             provider_longitude: proveedorData?.longitude || 0,
-            provider_status: providerStatus,
+            provider_status: (providerStatus === 'available' || providerStatus === 'busy') ? providerStatus : 'available',
           };
         });
         
         setResults(formattedResults);
 
         // Group products by provider for the map
-        const providerMap = new Map<string, MapProvider>();
+        const providerMap: Record<string, MapProvider> = {};
         
         formattedResults.forEach((result) => {
           if (result.provider_latitude && result.provider_longitude) {
-            if (!providerMap.has(result.provider_id)) {
-              const proveedorData = providerLocationMap.get(result.provider_id);
-              providerMap.set(result.provider_id, {
+            if (!providerMap[result.provider_id]) {
+              const proveedorData = providerLocationMap[result.provider_id];
+              providerMap[result.provider_id] = {
                 id: result.provider_id,
                 business_name: result.provider_name,
                 business_address: result.provider_address,
@@ -247,10 +247,10 @@ const ProductSearch = () => {
                 longitude: result.provider_longitude,
                 user_id: proveedorData?.user_id || '',
                 productos: []
-              });
+              };
             }
             
-            const provider = providerMap.get(result.provider_id)!;
+            const provider = providerMap[result.provider_id];
             // Get category name from productos data
             const productoOriginal = availableProductos.find((p: any) => 
               p.nombre === result.product_name && p.proveedor_id === result.provider_id
@@ -268,7 +268,7 @@ const ProductSearch = () => {
           }
         });
 
-        const providersArray = Array.from(providerMap.values());
+        const providersArray = Object.values(providerMap);
         console.log('📍 Proveedores para el mapa:', providersArray);
         setMapProviders(providersArray);
       } else {
