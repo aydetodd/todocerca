@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp } from 'lucide-react';
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -66,6 +65,7 @@ const ProductSearch = () => {
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -386,53 +386,73 @@ const ProductSearch = () => {
 
                 <TabsContent value="lista" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {results.map((result, index) => (
-                      <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                        <div className="aspect-square w-full overflow-hidden">
-                          <ProductPhotoCarousel productoId={result.product_id} />
-                        </div>
-                        <CardContent className="flex-1 flex flex-col pt-4">
-                          <h3 className="text-lg font-bold mb-1">{result.provider_name}</h3>
-                          <p className="text-base font-medium text-muted-foreground mb-3">{result.product_name}</p>
-                          
-                          <Collapsible className="mb-3">
-                            <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary hover:underline">
-                              Ver más <ChevronDown className="h-4 w-4" />
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="mt-2 space-y-2">
-                              {result.product_description && (
-                                <p className="text-sm text-muted-foreground">{result.product_description}</p>
-                              )}
-                              <div className="flex flex-wrap gap-2">
-                                <Badge variant="default" className="text-base">
-                                  ${result.price.toFixed(2)} / {result.unit}
-                                </Badge>
-                                <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
-                                  {result.stock > 0 ? (
-                                    <>
-                                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                                      Stock: {result.stock}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <XCircle className="h-3 w-3 mr-1" />
-                                      Sin stock
-                                    </>
+                    {results.map((result, index) => {
+                      const productKey = `${result.product_id}-${index}`;
+                      const isExpanded = expandedProducts.has(productKey);
+                      
+                      return (
+                        <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                          <div className="aspect-square w-full overflow-hidden">
+                            <ProductPhotoCarousel productoId={result.product_id} />
+                          </div>
+                          <CardContent className="flex-1 flex flex-col pt-4">
+                            <h3 className="text-lg font-bold mb-1">{result.provider_name}</h3>
+                            <p className="text-base font-medium text-muted-foreground mb-3">{result.product_name}</p>
+                            
+                            <div className="mb-3">
+                              <button 
+                                onClick={() => {
+                                  setExpandedProducts(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(productKey)) {
+                                      next.delete(productKey);
+                                    } else {
+                                      next.add(productKey);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className="flex items-center gap-1 text-sm text-primary hover:underline"
+                              >
+                                Ver más {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </button>
+                              {isExpanded && (
+                                <div className="mt-2 space-y-2">
+                                  {result.product_description && (
+                                    <p className="text-sm text-muted-foreground">{result.product_description}</p>
                                   )}
-                                </Badge>
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                          
-                          <Button 
-                            className="w-full mt-auto"
-                            onClick={() => navigate(`/proveedor/${result.provider_id}`)}
-                          >
-                            Ver más de este proveedor
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                                  <div className="flex flex-wrap gap-2">
+                                    <Badge variant="default" className="text-base">
+                                      ${result.price.toFixed(2)} / {result.unit}
+                                    </Badge>
+                                    <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
+                                      {result.stock > 0 ? (
+                                        <>
+                                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                                          Stock: {result.stock}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <XCircle className="h-3 w-3 mr-1" />
+                                          Sin stock
+                                        </>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <Button 
+                              className="w-full mt-auto"
+                              onClick={() => navigate(`/proveedor/${result.provider_id}`)}
+                            >
+                              Ver más de este proveedor
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </TabsContent>
               </Tabs>
