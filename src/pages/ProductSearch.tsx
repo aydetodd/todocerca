@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -384,17 +385,26 @@ const ProductSearch = () => {
                 </TabsContent>
 
                 <TabsContent value="lista" className="mt-0">
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold mb-4">Productos Encontrados</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {results.map((result, index) => (
-                      <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="flex-1">
-                              <CardTitle className="text-xl mb-2">{result.product_name}</CardTitle>
-                              <p className="text-sm text-muted-foreground mb-3">{result.product_description}</p>
-                              <div className="flex flex-wrap gap-2 mb-2">
-                                <Badge variant="default" className="text-lg">
+                      <Card key={`${result.product_id}-${index}`} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                        <div className="aspect-square w-full overflow-hidden">
+                          <ProductPhotoCarousel productoId={result.product_id} />
+                        </div>
+                        <CardContent className="flex-1 flex flex-col pt-4">
+                          <h3 className="text-lg font-bold mb-1">{result.provider_name}</h3>
+                          <p className="text-base font-medium text-muted-foreground mb-3">{result.product_name}</p>
+                          
+                          <Collapsible className="mb-3">
+                            <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary hover:underline">
+                              Ver más <ChevronDown className="h-4 w-4" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2 space-y-2">
+                              {result.product_description && (
+                                <p className="text-sm text-muted-foreground">{result.product_description}</p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant="default" className="text-base">
                                   ${result.price.toFixed(2)} / {result.unit}
                                 </Badge>
                                 <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
@@ -411,33 +421,14 @@ const ProductSearch = () => {
                                   )}
                                 </Badge>
                               </div>
-                              <div className="text-sm text-muted-foreground space-y-1">
-                                <p className="font-medium">Proveedor: {result.provider_name}</p>
-                                {result.provider_address && (
-                                  <p className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {result.provider_address}
-                                  </p>
-                                )}
-                                {result.provider_phone && (
-                                  <p className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    {result.provider_phone}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="w-64 flex-shrink-0">
-                              <ProductPhotoCarousel productoId={result.product_id} />
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
+                            </CollapsibleContent>
+                          </Collapsible>
+                          
                           <Button 
-                            className="w-full"
+                            className="w-full mt-auto"
                             onClick={() => navigate(`/proveedor/${result.provider_id}`)}
                           >
-                            Ver más productos y hacer pedido
+                            Ver más de este proveedor
                           </Button>
                         </CardContent>
                       </Card>
