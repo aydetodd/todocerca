@@ -17,8 +17,17 @@ export default defineConfig(({ mode }) => ({
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime'],
-    force: true,
+    include: [
+      'react', 
+      'react-dom', 
+      'react/jsx-runtime',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-dropdown-menu',
+    ],
+    exclude: [],
   },
   clearScreen: false,
 }));
