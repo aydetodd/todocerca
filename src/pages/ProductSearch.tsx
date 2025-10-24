@@ -392,10 +392,10 @@ const ProductSearch = () => {
                       
                       return (
                         <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                        <div className="aspect-square w-full overflow-hidden bg-background">
+                        <div className="aspect-square w-full overflow-hidden">
                           <ProductPhotoCarousel productoId={result.product_id} />
                         </div>
-                        <CardContent className="flex-1 flex flex-col pt-3 px-3 pb-3">
+                        <CardContent className="flex-1 flex flex-col p-3">
                             <h3 className="text-lg font-bold mb-0.5">{result.provider_name}</h3>
                             <p className="text-base font-medium text-muted-foreground mb-2">{result.product_name}</p>
                             
