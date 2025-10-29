@@ -759,6 +759,44 @@ export type Database = {
           },
         ]
       }
+      tracking_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          is_owner: boolean | null
+          joined_at: string
+          nickname: string
+          phone_number: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          is_owner?: boolean | null
+          joined_at?: string
+          nickname: string
+          phone_number?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          is_owner?: boolean | null
+          joined_at?: string
+          nickname?: string
+          phone_number?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracking_groups: {
         Row: {
           created_at: string
@@ -791,19 +829,51 @@ export type Database = {
           },
         ]
       }
+      tracking_member_locations: {
+        Row: {
+          group_id: string
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_member_locations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
