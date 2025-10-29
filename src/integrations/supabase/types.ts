@@ -804,6 +804,9 @@ export type Database = {
           max_devices: number | null
           name: string
           owner_id: string
+          subscription_end: string | null
+          subscription_status: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
@@ -811,6 +814,9 @@ export type Database = {
           max_devices?: number | null
           name: string
           owner_id: string
+          subscription_end?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
@@ -818,6 +824,9 @@ export type Database = {
           max_devices?: number | null
           name?: string
           owner_id?: string
+          subscription_end?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

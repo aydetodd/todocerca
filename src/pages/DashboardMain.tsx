@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, Map, Package, ClipboardList } from 'lucide-react';
+import { MapPin, LogOut, Search, Users, Map, Package, ClipboardList, Navigation } from 'lucide-react';
 import ProviderRegistration from '@/components/ProviderRegistration';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -216,6 +216,23 @@ export default function DashboardMain() {
               <Button className="w-full">
                 <Users className="h-4 w-4 mr-2" />
                 Ver Perfil
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Tracking GPS Familiar */}
+          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/tracking-gps')}>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Navigation className="h-5 w-5" />
+                <span>Tracking GPS</span>
+              </CardTitle>
+              <CardDescription>Rastreo familiar de hasta 5 dispositivos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full">
+                <Navigation className="h-4 w-4 mr-2" />
+                Gestionar Grupo
               </Button>
             </CardContent>
           </Card>

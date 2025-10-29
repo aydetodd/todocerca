@@ -16,6 +16,7 @@ import ProviderProfile from "./pages/ProviderProfile";
 import MiPerfil from "./pages/MiPerfil";
 import MisProductos from "./pages/MisProductos";
 import GestionPedidos from "./pages/GestionPedidos";
+import TrackingGPS from "./pages/TrackingGPS";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ export default function AppWrapper() {
             <Route path="/mis-productos" element={<MisProductos />} />
             <Route path="/gestion-pedidos" element={<GestionPedidos />} />
             <Route path="/mapa" element={<MapView />} />
+            <Route path="/tracking-gps" element={<TrackingGPS />} />
             <Route path="/search" element={<ProductSearch />} />
             <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
             <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
