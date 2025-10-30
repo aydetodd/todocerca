@@ -838,6 +838,47 @@ export type Database = {
           },
         ]
       }
+      tracking_invitations: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          group_id: string
+          id: string
+          invited_by: string
+          nickname: string
+          phone_number: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          group_id: string
+          id?: string
+          invited_by: string
+          nickname: string
+          phone_number: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          group_id?: string
+          id?: string
+          invited_by?: string
+          nickname?: string
+          phone_number?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracking_member_locations: {
         Row: {
           group_id: string

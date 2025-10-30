@@ -8,14 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const TrackingGPS = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { group, members, loading, createGroup, addMember, removeMember, refetch } = useTrackingGroup();
+  const { group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
   
   const [groupName, setGroupName] = useState('Mi Grupo Familiar');
@@ -34,7 +34,7 @@ const TrackingGPS = () => {
             (error) => console.error('Error getting location:', error)
           );
         }
-      }, 10000); // Actualizar cada 10 segundos
+      }, 10000);
 
       return () => clearInterval(interval);
     }
@@ -48,22 +48,22 @@ const TrackingGPS = () => {
     }
   };
 
-  const handleAddMember = async () => {
-    if (!newMemberName.trim()) {
+  const handleSendInvitation = async () => {
+    if (!newMemberName.trim() || !newMemberPhone.trim()) {
       toast({
         title: 'Error',
-        description: 'Por favor ingresa un nombre',
+        description: 'Por favor ingresa nombre y teléfono',
         variant: 'destructive'
       });
       return;
     }
 
     try {
-      await addMember(newMemberName, newMemberPhone || undefined);
+      await sendInvitation(newMemberName, newMemberPhone);
       setNewMemberName('');
       setNewMemberPhone('');
     } catch (error) {
-      console.error('Error adding member:', error);
+      console.error('Error sending invitation:', error);
     }
   };
 
@@ -191,6 +191,7 @@ const TrackingGPS = () => {
 
   const isOwner = members.find(m => m.is_owner)?.user_id === group.owner_id;
   const isActive = group.subscription_status === 'active';
+  const totalSlots = members.length + invitations.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -214,7 +215,7 @@ const TrackingGPS = () => {
                   <div>
                     <CardTitle>{group.name}</CardTitle>
                     <CardDescription>
-                      {members.length} de 5 miembros
+                      {totalSlots} de 5 dispositivos
                     </CardDescription>
                   </div>
                 </div>
@@ -286,31 +287,78 @@ const TrackingGPS = () => {
                   )}
                 </div>
               ))}
-
-              {isOwner && members.length < 5 && isActive && (
-                <>
-                  <Separator />
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">Agregar Miembro</h4>
-                    <Input
-                      placeholder="Nombre"
-                      value={newMemberName}
-                      onChange={(e) => setNewMemberName(e.target.value)}
-                    />
-                    <Input
-                      placeholder="Teléfono (opcional)"
-                      value={newMemberPhone}
-                      onChange={(e) => setNewMemberPhone(e.target.value)}
-                    />
-                    <Button onClick={handleAddMember} className="w-full">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Agregar
-                    </Button>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
+
+          {/* Invitaciones Pendientes */}
+          {invitations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Invitaciones Pendientes</CardTitle>
+                <CardDescription>
+                  Esperando que acepten la invitación
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {invitations.map((invite) => (
+                    <div key={invite.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{invite.nickname}</p>
+                        <p className="text-sm text-muted-foreground">{invite.phone_number}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Expira: {new Date(invite.expires_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cancelInvitation(invite.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Invitar Miembro */}
+          {isOwner && totalSlots < 5 && isActive && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Invitar Miembro</CardTitle>
+                <CardDescription>
+                  Se enviará una invitación por WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label htmlFor="memberName">Nombre</Label>
+                  <Input
+                    id="memberName"
+                    placeholder="Nombre"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="memberPhone">Teléfono (WhatsApp)</Label>
+                  <Input
+                    id="memberPhone"
+                    placeholder="10 dígitos"
+                    value={newMemberPhone}
+                    onChange={(e) => setNewMemberPhone(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleSendInvitation} className="w-full">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Enviar Invitación
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Ubicaciones en Tiempo Real */}
           {isActive && (

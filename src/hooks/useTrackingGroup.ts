@@ -22,22 +22,99 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface TrackingInvitation {
+  id: string;
+  group_id: string;
+  phone_number: string;
+  nickname: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export const useTrackingGroup = () => {
   const [group, setGroup] = useState<TrackingGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [invitations, setInvitations] = useState<TrackingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchGroup();
+    checkPendingInvitations();
   }, []);
+
+  const checkPendingInvitations = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('telefono')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.telefono) return;
+
+      const { data: pendingInvites, error } = await supabase
+        .from('tracking_invitations')
+        .select('*, tracking_groups(name)')
+        .eq('phone_number', profile.telefono)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      if (pendingInvites && pendingInvites.length > 0) {
+        for (const invite of pendingInvites) {
+          await acceptInvitation(invite.id, invite.group_id, invite.nickname);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking invitations:', error);
+    }
+  };
+
+  const acceptInvitation = async (inviteId: string, groupId: string, nickname: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error: memberError } = await supabase
+        .from('tracking_group_members')
+        .insert({
+          group_id: groupId,
+          user_id: user.id,
+          nickname: nickname,
+          is_owner: false
+        });
+
+      if (memberError) throw memberError;
+
+      const { error: updateError } = await supabase
+        .from('tracking_invitations')
+        .update({ status: 'accepted' })
+        .eq('id', inviteId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: 'Grupo unido',
+        description: 'Te has unido al grupo exitosamente'
+      });
+      
+      fetchGroup();
+    } catch (error: any) {
+      console.error('Error accepting invitation:', error);
+    }
+  };
 
   const fetchGroup = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar grupo donde el usuario es dueño
       const { data: ownerGroup, error: ownerError } = await supabase
         .from('tracking_groups')
         .select('*')
@@ -49,8 +126,8 @@ export const useTrackingGroup = () => {
       if (ownerGroup) {
         setGroup(ownerGroup as TrackingGroup);
         await fetchMembers(ownerGroup.id);
+        await fetchInvitations(ownerGroup.id);
       } else {
-        // Buscar grupo donde el usuario es miembro
         const { data: memberData, error: memberError } = await supabase
           .from('tracking_group_members')
           .select('group_id')
@@ -95,12 +172,27 @@ export const useTrackingGroup = () => {
     setMembers(data || []);
   };
 
+  const fetchInvitations = async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tracking_invitations')
+        .select('*')
+        .eq('group_id', groupId)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+      setInvitations(data || []);
+    } catch (error) {
+      console.error('Error fetching invitations:', error);
+    }
+  };
+
   const createGroup = async (name: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
-      // Obtener nickname del perfil
       const { data: profile } = await supabase
         .from('profiles')
         .select('apodo, telefono')
@@ -112,14 +204,13 @@ export const useTrackingGroup = () => {
         .insert({
           owner_id: user.id,
           name,
-          subscription_status: 'expired' // Inicia como expirado hasta que pague
+          subscription_status: 'expired'
         })
         .select()
         .single();
 
       if (groupError) throw groupError;
 
-      // Agregar al dueño como primer miembro
       const { error: memberError } = await supabase
         .from('tracking_group_members')
         .insert({
@@ -150,39 +241,55 @@ export const useTrackingGroup = () => {
     }
   };
 
-  const addMember = async (nickname: string, phoneNumber?: string) => {
+  const sendInvitation = async (nickname: string, phoneNumber: string) => {
     try {
       if (!group) throw new Error('No hay grupo activo');
-      
-      if (members.length >= 5) {
-        throw new Error('El grupo ya tiene el máximo de 5 miembros');
-      }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
-
-      // Por ahora, crear un user_id temporal (en producción se enviaría invitación)
-      const tempUserId = crypto.randomUUID();
-
-      const { error } = await supabase
-        .from('tracking_group_members')
-        .insert({
-          group_id: group.id,
-          user_id: tempUserId,
+      const { data, error } = await supabase.functions.invoke('send-tracking-invite', {
+        body: {
+          phoneNumber,
           nickname,
-          phone_number: phoneNumber
-        });
+          groupId: group.id,
+          groupName: group.name
+        }
+      });
 
       if (error) throw error;
 
       toast({
-        title: 'Miembro agregado',
-        description: `${nickname} ha sido agregado al grupo`
+        title: 'Invitación enviada',
+        description: 'Se ha enviado la invitación por WhatsApp'
       });
 
-      await fetchMembers(group.id);
+      await fetchInvitations(group.id);
     } catch (error: any) {
-      console.error('Error adding member:', error);
+      console.error('Error sending invitation:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
+  const cancelInvitation = async (invitationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tracking_invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Invitación cancelada',
+        description: 'La invitación ha sido cancelada'
+      });
+
+      if (group) await fetchInvitations(group.id);
+    } catch (error: any) {
+      console.error('Error canceling invitation:', error);
       toast({
         title: 'Error',
         description: error.message,
@@ -249,9 +356,11 @@ export const useTrackingGroup = () => {
   return {
     group,
     members,
+    invitations,
     loading,
     createGroup,
-    addMember,
+    sendInvitation,
+    cancelInvitation,
     removeMember,
     updateGroupName,
     refetch: fetchGroup
