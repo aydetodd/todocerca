@@ -340,33 +340,37 @@ const TrackingGPS = () => {
           {isOwner && totalSlots < 5 && isActive && (
             <Card>
               <CardHeader>
-                <CardTitle>Invitar Miembro</CardTitle>
+                <CardTitle>Agregar Miembros al Grupo</CardTitle>
                 <CardDescription>
-                  Se enviará una invitación por WhatsApp
+                  Puedes agregar hasta {5 - totalSlots} miembro(s) más. Se enviará una invitación por WhatsApp.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="bg-primary/10 p-3 rounded-lg mb-3">
+                  <p className="text-sm font-medium">📱 Espacios disponibles: {5 - totalSlots} de 5</p>
+                </div>
                 <div>
-                  <Label htmlFor="memberName">Nombre</Label>
+                  <Label htmlFor="memberName">Nombre del familiar</Label>
                   <Input
                     id="memberName"
-                    placeholder="Nombre"
+                    placeholder="Ej: María García"
                     value={newMemberName}
                     onChange={(e) => setNewMemberName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="memberPhone">Teléfono (WhatsApp)</Label>
+                  <Label htmlFor="memberPhone">Teléfono (WhatsApp con 10 dígitos)</Label>
                   <Input
                     id="memberPhone"
-                    placeholder="10 dígitos"
+                    placeholder="5512345678"
                     value={newMemberPhone}
                     onChange={(e) => setNewMemberPhone(e.target.value)}
+                    maxLength={10}
                   />
                 </div>
-                <Button onClick={handleSendInvitation} className="w-full">
+                <Button onClick={handleSendInvitation} className="w-full" size="lg">
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Enviar Invitación
+                  Enviar Invitación por WhatsApp
                 </Button>
               </CardContent>
             </Card>
