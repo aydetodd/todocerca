@@ -23,8 +23,6 @@ const TrackingGPS = () => {
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [couponCode, setCouponCode] = useState('');
-  const [showCouponInput, setShowCouponInput] = useState(false);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -93,8 +91,7 @@ const TrackingGPS = () => {
       const { data, error } = await supabase.functions.invoke('create-tracking-checkout', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
-        },
-        body: { couponCode: couponCode || undefined }
+        }
       });
 
       if (error) throw error;
@@ -242,36 +239,13 @@ const TrackingGPS = () => {
                   <p className="text-sm text-destructive font-medium mb-3">
                     Tu suscripción no está activa. Actívala para usar el tracking.
                   </p>
-                  
-                  {showCouponInput && (
-                    <div className="mb-3">
-                      <Input
-                        placeholder="Código de descuento (opcional)"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        className="mb-2"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Códigos disponibles: DESCUENTO50, DESCUENTO100
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    {!showCouponInput && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowCouponInput(true)}
-                        className="flex-1"
-                      >
-                        Tengo un código
-                      </Button>
-                    )}
-                    <Button onClick={handleSubscribe} className="flex-1">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Activar Suscripción
-                    </Button>
-                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Podrás ingresar un código de descuento en la pasarela de pago
+                  </p>
+                  <Button onClick={handleSubscribe} className="w-full">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Activar Suscripción ($400 MXN/año)
+                  </Button>
                 </div>
               )}
 

@@ -27,12 +27,6 @@ serve(async (req) => {
       throw new Error('Usuario no autenticado');
     }
 
-    // Get optional coupon code from request body
-    const { couponCode } = await req.json().catch(() => ({}));
-    if (couponCode) {
-      console.log('[CREATE-TRACKING-CHECKOUT] Coupon code provided:', couponCode);
-    }
-
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
@@ -49,12 +43,12 @@ serve(async (req) => {
     }
 
     // Crear sesión de checkout con el producto de tracking
-    const sessionConfig: any = {
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: 'price_1SNeRhGyH05pxWZz6dAjRBZv', // ID del precio creado
+          price: 'price_1SNeRhGyH05pxWZz6dAjRBZv',
           quantity: 1,
         },
       ],
@@ -65,17 +59,9 @@ serve(async (req) => {
         user_id: user.id,
         product_type: 'tracking_gps'
       },
-      // Permitir completar checkout sin tarjeta cuando el total es $0
+      allow_promotion_codes: true,
       payment_method_collection: 'if_required',
-    };
-
-    // Add coupon if provided
-    if (couponCode) {
-      sessionConfig.discounts = [{ coupon: couponCode }];
-      console.log('[CREATE-TRACKING-CHECKOUT] Applying coupon:', couponCode);
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    });
 
     return new Response(
       JSON.stringify({ url: session.url }),
