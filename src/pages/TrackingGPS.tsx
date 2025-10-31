@@ -22,6 +22,15 @@ const TrackingGPS = () => {
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [isSharing, setIsSharing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {
@@ -189,7 +198,7 @@ const TrackingGPS = () => {
     );
   }
 
-  const isOwner = members.find(m => m.is_owner)?.user_id === group.owner_id;
+  const isOwner = currentUserId === group.owner_id;
   const isActive = group.subscription_status === 'active';
   const totalSlots = members.length + invitations.length;
 
