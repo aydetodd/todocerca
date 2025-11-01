@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrackingGroup } from '@/hooks/useTrackingGroup';
 import { useTrackingLocations } from '@/hooks/useTrackingLocations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const TrackingGPS = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
@@ -23,6 +24,7 @@ const TrackingGPS = () => {
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -31,6 +33,58 @@ const TrackingGPS = () => {
     };
     getCurrentUser();
   }, []);
+
+  // Verificar suscripción después del checkout exitoso
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (searchParams.get('success') === 'true' && !checkingSubscription) {
+        setCheckingSubscription(true);
+        
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+
+          toast({
+            title: 'Verificando suscripción...',
+            description: 'Espera un momento mientras confirmamos tu pago'
+          });
+
+          const { data, error } = await supabase.functions.invoke('check-tracking-subscription', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            }
+          });
+
+          if (error) throw error;
+
+          if (data?.subscribed) {
+            toast({
+              title: '¡Suscripción activada!',
+              description: 'Ya puedes agregar miembros y usar el tracking GPS'
+            });
+            
+            // Recargar datos del grupo
+            await refetch();
+          }
+          
+          // Limpiar parámetro de la URL
+          searchParams.delete('success');
+          setSearchParams(searchParams);
+        } catch (error: any) {
+          console.error('Error checking subscription:', error);
+          toast({
+            title: 'Error',
+            description: 'Hubo un problema verificando tu suscripción. Recarga la página.',
+            variant: 'destructive'
+          });
+        } finally {
+          setCheckingSubscription(false);
+        }
+      }
+    };
+
+    checkSubscriptionStatus();
+  }, [searchParams]);
 
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {

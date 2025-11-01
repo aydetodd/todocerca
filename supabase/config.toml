@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.check-subscription]
 verify_jwt = true
 
+[functions.check-tracking-subscription]
+verify_jwt = true
+
 [functions.create-tracking-checkout]
 verify_jwt = true
 
