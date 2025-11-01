@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -412,16 +413,14 @@ const TrackingGPS = () => {
                     onChange={(e) => setNewMemberName(e.target.value)}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="memberPhone">Teléfono (WhatsApp con 10 dígitos)</Label>
-                  <Input
-                    id="memberPhone"
-                    placeholder="5512345678"
-                    value={newMemberPhone}
-                    onChange={(e) => setNewMemberPhone(e.target.value)}
-                    maxLength={10}
-                  />
-                </div>
+                <PhoneInput
+                  label="Teléfono (WhatsApp)"
+                  value={newMemberPhone}
+                  onChange={setNewMemberPhone}
+                  placeholder="5512345678"
+                  id="memberPhone"
+                  required
+                />
                 <Button onClick={handleSendInvitation} className="w-full" size="lg">
                   <UserPlus className="mr-2 h-4 w-4" />
                   Enviar Invitación por WhatsApp

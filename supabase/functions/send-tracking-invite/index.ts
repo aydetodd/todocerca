@@ -35,9 +35,11 @@ serve(async (req) => {
 
     const { phoneNumber, nickname, groupId, groupName }: InviteRequest = await req.json();
 
-    // Formatear número de teléfono
+    // Formatear número de teléfono para WhatsApp (quitar el + si viene)
     let formattedPhone = phoneNumber.replace(/\D/g, '');
-    if (!formattedPhone.startsWith('521')) {
+    // Si el número ya viene con código de país, usarlo tal cual
+    // Si no viene con código, asumir México y agregar 521
+    if (!formattedPhone.startsWith('52') && formattedPhone.length === 10) {
       formattedPhone = '521' + formattedPhone;
     }
 
