@@ -43,6 +43,18 @@ serve(async (req) => {
       formattedPhone = '521' + formattedPhone;
     }
 
+    // Verificar si ya existe una invitación pendiente
+    const { data: existingInvite } = await supabaseClient
+      .from('tracking_invitations')
+      .select()
+      .eq('group_id', groupId)
+      .eq('phone_number', phoneNumber)
+      .single();
+
+    if (existingInvite) {
+      throw new Error('Ya existe una invitación pendiente para este número. Cancela la anterior primero.');
+    }
+
     // Crear invitación en la base de datos
     const { data: invitation, error: inviteError } = await supabaseClient
       .from('tracking_invitations')
@@ -90,6 +102,16 @@ serve(async (req) => {
     if (!twilioResponse.ok) {
       const errorText = await twilioResponse.text();
       console.error('Twilio error:', errorText);
+      
+      // Eliminar la invitación si falla el envío
+      await supabaseClient
+        .from('tracking_invitations')
+        .delete()
+        .eq('id', invitation.id);
+      
+      if (errorText.includes('63007')) {
+        throw new Error('Error de configuración de Twilio: El número de WhatsApp no está habilitado correctamente. Contacta al administrador.');
+      }
       throw new Error(`Error enviando WhatsApp: ${errorText}`);
     }
 
