@@ -108,6 +108,9 @@ serve(async (req) => {
         .delete()
         .eq('id', invitation.id);
       
+      if (errorText.includes('21608')) {
+        throw new Error('Tu cuenta de Twilio es de prueba. Para enviar SMS debes:\n1. Verificar este número en twilio.com/console/phone-numbers/verified\n2. O actualizar a cuenta de pago en twilio.com/console/billing');
+      }
       throw new Error(`Error enviando SMS: ${errorText}`);
     }
 
