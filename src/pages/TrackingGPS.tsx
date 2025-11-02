@@ -17,8 +17,9 @@ const TrackingGPS = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, refetch } = useTrackingGroup();
+  const { group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, acceptInvitation, checkPendingInvitations, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
+  const [myInvitations, setMyInvitations] = useState<any[]>([]);
   
   const [groupName, setGroupName] = useState('Mi Grupo Familiar');
   const [newMemberName, setNewMemberName] = useState('');
@@ -33,6 +34,15 @@ const TrackingGPS = () => {
       if (user) setCurrentUserId(user.id);
     };
     getCurrentUser();
+    
+    // Verificar invitaciones pendientes para este usuario
+    const checkInvites = async () => {
+      const invites = await checkPendingInvitations();
+      if (invites && invites.length > 0) {
+        setMyInvitations(invites);
+      }
+    };
+    checkInvites();
   }, []);
 
   // Verificar suscripción después del checkout exitoso
@@ -269,6 +279,51 @@ const TrackingGPS = () => {
           Volver
         </Button>
 
+        {/* Invitaciones Pendientes para Aceptar */}
+        {myInvitations.length > 0 && (
+          <Card className="border-primary">
+            <CardHeader className="bg-primary/5">
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-primary" />
+                ¡Tienes Invitaciones Pendientes!
+              </CardTitle>
+              <CardDescription>
+                Has sido invitado a {myInvitations.length} grupo(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {myInvitations.map((invite: any) => (
+                  <div key={invite.id} className="border rounded-lg p-4 space-y-3">
+                    <div>
+                      <p className="font-semibold text-lg">{invite.tracking_groups?.name || 'Grupo Familiar'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Tu apodo en el grupo: <span className="font-medium">{invite.nickname}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Expira: {new Date(invite.expires_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          await acceptInvitation(invite.id, invite.group_id, invite.nickname);
+                          setMyInvitations(prev => prev.filter(i => i.id !== invite.id));
+                        } catch (error) {
+                          console.error('Error accepting invitation:', error);
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Aceptar Invitación
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-6">
           {/* Estado del Grupo */}
           <Card>
@@ -397,7 +452,7 @@ const TrackingGPS = () => {
               <CardHeader>
                 <CardTitle>Agregar Miembros al Grupo</CardTitle>
                 <CardDescription>
-                  Puedes agregar hasta {5 - totalSlots} miembro(s) más. Se enviará una invitación por WhatsApp.
+                  Puedes agregar hasta {5 - totalSlots} miembro(s) más. Se enviará una invitación por SMS.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -414,7 +469,7 @@ const TrackingGPS = () => {
                   />
                 </div>
                 <PhoneInput
-                  label="Teléfono (WhatsApp)"
+                  label="Teléfono (con WhatsApp)"
                   value={newMemberPhone}
                   onChange={setNewMemberPhone}
                   placeholder="5512345678"
@@ -423,8 +478,11 @@ const TrackingGPS = () => {
                 />
                 <Button onClick={handleSendInvitation} className="w-full" size="lg">
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Enviar Invitación por WhatsApp
+                  Enviar Invitación por SMS
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Se enviará un SMS con instrucciones para unirse al grupo
+                </p>
               </CardContent>
             </Card>
           )}

@@ -33,6 +33,15 @@ serve(async (req) => {
       throw new Error("Usuario no autenticado");
     }
 
+    // Obtener el nombre del perfil del usuario
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('nombre, apodo')
+      .eq('user_id', user.id)
+      .single();
+
+    const senderName = profile?.nombre || profile?.apodo || 'Un familiar';
+
     const { phoneNumber, nickname, groupId, groupName }: InviteRequest = await req.json();
 
     // Formatear número de teléfono para WhatsApp (quitar el + si viene)
@@ -75,10 +84,10 @@ serve(async (req) => {
     const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
     const message = `Invitacion a Grupo de Tracking GPS\n\n` +
-      `${user.email || 'Un familiar'} te invita al grupo "${groupName}".\n\n` +
+      `${senderName} te invita al grupo "${groupName}".\n\n` +
       `Para unirte:\n` +
-      `1. Registrate con este numero: ${phoneNumber}\n` +
-      `2. Automaticamente te uniras al grupo\n\n` +
+      `1. Inicia sesion en todocerca.mx con este numero: ${phoneNumber}\n` +
+      `2. Ve a "Tracking GPS" para aceptar la invitacion\n\n` +
       `Expira en 7 dias.`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;

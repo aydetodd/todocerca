@@ -66,13 +66,11 @@ export const useTrackingGroup = () => {
 
       if (error) throw error;
 
-      if (pendingInvites && pendingInvites.length > 0) {
-        for (const invite of pendingInvites) {
-          await acceptInvitation(invite.id, invite.group_id, invite.nickname);
-        }
-      }
+      // Ya no aceptamos automáticamente, solo retornamos las invitaciones
+      return pendingInvites || [];
     } catch (error) {
       console.error('Error checking invitations:', error);
+      return [];
     }
   };
 
@@ -258,7 +256,7 @@ export const useTrackingGroup = () => {
 
       toast({
         title: 'Invitación enviada',
-        description: 'Se ha enviado la invitación por WhatsApp'
+        description: 'Se ha enviado la invitación por SMS'
       });
 
       await fetchInvitations(group.id);
@@ -363,6 +361,8 @@ export const useTrackingGroup = () => {
     cancelInvitation,
     removeMember,
     updateGroupName,
+    acceptInvitation,
+    checkPendingInvitations,
     refetch: fetchGroup
   };
 };
