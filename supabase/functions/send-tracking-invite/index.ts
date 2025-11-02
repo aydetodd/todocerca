@@ -69,24 +69,23 @@ serve(async (req) => {
 
     if (inviteError) throw inviteError;
 
-    // Enviar WhatsApp
+    // Enviar SMS
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
-    const message = `🗺️ *Invitación a Grupo de Tracking GPS*\n\n` +
-      `Has sido invitado por ${user.email || 'un familiar'} a unirte al grupo "${groupName}".\n\n` +
-      `Para aceptar la invitación:\n` +
-      `1. Regístrate en la app con este número: ${phoneNumber}\n` +
-      `2. Automáticamente te unirás al grupo\n` +
-      `3. Podrás compartir tu ubicación con el grupo\n\n` +
-      `La invitación expira en 7 días.`;
+    const message = `Invitacion a Grupo de Tracking GPS\n\n` +
+      `${user.email || 'Un familiar'} te invita al grupo "${groupName}".\n\n` +
+      `Para unirte:\n` +
+      `1. Registrate con este numero: ${phoneNumber}\n` +
+      `2. Automaticamente te uniras al grupo\n\n` +
+      `Expira en 7 dias.`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     
     const body = new URLSearchParams({
-      To: `whatsapp:+${formattedPhone}`,
-      From: `whatsapp:${twilioPhoneNumber}`,
+      To: `+${formattedPhone}`,
+      From: twilioPhoneNumber,
       Body: message,
     });
 
@@ -109,10 +108,7 @@ serve(async (req) => {
         .delete()
         .eq('id', invitation.id);
       
-      if (errorText.includes('63007')) {
-        throw new Error('Error de configuración de Twilio: El número de WhatsApp no está habilitado correctamente. Contacta al administrador.');
-      }
-      throw new Error(`Error enviando WhatsApp: ${errorText}`);
+      throw new Error(`Error enviando SMS: ${errorText}`);
     }
 
     return new Response(
