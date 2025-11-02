@@ -21,5 +21,11 @@ verify_jwt = false
 [functions.upgrade-to-provider]
 verify_jwt = true
 
+[functions.verify-provider-upgrade]
+verify_jwt = true
+
 [functions.send-tracking-invite]
+verify_jwt = true
+
+[functions.send-whatsapp-welcome]
 verify_jwt = true

@@ -72,9 +72,11 @@ serve(async (req) => {
       mode: "payment",
       success_url: `${req.headers.get("origin")}/mi-perfil?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/mi-perfil?upgrade=cancelled`,
-      metadata: {
-        user_id: user.id,
-        upgrade_type: "cliente_to_proveedor",
+      payment_intent_data: {
+        metadata: {
+          user_id: user.id,
+          upgrade_type: "cliente_to_proveedor",
+        },
       },
     });
 

@@ -127,14 +127,42 @@ export default function MiPerfil() {
     }
   }
 
+  async function verifyProviderUpgrade() {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-provider-upgrade');
+      
+      if (error) throw error;
+      
+      if (data?.upgraded) {
+        toast({
+          title: "¡Bienvenido!",
+          description: data.message || "Ahora eres proveedor. Tu perfil ha sido actualizado.",
+        });
+        // Recargar perfil para reflejar el nuevo rol
+        await getProfile();
+      } else {
+        toast({
+          title: "Verificando pago",
+          description: "El pago está siendo procesado. Intenta nuevamente en unos minutos.",
+          variant: "default",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error verifying upgrade:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo verificar el pago. Contacta a soporte.",
+        variant: "destructive",
+      });
+    }
+  }
+
   // Verificar si el upgrade fue exitoso
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgrade') === 'success') {
-      toast({
-        title: "¡Pago exitoso!",
-        description: "Contacta al administrador para activar tu cuenta de proveedor",
-      });
+      // Verificar el pago y actualizar el rol
+      verifyProviderUpgrade();
       // Limpiar el parámetro de la URL
       window.history.replaceState({}, '', '/mi-perfil');
     }
