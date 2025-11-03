@@ -123,11 +123,21 @@ serve(async (req) => {
 
     if (!proveedorData) {
       logStep("Creating proveedor record");
+      
+      // Obtener datos adicionales del perfil
+      const { data: profileData } = await supabaseClient
+        .from('profiles')
+        .select('nombre, apodo')
+        .eq('user_id', user.id)
+        .single();
+      
+      const proveedorName = profileData?.nombre || profileData?.apodo || user.email?.split('@')[0] || 'Proveedor';
+      
       const { error: insertError } = await supabaseClient
         .from('proveedores')
         .insert({
           user_id: user.id,
-          nombre: profile.nombre || user.email?.split('@')[0] || 'Proveedor',
+          nombre: proveedorName,
           email: user.email,
         });
 

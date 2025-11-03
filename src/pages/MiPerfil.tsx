@@ -105,7 +105,16 @@ export default function MiPerfil() {
   async function handleUpgradeToProvider() {
     try {
       setUpgrading(true);
-      const { data, error } = await supabase.functions.invoke('upgrade-to-provider');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No estás autenticado');
+      }
+
+      const { data, error } = await supabase.functions.invoke('upgrade-to-provider', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) throw error;
       
@@ -129,7 +138,16 @@ export default function MiPerfil() {
 
   async function verifyProviderUpgrade() {
     try {
-      const { data, error } = await supabase.functions.invoke('verify-provider-upgrade');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No estás autenticado');
+      }
+
+      const { data, error } = await supabase.functions.invoke('verify-provider-upgrade', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) throw error;
       
@@ -139,7 +157,9 @@ export default function MiPerfil() {
           description: data.message || "Ahora eres proveedor. Tu perfil ha sido actualizado.",
         });
         // Recargar perfil para reflejar el nuevo rol
-        await getProfile();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         toast({
           title: "Verificando pago",

@@ -77,34 +77,50 @@ export const useTrackingGroup = () => {
   const acceptInvitation = async (inviteId: string, groupId: string, nickname: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error('Usuario no autenticado');
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('telefono')
+        .eq('user_id', user.id)
+        .single();
+
+      // Insertar el miembro con el teléfono
       const { error: memberError } = await supabase
         .from('tracking_group_members')
         .insert({
           group_id: groupId,
           user_id: user.id,
           nickname: nickname,
+          phone_number: profile?.telefono,
           is_owner: false
         });
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error('Error inserting member:', memberError);
+        throw memberError;
+      }
 
+      // Actualizar estado de la invitación
       const { error: updateError } = await supabase
         .from('tracking_invitations')
         .update({ status: 'accepted' })
         .eq('id', inviteId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating invitation:', updateError);
+        throw updateError;
+      }
 
-      toast({
-        title: 'Grupo unido',
-        description: 'Te has unido al grupo exitosamente'
-      });
-      
-      fetchGroup();
+      await fetchGroup();
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo unir al grupo',
+        variant: 'destructive'
+      });
+      throw error;
     }
   };
 

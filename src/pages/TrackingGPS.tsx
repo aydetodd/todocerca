@@ -97,6 +97,19 @@ const TrackingGPS = () => {
     checkSubscriptionStatus();
   }, [searchParams]);
 
+  // Recargar invitaciones cuando cambia el grupo
+  useEffect(() => {
+    const checkInvites = async () => {
+      const invites = await checkPendingInvitations();
+      if (invites && invites.length > 0) {
+        setMyInvitations(invites);
+      } else {
+        setMyInvitations([]);
+      }
+    };
+    checkInvites();
+  }, [group]);
+
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {
       const interval = setInterval(() => {
@@ -280,7 +293,7 @@ const TrackingGPS = () => {
         </Button>
 
         {/* Invitaciones Pendientes para Aceptar */}
-        {myInvitations.length > 0 && !group && (
+        {myInvitations.length > 0 && (
           <Card className="border-primary mb-6">
             <CardHeader className="bg-primary/5">
               <CardTitle className="flex items-center gap-2">
@@ -308,13 +321,15 @@ const TrackingGPS = () => {
                       onClick={async () => {
                         try {
                           await acceptInvitation(invite.id, invite.group_id, invite.nickname);
-                          setMyInvitations(prev => prev.filter(i => i.id !== invite.id));
-                          // Recargar toda la página para refrescar el grupo
-                          await refetch();
+                          setMyInvitations([]);
                           toast({
                             title: '¡Bienvenido al grupo!',
-                            description: 'Ya puedes compartir tu ubicación con el grupo'
+                            description: 'Recargando...'
                           });
+                          // Forzar recarga completa
+                          setTimeout(() => {
+                            window.location.reload();
+                          }, 500);
                         } catch (error) {
                           console.error('Error accepting invitation:', error);
                           toast({
