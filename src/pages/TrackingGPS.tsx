@@ -280,8 +280,8 @@ const TrackingGPS = () => {
         </Button>
 
         {/* Invitaciones Pendientes para Aceptar */}
-        {myInvitations.length > 0 && (
-          <Card className="border-primary">
+        {myInvitations.length > 0 && !group && (
+          <Card className="border-primary mb-6">
             <CardHeader className="bg-primary/5">
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-primary" />
@@ -309,8 +309,19 @@ const TrackingGPS = () => {
                         try {
                           await acceptInvitation(invite.id, invite.group_id, invite.nickname);
                           setMyInvitations(prev => prev.filter(i => i.id !== invite.id));
+                          // Recargar toda la página para refrescar el grupo
+                          await refetch();
+                          toast({
+                            title: '¡Bienvenido al grupo!',
+                            description: 'Ya puedes compartir tu ubicación con el grupo'
+                          });
                         } catch (error) {
                           console.error('Error accepting invitation:', error);
+                          toast({
+                            title: 'Error',
+                            description: 'No se pudo aceptar la invitación',
+                            variant: 'destructive'
+                          });
                         }
                       }}
                       className="w-full"
