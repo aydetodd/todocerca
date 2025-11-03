@@ -322,21 +322,8 @@ const TrackingGPS = () => {
                         try {
                           await acceptInvitation(invite.id, invite.group_id, invite.nickname);
                           setMyInvitations([]);
-                          toast({
-                            title: '¡Bienvenido al grupo!',
-                            description: 'Recargando...'
-                          });
-                          // Forzar recarga completa
-                          setTimeout(() => {
-                            window.location.reload();
-                          }, 500);
                         } catch (error) {
                           console.error('Error accepting invitation:', error);
-                          toast({
-                            title: 'Error',
-                            description: 'No se pudo aceptar la invitación',
-                            variant: 'destructive'
-                          });
                         }
                       }}
                       className="w-full"

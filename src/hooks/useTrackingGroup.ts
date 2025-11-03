@@ -85,21 +85,31 @@ export const useTrackingGroup = () => {
         .eq('user_id', user.id)
         .single();
 
+      if (!profile?.telefono) {
+        throw new Error('No se encontró el número de teléfono en tu perfil');
+      }
+
+      console.log('Accepting invitation:', { inviteId, groupId, nickname, phone: profile.telefono });
+
       // Insertar el miembro con el teléfono
-      const { error: memberError } = await supabase
+      const { data: memberData, error: memberError } = await supabase
         .from('tracking_group_members')
         .insert({
           group_id: groupId,
           user_id: user.id,
           nickname: nickname,
-          phone_number: profile?.telefono,
+          phone_number: profile.telefono,
           is_owner: false
-        });
+        })
+        .select()
+        .single();
 
       if (memberError) {
         console.error('Error inserting member:', memberError);
-        throw memberError;
+        throw new Error(`No se pudo agregar al grupo: ${memberError.message}`);
       }
+
+      console.log('Member added successfully:', memberData);
 
       // Actualizar estado de la invitación
       const { error: updateError } = await supabase
@@ -109,10 +119,16 @@ export const useTrackingGroup = () => {
 
       if (updateError) {
         console.error('Error updating invitation:', updateError);
-        throw updateError;
+        // No lanzamos error aquí porque el miembro ya se agregó
       }
 
+      console.log('Invitation accepted, fetching group...');
       await fetchGroup();
+      
+      toast({
+        title: '¡Unido al grupo!',
+        description: 'Ya puedes ver las ubicaciones del grupo'
+      });
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
       toast({
