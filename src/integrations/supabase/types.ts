@@ -924,6 +924,7 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      normalize_phone: { Args: { phone: string }; Returns: string }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined

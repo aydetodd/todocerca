@@ -76,59 +76,45 @@ export const useTrackingGroup = () => {
 
   const acceptInvitation = async (inviteId: string, groupId: string, nickname: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Usuario no autenticado');
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('telefono')
-        .eq('user_id', user.id)
-        .single();
+      console.log('Accepting invitation via edge function:', { inviteId, groupId, nickname });
 
-      if (!profile?.telefono) {
-        throw new Error('No se encontró el número de teléfono en tu perfil');
-      }
-
-      console.log('Accepting invitation:', { inviteId, groupId, nickname, phone: profile.telefono });
-
-      // Insertar el miembro con el teléfono
-      const { data: memberData, error: memberError } = await supabase
-        .from('tracking_group_members')
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          nickname: nickname,
-          phone_number: profile.telefono,
-          is_owner: false
-        })
-        .select()
-        .single();
-
-      if (memberError) {
-        console.error('Error inserting member:', memberError);
-        throw new Error(`No se pudo agregar al grupo: ${memberError.message}`);
-      }
-
-      console.log('Member added successfully:', memberData);
-
-      // Actualizar estado de la invitación
-      const { error: updateError } = await supabase
-        .from('tracking_invitations')
-        .update({ status: 'accepted' })
-        .eq('id', inviteId);
-
-      if (updateError) {
-        console.error('Error updating invitation:', updateError);
-        // No lanzamos error aquí porque el miembro ya se agregó
-      }
-
-      console.log('Invitation accepted, fetching group...');
-      await fetchGroup();
-      
-      toast({
-        title: '¡Unido al grupo!',
-        description: 'Ya puedes ver las ubicaciones del grupo'
+      // Llamar al edge function con service role para bypassar RLS
+      const { data, error } = await supabase.functions.invoke('accept-tracking-invitation', {
+        body: { inviteId, groupId, nickname },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
+
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(error.message || 'No se pudo unir al grupo');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'No se pudo unir al grupo');
+      }
+
+      console.log('Invitation accepted successfully:', data);
+      
+      // Si ya era miembro, solo mostramos mensaje y refrescamos
+      if (data.alreadyMember) {
+        toast({
+          title: 'Ya eres miembro',
+          description: 'Ya perteneces a este grupo'
+        });
+      } else {
+        toast({
+          title: '¡Unido al grupo!',
+          description: 'Ya puedes ver las ubicaciones del grupo'
+        });
+      }
+
+      // Refrescar datos del grupo
+      await fetchGroup();
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
       toast({
