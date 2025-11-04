@@ -97,7 +97,10 @@ serve(async (req) => {
           message: 'Ya eres miembro de este grupo',
           alreadyMember: true 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
@@ -137,7 +140,10 @@ serve(async (req) => {
         message: 'Te has unido al grupo exitosamente',
         member: memberData 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
 
   } catch (error) {

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X } from 'lucide-react';
+import TrackingMap from '@/components/TrackingMap';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -512,22 +513,10 @@ const TrackingGPS = () => {
               <CardContent>
                 {locations.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
-                    Ningún miembro está compartiendo su ubicación
+                    Ningún miembro está compartiendo su ubicación. Activa "Compartir Mi Ubicación" arriba.
                   </p>
                 ) : (
-                  <div className="space-y-3">
-                    {locations.map((loc) => (
-                      <div key={loc.id} className="p-3 bg-muted rounded-lg">
-                        <p className="font-medium">{loc.member?.nickname || 'Miembro'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Lat: {loc.latitude.toFixed(6)}, Lng: {loc.longitude.toFixed(6)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Actualizado: {new Date(loc.updated_at).toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                  <TrackingMap locations={locations} currentUserId={currentUserId} />
                 )}
               </CardContent>
             </Card>
