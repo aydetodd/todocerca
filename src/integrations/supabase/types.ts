@@ -915,7 +915,15 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      has_valid_tracking_invitation: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_tracking_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
