@@ -42,6 +42,46 @@ export const useTrackingGroup = () => {
   useEffect(() => {
     fetchGroup();
     checkPendingInvitations();
+
+    // Suscribirse a cambios en miembros del grupo en tiempo real
+    const membersChannel = supabase
+      .channel('tracking_members_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tracking_group_members'
+        },
+        () => {
+          console.log('Members changed, refetching group...');
+          fetchGroup();
+        }
+      )
+      .subscribe();
+
+    // Suscribirse a cambios en invitaciones en tiempo real
+    const invitationsChannel = supabase
+      .channel('tracking_invitations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tracking_invitations'
+        },
+        () => {
+          console.log('Invitations changed, refetching...');
+          fetchGroup();
+          checkPendingInvitations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(membersChannel);
+      supabase.removeChannel(invitationsChannel);
+    };
   }, []);
 
   const checkPendingInvitations = async () => {
