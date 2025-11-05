@@ -131,10 +131,18 @@ serve(async (req) => {
         .delete()
         .eq('id', invitation.id);
       
+      let errorMessage = 'Error enviando SMS';
       if (errorText.includes('21608')) {
-        throw new Error('Tu cuenta de Twilio es de prueba. Para enviar SMS debes:\n1. Verificar este número en twilio.com/console/phone-numbers/verified\n2. O actualizar a cuenta de pago en twilio.com/console/billing');
+        errorMessage = 'Tu cuenta de Twilio es de prueba. Para enviar SMS debes:\n1. Verificar este número en twilio.com/console/phone-numbers/verified\n2. O actualizar a cuenta de pago en twilio.com/console/billing';
       }
-      throw new Error(`Error enviando SMS: ${errorText}`);
+      
+      return new Response(
+        JSON.stringify({ error: errorMessage }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     return new Response(
