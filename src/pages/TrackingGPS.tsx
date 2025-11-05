@@ -399,30 +399,62 @@ const TrackingGPS = () => {
                 <Users className="h-5 w-5" />
                 <CardTitle>Miembros del Grupo</CardTitle>
               </div>
+              <CardDescription>
+                {locations.length} de {members.length} compartiendo ubicación
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">{member.nickname}</p>
-                    {member.phone_number && (
-                      <p className="text-sm text-muted-foreground">{member.phone_number}</p>
-                    )}
-                    {member.is_owner && (
-                      <Badge variant="secondary" className="mt-1">Dueño</Badge>
+              {members.map((member) => {
+                const isSharing = locations.some(loc => loc.user_id === member.user_id);
+                return (
+                  <div key={member.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{member.nickname}</p>
+                        {isSharing && (
+                          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                            <span className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse"></span>
+                            En línea
+                          </span>
+                        )}
+                        {!isSharing && (
+                          <span className="text-xs text-muted-foreground">
+                            No compartiendo
+                          </span>
+                        )}
+                      </div>
+                      {member.phone_number && (
+                        <p className="text-sm text-muted-foreground">{member.phone_number}</p>
+                      )}
+                      <div className="flex gap-2 mt-1">
+                        {member.is_owner && (
+                          <Badge variant="secondary">Dueño</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {isOwner && !member.is_owner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeMember(member.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     )}
                   </div>
-                  {isOwner && !member.is_owner && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeMember(member.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
+                );
+              })}
+              
+              {isActive && locations.length < members.length && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                    💡 Nota: Para aparecer en el mapa
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                    Cada miembro debe abrir esta página en su dispositivo y activar "Compartir Mi Ubicación"
+                  </p>
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
 
