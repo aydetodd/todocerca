@@ -1,3 +1,4 @@
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -30,31 +31,33 @@ const queryClient = new QueryClient({
 
 export default function AppWrapper() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <BrowserRouter>
-          <TooltipProvider delayDuration={0}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/landing" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/dashboard" element={<DashboardMain />} />
-              <Route path="/mi-perfil" element={<MiPerfil />} />
-              <Route path="/mis-productos" element={<MisProductos />} />
-              <Route path="/gestion-pedidos" element={<GestionPedidos />} />
-              <Route path="/mapa" element={<MapView />} />
-              <Route path="/tracking-gps" element={<TrackingGPS />} />
-              <Route path="/search" element={<ProductSearch />} />
-              <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
-              <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
-        </BrowserRouter>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <BrowserRouter>
+            <TooltipProvider delayDuration={0}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/landing" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/dashboard" element={<DashboardMain />} />
+                <Route path="/mi-perfil" element={<MiPerfil />} />
+                <Route path="/mis-productos" element={<MisProductos />} />
+                <Route path="/gestion-pedidos" element={<GestionPedidos />} />
+                <Route path="/mapa" element={<MapView />} />
+                <Route path="/tracking-gps" element={<TrackingGPS />} />
+                <Route path="/search" element={<ProductSearch />} />
+                <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+                <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 }
