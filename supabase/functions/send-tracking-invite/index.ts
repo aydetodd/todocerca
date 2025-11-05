@@ -52,29 +52,42 @@ serve(async (req) => {
       formattedPhone = '521' + formattedPhone;
     }
 
-    // Verificar si ya existe una invitación pendiente (normalizar teléfonos)
-    const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
-    const normalizedPhone = normalizePhone(phoneNumber);
-    
-    const { data: existingInvites } = await supabaseClient
+    // Verificar si ya existe una invitación pendiente
+    const { data: existingInvites, error: fetchError } = await supabaseClient
       .from('tracking_invitations')
       .select('*')
-      .eq('group_id', groupId);
+      .eq('group_id', groupId)
+      .eq('phone_number', phoneNumber);
 
-    // Buscar invitación pendiente con el mismo teléfono normalizado
-    const existingInvite = existingInvites?.find(
-      inv => normalizePhone(inv.phone_number) === normalizedPhone && inv.status === 'pending'
-    );
+    if (fetchError) {
+      console.error('Error checking invitations:', fetchError);
+    }
 
-    if (existingInvite) {
-      // Si la invitación ya expiró, eliminarla y continuar
-      if (new Date(existingInvite.expires_at) < new Date()) {
+    if (existingInvites && existingInvites.length > 0) {
+      const pendingInvite = existingInvites.find(inv => inv.status === 'pending');
+      
+      if (pendingInvite) {
+        // Si la invitación ya expiró, eliminarla y continuar
+        if (new Date(pendingInvite.expires_at) < new Date()) {
+          await supabaseClient
+            .from('tracking_invitations')
+            .delete()
+            .eq('id', pendingInvite.id);
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Ya existe una invitación pendiente para este número. Cancela la anterior primero.' }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      } else {
+        // Si hay invitaciones antiguas (aceptadas/rechazadas), eliminarlas
         await supabaseClient
           .from('tracking_invitations')
           .delete()
-          .eq('id', existingInvite.id);
-      } else {
-        throw new Error('Ya existe una invitación pendiente para este número. Cancela la anterior primero.');
+          .in('id', existingInvites.map(inv => inv.id));
       }
     }
 
