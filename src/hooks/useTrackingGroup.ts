@@ -42,47 +42,56 @@ export const useTrackingGroup = () => {
   useEffect(() => {
     fetchGroup();
     checkPendingInvitations();
+  }, []);
+
+  // Suscripciones en tiempo real en un useEffect separado que depende del group.id
+  useEffect(() => {
+    if (!group?.id) return;
+
+    console.log('Setting up realtime subscriptions for group:', group.id);
 
     // Suscribirse a cambios en miembros del grupo en tiempo real
     const membersChannel = supabase
-      .channel('tracking_members_changes')
+      .channel(`tracking_members_${group.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'tracking_group_members'
+          table: 'tracking_group_members',
+          filter: `group_id=eq.${group.id}`
         },
-        () => {
-          console.log('Members changed, refetching group...');
-          fetchGroup();
+        (payload) => {
+          console.log('Members changed:', payload);
+          fetchMembers(group.id);
         }
       )
       .subscribe();
 
     // Suscribirse a cambios en invitaciones en tiempo real
     const invitationsChannel = supabase
-      .channel('tracking_invitations_changes')
+      .channel(`tracking_invitations_${group.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'tracking_invitations'
+          table: 'tracking_invitations',
+          filter: `group_id=eq.${group.id}`
         },
-        () => {
-          console.log('Invitations changed, refetching...');
-          fetchGroup();
-          checkPendingInvitations();
+        (payload) => {
+          console.log('Invitations changed:', payload);
+          fetchInvitations(group.id);
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up realtime subscriptions');
       supabase.removeChannel(membersChannel);
       supabase.removeChannel(invitationsChannel);
     };
-  }, []);
+  }, [group?.id]);
 
   const checkPendingInvitations = async () => {
     try {
