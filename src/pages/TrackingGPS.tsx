@@ -408,8 +408,8 @@ const TrackingGPS = () => {
     <>
       {/* Full Screen Map View */}
       {showFullScreenMap && isActive && locations.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <div className="absolute top-4 left-4 z-10">
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="absolute top-4 left-4 z-[60]">
             <Button 
               variant="default" 
               size="lg"
@@ -420,7 +420,9 @@ const TrackingGPS = () => {
               Volver
             </Button>
           </div>
-          <TrackingMap locations={locations} currentUserId={currentUserId} />
+          <div className="w-full h-full">
+            <TrackingMap locations={locations} currentUserId={currentUserId} />
+          </div>
         </div>
       )}
 

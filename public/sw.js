@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v22-fullscreen-fix';
+const CACHE_NAME = 'todocerca-v23-tracking-fullscreen';
 const urlsToCache = [
   '/',
   '/index.html',

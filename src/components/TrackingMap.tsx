@@ -118,7 +118,7 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
   return (
     <div 
       id="tracking-map" 
-      className="w-full h-[400px] rounded-lg shadow-lg border border-border"
+      className="w-full h-full rounded-lg shadow-lg border border-border"
     />
   );
 };
