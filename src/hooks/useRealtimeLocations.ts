@@ -12,6 +12,7 @@ export interface ProveedorLocation {
     estado: 'available' | 'busy' | 'offline';
     telefono: string | null;
   };
+  is_taxi?: boolean;
 }
 
 export const useRealtimeLocations = () => {
@@ -65,11 +66,36 @@ export const useRealtimeLocations = () => {
         return true;
       });
 
+      // Get provider IDs to check for taxi services
+      const { data: proveedoresData } = await supabase
+        .from('proveedores')
+        .select('id, user_id')
+        .in('user_id', userIds);
+
+      const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
+      
+      // Check which providers have taxi products
+      const proveedorIds = proveedoresData?.map(p => p.id) || [];
+      const { data: taxiProducts } = await supabase
+        .from('productos')
+        .select('proveedor_id')
+        .in('proveedor_id', proveedorIds)
+        .or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
+      
+      const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
+
       // Merge data
-      const merged = locationsData?.map(loc => ({
-        ...loc,
-        profiles: profilesWithActiveSub?.find(p => p.user_id === loc.user_id) || null
-      })) || [];
+      const merged = locationsData?.map(loc => {
+        const profile = profilesWithActiveSub?.find(p => p.user_id === loc.user_id);
+        const proveedorId = proveedorMap.get(loc.user_id);
+        const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
+        
+        return {
+          ...loc,
+          profiles: profile || null,
+          is_taxi: isTaxi
+        };
+      }) || [];
 
       // Only show users with active subscription, provider role, and available/busy status
       setLocations(merged.filter(l => l.profiles) as ProveedorLocation[]);

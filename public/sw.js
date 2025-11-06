@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v9-ga4-analytics';
+const CACHE_NAME = 'todocerca-v10-taxi-markers';
 const urlsToCache = [
   '/',
   '/index.html',

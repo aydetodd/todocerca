@@ -4,7 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, Car } from 'lucide-react';
+import { renderToString } from 'react-dom/server';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -196,6 +197,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       const isCurrentUser = location.user_id === currentUserId;
       const estado = location.profiles.estado || 'offline';
+      const isTaxi = location.is_taxi;
       
       // Color based on status
       const colors = {
@@ -204,16 +206,46 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         offline: '#ef4444'    // red
       };
 
-      const iconHtml = isCurrentUser 
-        ? `
+      let iconHtml: string;
+      
+      if (isTaxi) {
+        // Taxi icon
+        const carIconSvg = renderToString(
+          <Car 
+            size={24} 
+            color="white" 
+            fill={colors[estado]}
+            strokeWidth={1.5}
+          />
+        );
+        iconHtml = `
+          <div style="
+            background-color: ${colors[estado]};
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 3px solid white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(0deg);
+            transition: all 0.3s ease;
+          ">
+            ${carIconSvg}
+          </div>
+        `;
+      } else if (isCurrentUser) {
+        iconHtml = `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
             <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
                   fill="${colors[estado]}" 
                   stroke="white" 
                   stroke-width="2"/>
           </svg>
-        `
-        : `
+        `;
+      } else {
+        iconHtml = `
           <div style="
             background-color: ${colors[estado]};
             width: 20px;
@@ -223,15 +255,45 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           "></div>
         `;
+      }
 
       const icon = L.divIcon({
         html: iconHtml,
         className: 'custom-marker',
-        iconSize: [isCurrentUser ? 30 : 20, isCurrentUser ? 30 : 20]
+        iconSize: [isTaxi ? 32 : (isCurrentUser ? 30 : 20), isTaxi ? 32 : (isCurrentUser ? 30 : 20)]
       });
 
-      const marker = L.marker([Number(location.latitude), Number(location.longitude)], { icon })
+      const marker = L.marker([Number(location.latitude), Number(location.longitude)], { 
+        icon,
+        // Smooth animation when location updates
+        draggable: false
+      })
         .addTo(mapRef.current!);
+      
+      // Store previous position for smooth transitions
+      if (markersRef.current[location.user_id]) {
+        const oldMarker = markersRef.current[location.user_id];
+        const oldLatLng = oldMarker.getLatLng();
+        const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
+        
+        // Animate marker movement
+        const steps = 20;
+        let currentStep = 0;
+        const latDiff = (newLatLng.lat - oldLatLng.lat) / steps;
+        const lngDiff = (newLatLng.lng - oldLatLng.lng) / steps;
+        
+        const animateMarker = () => {
+          if (currentStep < steps) {
+            currentStep++;
+            const lat = oldLatLng.lat + (latDiff * currentStep);
+            const lng = oldLatLng.lng + (lngDiff * currentStep);
+            marker.setLatLng([lat, lng]);
+            requestAnimationFrame(animateMarker);
+          }
+        };
+        
+        animateMarker();
+      }
 
       // Popup content
       const visibilityText = isCurrentUser && estado === 'offline' 
@@ -241,7 +303,8 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       const popupContent = `
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">${location.profiles.apodo || 'Usuario'}</h3>
+          <h3 class="font-bold text-lg mb-2">${location.profiles.apodo || 'Usuario'}${isTaxi ? ' 🚕' : ''}</h3>
+          ${isTaxi ? '<p class="text-xs mb-2 text-blue-600 font-semibold">Servicio de Taxi</p>' : ''}
           <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
           ${isCurrentUser ? `
             <p class="text-xs mb-2" style="color: ${visibilityColor}">
