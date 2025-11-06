@@ -16,11 +16,18 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
     dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: [
+      'react', 
+      'react-dom',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-slot',
+    ],
     force: true,
   },
   build: {
