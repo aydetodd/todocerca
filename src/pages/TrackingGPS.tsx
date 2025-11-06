@@ -305,43 +305,73 @@ const TrackingGPS = () => {
           Volver
         </Button>
 
-        {/* Selector de Grupos */}
-        {allGroups.length > 1 && (
-          <Card className="mb-6 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Mis Grupos ({allGroups.length})
-              </CardTitle>
-              <CardDescription>
-                Selecciona el grupo que deseas visualizar
-              </CardDescription>
+        {/* Selector de Grupos - Siempre visible si hay grupos */}
+        {allGroups.length > 0 && (
+          <Card className="mb-6 border-primary/20 shadow-lg">
+            <CardHeader className="bg-primary/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    {allGroups.length > 1 ? `Cambiar de Grupo (${allGroups.length})` : 'Mi Grupo'}
+                  </CardTitle>
+                  <CardDescription>
+                    {allGroups.length > 1 
+                      ? 'Selecciona el grupo que deseas ver' 
+                      : 'Grupo actual'}
+                  </CardDescription>
+                </div>
+                {allGroups.length > 1 && (
+                  <Badge variant="outline" className="bg-primary/10">
+                    {allGroups.length} grupos disponibles
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                {allGroups.map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => setSelectedGroupId(g.id)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      selectedGroupId === g.id
-                        ? 'border-primary bg-primary/5 shadow-md'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-base">{g.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {g.owner_id === currentUserId ? 'Dueño' : 'Miembro'}
-                        </p>
+            <CardContent className="pt-4">
+              <div className="grid gap-3">
+                {allGroups.map((g) => {
+                  const isCurrentUserOwner = g.owner_id === currentUserId;
+                  const isSelected = selectedGroupId === g.id;
+                  
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => setSelectedGroupId(g.id)}
+                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="font-semibold text-base flex items-center gap-2">
+                            {g.name}
+                            {isSelected && (
+                              <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                                Actual
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={isCurrentUserOwner ? 'default' : 'secondary'} className="text-xs">
+                              {isCurrentUserOwner ? '👑 Dueño' : '👤 Miembro'}
+                            </Badge>
+                            <Badge variant={g.subscription_status === 'active' ? 'default' : 'outline'} className="text-xs">
+                              {g.subscription_status === 'active' ? '✓ Activa' : '✗ Inactiva'}
+                            </Badge>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="text-primary">
+                            <Navigation className="h-5 w-5" />
+                          </div>
+                        )}
                       </div>
-                      <Badge variant={g.subscription_status === 'active' ? 'default' : 'secondary'}>
-                        {g.subscription_status === 'active' ? 'Activa' : 'Inactiva'}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
