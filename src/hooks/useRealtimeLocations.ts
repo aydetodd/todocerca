@@ -84,6 +84,8 @@ export const useRealtimeLocations = () => {
         .ilike('name', 'taxi')
         .maybeSingle();
       
+      console.log('Taxi category found:', taxiCategory);
+      
       // Build query to check for taxi products (by name, keywords, OR category)
       let taxiQuery = supabase
         .from('productos')
@@ -99,6 +101,7 @@ export const useRealtimeLocations = () => {
       }
       
       const { data: taxiProducts } = await taxiQuery;
+      console.log('Taxi products found:', taxiProducts);
       
       const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 

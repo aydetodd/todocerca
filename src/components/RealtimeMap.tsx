@@ -115,9 +115,11 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
   useEffect(() => {
     if (!mapRef.current || !currentUserId) return;
 
-    // Clear old markers
-    Object.values(markersRef.current).forEach(marker => marker.remove());
-    markersRef.current = {};
+    // Store old positions before updating
+    const oldPositions = new Map<string, L.LatLng>();
+    Object.entries(markersRef.current).forEach(([userId, marker]) => {
+      oldPositions.set(userId, marker.getLatLng());
+    });
 
     // Check if current user should be shown
     const currentUserLocation = locations.find(loc => loc.user_id === currentUserId);
@@ -205,6 +207,8 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       const estado = location.profiles.estado || 'offline';
       const isTaxi = location.is_taxi;
       
+      console.log('Location for', location.profiles.apodo, '- isTaxi:', isTaxi);
+      
       // Color based on status
       const colors = {
         available: '#22c55e', // green
@@ -267,36 +271,45 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         iconSize: [isTaxi ? 32 : (isCurrentUser ? 30 : 20), isTaxi ? 32 : (isCurrentUser ? 30 : 20)]
       });
 
-      const marker = L.marker([Number(location.latitude), Number(location.longitude)], { 
-        icon,
-        // Smooth animation when location updates
-        draggable: false
-      })
-        .addTo(mapRef.current!);
+      // Check if marker exists and update it, or create new one
+      const existingMarker = markersRef.current[location.user_id];
+      const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
       
-      // Store previous position for smooth transitions
-      if (markersRef.current[location.user_id]) {
-        const oldMarker = markersRef.current[location.user_id];
-        const oldLatLng = oldMarker.getLatLng();
-        const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
+      let marker: L.Marker;
+      
+      if (existingMarker && oldPositions.has(location.user_id)) {
+        // Update existing marker with smooth animation
+        marker = existingMarker;
+        const oldLatLng = oldPositions.get(location.user_id)!;
         
-        // Animate marker movement
-        const steps = 20;
-        let currentStep = 0;
-        const latDiff = (newLatLng.lat - oldLatLng.lat) / steps;
-        const lngDiff = (newLatLng.lng - oldLatLng.lng) / steps;
+        // Update icon in case status changed
+        marker.setIcon(icon);
         
-        const animateMarker = () => {
-          if (currentStep < steps) {
-            currentStep++;
-            const lat = oldLatLng.lat + (latDiff * currentStep);
-            const lng = oldLatLng.lng + (lngDiff * currentStep);
-            marker.setLatLng([lat, lng]);
-            requestAnimationFrame(animateMarker);
-          }
-        };
-        
-        animateMarker();
+        // Only animate if position actually changed
+        if (oldLatLng.lat !== newLatLng.lat || oldLatLng.lng !== newLatLng.lng) {
+          const steps = 20;
+          let currentStep = 0;
+          const latDiff = (newLatLng.lat - oldLatLng.lat) / steps;
+          const lngDiff = (newLatLng.lng - oldLatLng.lng) / steps;
+          
+          const animateMarker = () => {
+            if (currentStep < steps) {
+              currentStep++;
+              const lat = oldLatLng.lat + (latDiff * currentStep);
+              const lng = oldLatLng.lng + (lngDiff * currentStep);
+              marker.setLatLng([lat, lng]);
+              requestAnimationFrame(animateMarker);
+            }
+          };
+          
+          animateMarker();
+        }
+      } else {
+        // Create new marker
+        marker = L.marker(newLatLng, { 
+          icon,
+          draggable: false
+        }).addTo(mapRef.current!);
       }
 
       // Popup content
@@ -356,6 +369,14 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       });
 
       markersRef.current[location.user_id] = marker;
+    });
+    
+    // Remove markers for users no longer in locations
+    Object.keys(markersRef.current).forEach(userId => {
+      if (!locations.find(loc => loc.user_id === userId) && userId !== currentUserId) {
+        markersRef.current[userId].remove();
+        delete markersRef.current[userId];
+      }
     });
   }, [locations, currentUserId]);
 
