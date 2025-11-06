@@ -74,14 +74,14 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="bg-amber-50 p-4 rounded-lg text-center">
-                <div className="text-2xl font-bold text-amber-600">{stats.total}</div>
-                <div className="text-sm text-gray-600">Total</div>
+              <div className="bg-primary/10 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-primary">{stats.total}</div>
+                <div className="text-sm text-muted-foreground">Total</div>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg text-center">
                 <div className="text-2xl font-bold text-blue-600">{stats.clientes}</div>

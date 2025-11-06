@@ -266,7 +266,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
             </button>
             <button 
               onclick="window.openInternalChat('${location.user_id}', '${location.profiles.apodo}')"
-              class="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               Mensaje

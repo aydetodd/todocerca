@@ -59,13 +59,13 @@ export default function MapView() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-amber-500 text-white shadow-lg">
+      <header className="bg-primary text-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Mapa en Tiempo Real</h1>
           <Button 
             variant="outline" 
             onClick={() => navigate('/dashboard')}
-            className="text-amber-500 bg-white hover:bg-amber-50"
+            className="text-primary bg-white hover:bg-primary/20"
           >
             <Home className="h-4 w-4 mr-2" />
             Volver al Dashboard
@@ -87,7 +87,7 @@ export default function MapView() {
 
       {/* Floating Message Button */}
       <Button
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-2xl bg-amber-500 hover:bg-amber-600 z-40"
+        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 z-40"
         size="icon"
         onClick={() => {
           setSelectedReceiverId(undefined);

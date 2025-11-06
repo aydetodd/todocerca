@@ -51,7 +51,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       className="fixed inset-0 bg-background z-[9999] flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-amber-500 text-white">
+      <div className="flex items-center justify-between p-4 border-b bg-primary text-white">
         <h3 className="font-bold">
           {receiverName ? `Chat con ${receiverName}` : 'Mensajes'}
         </h3>
@@ -59,7 +59,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="text-white hover:bg-amber-600"
+          className="text-white hover:bg-primary/90"
         >
           <X className="h-4 w-4" />
         </Button>
@@ -84,7 +84,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                 className={`
                   inline-block p-3 rounded-lg max-w-[80%]
                   ${isOwn 
-                    ? 'bg-amber-500 text-white' 
+                    ? 'bg-primary text-white' 
                     : 'bg-muted'
                   }
                 `}
@@ -108,7 +108,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
             placeholder="Escribe un mensaje..."
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           />
-          <Button onClick={handleSend} size="icon" className="bg-amber-500 hover:bg-amber-600">
+          <Button onClick={handleSend} size="icon" className="bg-primary hover:bg-primary/90">
             <Send className="h-4 w-4" />
           </Button>
         </div>
