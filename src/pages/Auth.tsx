@@ -102,39 +102,25 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        console.log('🔑 Attempting login with phone...');
+        console.log('🔑 Attempting login with phone:', telefono);
         
-        // Buscar perfil por teléfono (busca con formato completo primero)
-        let profileData = null;
-        const { data: fullFormatData } = await supabase
-          .from('profiles')
-          .select('user_id, consecutive_number')
-          .eq('telefono', telefono)
-          .maybeSingle();
+        // Buscar perfil usando función flexible que normaliza teléfonos
+        const { data: profileData, error: searchError } = await supabase
+          .rpc('find_user_by_phone', { phone_param: telefono });
         
-        if (fullFormatData) {
-          profileData = fullFormatData;
-        } else {
-          // Buscar por últimos 10 dígitos si no se encuentra con formato completo
-          const phoneDigits = telefono.replace(/\D/g, '').slice(-10);
-          const { data: partialData } = await supabase
-            .from('profiles')
-            .select('user_id, consecutive_number, telefono')
-            .like('telefono', `%${phoneDigits}`)
-            .maybeSingle();
-          
-          profileData = partialData;
+        console.log('🔍 Search result:', { profileData, searchError });
+
+        if (!profileData || profileData.length === 0) {
+          console.error('❌ Phone not found in database');
+          throw new Error('Número de teléfono no encontrado. Verifica que esté registrado.');
         }
 
-        if (!profileData) {
-          throw new Error('Número de teléfono no encontrado');
-        }
-
-        console.log('📱 Profile found:', profileData);
+        const userProfile = profileData[0];
+        console.log('📱 Profile found:', userProfile);
 
         // Obtener el email del usuario usando una función segura
         const { data: userData } = await supabase.rpc('get_user_email_by_id', {
-          p_user_id: profileData.user_id
+          p_user_id: userProfile.user_id
         });
         
         // Usar el email real del usuario o generar uno
@@ -154,13 +140,22 @@ const Auth = () => {
           throw error;
         }
 
-        setUserIdConsecutivo(profileData.consecutive_number);
-        setShowIdConsecutivo(true);
+        // Obtener el consecutive_number del perfil completo
+        const { data: fullProfile } = await supabase
+          .from('profiles')
+          .select('consecutive_number')
+          .eq('user_id', userProfile.user_id)
+          .single();
 
-        toast({
-          title: "¡Bienvenido!",
-          description: `Tu número de usuario: ${profileData.consecutive_number}`,
-        });
+        if (fullProfile?.consecutive_number) {
+          setUserIdConsecutivo(fullProfile.consecutive_number);
+          setShowIdConsecutivo(true);
+
+          toast({
+            title: "¡Bienvenido!",
+            description: `Tu número de usuario: ${fullProfile.consecutive_number}`,
+          });
+        }
 
         // Check provider registration
         try {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v14-fix-login-email';
+const CACHE_NAME = 'todocerca-v15-flexible-phone-search';
 const urlsToCache = [
   '/',
   '/index.html',
