@@ -466,14 +466,14 @@ const TrackingGPS = () => {
                         className={
                           isSharing 
                             ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-500 border-green-300 shadow-[0_0_25px_rgba(34,197,94,1)] scale-110' 
-                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-950/40 border-green-950/60 hover:bg-green-950/60'
+                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-900/30 border-green-900/40 opacity-40 hover:opacity-50'
                         }
                         aria-label="Disponible"
                         title="Disponible"
                       />
                       <button
                         disabled
-                        className="w-10 h-10 rounded-full bg-yellow-950/40 border-2 border-yellow-950/60 opacity-50 cursor-not-allowed"
+                        className="w-10 h-10 rounded-full transition-all duration-300 border-2 bg-yellow-900/30 border-yellow-900/40 opacity-40 cursor-not-allowed"
                         aria-label="Ocupado"
                         title="Ocupado (próximamente)"
                       />
@@ -482,7 +482,7 @@ const TrackingGPS = () => {
                         className={
                           !isSharing 
                             ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-500 border-red-300 shadow-[0_0_25px_rgba(239,68,68,1)] scale-110' 
-                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-950/40 border-red-950/60 hover:bg-red-950/60'
+                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-900/30 border-red-900/40 opacity-40 hover:opacity-50'
                         }
                         aria-label="Fuera de servicio"
                         title="Fuera de servicio"
