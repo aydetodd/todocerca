@@ -115,18 +115,49 @@ const TrackingGPS = () => {
 
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {
-      const interval = setInterval(() => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              updateMyLocation(position.coords.latitude, position.coords.longitude);
-            },
-            (error) => console.error('Error getting location:', error)
-          );
-        }
-      }, 10000);
+      let watchId: number | null = null;
+      let lastUpdateTime = 0;
+      const MIN_UPDATE_INTERVAL = 3000; // 3 segundos mínimo entre actualizaciones
 
-      return () => clearInterval(interval);
+      if (navigator.geolocation) {
+        // watchPosition es más eficiente que setInterval + getCurrentPosition
+        watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const now = Date.now();
+            // Solo actualizar si han pasado al menos 3 segundos desde la última actualización
+            if (now - lastUpdateTime >= MIN_UPDATE_INTERVAL) {
+              console.log('[GPS] Actualización de ubicación:', {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                speed: position.coords.speed
+              });
+              updateMyLocation(position.coords.latitude, position.coords.longitude);
+              lastUpdateTime = now;
+            }
+          },
+          (error) => {
+            console.error('[GPS] Error obteniendo ubicación:', error);
+            toast({
+              title: 'Error de GPS',
+              description: 'No se pudo actualizar tu ubicación. Verifica los permisos.',
+              variant: 'destructive'
+            });
+          },
+          {
+            enableHighAccuracy: true, // Máxima precisión (usa GPS real)
+            timeout: 5000, // 5 segundos máximo de espera
+            maximumAge: 0 // No usar ubicaciones en caché, siempre obtener nueva
+          }
+        );
+      }
+
+      return () => {
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          console.log('[GPS] Tracking detenido');
+        }
+      };
     }
   }, [isSharing, group]);
 
