@@ -42,9 +42,13 @@ const TrackingGPS = () => {
     
     // Verificar invitaciones pendientes para este usuario
     const checkInvites = async () => {
+      console.log('[DEBUG] Checking pending invitations...');
       const invites = await checkPendingInvitations();
+      console.log('[DEBUG] Found pending invitations:', invites);
       if (invites && invites.length > 0) {
         setMyInvitations(invites);
+      } else {
+        setMyInvitations([]);
       }
     };
     checkInvites();
@@ -105,10 +109,12 @@ const TrackingGPS = () => {
     checkSubscriptionStatus();
   }, [searchParams]);
 
-  // Recargar invitaciones cuando cambia el grupo
+  // Recargar invitaciones cuando cambia el grupo o se actualiza la data
   useEffect(() => {
     const checkInvites = async () => {
+      console.log('[DEBUG] Rechecking invitations...');
       const invites = await checkPendingInvitations();
+      console.log('[DEBUG] Found invitations after group change:', invites);
       if (invites && invites.length > 0) {
         setMyInvitations(invites);
       } else {
@@ -116,7 +122,7 @@ const TrackingGPS = () => {
       }
     };
     checkInvites();
-  }, [group]);
+  }, [group, allGroups]); // Agregar allGroups como dependencia
 
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {
@@ -439,6 +445,61 @@ const TrackingGPS = () => {
               Volver
             </Button>
 
+            {/* INVITACIONES PENDIENTES - SIEMPRE PRIMERO */}
+            {myInvitations.length > 0 && (
+              <Card className="border-primary mb-6 shadow-lg animate-pulse-slow">
+                <CardHeader className="bg-primary/10">
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <UserPlus className="h-6 w-6" />
+                    ¡Tienes {myInvitations.length} Invitación(es) Pendiente(s)!
+                  </CardTitle>
+                  <CardDescription>
+                    Te han invitado a unirte a {myInvitations.length === 1 ? 'un grupo' : 'grupos'} de tracking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    {myInvitations.map((invite: any) => (
+                      <div key={invite.id} className="border-2 border-primary/20 rounded-lg p-4 space-y-3 bg-primary/5">
+                        <div>
+                          <p className="font-bold text-xl text-primary">{invite.tracking_groups?.name || 'Grupo Familiar'}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tu apodo en el grupo: <span className="font-semibold text-foreground">{invite.nickname}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Expira: {new Date(invite.expires_at).toLocaleDateString('es-MX', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={async () => {
+                            try {
+                              await acceptInvitation(invite.id, invite.group_id, invite.nickname);
+                              // Refrescar invitaciones
+                              const invites = await checkPendingInvitations();
+                              setMyInvitations(invites || []);
+                            } catch (error) {
+                              console.error('Error accepting invitation:', error);
+                            }
+                          }}
+                          className="w-full"
+                          size="lg"
+                        >
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Aceptar Invitación
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Selector de Grupos - Siempre visible si hay grupos */}
             {allGroups.length > 0 && (
           <Card className="mb-6 border-primary/20 shadow-lg">
@@ -511,50 +572,6 @@ const TrackingGPS = () => {
           </Card>
         )}
 
-        {/* Invitaciones Pendientes para Aceptar */}
-        {myInvitations.length > 0 && (
-          <Card className="border-primary mb-6">
-            <CardHeader className="bg-primary/5">
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-primary" />
-                ¡Tienes Invitaciones Pendientes!
-              </CardTitle>
-              <CardDescription>
-                Has sido invitado a {myInvitations.length} grupo(s)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                {myInvitations.map((invite: any) => (
-                  <div key={invite.id} className="border rounded-lg p-4 space-y-3">
-                    <div>
-                      <p className="font-semibold text-lg">{invite.tracking_groups?.name || 'Grupo Familiar'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Tu apodo en el grupo: <span className="font-medium">{invite.nickname}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Expira: {new Date(invite.expires_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={async () => {
-                        try {
-                          await acceptInvitation(invite.id, invite.group_id, invite.nickname);
-                          setMyInvitations([]);
-                        } catch (error) {
-                          console.error('Error accepting invitation:', error);
-                        }
-                      }}
-                      className="w-full"
-                    >
-                      Aceptar Invitación
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="grid gap-6">
           {/* Estado del Grupo */}

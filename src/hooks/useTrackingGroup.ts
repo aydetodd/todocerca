@@ -110,7 +110,10 @@ export const useTrackingGroup = () => {
   const checkPendingInvitations = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('[Invitations] No user found');
+        return [];
+      }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -118,21 +121,35 @@ export const useTrackingGroup = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (!profile?.telefono) return;
+      if (!profile?.telefono) {
+        console.log('[Invitations] User has no phone number in profile');
+        return [];
+      }
 
+      console.log('[Invitations] Checking for phone:', profile.telefono);
+
+      // Buscar invitaciones que coincidan con el teléfono normalizado
       const { data: pendingInvites, error } = await supabase
         .from('tracking_invitations')
         .select('*, tracking_groups(name)')
-        .eq('phone_number', profile.telefono)
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString());
 
       if (error) throw error;
 
-      // Ya no aceptamos automáticamente, solo retornamos las invitaciones
-      return pendingInvites || [];
+      // Filtrar manualmente las que coincidan con el teléfono normalizado
+      const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '');
+      const userPhone = normalizePhone(profile.telefono);
+      
+      const matchingInvites = (pendingInvites || []).filter(invite => 
+        normalizePhone(invite.phone_number) === userPhone
+      );
+
+      console.log('[Invitations] Found matching invitations:', matchingInvites.length);
+
+      return matchingInvites;
     } catch (error) {
-      console.error('Error checking invitations:', error);
+      console.error('[Invitations] Error checking invitations:', error);
       return [];
     }
   };
