@@ -190,21 +190,33 @@ const TrackingGPS = () => {
 
   const toggleSharing = () => {
     if (!isSharing && navigator.geolocation) {
+      console.log('[DEBUG] Activating location sharing...');
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('[DEBUG] Got position:', position.coords);
           updateMyLocation(position.coords.latitude, position.coords.longitude);
           setIsSharing(true);
+          toast({
+            title: 'Ubicación compartida',
+            description: 'Tu ubicación se está compartiendo con el grupo'
+          });
         },
         (error) => {
+          console.error('[DEBUG] Geolocation error:', error);
           toast({
             title: 'Error',
-            description: 'No se pudo obtener tu ubicación',
+            description: 'No se pudo obtener tu ubicación. Verifica los permisos.',
             variant: 'destructive'
           });
         }
       );
     } else {
+      console.log('[DEBUG] Deactivating location sharing');
       setIsSharing(false);
+      toast({
+        title: 'Ubicación pausada',
+        description: 'Dejaste de compartir tu ubicación'
+      });
     }
   };
 
