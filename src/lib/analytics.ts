@@ -51,7 +51,7 @@ export const trackProductSearch = (searchTerm: string, resultsCount?: number) =>
  */
 export const trackPageView = (pagePath: string, pageTitle: string) => {
   if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', 'G-XXXXXXXXXX', {
+    window.gtag('config', 'G-4V2SKLDLJF', {
       page_path: pagePath,
       page_title: pageTitle,
     });
