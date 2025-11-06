@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.create-tracking-checkout]
 verify_jwt = true
 
+[functions.add-tracking-devices]
+verify_jwt = true
+
 [functions.send-recovery-code]
 verify_jwt = false
 

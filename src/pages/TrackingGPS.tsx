@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,7 @@ const TrackingGPS = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
+  const [additionalDevices, setAdditionalDevices] = useState(1);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -270,6 +271,45 @@ const TrackingGPS = () => {
       }
 
       const { data, error } = await supabase.functions.invoke('create-tracking-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Error creating checkout:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo crear la sesión de pago',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleAddDevices = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: 'Error',
+          description: 'Debes iniciar sesión',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: 'Redirigiendo a pago...',
+        description: `Agregando ${additionalDevices} dispositivo(s) adicional(es)`
+      });
+
+      const { data, error } = await supabase.functions.invoke('add-tracking-devices', {
+        body: { quantity: additionalDevices },
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
@@ -814,6 +854,75 @@ const TrackingGPS = () => {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Agregar Dispositivos Adicionales */}
+          {isOwner && totalSlots >= 5 && isActive && (
+            <Card className="border-primary/30">
+              <CardHeader className="bg-primary/5">
+                <CardTitle>Agregar Más Dispositivos</CardTitle>
+                <CardDescription>
+                  Ya tienes los 5 dispositivos incluidos. Agrega más a $100 MXN/año cada uno.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">💰 Precio por dispositivo adicional</p>
+                  <p className="text-2xl font-bold text-primary">$100 MXN/año</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="deviceQuantity">Cantidad de dispositivos</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setAdditionalDevices(Math.max(1, additionalDevices - 1))}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 text-center">
+                      <p className="text-3xl font-bold">{additionalDevices}</p>
+                      <p className="text-xs text-muted-foreground">dispositivo(s)</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setAdditionalDevices(Math.min(50, additionalDevices + 1))}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-primary/10 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm">Dispositivos:</span>
+                    <span className="font-medium">{additionalDevices}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm">Precio unitario:</span>
+                    <span className="font-medium">$100 MXN</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Total:</span>
+                    <span className="text-2xl font-bold text-primary">
+                      ${additionalDevices * 100} MXN/año
+                    </span>
+                  </div>
+                </div>
+
+                <Button onClick={handleAddDevices} className="w-full" size="lg">
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  Agregar {additionalDevices} Dispositivo(s)
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Podrás agregar códigos de descuento en la pasarela de pago
+                </p>
               </CardContent>
             </Card>
           )}

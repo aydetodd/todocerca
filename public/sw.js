@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v33-show-invitations-first';
+const CACHE_NAME = 'todocerca-v34-additional-devices';
 const urlsToCache = [
   '/',
   '/index.html',
