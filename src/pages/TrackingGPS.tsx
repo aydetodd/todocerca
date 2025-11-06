@@ -737,6 +737,53 @@ const TrackingGPS = () => {
                 </div>
               )}
 
+              {/* Agregar Dispositivos Adicionales - Mostrar cuando ya hay 5 */}
+              {isOwner && totalSlots >= 5 && isActive && (
+                <div className="bg-primary/5 border border-primary/30 rounded-lg p-4 mb-4">
+                  <p className="text-sm font-medium mb-3">
+                    ✅ Tienes los 5 dispositivos incluidos. ¿Necesitas más?
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Agrega dispositivos adicionales a $100 MXN/año cada uno
+                  </p>
+                  
+                  <div className="flex items-center gap-3 mb-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setAdditionalDevices(Math.max(1, additionalDevices - 1))}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 text-center bg-background rounded-lg p-2">
+                      <p className="text-2xl font-bold">{additionalDevices}</p>
+                      <p className="text-xs text-muted-foreground">dispositivo(s)</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setAdditionalDevices(Math.min(50, additionalDevices + 1))}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="bg-background p-3 rounded-lg mb-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Total:</span>
+                      <span className="text-xl font-bold text-primary">
+                        ${additionalDevices * 100} MXN/año
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleAddDevices} className="w-full">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Agregar {additionalDevices} Dispositivo(s)
+                  </Button>
+                </div>
+              )}
+
               {isActive && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-center p-4 bg-muted/50 rounded-lg">
@@ -751,7 +798,7 @@ const TrackingGPS = () => {
               )}
 
               {group.subscription_end && (
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-xs text-muted-foreground text-center mt-4">
                   Válida hasta: {new Date(group.subscription_end).toLocaleDateString()}
                 </p>
               )}
@@ -858,74 +905,6 @@ const TrackingGPS = () => {
             </Card>
           )}
 
-          {/* Agregar Dispositivos Adicionales */}
-          {isOwner && totalSlots >= 5 && isActive && (
-            <Card className="border-primary/30">
-              <CardHeader className="bg-primary/5">
-                <CardTitle>Agregar Más Dispositivos</CardTitle>
-                <CardDescription>
-                  Ya tienes los 5 dispositivos incluidos. Agrega más a $100 MXN/año cada uno.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm font-medium mb-2">💰 Precio por dispositivo adicional</p>
-                  <p className="text-2xl font-bold text-primary">$100 MXN/año</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="deviceQuantity">Cantidad de dispositivos</Label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setAdditionalDevices(Math.max(1, additionalDevices - 1))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <div className="flex-1 text-center">
-                      <p className="text-3xl font-bold">{additionalDevices}</p>
-                      <p className="text-xs text-muted-foreground">dispositivo(s)</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setAdditionalDevices(Math.min(50, additionalDevices + 1))}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="bg-primary/10 p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm">Dispositivos:</span>
-                    <span className="font-medium">{additionalDevices}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm">Precio unitario:</span>
-                    <span className="font-medium">$100 MXN</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold">Total:</span>
-                    <span className="text-2xl font-bold text-primary">
-                      ${additionalDevices * 100} MXN/año
-                    </span>
-                  </div>
-                </div>
-
-                <Button onClick={handleAddDevices} className="w-full" size="lg">
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Agregar {additionalDevices} Dispositivo(s)
-                </Button>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  Podrás agregar códigos de descuento en la pasarela de pago
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Invitar Miembro */}
           {isOwner && totalSlots < 5 && isActive && (
