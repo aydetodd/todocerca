@@ -93,20 +93,10 @@ serve(async (req) => {
     // Actualizar max_devices en tracking_groups para todos los grupos del usuario
     const totalMaxDevices = 5 + totalAdditionalDevices;
 
-    const { data: profileData } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profileData) {
-      throw new Error('Profile not found');
-    }
-
     const { data: groups, error: updateError } = await supabaseClient
       .from('tracking_groups')
       .update({ max_devices: totalMaxDevices })
-      .eq('owner_id', profileData.id)
+      .eq('owner_id', user.id)
       .select();
 
     if (updateError) {
