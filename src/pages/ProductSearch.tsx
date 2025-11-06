@@ -11,6 +11,7 @@ import ProvidersMap from '@/components/ProvidersMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
+import { trackProductSearch } from '@/lib/analytics';
 
 interface Category {
   id: string;
@@ -272,9 +273,13 @@ const ProductSearch = () => {
         const providersArray = Object.values(providerMap);
         console.log('📍 Proveedores para el mapa:', providersArray);
         setMapProviders(providersArray);
+        
+        // Track successful search
+        trackProductSearch(term, formattedResults.length);
       } else {
         setResults([]);
         setMapProviders([]);
+        trackProductSearch(term, 0);
       }
     } catch (error) {
       console.error('Error searching:', error);

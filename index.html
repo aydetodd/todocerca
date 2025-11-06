@@ -28,7 +28,19 @@
   <meta property="og:title" content="TodoCerca - Encuentra todo cerca de ti">
   <meta name="twitter:title" content="TodoCerca - Encuentra todo cerca de ti">
   <meta property="og:description" content="Encuentra productos y servicios locales cerca de ti en TodoCerca">
-  <meta name="twitter:description" content="Encuentra productos y servicios locales cerca de ti en TodoCerca">
+    <meta name="twitter:description" content="Encuentra productos y servicios locales cerca de ti en TodoCerca">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX', {
+        page_title: document.title,
+        page_location: window.location.href
+      });
+    </script>
 </head>
 
   <body>

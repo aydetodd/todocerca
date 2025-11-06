@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v8-no-orange';
+const CACHE_NAME = 'todocerca-v9-ga4-analytics';
 const urlsToCache = [
   '/',
   '/index.html',

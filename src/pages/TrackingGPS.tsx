@@ -14,6 +14,7 @@ import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { trackGPSSubscription, trackConversion } from '@/lib/analytics';
 
 const TrackingGPS = () => {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ const TrackingGPS = () => {
           if (error) throw error;
 
           if (data?.subscribed) {
+            trackGPSSubscription('completed', 400);
+            trackConversion('gps_subscription', 400);
+            
             toast({
               title: '¡Pago confirmado!',
               description: 'Ahora elige un nombre para tu grupo de tracking'
@@ -181,6 +185,8 @@ const TrackingGPS = () => {
 
   const handleStartSubscription = async () => {
     try {
+      trackGPSSubscription('started');
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({
@@ -209,6 +215,7 @@ const TrackingGPS = () => {
       }
     } catch (error: any) {
       console.error('Error creating checkout:', error);
+      trackGPSSubscription('cancelled');
       toast({
         title: 'Error',
         description: 'No se pudo iniciar el proceso de pago',

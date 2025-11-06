@@ -5,6 +5,7 @@ import { X, Send } from 'lucide-react';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { trackMessaging } from '@/lib/analytics';
 
 interface MessagingPanelProps {
   isOpen: boolean;
@@ -20,6 +21,12 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isOpen) {
+      trackMessaging('opened');
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id || null);
     });
@@ -33,6 +40,8 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   const handleSend = async () => {
     if (!message.trim()) return;
+    
+    trackMessaging('sent');
     
     // Play send sound
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');

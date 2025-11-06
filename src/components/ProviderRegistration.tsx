@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Upload, ArrowLeft, ArrowRight } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { trackProviderRegistration, trackConversion } from '@/lib/analytics';
 
 interface Product {
   id: string;
@@ -175,6 +176,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
   const handleSubmit = async () => {
     console.log('🚀 Starting handleSubmit...');
+    trackProviderRegistration('started');
     
     if (!validateForm()) {
       console.log('❌ Validation failed');
@@ -300,6 +302,11 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       }
 
       if (checkoutData?.url) {
+        // Get first product category for tracking
+        const firstCategory = products[0]?.category_id;
+        trackProviderRegistration('completed', firstCategory);
+        trackConversion('provider_upgrade', 400);
+        
         toast({
           title: "¡Registro exitoso!",
           description: `Se registraron ${products.length} productos. Redirigiendo al pago...`,
