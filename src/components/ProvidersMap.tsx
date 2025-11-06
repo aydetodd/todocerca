@@ -87,42 +87,63 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
       
       let icon;
       if (isTaxi) {
-        // Taxi icon - vista desde arriba
+        // Taxi icon - vista en perspectiva con llantas laterales
         const taxiTopViewSvg = `
-          <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
             <!-- Sombra del carro -->
-            <ellipse cx="22" cy="40" rx="16" ry="3" fill="rgba(0,0,0,0.2)"/>
+            <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
             
-            <!-- Cuerpo principal del taxi -->
-            <rect x="10" y="10" width="24" height="24" rx="3" fill="#FDB813" stroke="#333" stroke-width="0.6"/>
+            <!-- Llanta trasera izquierda -->
+            <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+            <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
             
-            <!-- Techo/Cabina -->
-            <rect x="12" y="15" width="20" height="10" rx="2" fill="#FFD700" stroke="#333" stroke-width="0.6"/>
+            <!-- Llanta trasera derecha -->
+            <ellipse cx="26" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+            <ellipse cx="26" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
             
-            <!-- Texto TAXI -->
-            <text x="22" y="22" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+            <!-- Cuerpo principal del taxi (parte trasera) -->
+            <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" 
+                  fill="#FDB813" stroke="#333" stroke-width="0.7"/>
             
-            <!-- Ventanas laterales -->
-            <rect x="11" y="16" width="3.5" height="7" rx="0.5" fill="#4A90E2" opacity="0.7"/>
-            <rect x="29.5" y="16" width="3.5" height="7" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            <!-- Llanta delantera izquierda -->
+            <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+            <ellipse cx="10" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
+            
+            <!-- Llanta delantera derecha -->
+            <ellipse cx="26" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+            <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
+            
+            <!-- Techo/Cabina superior -->
+            <rect x="12" y="23" width="12" height="12" rx="1.5" fill="#FFD700" stroke="#333" stroke-width="0.6"/>
+            
+            <!-- Ventanas laterales izquierda -->
+            <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Ventanas laterales derecha -->
+            <rect x="22.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
             
             <!-- Parabrisas frontal -->
-            <path d="M 15 11 Q 22 9 29 11 L 28 15 L 16 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.4"/>
+            <path d="M 13 15 L 13 18 L 23 18 L 23 15 Q 18 13.5 13 15 Z" 
+                  fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.5"/>
             
             <!-- Ventana trasera -->
-            <path d="M 16 29 L 28 29 Q 22 31 16 29 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+            <path d="M 13 36 L 13 39 L 23 39 L 23 36 Z" 
+                  fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.5"/>
+            
+            <!-- Texto TAXI en el techo -->
+            <text x="18" y="30" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
             
             <!-- Luces delanteras -->
-            <circle cx="14" cy="11" r="1.8" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-            <circle cx="30" cy="11" r="1.8" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+            <circle cx="13" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+            <circle cx="23" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
             
             <!-- Luces traseras -->
-            <circle cx="14" cy="33" r="1.5" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-            <circle cx="30" cy="33" r="1.5" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+            <circle cx="13" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+            <circle cx="23" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
             
-            <!-- Espejos laterales -->
-            <rect x="7" y="19" width="2.5" height="4" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.4"/>
-            <rect x="34.5" y="19" width="2.5" height="4" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.4"/>
+            <!-- Detalles de puertas -->
+            <line x1="13" y1="25" x2="13" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
+            <line x1="23" y1="25" x2="23" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
           </svg>
         `;
         
@@ -139,8 +160,8 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         icon = L.divIcon({
           html: iconHtml,
           className: 'custom-taxi-marker',
-          iconSize: [44, 44],
-          iconAnchor: [22, 22]
+          iconSize: [36, 52],
+          iconAnchor: [18, 26]
         });
       }
       

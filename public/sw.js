@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v19-taxi-top-view-icon';
+const CACHE_NAME = 'todocerca-v20-taxi-side-wheels';
 const urlsToCache = [
   '/',
   '/index.html',

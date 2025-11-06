@@ -219,42 +219,63 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       let iconHtml: string;
       
       if (isTaxi) {
-        // Taxi icon - vista desde arriba
+        // Taxi icon - vista en perspectiva con llantas laterales
         const taxiTopViewSvg = `
-          <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
             <!-- Sombra del carro -->
-            <ellipse cx="18" cy="32" rx="14" ry="3" fill="rgba(0,0,0,0.2)"/>
+            <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
             
-            <!-- Cuerpo principal del taxi -->
-            <rect x="8" y="8" width="20" height="20" rx="3" fill="#FDB813" stroke="#333" stroke-width="0.5"/>
+            <!-- Llanta trasera izquierda -->
+            <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
+            <ellipse cx="8" cy="34" rx="1.8" ry="2.5" fill="#4a4a4a"/>
             
-            <!-- Techo/Cabina -->
-            <rect x="10" y="12" width="16" height="8" rx="2" fill="#FFD700" stroke="#333" stroke-width="0.5"/>
+            <!-- Llanta trasera derecha -->
+            <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
+            <ellipse cx="24" cy="34" rx="1.8" ry="2.5" fill="#4a4a4a"/>
             
-            <!-- Texto TAXI -->
-            <text x="18" y="18" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+            <!-- Cuerpo principal del taxi (parte trasera) -->
+            <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
+                  fill="#FDB813" stroke="#333" stroke-width="0.6"/>
             
-            <!-- Ventanas laterales -->
-            <rect x="9" y="13" width="3" height="6" rx="0.5" fill="#4A90E2" opacity="0.7"/>
-            <rect x="24" y="13" width="3" height="6" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            <!-- Llanta delantera izquierda -->
+            <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
+            <ellipse cx="8" cy="18" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+            
+            <!-- Llanta delantera derecha -->
+            <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
+            <ellipse cx="24" cy="18" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+            
+            <!-- Techo/Cabina superior -->
+            <rect x="10" y="20" width="12" height="10" rx="1.5" fill="#FFD700" stroke="#333" stroke-width="0.5"/>
+            
+            <!-- Ventanas laterales izquierda -->
+            <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
+            
+            <!-- Ventanas laterales derecha -->
+            <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
             
             <!-- Parabrisas frontal -->
-            <path d="M 12 9 Q 18 7 24 9 L 23 12 L 13 12 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.3"/>
+            <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" 
+                  fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.4"/>
             
             <!-- Ventana trasera -->
-            <path d="M 13 24 L 23 24 Q 18 26 13 24 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
+            <path d="M 11 32 L 11 35 L 21 35 L 21 32 Z" 
+                  fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Texto TAXI en el techo -->
+            <text x="16" y="26" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
             
             <!-- Luces delanteras -->
-            <circle cx="11" cy="9" r="1.5" fill="#FFF" stroke="#333" stroke-width="0.3"/>
-            <circle cx="25" cy="9" r="1.5" fill="#FFF" stroke="#333" stroke-width="0.3"/>
+            <circle cx="11" cy="12" r="1.2" fill="#FFF" stroke="#333" stroke-width="0.3"/>
+            <circle cx="21" cy="12" r="1.2" fill="#FFF" stroke="#333" stroke-width="0.3"/>
             
             <!-- Luces traseras -->
-            <circle cx="11" cy="27" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-            <circle cx="25" cy="27" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+            <circle cx="11" cy="36" r="1" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+            <circle cx="21" cy="36" r="1" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
             
-            <!-- Espejos laterales -->
-            <rect x="6" y="16" width="2" height="3" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.3"/>
-            <rect x="28" y="16" width="2" height="3" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.3"/>
+            <!-- Detalles de puertas -->
+            <line x1="11" y1="22" x2="11" y2="29" stroke="#333" stroke-width="0.4" opacity="0.3"/>
+            <line x1="21" y1="22" x2="21" y2="29" stroke="#333" stroke-width="0.4" opacity="0.3"/>
           </svg>
         `;
         iconHtml = `
@@ -291,8 +312,8 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       const icon = L.divIcon({
         html: iconHtml,
         className: 'custom-marker',
-        iconSize: [isTaxi ? 36 : (isCurrentUser ? 30 : 20), isTaxi ? 36 : (isCurrentUser ? 30 : 20)],
-        iconAnchor: [isTaxi ? 18 : (isCurrentUser ? 15 : 10), isTaxi ? 18 : (isCurrentUser ? 15 : 10)]
+        iconSize: [isTaxi ? 32 : (isCurrentUser ? 30 : 20), isTaxi ? 48 : (isCurrentUser ? 30 : 20)],
+        iconAnchor: [isTaxi ? 16 : (isCurrentUser ? 15 : 10), isTaxi ? 24 : (isCurrentUser ? 15 : 10)]
       });
 
       // Check if marker exists and update it, or create new one
