@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 type UserStatus = 'available' | 'busy' | 'offline';
@@ -8,62 +7,118 @@ type UserStatus = 'available' | 'busy' | 'offline';
 export const StatusControl = () => {
   const [status, setStatus] = useState<UserStatus>('offline');
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error('[StatusControl] No user found');
+        return;
+      }
+      
+      setUserId(user.id);
+      console.log('[StatusControl] User ID:', user.id);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('estado')
         .eq('user_id', user.id)
         .single();
 
+      if (error) {
+        console.error('[StatusControl] Error fetching status:', error);
+        return;
+      }
+
       if (data?.estado) {
+        console.log('[StatusControl] Current status:', data.estado);
         setStatus(data.estado as UserStatus);
       }
     };
 
     fetchStatus();
+    
+    // Suscribirse a cambios en tiempo real
+    const channel = supabase
+      .channel('status_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('[StatusControl] Status changed:', payload);
+          if (payload.new && 'estado' in payload.new) {
+            setStatus(payload.new.estado as UserStatus);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const updateStatus = async (newStatus: UserStatus) => {
-    setLoading(true);
-    console.log('[StatusControl] Intentando actualizar estado a:', newStatus);
+    if (loading) return;
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('[StatusControl] No hay usuario autenticado');
+    setLoading(true);
+    console.log('[StatusControl] 🔄 Actualizando estado a:', newStatus);
+
+    if (!userId) {
+      console.error('[StatusControl] ❌ No hay userId');
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el usuario",
+        variant: "destructive",
+      });
       setLoading(false);
       return;
     }
 
-    console.log('[StatusControl] Usuario ID:', user.id);
+    try {
+      console.log('[StatusControl] 📝 Ejecutando UPDATE...');
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ estado: newStatus })
+        .eq('user_id', userId)
+        .select('estado')
+        .single();
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ estado: newStatus })
-      .eq('user_id', user.id)
-      .select();
+      if (error) {
+        console.error('[StatusControl] ❌ Error:', error);
+        throw error;
+      }
 
-    if (error) {
-      console.error('[StatusControl] Error al actualizar:', error);
+      console.log('[StatusControl] ✅ Actualizado exitosamente:', data);
+      setStatus(newStatus);
+      
+      const statusText = newStatus === 'offline' 
+        ? '🔴 Fuera de servicio (ROJO) - NO visible en mapa' 
+        : newStatus === 'busy' 
+        ? '🟡 Ocupado (AMARILLO)' 
+        : '🟢 Disponible (VERDE)';
+      
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado",
+        title: "✅ Estado actualizado",
+        description: statusText,
+        duration: 5000,
+      });
+    } catch (error: any) {
+      console.error('[StatusControl] ❌ Exception:', error);
+      toast({
+        title: "❌ Error",
+        description: error.message || "No se pudo actualizar el estado",
         variant: "destructive",
       });
-    } else {
-      console.log('[StatusControl] Estado actualizado exitosamente:', data);
-      setStatus(newStatus);
-      toast({
-        title: "Estado actualizado",
-        description: `Tu estado ahora es: ${newStatus === 'offline' ? 'Fuera de servicio (rojo)' : newStatus === 'busy' ? 'Ocupado (amarillo)' : 'Disponible (verde)'}`,
-      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
