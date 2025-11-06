@@ -11,6 +11,7 @@ export interface MemberLocation {
   member?: {
     nickname: string;
     is_owner: boolean;
+    estado?: string;
   };
 }
 
@@ -26,7 +27,7 @@ export const useTrackingLocations = (groupId: string | null) => {
 
     fetchLocations();
 
-    // Suscribirse a cambios en tiempo real
+    // Suscribirse a cambios en tiempo real en ubicaciones Y estados de usuarios
     const channel = supabase
       .channel('tracking_locations_changes')
       .on(
@@ -38,6 +39,18 @@ export const useTrackingLocations = (groupId: string | null) => {
           filter: `group_id=eq.${groupId}`
         },
         () => {
+          fetchLocations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        () => {
+          // Refrescar cuando cambie el estado de cualquier usuario
           fetchLocations();
         }
       )
@@ -71,13 +84,36 @@ export const useTrackingLocations = (groupId: string | null) => {
 
       console.log('[DEBUG] Fetched members:', membersData);
 
-      // Combinar datos
-      const merged = locationsData?.map(loc => ({
-        ...loc,
-        member: membersData?.find(m => m.user_id === loc.user_id)
-      })) || [];
+      // Obtener estados de usuarios desde profiles
+      const userIds = locationsData?.map(loc => loc.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, estado')
+        .in('user_id', userIds);
 
-      console.log('[DEBUG] Merged locations:', merged);
+      if (profilesError) throw profilesError;
+
+      console.log('[DEBUG] Fetched profiles:', profilesData);
+
+      // Combinar datos y filtrar por estado (solo mostrar si NO está offline)
+      const merged = locationsData?.map(loc => {
+        const member = membersData?.find(m => m.user_id === loc.user_id);
+        const profile = profilesData?.find(p => p.user_id === loc.user_id);
+        
+        return {
+          ...loc,
+          member: member ? {
+            ...member,
+            estado: profile?.estado
+          } : undefined
+        };
+      }).filter(loc => {
+        // Solo mostrar si el estado NO es offline (rojo)
+        const estado = loc.member?.estado;
+        return estado !== 'offline';
+      }) || [];
+
+      console.log('[DEBUG] Merged and filtered locations:', merged);
       setLocations(merged);
     } catch (error) {
       console.error('Error fetching locations:', error);
