@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v23-tracking-fullscreen';
+const CACHE_NAME = 'todocerca-v24-remove-small-map';
 const urlsToCache = [
   '/',
   '/index.html',

@@ -753,37 +753,24 @@ const TrackingGPS = () => {
             </Card>
           )}
 
-          {/* Ubicaciones en Tiempo Real */}
-          {isActive && (
+          {/* Ver Mapa en Pantalla Completa */}
+          {isActive && locations.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Ubicaciones en Tiempo Real
-                  {locations.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFullScreenMap(true)}
-                    >
-                      <MapIcon className="h-4 w-4 mr-2" />
-                      Ver Mapa Completo
-                    </Button>
-                  )}
-                </CardTitle>
+                <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
                 <CardDescription>
                   {locations.length} miembro(s) compartiendo ubicación
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {locations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Ningún miembro está compartiendo su ubicación. Activa "Compartir Mi Ubicación" arriba.
-                  </p>
-                ) : (
-                  <div className="h-[300px]">
-                    <TrackingMap locations={locations} currentUserId={currentUserId} />
-                  </div>
-                )}
+                <Button
+                  onClick={() => setShowFullScreenMap(true)}
+                  className="w-full"
+                  size="lg"
+                >
+                  <MapIcon className="h-5 w-5 mr-2" />
+                  Ver Mapa en Pantalla Completa
+                </Button>
               </CardContent>
             </Card>
           )}
