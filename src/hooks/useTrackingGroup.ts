@@ -6,6 +6,7 @@ export interface TrackingGroup {
   id: string;
   owner_id: string;
   name: string;
+  max_devices: number;
   subscription_status: 'active' | 'expired' | 'cancelled';
   subscription_end: string | null;
   created_at: string;

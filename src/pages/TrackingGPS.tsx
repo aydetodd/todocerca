@@ -47,6 +47,9 @@ const TrackingGPS = () => {
     };
     getCurrentUser();
     
+    // Sincronizar dispositivos adicionales desde Stripe
+    syncAdditionalDevices();
+    
     // Verificar invitaciones pendientes para este usuario
     const checkInvites = async () => {
       console.log('[TRACKING GPS] ===== VERIFICANDO INVITACIONES =====');
@@ -79,29 +82,36 @@ const TrackingGPS = () => {
             description: 'Espera un momento mientras confirmamos tu pago'
           });
 
-          const { data, error } = await supabase.functions.invoke('check-tracking-subscription', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`
-            }
-          });
-
-          if (error) throw error;
-
-          if (data?.subscribed) {
-            trackGPSSubscription('completed', 400);
-            trackConversion('gps_subscription', 400);
-            
-            toast({
-              title: '¡Pago confirmado!',
-              description: 'Ahora elige un nombre para tu grupo de tracking'
+          // Si viene de una compra de dispositivos, sincronizar
+          if (searchParams.get('devices')) {
+            await syncAdditionalDevices();
+          } else {
+            // Verificar suscripción normal
+            const { data, error } = await supabase.functions.invoke('check-tracking-subscription', {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
             });
-            
-            // Mostrar diálogo para crear el grupo
-            setShowGroupNameDialog(true);
+
+            if (error) throw error;
+
+            if (data?.subscribed) {
+              trackGPSSubscription('completed', 400);
+              trackConversion('gps_subscription', 400);
+              
+              toast({
+                title: '¡Pago confirmado!',
+                description: 'Ahora elige un nombre para tu grupo de tracking'
+              });
+              
+              // Mostrar diálogo para crear el grupo
+              setShowGroupNameDialog(true);
+            }
           }
           
           // Limpiar parámetro de la URL
           searchParams.delete('success');
+          searchParams.delete('devices');
           setSearchParams(searchParams);
         } catch (error: any) {
           console.error('Error checking subscription:', error);
@@ -329,6 +339,38 @@ const TrackingGPS = () => {
         description: error.message || 'No se pudo crear la sesión de pago',
         variant: 'destructive'
       });
+    }
+  };
+
+  const syncAdditionalDevices = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('sync-tracking-devices', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Error syncing devices:', error);
+        return;
+      }
+
+      if (data) {
+        console.log('Devices synced:', data);
+        if (data.additional_devices > 0) {
+          toast({
+            title: 'Dispositivos sincronizados',
+            description: `Ahora tienes ${data.max_devices} dispositivos disponibles (5 base + ${data.additional_devices} adicionales)`,
+          });
+        }
+        // Recargar grupos para obtener el max_devices actualizado
+        refetch();
+      }
+    } catch (error) {
+      console.error('Error syncing devices:', error);
     }
   };
 
@@ -714,7 +756,7 @@ const TrackingGPS = () => {
                   <div>
                     <CardTitle>{group.name}</CardTitle>
                     <CardDescription>
-                      {totalSlots} de 5 dispositivos
+                      {totalSlots} de {group.max_devices} dispositivos
                     </CardDescription>
                   </div>
                 </div>
@@ -863,29 +905,39 @@ const TrackingGPS = () => {
 
 
           {/* Invitar Miembro */}
-          {isOwner && totalSlots < 5 && isActive && (
+          {isOwner && totalSlots < group.max_devices && isActive && (
             <Card>
               <CardHeader>
                 <CardTitle>Agregar Miembros al Grupo</CardTitle>
                 <CardDescription>
-                  Puedes agregar hasta {5 - totalSlots} miembro(s) más. Se enviará una invitación por SMS.
+                  Puedes agregar hasta {group.max_devices - totalSlots} miembro(s) más. Se enviará una invitación por SMS.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="bg-primary/10 p-3 rounded-lg mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium">📱 Espacios disponibles: {5 - totalSlots} de 5</p>
-                  {isOwner && isActive && (
+                  <p className="text-sm font-medium">📱 Espacios disponibles: {group.max_devices - totalSlots} de {group.max_devices}</p>
+                  <div className="flex gap-2">
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="sm" 
-                      onClick={() => setShowAddDevicesDialog(true)}
-                      className="h-auto py-1 px-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex flex-col items-center gap-0"
+                      onClick={syncAdditionalDevices}
+                      className="h-auto py-1 px-2 text-xs"
                     >
-                      <Plus className="h-3 w-3" />
-                      <span className="text-xs font-semibold leading-tight">Comprar</span>
-                      <span className="text-xs font-semibold leading-tight">más</span>
+                      🔄 Sincronizar
                     </Button>
-                  )}
+                    {isOwner && isActive && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowAddDevicesDialog(true)}
+                        className="h-auto py-1 px-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex flex-col items-center gap-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span className="text-xs font-semibold leading-tight">Comprar</span>
+                        <span className="text-xs font-semibold leading-tight">más</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="memberName">Nombre del familiar</Label>

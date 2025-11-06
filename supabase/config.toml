@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.add-tracking-devices]
 verify_jwt = true
 
+[functions.sync-tracking-devices]
+verify_jwt = true
+
 [functions.send-recovery-code]
 verify_jwt = false
 
