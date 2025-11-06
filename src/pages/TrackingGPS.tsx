@@ -23,7 +23,8 @@ const TrackingGPS = () => {
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
   const [myInvitations, setMyInvitations] = useState<any[]>([]);
   
-  const [groupName, setGroupName] = useState('Mi Grupo Familiar');
+  const [groupName, setGroupName] = useState('');
+  const [showGroupNameDialog, setShowGroupNameDialog] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [isSharing, setIsSharing] = useState(true);
@@ -72,12 +73,12 @@ const TrackingGPS = () => {
 
           if (data?.subscribed) {
             toast({
-              title: '¡Suscripción activada!',
-              description: 'Ya puedes agregar miembros y usar el tracking GPS'
+              title: '¡Pago confirmado!',
+              description: 'Ahora elige un nombre para tu grupo de tracking'
             });
             
-            // Recargar datos del grupo
-            await refetch();
+            // Mostrar diálogo para crear el grupo
+            setShowGroupNameDialog(true);
           }
           
           // Limpiar parámetro de la URL
@@ -129,11 +130,59 @@ const TrackingGPS = () => {
     }
   }, [isSharing, group]);
 
-  const handleCreateGroup = async () => {
+  const handleCreateGroupAfterPayment = async () => {
+    if (!groupName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Debes ingresar un nombre para el grupo',
+        variant: 'destructive'
+      });
+      return;
+    }
     try {
       await createGroup(groupName);
+      setShowGroupNameDialog(false);
+      setGroupName('');
     } catch (error) {
       console.error('Error creating group:', error);
+    }
+  };
+
+  const handleStartSubscription = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: 'Error',
+          description: 'Debes iniciar sesión',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: 'Redirigiendo a pago...',
+        description: 'Serás redirigido a la pasarela de pago'
+      });
+
+      const { data, error } = await supabase.functions.invoke('create-tracking-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Error creating checkout:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo iniciar el proceso de pago',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -245,46 +294,68 @@ const TrackingGPS = () => {
             Volver
           </Button>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <MapPin className="h-8 w-8 text-primary" />
-                <CardTitle className="text-2xl">Tracking GPS Familiar</CardTitle>
-              </div>
-              <CardDescription>
-                Crea un grupo para rastrear hasta 5 dispositivos. 
-                Suscripción anual de $400 MXN.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="groupName">Nombre del Grupo</Label>
-                <Input
-                  id="groupName"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="Ej: Familia García"
-                  className="mt-1"
-                />
-              </div>
-              
-              <Button onClick={handleCreateGroup} className="w-full" size="lg">
-                <Plus className="mr-2 h-4 w-4" />
-                Crear Grupo
-              </Button>
+          {showGroupNameDialog ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Elige un nombre para tu grupo</CardTitle>
+                <CardDescription>
+                  Este será el nombre que verán todos los miembros del grupo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="groupNameInput">Nombre del Grupo</Label>
+                  <Input
+                    id="groupNameInput"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Ej: Familia García, Equipo de Trabajo, etc."
+                    className="mt-1"
+                    autoFocus
+                  />
+                </div>
+                
+                <Button onClick={handleCreateGroupAfterPayment} className="w-full" size="lg" disabled={!groupName.trim()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Crear Grupo
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <MapPin className="h-8 w-8 text-primary" />
+                  <CardTitle className="text-2xl">Tracking GPS Familiar</CardTitle>
+                </div>
+                <CardDescription>
+                  Suscripción para rastrear hasta 5 dispositivos en tiempo real. 
+                  Después del pago, elegirás el nombre de tu grupo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-muted p-4 rounded-lg space-y-2">
+                  <h4 className="font-semibold">¿Qué incluye?</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>✓ Hasta 5 dispositivos</li>
+                    <li>✓ Ubicación en tiempo real</li>
+                    <li>✓ Privacidad total (solo tu grupo)</li>
+                    <li>✓ Sin publicidad</li>
+                    <li>✓ Suscripción anual: $400 MXN</li>
+                  </ul>
+                </div>
+                
+                <Button onClick={handleStartSubscription} className="w-full" size="lg">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Suscribirse ($400 MXN/año)
+                </Button>
 
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <h4 className="font-semibold">¿Qué incluye?</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>✓ Hasta 5 dispositivos</li>
-                  <li>✓ Ubicación en tiempo real</li>
-                  <li>✓ Privacidad total (solo tu grupo)</li>
-                  <li>✓ Sin publicidad</li>
-                  <li>✓ Suscripción anual: $400 MXN</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-xs text-center text-muted-foreground">
+                  Podrás ingresar códigos de descuento en la pasarela de pago
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );

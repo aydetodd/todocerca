@@ -91,7 +91,7 @@ serve(async (req) => {
       }
 
       if (group) {
-        logStep("Actualizando grupo", { groupId: group.id });
+        logStep("Actualizando grupo existente", { groupId: group.id });
         
         const { error: updateError } = await supabaseClient
           .from('tracking_groups')
@@ -109,7 +109,7 @@ serve(async (req) => {
 
         logStep("Grupo actualizado exitosamente");
       } else {
-        logStep("No se encontró grupo para el usuario");
+        logStep("Usuario tiene suscripción activa pero aún no ha creado su grupo");
       }
 
       return new Response(
