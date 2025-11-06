@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v12-sms-auth';
+const CACHE_NAME = 'todocerca-v13-fix-ssr-error';
 const urlsToCache = [
   '/',
   '/index.html',
