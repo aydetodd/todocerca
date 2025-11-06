@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v36-no-sync-button';
+const CACHE_NAME = 'todocerca-v37-auto-tracking';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -57,4 +57,11 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+// Handle online/offline events to support auto-reconnection
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

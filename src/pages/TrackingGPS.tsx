@@ -29,13 +29,15 @@ const TrackingGPS = () => {
   const [showGroupNameDialog, setShowGroupNameDialog] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
-  const [isSharing, setIsSharing] = useState(true);
+  const [isSharing, setIsSharing] = useState(false); // Ahora se controla por el estado del perfil
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
   const [additionalDevices, setAdditionalDevices] = useState(1);
   const [showAddDevicesDialog, setShowAddDevicesDialog] = useState(false);
+  const [userStatus, setUserStatus] = useState<'available' | 'busy' | 'offline'>('offline');
 
+  // Verificar y sincronizar el estado del usuario automáticamente
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -43,6 +45,23 @@ const TrackingGPS = () => {
         setCurrentUserId(user.id);
         console.log('[TRACKING GPS] Current user ID:', user.id);
         console.log('[TRACKING GPS] Current user email:', user.email);
+        
+        // Obtener estado actual del usuario
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('estado')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profileData?.estado) {
+          console.log('[TRACKING GPS] Estado del usuario:', profileData.estado);
+          setUserStatus(profileData.estado as 'available' | 'busy' | 'offline');
+          // Auto-activar seguimiento si el estado NO es offline
+          if (profileData.estado !== 'offline') {
+            setIsSharing(true);
+            console.log('[TRACKING GPS] 🟢 Auto-activando seguimiento de ubicación');
+          }
+        }
       }
     };
     getCurrentUser();
@@ -65,7 +84,80 @@ const TrackingGPS = () => {
       }
     };
     checkInvites();
+    
+    // Suscribirse a cambios en el estado del usuario
+    const setupStatusSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const channel = supabase
+        .channel('user_status_tracking')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('[TRACKING GPS] 🔔 Estado actualizado:', payload.new);
+            if (payload.new && 'estado' in payload.new) {
+              const newStatus = payload.new.estado as 'available' | 'busy' | 'offline';
+              setUserStatus(newStatus);
+              
+              // Auto-activar/desactivar seguimiento según el estado
+              if (newStatus !== 'offline') {
+                setIsSharing(true);
+                console.log('[TRACKING GPS] 🟢 Auto-activando seguimiento (estado:', newStatus, ')');
+              } else {
+                setIsSharing(false);
+                console.log('[TRACKING GPS] 🔴 Desactivando seguimiento (estado: offline)');
+              }
+            }
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    
+    setupStatusSubscription();
   }, []);
+  
+  // Manejar reconexión automática cuando se recupera internet
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('[TRACKING GPS] 🌐 Conexión a internet recuperada');
+      if (userStatus !== 'offline') {
+        console.log('[TRACKING GPS] 🔄 Reactivando seguimiento de ubicación');
+        setIsSharing(true);
+        toast({
+          title: 'Conexión restaurada',
+          description: 'Seguimiento de ubicación reactivado automáticamente',
+        });
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log('[TRACKING GPS] 📴 Conexión a internet perdida');
+      toast({
+        title: 'Sin conexión',
+        description: 'El seguimiento se reanudará automáticamente al recuperar señal',
+        variant: 'destructive'
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [userStatus]);
 
   // Verificar suscripción después del checkout exitoso
   useEffect(() => {
@@ -144,53 +236,76 @@ const TrackingGPS = () => {
     checkInvites();
   }, [group, allGroups]); // Agregar allGroups como dependencia
 
+  // Seguimiento automático de ubicación basado en el estado del perfil
   useEffect(() => {
     if (isSharing && group?.subscription_status === 'active') {
       let watchId: number | null = null;
       let lastUpdateTime = 0;
       const MIN_UPDATE_INTERVAL = 3000; // 3 segundos mínimo entre actualizaciones
 
+      console.log('[GPS] 🚀 Iniciando seguimiento automático de ubicación');
+      console.log('[GPS] Estado del usuario:', userStatus);
+      console.log('[GPS] Suscripción activa:', group?.subscription_status === 'active');
+
       if (navigator.geolocation) {
-        // watchPosition es más eficiente que setInterval + getCurrentPosition
+        // watchPosition mantiene el seguimiento activo continuamente
         watchId = navigator.geolocation.watchPosition(
           (position) => {
             const now = Date.now();
             // Solo actualizar si han pasado al menos 3 segundos desde la última actualización
             if (now - lastUpdateTime >= MIN_UPDATE_INTERVAL) {
-              console.log('[GPS] Actualización de ubicación:', {
+              console.log('[GPS] 📍 Actualización de ubicación:', {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude,
                 accuracy: position.coords.accuracy,
-                speed: position.coords.speed
+                speed: position.coords.speed,
+                timestamp: new Date().toLocaleTimeString()
               });
               updateMyLocation(position.coords.latitude, position.coords.longitude);
               lastUpdateTime = now;
             }
           },
           (error) => {
-            console.error('[GPS] Error obteniendo ubicación:', error);
-            toast({
-              title: 'Error de GPS',
-              description: 'No se pudo actualizar tu ubicación. Verifica los permisos.',
-              variant: 'destructive'
-            });
+            console.error('[GPS] ❌ Error obteniendo ubicación:', error);
+            // Solo mostrar toast si es un error crítico
+            if (error.code === error.PERMISSION_DENIED) {
+              toast({
+                title: 'Permiso de ubicación denegado',
+                description: 'Por favor, habilita el permiso de ubicación en la configuración de tu navegador.',
+                variant: 'destructive'
+              });
+            }
           },
           {
-            enableHighAccuracy: true, // Máxima precisión (usa GPS real)
-            timeout: 5000, // 5 segundos máximo de espera
-            maximumAge: 0 // No usar ubicaciones en caché, siempre obtener nueva
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
           }
         );
+
+        toast({
+          title: 'Seguimiento automático activado',
+          description: 'Tu ubicación se actualizará automáticamente mientras tengas señal.',
+        });
+      } else {
+        console.error('[GPS] ❌ Geolocalización no disponible en este navegador');
+        toast({
+          title: 'GPS no disponible',
+          description: 'Tu dispositivo no soporta geolocalización.',
+          variant: 'destructive'
+        });
       }
 
       return () => {
         if (watchId !== null) {
+          console.log('[GPS] 🛑 Deteniendo seguimiento de ubicación');
           navigator.geolocation.clearWatch(watchId);
-          console.log('[GPS] Tracking detenido');
         }
       };
+    } else {
+      console.log('[GPS] ⏸️ Seguimiento pausado - isSharing:', isSharing, 'subscription:', group?.subscription_status);
     }
-  }, [isSharing, group]);
+  }, [isSharing, group, updateMyLocation, userStatus]);
 
   const handleCreateGroupAfterPayment = async () => {
     if (!groupName.trim()) {
@@ -374,36 +489,12 @@ const TrackingGPS = () => {
     }
   };
 
+  // Ya no es necesaria función manual, el seguimiento es automático basado en el estado
   const toggleSharing = () => {
-    if (!isSharing && navigator.geolocation) {
-      console.log('[DEBUG] Activating location sharing...');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log('[DEBUG] Got position:', position.coords);
-          updateMyLocation(position.coords.latitude, position.coords.longitude);
-          setIsSharing(true);
-          toast({
-            title: 'Ubicación compartida',
-            description: 'Tu ubicación se está compartiendo con el grupo'
-          });
-        },
-        (error) => {
-          console.error('[DEBUG] Geolocation error:', error);
-          toast({
-            title: 'Error',
-            description: 'No se pudo obtener tu ubicación. Verifica los permisos.',
-            variant: 'destructive'
-          });
-        }
-      );
-    } else {
-      console.log('[DEBUG] Deactivating location sharing');
-      setIsSharing(false);
-      toast({
-        title: 'Ubicación pausada',
-        description: 'Dejaste de compartir tu ubicación'
-      });
-    }
+    toast({
+      title: 'Seguimiento Automático',
+      description: 'El seguimiento se activa automáticamente cuando tu estado NO es offline (rojo). Cambia tu estado usando el semáforo de arriba.',
+    });
   };
 
   if (loading) {
@@ -789,7 +880,7 @@ const TrackingGPS = () => {
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                     <p className="text-xs text-blue-800 dark:text-blue-200">
-                      💡 <strong>Semáforo de estado:</strong> Verde = disponible y visible en mapa | Amarillo = ocupado pero visible | Rojo = fuera de servicio y NO visible en mapa
+                      💡 <strong>Seguimiento Automático:</strong> Tu ubicación se comparte automáticamente cuando tu semáforo está en verde (disponible) o amarillo (ocupado), incluso sin tener la app abierta si tienes datos o WiFi. Rojo (offline) = NO visible en mapa.
                     </p>
                   </div>
                 </div>
@@ -862,7 +953,7 @@ const TrackingGPS = () => {
                     💡 Nota: Para aparecer en el mapa
                   </p>
                   <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                    Cada miembro debe abrir esta página en su dispositivo y activar "Compartir Mi Ubicación"
+                    Cada miembro debe tener su semáforo en verde (disponible) o amarillo (ocupado) y tener señal de datos o WiFi. El seguimiento es automático.
                   </p>
                 </div>
               )}
