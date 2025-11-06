@@ -107,6 +107,13 @@ const ProductSearch = () => {
     }
   }, [searchParams]);
 
+  // Abrir mapa automáticamente cuando hay resultados
+  useEffect(() => {
+    if (results.length > 0 && mapProviders.length > 0) {
+      setShowFullScreenMap(true);
+    }
+  }, [results.length, mapProviders.length]);
+
   const handleSearch = async (e: React.FormEvent | null, query?: string) => {
     if (e) e.preventDefault();
     const term = query || searchTerm;
