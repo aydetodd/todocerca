@@ -69,11 +69,9 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     // Create new map
     const center: [number, number] = [validProviders[0].latitude, validProviders[0].longitude];
     
-    const map = L.map(mapContainerRef.current).setView(center, 12);
+    const map = L.map(mapContainerRef.current, { attributionControl: false }).setView(center, 12);
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     // Add markers
     validProviders.forEach((provider) => {

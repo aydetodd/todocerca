@@ -45,36 +45,30 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const map = L.map('map').setView(
+            const map = L.map('map', { attributionControl: false }).setView(
               [position.coords.latitude, position.coords.longitude], 
               13
             );
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
             mapRef.current = map;
           },
           (error) => {
             console.error('Error getting location:', error);
             // Fallback to Querétaro if location access denied
-            const map = L.map('map').setView([20.5937, -100.3929], 13);
+            const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
             mapRef.current = map;
           }
         );
       } else {
         // Fallback if geolocation not supported
-        const map = L.map('map').setView([20.5937, -100.3929], 13);
+        const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         mapRef.current = map;
       }

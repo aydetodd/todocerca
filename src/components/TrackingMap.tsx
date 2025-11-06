@@ -23,11 +23,9 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
   useEffect(() => {
     if (!mapRef.current) {
       // Inicializar mapa centrado en México
-      mapRef.current = L.map('tracking-map').setView([23.6345, -102.5528], 5);
+      mapRef.current = L.map('tracking-map', { attributionControl: false }).setView([23.6345, -102.5528], 5);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(mapRef.current);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
     }
 
     return () => {
