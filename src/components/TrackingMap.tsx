@@ -19,6 +19,8 @@ interface TrackingMapProps {
 const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
+  const hasInitializedView = useRef(false);
+  const previousLocationCount = useRef(0);
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -38,6 +40,10 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
 
   useEffect(() => {
     if (!mapRef.current || locations.length === 0) return;
+
+    // Determinar si debemos recentrar el mapa
+    const shouldRecenter = !hasInitializedView.current || locations.length !== previousLocationCount.current;
+    previousLocationCount.current = locations.length;
 
     // Limpiar marcadores antiguos
     Object.values(markersRef.current).forEach(marker => marker.remove());
@@ -103,13 +109,14 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
       markersRef.current[loc.user_id] = marker;
     });
 
-    // Ajustar vista del mapa para mostrar todos los marcadores
-    if (!bounds.isValid()) return;
-    
-    if (locations.length === 1) {
-      mapRef.current.setView([locations[0].latitude, locations[0].longitude], 15);
-    } else {
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+    // Solo ajustar vista inicialmente o cuando cambia el número de ubicaciones
+    if (shouldRecenter && bounds.isValid()) {
+      if (locations.length === 1) {
+        mapRef.current.setView([locations[0].latitude, locations[0].longitude], 15);
+      } else {
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
+      hasInitializedView.current = true;
     }
   }, [locations, currentUserId]);
 
