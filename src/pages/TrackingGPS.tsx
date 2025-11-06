@@ -737,14 +737,17 @@ const TrackingGPS = () => {
                 </div>
               )}
 
-              {/* Agregar Dispositivos Adicionales - Mostrar cuando ya hay 5 */}
-              {isOwner && totalSlots >= 5 && isActive && (
+              {/* Agregar Dispositivos Adicionales - Siempre visible para el dueño */}
+              {isOwner && isActive && (
                 <div className="bg-primary/5 border border-primary/30 rounded-lg p-4 mb-4">
-                  <p className="text-sm font-medium mb-3">
-                    ✅ Tienes los 5 dispositivos incluidos. ¿Necesitas más?
+                  <p className="text-sm font-medium mb-2">
+                    {totalSlots >= 5 ? '✅ Tienes los 5 dispositivos incluidos' : '📱 Dispositivos adicionales'}
                   </p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Agrega dispositivos adicionales a $100 MXN/año cada uno
+                    {totalSlots >= 5 
+                      ? '¿Necesitas más? Agrega dispositivos a $100 MXN/año cada uno'
+                      : `Tienes ${totalSlots} de 5 incluidos. Puedes agregar más a $100 MXN/año cada uno`
+                    }
                   </p>
                   
                   <div className="flex items-center gap-3 mb-3">
