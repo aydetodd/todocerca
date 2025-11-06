@@ -392,7 +392,7 @@ const ProductSearch = () => {
                 {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
               </p>
               
-              <Tabs defaultValue="lista" className="w-full">
+              <Tabs defaultValue="mapa" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
                   <TabsTrigger 
                     value="mapa" 

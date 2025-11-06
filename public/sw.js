@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v27-remove-menu-map';
+const CACHE_NAME = 'todocerca-v28-default-map-tab';
 const urlsToCache = [
   '/',
   '/index.html',
