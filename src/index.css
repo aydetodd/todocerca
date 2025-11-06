@@ -279,101 +279,101 @@ Paleta: Azul marino profundo con acentos brillantes
 */
 @layer base {
   :root {
-    /* Fondos gris medio con toque azul */
-    --background: 215 20% 88%;
-    --foreground: 215 60% 12%;
+    /* Fondo muy oscuro tipo dark mode */
+    --background: 215 35% 18%;
+    --foreground: 0 0% 98%;
 
-    /* Cards gris claro con azul sutil */
-    --card: 215 25% 94%;
-    --card-foreground: 215 60% 12%;
+    /* Cards oscuras pero más claras que el fondo */
+    --card: 215 30% 22%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 215 25% 94%;
-    --popover-foreground: 215 60% 12%;
+    --popover: 215 30% 22%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Azul profundo vibrante como color principal */
-    --primary: 215 90% 40%; 
+    /* Azul brillante para destacar */
+    --primary: 210 100% 60%; 
     --primary-foreground: 0 0% 100%;
 
-    /* Secundario azul medio */
-    --secondary: 215 60% 75%;
-    --secondary-foreground: 215 60% 12%;
+    /* Secundario con azul medio */
+    --secondary: 215 40% 30%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Muteds con bastante azul */
-    --muted: 215 40% 82%;
-    --muted-foreground: 215 30% 35%;
+    /* Muteds oscuros */
+    --muted: 215 25% 25%;
+    --muted-foreground: 0 0% 75%;
 
-    /* Accent azul brillante */
-    --accent: 210 100% 55%;
+    /* Accent azul eléctrico brillante */
+    --accent: 210 100% 65%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive en rojo */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Bordes azules visibles */
-    --border: 215 40% 75%;
-    --input: 215 30% 90%;
-    --ring: 215 90% 40%;
+    /* Bordes sutiles pero visibles */
+    --border: 215 30% 30%;
+    --input: 215 25% 28%;
+    --ring: 210 100% 60%;
 
     --radius: 0.75rem;
 
-    /* Sidebar con más color */
-    --sidebar-background: 215 30% 85%;
-    --sidebar-foreground: 215 60% 12%;
-    --sidebar-primary: 215 90% 40%;
+    /* Sidebar oscura con azul */
+    --sidebar-background: 215 35% 18%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 210 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 60% 75%;
-    --sidebar-accent-foreground: 215 60% 12%;
-    --sidebar-border: 215 40% 70%;
-    --sidebar-ring: 215 90% 40%;
+    --sidebar-accent: 215 25% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 30% 30%;
+    --sidebar-ring: 210 100% 60%;
   }
 
   .dark {
-    /* Modo oscuro con gris profundo */
-    --background: 0 0% 12%;
+    /* Modo oscuro aún más profundo */
+    --background: 215 40% 12%;
     --foreground: 0 0% 98%;
 
-    /* Cards oscuros con azul */
-    --card: 215 45% 13%;
-    --card-foreground: 210 30% 98%;
+    /* Cards super oscuras */
+    --card: 215 35% 15%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 215 45% 13%;
-    --popover-foreground: 210 30% 98%;
+    --popover: 215 35% 15%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Primary azul brillante en dark mode */
-    --primary: 210 90% 55%;
+    /* Primary azul neón brillante */
+    --primary: 210 100% 65%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary oscuro */
-    --secondary: 215 40% 18%;
-    --secondary-foreground: 210 30% 98%;
+    /* Secondary muy oscuro */
+    --secondary: 215 35% 20%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted oscuro azulado */
-    --muted: 215 35% 16%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 215 30% 18%;
+    --muted-foreground: 0 0% 70%;
 
-    /* Accent azul eléctrico brillante */
-    --accent: 210 95% 58%;
+    /* Accent azul neón súper brillante */
+    --accent: 210 100% 70%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive en rojo oscuro */
-    --destructive: 0 62% 35%;
-    --destructive-foreground: 210 30% 98%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Bordes oscuros */
-    --border: 215 35% 20%;
-    --input: 215 35% 20%;
-    --ring: 210 90% 55%;
+    /* Bordes oscuros sutiles */
+    --border: 215 30% 22%;
+    --input: 215 30% 20%;
+    --ring: 210 100% 65%;
 
-    /* Sidebar oscuro */
-    --sidebar-background: 215 50% 10%;
-    --sidebar-foreground: 210 30% 98%;
-    --sidebar-primary: 210 90% 55%;
+    /* Sidebar super oscura */
+    --sidebar-background: 215 40% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 210 100% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 35% 16%;
-    --sidebar-accent-foreground: 210 30% 98%;
-    --sidebar-border: 215 35% 20%;
-    --sidebar-ring: 210 90% 55%;
+    --sidebar-accent: 215 30% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 30% 22%;
+    --sidebar-ring: 210 100% 65%;
   }
 }
 
