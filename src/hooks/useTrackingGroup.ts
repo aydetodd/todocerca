@@ -192,47 +192,55 @@ export const useTrackingGroup = () => {
   const fetchAllGroups = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
 
-      // Obtener grupos donde soy dueño
-      const { data: ownerGroups, error: ownerError } = await supabase
-        .from('tracking_groups')
-        .select('*')
-        .eq('owner_id', user.id);
+      console.log('Fetching groups for user:', user.id);
 
-      if (ownerError) throw ownerError;
-
-      // Obtener grupos donde soy miembro
+      // Obtener grupos donde soy miembro (esto incluye tanto dueño como invitado)
       const { data: memberData, error: memberError } = await supabase
         .from('tracking_group_members')
-        .select('group_id')
+        .select('group_id, is_owner')
         .eq('user_id', user.id);
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error('Error fetching member data:', memberError);
+        throw memberError;
+      }
 
-      let memberGroups: TrackingGroup[] = [];
+      console.log('Member data:', memberData);
+
+      let allGroupsData: TrackingGroup[] = [];
       if (memberData && memberData.length > 0) {
         const groupIds = memberData.map(m => m.group_id);
+        console.log('Fetching groups with IDs:', groupIds);
+        
         const { data: groups, error: groupsError } = await supabase
           .from('tracking_groups')
           .select('*')
           .in('id', groupIds);
 
-        if (groupsError) throw groupsError;
-        memberGroups = (groups || []) as TrackingGroup[];
+        if (groupsError) {
+          console.error('Error fetching groups:', groupsError);
+          throw groupsError;
+        }
+        
+        allGroupsData = (groups || []) as TrackingGroup[];
+        console.log('Fetched groups:', allGroupsData);
       }
 
-      // Combinar ambos arrays y eliminar duplicados
-      const allGroupsData = [...(ownerGroups || []), ...memberGroups];
-      const uniqueGroups = Array.from(
-        new Map(allGroupsData.map(g => [g.id, g])).values()
-      ) as TrackingGroup[];
-
-      setAllGroups(uniqueGroups);
+      setAllGroups(allGroupsData);
 
       // Si no hay grupo seleccionado, seleccionar el primero
-      if (uniqueGroups.length > 0 && !selectedGroupId) {
-        setSelectedGroupId(uniqueGroups[0].id);
+      if (allGroupsData.length > 0 && !selectedGroupId) {
+        console.log('Setting default selected group:', allGroupsData[0].id);
+        setSelectedGroupId(allGroupsData[0].id);
+      } else if (allGroupsData.length === 0) {
+        console.log('No groups found for user');
+        setSelectedGroupId(null);
+        setGroup(null);
       }
     } catch (error) {
       console.error('Error fetching groups:', error);
