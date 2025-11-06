@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v6-dark-blue';
+const CACHE_NAME = 'todocerca-v7-soft-blue';
 const urlsToCache = [
   '/',
   '/index.html',

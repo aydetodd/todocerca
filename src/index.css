@@ -290,8 +290,8 @@ Paleta: Azul marino profundo con acentos brillantes
     --popover: 215 30% 22%;
     --popover-foreground: 0 0% 98%;
 
-    /* Azul brillante para destacar */
-    --primary: 210 100% 60%; 
+    /* Azul suave para destacar */
+    --primary: 215 70% 48%; 
     --primary-foreground: 0 0% 100%;
 
     /* Secundario con azul medio */
@@ -302,8 +302,8 @@ Paleta: Azul marino profundo con acentos brillantes
     --muted: 215 25% 25%;
     --muted-foreground: 0 0% 75%;
 
-    /* Accent azul eléctrico brillante */
-    --accent: 210 100% 65%;
+    /* Accent azul suave */
+    --accent: 215 65% 50%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive en rojo */
@@ -340,8 +340,8 @@ Paleta: Azul marino profundo con acentos brillantes
     --popover: 215 35% 15%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary azul neón brillante */
-    --primary: 210 100% 65%;
+    /* Primary azul suave */
+    --primary: 215 70% 52%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary muy oscuro */
@@ -352,8 +352,8 @@ Paleta: Azul marino profundo con acentos brillantes
     --muted: 215 30% 18%;
     --muted-foreground: 0 0% 70%;
 
-    /* Accent azul neón súper brillante */
-    --accent: 210 100% 70%;
+    /* Accent azul suave */
+    --accent: 215 65% 55%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive en rojo oscuro */
