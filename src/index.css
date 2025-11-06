@@ -273,88 +273,107 @@ Perfecto para: Apps eco-friendly, productos naturales
 */
 
 /* 
-OPCIÓN 5: TEAL TECNOLÓGICO - Actual mejorado
-Perfecto para: Tech, tracking GPS, apps modernas
+AZUL OSCURO PROFUNDO - Profesional y Elegante
+Perfecto para: Apps profesionales, tracking GPS, corporativo
+Paleta: Azul marino profundo con acentos brillantes
 */
 @layer base {
   :root {
-    --background: 180 50% 98%;
-    --foreground: 200 40% 15%;
+    /* Fondos claros con toque azul suave */
+    --background: 210 30% 98%;
+    --foreground: 215 50% 15%;
 
+    /* Cards y popovers con blanco puro */
     --card: 0 0% 100%;
-    --card-foreground: 200 40% 15%;
+    --card-foreground: 215 50% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 40% 15%;
+    --popover-foreground: 215 50% 15%;
 
-    --primary: 180 80% 45%; 
+    /* Azul profundo vibrante como color principal */
+    --primary: 215 85% 45%; 
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 180 60% 95%;
-    --secondary-foreground: 200 40% 15%;
+    /* Secundario azul muy claro */
+    --secondary: 215 40% 95%;
+    --secondary-foreground: 215 50% 15%;
 
-    --muted: 180 50% 96%;
-    --muted-foreground: 180 15% 50%;
+    /* Muteds con toque azul */
+    --muted: 215 35% 96%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 180 80% 38%;
+    /* Accent azul eléctrico */
+    --accent: 210 90% 50%;
     --accent-foreground: 0 0% 100%;
 
+    /* Destructive en rojo */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 180 30% 88%;
-    --input: 180 30% 88%;
-    --ring: 180 80% 45%;
+    /* Bordes sutiles */
+    --border: 215 25% 88%;
+    --input: 215 25% 88%;
+    --ring: 215 85% 45%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 180 60% 97%;
-    --sidebar-foreground: 200 40% 15%;
-    --sidebar-primary: 180 80% 45%;
+    /* Sidebar con fondo claro azulado */
+    --sidebar-background: 215 40% 97%;
+    --sidebar-foreground: 215 50% 15%;
+    --sidebar-primary: 215 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 180 60% 95%;
-    --sidebar-accent-foreground: 200 40% 15%;
-    --sidebar-border: 180 30% 85%;
-    --sidebar-ring: 180 80% 45%;
+    --sidebar-accent: 215 40% 95%;
+    --sidebar-accent-foreground: 215 50% 15%;
+    --sidebar-border: 215 25% 85%;
+    --sidebar-ring: 215 85% 45%;
   }
 
   .dark {
-    --background: 200 40% 15%;
-    --foreground: 180 50% 98%;
+    /* Modo oscuro con azul marino profundo */
+    --background: 215 50% 10%;
+    --foreground: 210 30% 98%;
 
-    --card: 200 35% 18%;
-    --card-foreground: 180 50% 98%;
+    /* Cards oscuros con azul */
+    --card: 215 45% 13%;
+    --card-foreground: 210 30% 98%;
 
-    --popover: 200 35% 18%;
-    --popover-foreground: 180 50% 98%;
+    --popover: 215 45% 13%;
+    --popover-foreground: 210 30% 98%;
 
-    --primary: 180 80% 50%;
+    /* Primary azul brillante en dark mode */
+    --primary: 210 90% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 30% 25%;
-    --secondary-foreground: 180 50% 98%;
+    /* Secondary oscuro */
+    --secondary: 215 40% 18%;
+    --secondary-foreground: 210 30% 98%;
 
-    --muted: 200 25% 22%;
-    --muted-foreground: 180 25% 70%;
+    /* Muted oscuro azulado */
+    --muted: 215 35% 16%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 180 80% 42%;
+    /* Accent azul eléctrico brillante */
+    --accent: 210 95% 58%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 180 50% 98%;
+    /* Destructive en rojo oscuro */
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 210 30% 98%;
 
-    --border: 200 25% 22%;
-    --input: 200 25% 22%;
-    --ring: 180 80% 50%;
+    /* Bordes oscuros */
+    --border: 215 35% 20%;
+    --input: 215 35% 20%;
+    --ring: 210 90% 55%;
 
-    --sidebar-background: 200 40% 15%;
-    --sidebar-foreground: 180 50% 98%;
-    --sidebar-primary: 180 80% 50%;
+    /* Sidebar oscuro */
+    --sidebar-background: 215 50% 10%;
+    --sidebar-foreground: 210 30% 98%;
+    --sidebar-primary: 210 90% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 25% 22%;
-    --sidebar-accent-foreground: 180 50% 98%;
-    --sidebar-border: 200 25% 22%;
-    --sidebar-ring: 180 80% 50%;
+    --sidebar-accent: 215 35% 16%;
+    --sidebar-accent-foreground: 210 30% 98%;
+    --sidebar-border: 215 35% 20%;
+    --sidebar-ring: 210 90% 55%;
   }
 }
 
