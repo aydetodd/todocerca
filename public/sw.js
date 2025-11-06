@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v35-device-sync';
+const CACHE_NAME = 'todocerca-v36-no-sync-button';
 const urlsToCache = [
   '/',
   '/index.html',

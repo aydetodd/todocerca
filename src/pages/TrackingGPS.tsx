@@ -916,28 +916,18 @@ const TrackingGPS = () => {
               <CardContent className="space-y-3">
                 <div className="bg-primary/10 p-3 rounded-lg mb-3 flex items-center justify-between">
                   <p className="text-sm font-medium">📱 Espacios disponibles: {group.max_devices - totalSlots} de {group.max_devices}</p>
-                  <div className="flex gap-2">
+                  {isOwner && isActive && (
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="sm" 
-                      onClick={syncAdditionalDevices}
-                      className="h-auto py-1 px-2 text-xs"
+                      onClick={() => setShowAddDevicesDialog(true)}
+                      className="h-auto py-1 px-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex flex-col items-center gap-0"
                     >
-                      🔄 Sincronizar
+                      <Plus className="h-3 w-3" />
+                      <span className="text-xs font-semibold leading-tight">Comprar</span>
+                      <span className="text-xs font-semibold leading-tight">más</span>
                     </Button>
-                    {isOwner && isActive && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setShowAddDevicesDialog(true)}
-                        className="h-auto py-1 px-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex flex-col items-center gap-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span className="text-xs font-semibold leading-tight">Comprar</span>
-                        <span className="text-xs font-semibold leading-tight">más</span>
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="memberName">Nombre del familiar</Label>
