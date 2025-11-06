@@ -2,7 +2,7 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { TooltipProvider } from "@/components/ui/tooltip";
+// import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import Home from "./pages/Home";
@@ -34,26 +34,24 @@ export default function AppWrapper() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <BrowserRouter>
-          <TooltipProvider delayDuration={0}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/landing" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/dashboard" element={<DashboardMain />} />
-              <Route path="/mi-perfil" element={<MiPerfil />} />
-              <Route path="/mis-productos" element={<MisProductos />} />
-              <Route path="/gestion-pedidos" element={<GestionPedidos />} />
-              <Route path="/mapa" element={<MapView />} />
-              <Route path="/tracking-gps" element={<TrackingGPS />} />
-              <Route path="/search" element={<ProductSearch />} />
-              <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
-              <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/landing" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/dashboard" element={<DashboardMain />} />
+            <Route path="/mi-perfil" element={<MiPerfil />} />
+            <Route path="/mis-productos" element={<MisProductos />} />
+            <Route path="/gestion-pedidos" element={<GestionPedidos />} />
+            <Route path="/mapa" element={<MapView />} />
+            <Route path="/tracking-gps" element={<TrackingGPS />} />
+            <Route path="/search" element={<ProductSearch />} />
+            <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+            <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+          <Sonner />
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
