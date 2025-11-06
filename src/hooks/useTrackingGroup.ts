@@ -109,47 +109,69 @@ export const useTrackingGroup = () => {
 
   const checkPendingInvitations = async () => {
     try {
+      console.log('[Invitations] ===== INICIO VERIFICACIÓN =====');
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('[Invitations] No user found');
+        console.log('[Invitations] ❌ No hay usuario autenticado');
         return [];
       }
+      console.log('[Invitations] ✓ Usuario autenticado:', user.id);
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('telefono')
+        .select('telefono, apodo, email')
         .eq('user_id', user.id)
         .single();
 
+      console.log('[Invitations] Perfil del usuario:', profile);
+      console.log('[Invitations] Error de perfil:', profileError);
+
       if (!profile?.telefono) {
-        console.log('[Invitations] User has no phone number in profile');
+        console.log('[Invitations] ❌ PROBLEMA: Usuario no tiene teléfono en su perfil');
+        console.log('[Invitations] Datos del perfil:', JSON.stringify(profile, null, 2));
         return [];
       }
 
-      console.log('[Invitations] Checking for phone:', profile.telefono);
+      console.log('[Invitations] ✓ Teléfono del usuario:', profile.telefono);
 
-      // Buscar invitaciones que coincidan con el teléfono normalizado
-      const { data: pendingInvites, error } = await supabase
+      // Buscar TODAS las invitaciones pendientes (sin filtro de teléfono)
+      const { data: allPendingInvites, error: invitesError } = await supabase
         .from('tracking_invitations')
         .select('*, tracking_groups(name)')
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString());
 
-      if (error) throw error;
+      console.log('[Invitations] Total de invitaciones pendientes en BD:', allPendingInvites?.length || 0);
+      console.log('[Invitations] Todas las invitaciones:', JSON.stringify(allPendingInvites, null, 2));
+      console.log('[Invitations] Error al buscar invitaciones:', invitesError);
 
-      // Filtrar manualmente las que coincidan con el teléfono normalizado
-      const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '');
-      const userPhone = normalizePhone(profile.telefono);
+      if (invitesError) throw invitesError;
+
+      // Normalizar teléfonos y filtrar
+      const normalizePhone = (phone: string) => {
+        const normalized = phone.replace(/[^0-9]/g, '');
+        console.log(`[Invitations] Normalizando "${phone}" -> "${normalized}"`);
+        return normalized;
+      };
       
-      const matchingInvites = (pendingInvites || []).filter(invite => 
-        normalizePhone(invite.phone_number) === userPhone
-      );
+      const userPhone = normalizePhone(profile.telefono);
+      console.log('[Invitations] Teléfono normalizado del usuario:', userPhone);
+      
+      const matchingInvites = (allPendingInvites || []).filter(invite => {
+        const invitePhone = normalizePhone(invite.phone_number);
+        const matches = invitePhone === userPhone;
+        console.log(`[Invitations] Comparando: "${invitePhone}" === "${userPhone}" ? ${matches}`);
+        return matches;
+      });
 
-      console.log('[Invitations] Found matching invitations:', matchingInvites.length);
+      console.log('[Invitations] ✓ Invitaciones que coinciden:', matchingInvites.length);
+      console.log('[Invitations] Detalle:', JSON.stringify(matchingInvites, null, 2));
+      console.log('[Invitations] ===== FIN VERIFICACIÓN =====');
 
       return matchingInvites;
     } catch (error) {
-      console.error('[Invitations] Error checking invitations:', error);
+      console.error('[Invitations] ❌ ERROR CRÍTICO:', error);
       return [];
     }
   };

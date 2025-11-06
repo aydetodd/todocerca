@@ -36,19 +36,26 @@ const TrackingGPS = () => {
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
+      if (user) {
+        setCurrentUserId(user.id);
+        console.log('[TRACKING GPS] Current user ID:', user.id);
+        console.log('[TRACKING GPS] Current user email:', user.email);
+      }
     };
     getCurrentUser();
     
     // Verificar invitaciones pendientes para este usuario
     const checkInvites = async () => {
-      console.log('[DEBUG] Checking pending invitations...');
+      console.log('[TRACKING GPS] ===== VERIFICANDO INVITACIONES =====');
       const invites = await checkPendingInvitations();
-      console.log('[DEBUG] Found pending invitations:', invites);
+      console.log('[TRACKING GPS] Invitaciones encontradas:', invites?.length || 0);
+      console.log('[TRACKING GPS] Detalle de invitaciones:', JSON.stringify(invites, null, 2));
       if (invites && invites.length > 0) {
         setMyInvitations(invites);
+        console.log('[TRACKING GPS] ✅ Mostrando', invites.length, 'invitación(es)');
       } else {
         setMyInvitations([]);
+        console.log('[TRACKING GPS] ❌ No hay invitaciones para mostrar');
       }
     };
     checkInvites();
