@@ -11,6 +11,7 @@
 OPCIÓN 1: AZUL PROFESIONAL - Corporativo y confiable
 Perfecto para: Apps empresariales, tracking profesional
 */
+/*
 @layer base {
   :root {
     --background: 210 40% 98%;
@@ -22,7 +23,7 @@ Perfecto para: Apps empresariales, tracking profesional
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 217 91% 60%; /* Azul brillante */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
@@ -92,6 +93,7 @@ Perfecto para: Apps empresariales, tracking profesional
     --sidebar-ring: 217 91% 60%;
   }
 }
+*/
 
 /* 
 OPCIÓN 2: NARANJA ENERGÉTICO - Vibrante y dinámico
@@ -361,7 +363,6 @@ Perfecto para: Apps eco-friendly, productos naturales
 OPCIÓN 5: TEAL TECNOLÓGICO - Actual mejorado
 Perfecto para: Tech, tracking GPS, apps modernas
 */
-/*
 @layer base {
   :root {
     --background: 180 50% 98%;
@@ -443,7 +444,6 @@ Perfecto para: Tech, tracking GPS, apps modernas
     --sidebar-ring: 180 80% 50%;
   }
 }
-*/
 
 @layer base {
   * {
