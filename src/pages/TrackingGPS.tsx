@@ -127,27 +127,25 @@ const TrackingGPS = () => {
     setupStatusSubscription();
   }, []);
   
-  // Manejar reconexión automática cuando se recupera internet
+  // Manejar reconexión automática cuando se recupera internet (sin notificaciones molestas)
   useEffect(() => {
+    let hasShownOfflineToast = false;
+    
     const handleOnline = () => {
       console.log('[TRACKING GPS] 🌐 Conexión a internet recuperada');
       if (userStatus !== 'offline') {
         console.log('[TRACKING GPS] 🔄 Reactivando seguimiento de ubicación');
         setIsSharing(true);
-        toast({
-          title: 'Conexión restaurada',
-          description: 'Seguimiento de ubicación reactivado automáticamente',
-        });
       }
+      hasShownOfflineToast = false;
     };
     
     const handleOffline = () => {
       console.log('[TRACKING GPS] 📴 Conexión a internet perdida');
-      toast({
-        title: 'Sin conexión',
-        description: 'El seguimiento se reanudará automáticamente al recuperar señal',
-        variant: 'destructive'
-      });
+      // Solo mostrar el toast una vez por sesión de desconexión
+      if (!hasShownOfflineToast) {
+        hasShownOfflineToast = true;
+      }
     };
     
     window.addEventListener('online', handleOnline);
