@@ -77,7 +77,51 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
 
     // Add markers
     validProviders.forEach((provider) => {
-      const marker = L.marker([provider.latitude, provider.longitude]).addTo(map);
+      // Check if provider has taxi products
+      const isTaxi = provider.productos.some(p => 
+        p.categoria?.toLowerCase().includes('taxi') || 
+        p.nombre?.toLowerCase().includes('taxi')
+      );
+      
+      console.log('Provider:', provider.business_name, '- isTaxi:', isTaxi);
+      
+      let icon;
+      if (isTaxi) {
+        // Create taxi car icon
+        const carIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/>
+          <path d="M9 17h6"/>
+          <circle cx="17" cy="17" r="2"/>
+        </svg>`;
+        
+        const iconHtml = `
+          <div style="
+            background-color: #3b82f6;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 3px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            ${carIconSvg}
+          </div>
+        `;
+        
+        icon = L.divIcon({
+          html: iconHtml,
+          className: 'custom-taxi-marker',
+          iconSize: [40, 40],
+          iconAnchor: [20, 40]
+        });
+      }
+      
+      const marker = isTaxi 
+        ? L.marker([provider.latitude, provider.longitude], { icon }).addTo(map)
+        : L.marker([provider.latitude, provider.longitude]).addTo(map);
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">

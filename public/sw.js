@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v17-taxi-realtime-movement';
+const CACHE_NAME = 'todocerca-v18-taxi-icon-static-map';
 const urlsToCache = [
   '/',
   '/index.html',
