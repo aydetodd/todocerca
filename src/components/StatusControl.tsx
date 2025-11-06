@@ -31,25 +31,36 @@ export const StatusControl = () => {
 
   const updateStatus = async (newStatus: UserStatus) => {
     setLoading(true);
+    console.log('[StatusControl] Intentando actualizar estado a:', newStatus);
+    
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.error('[StatusControl] No hay usuario autenticado');
+      setLoading(false);
+      return;
+    }
 
-    const { error } = await supabase
+    console.log('[StatusControl] Usuario ID:', user.id);
+
+    const { data, error } = await supabase
       .from('profiles')
       .update({ estado: newStatus })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select();
 
     if (error) {
+      console.error('[StatusControl] Error al actualizar:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado",
         variant: "destructive",
       });
     } else {
+      console.log('[StatusControl] Estado actualizado exitosamente:', data);
       setStatus(newStatus);
       toast({
         title: "Estado actualizado",
-        description: `Tu estado ahora es: ${newStatus}`,
+        description: `Tu estado ahora es: ${newStatus === 'offline' ? 'Fuera de servicio (rojo)' : newStatus === 'busy' ? 'Ocupado (amarillo)' : 'Disponible (verde)'}`,
       });
     }
     setLoading(false);
