@@ -11,6 +11,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
+import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -460,38 +461,11 @@ const TrackingGPS = () => {
               {isActive && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-center p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 bg-gray-900/98 rounded-2xl p-2 shadow-2xl border-2 border-gray-600 backdrop-blur-md">
-                      <button
-                        onClick={() => !isSharing && toggleSharing()}
-                        className={
-                          isSharing 
-                            ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-500 border-green-300 shadow-[0_0_25px_rgba(34,197,94,1)] scale-110' 
-                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-900/30 border-green-900/40 opacity-40 hover:opacity-50'
-                        }
-                        aria-label="Disponible"
-                        title="Disponible"
-                      />
-                      <button
-                        disabled
-                        className="w-10 h-10 rounded-full transition-all duration-300 border-2 bg-yellow-900/30 border-yellow-900/40 opacity-40 cursor-not-allowed"
-                        aria-label="Ocupado"
-                        title="Ocupado (próximamente)"
-                      />
-                      <button
-                        onClick={() => isSharing && toggleSharing()}
-                        className={
-                          !isSharing 
-                            ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-500 border-red-300 shadow-[0_0_25px_rgba(239,68,68,1)] scale-110' 
-                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-900/30 border-red-900/40 opacity-40 hover:opacity-50'
-                        }
-                        aria-label="Fuera de servicio"
-                        title="Fuera de servicio"
-                      />
-                    </div>
+                    <StatusControl />
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                     <p className="text-xs text-blue-800 dark:text-blue-200">
-                      💡 <strong>Importante:</strong> Todos los miembros deben estar viendo este mismo grupo {group.name} para verse en el mapa.
+                      💡 <strong>Semáforo de estado:</strong> Verde = disponible y visible en mapa | Amarillo = ocupado pero visible | Rojo = fuera de servicio y NO visible en mapa
                     </p>
                   </div>
                 </div>
