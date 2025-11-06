@@ -87,35 +87,60 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
       
       let icon;
       if (isTaxi) {
-        // Create taxi car icon
-        const carIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-          <circle cx="7" cy="17" r="2"/>
-          <path d="M9 17h6"/>
-          <circle cx="17" cy="17" r="2"/>
-        </svg>`;
+        // Taxi icon - vista desde arriba
+        const taxiTopViewSvg = `
+          <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sombra del carro -->
+            <ellipse cx="22" cy="40" rx="16" ry="3" fill="rgba(0,0,0,0.2)"/>
+            
+            <!-- Cuerpo principal del taxi -->
+            <rect x="10" y="10" width="24" height="24" rx="3" fill="#FDB813" stroke="#333" stroke-width="0.6"/>
+            
+            <!-- Techo/Cabina -->
+            <rect x="12" y="15" width="20" height="10" rx="2" fill="#FFD700" stroke="#333" stroke-width="0.6"/>
+            
+            <!-- Texto TAXI -->
+            <text x="22" y="22" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+            
+            <!-- Ventanas laterales -->
+            <rect x="11" y="16" width="3.5" height="7" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            <rect x="29.5" y="16" width="3.5" height="7" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            
+            <!-- Parabrisas frontal -->
+            <path d="M 15 11 Q 22 9 29 11 L 28 15 L 16 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Ventana trasera -->
+            <path d="M 16 29 L 28 29 Q 22 31 16 29 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Luces delanteras -->
+            <circle cx="14" cy="11" r="1.8" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+            <circle cx="30" cy="11" r="1.8" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Luces traseras -->
+            <circle cx="14" cy="33" r="1.5" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+            <circle cx="30" cy="33" r="1.5" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+            
+            <!-- Espejos laterales -->
+            <rect x="7" y="19" width="2.5" height="4" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.4"/>
+            <rect x="34.5" y="19" width="2.5" height="4" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.4"/>
+          </svg>
+        `;
         
         const iconHtml = `
           <div style="
-            background-color: #3b82f6;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: 3px solid white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+            transform: rotate(0deg);
+            transition: all 0.3s ease;
           ">
-            ${carIconSvg}
+            ${taxiTopViewSvg}
           </div>
         `;
         
         icon = L.divIcon({
           html: iconHtml,
           className: 'custom-taxi-marker',
-          iconSize: [40, 40],
-          iconAnchor: [20, 40]
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
         });
       }
       

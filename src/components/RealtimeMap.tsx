@@ -219,28 +219,51 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       let iconHtml: string;
       
       if (isTaxi) {
-        // Taxi icon usando SVG directo (sin react-dom/server para evitar errores)
-        const carIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-          <circle cx="7" cy="17" r="2"/>
-          <path d="M9 17h6"/>
-          <circle cx="17" cy="17" r="2"/>
-        </svg>`;
+        // Taxi icon - vista desde arriba
+        const taxiTopViewSvg = `
+          <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sombra del carro -->
+            <ellipse cx="18" cy="32" rx="14" ry="3" fill="rgba(0,0,0,0.2)"/>
+            
+            <!-- Cuerpo principal del taxi -->
+            <rect x="8" y="8" width="20" height="20" rx="3" fill="#FDB813" stroke="#333" stroke-width="0.5"/>
+            
+            <!-- Techo/Cabina -->
+            <rect x="10" y="12" width="16" height="8" rx="2" fill="#FFD700" stroke="#333" stroke-width="0.5"/>
+            
+            <!-- Texto TAXI -->
+            <text x="18" y="18" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+            
+            <!-- Ventanas laterales -->
+            <rect x="9" y="13" width="3" height="6" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            <rect x="24" y="13" width="3" height="6" rx="0.5" fill="#4A90E2" opacity="0.7"/>
+            
+            <!-- Parabrisas frontal -->
+            <path d="M 12 9 Q 18 7 24 9 L 23 12 L 13 12 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.3"/>
+            
+            <!-- Ventana trasera -->
+            <path d="M 13 24 L 23 24 Q 18 26 13 24 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
+            
+            <!-- Luces delanteras -->
+            <circle cx="11" cy="9" r="1.5" fill="#FFF" stroke="#333" stroke-width="0.3"/>
+            <circle cx="25" cy="9" r="1.5" fill="#FFF" stroke="#333" stroke-width="0.3"/>
+            
+            <!-- Luces traseras -->
+            <circle cx="11" cy="27" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+            <circle cx="25" cy="27" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+            
+            <!-- Espejos laterales -->
+            <rect x="6" y="16" width="2" height="3" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.3"/>
+            <rect x="28" y="16" width="2" height="3" rx="0.5" fill="#FDB813" stroke="#333" stroke-width="0.3"/>
+          </svg>
+        `;
         iconHtml = `
           <div style="
-            background-color: ${colors[estado]};
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            border: 3px solid white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
             transform: rotate(0deg);
             transition: all 0.3s ease;
           ">
-            ${carIconSvg}
+            ${taxiTopViewSvg}
           </div>
         `;
       } else if (isCurrentUser) {
@@ -268,7 +291,8 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       const icon = L.divIcon({
         html: iconHtml,
         className: 'custom-marker',
-        iconSize: [isTaxi ? 32 : (isCurrentUser ? 30 : 20), isTaxi ? 32 : (isCurrentUser ? 30 : 20)]
+        iconSize: [isTaxi ? 36 : (isCurrentUser ? 30 : 20), isTaxi ? 36 : (isCurrentUser ? 30 : 20)],
+        iconAnchor: [isTaxi ? 18 : (isCurrentUser ? 15 : 10), isTaxi ? 18 : (isCurrentUser ? 15 : 10)]
       });
 
       // Check if marker exists and update it, or create new one
