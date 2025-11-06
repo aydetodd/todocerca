@@ -429,54 +429,39 @@ const TrackingGPS = () => {
 
               {isActive && (
                 <div className="space-y-4">
-                  {/* Semáforo de Estado Horizontal */}
                   <div className="flex items-center justify-center p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2 bg-gray-900/98 rounded-2xl p-2 shadow-2xl border-2 border-gray-600 backdrop-blur-md">
-                      {/* Verde - Disponible */}
                       <button
-                        onClick={() => {
-                          if (!isSharing) toggleSharing();
-                        }}
-                        className={`
-                          w-10 h-10 rounded-full transition-all duration-300 border-2
-                          ${isSharing 
-                            ? 'bg-green-500 border-green-300 shadow-[0_0_25px_rgba(34,197,94,1)] scale-110' 
-                            : 'bg-green-950/40 border-green-950/60 hover:bg-green-950/60'
-                          }
-                        `}
+                        onClick={() => !isSharing && toggleSharing()}
+                        className={
+                          isSharing 
+                            ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-500 border-green-300 shadow-[0_0_25px_rgba(34,197,94,1)] scale-110' 
+                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-green-950/40 border-green-950/60 hover:bg-green-950/60'
+                        }
                         aria-label="Disponible"
                         title="Disponible"
                       />
-                      
-                      {/* Amarillo - Ocupado */}
                       <button
                         disabled
                         className="w-10 h-10 rounded-full bg-yellow-950/40 border-2 border-yellow-950/60 opacity-50 cursor-not-allowed"
                         aria-label="Ocupado"
                         title="Ocupado (próximamente)"
                       />
-                      
-                      {/* Rojo - Fuera de servicio */}
                       <button
-                        onClick={() => {
-                          if (isSharing) toggleSharing();
-                        }}
-                        className={`
-                          w-10 h-10 rounded-full transition-all duration-300 border-2
-                          ${!isSharing 
-                            ? 'bg-red-500 border-red-300 shadow-[0_0_25px_rgba(239,68,68,1)] scale-110' 
-                            : 'bg-red-950/40 border-red-950/60 hover:bg-red-950/60'
-                          }
-                        `}
+                        onClick={() => isSharing && toggleSharing()}
+                        className={
+                          !isSharing 
+                            ? 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-500 border-red-300 shadow-[0_0_25px_rgba(239,68,68,1)] scale-110' 
+                            : 'w-10 h-10 rounded-full transition-all duration-300 border-2 bg-red-950/40 border-red-950/60 hover:bg-red-950/60'
+                        }
                         aria-label="Fuera de servicio"
                         title="Fuera de servicio"
                       />
                     </div>
                   </div>
-                  
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                     <p className="text-xs text-blue-800 dark:text-blue-200">
-                      💡 <strong>Importante:</strong> Todos los miembros deben estar viendo este mismo grupo "{group.name}" para verse en el mapa.
+                      💡 <strong>Importante:</strong> Todos los miembros deben estar viendo este mismo grupo {group.name} para verse en el mapa.
                     </p>
                   </div>
                 </div>
