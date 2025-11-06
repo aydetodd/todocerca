@@ -8,82 +8,82 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 38 96% 97%; /* Amarillo muy claro */
-    --foreground: 20 14.3% 4.1%;
+    --background: 165 75% 96%; /* Verde menta muy claro */
+    --foreground: 180 80% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
+    --card-foreground: 180 80% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
+    --popover-foreground: 180 80% 16%;
 
-    --primary: 38 92% 50%; /* Amarillo principal (amber-500) */
+    --primary: 180 75% 45%; /* Teal brillante */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 95% 53%; /* Naranja (orange-500) */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 165 70% 85%; /* Verde menta medio */
+    --secondary-foreground: 180 80% 16%;
 
-    --muted: 38 70% 95%;
-    --muted-foreground: 38 8% 46%;
+    --muted: 165 65% 92%;
+    --muted-foreground: 180 20% 45%;
 
-    --accent: 32 95% 54%; /* Naranja-amarillo vibrante */
+    --accent: 180 80% 38%; /* Teal más oscuro */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 38 30% 90%;
-    --input: 38 30% 90%;
-    --ring: 38 92% 50%;
+    --border: 165 30% 85%;
+    --input: 165 30% 90%;
+    --ring: 180 75% 45%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 38 80% 98%;
-    --sidebar-foreground: 38 30% 25%;
-    --sidebar-primary: 38 92% 50%;
+    --sidebar-background: 165 70% 98%;
+    --sidebar-foreground: 180 60% 25%;
+    --sidebar-primary: 180 75% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 60% 92%;
-    --sidebar-accent-foreground: 20 14.3% 4.1%;
-    --sidebar-border: 38 35% 85%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-accent: 165 60% 90%;
+    --sidebar-accent-foreground: 180 80% 16%;
+    --sidebar-border: 165 35% 82%;
+    --sidebar-ring: 180 75% 45%;
   }
 
   .dark {
-    --background: 30 20% 8%; /* Oscuro con tono cálido */
-    --foreground: 38 40% 95%;
+    --background: 180 80% 16%; /* Teal oscuro */
+    --foreground: 165 70% 95%;
 
-    --card: 30 15% 12%;
-    --card-foreground: 38 40% 95%;
+    --card: 180 70% 20%;
+    --card-foreground: 165 70% 95%;
 
-    --popover: 30 15% 10%;
-    --popover-foreground: 38 40% 95%;
+    --popover: 180 75% 18%;
+    --popover-foreground: 165 70% 95%;
 
-    --primary: 38 90% 55%; /* Amarillo más brillante para modo oscuro */
-    --primary-foreground: 30 20% 8%;
+    --primary: 180 75% 50%; /* Teal brillante para modo oscuro */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 90% 58%; /* Naranja brillante */
-    --secondary-foreground: 30 20% 8%;
+    --secondary: 165 70% 85%; /* Verde menta claro */
+    --secondary-foreground: 180 80% 16%;
 
-    --muted: 30 12% 16%;
-    --muted-foreground: 38 12% 65%;
+    --muted: 180 50% 25%;
+    --muted-foreground: 165 30% 70%;
 
-    --accent: 32 90% 60%; /* Naranja-amarillo vibrante */
-    --accent-foreground: 30 20% 8%;
+    --accent: 180 80% 42%; /* Teal medio brillante */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 12% 22%;
-    --input: 30 12% 20%;
-    --ring: 38 90% 55%;
-    --sidebar-background: 30 18% 10%;
-    --sidebar-foreground: 38 25% 85%;
-    --sidebar-primary: 38 90% 55%;
-    --sidebar-primary-foreground: 30 20% 8%;
-    --sidebar-accent: 30 15% 16%;
-    --sidebar-accent-foreground: 38 40% 95%;
-    --sidebar-border: 30 12% 18%;
-    --sidebar-ring: 38 90% 55%;
+    --border: 180 40% 30%;
+    --input: 180 40% 28%;
+    --ring: 180 75% 50%;
+    --sidebar-background: 180 75% 18%;
+    --sidebar-foreground: 165 50% 85%;
+    --sidebar-primary: 180 75% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 180 60% 25%;
+    --sidebar-accent-foreground: 165 70% 95%;
+    --sidebar-border: 180 45% 28%;
+    --sidebar-ring: 180 75% 50%;
   }
 }
 
