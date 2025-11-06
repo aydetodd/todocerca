@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, Map, ArrowLeft, Package, ClipboardList, Briefcase } from 'lucide-react';
+import { MapPin, LogOut, Search, Users, ArrowLeft, Package, ClipboardList, Briefcase } from 'lucide-react';
 import { StatusControl } from '@/components/StatusControl';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
@@ -231,10 +231,6 @@ export default function MiPerfil() {
                   </Button>
                 </>
               )}
-              <Button variant="outline" size="sm" onClick={() => navigate('/mapa')}>
-                <Map className="h-4 w-4 mr-2" />
-                Mapa
-              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
