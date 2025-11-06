@@ -911,6 +911,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_user_by_phone: {
+        Args: { phone_param: string }
+        Returns: {
+          phone: string
+          user_id: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]

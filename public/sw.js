@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v10-taxi-markers';
+const CACHE_NAME = 'todocerca-v11-security-fix';
 const urlsToCache = [
   '/',
   '/index.html',
