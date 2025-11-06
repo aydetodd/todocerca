@@ -25,7 +25,7 @@ const TrackingGPS = () => {
   const [groupName, setGroupName] = useState('Mi Grupo Familiar');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
-  const [isSharing, setIsSharing] = useState(false);
+  const [isSharing, setIsSharing] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
 
