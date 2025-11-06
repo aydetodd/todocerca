@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v24-remove-small-map';
+const CACHE_NAME = 'todocerca-v25-remove-map-button';
 const urlsToCache = [
   '/',
   '/index.html',

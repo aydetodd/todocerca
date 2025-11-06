@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, Map, Package, ClipboardList, Navigation } from 'lucide-react';
+import { MapPin, LogOut, Search, Users, Package, ClipboardList, Navigation } from 'lucide-react';
 import ProviderRegistration from '@/components/ProviderRegistration';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -161,10 +161,6 @@ export default function DashboardMain() {
               <Badge variant={isProvider ? "default" : "secondary"}>
                 {isProvider ? "Proveedor" : "Cliente"}
               </Badge>
-              <Button variant="outline" size="sm" onClick={() => navigate('/mapa')}>
-                <Map className="h-4 w-4 mr-2" />
-                Ver Mapa
-              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
