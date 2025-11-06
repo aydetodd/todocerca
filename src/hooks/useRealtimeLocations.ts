@@ -76,11 +76,29 @@ export const useRealtimeLocations = () => {
       
       // Check which providers have taxi products
       const proveedorIds = proveedoresData?.map(p => p.id) || [];
-      const { data: taxiProducts } = await supabase
+      
+      // First, get the Taxi category ID
+      const { data: taxiCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .ilike('name', 'taxi')
+        .maybeSingle();
+      
+      // Build query to check for taxi products (by name, keywords, OR category)
+      let taxiQuery = supabase
         .from('productos')
         .select('proveedor_id')
-        .in('proveedor_id', proveedorIds)
-        .or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
+        .in('proveedor_id', proveedorIds);
+      
+      if (taxiCategory?.id) {
+        // Search by category OR by name/keywords
+        taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
+      } else {
+        // Fallback to name/keywords only if no category found
+        taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
+      }
+      
+      const { data: taxiProducts } = await taxiQuery;
       
       const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 

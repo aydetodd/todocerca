@@ -34,6 +34,12 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
   // Initialize map with user's location
   useEffect(() => {
+    // Cleanup existing map if any
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+    
     if (!mapRef.current) {
       // Try to get user's current location
       if (navigator.geolocation) {

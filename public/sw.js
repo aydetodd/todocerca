@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v15-flexible-phone-search';
+const CACHE_NAME = 'todocerca-v16-fix-taxi-icon-category';
 const urlsToCache = [
   '/',
   '/index.html',
