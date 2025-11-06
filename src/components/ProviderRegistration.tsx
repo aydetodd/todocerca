@@ -48,7 +48,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   // Provider data - simplified
   const [providerData, setProviderData] = useState({
     nombre: '',  // Nombre del negocio (opcional)
-    email: '',   // Email (opcional)
     telefono: userData.telefono,
     business_address: '',  // Dirección (opcional)
     description: '',       // Descripción (opcional)
@@ -220,7 +219,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       console.log('🏢 Creating provider record...');
       const providerDataWithUserId = {
         nombre: providerData.nombre || apodo, // Usar apodo si no hay nombre de negocio
-        email: providerData.email || userData.email,
+        email: userData.email,
         telefono: providerData.telefono,
         business_address: providerData.business_address,
         description: providerData.description,
@@ -336,7 +335,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   const renderProviderInfo = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="apodo">Apodo / Nombre de Usuario *</Label>
+        <Label htmlFor="apodo">Alias / Nombre de Usuario *</Label>
         <Input
           id="apodo"
           value={apodo}
@@ -350,15 +349,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
           id="nombre"
           value={providerData.nombre}
           onChange={(e) => setProviderData({...providerData, nombre: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label htmlFor="email">Email (opcional)</Label>
-        <Input
-          id="email"
-          type="email"
-          value={providerData.email}
-          onChange={(e) => setProviderData({...providerData, email: e.target.value})}
         />
       </div>
       <PhoneInput

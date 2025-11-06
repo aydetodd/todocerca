@@ -445,6 +445,36 @@ export type Database = {
           },
         ]
       }
+      phone_verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          used: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           created_at: string
@@ -537,6 +567,9 @@ export type Database = {
           id: string
           nombre: string
           phone: string | null
+          phone_verification_code: string | null
+          phone_verification_expires_at: string | null
+          phone_verified: boolean | null
           postal_code: string | null
           role: Database["public"]["Enums"]["user_role"]
           telefono: string | null
@@ -556,6 +589,9 @@ export type Database = {
           id?: string
           nombre: string
           phone?: string | null
+          phone_verification_code?: string | null
+          phone_verification_expires_at?: string | null
+          phone_verified?: boolean | null
           postal_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           telefono?: string | null
@@ -575,6 +611,9 @@ export type Database = {
           id?: string
           nombre?: string
           phone?: string | null
+          phone_verification_code?: string | null
+          phone_verification_expires_at?: string | null
+          phone_verified?: boolean | null
           postal_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           telefono?: string | null

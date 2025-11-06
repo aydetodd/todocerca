@@ -20,7 +20,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
@@ -31,7 +30,9 @@ const Auth = () => {
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedProhibitedContent, setAcceptedProhibitedContent] = useState(false);
-  const [wantsEmail, setWantsEmail] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showVerification, setShowVerification] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -78,18 +79,18 @@ const Auth = () => {
       console.log('❌ Missing apodo for registration');
       toast({
         title: "Error", 
-        description: "El apodo es obligatorio para el registro",
+        description: "El alias es obligatorio para el registro",
         variant: "destructive",
       });
       return;
     }
     
-    // Validar que se aceptaron los términos al registrarse
+    // Validar términos en registro
     if (!isLogin && (!acceptedTerms || !acceptedProhibitedContent)) {
       console.log('❌ Terms not accepted');
       toast({
         title: "Error",
-        description: "Debes aceptar los Términos de Uso y la Política de Contenido Prohibido para registrarte",
+        description: "Debes aceptar los Términos de Uso y la Política de Contenido Prohibido",
         variant: "destructive",
       });
       return;
@@ -103,89 +104,65 @@ const Auth = () => {
       if (isLogin) {
         console.log('🔑 Attempting login with phone...');
         
-        // Buscar el perfil por teléfono para obtener el user_id, consecutive_number y email
-        // Intentar buscar con el formato completo primero
+        // Buscar perfil por teléfono
         let profileData = null;
-        let profileError = null;
-        
-        const { data: fullFormatData, error: fullFormatError } = await supabase
+        const { data: fullFormatData } = await supabase
           .from('profiles')
-          .select('user_id, consecutive_number, email')
+          .select('user_id, consecutive_number')
           .eq('telefono', telefono)
           .maybeSingle();
         
         if (fullFormatData) {
           profileData = fullFormatData;
         } else {
-          // Si no se encuentra, intentar buscar sin el código de país (solo los últimos 10 dígitos)
           const phoneDigits = telefono.replace(/\D/g, '').slice(-10);
-          const { data: partialData, error: partialError } = await supabase
+          const { data: partialData } = await supabase
             .from('profiles')
-            .select('user_id, consecutive_number, email, telefono')
+            .select('user_id, consecutive_number, telefono')
             .like('telefono', `%${phoneDigits}`)
             .maybeSingle();
           
           profileData = partialData;
-          profileError = partialError;
         }
 
-        if (profileError || !profileData) {
-          throw new Error('Número de teléfono no encontrado. Verifica que ingresaste el número correcto.');
+        if (!profileData) {
+          throw new Error('Número de teléfono no encontrado');
         }
 
-        console.log('📱 Profile found:', profileData.consecutive_number);
-
-        // Si el usuario proporcionó un email en el login, usarlo. Si no, usar el del perfil o generar uno
-        const emailToUse = email || profileData.email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
-        console.log('📧 Using email:', emailToUse);
+        // Email generado para autenticación
+        const emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
         
-        // Intentar login con el email correcto
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailToUse,
           password,
         });
 
-        console.log('🔑 Login result:', { data: data?.user ? 'user found' : 'no user', error });
-
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
             throw new Error('Teléfono o contraseña incorrectos');
           }
-          if (error.message.includes('Email not confirmed')) {
-            throw new Error('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
-          }
           throw error;
         }
 
-        // Verificar que el email esté confirmado
-        if (data.user && !data.user.email_confirmed_at) {
-          await supabase.auth.signOut();
-          throw new Error('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
-        }
-
-        // Mostrar el ID consecutivo
         setUserIdConsecutivo(profileData.consecutive_number);
         setShowIdConsecutivo(true);
 
         toast({
           title: "¡Bienvenido!",
-          description: `Tu número de usuario es: ${profileData.consecutive_number}`,
+          description: `Tu número de usuario: ${profileData.consecutive_number}`,
         });
 
-        // Post-login flow for providers: check if they need to complete provider registration
+        // Check provider registration
         try {
           setSkipAutoRedirect(true);
           const role = data.user?.user_metadata?.role;
           const userId = data.user?.id;
           if (role === 'proveedor' && userId) {
-            const { data: existingProvider, error: providerLookupError } = await supabase
+            const { data: existingProvider } = await supabase
               .from('proveedores')
               .select('id')
               .eq('user_id', userId)
               .maybeSingle();
-            if (providerLookupError) {
-              console.log('⚠️ Provider lookup error (non-fatal):', providerLookupError);
-            }
             if (!existingProvider) {
               setShowProviderRegistration(true);
               toast({
@@ -194,7 +171,6 @@ const Auth = () => {
               });
             } else {
               setSkipAutoRedirect(false);
-              // Redirigir si hay URL guardada
               const redirectUrl = localStorage.getItem('redirectAfterLogin');
               if (redirectUrl) {
                 localStorage.removeItem('redirectAfterLogin');
@@ -203,7 +179,6 @@ const Auth = () => {
             }
           } else {
             setSkipAutoRedirect(false);
-            // Redirigir si hay URL guardada
             const redirectUrl = localStorage.getItem('redirectAfterLogin');
             if (redirectUrl) {
               localStorage.removeItem('redirectAfterLogin');
@@ -211,17 +186,16 @@ const Auth = () => {
             }
           }
         } catch (e) {
-          console.log('⚠️ Post-login provider flow error:', e);
+          console.log('⚠️ Post-login error:', e);
           setSkipAutoRedirect(false);
         }
       } else {
-        console.log('📝 Attempting registration...');
-        console.log('📝 Registration data:', { telefono, userType, nombre, email });
+        // REGISTRO CON VERIFICACIÓN SMS
+        console.log('📝 Starting SMS registration...');
         
-        // Usar email proporcionado o generar automático basado en el teléfono
-        const finalEmail = email || `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        const finalEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
         
-        // Registro
+        // Crear usuario
         const { data, error } = await supabase.auth.signUp({
           email: finalEmail,
           password,
@@ -232,73 +206,47 @@ const Auth = () => {
               apodo,
               role: userType,
               telefono,
-              email: email || null, // Guardar email real si existe
             },
           },
         });
 
-        console.log('📝 Registration result:', { 
-          user: data?.user ? 'user created' : 'no user', 
-          error: error ? error.message : 'none' 
-        });
-
         if (error) {
           if (error.message.includes('already registered')) {
-            throw new Error('Este número de teléfono ya está registrado');
+            throw new Error('Este teléfono ya está registrado');
           }
           throw error;
         }
 
         if (data.user) {
-          console.log('✅ User registered successfully:', data.user.id);
+          console.log('✅ User created:', data.user.id);
+          setPendingUserId(data.user.id);
 
-          // Actualizar el perfil con el teléfono y email
-          const { error: updateError } = await supabase
+          // Actualizar perfil
+          await supabase
             .from('profiles')
-            .update({ 
-              telefono,
-              email: email || null  // Guardar el email real si fue proporcionado
-            })
+            .update({ telefono })
             .eq('user_id', data.user.id);
 
-          if (updateError) {
-            console.error('⚠️ Error updating profile with phone and email:', updateError);
-          }
-
-          // Enviar mensaje de bienvenida por WhatsApp
-          try {
-            await supabase.functions.invoke('send-whatsapp-welcome', {
-              body: {
-                phoneNumber: telefono,
-                userName: nombre,
-                userType: userType,
-              },
-            });
-            console.log('📱 WhatsApp welcome message sent');
-          } catch (whatsappError) {
-            console.error('⚠️ Error sending WhatsApp message:', whatsappError);
-            // No mostramos error al usuario, solo lo registramos
-          }
-
-          // Mostrar mensaje de verificación de correo
-          const emailUsed = email || finalEmail;
-          toast({
-            title: "¡Cuenta creada!",
-            description: `Revisa tu correo ${emailUsed} para verificar tu cuenta antes de iniciar sesión.`,
-            duration: 8000,
+          // Enviar código de verificación SMS
+          const { error: smsError } = await supabase.functions.invoke('send-verification-sms', {
+            body: { phone: telefono }
           });
-          
-          console.log('📧 Email verification required');
-          
-          // Cambiar a modo login para que el usuario inicie sesión después de verificar
-          setIsLogin(true);
-          
-          // Cerrar la sesión automática si existe (para forzar verificación)
+
+          if (smsError) {
+            console.error('Error enviando SMS:', smsError);
+            throw new Error('Error al enviar código de verificación');
+          }
+
+          // Cerrar sesión temporal
           await supabase.auth.signOut();
-          
-        } else {
-          console.log('❌ No user data returned from registration');
-          throw new Error('No se pudo crear la cuenta');
+
+          toast({
+            title: "¡Código enviado!",
+            description: "Revisa tu SMS e ingresa el código de verificación",
+            duration: 5000,
+          });
+
+          setShowVerification(true);
         }
       }
     } catch (error: any) {
@@ -344,6 +292,90 @@ const Auth = () => {
         onBack={() => setShowPasswordRecovery(false)}
         initialPhone={telefono}
       />
+    );
+  }
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      toast({
+        title: "Error",
+        description: "Ingresa el código de 6 dígitos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('verify-phone-code', {
+        body: {
+          phone: telefono,
+          code: verificationCode,
+          userId: pendingUserId,
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Teléfono verificado!",
+        description: "Ya puedes iniciar sesión",
+      });
+
+      setShowVerification(false);
+      setIsLogin(true);
+      setVerificationCode("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Código inválido",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showVerification) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Verificar Teléfono</CardTitle>
+            <CardDescription>
+              Ingresa el código de 6 dígitos enviado a {telefono}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="code">Código de verificación</Label>
+              <Input
+                id="code"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+              />
+            </div>
+            <Button 
+              onClick={handleVerifyCode} 
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Verificando..." : "Verificar"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowVerification(false)}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -439,33 +471,6 @@ const Auth = () => {
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="wantsEmail"
-                        checked={wantsEmail}
-                        onCheckedChange={(checked) => {
-                          setWantsEmail(checked as boolean);
-                          if (!checked) setEmail("");
-                        }}
-                      />
-                      <Label htmlFor="wantsEmail" className="cursor-pointer">
-                        ¿Deseas agregar tu correo electrónico?
-                      </Label>
-                    </div>
-                    
-                    {wantsEmail && (
-                      <div>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                        />
-                      </div>
-                    )}
                   </div>
                 </>
               )}
