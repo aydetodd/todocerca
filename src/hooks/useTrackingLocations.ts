@@ -100,19 +100,30 @@ export const useTrackingLocations = (groupId: string | null) => {
         const member = membersData?.find(m => m.user_id === loc.user_id);
         const profile = profilesData?.find(p => p.user_id === loc.user_id);
         
-        return {
+        const locationWithMember = {
           ...loc,
           member: member ? {
             ...member,
             estado: profile?.estado
           } : undefined
         };
+        
+        console.log('[DEBUG] Location for user', loc.user_id, ':', {
+          nickname: member?.nickname,
+          estado: profile?.estado,
+          willBeFiltered: profile?.estado === 'offline'
+        });
+        
+        return locationWithMember;
       }).filter(loc => {
         // Solo mostrar si el estado NO es offline (rojo)
         const estado = loc.member?.estado;
-        return estado !== 'offline';
+        const shouldShow = estado !== 'offline';
+        console.log('[DEBUG] Filtering:', loc.member?.nickname, 'estado:', estado, 'shouldShow:', shouldShow);
+        return shouldShow;
       }) || [];
 
+      console.log('[DEBUG] Final filtered locations count:', merged.length);
       console.log('[DEBUG] Merged and filtered locations:', merged);
       setLocations(merged);
     } catch (error) {
