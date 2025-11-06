@@ -31,10 +31,14 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, clientes: 0, proveedores: 0 });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      loadUsers();
+      setError(null);
+      loadUsers().catch((err) => {
+        setError(err.message || 'Error al cargar los datos');
+      });
     }
   }, [open]);
 
@@ -46,7 +50,14 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
         .select('consecutive_number, role, nombre, apodo, telefono, email, codigo_postal, created_at')
         .order('consecutive_number', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading users:', error);
+        // Check if it's a permission error
+        if (error.code === 'PGRST116' || error.message.includes('policy')) {
+          throw new Error('No tienes permisos para ver este reporte. Solo los administradores pueden acceder.');
+        }
+        throw error;
+      }
 
       const formattedUsers = data?.map(user => ({
         ...user,
@@ -58,8 +69,9 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
       const clientes = formattedUsers.filter(u => u.role === 'cliente').length;
       const proveedores = formattedUsers.filter(u => u.role === 'proveedor').length;
       setStats({ total: formattedUsers.length, clientes, proveedores });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading users:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -75,6 +87,13 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+            <p className="text-destructive font-medium mb-2">⚠️ {error}</p>
+            <p className="text-sm text-muted-foreground">
+              Este reporte requiere permisos de administrador para visualizar todos los usuarios registrados.
+            </p>
           </div>
         ) : (
           <>
