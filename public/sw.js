@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todocerca-v20-taxi-side-wheels';
+const CACHE_NAME = 'todocerca-v21-fullscreen-maps';
 const urlsToCache = [
   '/',
   '/index.html',

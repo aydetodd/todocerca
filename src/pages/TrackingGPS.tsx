@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +31,7 @@ const TrackingGPS = () => {
   const [isSharing, setIsSharing] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [showFullScreenMap, setShowFullScreenMap] = useState(false);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -404,19 +405,40 @@ const TrackingGPS = () => {
   const totalSlots = members.length + invitations.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="max-w-4xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/dashboard')}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
+    <>
+      {/* Full Screen Map View */}
+      {showFullScreenMap && isActive && locations.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="absolute top-4 left-4 z-10">
+            <Button 
+              variant="default" 
+              size="lg"
+              onClick={() => setShowFullScreenMap(false)}
+              className="shadow-lg"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Volver
+            </Button>
+          </div>
+          <TrackingMap locations={locations} currentUserId={currentUserId} />
+        </div>
+      )}
 
-        {/* Selector de Grupos - Siempre visible si hay grupos */}
-        {allGroups.length > 0 && (
+      {/* Normal View */}
+      {!showFullScreenMap && (
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
+          <div className="max-w-4xl mx-auto">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="mb-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver
+            </Button>
+
+            {/* Selector de Grupos - Siempre visible si hay grupos */}
+            {allGroups.length > 0 && (
           <Card className="mb-6 border-primary/20 shadow-lg">
             <CardHeader className="bg-primary/5">
               <div className="flex items-center justify-between">
@@ -733,7 +755,19 @@ const TrackingGPS = () => {
           {isActive && (
             <Card>
               <CardHeader>
-                <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Ubicaciones en Tiempo Real
+                  {locations.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFullScreenMap(true)}
+                    >
+                      <MapIcon className="h-4 w-4 mr-2" />
+                      Ver Mapa Completo
+                    </Button>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   {locations.length} miembro(s) compartiendo ubicación
                 </CardDescription>
@@ -744,7 +778,9 @@ const TrackingGPS = () => {
                     Ningún miembro está compartiendo su ubicación. Activa "Compartir Mi Ubicación" arriba.
                   </p>
                 ) : (
-                  <TrackingMap locations={locations} currentUserId={currentUserId} />
+                  <div className="h-[300px]">
+                    <TrackingMap locations={locations} currentUserId={currentUserId} />
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -752,6 +788,8 @@ const TrackingGPS = () => {
         </div>
       </div>
     </div>
+    )}
+    </>
   );
 };
 

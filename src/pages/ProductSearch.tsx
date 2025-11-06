@@ -67,6 +67,7 @@ const ProductSearch = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [showFullScreenMap, setShowFullScreenMap] = useState(false);
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -291,9 +292,30 @@ const ProductSearch = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
+    <>
+      {/* Full Screen Map View */}
+      {showFullScreenMap && mapProviders.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="absolute top-4 left-4 z-10">
+            <Button 
+              variant="default" 
+              size="lg"
+              onClick={() => setShowFullScreenMap(false)}
+              className="shadow-lg"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Volver a Resultados
+            </Button>
+          </div>
+          <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
+        </div>
+      )}
+
+      {/* Normal View */}
+      {!showFullScreenMap && (
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
@@ -368,9 +390,13 @@ const ProductSearch = () => {
                 {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
               </p>
               
-              <Tabs defaultValue="mapa" className="w-full">
+              <Tabs defaultValue="lista" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                  <TabsTrigger value="mapa" className="flex items-center gap-2">
+                  <TabsTrigger 
+                    value="mapa" 
+                    className="flex items-center gap-2"
+                    onClick={() => setShowFullScreenMap(true)}
+                  >
                     <Map className="h-4 w-4" />
                     Ver Mapa
                   </TabsTrigger>
@@ -381,12 +407,7 @@ const ProductSearch = () => {
                 </TabsList>
 
                 <TabsContent value="mapa" className="mt-0">
-                  {mapProviders.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-semibold mb-4">Ubicación de Proveedores</h2>
-                      <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
-                    </div>
-                  )}
+                  {/* El mapa ahora se muestra en pantalla completa */}
                 </TabsContent>
 
                 <TabsContent value="lista" className="mt-0">
@@ -462,19 +483,23 @@ const ProductSearch = () => {
                 </TabsContent>
               </Tabs>
             </div>
-
           </div>
         )}
-      </div>
+          </div>
+        </div>
+      )}
 
+      {/* Messaging Panel */}
       <MessagingPanel
         isOpen={isMessagingOpen}
         onClose={() => setIsMessagingOpen(false)}
         receiverId={selectedReceiverId}
         receiverName={selectedReceiverName}
       />
-      <NavigationBar />
-    </div>
+      
+      {/* Navigation Bar */}
+      {!showFullScreenMap && <NavigationBar />}
+    </>
   );
 };
 
