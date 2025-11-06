@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => ({
       'react-dom',
       '@radix-ui/react-tooltip',
       '@radix-ui/react-slot',
+      '@supabase/supabase-js',
     ],
-    force: true,
   },
   build: {
     commonjsOptions: {
