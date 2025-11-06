@@ -876,12 +876,14 @@ const TrackingGPS = () => {
                   <p className="text-sm font-medium">📱 Espacios disponibles: {5 - totalSlots} de 5</p>
                   {isOwner && isActive && (
                     <Button 
-                      variant="link" 
+                      variant="outline" 
                       size="sm" 
                       onClick={() => setShowAddDevicesDialog(true)}
-                      className="text-xs h-auto p-0"
+                      className="h-auto py-1 px-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex flex-col items-center gap-0"
                     >
-                      Comprar más
+                      <Plus className="h-3 w-3" />
+                      <span className="text-xs font-semibold leading-tight">Comprar</span>
+                      <span className="text-xs font-semibold leading-tight">más</span>
                     </Button>
                   )}
                 </div>
