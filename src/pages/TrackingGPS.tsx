@@ -280,11 +280,6 @@ const TrackingGPS = () => {
             maximumAge: 0
           }
         );
-
-        toast({
-          title: 'Seguimiento automático activado',
-          description: 'Tu ubicación se actualizará automáticamente mientras tengas señal.',
-        });
       } else {
         console.error('[GPS] ❌ Geolocalización no disponible en este navegador');
         toast({
