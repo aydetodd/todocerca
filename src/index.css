@@ -279,53 +279,53 @@ Paleta: Azul marino profundo con acentos brillantes
 */
 @layer base {
   :root {
-    /* Fondos gris claro neutro */
-    --background: 0 0% 96%;
-    --foreground: 215 50% 15%;
+    /* Fondos gris medio con toque azul */
+    --background: 215 20% 88%;
+    --foreground: 215 60% 12%;
 
-    /* Cards y popovers con blanco puro */
-    --card: 0 0% 100%;
-    --card-foreground: 215 50% 15%;
+    /* Cards gris claro con azul sutil */
+    --card: 215 25% 94%;
+    --card-foreground: 215 60% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 50% 15%;
+    --popover: 215 25% 94%;
+    --popover-foreground: 215 60% 12%;
 
     /* Azul profundo vibrante como color principal */
-    --primary: 215 85% 45%; 
+    --primary: 215 90% 40%; 
     --primary-foreground: 0 0% 100%;
 
-    /* Secundario gris claro */
-    --secondary: 0 0% 94%;
-    --secondary-foreground: 215 50% 15%;
+    /* Secundario azul medio */
+    --secondary: 215 60% 75%;
+    --secondary-foreground: 215 60% 12%;
 
-    /* Muteds gris neutro */
-    --muted: 0 0% 92%;
-    --muted-foreground: 215 15% 45%;
+    /* Muteds con bastante azul */
+    --muted: 215 40% 82%;
+    --muted-foreground: 215 30% 35%;
 
-    /* Accent azul eléctrico */
-    --accent: 210 90% 50%;
+    /* Accent azul brillante */
+    --accent: 210 100% 55%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive en rojo */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Bordes sutiles grises */
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 215 85% 45%;
+    /* Bordes azules visibles */
+    --border: 215 40% 75%;
+    --input: 215 30% 90%;
+    --ring: 215 90% 40%;
 
     --radius: 0.75rem;
 
-    /* Sidebar con fondo gris claro */
-    --sidebar-background: 0 0% 97%;
-    --sidebar-foreground: 215 50% 15%;
-    --sidebar-primary: 215 85% 45%;
+    /* Sidebar con más color */
+    --sidebar-background: 215 30% 85%;
+    --sidebar-foreground: 215 60% 12%;
+    --sidebar-primary: 215 90% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 215 50% 15%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 215 85% 45%;
+    --sidebar-accent: 215 60% 75%;
+    --sidebar-accent-foreground: 215 60% 12%;
+    --sidebar-border: 215 40% 70%;
+    --sidebar-ring: 215 90% 40%;
   }
 
   .dark {
