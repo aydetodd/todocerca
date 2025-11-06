@@ -33,6 +33,8 @@ export interface TrackingInvitation {
 }
 
 export const useTrackingGroup = () => {
+  const [allGroups, setAllGroups] = useState<TrackingGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [group, setGroup] = useState<TrackingGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [invitations, setInvitations] = useState<TrackingInvitation[]>([]);
@@ -40,9 +42,21 @@ export const useTrackingGroup = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchGroup();
+    fetchAllGroups();
     checkPendingInvitations();
   }, []);
+
+  // Cuando cambia el grupo seleccionado, actualizar el grupo actual
+  useEffect(() => {
+    if (selectedGroupId) {
+      const selectedGroup = allGroups.find(g => g.id === selectedGroupId);
+      if (selectedGroup) {
+        setGroup(selectedGroup);
+        fetchMembers(selectedGroup.id);
+        fetchInvitations(selectedGroup.id);
+      }
+    }
+  }, [selectedGroupId, allGroups]);
 
   // Suscripciones en tiempo real en un useEffect separado que depende del group.id
   useEffect(() => {
@@ -163,7 +177,7 @@ export const useTrackingGroup = () => {
       }
 
       // Refrescar datos del grupo
-      await fetchGroup();
+      await fetchAllGroups();
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
       toast({
@@ -175,51 +189,59 @@ export const useTrackingGroup = () => {
     }
   };
 
-  const fetchGroup = async () => {
+  const fetchAllGroups = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: ownerGroup, error: ownerError } = await supabase
+      // Obtener grupos donde soy dueño
+      const { data: ownerGroups, error: ownerError } = await supabase
         .from('tracking_groups')
         .select('*')
-        .eq('owner_id', user.id)
-        .maybeSingle();
+        .eq('owner_id', user.id);
 
       if (ownerError) throw ownerError;
 
-      if (ownerGroup) {
-        setGroup(ownerGroup as TrackingGroup);
-        await fetchMembers(ownerGroup.id);
-        await fetchInvitations(ownerGroup.id);
-      } else {
-        const { data: memberData, error: memberError } = await supabase
-          .from('tracking_group_members')
-          .select('group_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // Obtener grupos donde soy miembro
+      const { data: memberData, error: memberError } = await supabase
+        .from('tracking_group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
 
-        if (memberError) throw memberError;
+      if (memberError) throw memberError;
 
-        if (memberData) {
-          const { data: memberGroup, error: groupError } = await supabase
-            .from('tracking_groups')
-            .select('*')
-            .eq('id', memberData.group_id)
-            .single();
+      let memberGroups: TrackingGroup[] = [];
+      if (memberData && memberData.length > 0) {
+        const groupIds = memberData.map(m => m.group_id);
+        const { data: groups, error: groupsError } = await supabase
+          .from('tracking_groups')
+          .select('*')
+          .in('id', groupIds);
 
-          if (groupError) throw groupError;
-          
-          setGroup(memberGroup as TrackingGroup);
-          await fetchMembers(memberGroup.id);
-        }
+        if (groupsError) throw groupsError;
+        memberGroups = (groups || []) as TrackingGroup[];
+      }
+
+      // Combinar ambos arrays y eliminar duplicados
+      const allGroupsData = [...(ownerGroups || []), ...memberGroups];
+      const uniqueGroups = Array.from(
+        new Map(allGroupsData.map(g => [g.id, g])).values()
+      ) as TrackingGroup[];
+
+      setAllGroups(uniqueGroups);
+
+      // Si no hay grupo seleccionado, seleccionar el primero
+      if (uniqueGroups.length > 0 && !selectedGroupId) {
+        setSelectedGroupId(uniqueGroups[0].id);
       }
     } catch (error) {
-      console.error('Error fetching group:', error);
+      console.error('Error fetching groups:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchGroup = fetchAllGroups; // Mantener compatibilidad
 
   const fetchMembers = async (groupId: string) => {
     const { data, error } = await supabase
@@ -293,7 +315,8 @@ export const useTrackingGroup = () => {
         description: 'Ahora necesitas activar la suscripción para empezar a usar el tracking.'
       });
 
-      await fetchGroup();
+      await fetchAllGroups();
+      setSelectedGroupId(newGroup.id);
       return newGroup;
     } catch (error: any) {
       console.error('Error creating group:', error);
@@ -419,6 +442,9 @@ export const useTrackingGroup = () => {
   };
 
   return {
+    allGroups,
+    selectedGroupId,
+    setSelectedGroupId,
     group,
     members,
     invitations,
@@ -430,6 +456,6 @@ export const useTrackingGroup = () => {
     updateGroupName,
     acceptInvitation,
     checkPendingInvitations,
-    refetch: fetchGroup
+    refetch: fetchAllGroups
   };
 };

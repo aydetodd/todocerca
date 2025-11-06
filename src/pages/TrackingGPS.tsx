@@ -18,7 +18,7 @@ const TrackingGPS = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, acceptInvitation, checkPendingInvitations, refetch } = useTrackingGroup();
+  const { allGroups, selectedGroupId, setSelectedGroupId, group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, acceptInvitation, checkPendingInvitations, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
   const [myInvitations, setMyInvitations] = useState<any[]>([]);
   
@@ -304,6 +304,48 @@ const TrackingGPS = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver
         </Button>
+
+        {/* Selector de Grupos */}
+        {allGroups.length > 1 && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Mis Grupos ({allGroups.length})
+              </CardTitle>
+              <CardDescription>
+                Selecciona el grupo que deseas visualizar
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {allGroups.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedGroupId(g.id)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      selectedGroupId === g.id
+                        ? 'border-primary bg-primary/5 shadow-md'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-base">{g.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {g.owner_id === currentUserId ? 'Dueño' : 'Miembro'}
+                        </p>
+                      </div>
+                      <Badge variant={g.subscription_status === 'active' ? 'default' : 'secondary'}>
+                        {g.subscription_status === 'active' ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Invitaciones Pendientes para Aceptar */}
         {myInvitations.length > 0 && (
