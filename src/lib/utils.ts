@@ -5,8 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Currency formatting utility
-
 export function formatCurrency(amount: number, locale: string = 'es-MX'): string {
   const currencyMap: Record<string, string> = {
     'es-MX': 'MXN',
