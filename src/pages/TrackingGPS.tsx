@@ -333,7 +333,89 @@ const TrackingGPS = () => {
     );
   }
 
-  if (!group) {
+  // MOSTRAR INVITACIONES PENDIENTES INCLUSO SI NO HAY GRUPO
+  const hasInvitations = myInvitations.length > 0;
+  console.log('[TRACKING GPS] ¿Tiene invitaciones?', hasInvitations, myInvitations);
+
+  // SI NO HAY GRUPO PERO SÍ HAY INVITACIONES, MOSTRAR SOLO LAS INVITACIONES
+  if (!group && hasInvitations) {
+    console.log('[TRACKING GPS] Mostrando pantalla de invitaciones sin grupo');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <div className="max-w-2xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="mb-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver
+          </Button>
+
+          {/* INVITACIONES PENDIENTES */}
+          <Card className="border-primary shadow-lg">
+            <CardHeader className="bg-primary/10">
+              <CardTitle className="flex items-center gap-2 text-primary text-2xl">
+                <UserPlus className="h-6 w-6" />
+                ¡Tienes {myInvitations.length} Invitación(es) Pendiente(s)!
+              </CardTitle>
+              <CardDescription className="text-base">
+                Te han invitado a unirte a {myInvitations.length === 1 ? 'un grupo' : 'grupos'} de tracking GPS
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {myInvitations.map((invite: any) => (
+                  <div key={invite.id} className="border-2 border-primary/30 rounded-lg p-6 space-y-4 bg-primary/5">
+                    <div>
+                      <p className="font-bold text-2xl text-primary mb-2">
+                        {invite.tracking_groups?.name || 'Grupo Familiar'}
+                      </p>
+                      <p className="text-base text-muted-foreground">
+                        Tu apodo en el grupo: <span className="font-semibold text-foreground text-lg">{invite.nickname}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Expira: {new Date(invite.expires_at).toLocaleDateString('es-MX', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          console.log('[TRACKING GPS] Aceptando invitación:', invite.id);
+                          await acceptInvitation(invite.id, invite.group_id, invite.nickname);
+                          const invites = await checkPendingInvitations();
+                          setMyInvitations(invites || []);
+                          toast({
+                            title: '¡Unido exitosamente!',
+                            description: 'Ya eres parte del grupo'
+                          });
+                        } catch (error) {
+                          console.error('[TRACKING GPS] Error aceptando invitación:', error);
+                        }
+                      }}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      Aceptar y Unirme al Grupo
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!group && !hasInvitations) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
         <div className="max-w-2xl mx-auto">
