@@ -961,6 +961,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_user_email_by_id: { Args: { p_user_id: string }; Returns: string }
       has_valid_tracking_invitation: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean

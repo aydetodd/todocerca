@@ -104,7 +104,7 @@ const Auth = () => {
       if (isLogin) {
         console.log('🔑 Attempting login with phone...');
         
-        // Buscar perfil por teléfono
+        // Buscar perfil por teléfono (busca con formato completo primero)
         let profileData = null;
         const { data: fullFormatData } = await supabase
           .from('profiles')
@@ -115,6 +115,7 @@ const Auth = () => {
         if (fullFormatData) {
           profileData = fullFormatData;
         } else {
+          // Buscar por últimos 10 dígitos si no se encuentra con formato completo
           const phoneDigits = telefono.replace(/\D/g, '').slice(-10);
           const { data: partialData } = await supabase
             .from('profiles')
@@ -129,8 +130,17 @@ const Auth = () => {
           throw new Error('Número de teléfono no encontrado');
         }
 
-        // Email generado para autenticación
-        const emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        console.log('📱 Profile found:', profileData);
+
+        // Obtener el email del usuario usando una función segura
+        const { data: userData } = await supabase.rpc('get_user_email_by_id', {
+          p_user_id: profileData.user_id
+        });
+        
+        // Usar el email real del usuario o generar uno
+        const emailToUse = userData || `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        
+        console.log('📧 Using email for login:', emailToUse);
         
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailToUse,
