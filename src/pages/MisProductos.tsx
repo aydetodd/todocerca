@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Map, ArrowLeft, User, ClipboardList } from 'lucide-react';
+import { MapPin, LogOut, ArrowLeft, User, ClipboardList } from 'lucide-react';
 import ProductManagement from '@/components/ProductManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -125,10 +125,6 @@ export default function MisProductos() {
               <Button variant="outline" size="sm" onClick={() => navigate('/gestion-pedidos')}>
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Pedidos
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/mapa')}>
-                <Map className="h-4 w-4 mr-2" />
-                Mapa
               </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />

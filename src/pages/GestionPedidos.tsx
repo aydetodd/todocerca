@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Map, ArrowLeft, User, Package } from 'lucide-react';
+import { MapPin, LogOut, ArrowLeft, User, Package } from 'lucide-react';
 import { OrdersManagement } from '@/components/OrdersManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -125,10 +125,6 @@ export default function GestionPedidos() {
               <Button variant="outline" size="sm" onClick={() => navigate('/mis-productos')}>
                 <Package className="h-4 w-4 mr-2" />
                 Productos
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/mapa')}>
-                <Map className="h-4 w-4 mr-2" />
-                Mapa
               </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
