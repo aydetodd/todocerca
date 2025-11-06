@@ -6,11 +6,16 @@ const urlsToCache = [
   '/src/index.css'
 ];
 
-// Install service worker
+// Install service worker and force immediate activation
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      return caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache));
+    })
   );
   self.skipWaiting();
 });
