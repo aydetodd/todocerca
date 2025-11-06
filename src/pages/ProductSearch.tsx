@@ -307,7 +307,9 @@ const ProductSearch = () => {
               Volver a Resultados
             </Button>
           </div>
-          <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
+          <div className="h-full w-full">
+            <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
+          </div>
         </div>
       )}
 

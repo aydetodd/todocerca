@@ -282,7 +282,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
 
   if (validProviders.length === 0) {
     return (
-      <div className="w-full h-[500px] rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
+      <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
         <p className="text-muted-foreground">No hay proveedores con ubicación disponible</p>
       </div>
     );
@@ -292,7 +292,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     <>
       <div 
         ref={mapContainerRef}
-        className="w-full h-[500px] rounded-lg overflow-hidden border"
+        className="w-full h-full rounded-lg overflow-hidden border"
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
