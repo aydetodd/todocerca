@@ -279,8 +279,8 @@ Paleta: Azul marino profundo con acentos brillantes
 */
 @layer base {
   :root {
-    /* Fondos claros con toque azul suave */
-    --background: 210 30% 98%;
+    /* Fondos gris claro neutro */
+    --background: 0 0% 96%;
     --foreground: 215 50% 15%;
 
     /* Cards y popovers con blanco puro */
@@ -294,12 +294,12 @@ Paleta: Azul marino profundo con acentos brillantes
     --primary: 215 85% 45%; 
     --primary-foreground: 0 0% 100%;
 
-    /* Secundario azul muy claro */
-    --secondary: 215 40% 95%;
+    /* Secundario gris claro */
+    --secondary: 0 0% 94%;
     --secondary-foreground: 215 50% 15%;
 
-    /* Muteds con toque azul */
-    --muted: 215 35% 96%;
+    /* Muteds gris neutro */
+    --muted: 0 0% 92%;
     --muted-foreground: 215 15% 45%;
 
     /* Accent azul eléctrico */
@@ -310,28 +310,28 @@ Paleta: Azul marino profundo con acentos brillantes
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Bordes sutiles */
-    --border: 215 25% 88%;
-    --input: 215 25% 88%;
+    /* Bordes sutiles grises */
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
     --ring: 215 85% 45%;
 
     --radius: 0.75rem;
 
-    /* Sidebar con fondo claro azulado */
-    --sidebar-background: 215 40% 97%;
+    /* Sidebar con fondo gris claro */
+    --sidebar-background: 0 0% 97%;
     --sidebar-foreground: 215 50% 15%;
     --sidebar-primary: 215 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 40% 95%;
+    --sidebar-accent: 0 0% 94%;
     --sidebar-accent-foreground: 215 50% 15%;
-    --sidebar-border: 215 25% 85%;
+    --sidebar-border: 0 0% 88%;
     --sidebar-ring: 215 85% 45%;
   }
 
   .dark {
-    /* Modo oscuro con azul marino profundo */
-    --background: 215 50% 10%;
-    --foreground: 210 30% 98%;
+    /* Modo oscuro con gris profundo */
+    --background: 0 0% 12%;
+    --foreground: 0 0% 98%;
 
     /* Cards oscuros con azul */
     --card: 215 45% 13%;
