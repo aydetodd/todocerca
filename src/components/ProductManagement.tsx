@@ -38,6 +38,7 @@ interface Product {
   category_id: string;
   keywords: string;
   is_available: boolean;
+  is_mobile: boolean;
   stock: number;
   foto_url?: string;
 }
@@ -71,6 +72,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     category_id: '',
     keywords: '',
     is_available: true,
+    is_mobile: false,
     stock: 0,
   });
 
@@ -154,6 +156,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         category_id: product.category_id,
         keywords: product.keywords || '',
         is_available: product.is_available,
+        is_mobile: product.is_mobile,
         stock: product.stock,
       });
     } else {
@@ -166,6 +169,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         category_id: '',
         keywords: '',
         is_available: true,
+        is_mobile: false,
         stock: 0,
       });
     }
@@ -505,6 +509,18 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   onChange={(e) => setFormData({...formData, keywords: e.target.value})}
                   placeholder="Ej: fresco, orgánico, temporada"
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="is_mobile"
+                  checked={formData.is_mobile}
+                  onChange={(e) => setFormData({...formData, is_mobile: e.target.checked})}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="is_mobile" className="text-sm font-normal cursor-pointer">
+                  Este producto se vende en ubicación móvil (vendedor ambulante)
+                </Label>
               </div>
               <div>
                 <Label htmlFor="photos">Fotos del Producto</Label>

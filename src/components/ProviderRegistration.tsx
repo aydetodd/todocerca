@@ -72,35 +72,9 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   }, []);
 
   const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      console.log('Geolocalización no disponible');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        console.log('📍 Ubicación obtenida:', { latitude, longitude });
-        setProviderData(prev => ({
-          ...prev,
-          latitude,
-          longitude
-        }));
-        toast({
-          title: "Ubicación obtenida",
-          description: "Se detectó tu ubicación automáticamente",
-        });
-      },
-      (error) => {
-        console.log('Error obteniendo ubicación:', error);
-        // No mostramos error al usuario para no ser intrusivos
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      }
-    );
+    // NO obtener ubicación GPS automáticamente
+    // La ubicación debe derivarse de la dirección del negocio ingresada
+    console.log('📍 Ubicación del negocio debe ingresarse como dirección');
   };
 
   const fetchCategories = async () => {
@@ -377,15 +351,12 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         />
       </div>
       <div className="space-y-2">
-        {providerData.latitude && providerData.longitude ? (
-          <p className="text-xs text-green-600">
-            ✓ Ubicación GPS detectada automáticamente
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            📍 Ubicación GPS se detectará automáticamente
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          💡 Tu ubicación en el mapa se mostrará según la dirección del negocio que ingreses
+        </p>
+        <p className="text-xs text-muted-foreground">
+          📍 Si vendes productos móviles (vendedor ambulante), marca la casilla correspondiente al registrar cada producto
+        </p>
       </div>
     </div>
   );

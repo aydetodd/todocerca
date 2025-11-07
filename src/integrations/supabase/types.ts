@@ -503,6 +503,7 @@ export type Database = {
           descripcion: string | null
           id: string
           is_available: boolean | null
+          is_mobile: boolean
           keywords: string | null
           nombre: string
           precio: number
@@ -517,6 +518,7 @@ export type Database = {
           descripcion?: string | null
           id?: string
           is_available?: boolean | null
+          is_mobile?: boolean
           keywords?: string | null
           nombre: string
           precio: number
@@ -531,6 +533,7 @@ export type Database = {
           descripcion?: string | null
           id?: string
           is_available?: boolean | null
+          is_mobile?: boolean
           keywords?: string | null
           nombre?: string
           precio?: number
