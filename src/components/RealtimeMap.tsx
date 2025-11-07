@@ -40,38 +40,36 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       mapRef.current = null;
     }
     
-    if (!mapRef.current) {
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const map = L.map('map', { attributionControl: false }).setView(
-              [position.coords.latitude, position.coords.longitude], 
-              13
-            );
+    // Try to get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const map = L.map('map', { attributionControl: false }).setView(
+            [position.coords.latitude, position.coords.longitude], 
+            13
+          );
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            mapRef.current = map;
-          },
-          (error) => {
-            console.error('Error getting location:', error);
-            // Fallback to Querétaro if location access denied
-            const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
+          mapRef.current = map;
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to Querétaro if location access denied
+          const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            mapRef.current = map;
-          }
-        );
-      } else {
-        // Fallback if geolocation not supported
-        const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
+          mapRef.current = map;
+        }
+      );
+    } else {
+      // Fallback if geolocation not supported
+      const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        mapRef.current = map;
-      }
+      mapRef.current = map;
     }
 
     return () => {

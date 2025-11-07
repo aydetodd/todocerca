@@ -90,12 +90,33 @@ serve(async (req) => {
     }
 
     const subscription = subscriptions.data[0];
+    
+    // Validate subscription dates
+    if (!subscription.current_period_end || !subscription.current_period_start) {
+      logStep("Invalid subscription dates", { 
+        subscriptionId: subscription.id,
+        hasEnd: !!subscription.current_period_end,
+        hasStart: !!subscription.current_period_start
+      });
+      throw new Error('Suscripción sin fechas válidas');
+    }
+    
     const subscriptionEnd = new Date(subscription.current_period_end * 1000);
     const subscriptionStart = new Date(subscription.current_period_start * 1000);
+    
+    // Validate the Date objects are valid
+    if (isNaN(subscriptionEnd.getTime()) || isNaN(subscriptionStart.getTime())) {
+      logStep("Invalid Date objects created", { 
+        end: subscription.current_period_end,
+        start: subscription.current_period_start
+      });
+      throw new Error('Fechas de suscripción inválidas');
+    }
+    
     logStep("Active subscription found", { 
       subscriptionId: subscription.id, 
-      startDate: subscriptionStart,
-      endDate: subscriptionEnd 
+      startDate: subscriptionStart.toISOString(),
+      endDate: subscriptionEnd.toISOString()
     });
 
     // Sync subscription to database
