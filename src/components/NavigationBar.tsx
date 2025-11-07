@@ -1,3 +1,4 @@
+import React from "react";
 import { Home, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
