@@ -125,7 +125,7 @@ export const useRealtimeLocations = () => {
 
     fetchLocations();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with more specific filters
     const channel = supabase
       .channel('proveedor_locations_changes')
       .on(
@@ -135,7 +135,8 @@ export const useRealtimeLocations = () => {
           schema: 'public',
           table: 'proveedor_locations'
         },
-        () => {
+        (payload) => {
+          console.log('[RealtimeMap] proveedor_locations changed:', payload);
           fetchLocations();
         }
       )
@@ -146,11 +147,14 @@ export const useRealtimeLocations = () => {
           schema: 'public',
           table: 'profiles'
         },
-        () => {
+        (payload) => {
+          console.log('[RealtimeMap] profiles changed:', payload);
           fetchLocations();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[RealtimeMap] Subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
