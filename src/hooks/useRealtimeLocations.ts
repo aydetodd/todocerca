@@ -119,7 +119,12 @@ export const useRealtimeLocations = () => {
       }) || [];
 
       // Only show users with active subscription, provider role, and available/busy status
-      setLocations(merged.filter(l => l.profiles) as ProveedorLocation[]);
+      const filtered = merged.filter(l => l.profiles) as ProveedorLocation[];
+      console.log('📍 [RealtimeMap] Locations updated:', filtered.length, 'providers');
+      filtered.forEach(loc => {
+        console.log(`  - ${loc.profiles?.apodo} (${loc.is_taxi ? '🚕 TAXI' : '👤'}): [${loc.latitude}, ${loc.longitude}]`);
+      });
+      setLocations(filtered);
       setLoading(false);
     };
 
@@ -135,8 +140,9 @@ export const useRealtimeLocations = () => {
           schema: 'public',
           table: 'proveedor_locations'
         },
-        () => {
-          console.log('[RealtimeMap] proveedor_locations changed - refetching');
+        (payload) => {
+          console.log('🚕 [RealtimeMap] proveedor_locations CHANGED:', payload);
+          console.log('🔄 Refetching all locations...');
           fetchLocations();
         }
       )
@@ -147,12 +153,14 @@ export const useRealtimeLocations = () => {
           schema: 'public',
           table: 'profiles'
         },
-        () => {
-          console.log('[RealtimeMap] profiles changed - refetching');
+        (payload) => {
+          console.log('👤 [RealtimeMap] profiles changed:', payload);
           fetchLocations();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [RealtimeMap] Subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

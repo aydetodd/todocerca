@@ -107,6 +107,8 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
   useEffect(() => {
     if (!mapRef.current || !currentUserId) return;
 
+    console.log('🗺️ [RealtimeMap] Updating markers for', locations.length, 'locations');
+    
     // Simple approach: Clear all markers and recreate them (like TrackingMap)
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
