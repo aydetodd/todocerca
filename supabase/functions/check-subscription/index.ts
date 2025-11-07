@@ -19,7 +19,8 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
   try {
@@ -42,12 +43,27 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Get profile_id
+    const { data: profileData, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profileData) {
+      throw new Error('Profile not found');
+    }
+    logStep("Profile found", { profileId: profileData.id });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
       logStep("No customer found, returning unsubscribed state");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        message: 'No se encontró cliente en Stripe'
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -61,20 +77,77 @@ serve(async (req) => {
       status: "active",
       limit: 1,
     });
-    const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd = null;
+    
+    if (subscriptions.data.length === 0) {
+      logStep("No active subscriptions found");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        message: 'No se encontró suscripción activa en Stripe'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+    const subscription = subscriptions.data[0];
+    const subscriptionEnd = new Date(subscription.current_period_end * 1000);
+    const subscriptionStart = new Date(subscription.current_period_start * 1000);
+    logStep("Active subscription found", { 
+      subscriptionId: subscription.id, 
+      startDate: subscriptionStart,
+      endDate: subscriptionEnd 
+    });
+
+    // Sync subscription to database
+    const { data: existingSub } = await supabaseClient
+      .from('subscriptions')
+      .select('id')
+      .eq('profile_id', profileData.id)
+      .eq('stripe_subscription_id', subscription.id)
+      .maybeSingle();
+
+    if (existingSub) {
+      // Update existing subscription
+      const { error: updateError } = await supabaseClient
+        .from('subscriptions')
+        .update({
+          status: 'activa',
+          end_date: subscriptionEnd.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingSub.id);
+
+      if (updateError) {
+        logStep("Error updating subscription", { error: updateError });
+        throw updateError;
+      }
+      logStep("Subscription updated in database");
     } else {
-      logStep("No active subscription found");
+      // Insert new subscription
+      const { error: insertError } = await supabaseClient
+        .from('subscriptions')
+        .insert({
+          profile_id: profileData.id,
+          stripe_subscription_id: subscription.id,
+          status: 'activa',
+          start_date: subscriptionStart.toISOString(),
+          end_date: subscriptionEnd.toISOString(),
+          amount: 200.00,
+          currency: 'MXN',
+          payment_method: 'stripe'
+        });
+
+      if (insertError) {
+        logStep("Error inserting subscription", { error: insertError });
+        throw insertError;
+      }
+      logStep("Subscription inserted in database");
     }
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      subscription_end: subscriptionEnd
+      subscribed: true,
+      subscription_end: subscriptionEnd.toISOString(),
+      message: 'Suscripción sincronizada correctamente'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
