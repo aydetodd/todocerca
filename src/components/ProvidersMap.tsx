@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -44,7 +43,6 @@ interface ProvidersMapProps {
 }
 
 const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
-  const navigate = useNavigate();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -281,7 +279,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     });
 
     console.log('✅ Markers updated:', markersRef.current.size);
-  }, [validProviders, navigate, onOpenChat]);
+  }, [validProviders, onOpenChat]);
 
   // Setup global functions once
   useEffect(() => {
@@ -305,7 +303,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     };
 
     (window as any).goToProviderProfile = (providerId: string) => {
-      navigate(`/proveedor/${providerId}`);
+      window.location.href = `/proveedor/${providerId}`;
     };
 
     (window as any).showProductDetails = (providerId: string, productIndex: number) => {
@@ -318,7 +316,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         setIsDialogOpen(true);
       }
     };
-  }, [navigate, onOpenChat, providers]);
+  }, [onOpenChat, providers]);
 
   if (validProviders.length === 0) {
     return (
