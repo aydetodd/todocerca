@@ -6,6 +6,7 @@ import { StatusControl } from '@/components/StatusControl';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MapView() {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function MapView() {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isProvider, setIsProvider] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -31,6 +33,10 @@ export default function MapView() {
         setIsProvider(true);
 
         console.log('[MapView] Syncing subscription from Stripe...');
+        toast({
+          title: "Verificando suscripción...",
+          description: "Sincronizando con Stripe",
+        });
         
         // Call check-subscription to sync from Stripe
         const { data: { session } } = await supabase.auth.getSession();
@@ -47,15 +53,38 @@ export default function MapView() {
 
             if (syncError) {
               console.error('[MapView] Error syncing subscription:', syncError);
+              toast({
+                title: "Error al sincronizar",
+                description: syncError.message,
+                variant: "destructive"
+              });
             } else {
               console.log('[MapView] Subscription sync result:', syncResult);
+              if (syncResult?.subscribed) {
+                toast({
+                  title: "✅ Suscripción activa",
+                  description: "Tu taxi aparecerá en el mapa",
+                });
+                setHasActiveSubscription(true);
+              } else {
+                toast({
+                  title: "⚠️ Sin suscripción activa",
+                  description: syncResult?.message || "No se encontró suscripción en Stripe",
+                  variant: "destructive"
+                });
+              }
             }
           } catch (err) {
             console.error('[MapView] Exception syncing subscription:', err);
+            toast({
+              title: "Error",
+              description: "No se pudo verificar la suscripción",
+              variant: "destructive"
+            });
           }
         }
 
-        // Check for active subscription in database
+        // Also check database in case sync just completed
         const { data: subscription } = await supabase
           .from('subscriptions')
           .select('status, end_date')
@@ -64,7 +93,6 @@ export default function MapView() {
           .maybeSingle();
 
         if (subscription) {
-          // Check if subscription hasn't ended
           if (!subscription.end_date || new Date(subscription.end_date) > new Date()) {
             setHasActiveSubscription(true);
           }
