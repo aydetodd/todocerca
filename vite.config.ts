@@ -16,8 +16,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
     dedupe: ['react', 'react-dom'],
   },
@@ -25,6 +23,8 @@ export default defineConfig(({ mode }) => ({
     include: [
       'react', 
       'react-dom',
+      'react/jsx-runtime',
+      'react-dom/client',
       '@radix-ui/react-tooltip',
       '@radix-ui/react-slot',
       '@supabase/supabase-js',
@@ -34,10 +34,17 @@ export default defineConfig(({ mode }) => ({
       resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
     },
   },
-  cacheDir: '.vite',
   build: {
     commonjsOptions: {
       include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-dom/client'],
+        },
+      },
     },
   },
   clearScreen: false,
