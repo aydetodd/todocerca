@@ -153,6 +153,7 @@ export const useTrackingLocations = (groupId: string | null) => {
         longitude
       });
 
+      // Actualizar en tracking_member_locations
       const { data, error } = await supabase
         .from('tracking_member_locations')
         .upsert({
@@ -167,11 +168,37 @@ export const useTrackingLocations = (groupId: string | null) => {
         .select();
 
       if (error) {
-        console.error('[DEBUG] Error updating location:', error);
+        console.error('[DEBUG] Error updating tracking location:', error);
         throw error;
       }
       
-      console.log('[DEBUG] Location updated successfully:', data);
+      console.log('[DEBUG] Tracking location updated successfully:', data);
+
+      // TAMBIÉN actualizar en proveedor_locations para que aparezca en el mapa de proveedores
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileData?.role === 'proveedor') {
+        const { error: proveedorError } = await supabase
+          .from('proveedor_locations')
+          .upsert({
+            user_id: user.id,
+            latitude,
+            longitude,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (proveedorError) {
+          console.error('[DEBUG] Error updating proveedor location:', proveedorError);
+        } else {
+          console.log('[DEBUG] ✅ Proveedor location ALSO updated for taxi map');
+        }
+      }
     } catch (error) {
       console.error('Error updating location:', error);
     }
