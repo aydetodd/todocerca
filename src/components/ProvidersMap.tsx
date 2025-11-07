@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Phone, MessageCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -46,22 +47,43 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
   const navigate = useNavigate();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  console.log('🗺️ ProvidersMap recibió proveedores:', providers);
+  // Get real-time locations
+  const { locations: realtimeLocations } = useRealtimeLocations();
+
+  console.log('🗺️ ProvidersMap - proveedores recibidos:', providers);
+  console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations);
+  
+  // Merge provider data with real-time locations
+  const providersWithRealtimeLocation = providers.map(provider => {
+    const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
+    if (realtimeLocation) {
+      console.log(`🔄 Actualizando ubicación para ${provider.business_name}:`, {
+        old: { lat: provider.latitude, lng: provider.longitude },
+        new: { lat: realtimeLocation.latitude, lng: realtimeLocation.longitude }
+      });
+      return {
+        ...provider,
+        latitude: realtimeLocation.latitude,
+        longitude: realtimeLocation.longitude
+      };
+    }
+    return provider;
+  });
   
   // Filter providers with valid coordinates
-  const validProviders = providers.filter(p => p.latitude && p.longitude);
+  const validProviders = providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
   console.log('✅ Proveedores válidos con coordenadas:', validProviders);
   
+  // Initialize map once
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    
-    // Clean up previous map instance
     if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
+      console.log('🗺️ Map already initialized');
+      return;
     }
 
     if (validProviders.length === 0) return;
@@ -73,7 +95,29 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // Add markers
+    mapRef.current = map;
+    console.log('🗺️ Map initialized');
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersRef.current.clear();
+      }
+    };
+  }, []);
+
+  // Update markers when providers change
+  useEffect(() => {
+    if (!mapRef.current || validProviders.length === 0) return;
+
+    console.log('🔄 Updating markers for providers:', validProviders.length);
+
+    // Remove all existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.clear();
+
+    // Add/update markers
     validProviders.forEach((provider) => {
       // Check if provider has taxi products
       const isTaxi = provider.productos.some(p => 
@@ -164,8 +208,8 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
       }
       
       const marker = isTaxi 
-        ? L.marker([provider.latitude, provider.longitude], { icon }).addTo(map)
-        : L.marker([provider.latitude, provider.longitude]).addTo(map);
+        ? L.marker([provider.latitude, provider.longitude], { icon }).addTo(mapRef.current!)
+        : L.marker([provider.latitude, provider.longitude]).addTo(mapRef.current!);
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
@@ -231,10 +275,16 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         closeOnClick: false,
         maxWidth: 350
       });
+
+      // Store marker reference
+      markersRef.current.set(provider.user_id, marker);
     });
 
-    mapRef.current = map;
+    console.log('✅ Markers updated:', markersRef.current.size);
+  }, [validProviders, navigate, onOpenChat]);
 
+  // Setup global functions once
+  useEffect(() => {
     // Add global functions for popup buttons
     (window as any).makeCall = (phone: string) => {
       window.location.href = `tel:${phone}`;
@@ -259,7 +309,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
     };
 
     (window as any).showProductDetails = (providerId: string, productIndex: number) => {
-      const provider = validProviders.find(p => p.id === providerId);
+      const provider = providers.find(p => p.id === providerId);
       if (provider && provider.productos[productIndex]) {
         setSelectedProduct({ 
           provider, 
@@ -268,15 +318,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         setIsDialogOpen(true);
       }
     };
-
-    // Cleanup on unmount
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [validProviders]);
+  }, [navigate, onOpenChat, providers]);
 
   if (validProviders.length === 0) {
     return (
