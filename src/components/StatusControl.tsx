@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 type UserStatus = 'available' | 'busy' | 'offline';
 
 export const StatusControl = () => {
-  const [status, setStatus] = useState<UserStatus>('offline');
+  const [status, setStatus] = useState<UserStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -23,7 +23,7 @@ export const StatusControl = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('estado')
+        .select('estado, role')
         .eq('user_id', user.id)
         .single();
 
@@ -32,10 +32,10 @@ export const StatusControl = () => {
         return;
       }
 
-      if (data?.estado) {
-        console.log('[StatusControl] Current status:', data.estado);
-        setStatus(data.estado as UserStatus);
-      }
+      // Si es proveedor y no tiene estado, usar 'available' por defecto
+      const currentStatus = data?.estado || (data?.role === 'proveedor' ? 'available' : 'offline');
+      console.log('[StatusControl] Current status:', currentStatus);
+      setStatus(currentStatus as UserStatus);
     };
 
     fetchStatus();

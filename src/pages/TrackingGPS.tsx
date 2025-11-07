@@ -35,7 +35,7 @@ const TrackingGPS = () => {
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
   const [additionalDevices, setAdditionalDevices] = useState(1);
   const [showAddDevicesDialog, setShowAddDevicesDialog] = useState(false);
-  const [userStatus, setUserStatus] = useState<'available' | 'busy' | 'offline'>('offline');
+  const [userStatus, setUserStatus] = useState<'available' | 'busy' | 'offline' | null>(null);
 
   // Verificar y sincronizar el estado del usuario automáticamente
   useEffect(() => {
@@ -46,18 +46,21 @@ const TrackingGPS = () => {
         console.log('[TRACKING GPS] Current user ID:', user.id);
         console.log('[TRACKING GPS] Current user email:', user.email);
         
-        // Obtener estado actual del usuario
+        // Obtener estado actual del usuario (o usar 'available' por defecto para proveedores)
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('estado')
+          .select('estado, role')
           .eq('user_id', user.id)
           .single();
         
-        if (profileData?.estado) {
-          console.log('[TRACKING GPS] Estado del usuario:', profileData.estado);
-          setUserStatus(profileData.estado as 'available' | 'busy' | 'offline');
+        if (profileData) {
+          // Si es proveedor y no tiene estado, usar 'available' por defecto
+          const currentStatus = profileData.estado || (profileData.role === 'proveedor' ? 'available' : 'offline');
+          console.log('[TRACKING GPS] Estado del usuario:', currentStatus);
+          setUserStatus(currentStatus as 'available' | 'busy' | 'offline');
+          
           // Auto-activar seguimiento si el estado NO es offline
-          if (profileData.estado !== 'offline') {
+          if (currentStatus !== 'offline') {
             setIsSharing(true);
             console.log('[TRACKING GPS] 🟢 Auto-activando seguimiento de ubicación');
           }
