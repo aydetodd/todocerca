@@ -34,10 +34,10 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
   // Initialize map with user's location
   useEffect(() => {
-    // Cleanup existing map if any
+    // Prevent double initialization
     if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
+      console.log('🗺️ Map already initialized, skipping');
+      return;
     }
     
     // Try to get user's current location

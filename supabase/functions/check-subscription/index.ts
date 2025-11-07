@@ -91,26 +91,31 @@ serve(async (req) => {
 
     const subscription = subscriptions.data[0];
     
-    // Validate subscription dates
-    if (!subscription.current_period_end || !subscription.current_period_start) {
-      logStep("Invalid subscription dates", { 
-        subscriptionId: subscription.id,
-        hasEnd: !!subscription.current_period_end,
-        hasStart: !!subscription.current_period_start
-      });
-      throw new Error('Suscripción sin fechas válidas');
-    }
+    // Handle subscription dates - use defaults for manual/lifetime subscriptions
+    let subscriptionEnd: Date;
+    let subscriptionStart: Date;
     
-    const subscriptionEnd = new Date(subscription.current_period_end * 1000);
-    const subscriptionStart = new Date(subscription.current_period_start * 1000);
-    
-    // Validate the Date objects are valid
-    if (isNaN(subscriptionEnd.getTime()) || isNaN(subscriptionStart.getTime())) {
-      logStep("Invalid Date objects created", { 
-        end: subscription.current_period_end,
-        start: subscription.current_period_start
+    if (subscription.current_period_end && subscription.current_period_start) {
+      // Normal recurring subscription with valid dates
+      subscriptionEnd = new Date(subscription.current_period_end * 1000);
+      subscriptionStart = new Date(subscription.current_period_start * 1000);
+      
+      // Validate the Date objects are valid
+      if (isNaN(subscriptionEnd.getTime()) || isNaN(subscriptionStart.getTime())) {
+        logStep("Invalid Date objects created", { 
+          end: subscription.current_period_end,
+          start: subscription.current_period_start
+        });
+        throw new Error('Fechas de suscripción inválidas');
+      }
+    } else {
+      // Manual/lifetime subscription - use long-term dates
+      logStep("Manual subscription without period dates, using defaults", { 
+        subscriptionId: subscription.id
       });
-      throw new Error('Fechas de suscripción inválidas');
+      subscriptionStart = new Date();
+      subscriptionEnd = new Date();
+      subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1); // 1 year from now
     }
     
     logStep("Active subscription found", { 
