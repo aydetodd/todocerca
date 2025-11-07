@@ -29,7 +29,6 @@ export default defineConfig(({ mode }) => ({
       '@radix-ui/react-slot',
       '@supabase/supabase-js',
     ],
-    force: true,
     esbuildOptions: {
       resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
     },
