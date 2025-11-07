@@ -107,11 +107,9 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
   useEffect(() => {
     if (!mapRef.current || !currentUserId) return;
 
-    // Store old positions before updating
-    const oldPositions = new Map<string, L.LatLng>();
-    Object.entries(markersRef.current).forEach(([userId, marker]) => {
-      oldPositions.set(userId, marker.getLatLng());
-    });
+    // Simple approach: Clear all markers and recreate them (like TrackingMap)
+    Object.values(markersRef.current).forEach(marker => marker.remove());
+    markersRef.current = {};
 
     // Check if current user should be shown
     const currentUserLocation = locations.find(loc => loc.user_id === currentUserId);
@@ -309,45 +307,12 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       });
 
       // Check if marker exists and update it, or create new one
-      const existingMarker = markersRef.current[location.user_id];
+      // Create new marker (simple approach like TrackingMap)
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
-      
-      let marker: L.Marker;
-      
-      if (existingMarker && oldPositions.has(location.user_id)) {
-        // Update existing marker with smooth animation
-        marker = existingMarker;
-        const oldLatLng = oldPositions.get(location.user_id)!;
-        
-        // Update icon in case status changed
-        marker.setIcon(icon);
-        
-        // Only animate if position actually changed
-        if (oldLatLng.lat !== newLatLng.lat || oldLatLng.lng !== newLatLng.lng) {
-          const steps = 20;
-          let currentStep = 0;
-          const latDiff = (newLatLng.lat - oldLatLng.lat) / steps;
-          const lngDiff = (newLatLng.lng - oldLatLng.lng) / steps;
-          
-          const animateMarker = () => {
-            if (currentStep < steps) {
-              currentStep++;
-              const lat = oldLatLng.lat + (latDiff * currentStep);
-              const lng = oldLatLng.lng + (lngDiff * currentStep);
-              marker.setLatLng([lat, lng]);
-              requestAnimationFrame(animateMarker);
-            }
-          };
-          
-          animateMarker();
-        }
-      } else {
-        // Create new marker
-        marker = L.marker(newLatLng, { 
-          icon,
-          draggable: false
-        }).addTo(mapRef.current!);
-      }
+      const marker = L.marker(newLatLng, { 
+        icon,
+        draggable: false
+      }).addTo(mapRef.current!);
 
       // Popup content
       const visibilityText = isCurrentUser && estado === 'offline' 
