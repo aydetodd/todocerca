@@ -30,7 +30,32 @@ export default function MapView() {
       if (profile?.role === 'proveedor') {
         setIsProvider(true);
 
-        // Check for active subscription
+        console.log('[MapView] Syncing subscription from Stripe...');
+        
+        // Call check-subscription to sync from Stripe
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+              'check-subscription',
+              {
+                headers: {
+                  Authorization: `Bearer ${session.access_token}`
+                }
+              }
+            );
+
+            if (syncError) {
+              console.error('[MapView] Error syncing subscription:', syncError);
+            } else {
+              console.log('[MapView] Subscription sync result:', syncResult);
+            }
+          } catch (err) {
+            console.error('[MapView] Exception syncing subscription:', err);
+          }
+        }
+
+        // Check for active subscription in database
         const { data: subscription } = await supabase
           .from('subscriptions')
           .select('status, end_date')
