@@ -11,14 +11,6 @@ const config: CapacitorConfig = {
   plugins: {
     Geolocation: {
       permissions: ['location', 'coarseLocation']
-    },
-    BackgroundRunner: {
-      label: 'com.todocerca.background.tracking',
-      src: 'background.js',
-      event: 'trackingUpdate',
-      repeat: true,
-      interval: 30,
-      autoStart: false
     }
   }
 };
