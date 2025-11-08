@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  isNativeApp, 
+  getCurrentPosition, 
+  watchPosition, 
+  clearWatch 
+} from '@/utils/capacitorLocation';
 
 export interface MemberLocation {
   id: string;
@@ -18,6 +24,7 @@ export interface MemberLocation {
 export const useTrackingLocations = (groupId: string | null) => {
   const [locations, setLocations] = useState<MemberLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [watchId, setWatchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId) {
@@ -56,10 +63,32 @@ export const useTrackingLocations = (groupId: string | null) => {
       )
       .subscribe();
 
+    // Iniciar tracking automático de ubicación si es app nativa
+    if (isNativeApp()) {
+      startLocationTracking();
+    }
+
     return () => {
       supabase.removeChannel(channel);
+      // Limpiar tracking al desmontar
+      if (watchId) {
+        clearWatch(watchId);
+      }
     };
   }, [groupId]);
+
+  const startLocationTracking = async () => {
+    try {
+      const id = await watchPosition((position) => {
+        console.log('[Capacitor] New position:', position);
+        updateMyLocation(position.latitude, position.longitude);
+      });
+      setWatchId(id);
+      console.log('[Capacitor] Location tracking started with watch ID:', id);
+    } catch (error) {
+      console.error('[Capacitor] Error starting location tracking:', error);
+    }
+  };
 
   const fetchLocations = async () => {
     if (!groupId) return;
@@ -146,7 +175,8 @@ export const useTrackingLocations = (groupId: string | null) => {
         return;
       }
 
-      console.log('[DEBUG] Updating location:', {
+      const source = isNativeApp() ? 'capacitor' : 'web';
+      console.log(`[${source.toUpperCase()}] Updating location:`, {
         user_id: user.id,
         group_id: groupId,
         latitude,

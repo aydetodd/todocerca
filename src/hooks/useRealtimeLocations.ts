@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  isNativeApp, 
+  watchPosition, 
+  clearWatch 
+} from '@/utils/capacitorLocation';
 
 export interface ProveedorLocation {
   id: string;
@@ -18,6 +23,7 @@ export interface ProveedorLocation {
 export const useRealtimeLocations = () => {
   const [locations, setLocations] = useState<ProveedorLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [watchId, setWatchId] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch initial locations
@@ -162,14 +168,47 @@ export const useRealtimeLocations = () => {
         console.log('📡 [RealtimeMap] Subscription status:', status);
       });
 
+    // Auto-track location for providers in native app
+    const startProviderTracking = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.role === 'proveedor' && isNativeApp()) {
+        try {
+          const id = await watchPosition((position) => {
+            console.log('[Capacitor Provider] New position:', position);
+            updateLocation(position.latitude, position.longitude);
+          });
+          setWatchId(id);
+          console.log('[Capacitor Provider] Auto-tracking started');
+        } catch (error) {
+          console.error('[Capacitor Provider] Error starting tracking:', error);
+        }
+      }
+    };
+
+    startProviderTracking();
+
     return () => {
       supabase.removeChannel(channel);
+      if (watchId) {
+        clearWatch(watchId);
+      }
     };
   }, []);
 
   const updateLocation = async (latitude: number, longitude: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    const source = isNativeApp() ? 'capacitor' : 'web';
+    console.log(`[${source.toUpperCase()} Provider] Updating location:`, { latitude, longitude });
 
     const { error } = await supabase
       .from('proveedor_locations')
@@ -184,6 +223,8 @@ export const useRealtimeLocations = () => {
 
     if (error) {
       console.error('Error updating location:', error);
+    } else {
+      console.log(`[${source.toUpperCase()} Provider] Location updated successfully`);
     }
   };
 
