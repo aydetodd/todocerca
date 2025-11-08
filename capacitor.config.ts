@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.85760625b6da43c890e2846dd01fbbe3',
+  appId: 'com.todocerca.app',
   appName: 'todocerca',
   webDir: 'dist',
   server: {
