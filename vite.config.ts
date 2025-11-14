@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// Force cache clear: 2025-01-07T19:43:00
+// Force cache clear: 2025-01-14T04:38:00
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      'react': path.resolve('./node_modules/react'),
+      'react-dom': path.resolve('./node_modules/react-dom'),
     },
     dedupe: ['react', 'react-dom'],
   },
@@ -34,6 +36,7 @@ export default defineConfig(({ mode }) => ({
     esbuildOptions: {
       resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
     },
+    force: true,
   },
   build: {
     commonjsOptions: {
