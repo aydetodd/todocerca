@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrackingGroup } from '@/hooks/useTrackingGroup';
 import { useTrackingLocations } from '@/hooks/useTrackingLocations';
+import { useBackgroundTracking } from '@/hooks/useBackgroundTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,9 @@ const TrackingGPS = () => {
   const [additionalDevices, setAdditionalDevices] = useState(1);
   const [showAddDevicesDialog, setShowAddDevicesDialog] = useState(false);
   const [userStatus, setUserStatus] = useState<'available' | 'busy' | 'offline' | null>(null);
+
+  // Hook para background tracking - se activa automáticamente cuando isSharing es true
+  useBackgroundTracking(isSharing, group?.id || null);
 
   // Verificar y sincronizar el estado del usuario automáticamente
   useEffect(() => {
