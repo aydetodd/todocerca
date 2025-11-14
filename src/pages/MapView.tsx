@@ -7,6 +7,7 @@ import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useBackgroundTracking } from '@/hooks/useBackgroundTracking';
 
 export default function MapView() {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
@@ -16,6 +17,9 @@ export default function MapView() {
   const [isProvider, setIsProvider] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Enable background tracking for providers (always active to keep location updated)
+  useBackgroundTracking(isProvider, null);
 
   useEffect(() => {
     const checkSubscription = async () => {
