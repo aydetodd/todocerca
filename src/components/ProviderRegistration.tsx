@@ -193,44 +193,84 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         throw new Error(`Error al actualizar perfil: ${profileUpdateError.message}`);
       }
 
-      // 3. Create provider record
-      console.log('🏢 Creating provider record...');
-      const providerDataWithUserId = {
-        nombre: providerData.nombre || apodo, // Usar apodo si no hay nombre de negocio
-        email: userData.email,
-        telefono: providerData.telefono,
-        business_address: providerData.business_address,
-        description: providerData.description,
-        latitude: providerData.latitude,
-        longitude: providerData.longitude,
-        user_id: currentUser.id
-      };
-      console.log('🏢 Provider data with user ID:', JSON.stringify(providerDataWithUserId, null, 2));
-
-      const { data: providerRecord, error: providerError } = await supabase
+      // 3. Create provider record - Check if exists first
+      console.log('🏢 Checking if provider record already exists...');
+      const { data: existingProvider, error: checkError } = await supabase
         .from('proveedores')
-        .insert(providerDataWithUserId)
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+      
+      console.log('🏢 Existing provider check:', { data: existingProvider, error: checkError });
+      
+      let providerRecord;
+      
+      if (existingProvider) {
+        console.log('🏢 Provider record already exists, updating...');
+        const providerDataWithUserId = {
+          nombre: providerData.nombre || apodo,
+          email: userData.email,
+          telefono: providerData.telefono,
+          business_address: providerData.business_address,
+          description: providerData.description,
+          latitude: providerData.latitude,
+          longitude: providerData.longitude,
+        };
+        
+        const { data: updatedProvider, error: updateError } = await supabase
+          .from('proveedores')
+          .update(providerDataWithUserId)
+          .eq('user_id', currentUser.id)
+          .select()
+          .single();
+        
+        if (updateError) {
+          console.error('❌ Provider update error:', updateError);
+          throw new Error(`Error al actualizar proveedor: ${updateError.message}`);
+        }
+        
+        providerRecord = updatedProvider;
+        console.log('✅ Provider updated successfully:', providerRecord);
+      } else {
+        console.log('🏢 Creating new provider record...');
+        const providerDataWithUserId = {
+          nombre: providerData.nombre || apodo,
+          email: userData.email,
+          telefono: providerData.telefono,
+          business_address: providerData.business_address,
+          description: providerData.description,
+          latitude: providerData.latitude,
+          longitude: providerData.longitude,
+          user_id: currentUser.id
+        };
+        console.log('🏢 Provider data with user ID:', JSON.stringify(providerDataWithUserId, null, 2));
 
-      console.log('🏢 Provider insert result:', { data: providerRecord, error: providerError });
+        const { data: newProvider, error: providerError } = await supabase
+          .from('proveedores')
+          .insert(providerDataWithUserId)
+          .select()
+          .single();
 
-      if (providerError) {
-        console.error('❌ Provider insert error details:', {
-          message: providerError.message,
-          details: providerError.details,
-          hint: providerError.hint,
-          code: providerError.code
-        });
-        throw new Error(`Error al crear proveedor: ${providerError.message}`);
+        console.log('🏢 Provider insert result:', { data: newProvider, error: providerError });
+
+        if (providerError) {
+          console.error('❌ Provider insert error details:', {
+            message: providerError.message,
+            details: providerError.details,
+            hint: providerError.hint,
+            code: providerError.code
+          });
+          throw new Error(`Error al crear proveedor: ${providerError.message}`);
+        }
+
+        providerRecord = newProvider;
+        console.log('✅ Provider created successfully:', providerRecord);
       }
 
       if (!providerRecord) {
         console.error('❌ No provider record returned');
         throw new Error('No se pudo crear el registro de proveedor');
       }
-
-      console.log('✅ Provider created successfully:', providerRecord);
 
       // 4. Create products
       console.log('🛍️ Creating products...');
@@ -277,14 +317,19 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       }
       
       // Redirect to payment
-      console.log('💳 Redirecting to payment...');
+      console.log('💳 Calling create-checkout edge function...');
       const checkoutBody = couponCode ? { couponCode } : {};
+      console.log('💳 Checkout body:', checkoutBody);
+      
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
         body: checkoutBody
       });
       
+      console.log('💳 Checkout response:', { data: checkoutData, error: checkoutError });
+      
       if (checkoutError) {
-        throw new Error(`Error al crear sesión de pago: ${checkoutError.message}`);
+        console.error('❌ Checkout error details:', JSON.stringify(checkoutError, null, 2));
+        throw new Error(`Error al crear sesión de pago: ${JSON.stringify(checkoutError)}`);
       }
 
       if (checkoutData?.url) {
@@ -306,11 +351,16 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       } else {
         throw new Error('No se pudo obtener la URL de pago');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 Registration error:', error);
+      console.error('💥 Error stack:', error.stack);
+      const errorMessage = error.message || 'Error desconocido';
+      const errorDetails = JSON.stringify(error, null, 2);
+      console.error('💥 Full error object:', errorDetails);
+      
       toast({
-        title: "Error",
-        description: `Hubo un problema al registrar tus productos: ${error.message}`,
+        title: "Error en el registro",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
