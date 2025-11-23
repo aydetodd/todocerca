@@ -267,6 +267,15 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
       console.log('🎉 All products processed successfully');
       
+      // 5. Refresh session to update JWT token with new role
+      console.log('🔄 Refreshing session to update token...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('⚠️ Session refresh error:', refreshError);
+      } else {
+        console.log('✅ Session refreshed successfully');
+      }
+      
       // Redirect to payment
       console.log('💳 Redirecting to payment...');
       const checkoutBody = couponCode ? { couponCode } : {};
