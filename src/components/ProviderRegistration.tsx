@@ -178,15 +178,19 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      // 2. Actualizar perfil con apodo
-      console.log('👤 Updating profile with apodo...');
+      // 2. Actualizar perfil con apodo y cambiar rol a proveedor
+      console.log('👤 Updating profile with apodo and changing role to proveedor...');
       const { error: profileUpdateError } = await supabase
         .from('profiles')
-        .update({ apodo })
+        .update({ 
+          apodo,
+          role: 'proveedor'
+        })
         .eq('user_id', currentUser.id);
       
       if (profileUpdateError) {
         console.error('⚠️ Profile update error:', profileUpdateError);
+        throw new Error(`Error al actualizar perfil: ${profileUpdateError.message}`);
       }
 
       // 3. Create provider record
