@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.send-whatsapp-welcome]
 verify_jwt = true
+
+[functions.flespi-webhook]
+verify_jwt = false
