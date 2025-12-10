@@ -11,10 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check, Radio } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { GpsTrackerManagement } from '@/components/GpsTrackerManagement';
+import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
+import { useGpsTrackers } from '@/hooks/useGpsTrackers';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { trackGPSSubscription, trackConversion } from '@/lib/analytics';
@@ -1031,8 +1033,11 @@ const TrackingGPS = () => {
             </CardContent>
           </Card>
 
-          {/* Rastreadores GPS */}
+          {/* Rastreadores GPS - Gestión */}
           <GpsTrackerManagement groupId={group.id} isOwner={isOwner} />
+
+          {/* Tarjetas Expandibles de Rastreadores GPS */}
+          <GpsTrackerCards groupId={group.id} isOwner={isOwner} />
 
           {/* Invitaciones Pendientes */}
           {invitations.length > 0 && (
@@ -1271,6 +1276,31 @@ const TrackingGPS = () => {
     </Dialog>
 
     </>
+  );
+};
+
+// Componente para mostrar tarjetas expandibles de trackers GPS
+const GpsTrackerCards = ({ groupId, isOwner }: { groupId: string; isOwner: boolean }) => {
+  const { trackers, loading } = useGpsTrackers(groupId);
+
+  if (loading || trackers.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Radio className="h-5 w-5 text-primary" />
+        <h3 className="font-semibold">Información de Dispositivos GPS</h3>
+      </div>
+      {trackers.map((tracker) => (
+        <GpsTrackerDetailCard
+          key={tracker.id}
+          tracker={tracker}
+          isOwner={isOwner}
+        />
+      ))}
+    </div>
   );
 };
 
