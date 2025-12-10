@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
+import { GpsTrackerManagement } from '@/components/GpsTrackerManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { trackGPSSubscription, trackConversion } from '@/lib/analytics';
@@ -959,6 +960,11 @@ const TrackingGPS = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Rastreadores GPS */}
+          {isActive && (
+            <GpsTrackerManagement groupId={group.id} isOwner={isOwner} />
+          )}
 
           {/* Invitaciones Pendientes */}
           {invitations.length > 0 && (

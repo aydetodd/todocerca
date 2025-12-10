@@ -203,7 +203,7 @@ export type Database = {
           {
             foreignKeyName: "gps_tracker_locations_tracker_id_fkey"
             columns: ["tracker_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "gps_trackers"
             referencedColumns: ["id"]
           },
