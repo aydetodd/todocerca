@@ -966,9 +966,10 @@ export type Database = {
           expires_at: string | null
           group_id: string
           id: string
+          invite_token: string | null
           invited_by: string
           nickname: string
-          phone_number: string
+          phone_number: string | null
           status: string | null
         }
         Insert: {
@@ -976,9 +977,10 @@ export type Database = {
           expires_at?: string | null
           group_id: string
           id?: string
+          invite_token?: string | null
           invited_by: string
           nickname: string
-          phone_number: string
+          phone_number?: string | null
           status?: string | null
         }
         Update: {
@@ -986,9 +988,10 @@ export type Database = {
           expires_at?: string | null
           group_id?: string
           id?: string
+          invite_token?: string | null
           invited_by?: string
           nickname?: string
-          phone_number?: string
+          phone_number?: string | null
           status?: string | null
         }
         Relationships: [
