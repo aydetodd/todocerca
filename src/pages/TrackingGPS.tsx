@@ -1184,24 +1184,31 @@ const TrackingGPS = () => {
             </Card>
           )}
 
-          {/* Ver Mapa en Pantalla Completa */}
+          {/* Mapa de Ubicaciones en Tiempo Real */}
           {isActive && locations.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
-                <CardDescription>
-                  {locations.length} miembro(s) compartiendo ubicación
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
+                    <CardDescription>
+                      {locations.length} miembro(s) compartiendo ubicación
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setShowFullScreenMap(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <MapIcon className="h-4 w-4 mr-1" />
+                    Pantalla Completa
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setShowFullScreenMap(true)}
-                  className="w-full"
-                  size="lg"
-                >
-                  <MapIcon className="h-5 w-5 mr-2" />
-                  Ver Mapa en Pantalla Completa
-                </Button>
+              <CardContent className="p-0">
+                <div className="h-[300px] rounded-b-lg overflow-hidden">
+                  <TrackingMap locations={locations} currentUserId={currentUserId} />
+                </div>
               </CardContent>
             </Card>
           )}
