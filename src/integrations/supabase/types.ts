@@ -168,6 +168,94 @@ export type Database = {
           },
         ]
       }
+      gps_tracker_locations: {
+        Row: {
+          altitude: number | null
+          course: number | null
+          id: string
+          latitude: number
+          longitude: number
+          speed: number | null
+          tracker_id: string
+          updated_at: string
+        }
+        Insert: {
+          altitude?: number | null
+          course?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          speed?: number | null
+          tracker_id: string
+          updated_at?: string
+        }
+        Update: {
+          altitude?: number | null
+          course?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          tracker_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_locations_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_trackers: {
+        Row: {
+          battery_level: number | null
+          created_at: string
+          group_id: string
+          id: string
+          imei: string
+          is_active: boolean | null
+          last_seen: string | null
+          model: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string
+          group_id: string
+          id?: string
+          imei: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          model?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string
+          group_id?: string
+          id?: string
+          imei?: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          model?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_trackers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items_pedido: {
         Row: {
           cantidad: number
