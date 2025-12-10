@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { GpsTrackerManagement } from '@/components/GpsTrackerManagement';
@@ -38,6 +38,9 @@ const TrackingGPS = () => {
   const [additionalDevices, setAdditionalDevices] = useState(1);
   const [showAddDevicesDialog, setShowAddDevicesDialog] = useState(false);
   const [userStatus, setUserStatus] = useState<'available' | 'busy' | 'offline' | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   // Hook para background tracking - se activa automáticamente cuando isSharing es true
   useBackgroundTracking(isSharing, group?.id || null);
@@ -384,6 +387,73 @@ const TrackingGPS = () => {
     } catch (error) {
       console.error('Error sending invitation:', error);
     }
+  };
+
+  const handleGenerateLink = async () => {
+    if (!newMemberName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Por favor ingresa un nombre para el invitado',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!group?.id || !currentUserId) return;
+
+    setGeneratingLink(true);
+    try {
+      // Create invitation without phone (link-based)
+      const { data, error } = await supabase
+        .from('tracking_invitations')
+        .insert({
+          group_id: group.id,
+          invited_by: currentUserId,
+          nickname: newMemberName.trim(),
+          phone_number: null,
+          status: 'pending',
+        })
+        .select('invite_token')
+        .single();
+
+      if (error) throw error;
+
+      const link = `${window.location.origin}/join-group?token=${data.invite_token}`;
+      setInviteLink(link);
+      setNewMemberName('');
+      
+      toast({
+        title: 'Link generado',
+        description: 'Comparte el link por WhatsApp u otro medio',
+      });
+    } catch (error: any) {
+      console.error('Error generating link:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo generar el link',
+        variant: 'destructive'
+      });
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setLinkCopied(true);
+      toast({ title: 'Link copiado' });
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      toast({ title: 'Error al copiar', variant: 'destructive' });
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!inviteLink) return;
+    const message = `¡Únete a mi grupo de rastreo familiar! Haz clic aquí: ${inviteLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSubscribe = async () => {
@@ -1005,11 +1075,11 @@ const TrackingGPS = () => {
               <CardHeader>
                 <CardTitle>Agregar Miembros al Grupo</CardTitle>
                 <CardDescription>
-                  Puedes agregar hasta {group.max_devices - totalSlots} miembro(s) más. Se enviará una invitación por SMS.
+                  Puedes agregar hasta {group.max_devices - totalSlots} miembro(s) más
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="bg-primary/10 p-3 rounded-lg mb-3 flex items-center justify-between">
+              <CardContent className="space-y-4">
+                <div className="bg-primary/10 p-3 rounded-lg flex items-center justify-between">
                   <p className="text-sm font-medium">📱 Espacios disponibles: {group.max_devices - totalSlots} de {group.max_devices}</p>
                   {isOwner && isActive && (
                     <Button 
@@ -1024,30 +1094,89 @@ const TrackingGPS = () => {
                     </Button>
                   )}
                 </div>
-                <div>
-                  <Label htmlFor="memberName">Nombre del familiar</Label>
-                  <Input
-                    id="memberName"
-                    placeholder="Ej: María García"
-                    value={newMemberName}
-                    onChange={(e) => setNewMemberName(e.target.value)}
-                  />
+
+                {/* Opción 1: Link Gratis */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Link className="h-5 w-5 text-green-600" />
+                    <span className="font-medium">Invitación por Link</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">GRATIS</Badge>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="memberNameLink">Nombre del familiar</Label>
+                    <Input
+                      id="memberNameLink"
+                      placeholder="Ej: María García"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={handleGenerateLink} 
+                    className="w-full" 
+                    variant="outline"
+                    disabled={generatingLink || !newMemberName.trim()}
+                  >
+                    <Link className="mr-2 h-4 w-4" />
+                    {generatingLink ? 'Generando...' : 'Generar Link de Invitación'}
+                  </Button>
+
+                  {inviteLink && (
+                    <div className="bg-muted p-3 rounded-lg space-y-2">
+                      <p className="text-sm font-medium">Link generado:</p>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={inviteLink} 
+                          readOnly 
+                          className="text-xs"
+                        />
+                        <Button size="icon" variant="outline" onClick={handleCopyLink}>
+                          {linkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <Button 
+                        onClick={handleShareWhatsApp} 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        Compartir por WhatsApp
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <PhoneInput
-                  label="Teléfono (con WhatsApp)"
-                  value={newMemberPhone}
-                  onChange={setNewMemberPhone}
-                  placeholder="5512345678"
-                  id="memberPhone"
-                  required
-                />
-                <Button onClick={handleSendInvitation} className="w-full" size="lg">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Enviar Invitación por SMS
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  Se enviará un SMS con instrucciones para unirse al grupo
-                </p>
+
+                <Separator />
+
+                {/* Opción 2: SMS */}
+                <div className="border rounded-lg p-4 space-y-3 opacity-75">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium">Invitación por SMS</span>
+                    <Badge variant="outline" className="text-muted-foreground">~$0.05 USD</Badge>
+                  </div>
+
+                  <PhoneInput
+                    label="Teléfono (con WhatsApp)"
+                    value={newMemberPhone}
+                    onChange={setNewMemberPhone}
+                    placeholder="5512345678"
+                    id="memberPhone"
+                    required
+                  />
+                  <Button 
+                    onClick={handleSendInvitation} 
+                    className="w-full" 
+                    variant="secondary"
+                    disabled={!newMemberName.trim() || !newMemberPhone.trim()}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Enviar por SMS (costo)
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Se enviará un SMS automático con instrucciones
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}
