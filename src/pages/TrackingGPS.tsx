@@ -962,9 +962,7 @@ const TrackingGPS = () => {
           </Card>
 
           {/* Rastreadores GPS */}
-          {isActive && (
-            <GpsTrackerManagement groupId={group.id} isOwner={isOwner} />
-          )}
+          <GpsTrackerManagement groupId={group.id} isOwner={isOwner} />
 
           {/* Invitaciones Pendientes */}
           {invitations.length > 0 && (
