@@ -1100,7 +1100,6 @@ const TrackingGPS = () => {
                   <div className="flex items-center gap-2">
                     <Link className="h-5 w-5 text-green-600" />
                     <span className="font-medium">Invitación por Link</span>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">GRATIS</Badge>
                   </div>
                   
                   <div>
@@ -1153,7 +1152,6 @@ const TrackingGPS = () => {
                   <div className="flex items-center gap-2">
                     <UserPlus className="h-5 w-5 text-blue-600" />
                     <span className="font-medium">Invitación por SMS</span>
-                    <Badge variant="outline" className="text-muted-foreground">~$0.05 USD</Badge>
                   </div>
 
                   <PhoneInput
