@@ -752,12 +752,12 @@ const TrackingGPS = () => {
       {/* Full Screen Map View */}
       {showFullScreenMap && isActive && locations.length > 0 && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
-          <div className="absolute top-4 left-4 z-[60]">
+          <div className="absolute top-4 left-4 z-[1001]">
             <Button 
               variant="default" 
               size="lg"
               onClick={() => setShowFullScreenMap(false)}
-              className="shadow-lg"
+              className="shadow-2xl bg-primary hover:bg-primary/90"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               Volver

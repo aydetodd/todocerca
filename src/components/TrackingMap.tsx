@@ -105,18 +105,11 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
         </div>
       `;
 
-      // Crear popup que permanece abierto hasta el siguiente click
-      const popup = L.popup({
+      // Crear popup que permanece abierto hasta cerrar manualmente
+      marker.bindPopup(popupContent, {
         closeOnClick: false,
         autoClose: false,
         closeButton: true,
-      }).setContent(popupContent);
-      
-      marker.bindPopup(popup);
-      
-      // Al hacer click, mantener popup abierto
-      marker.on('click', () => {
-        marker.openPopup();
       });
       
       markersRef.current[loc.user_id] = marker;
