@@ -62,7 +62,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers.length);
   console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations.length, 'loading:', realtimeLoading);
   
-  // Merge provider data with real-time locations
+  // Merge provider data with real-time locations (use static coords as fallback)
   const providersWithRealtimeLocation = React.useMemo(() => {
     return providers
       .map(provider => {
@@ -80,10 +80,18 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
             _realtimeStatus: realtimeLocation.profiles?.estado || 'available'
           };
         }
-        if (realtimeLoading) {
-          return null;
+        // Use static coordinates from provider data as fallback
+        if (provider.latitude && provider.longitude) {
+          console.log(`📍 Proveedor ${provider.business_name}: usando coordenadas estáticas`, {
+            lat: provider.latitude,
+            lng: provider.longitude
+          });
+          return {
+            ...provider,
+            _realtimeStatus: 'available'
+          };
         }
-        console.log(`❌ ${provider.business_name}: sin datos realtime`);
+        console.log(`❌ ${provider.business_name}: sin ubicación disponible`);
         return null;
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
