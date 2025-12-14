@@ -50,20 +50,22 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Get real-time locations
-  const { locations: realtimeLocations } = useRealtimeLocations();
+  // Get real-time locations with loading state
+  const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations();
 
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers);
-  console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations);
+  console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations, 'loading:', realtimeLoading);
   
-  // Only use providers that have realtime location data (from proveedor_locations)
-  // This ensures we show the correct, up-to-date location with correct status
+  // Merge provider data with real-time locations
+  // Use realtime location if available, otherwise use static location from proveedores
+  // Get status from realtime data (which is filtered by available/busy already)
   const providersWithRealtimeLocation = providers
     .map(provider => {
       const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
       if (realtimeLocation) {
-        console.log(`🔄 Actualizando ubicación para ${provider.business_name}:`, {
-          realtime: { lat: realtimeLocation.latitude, lng: realtimeLocation.longitude },
+        console.log(`🔄 Proveedor ${provider.business_name}: usando ubicación realtime`, {
+          lat: realtimeLocation.latitude, 
+          lng: realtimeLocation.longitude,
           status: realtimeLocation.profiles?.estado
         });
         return {
@@ -73,15 +75,20 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
           _realtimeStatus: realtimeLocation.profiles?.estado
         };
       }
-      // Provider has no realtime location - don't show them
-      console.log(`⏳ ${provider.business_name} sin ubicación en tiempo real, no se muestra`);
+      // If still loading realtime data, don't show provider yet to avoid wrong location
+      if (realtimeLoading) {
+        console.log(`⏳ ${provider.business_name}: esperando datos realtime...`);
+        return null;
+      }
+      // After loading, if no realtime data, provider might be offline or no subscription
+      console.log(`❌ ${provider.business_name}: sin datos realtime (posiblemente offline)`);
       return null;
     })
     .filter((p): p is NonNullable<typeof p> => p !== null);
   
   // Filter providers with valid coordinates
   const validProviders = providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
-  console.log('✅ Proveedores válidos con coordenadas:', validProviders);
+  console.log('✅ Proveedores válidos con coordenadas:', validProviders.length);
   
   // Initialize map once
   useEffect(() => {
@@ -335,6 +342,15 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
       }
     };
   }, [onOpenChat, providers]);
+
+  // Show loading state while fetching realtime data
+  if (realtimeLoading) {
+    return (
+      <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">Cargando ubicaciones...</p>
+      </div>
+    );
+  }
 
   if (validProviders.length === 0) {
     return (
