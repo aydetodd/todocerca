@@ -55,22 +55,28 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers);
   console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations);
   
-  // Merge provider data with real-time locations
-  const providersWithRealtimeLocation = providers.map(provider => {
-    const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
-    if (realtimeLocation) {
-      console.log(`🔄 Actualizando ubicación para ${provider.business_name}:`, {
-        old: { lat: provider.latitude, lng: provider.longitude },
-        new: { lat: realtimeLocation.latitude, lng: realtimeLocation.longitude }
-      });
-      return {
-        ...provider,
-        latitude: realtimeLocation.latitude,
-        longitude: realtimeLocation.longitude
-      };
-    }
-    return provider;
-  });
+  // Only use providers that have realtime location data (from proveedor_locations)
+  // This ensures we show the correct, up-to-date location with correct status
+  const providersWithRealtimeLocation = providers
+    .map(provider => {
+      const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
+      if (realtimeLocation) {
+        console.log(`🔄 Actualizando ubicación para ${provider.business_name}:`, {
+          realtime: { lat: realtimeLocation.latitude, lng: realtimeLocation.longitude },
+          status: realtimeLocation.profiles?.estado
+        });
+        return {
+          ...provider,
+          latitude: realtimeLocation.latitude,
+          longitude: realtimeLocation.longitude,
+          _realtimeStatus: realtimeLocation.profiles?.estado
+        };
+      }
+      // Provider has no realtime location - don't show them
+      console.log(`⏳ ${provider.business_name} sin ubicación en tiempo real, no se muestra`);
+      return null;
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
   
   // Filter providers with valid coordinates
   const validProviders = providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
@@ -123,9 +129,8 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         p.nombre?.toLowerCase().includes('taxi')
       );
       
-      // Get provider status from realtime locations
-      const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
-      const providerStatus = realtimeLocation?.profiles?.estado || 'available';
+      // Get provider status - use the _realtimeStatus we attached earlier
+      const providerStatus = (provider as any)._realtimeStatus || 'available';
       
       console.log('Provider:', provider.business_name, '- isTaxi:', isTaxi, '- status:', providerStatus);
       
