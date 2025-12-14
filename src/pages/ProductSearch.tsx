@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp } from 'lucide-react';
-import ProvidersMap from '@/components/ProvidersMap';
+import ProvidersMap from '@/components/ProvidersMapView';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
