@@ -138,7 +138,7 @@ export const useRealtimeLocations = () => {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel('proveedor_locations_and_profiles')
+      .channel('proveedor_locations_and_profiles_v2')
       .on(
         'postgres_changes',
         {
@@ -156,16 +156,19 @@ export const useRealtimeLocations = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'profiles',
-          filter: 'role=eq.proveedor'
+          table: 'profiles'
         },
         (payload) => {
-          console.log('👤 [RealtimeMap] Provider profile changed:', payload);
-          if (payload.new && 'estado' in payload.new) {
+          console.log('👤 [RealtimeMap] Profile changed:', payload);
+          // Check if this is a provider status change
+          if (payload.new && 'estado' in payload.new && 'role' in payload.new) {
+            const role = payload.new.role;
             const newStatus = payload.new.estado;
-            console.log(`🔄 Provider status changed to ${newStatus}, refetching locations...`);
-            // Always refetch to get correct data with subscriptions check
-            fetchLocations();
+            console.log(`🔄 Profile update: role=${role}, status=${newStatus}`);
+            if (role === 'proveedor') {
+              console.log('🚕 Provider status changed, refetching all locations...');
+              fetchLocations();
+            }
           }
         }
       )
