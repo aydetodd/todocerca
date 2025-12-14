@@ -135,8 +135,15 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
           if (profileData) {
             // Add current user marker
-            const estado = profileData.estado || 'available'; // Default to available for providers
-            const colors = {
+            const estado = profileData.estado;
+            console.log(`🚕 [CurrentUser Marker] estado=${estado}`);
+            
+            if (!estado) {
+              console.warn('⚠️ [CurrentUser] No estado, skipping marker');
+              return;
+            }
+            
+            const colors: Record<string, string> = {
               available: '#22c55e',
               busy: '#eab308',
               offline: '#ef4444'
@@ -196,13 +203,19 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       if (!location.profiles) return;
 
       const isCurrentUser = location.user_id === currentUserId;
-      const estado = location.profiles.estado || 'available'; // Default to available for providers
+      const estado = location.profiles.estado;
       const isTaxi = location.is_taxi;
       
-      console.log('Location for', location.profiles.apodo, '- isTaxi:', isTaxi);
+      console.log(`🚕 [Marker] ${location.profiles.apodo}: estado=${estado}, isTaxi=${isTaxi}, user_id=${location.user_id}`);
+      
+      // If no estado, skip (shouldn't happen but safety check)
+      if (!estado) {
+        console.warn(`⚠️ [Marker] No estado for ${location.profiles.apodo}, skipping`);
+        return;
+      }
       
       // Color based on status
-      const colors = {
+      const colors: Record<string, string> = {
         available: '#22c55e', // green
         busy: '#eab308',      // yellow
         offline: '#ef4444'    // red

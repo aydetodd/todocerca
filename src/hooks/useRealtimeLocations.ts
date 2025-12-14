@@ -117,9 +117,17 @@ export const useRealtimeLocations = () => {
         const proveedorId = proveedorMap.get(loc.user_id);
         const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
         
+        if (profile) {
+          console.log(`📍 [Merge] ${profile.apodo}: estado=${profile.estado}, role=${profile.role}`);
+        }
+        
         return {
           ...loc,
-          profiles: profile || null,
+          profiles: profile ? {
+            apodo: profile.apodo,
+            estado: profile.estado as 'available' | 'busy' | 'offline',
+            telefono: profile.telefono
+          } : null,
           is_taxi: isTaxi
         };
       }) || [];
@@ -128,7 +136,7 @@ export const useRealtimeLocations = () => {
       const filtered = merged.filter(l => l.profiles) as ProveedorLocation[];
       console.log('📍 [RealtimeMap] Locations updated:', filtered.length, 'providers');
       filtered.forEach(loc => {
-        console.log(`  - ${loc.profiles?.apodo} (${loc.is_taxi ? '🚕 TAXI' : '👤'}): [${loc.latitude}, ${loc.longitude}]`);
+        console.log(`  - ${loc.profiles?.apodo} (${loc.is_taxi ? '🚕 TAXI' : '👤'}): estado=${loc.profiles?.estado}, [${loc.latitude}, ${loc.longitude}]`);
       });
       setLocations(filtered);
       setLoading(false);
