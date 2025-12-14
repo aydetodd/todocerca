@@ -210,7 +210,15 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       let iconHtml: string;
       
+      // Colors based on status for taxi
+      const taxiColors = {
+        available: { body: '#22c55e', roof: '#16a34a' }, // green
+        busy: { body: '#FDB813', roof: '#FFD700' },      // yellow (original taxi color)
+        offline: { body: '#ef4444', roof: '#dc2626' }    // red (shouldn't show anyway)
+      };
+      
       if (isTaxi) {
+        const taxiColor = taxiColors[estado] || taxiColors.busy;
         // Taxi icon - vista en perspectiva con llantas laterales
         const taxiTopViewSvg = `
           <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
@@ -227,7 +235,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
             
             <!-- Cuerpo principal del taxi (parte trasera) -->
             <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
-                  fill="#FDB813" stroke="#333" stroke-width="0.6"/>
+                  fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
             
             <!-- Llanta delantera izquierda -->
             <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
@@ -238,7 +246,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
             <ellipse cx="24" cy="18" rx="1.8" ry="2.5" fill="#4a4a4a"/>
             
             <!-- Techo/Cabina superior -->
-            <rect x="10" y="20" width="12" height="10" rx="1.5" fill="#FFD700" stroke="#333" stroke-width="0.5"/>
+            <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.5"/>
             
             <!-- Ventanas laterales izquierda -->
             <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
