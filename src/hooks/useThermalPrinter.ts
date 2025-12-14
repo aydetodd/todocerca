@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 // Extensión de tipos para Web Bluetooth API
