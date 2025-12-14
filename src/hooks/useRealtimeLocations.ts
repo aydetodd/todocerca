@@ -156,48 +156,16 @@ export const useRealtimeLocations = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'profiles'
+          table: 'profiles',
+          filter: 'role=eq.proveedor'
         },
         (payload) => {
-          console.log('👤 [RealtimeMap] Profile status changed:', payload);
-          // Update status immediately without full refetch
-          if (payload.new && 'estado' in payload.new && 'user_id' in payload.new) {
-            const newStatus = payload.new.estado as 'available' | 'busy' | 'offline';
-            const userId = payload.new.user_id as string;
-            
-            console.log(`🔄 Updating status for user ${userId} to ${newStatus}`);
-            
-            setLocations(prev => {
-              // If status is offline, remove from map
-              if (newStatus === 'offline') {
-                console.log(`❌ Removing offline user ${userId} from map`);
-                return prev.filter(loc => loc.user_id !== userId);
-              }
-              
-              // Update existing user's status
-              const updated = prev.map(loc => {
-                if (loc.user_id === userId && loc.profiles) {
-                  console.log(`✅ Updated ${loc.profiles.apodo} status to ${newStatus}`);
-                  return {
-                    ...loc,
-                    profiles: {
-                      ...loc.profiles,
-                      estado: newStatus
-                    }
-                  };
-                }
-                return loc;
-              });
-              
-              // If user wasn't in the list but is now available/busy, refetch
-              const wasInList = prev.some(loc => loc.user_id === userId);
-              if (!wasInList && (newStatus === 'available' || newStatus === 'busy')) {
-                console.log(`➕ User ${userId} came online, refetching...`);
-                fetchLocations();
-              }
-              
-              return updated;
-            });
+          console.log('👤 [RealtimeMap] Provider profile changed:', payload);
+          if (payload.new && 'estado' in payload.new) {
+            const newStatus = payload.new.estado;
+            console.log(`🔄 Provider status changed to ${newStatus}, refetching locations...`);
+            // Always refetch to get correct data with subscriptions check
+            fetchLocations();
           }
         }
       )
