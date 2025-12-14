@@ -135,7 +135,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
           if (profileData) {
             // Add current user marker
-            const estado = profileData.estado || 'offline';
+            const estado = profileData.estado || 'available'; // Default to available for providers
             const colors = {
               available: '#22c55e',
               busy: '#eab308',
@@ -196,7 +196,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       if (!location.profiles) return;
 
       const isCurrentUser = location.user_id === currentUserId;
-      const estado = location.profiles.estado || 'offline';
+      const estado = location.profiles.estado || 'available'; // Default to available for providers
       const isTaxi = location.is_taxi;
       
       console.log('Location for', location.profiles.apodo, '- isTaxi:', isTaxi);

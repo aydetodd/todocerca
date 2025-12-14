@@ -123,10 +123,22 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
         p.nombre?.toLowerCase().includes('taxi')
       );
       
-      console.log('Provider:', provider.business_name, '- isTaxi:', isTaxi);
+      // Get provider status from realtime locations
+      const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
+      const providerStatus = realtimeLocation?.profiles?.estado || 'available';
+      
+      console.log('Provider:', provider.business_name, '- isTaxi:', isTaxi, '- status:', providerStatus);
+      
+      // Colors based on status
+      const taxiColors = {
+        available: { body: '#22c55e', roof: '#16a34a' }, // green
+        busy: { body: '#FDB813', roof: '#FFD700' },      // yellow (original taxi color)
+        offline: { body: '#ef4444', roof: '#dc2626' }    // red (shouldn't show anyway)
+      };
       
       let icon;
       if (isTaxi) {
+        const taxiColor = taxiColors[providerStatus] || taxiColors.available;
         // Taxi icon - vista en perspectiva con llantas laterales
         const taxiTopViewSvg = `
           <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
@@ -143,7 +155,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
             
             <!-- Cuerpo principal del taxi (parte trasera) -->
             <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" 
-                  fill="#FDB813" stroke="#333" stroke-width="0.7"/>
+                  fill="${taxiColor.body}" stroke="#333" stroke-width="0.7"/>
             
             <!-- Llanta delantera izquierda -->
             <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
@@ -154,7 +166,7 @@ const ProvidersMap = ({ providers, onOpenChat }: ProvidersMapProps) => {
             <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
             
             <!-- Techo/Cabina superior -->
-            <rect x="12" y="23" width="12" height="12" rx="1.5" fill="#FFD700" stroke="#333" stroke-width="0.6"/>
+            <rect x="12" y="23" width="12" height="12" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.6"/>
             
             <!-- Ventanas laterales izquierda -->
             <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>

@@ -214,7 +214,7 @@ const ProductSearch = () => {
           proveedoresData.forEach((p: any) => {
             providerLocationMap[p.id] = p;
             const profile = profilesData?.find(prof => prof.user_id === p.user_id);
-            providerStatusMap[p.id] = profile?.estado || 'offline';
+            providerStatusMap[p.id] = profile?.estado || 'available'; // Default to available for providers
           });
         }
 
