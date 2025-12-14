@@ -1,7 +1,6 @@
+// Cache bust: 2025-12-14T22:10:00 - Remove next-themes
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
-// import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import Home from "./pages/Home";
@@ -33,30 +32,28 @@ const queryClient = new QueryClient({
 export default function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/landing" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/dashboard" element={<DashboardMain />} />
-            <Route path="/mi-perfil" element={<MiPerfil />} />
-            <Route path="/mis-productos" element={<MisProductos />} />
-            <Route path="/gestion-pedidos" element={<GestionPedidos />} />
-            <Route path="/mapa" element={<MapView />} />
-            <Route path="/tracking-gps" element={<TrackingGPS />} />
-            <Route path="/join-group" element={<JoinGroup />} />
-            <Route path="/gps-reports" element={<GpsReports />} />
-            <Route path="/search" element={<ProductSearch />} />
-            <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
-            <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-          <Sonner />
-        </BrowserRouter>
-      </ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/landing" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard" element={<DashboardMain />} />
+          <Route path="/mi-perfil" element={<MiPerfil />} />
+          <Route path="/mis-productos" element={<MisProductos />} />
+          <Route path="/gestion-pedidos" element={<GestionPedidos />} />
+          <Route path="/mapa" element={<MapView />} />
+          <Route path="/tracking-gps" element={<TrackingGPS />} />
+          <Route path="/join-group" element={<JoinGroup />} />
+          <Route path="/gps-reports" element={<GpsReports />} />
+          <Route path="/search" element={<ProductSearch />} />
+          <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+          <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        <Sonner />
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
