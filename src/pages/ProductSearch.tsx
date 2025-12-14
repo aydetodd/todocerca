@@ -30,8 +30,8 @@ interface SearchResult {
   provider_postal_code: string;
   provider_id: string;
   provider_address: string;
-  provider_latitude: number;
-  provider_longitude: number;
+  provider_latitude: number | null;
+  provider_longitude: number | null;
   provider_status: 'available' | 'busy';
 }
 
@@ -228,10 +228,11 @@ const ProductSearch = () => {
             provider_postal_code: proveedorData?.codigo_postal || '',
             provider_id: producto.proveedor_id || '',
             provider_address: proveedorData?.business_address || '',
-            provider_latitude: proveedorData?.latitude || 0,
-            provider_longitude: proveedorData?.longitude || 0,
+            provider_latitude: proveedorData?.latitude ?? null,
+            provider_longitude: proveedorData?.longitude ?? null,
             provider_status: (providerStatus === 'available' || providerStatus === 'busy') ? providerStatus : 'available',
           };
+          console.log('📍 Resultado formateado:', producto.nombre, 'coords:', proveedorData?.latitude, proveedorData?.longitude);
         });
         
         setResults(formattedResults);
@@ -240,7 +241,7 @@ const ProductSearch = () => {
         const providerMap: Record<string, MapProvider> = {};
         
         formattedResults.forEach((result) => {
-          if (result.provider_latitude && result.provider_longitude) {
+          if (result.provider_latitude !== null && result.provider_longitude !== null) {
             if (!providerMap[result.provider_id]) {
               const proveedorData = providerLocationMap[result.provider_id];
               providerMap[result.provider_id] = {
