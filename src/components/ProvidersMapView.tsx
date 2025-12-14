@@ -56,7 +56,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Get real-time locations with loading state
+  // Get real-time locations - don't block on loading if we have static coordinates
   const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations();
 
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers.length);
@@ -95,14 +95,19 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
         return null;
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
-  }, [providers, realtimeLocations, realtimeLoading]);
+  }, [providers, realtimeLocations]);
   
   // Filter providers with valid coordinates
   const validProviders = React.useMemo(() => {
     return providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
   }, [providersWithRealtimeLocation]);
 
-  console.log('✅ Proveedores válidos:', validProviders.length);
+  // Check if we have providers with static coordinates (don't wait for realtime)
+  const hasStaticProviders = React.useMemo(() => {
+    return providers.some(p => p.latitude && p.longitude);
+  }, [providers]);
+
+  console.log('✅ Proveedores válidos:', validProviders.length, 'hasStaticProviders:', hasStaticProviders);
   
   // Initialize map once
   useEffect(() => {
@@ -241,8 +246,8 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     };
   }, [onOpenChat, providers]);
 
-  // Loading state
-  if (realtimeLoading) {
+  // Only show loading if we don't have any static providers AND realtime is loading
+  if (realtimeLoading && !hasStaticProviders && validProviders.length === 0) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
         <p className="text-muted-foreground">Cargando ubicaciones...</p>
@@ -250,7 +255,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     );
   }
 
-  // No providers
+  // No providers with valid coordinates
   if (validProviders.length === 0) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
