@@ -40,18 +40,21 @@ export const StatusControl = () => {
 
     fetchStatus();
     
-    // Suscribirse a cambios en tiempo real
+    // Suscribirse a cambios en tiempo real SOLO del usuario actual
+    if (!userId) return;
+    
     const channel = supabase
-      .channel('status_changes')
+      .channel(`status_changes_${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'profiles'
+          table: 'profiles',
+          filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log('[StatusControl] Status changed:', payload);
+          console.log('[StatusControl] Status changed for current user:', payload);
           if (payload.new && 'estado' in payload.new) {
             setStatus(payload.new.estado as UserStatus);
           }
@@ -62,7 +65,7 @@ export const StatusControl = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
   const updateStatus = async (newStatus: UserStatus) => {
     if (loading) return;
