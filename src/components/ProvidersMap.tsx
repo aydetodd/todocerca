@@ -1,4 +1,5 @@
-// ProvidersMap - Shows providers on a map with real-time location updates
+// ProvidersMap component - Shows providers on a map with real-time location updates
+// Updated: Fixed hook call issues
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
