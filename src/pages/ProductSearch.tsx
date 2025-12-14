@@ -303,12 +303,12 @@ const ProductSearch = () => {
       {/* Full Screen Map View */}
       {showFullScreenMap && mapProviders.length > 0 && (
         <div className="fixed inset-0 z-50 bg-background">
-          <div className="absolute top-4 left-4 z-10">
+          <div className="absolute top-4 left-4 z-[9999]">
             <Button 
               variant="default" 
               size="lg"
               onClick={() => setShowFullScreenMap(false)}
-              className="shadow-lg"
+              className="shadow-xl bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               Volver a Resultados
