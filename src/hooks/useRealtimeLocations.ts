@@ -28,6 +28,8 @@ export const useRealtimeLocations = () => {
   useEffect(() => {
     // Fetch initial locations
     const fetchLocations = async () => {
+      console.log('🔄 [RealtimeLocations] Fetching all locations...');
+      
       const { data: locationsData, error: locError } = await supabase
         .from('proveedor_locations')
         .select('*');
@@ -46,6 +48,11 @@ export const useRealtimeLocations = () => {
         .in('user_id', userIds)
         .eq('role', 'proveedor')
         .in('estado', ['available', 'busy']);
+
+      console.log('📊 [RealtimeLocations] Profiles found:', profilesData?.length || 0);
+      profilesData?.forEach(p => {
+        console.log(`   👤 ${p.apodo}: estado=${p.estado}`);
+      });
 
       if (!profilesData || profilesData.length === 0) {
         setLocations([]);
@@ -90,8 +97,6 @@ export const useRealtimeLocations = () => {
         .ilike('name', 'taxi')
         .maybeSingle();
       
-      console.log('Taxi category found:', taxiCategory);
-      
       // Build query to check for taxi products (by name, keywords, OR category)
       let taxiQuery = supabase
         .from('productos')
@@ -99,16 +104,12 @@ export const useRealtimeLocations = () => {
         .in('proveedor_id', proveedorIds);
       
       if (taxiCategory?.id) {
-        // Search by category OR by name/keywords
         taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
       } else {
-        // Fallback to name/keywords only if no category found
         taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
       }
       
       const { data: taxiProducts } = await taxiQuery;
-      console.log('Taxi products found:', taxiProducts);
-      
       const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 
       // Merge data
@@ -116,10 +117,6 @@ export const useRealtimeLocations = () => {
         const profile = profilesWithActiveSub?.find(p => p.user_id === loc.user_id);
         const proveedorId = proveedorMap.get(loc.user_id);
         const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
-        
-        if (profile) {
-          console.log(`📍 [Merge] ${profile.apodo}: estado=${profile.estado}, role=${profile.role}`);
-        }
         
         return {
           ...loc,
@@ -134,9 +131,9 @@ export const useRealtimeLocations = () => {
 
       // Only show users with active subscription, provider role, and available/busy status
       const filtered = merged.filter(l => l.profiles) as ProveedorLocation[];
-      console.log('📍 [RealtimeMap] Locations updated:', filtered.length, 'providers');
+      console.log('✅ [RealtimeLocations] Final locations:', filtered.length);
       filtered.forEach(loc => {
-        console.log(`  - ${loc.profiles?.apodo} (${loc.is_taxi ? '🚕 TAXI' : '👤'}): estado=${loc.profiles?.estado}, [${loc.latitude}, ${loc.longitude}]`);
+        console.log(`   🚕 ${loc.profiles?.apodo}: estado=${loc.profiles?.estado}, is_taxi=${loc.is_taxi}`);
       });
       setLocations(filtered);
       setLoading(false);
@@ -144,9 +141,12 @@ export const useRealtimeLocations = () => {
 
     fetchLocations();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes - using unique channel name
+    const channelId = `locations_v3_${Date.now()}`;
+    console.log('📡 [RealtimeLocations] Creating channel:', channelId);
+    
     const channel = supabase
-      .channel('proveedor_locations_and_profiles_v2')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -155,7 +155,7 @@ export const useRealtimeLocations = () => {
           table: 'proveedor_locations'
         },
         (payload) => {
-          console.log('🚕 [RealtimeMap] proveedor_locations CHANGED:', payload);
+          console.log('📍 [Realtime] Location changed, refetching...');
           fetchLocations();
         }
       )
@@ -167,22 +167,20 @@ export const useRealtimeLocations = () => {
           table: 'profiles'
         },
         (payload) => {
-          console.log('👤 [RealtimeMap] Profile changed:', payload);
-          // Check if this is a provider status change
-          if (payload.new && 'estado' in payload.new && 'role' in payload.new) {
-            const role = payload.new.role;
-            const newStatus = payload.new.estado;
-            console.log(`🔄 Profile update: role=${role}, status=${newStatus}`);
-            if (role === 'proveedor') {
-              console.log('🚕 Provider status changed, refetching all locations...');
-              fetchLocations();
-            }
-          }
+          console.log('👤 [Realtime] Profile changed:', payload.new);
+          // Always refetch when profile changes - the estado filter will handle it
+          fetchLocations();
         }
       )
       .subscribe((status) => {
-        console.log('📡 [RealtimeMap] Subscription status:', status);
+        console.log('📡 [RealtimeLocations] Subscription status:', status);
       });
+
+    // Polling backup every 5 seconds to ensure status changes are reflected
+    const pollInterval = setInterval(() => {
+      console.log('⏰ [Polling] Checking for updates...');
+      fetchLocations();
+    }, 5000);
 
     // Auto-track location for providers in native app
     const startProviderTracking = async () => {
@@ -212,7 +210,9 @@ export const useRealtimeLocations = () => {
     startProviderTracking();
 
     return () => {
+      console.log('🔌 [RealtimeLocations] Cleaning up...');
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
       if (watchId) {
         clearWatch(watchId);
       }
