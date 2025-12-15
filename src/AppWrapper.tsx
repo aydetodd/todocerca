@@ -1,8 +1,9 @@
-// Cache bust: 2025-12-14T22:10:00 - Remove next-themes
+// Cache bust: 2025-12-15 - Global provider tracking
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -33,6 +34,8 @@ export default function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        {/* Tracking global de ubicación para proveedores */}
+        <GlobalProviderTracking />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/landing" element={<Index />} />
