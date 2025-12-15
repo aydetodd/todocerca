@@ -30,62 +30,65 @@ export const useRealtimeLocations = () => {
   const fetchLocations = useCallback(async () => {
     if (!isMounted.current) return;
     
-    // 1. Get all provider locations
+    console.log('🔄 [fetchLocations] Iniciando...');
+    
+    // 1. Primero obtener perfiles de proveedores activos (available o busy)
+    const { data: activeProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, user_id, apodo, estado, telefono')
+      .eq('role', 'proveedor')
+      .in('estado', ['available', 'busy']);
+
+    if (profilesError) {
+      console.error('❌ Error fetching profiles:', profilesError);
+      setLoading(false);
+      setInitialLoadDone(true);
+      return;
+    }
+
+    console.log('👥 Perfiles activos:', activeProfiles?.map(p => `${p.apodo}=${p.estado}`));
+
+    if (!activeProfiles || activeProfiles.length === 0) {
+      console.log('⚠️ No hay proveedores activos');
+      setLocations([]);
+      setLoading(false);
+      setInitialLoadDone(true);
+      return;
+    }
+
+    const activeUserIds = activeProfiles.map(p => p.user_id);
+
+    // 2. Obtener ubicaciones solo de proveedores activos
     const { data: locationsData, error: locError } = await supabase
       .from('proveedor_locations')
-      .select('*');
+      .select('*')
+      .in('user_id', activeUserIds);
 
     if (locError) {
-      console.error('Error fetching locations:', locError);
+      console.error('❌ Error fetching locations:', locError);
       setLoading(false);
+      setInitialLoadDone(true);
       return;
     }
 
     if (!locationsData || locationsData.length === 0) {
+      console.log('⚠️ No hay ubicaciones de proveedores activos');
       setLocations([]);
       setLoading(false);
+      setInitialLoadDone(true);
       return;
     }
 
-    const userIds = locationsData.map(l => l.user_id);
-    
-    // 2. Obtener perfiles FRESH - usando timestamp para evitar cache
-    const timestamp = Date.now();
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, user_id, apodo, estado, telefono, role')
-      .in('user_id', userIds)
-      .eq('role', 'proveedor');
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      setLoading(false);
-      return;
-    }
-    
-    console.log(`🔍 [Fetch ${timestamp}] Profiles raw:`, profilesData?.map(p => `${p.apodo}=${p.estado}`));
-
-    // 3. Filtrar solo available/busy (no mostrar offline)
-    const activeProfiles = (profilesData || []).filter(p => 
-      p.estado === 'available' || p.estado === 'busy'
-    );
-
-    if (activeProfiles.length === 0) {
-      setLocations([]);
-      setLoading(false);
-      return;
-    }
-
-    // 4. Get provider IDs for taxi check
+    // 3. Obtener proveedores para verificar taxis
     const { data: proveedoresData } = await supabase
       .from('proveedores')
       .select('id, user_id')
-      .in('user_id', userIds);
+      .in('user_id', activeUserIds);
 
     const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
     const proveedorIds = proveedoresData?.map(p => p.id) || [];
     
-    // 5. Check for taxi products
+    // 4. Verificar productos taxi
     const { data: taxiCategory } = await supabase
       .from('categories')
       .select('id')
@@ -106,13 +109,11 @@ export const useRealtimeLocations = () => {
     const { data: taxiProducts } = await taxiQuery;
     const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 
-    // 6. Merge data - usar activeProfiles
+    // 5. Combinar datos
     const merged: ProveedorLocation[] = [];
     
     for (const loc of locationsData) {
       const profile = activeProfiles.find(p => p.user_id === loc.user_id);
-      
-      // Solo incluir si tiene perfil activo (ya filtrado por available/busy)
       if (!profile) continue;
       
       const proveedorId = proveedorMap.get(loc.user_id);
@@ -129,13 +130,12 @@ export const useRealtimeLocations = () => {
       });
     }
 
-    console.log(`✅ [Locations] Final: ${merged.length} locations`);
+    console.log(`✅ [fetchLocations] Final: ${merged.length} proveedores activos`);
     merged.forEach(loc => {
-      console.log(`   🚕 ${loc.profiles?.apodo}: estado="${loc.profiles?.estado}" lat=${loc.latitude}`);
+      console.log(`   🚕 ${loc.profiles?.apodo}: estado=${loc.profiles?.estado}`);
     });
     
     if (isMounted.current) {
-      console.log('🔄 [Locations] Setting state with', merged.length, 'items');
       setLocations(merged);
       setLoading(false);
       setInitialLoadDone(true);
@@ -145,11 +145,12 @@ export const useRealtimeLocations = () => {
   useEffect(() => {
     isMounted.current = true;
     
+    // Carga inicial
     fetchLocations();
 
-    // Canal para cambios de profiles - escuchar TODOS los updates de proveedores
+    // Suscripción a cambios de profiles (todos los eventos UPDATE)
     const profilesChannel = supabase
-      .channel('profiles_status_realtime')
+      .channel('realtime-profiles-status')
       .on(
         'postgres_changes',
         { 
@@ -158,32 +159,31 @@ export const useRealtimeLocations = () => {
           table: 'profiles'
         },
         (payload: any) => {
+          console.log('📡 [Realtime] Profile UPDATE recibido:', payload);
+          
           const newData = payload.new;
           const oldData = payload.old;
           
-          // Solo nos interesan los proveedores
-          if (newData?.role !== 'proveedor') return;
+          // Solo procesar si es proveedor
+          if (newData?.role !== 'proveedor') {
+            console.log('   ➡️ Ignorado: no es proveedor');
+            return;
+          }
           
           // Solo refetch si el estado cambió
           if (oldData?.estado !== newData?.estado) {
-            console.log('🔴🟡🟢 [Realtime] Proveedor estado cambió:', {
-              apodo: newData.apodo,
-              old_estado: oldData?.estado,
-              new_estado: newData.estado
-            });
-            
-            // Refetch inmediato - no setTimeout
+            console.log(`🔄 [Realtime] ${newData.apodo}: ${oldData?.estado} → ${newData.estado}`);
             fetchLocations();
           }
         }
       )
       .subscribe((status) => {
-        console.log('📡 [Profiles Channel] Status:', status);
+        console.log('📡 [Profiles Channel] Subscription status:', status);
       });
 
-    // Canal para ubicaciones
+    // Suscripción a cambios de ubicaciones
     const locationsChannel = supabase
-      .channel('locations_realtime_' + Date.now())
+      .channel('realtime-locations')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'proveedor_locations' },
@@ -194,10 +194,10 @@ export const useRealtimeLocations = () => {
       )
       .subscribe();
 
-    // Polling cada 3 segundos como respaldo
-    const pollInterval = setInterval(fetchLocations, 3000);
+    // Polling como respaldo (cada 5 segundos)
+    const pollInterval = setInterval(fetchLocations, 5000);
 
-    // Auto-track for providers
+    // Auto-track para proveedores
     const startProviderTracking = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -231,7 +231,7 @@ export const useRealtimeLocations = () => {
         clearWatch(watchId);
       }
     };
-  }, [fetchLocations]);
+  }, [fetchLocations, watchId]);
 
   const updateLocation = async (latitude: number, longitude: number) => {
     const { data: { user } } = await supabase.auth.getUser();
