@@ -48,7 +48,8 @@ export const useRealtimeLocations = () => {
 
     const userIds = locationsData.map(l => l.user_id);
     
-    // 2. Obtener perfiles FRESH - sin cache
+    // 2. Obtener perfiles FRESH - usando timestamp para evitar cache
+    const timestamp = Date.now();
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, user_id, apodo, estado, telefono, role')
@@ -60,6 +61,8 @@ export const useRealtimeLocations = () => {
       setLoading(false);
       return;
     }
+    
+    console.log(`🔍 [Fetch ${timestamp}] Profiles raw:`, profilesData?.map(p => `${p.apodo}=${p.estado}`));
 
     // 3. Filtrar solo available/busy (no mostrar offline)
     const activeProfiles = (profilesData || []).filter(p => 
