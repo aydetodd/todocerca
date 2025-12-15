@@ -12,6 +12,8 @@ export interface ProveedorLocation {
   latitude: number;
   longitude: number;
   updated_at: string;
+  apodo?: string | null;
+  estado?: 'available' | 'busy' | 'offline' | null;
   profiles?: {
     apodo: string | null;
     estado: 'available' | 'busy' | 'offline';
@@ -27,118 +29,68 @@ export const useRealtimeLocations = () => {
   const [watchId, setWatchId] = useState<string | null>(null);
   const isMounted = useRef(true);
 
+  // Función para obtener ubicaciones con estado - ESPERA a tener TODO antes de mostrar
   const fetchLocations = useCallback(async () => {
-    if (!isMounted.current) return;
-    
-    // 1. Get all provider locations
-    const { data: locationsData, error: locError } = await supabase
-      .from('proveedor_locations')
-      .select('*');
-
-    if (locError) {
-      console.error('Error fetching locations:', locError);
-      setLoading(false);
-      return;
-    }
-
-    if (!locationsData || locationsData.length === 0) {
-      setLocations([]);
-      setLoading(false);
-      return;
-    }
-
-    const userIds = locationsData.map(l => l.user_id);
-    
-    // 2. Obtener perfiles FRESH - usando timestamp para evitar cache
-    const timestamp = Date.now();
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, user_id, apodo, estado, telefono, role')
-      .in('user_id', userIds)
-      .eq('role', 'proveedor');
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      setLoading(false);
-      return;
-    }
-    
-    console.log(`🔍 [Fetch ${timestamp}] Profiles raw:`, profilesData?.map(p => `${p.apodo}=${p.estado}`));
-
-    // 3. Filtrar solo available/busy (no mostrar offline)
-    const activeProfiles = (profilesData || []).filter(p => 
-      p.estado === 'available' || p.estado === 'busy'
-    );
-
-    if (activeProfiles.length === 0) {
-      setLocations([]);
-      setLoading(false);
-      return;
-    }
-
-    // 4. Get provider IDs for taxi check
-    const { data: proveedoresData } = await supabase
-      .from('proveedores')
-      .select('id, user_id')
-      .in('user_id', userIds);
-
-    const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
-    const proveedorIds = proveedoresData?.map(p => p.id) || [];
-    
-    // 5. Check for taxi products
-    const { data: taxiCategory } = await supabase
-      .from('categories')
-      .select('id')
-      .ilike('name', 'taxi')
-      .maybeSingle();
-    
-    let taxiQuery = supabase
-      .from('productos')
-      .select('proveedor_id')
-      .in('proveedor_id', proveedorIds);
-    
-    if (taxiCategory?.id) {
-      taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
-    } else {
-      taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
-    }
-    
-    const { data: taxiProducts } = await taxiQuery;
-    const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
-
-    // 6. Merge data - usar activeProfiles
-    const merged: ProveedorLocation[] = [];
-    
-    for (const loc of locationsData) {
-      const profile = activeProfiles.find(p => p.user_id === loc.user_id);
+    try {
+      // 1. Obtener proveedores con ubicación
+      const { data: proveedorLocations, error: locError } = await supabase
+        .from('proveedor_locations')
+        .select('*');
       
-      // Solo incluir si tiene perfil activo (ya filtrado por available/busy)
-      if (!profile) continue;
+      if (locError) throw locError;
+
+      // 2. Obtener TODOS los profiles de proveedores con su estado actual
+      const { data: profiles, error: profError } = await supabase
+        .from('profiles')
+        .select('user_id, apodo, nombre, estado, role')
+        .eq('role', 'proveedor');
       
-      const proveedorId = proveedorMap.get(loc.user_id);
-      const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
-      
-      merged.push({
-        ...loc,
-        profiles: {
-          apodo: profile.apodo,
-          estado: profile.estado as 'available' | 'busy' | 'offline',
-          telefono: profile.telefono
-        },
-        is_taxi: isTaxi
+      if (profError) throw profError;
+
+      if (!isMounted.current) return;
+
+      // 3. Crear mapa de profiles para lookup rápido
+      const profileMap = new Map<string, { apodo: string | null; nombre: string; estado: string | null }>();
+      profiles?.forEach(p => {
+        profileMap.set(p.user_id, {
+          apodo: p.apodo,
+          nombre: p.nombre,
+          estado: p.estado
+        });
       });
-    }
 
-    console.log(`✅ [Locations] Final: ${merged.length} locations`);
-    merged.forEach(loc => {
-      console.log(`   🚕 ${loc.profiles?.apodo}: estado="${loc.profiles?.estado}" lat=${loc.latitude}`);
-    });
-    
-    if (isMounted.current) {
-      console.log('🔄 [Locations] Setting state with', merged.length, 'items');
+      // 4. Combinar y FILTRAR - solo mostrar available y busy
+      const merged: ProveedorLocation[] = [];
+      
+      proveedorLocations?.forEach(loc => {
+        const profile = profileMap.get(loc.user_id);
+        
+        // Solo incluir si tiene profile Y NO está offline
+        if (profile && profile.estado !== 'offline') {
+          merged.push({
+            id: loc.id,
+            user_id: loc.user_id,
+            latitude: Number(loc.latitude),
+            longitude: Number(loc.longitude),
+            updated_at: loc.updated_at,
+            apodo: profile.apodo || profile.nombre,
+            estado: profile.estado as 'available' | 'busy' | 'offline' | null
+          });
+        }
+      });
+
+      console.log('✅ [Locations] Cargados:', merged.length, 'proveedores activos');
+      
+      // Actualizar estado de una sola vez
       setLocations(merged);
       setLoading(false);
       setInitialLoadDone(true);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      if (isMounted.current) {
+        setLoading(false);
+        setInitialLoadDone(true);
+      }
     }
   }, []);
 
@@ -147,9 +99,9 @@ export const useRealtimeLocations = () => {
     
     fetchLocations();
 
-    // Canal para cambios de profiles - escuchar TODOS los updates de proveedores
+    // Canal para cambios de profiles - ACTUALIZACIÓN DIRECTA sin refetch
     const profilesChannel = supabase
-      .channel('profiles_status_realtime')
+      .channel('profiles_status_direct_' + Date.now())
       .on(
         'postgres_changes',
         { 
@@ -164,21 +116,37 @@ export const useRealtimeLocations = () => {
           // Solo nos interesan los proveedores
           if (newData?.role !== 'proveedor') return;
           
-          // Solo refetch si el estado cambió
+          // Solo actuar si el estado cambió
           if (oldData?.estado !== newData?.estado) {
-            console.log('🔴🟡🟢 [Realtime] Proveedor estado cambió:', {
+            console.log('🔴🟡🟢 [Realtime] Estado cambió:', {
+              user_id: newData.user_id,
               apodo: newData.apodo,
-              old_estado: oldData?.estado,
-              new_estado: newData.estado
+              de: oldData?.estado,
+              a: newData.estado
             });
             
-            // Refetch inmediato - no setTimeout
-            fetchLocations();
+            // ACTUALIZAR ESTADO LOCAL DIRECTAMENTE - sin refetch
+            setLocations(prevLocations => {
+              if (newData.estado === 'offline') {
+                // REMOVER del array si está offline
+                console.log('🚫 [Realtime] Removiendo proveedor offline:', newData.apodo);
+                return prevLocations.filter(loc => loc.user_id !== newData.user_id);
+              } else {
+                // ACTUALIZAR el estado del proveedor existente
+                return prevLocations.map(loc => {
+                  if (loc.user_id === newData.user_id) {
+                    console.log('✏️ [Realtime] Actualizando estado de:', newData.apodo, 'a', newData.estado);
+                    return { ...loc, estado: newData.estado };
+                  }
+                  return loc;
+                });
+              }
+            });
           }
         }
       )
       .subscribe((status) => {
-        console.log('📡 [Profiles Channel] Status:', status);
+        console.log('📡 [Profiles Direct] Status:', status);
       });
 
     // Canal para ubicaciones
