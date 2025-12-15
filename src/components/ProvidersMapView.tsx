@@ -62,36 +62,35 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers.length);
   console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations.length, 'loading:', realtimeLoading);
   
-  // Merge provider data with real-time locations (use static coords as fallback)
+  // Merge provider data with real-time locations - ONLY show providers with realtime data to get correct status
   const providersWithRealtimeLocation = React.useMemo(() => {
     return providers
       .map(provider => {
+        // First check if there's realtime location data with status
         const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
+        
         if (realtimeLocation) {
-          console.log(`🔄 Proveedor ${provider.business_name}: ubicación realtime`, {
-            lat: realtimeLocation.latitude, 
-            lng: realtimeLocation.longitude,
-            status: realtimeLocation.profiles?.estado
-          });
+          // Use the status from realtime data - this is the source of truth
+          const status = realtimeLocation.profiles?.estado || 'offline';
+          
+          console.log(`🔄 Proveedor ${provider.business_name}: realtime status=${status}`);
+          
+          // Don't show offline providers
+          if (status === 'offline') {
+            console.log(`❌ ${provider.business_name}: offline, no mostrar`);
+            return null;
+          }
+          
           return {
             ...provider,
             latitude: realtimeLocation.latitude,
             longitude: realtimeLocation.longitude,
-            _realtimeStatus: realtimeLocation.profiles?.estado || 'available'
+            _realtimeStatus: status
           };
         }
-        // Use static coordinates from provider data as fallback
-        if (provider.latitude && provider.longitude) {
-          console.log(`📍 Proveedor ${provider.business_name}: usando coordenadas estáticas`, {
-            lat: provider.latitude,
-            lng: provider.longitude
-          });
-          return {
-            ...provider,
-            _realtimeStatus: 'available'
-          };
-        }
-        console.log(`❌ ${provider.business_name}: sin ubicación disponible`);
+        
+        // No realtime data - don't show this provider (we don't know their status)
+        console.log(`⚠️ ${provider.business_name}: sin datos realtime, esperando...`);
         return null;
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
@@ -102,12 +101,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     return providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
   }, [providersWithRealtimeLocation]);
 
-  // Check if we have providers with static coordinates (don't wait for realtime)
-  const hasStaticProviders = React.useMemo(() => {
-    return providers.some(p => p.latitude && p.longitude);
-  }, [providers]);
-
-  console.log('✅ Proveedores válidos:', validProviders.length, 'hasStaticProviders:', hasStaticProviders);
+  console.log('✅ Proveedores válidos:', validProviders.length, 'realtime loaded:', !realtimeLoading);
   
   // Initialize map once
   useEffect(() => {
@@ -246,8 +240,8 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     };
   }, [onOpenChat, providers]);
 
-  // Only show loading if we don't have any static providers AND realtime is loading
-  if (realtimeLoading && !hasStaticProviders && validProviders.length === 0) {
+  // Show loading while realtime data loads
+  if (realtimeLoading && validProviders.length === 0) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
         <p className="text-muted-foreground">Cargando ubicaciones...</p>
