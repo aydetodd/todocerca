@@ -145,30 +145,44 @@ export const useRealtimeLocations = () => {
     
     fetchLocations();
 
-    // Canal separado para cambios de profiles - CRÍTICO para estados
+    // Canal para cambios de profiles - escuchar TODOS los updates de proveedores
     const profilesChannel = supabase
-      .channel('profiles_status_changes')
+      .channel('profiles_realtime_' + Date.now())
       .on(
         'postgres_changes',
         { 
           event: 'UPDATE', 
           schema: 'public', 
-          table: 'profiles',
-          filter: 'role=eq.proveedor'
+          table: 'profiles'
         },
-        (payload) => {
-          console.log('🔴🟡🟢 [Realtime] PROFILE ESTADO CAMBIÓ:', payload.new);
-          // Refetch inmediato cuando un proveedor cambia estado
+        (payload: any) => {
+          const newData = payload.new;
+          const oldData = payload.old;
+          
+          // Solo nos interesan los proveedores
+          if (newData?.role !== 'proveedor') return;
+          
+          console.log('🔴🟡🟢 [Realtime] Proveedor estado cambió:', {
+            apodo: newData.apodo,
+            old_estado: oldData?.estado,
+            new_estado: newData.estado
+          });
+          
+          // Si el estado cambió a offline, forzar refetch inmediato
+          if (newData.estado === 'offline') {
+            console.log('⚠️ [Realtime] Proveedor ahora OFFLINE - removiendo del mapa');
+          }
+          
           fetchLocations();
         }
       )
       .subscribe((status) => {
-        console.log('📡 [Profiles Subscription]', status);
+        console.log('📡 [Profiles Channel] Status:', status);
       });
 
     // Canal para ubicaciones
     const locationsChannel = supabase
-      .channel('locations_changes')
+      .channel('locations_realtime_' + Date.now())
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'proveedor_locations' },
@@ -177,15 +191,10 @@ export const useRealtimeLocations = () => {
           fetchLocations();
         }
       )
-      .subscribe((status) => {
-        console.log('📡 [Locations Subscription]', status);
-      });
+      .subscribe();
 
-    // Polling cada 2 segundos como respaldo
-    const pollInterval = setInterval(() => {
-      console.log('⏱️ [Polling] Refetching...');
-      fetchLocations();
-    }, 2000);
+    // Polling cada 3 segundos como respaldo
+    const pollInterval = setInterval(fetchLocations, 3000);
 
     // Auto-track for providers
     const startProviderTracking = async () => {
