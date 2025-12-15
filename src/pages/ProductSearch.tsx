@@ -13,7 +13,7 @@ import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
 import { trackProductSearch } from '@/lib/analytics';
-
+import { StatusControl } from '@/components/StatusControl';
 interface Category {
   id: string;
   name: string;
@@ -310,6 +310,9 @@ const ProductSearch = () => {
               <ArrowLeft className="h-5 w-5 mr-2" />
               Volver a Resultados
             </Button>
+          </div>
+          <div className="absolute top-4 right-4 z-[9999]">
+            <StatusControl />
           </div>
           <div className="h-full w-full">
             <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
