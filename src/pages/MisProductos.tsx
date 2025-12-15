@@ -104,9 +104,7 @@ export default function MisProductos() {
 
   return (
     <div className="min-h-screen bg-background">
-      <GlobalHeader>
-        <Badge variant="default">Proveedor</Badge>
-      </GlobalHeader>
+      <GlobalHeader />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
