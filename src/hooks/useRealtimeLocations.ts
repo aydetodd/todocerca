@@ -181,21 +181,24 @@ export const useRealtimeLocations = () => {
         console.log('📡 [Profiles Channel] Subscription status:', status);
       });
 
-    // Suscripción a cambios de ubicaciones
+    // Suscripción a cambios de ubicaciones - refetch inmediato cuando cambia
     const locationsChannel = supabase
       .channel('realtime-locations')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'proveedor_locations' },
-        () => {
-          console.log('📍 [Realtime] Location change');
+        (payload: any) => {
+          console.log('📍 [Realtime] Location change:', payload.new?.user_id);
+          // Actualización inmediata para movimiento fluido
           fetchLocations();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📍 [Locations Channel] Subscription status:', status);
+      });
 
-    // Polling como respaldo (cada 5 segundos)
-    const pollInterval = setInterval(fetchLocations, 5000);
+    // Polling más frecuente para movimiento fluido (cada 2 segundos)
+    const pollInterval = setInterval(fetchLocations, 2000);
 
     // Auto-track para proveedores
     const startProviderTracking = async () => {

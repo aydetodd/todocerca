@@ -66,9 +66,10 @@ export default function MapView() {
         { enableHighAccuracy: true }
       );
       
-      // Then watch for changes
+      // Then watch for changes - más agresivo para movimiento fluido
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
+          console.log('[MapView] 🚀 Nueva posición detectada');
           updateProviderLocation(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
@@ -81,7 +82,7 @@ export default function MapView() {
         },
         {
           enableHighAccuracy: true,
-          timeout: 5000,
+          timeout: 3000,
           maximumAge: 0 // Always get fresh position
         }
       );
