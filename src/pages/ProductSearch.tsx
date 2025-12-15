@@ -3,10 +3,11 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { GlobalHeader } from '@/components/GlobalHeader';
 import ProvidersMap from '@/components/ProvidersMapView';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -319,14 +320,10 @@ const ProductSearch = () => {
       {/* Normal View */}
       {!showFullScreenMap && (
         <div className="min-h-screen bg-background">
+          <GlobalHeader />
+          
           <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-          <h1 className="text-3xl font-bold">Buscar Productos y Servicios</h1>
-        </div>
+            <h1 className="text-3xl font-bold mb-6">Buscar Productos y Servicios</h1>
         
         <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-4">

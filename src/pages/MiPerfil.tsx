@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, Search, Users, ArrowLeft, Package, ClipboardList, Briefcase } from 'lucide-react';
-import { StatusControl } from '@/components/StatusControl';
+import { Users, Briefcase } from 'lucide-react';
+import { GlobalHeader } from '@/components/GlobalHeader';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -203,42 +203,11 @@ export default function MiPerfil() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant={isProvider ? "default" : "secondary"}>
-                {isProvider ? "Proveedor" : "Cliente"}
-              </Badge>
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-              {isProvider && (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/mis-productos')}>
-                    <Package className="h-4 w-4 mr-2" />
-                    Productos
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/gestion-pedidos')}>
-                    <ClipboardList className="h-4 w-4 mr-2" />
-                    Pedidos
-                  </Button>
-                </>
-              )}
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar Sesión
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <GlobalHeader>
+        <Badge variant={isProvider ? "default" : "secondary"}>
+          {isProvider ? "Proveedor" : "Cliente"}
+        </Badge>
+      </GlobalHeader>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -258,77 +227,70 @@ export default function MiPerfil() {
             <CardDescription>Tus datos de usuario</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-4">
-              <div className="flex-1 space-y-4">
-                {profile?.consecutive_number && (
-                  <div>
-                    <span className="text-sm font-medium">ID Usuario:</span>
-                    <p className="text-sm font-mono font-bold text-primary">
-                      {formatUserId(profile.consecutive_number, profile.role)}
-                    </p>
-                  </div>
-                )}
+            <div className="space-y-4">
+              {profile?.consecutive_number && (
                 <div>
-                  <span className="text-sm font-medium">Nombre:</span>
-                  <p className="text-sm text-muted-foreground">{profile?.nombre}</p>
-                </div>
-                {user?.email && !user.email.endsWith('@todocerca.app') && (
-                  <div>
-                    <span className="text-sm font-medium">Email:</span>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm font-medium">Rol:</span>
-                  <p className="text-sm text-muted-foreground">
-                    {isProvider ? "Proveedor" : "Cliente"}
+                  <span className="text-sm font-medium">ID Usuario:</span>
+                  <p className="text-sm font-mono font-bold text-primary">
+                    {formatUserId(profile.consecutive_number, profile.role)}
                   </p>
                 </div>
-                {userSpecificData?.telefono && (
-                  <div>
-                    <span className="text-sm font-medium">Teléfono:</span>
-                    <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
-                  </div>
-                )}
-                {userSpecificData?.codigo_postal && (
-                  <div>
-                    <span className="text-sm font-medium">Código Postal:</span>
-                    <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
-                  </div>
-                )}
-                
-                {/* Botón para convertirse en proveedor si es cliente */}
-                {profile?.role === 'cliente' && (
-                  <div className="pt-4 border-t">
-                    <Button 
-                      onClick={handleUpgradeToProvider}
-                      disabled={upgrading}
-                      className="w-full"
-                    >
-                      <Briefcase className="h-4 w-4 mr-2" />
-                      {upgrading ? 'Procesando...' : 'Convertirme en Proveedor ($200 MXN/año)'}
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Publica hasta 500 productos y servicios
-                    </p>
-                  </div>
-                )}
-                
-                {/* QR Code Generator for Providers */}
-                {isProvider && userSpecificData?.id && (
-                  <div className="pt-4 border-t">
-                    <QRCodeGenerator 
-                      proveedorId={userSpecificData.id} 
-                      businessName={userSpecificData.nombre || profile.nombre}
-                    />
-                  </div>
-                )}
+              )}
+              <div>
+                <span className="text-sm font-medium">Nombre:</span>
+                <p className="text-sm text-muted-foreground">{profile?.nombre}</p>
               </div>
+              {user?.email && !user.email.endsWith('@todocerca.app') && (
+                <div>
+                  <span className="text-sm font-medium">Email:</span>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+              )}
+              <div>
+                <span className="text-sm font-medium">Rol:</span>
+                <p className="text-sm text-muted-foreground">
+                  {isProvider ? "Proveedor" : "Cliente"}
+                </p>
+              </div>
+              {userSpecificData?.telefono && (
+                <div>
+                  <span className="text-sm font-medium">Teléfono:</span>
+                  <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
+                </div>
+              )}
+              {userSpecificData?.codigo_postal && (
+                <div>
+                  <span className="text-sm font-medium">Código Postal:</span>
+                  <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
+                </div>
+              )}
               
-              {/* Status Control - Traffic Light */}
-              <div className="flex-shrink-0">
-                <StatusControl />
-              </div>
+              {/* Botón para convertirse en proveedor si es cliente */}
+              {profile?.role === 'cliente' && (
+                <div className="pt-4 border-t">
+                  <Button 
+                    onClick={handleUpgradeToProvider}
+                    disabled={upgrading}
+                    className="w-full"
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    {upgrading ? 'Procesando...' : 'Convertirme en Proveedor ($200 MXN/año)'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Publica hasta 500 productos y servicios
+                  </p>
+                </div>
+              )}
+              
+              {/* QR Code Generator for Providers */}
+              {isProvider && userSpecificData?.id && (
+                <div className="pt-4 border-t">
+                  <QRCodeGenerator 
+                    proveedorId={userSpecificData.id} 
+                    businessName={userSpecificData.nombre || profile.nombre}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
