@@ -16,8 +16,11 @@ export interface ProveedorLocation {
     apodo: string | null;
     estado: 'available' | 'busy' | 'offline';
     telefono: string | null;
+    provider_type: 'taxi' | 'ruta' | null;
+    route_name: string | null;
   };
   is_taxi?: boolean;
+  is_bus?: boolean;
 }
 
 export const useRealtimeLocations = () => {
@@ -36,7 +39,7 @@ export const useRealtimeLocations = () => {
     
     const { data: activeProfiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, user_id, apodo, estado, telefono')
+      .select('id, user_id, apodo, estado, telefono, provider_type, route_name')
       .eq('role', 'proveedor')
       .in('estado', ['available', 'busy']);
 
@@ -97,16 +100,23 @@ export const useRealtimeLocations = () => {
       if (!profile) continue;
       
       const proveedorId = proveedorMap.get(loc.user_id);
-      const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
+      
+      // Determine vehicle type: first check provider_type, then fall back to product check
+      const isBus = profile.provider_type === 'ruta';
+      const isTaxi = profile.provider_type === 'taxi' || 
+        (profile.provider_type === null && proveedorId ? taxiProviderIds.has(proveedorId) : false);
       
       const location: ProveedorLocation = {
         ...loc,
         profiles: {
           apodo: profile.apodo,
           estado: profile.estado as 'available' | 'busy' | 'offline',
-          telefono: profile.telefono
+          telefono: profile.telefono,
+          provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
+          route_name: profile.route_name
         },
-        is_taxi: isTaxi
+        is_taxi: isTaxi,
+        is_bus: isBus
       };
       
       newLocationsMap.set(loc.user_id, location);

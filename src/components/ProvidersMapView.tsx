@@ -40,14 +40,18 @@ interface Provider {
 interface ProvidersMapProps {
   providers: Provider[];
   onOpenChat?: (providerId: string, providerName: string) => void;
+  vehicleFilter?: 'all' | 'taxi' | 'ruta';
 }
 
-// Taxi colors based on status
-const TAXI_COLORS: Record<string, { body: string; roof: string }> = {
+// Vehicle colors based on status
+const VEHICLE_COLORS: Record<string, { body: string; roof: string }> = {
   available: { body: '#22c55e', roof: '#16a34a' },
   busy: { body: '#FDB813', roof: '#FFD700' },
   offline: { body: '#ef4444', roof: '#dc2626' }
 };
+
+// Bus is always white
+const BUS_COLOR = { body: '#FFFFFF', roof: '#F0F0F0' };
 
 // Calculate bearing between two points
 const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -64,7 +68,7 @@ const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number
 };
 
 const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
-  const taxiColor = TAXI_COLORS[providerStatus] || TAXI_COLORS.available;
+  const taxiColor = VEHICLE_COLORS[providerStatus] || VEHICLE_COLORS.available;
 
   const taxiSvg = `
     <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
@@ -101,7 +105,64 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   });
 };
 
-function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
+// Create bus icon (white bus with route name)
+const createBusIcon = (routeName: string, rotation: number = 0) => {
+  const busSvg = `
+    <svg width="40" height="60" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- Shadow -->
+      <ellipse cx="20" cy="56" rx="16" ry="3" fill="rgba(0,0,0,0.25)"/>
+      
+      <!-- Rear wheels -->
+      <ellipse cx="10" cy="48" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="10" cy="48" rx="2.2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="30" cy="48" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="30" cy="48" rx="2.2" ry="3" fill="#4a4a4a"/>
+      
+      <!-- Bus body (white) -->
+      <rect x="8" y="10" width="24" height="42" rx="4" fill="${BUS_COLOR.body}" stroke="#666" stroke-width="1"/>
+      
+      <!-- Front wheels -->
+      <ellipse cx="10" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="10" cy="18" rx="2.2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="30" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="30" cy="18" rx="2.2" ry="3" fill="#4a4a4a"/>
+      
+      <!-- Roof -->
+      <rect x="10" y="12" width="20" height="8" rx="2" fill="${BUS_COLOR.roof}" stroke="#888" stroke-width="0.5"/>
+      
+      <!-- Windows -->
+      <rect x="10" y="22" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
+      <rect x="10" y="30" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
+      <rect x="10" y="38" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
+      
+      <!-- Front windshield -->
+      <path d="M 12 12 L 12 18 L 28 18 L 28 12 Q 20 10 12 12 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+      
+      <!-- Rear window -->
+      <rect x="12" y="46" width="16" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+      
+      <!-- Headlights -->
+      <circle cx="13" cy="11" r="1.5" fill="#FFF" stroke="#666" stroke-width="0.4"/>
+      <circle cx="27" cy="11" r="1.5" fill="#FFF" stroke="#666" stroke-width="0.4"/>
+      
+      <!-- Taillights -->
+      <rect x="12" y="50" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      <rect x="25" y="50" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      
+      <!-- Door indication -->
+      <line x1="20" y1="22" x2="20" y2="44" stroke="#999" stroke-width="0.8"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${busSvg}</div>`,
+    className: 'custom-bus-marker',
+    iconSize: [40, 60],
+    iconAnchor: [20, 30]
+  });
+};
+
+function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: ProvidersMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -125,8 +186,10 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
         if (realtimeLocation) {
           // Use the status from realtime data - this is the source of truth
           const status = realtimeLocation.profiles?.estado || 'offline';
+          const providerType = realtimeLocation.profiles?.provider_type || null;
+          const routeName = realtimeLocation.profiles?.route_name || null;
           
-          console.log(`🔄 Proveedor ${provider.business_name}: realtime status=${status}`);
+          console.log(`🔄 Proveedor ${provider.business_name}: realtime status=${status}, type=${providerType}`);
           
           // Don't show offline providers
           if (status === 'offline') {
@@ -138,7 +201,11 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
             ...provider,
             latitude: realtimeLocation.latitude,
             longitude: realtimeLocation.longitude,
-            _realtimeStatus: status
+            _realtimeStatus: status,
+            _providerType: providerType,
+            _routeName: routeName,
+            _isBus: realtimeLocation.is_bus,
+            _isTaxi: realtimeLocation.is_taxi
           };
         }
         
@@ -149,12 +216,33 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       .filter((p): p is NonNullable<typeof p> => p !== null);
   }, [providers, realtimeLocations]);
   
-  // Filter providers with valid coordinates
+  // Filter providers with valid coordinates and apply vehicle filter
   const validProviders = React.useMemo(() => {
-    return providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
-  }, [providersWithRealtimeLocation]);
+    let filtered = providersWithRealtimeLocation.filter(p => p.latitude && p.longitude);
+    
+    // Apply vehicle type filter
+    if (vehicleFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        const isBus = (p as any)._isBus || (p as any)._providerType === 'ruta';
+        const isTaxi = !isBus && (
+          (p as any)._isTaxi || 
+          (p as any)._providerType === 'taxi' ||
+          p.productos.some(prod => 
+            prod.categoria?.toLowerCase().includes('taxi') || 
+            prod.nombre?.toLowerCase().includes('taxi')
+          )
+        );
+        
+        if (vehicleFilter === 'taxi') return isTaxi;
+        if (vehicleFilter === 'ruta') return isBus;
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [providersWithRealtimeLocation, vehicleFilter]);
 
-  console.log('✅ Proveedores válidos:', validProviders.length, 'realtime loaded:', !realtimeLoading);
+  console.log('✅ Proveedores válidos:', validProviders.length, 'filtro:', vehicleFilter, 'realtime loaded:', !realtimeLoading);
   
   // Initialize map once
   useEffect(() => {
@@ -197,11 +285,18 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       const existingMarker = markersRef.current.get(provider.user_id);
       const newPos: [number, number] = [provider.latitude, provider.longitude];
 
-      const isTaxi = provider.productos.some(p => 
-        p.categoria?.toLowerCase().includes('taxi') || 
-        p.nombre?.toLowerCase().includes('taxi')
+      // Determine vehicle type from realtime data first, then fall back to product check
+      const isBus = (provider as any)._isBus || (provider as any)._providerType === 'ruta';
+      const isTaxi = !isBus && (
+        (provider as any)._isTaxi || 
+        (provider as any)._providerType === 'taxi' ||
+        provider.productos.some(p => 
+          p.categoria?.toLowerCase().includes('taxi') || 
+          p.nombre?.toLowerCase().includes('taxi')
+        )
       );
-
+      
+      const routeName = (provider as any)._routeName || '';
       const providerStatus = (provider as any)._realtimeStatus || 'available';
 
       // If marker exists, update position AND update icon if status changed
@@ -224,7 +319,8 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
             provider.longitude
           );
           
-          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)} - rotation: ${rotation.toFixed(0)}°`);
+          const vehicleEmoji = isBus ? '🚌' : '🚕';
+          console.log(`${vehicleEmoji} ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)} - rotation: ${rotation.toFixed(0)}°`);
           existingMarker.setLatLng(newPos);
           
           // Store new position and rotation
@@ -234,8 +330,10 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
             rotation 
           });
           
-          // Update icon with new rotation for taxis
-          if (isTaxi) {
+          // Update icon with new rotation
+          if (isBus) {
+            existingMarker.setIcon(createBusIcon(routeName, rotation));
+          } else if (isTaxi) {
             existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
             (existingMarker as any)._taxiStatus = providerStatus;
           }
@@ -256,16 +354,21 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
 
       // Create new marker only if it doesn't exist
       let icon;
-      if (isTaxi) {
+      if (isBus) {
+        icon = createBusIcon(routeName, 0);
+      } else if (isTaxi) {
         icon = createTaxiIcon(providerStatus, 0);
       }
 
-      const marker = isTaxi 
+      const marker = (isTaxi || isBus) 
         ? L.marker(newPos, { icon }).addTo(mapRef.current!)
         : L.marker(newPos).addTo(mapRef.current!);
 
       if (isTaxi) {
         (marker as any)._taxiStatus = providerStatus;
+      }
+      if (isBus) {
+        (marker as any)._isBus = true;
       }
       
       // Store initial position
