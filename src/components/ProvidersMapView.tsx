@@ -124,18 +124,38 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     };
   }, [validProviders.length > 0]);
 
-  // Update markers when providers change
+  // Update markers when providers change - smooth movement
   useEffect(() => {
     if (!mapRef.current || validProviders.length === 0) return;
 
     console.log('🔄 Updating markers:', validProviders.length);
 
-    // Remove all existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current.clear();
+    // Track current provider IDs
+    const currentProviderIds = new Set(validProviders.map(p => p.user_id));
+    
+    // Remove markers for providers that are no longer present
+    markersRef.current.forEach((marker, userId) => {
+      if (!currentProviderIds.has(userId)) {
+        marker.remove();
+        markersRef.current.delete(userId);
+      }
+    });
 
-    // Add markers
+    // Add or update markers for each provider
     validProviders.forEach((provider) => {
+      const existingMarker = markersRef.current.get(provider.user_id);
+      
+      // If marker exists, just update its position (smooth movement)
+      if (existingMarker) {
+        const currentLatLng = existingMarker.getLatLng();
+        if (currentLatLng.lat !== provider.latitude || currentLatLng.lng !== provider.longitude) {
+          console.log(`🚕 Moviendo ${provider.business_name} a:`, provider.latitude.toFixed(6), provider.longitude.toFixed(6));
+          existingMarker.setLatLng([provider.latitude, provider.longitude]);
+        }
+        return;
+      }
+      
+      // Create new marker
       const isTaxi = provider.productos.some(p => 
         p.categoria?.toLowerCase().includes('taxi') || 
         p.nombre?.toLowerCase().includes('taxi')
