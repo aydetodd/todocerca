@@ -29,9 +29,6 @@ export const useRealtimeLocations = () => {
   const fetchLocations = useCallback(async () => {
     if (!isMounted.current) return;
     
-    const timestamp = new Date().toISOString();
-    console.log(`🔄 [Locations] Fetching at ${timestamp}...`);
-    
     // 1. Get all provider locations
     const { data: locationsData, error: locError } = await supabase
       .from('proveedor_locations')
@@ -44,51 +41,36 @@ export const useRealtimeLocations = () => {
     }
 
     if (!locationsData || locationsData.length === 0) {
-      console.log('📍 [Locations] No locations found');
       setLocations([]);
       setLoading(false);
       return;
     }
 
     const userIds = locationsData.map(l => l.user_id);
-    console.log('📍 [Locations] Found user_ids:', userIds);
     
-    // 2. Get ALL profiles for these user_ids (sin filtro de estado para debug)
-    const { data: allProfilesData, error: allProfilesError } = await supabase
+    // 2. Obtener perfiles FRESH - sin cache
+    const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, user_id, apodo, estado, telefono, role')
       .in('user_id', userIds)
       .eq('role', 'proveedor');
 
-    if (allProfilesError) {
-      console.error('Error fetching all profiles:', allProfilesError);
-    } else {
-      console.log('👤 [ALL Profiles] Raw from DB:');
-      allProfilesData?.forEach(p => {
-        console.log(`   - ${p.apodo} (${p.user_id}): estado="${p.estado}" role="${p.role}"`);
-      });
-    }
-
-    // 3. Filter only available/busy
-    const profilesData = allProfilesData?.filter(p => 
-      p.estado === 'available' || p.estado === 'busy'
-    ) || [];
-
-    console.log('👤 [Filtered Profiles] available/busy only:');
-    profilesData.forEach(p => {
-      console.log(`   ✅ ${p.apodo}: estado="${p.estado}"`);
-    });
-
-    if (profilesData.length === 0) {
-      console.log('📍 [Locations] No active profiles');
-      setLocations([]);
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
       setLoading(false);
       return;
     }
 
-    // 4. Usar perfiles filtrados directamente
-    const profilesWithActiveSub = profilesData;
-    console.log(`🔓 [DEBUG] Usando ${profilesWithActiveSub.length} perfiles (sin filtro suscripción)`);
+    // 3. Filtrar solo available/busy (no mostrar offline)
+    const activeProfiles = (profilesData || []).filter(p => 
+      p.estado === 'available' || p.estado === 'busy'
+    );
+
+    if (activeProfiles.length === 0) {
+      setLocations([]);
+      setLoading(false);
+      return;
+    }
 
     // 4. Get provider IDs for taxi check
     const { data: proveedoresData } = await supabase
@@ -120,11 +102,11 @@ export const useRealtimeLocations = () => {
     const { data: taxiProducts } = await taxiQuery;
     const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 
-    // 6. Merge data - usar profilesWithActiveSub directamente
+    // 6. Merge data - usar activeProfiles
     const merged: ProveedorLocation[] = [];
     
     for (const loc of locationsData) {
-      const profile = profilesWithActiveSub.find(p => p.user_id === loc.user_id);
+      const profile = activeProfiles.find(p => p.user_id === loc.user_id);
       
       // Solo incluir si tiene perfil activo (ya filtrado por available/busy)
       if (!profile) continue;
@@ -160,9 +142,30 @@ export const useRealtimeLocations = () => {
     
     fetchLocations();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel('locations_realtime')
+    // Canal separado para cambios de profiles - CRÍTICO para estados
+    const profilesChannel = supabase
+      .channel('profiles_status_changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'profiles',
+          filter: 'role=eq.proveedor'
+        },
+        (payload) => {
+          console.log('🔴🟡🟢 [Realtime] PROFILE ESTADO CAMBIÓ:', payload.new);
+          // Refetch inmediato cuando un proveedor cambia estado
+          fetchLocations();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 [Profiles Subscription]', status);
+      });
+
+    // Canal para ubicaciones
+    const locationsChannel = supabase
+      .channel('locations_changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'proveedor_locations' },
@@ -171,21 +174,15 @@ export const useRealtimeLocations = () => {
           fetchLocations();
         }
       )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles' },
-        (payload) => {
-          console.log('👤 [Realtime] Profile UPDATE:', payload.new);
-          // Refetch para obtener el estado actualizado
-          fetchLocations();
-        }
-      )
       .subscribe((status) => {
-        console.log('📡 [Subscription]', status);
+        console.log('📡 [Locations Subscription]', status);
       });
 
-    // Polling cada 3 segundos para asegurar actualizaciones
-    const pollInterval = setInterval(fetchLocations, 3000);
+    // Polling cada 2 segundos como respaldo
+    const pollInterval = setInterval(() => {
+      console.log('⏱️ [Polling] Refetching...');
+      fetchLocations();
+    }, 2000);
 
     // Auto-track for providers
     const startProviderTracking = async () => {
@@ -214,7 +211,8 @@ export const useRealtimeLocations = () => {
 
     return () => {
       isMounted.current = false;
-      supabase.removeChannel(channel);
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(locationsChannel);
       clearInterval(pollInterval);
       if (watchId) {
         clearWatch(watchId);
