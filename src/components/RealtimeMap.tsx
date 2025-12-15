@@ -23,7 +23,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { locations, updateLocation } = useRealtimeLocations();
+  const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
 
   // Get current user
   useEffect(() => {
@@ -103,11 +103,17 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
     return () => clearInterval(interval);
   }, [currentUserId, updateLocation]);
 
-  // Update markers including current user
+  // Update markers - SOLO cuando initialLoadDone sea true
   useEffect(() => {
     if (!mapRef.current) return;
+    
+    // No mostrar markers hasta que la carga inicial esté lista
+    if (!initialLoadDone) {
+      console.log('⏳ [Map] Waiting for initial load...');
+      return;
+    }
 
-    console.log('🗺️ [Map] Updating', locations.length, 'markers');
+    console.log('🗺️ [Map] Updating', locations.length, 'markers (initial load done)');
     
     // Primero: remover TODOS los markers que ya no están en locations
     const currentLocationUserIds = new Set(locations.map(loc => loc.user_id));
@@ -265,7 +271,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId]);
+  }, [locations, currentUserId, initialLoadDone]);
 
   // Add global functions for popup buttons
   useEffect(() => {
