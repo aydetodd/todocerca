@@ -29,7 +29,8 @@ export const useRealtimeLocations = () => {
   const fetchLocations = useCallback(async () => {
     if (!isMounted.current) return;
     
-    console.log('🔄 [Locations] Fetching...');
+    const timestamp = new Date().toISOString();
+    console.log(`🔄 [Locations] Fetching at ${timestamp}...`);
     
     // 1. Get all provider locations
     const { data: locationsData, error: locError } = await supabase
@@ -50,36 +51,44 @@ export const useRealtimeLocations = () => {
     }
 
     const userIds = locationsData.map(l => l.user_id);
+    console.log('📍 [Locations] Found user_ids:', userIds);
     
-    // 2. Get profiles - FRESH query cada vez, solo available/busy proveedores
-    const { data: profilesData, error: profilesError } = await supabase
+    // 2. Get ALL profiles for these user_ids (sin filtro de estado para debug)
+    const { data: allProfilesData, error: allProfilesError } = await supabase
       .from('profiles')
       .select('id, user_id, apodo, estado, telefono, role')
       .in('user_id', userIds)
-      .eq('role', 'proveedor')
-      .in('estado', ['available', 'busy']);
+      .eq('role', 'proveedor');
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      setLoading(false);
-      return;
+    if (allProfilesError) {
+      console.error('Error fetching all profiles:', allProfilesError);
+    } else {
+      console.log('👤 [ALL Profiles] Raw from DB:');
+      allProfilesData?.forEach(p => {
+        console.log(`   - ${p.apodo} (${p.user_id}): estado="${p.estado}" role="${p.role}"`);
+      });
     }
 
-    console.log('👤 [Profiles]', profilesData?.length || 0, 'found:');
-    profilesData?.forEach(p => {
-      console.log(`   - ${p.apodo}: estado=${p.estado}`);
+    // 3. Filter only available/busy
+    const profilesData = allProfilesData?.filter(p => 
+      p.estado === 'available' || p.estado === 'busy'
+    ) || [];
+
+    console.log('👤 [Filtered Profiles] available/busy only:');
+    profilesData.forEach(p => {
+      console.log(`   ✅ ${p.apodo}: estado="${p.estado}"`);
     });
 
-    if (!profilesData || profilesData.length === 0) {
+    if (profilesData.length === 0) {
+      console.log('📍 [Locations] No active profiles');
       setLocations([]);
       setLoading(false);
       return;
     }
 
-    // 3. TEMPORALMENTE: usar todos los perfiles para pruebas (sin filtro de suscripción)
-    // TODO: restaurar filtro de suscripción después de confirmar que estados funcionan
+    // 4. Usar perfiles filtrados directamente
     const profilesWithActiveSub = profilesData;
-    console.log('🔓 [DEBUG] Usando TODOS los perfiles sin filtro de suscripción');
+    console.log(`🔓 [DEBUG] Usando ${profilesWithActiveSub.length} perfiles (sin filtro suscripción)`);
 
     // 4. Get provider IDs for taxi check
     const { data: proveedoresData } = await supabase
@@ -134,12 +143,13 @@ export const useRealtimeLocations = () => {
       });
     }
 
-    console.log('✅ [Locations] Final:', merged.length);
+    console.log(`✅ [Locations] Final: ${merged.length} locations`);
     merged.forEach(loc => {
-      console.log(`   🚕 ${loc.profiles?.apodo}: estado=${loc.profiles?.estado}`);
+      console.log(`   🚕 ${loc.profiles?.apodo}: estado="${loc.profiles?.estado}" lat=${loc.latitude}`);
     });
     
     if (isMounted.current) {
+      console.log('🔄 [Locations] Setting state with', merged.length, 'items');
       setLocations(merged);
       setLoading(false);
     }
