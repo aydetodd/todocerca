@@ -124,11 +124,9 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     };
   }, [validProviders.length > 0]);
 
-  // Update markers when providers change - smooth movement
+  // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
     if (!mapRef.current || validProviders.length === 0) return;
-
-    console.log('🔄 Updating markers:', validProviders.length);
 
     // Track current provider IDs
     const currentProviderIds = new Set(validProviders.map(p => p.user_id));
@@ -144,25 +142,27 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     // Add or update markers for each provider
     validProviders.forEach((provider) => {
       const existingMarker = markersRef.current.get(provider.user_id);
+      const newPos: [number, number] = [provider.latitude, provider.longitude];
       
       // If marker exists, just update its position (smooth movement)
       if (existingMarker) {
         const currentLatLng = existingMarker.getLatLng();
-        if (currentLatLng.lat !== provider.latitude || currentLatLng.lng !== provider.longitude) {
-          console.log(`🚕 Moviendo ${provider.business_name} a:`, provider.latitude.toFixed(6), provider.longitude.toFixed(6));
-          existingMarker.setLatLng([provider.latitude, provider.longitude]);
+        // Only update if position actually changed
+        if (Math.abs(currentLatLng.lat - provider.latitude) > 0.000001 || 
+            Math.abs(currentLatLng.lng - provider.longitude) > 0.000001) {
+          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)}`);
+          existingMarker.setLatLng(newPos);
         }
-        return;
+        return; // Don't recreate marker
       }
       
-      // Create new marker
+      // Create new marker only if it doesn't exist
       const isTaxi = provider.productos.some(p => 
         p.categoria?.toLowerCase().includes('taxi') || 
         p.nombre?.toLowerCase().includes('taxi')
       );
       
       const providerStatus = (provider as any)._realtimeStatus || 'available';
-      console.log('Provider:', provider.business_name, '- isTaxi:', isTaxi, '- status:', providerStatus);
       
       let icon;
       if (isTaxi) {
@@ -203,8 +203,8 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       }
       
       const marker = isTaxi 
-        ? L.marker([provider.latitude, provider.longitude], { icon }).addTo(mapRef.current!)
-        : L.marker([provider.latitude, provider.longitude]).addTo(mapRef.current!);
+        ? L.marker(newPos, { icon }).addTo(mapRef.current!)
+        : L.marker(newPos).addTo(mapRef.current!);
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
@@ -228,9 +228,8 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       
       marker.bindPopup(popupContent, { closeButton: true, autoClose: false, closeOnClick: false, maxWidth: 350 });
       markersRef.current.set(provider.user_id, marker);
+      console.log(`✅ Nuevo marcador: ${provider.business_name}`);
     });
-
-    console.log('✅ Markers updated:', markersRef.current.size);
   }, [validProviders]);
 
   // Setup global functions
