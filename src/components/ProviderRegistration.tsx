@@ -43,6 +43,8 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   const [categories, setCategories] = useState<Category[]>([]);
   const [couponCode, setCouponCode] = useState('');
   const [apodo, setApodo] = useState('');
+  const [providerType, setProviderType] = useState<'taxi' | 'ruta'>('taxi');
+  const [routeName, setRouteName] = useState('');
   const { toast } = useToast();
 
   // Provider data - simplified
@@ -178,13 +180,15 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      // 2. Actualizar perfil con apodo y cambiar rol a proveedor
-      console.log('👤 Updating profile with apodo and changing role to proveedor...');
+      // 2. Actualizar perfil con apodo, tipo de proveedor, ruta y cambiar rol a proveedor
+      console.log('👤 Updating profile with apodo, provider_type and changing role to proveedor...');
       const { error: profileUpdateError } = await supabase
         .from('profiles')
         .update({ 
           apodo,
-          role: 'proveedor'
+          role: 'proveedor',
+          provider_type: providerType,
+          route_name: providerType === 'ruta' ? routeName : null
         })
         .eq('user_id', currentUser.id);
       
@@ -371,6 +375,37 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
 
   const renderProviderInfo = () => (
     <div className="space-y-4">
+      {/* Tipo de proveedor */}
+      <div>
+        <Label>Tipo de Servicio *</Label>
+        <Select
+          value={providerType}
+          onValueChange={(value: 'taxi' | 'ruta') => setProviderType(value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona tipo de servicio" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="taxi">🚕 Taxi</SelectItem>
+            <SelectItem value="ruta">🚌 Ruta de Transporte Público</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* Nombre de ruta (solo para transporte público) */}
+      {providerType === 'ruta' && (
+        <div>
+          <Label htmlFor="routeName">Nombre de la Ruta *</Label>
+          <Input
+            id="routeName"
+            value={routeName}
+            onChange={(e) => setRouteName(e.target.value)}
+            placeholder="Ej: Ruta 1, Línea Centro-Norte"
+            required
+          />
+        </div>
+      )}
+      
       <div>
         <Label htmlFor="apodo">Alias / Nombre de Usuario *</Label>
         <Input

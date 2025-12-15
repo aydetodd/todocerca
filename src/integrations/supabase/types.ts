@@ -662,7 +662,9 @@ export type Database = {
           phone_verification_expires_at: string | null
           phone_verified: boolean | null
           postal_code: string | null
+          provider_type: Database["public"]["Enums"]["provider_type"] | null
           role: Database["public"]["Enums"]["user_role"]
+          route_name: string | null
           telefono: string | null
           updated_at: string
           user_id: string
@@ -684,7 +686,9 @@ export type Database = {
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
           postal_code?: string | null
+          provider_type?: Database["public"]["Enums"]["provider_type"] | null
           role?: Database["public"]["Enums"]["user_role"]
+          route_name?: string | null
           telefono?: string | null
           updated_at?: string
           user_id: string
@@ -706,7 +710,9 @@ export type Database = {
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
           postal_code?: string | null
+          provider_type?: Database["public"]["Enums"]["provider_type"] | null
           role?: Database["public"]["Enums"]["user_role"]
+          route_name?: string | null
           telefono?: string | null
           updated_at?: string
           user_id?: string
@@ -1073,6 +1079,7 @@ export type Database = {
     }
     Enums: {
       availability_status: "disponible" | "ocupado" | "no_disponible"
+      provider_type: "taxi" | "ruta"
       subscription_status: "activa" | "vencida" | "pendiente"
       user_role: "admin" | "cliente" | "proveedor"
       user_status: "available" | "busy" | "offline"
@@ -1205,6 +1212,7 @@ export const Constants = {
   public: {
     Enums: {
       availability_status: ["disponible", "ocupado", "no_disponible"],
+      provider_type: ["taxi", "ruta"],
       subscription_status: ["activa", "vencida", "pendiente"],
       user_role: ["admin", "cliente", "proveedor"],
       user_status: ["available", "busy", "offline"],

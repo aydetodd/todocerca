@@ -69,6 +69,7 @@ const ProductSearch = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
+  const [vehicleFilter, setVehicleFilter] = useState<'all' | 'taxi' | 'ruta'>('all');
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -315,7 +316,7 @@ const ProductSearch = () => {
             <StatusControl />
           </div>
           <div className="h-full w-full">
-            <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} />
+            <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} vehicleFilter={vehicleFilter} />
           </div>
         </div>
       )}
@@ -343,6 +344,34 @@ const ProductSearch = () => {
             </Button>
           </div>
         </form>
+
+        {/* Filtro de Transporte */}
+        <div className="mb-4">
+          <p className="text-sm font-medium mb-3">Tipo de Transporte:</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={vehicleFilter === 'all' ? 'default' : 'outline'}
+              onClick={() => setVehicleFilter('all')}
+              size="sm"
+            >
+              🚗 Todos
+            </Button>
+            <Button
+              variant={vehicleFilter === 'taxi' ? 'default' : 'outline'}
+              onClick={() => setVehicleFilter('taxi')}
+              size="sm"
+            >
+              🚕 Taxis
+            </Button>
+            <Button
+              variant={vehicleFilter === 'ruta' ? 'default' : 'outline'}
+              onClick={() => setVehicleFilter('ruta')}
+              size="sm"
+            >
+              🚌 Rutas de Transporte
+            </Button>
+          </div>
+        </div>
 
         {/* Categorías */}
         <div className="mb-8">
