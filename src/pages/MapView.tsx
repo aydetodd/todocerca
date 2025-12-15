@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Home } from 'lucide-react';
@@ -7,7 +7,6 @@ import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useBackgroundTracking } from '@/hooks/useBackgroundTracking';
 
 export default function MapView() {
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
@@ -17,90 +16,8 @@ export default function MapView() {
   const [isProvider, setIsProvider] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const watchIdRef = useRef<number | null>(null);
 
-  // Enable background tracking for providers (always active to keep location updated)
-  useBackgroundTracking(isProvider, null);
-
-  // Web geolocation tracking for providers (works in browser/PWA)
-  useEffect(() => {
-    if (!isProvider) return;
-
-    let lastUpdateTime = 0;
-    const MIN_UPDATE_INTERVAL = 1000; // Actualizar máximo cada 1 segundo
-
-    const updateProviderLocation = async (latitude: number, longitude: number) => {
-      const now = Date.now();
-      // Throttle para no saturar la base de datos
-      if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) return;
-      lastUpdateTime = now;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      console.log('[MapView] 📍 Ubicación:', latitude.toFixed(6), longitude.toFixed(6));
-
-      const { error } = await supabase
-        .from('proveedor_locations')
-        .upsert({
-          user_id: user.id,
-          latitude,
-          longitude,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        console.error('[MapView] Error updating location:', error);
-      }
-    };
-
-    if ('geolocation' in navigator) {
-      console.log('[MapView] 🛰️ Iniciando tracking GPS...');
-      
-      // Get initial position
-      navigator.geolocation.getCurrentPosition(
-        (pos) => updateProviderLocation(pos.coords.latitude, pos.coords.longitude),
-        (err) => console.error('[MapView] GPS error:', err),
-        { enableHighAccuracy: true }
-      );
-      
-      // Watch position continuously
-      const watchId = navigator.geolocation.watchPosition(
-        (pos) => updateProviderLocation(pos.coords.latitude, pos.coords.longitude),
-        (err) => {
-          console.error('[MapView] GPS error:', err);
-          if (err.code === err.PERMISSION_DENIED) {
-            toast({
-              title: "Permiso GPS denegado",
-              description: "Activa la ubicación en tu navegador",
-              variant: "destructive"
-            });
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0 // Siempre posición fresca
-        }
-      );
-      
-      watchIdRef.current = watchId;
-      
-      toast({
-        title: "📍 GPS Activo",
-        description: "Ubicación en tiempo real activada",
-      });
-    }
-
-    return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    };
-  }, [isProvider, toast]);
+  // GPS tracking ahora es global via GlobalProviderTracking
 
   useEffect(() => {
     const checkSubscription = async () => {
