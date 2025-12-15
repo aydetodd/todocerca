@@ -24,18 +24,21 @@ export default function MapView() {
 
   // Web geolocation tracking for providers (works in browser/PWA)
   useEffect(() => {
-    // Track location if provider (with or without subscription for testing)
     if (!isProvider) return;
 
+    let lastUpdateTime = 0;
+    const MIN_UPDATE_INTERVAL = 1000; // Actualizar máximo cada 1 segundo
+
     const updateProviderLocation = async (latitude: number, longitude: number) => {
+      const now = Date.now();
+      // Throttle para no saturar la base de datos
+      if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) return;
+      lastUpdateTime = now;
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log('[MapView] 📍 Actualizando ubicación proveedor:', { 
-        latitude: latitude.toFixed(6), 
-        longitude: longitude.toFixed(6),
-        time: new Date().toISOString()
-      });
+      console.log('[MapView] 📍 Ubicación:', latitude.toFixed(6), longitude.toFixed(6));
 
       const { error } = await supabase
         .from('proveedor_locations')
@@ -53,37 +56,33 @@ export default function MapView() {
       }
     };
 
-    // Start watching position with browser geolocation
     if ('geolocation' in navigator) {
-      console.log('[MapView] 🛰️ Iniciando tracking de ubicación para proveedor...');
+      console.log('[MapView] 🛰️ Iniciando tracking GPS...');
       
-      // Get initial position immediately
+      // Get initial position
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          updateProviderLocation(position.coords.latitude, position.coords.longitude);
-        },
-        (error) => console.error('[MapView] Initial position error:', error),
+        (pos) => updateProviderLocation(pos.coords.latitude, pos.coords.longitude),
+        (err) => console.error('[MapView] GPS error:', err),
         { enableHighAccuracy: true }
       );
       
-      // Then watch for changes - más agresivo para movimiento fluido
+      // Watch position continuously
       const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          console.log('[MapView] 🚀 Nueva posición detectada');
-          updateProviderLocation(position.coords.latitude, position.coords.longitude);
-        },
-        (error) => {
-          console.error('[MapView] Geolocation error:', error);
-          toast({
-            title: "Error de GPS",
-            description: "No se pudo obtener tu ubicación. Verifica los permisos.",
-            variant: "destructive"
-          });
+        (pos) => updateProviderLocation(pos.coords.latitude, pos.coords.longitude),
+        (err) => {
+          console.error('[MapView] GPS error:', err);
+          if (err.code === err.PERMISSION_DENIED) {
+            toast({
+              title: "Permiso GPS denegado",
+              description: "Activa la ubicación en tu navegador",
+              variant: "destructive"
+            });
+          }
         },
         {
           enableHighAccuracy: true,
-          timeout: 3000,
-          maximumAge: 0 // Always get fresh position
+          timeout: 5000,
+          maximumAge: 0 // Siempre posición fresca
         }
       );
       
@@ -91,13 +90,7 @@ export default function MapView() {
       
       toast({
         title: "📍 GPS Activo",
-        description: "Tu ubicación se actualiza en tiempo real",
-      });
-    } else {
-      toast({
-        title: "GPS no disponible",
-        description: "Tu navegador no soporta geolocalización",
-        variant: "destructive"
+        description: "Ubicación en tiempo real activada",
       });
     }
 
@@ -105,7 +98,6 @@ export default function MapView() {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
-        console.log('[MapView] 🛑 Tracking detenido');
       }
     };
   }, [isProvider, toast]);
