@@ -70,6 +70,8 @@ const ProductSearch = () => {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
   const [vehicleFilter, setVehicleFilter] = useState<'all' | 'taxi' | 'ruta'>('all');
+  const [selectedRouteNumber, setSelectedRouteNumber] = useState<string>('');
+  const [availableRoutesInSearch, setAvailableRoutesInSearch] = useState<string[]>([]);
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -100,6 +102,35 @@ const ProductSearch = () => {
     
     fetchCategories();
   }, []);
+
+  // Cargar rutas disponibles para el filtro de búsqueda
+  useEffect(() => {
+    const fetchAvailableRoutes = async () => {
+      // Buscar la categoría "Rutas de Transporte"
+      const rutasCategory = categories.find(c => c.name === 'Rutas de Transporte');
+      if (!rutasCategory) return;
+
+      // Obtener productos únicos de esta categoría
+      const { data } = await supabase
+        .from('productos')
+        .select('nombre')
+        .eq('category_id', rutasCategory.id)
+        .eq('is_available', true);
+      
+      if (data) {
+        const uniqueRoutes = [...new Set(data.map(p => p.nombre))].sort((a, b) => {
+          const numA = parseInt(a.replace('Ruta ', ''));
+          const numB = parseInt(b.replace('Ruta ', ''));
+          return numA - numB;
+        });
+        setAvailableRoutesInSearch(uniqueRoutes);
+      }
+    };
+    
+    if (categories.length > 0) {
+      fetchAvailableRoutes();
+    }
+  }, [categories]);
 
   useEffect(() => {
     const query = searchParams.get('q');
@@ -351,14 +382,20 @@ const ProductSearch = () => {
           <div className="flex flex-wrap gap-2">
             <Button
               variant={vehicleFilter === 'all' ? 'default' : 'outline'}
-              onClick={() => setVehicleFilter('all')}
+              onClick={() => {
+                setVehicleFilter('all');
+                setSelectedRouteNumber('');
+              }}
               size="sm"
             >
               🚗 Todos
             </Button>
             <Button
               variant={vehicleFilter === 'taxi' ? 'default' : 'outline'}
-              onClick={() => setVehicleFilter('taxi')}
+              onClick={() => {
+                setVehicleFilter('taxi');
+                setSelectedRouteNumber('');
+              }}
               size="sm"
             >
               🚕 Taxis
@@ -371,6 +408,32 @@ const ProductSearch = () => {
               🚌 Rutas de Transporte
             </Button>
           </div>
+          
+          {/* Selector de número de ruta cuando se elige "Rutas de Transporte" */}
+          {vehicleFilter === 'ruta' && (
+            <div className="mt-3">
+              <p className="text-sm font-medium mb-2">Selecciona una ruta:</p>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                <Button
+                  variant={selectedRouteNumber === '' ? 'default' : 'outline'}
+                  onClick={() => setSelectedRouteNumber('')}
+                  size="sm"
+                >
+                  Todas las rutas
+                </Button>
+                {availableRoutesInSearch.map((routeName) => (
+                  <Button
+                    key={routeName}
+                    variant={selectedRouteNumber === routeName ? 'default' : 'outline'}
+                    onClick={() => setSelectedRouteNumber(routeName)}
+                    size="sm"
+                  >
+                    {routeName}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Categorías */}

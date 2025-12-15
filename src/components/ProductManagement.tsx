@@ -439,73 +439,13 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="nombre">Nombre del Producto *</Label>
-                <Input
-                  id="nombre"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                  placeholder="Ej: Tomate rojo"
-                />
-              </div>
-              <div>
-                <Label htmlFor="descripcion">Descripción *</Label>
-                <Textarea
-                  id="descripcion"
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                  placeholder="Describe tu producto..."
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="precio">Precio *</Label>
-                  <Input
-                    id="precio"
-                    type="number"
-                    value={formData.precio}
-                    onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value) || 0})}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="unit">Unidad *</Label>
-                  <Select
-                    value={formData.unit}
-                    onValueChange={(value) => setFormData({...formData, unit: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">Kilos</SelectItem>
-                      <SelectItem value="l">Litros</SelectItem>
-                      <SelectItem value="pz">Piezas</SelectItem>
-                      <SelectItem value="m">Metros</SelectItem>
-                      <SelectItem value="paquete">Paquetes</SelectItem>
-                      <SelectItem value="caja">Cajas</SelectItem>
-                      <SelectItem value="bulto">Bultos</SelectItem>
-                      <SelectItem value="ton">Toneladas</SelectItem>
-                      <SelectItem value="g">Gramos</SelectItem>
-                      <SelectItem value="km">Kilómetros</SelectItem>
-                      <SelectItem value="cita">Citas</SelectItem>
-                      <SelectItem value="proceso">Procesos</SelectItem>
-                      <SelectItem value="evento">Eventos</SelectItem>
-                      <SelectItem value="viaje">Viajes</SelectItem>
-                      <SelectItem value="otros">Otros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {/* Categoría primero para rutas de transporte */}
               <div>
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
                   value={formData.category_id}
                   onValueChange={(value) => {
-                    setFormData({...formData, category_id: value, nombre: ''});
+                    setFormData({...formData, category_id: value, nombre: '', descripcion: ''});
                     setSelectedRoute('');
                   }}
                 >
@@ -558,6 +498,94 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
                     Solo se muestran las rutas que aún no has registrado
+                  </p>
+                </div>
+              )}
+
+              {/* Nombre del producto (solo si no es categoría rutas o está editando) */}
+              {(!isRutasCategory || editingProduct) && (
+                <div>
+                  <Label htmlFor="nombre">Nombre del Producto *</Label>
+                  <Input
+                    id="nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Ej: Tomate rojo"
+                  />
+                </div>
+              )}
+              <div>
+                <Label htmlFor="descripcion">Descripción *</Label>
+                <Textarea
+                  id="descripcion"
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                  placeholder="Describe tu producto..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="precio">Precio *</Label>
+                  <Input
+                    id="precio"
+                    type="number"
+                    value={formData.precio}
+                    onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value) || 0})}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="unit">Unidad *</Label>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={(value) => setFormData({...formData, unit: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">Kilos</SelectItem>
+                      <SelectItem value="l">Litros</SelectItem>
+                      <SelectItem value="pz">Piezas</SelectItem>
+                      <SelectItem value="m">Metros</SelectItem>
+                      <SelectItem value="paquete">Paquetes</SelectItem>
+                      <SelectItem value="caja">Cajas</SelectItem>
+                      <SelectItem value="bulto">Bultos</SelectItem>
+                      <SelectItem value="ton">Toneladas</SelectItem>
+                      <SelectItem value="g">Gramos</SelectItem>
+                      <SelectItem value="km">Kilómetros</SelectItem>
+                      <SelectItem value="cita">Citas</SelectItem>
+                      <SelectItem value="proceso">Procesos</SelectItem>
+                      <SelectItem value="evento">Eventos</SelectItem>
+                      <SelectItem value="viaje">Viajes</SelectItem>
+                      <SelectItem value="otros">Otros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Campo descripción (solo si no es rutas o está editando) */}
+              {(!isRutasCategory || editingProduct) && (
+                <div>
+                  <Label htmlFor="descripcion">Descripción *</Label>
+                  <Textarea
+                    id="descripcion"
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                    placeholder="Describe tu producto..."
+                    rows={3}
+                  />
+                </div>
+              )}
+              
+              {/* Mostrar descripción solo lectura para rutas */}
+              {isRutasCategory && !editingProduct && selectedRoute && (
+                <div>
+                  <Label>Descripción</Label>
+                  <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                    {formData.descripcion}
                   </p>
                 </div>
               )}
