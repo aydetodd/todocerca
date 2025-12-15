@@ -24,13 +24,18 @@ export default function MapView() {
 
   // Web geolocation tracking for providers (works in browser/PWA)
   useEffect(() => {
-    if (!isProvider || !hasActiveSubscription) return;
+    // Track location if provider (with or without subscription for testing)
+    if (!isProvider) return;
 
     const updateProviderLocation = async (latitude: number, longitude: number) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log('[MapView] 📍 Actualizando ubicación proveedor:', { latitude, longitude });
+      console.log('[MapView] 📍 Actualizando ubicación proveedor:', { 
+        latitude: latitude.toFixed(6), 
+        longitude: longitude.toFixed(6),
+        time: new Date().toISOString()
+      });
 
       const { error } = await supabase
         .from('proveedor_locations')
@@ -52,30 +57,57 @@ export default function MapView() {
     if ('geolocation' in navigator) {
       console.log('[MapView] 🛰️ Iniciando tracking de ubicación para proveedor...');
       
+      // Get initial position immediately
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateProviderLocation(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => console.error('[MapView] Initial position error:', error),
+        { enableHighAccuracy: true }
+      );
+      
+      // Then watch for changes
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
           updateProviderLocation(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           console.error('[MapView] Geolocation error:', error);
+          toast({
+            title: "Error de GPS",
+            description: "No se pudo obtener tu ubicación. Verifica los permisos.",
+            variant: "destructive"
+          });
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000
+          timeout: 5000,
+          maximumAge: 0 // Always get fresh position
         }
       );
       
       watchIdRef.current = watchId;
+      
+      toast({
+        title: "📍 GPS Activo",
+        description: "Tu ubicación se actualiza en tiempo real",
+      });
+    } else {
+      toast({
+        title: "GPS no disponible",
+        description: "Tu navegador no soporta geolocalización",
+        variant: "destructive"
+      });
     }
 
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
+        console.log('[MapView] 🛑 Tracking detenido');
       }
     };
-  }, [isProvider, hasActiveSubscription]);
+  }, [isProvider, toast]);
 
   useEffect(() => {
     const checkSubscription = async () => {
