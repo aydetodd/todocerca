@@ -52,6 +52,9 @@ interface ProductManagementProps {
   proveedorId: string;
 }
 
+// Generar lista de rutas disponibles (1-100)
+const AVAILABLE_ROUTES = Array.from({ length: 100 }, (_, i) => `Ruta ${i + 1}`);
+
 export default function ProductManagement({ proveedorId }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -62,6 +65,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<string>('');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -75,6 +79,17 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     is_mobile: false,
     stock: 0,
   });
+
+  // Detectar si la categoría seleccionada es "Rutas de Transporte"
+  const isRutasCategory = categories.find(c => c.id === formData.category_id)?.name === 'Rutas de Transporte';
+
+  // Obtener rutas ya registradas por este proveedor
+  const registeredRoutes = products
+    .filter(p => categories.find(c => c.id === p.category_id)?.name === 'Rutas de Transporte')
+    .map(p => p.nombre);
+
+  // Rutas disponibles (no registradas aún)
+  const availableRoutes = AVAILABLE_ROUTES.filter(r => !registeredRoutes.includes(r));
 
   useEffect(() => {
     fetchProducts();
@@ -172,6 +187,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_mobile: false,
         stock: 0,
       });
+      setSelectedRoute('');
     }
     setSelectedFiles([]);
     setIsDialogOpen(true);
@@ -478,6 +494,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <SelectItem value="cita">Citas</SelectItem>
                       <SelectItem value="proceso">Procesos</SelectItem>
                       <SelectItem value="evento">Eventos</SelectItem>
+                      <SelectItem value="viaje">Viajes</SelectItem>
                       <SelectItem value="otros">Otros</SelectItem>
                     </SelectContent>
                   </Select>
@@ -487,7 +504,10 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
                   value={formData.category_id}
-                  onValueChange={(value) => setFormData({...formData, category_id: value})}
+                  onValueChange={(value) => {
+                    setFormData({...formData, category_id: value, nombre: ''});
+                    setSelectedRoute('');
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
@@ -501,6 +521,46 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Selector especial para Rutas de Transporte */}
+              {isRutasCategory && !editingProduct && (
+                <div>
+                  <Label htmlFor="route">Selecciona tu Ruta *</Label>
+                  <Select
+                    value={selectedRoute}
+                    onValueChange={(value) => {
+                      setSelectedRoute(value);
+                      setFormData({
+                        ...formData, 
+                        nombre: value,
+                        descripcion: `Servicio de transporte urbano - ${value}`,
+                        unit: 'viaje',
+                        keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}`
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una ruta disponible" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {availableRoutes.length > 0 ? (
+                        availableRoutes.map((route) => (
+                          <SelectItem key={route} value={route}>
+                            {route}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+                          Ya tienes todas las rutas registradas
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Solo se muestran las rutas que aún no has registrado
+                  </p>
+                </div>
+              )}
               <div>
                 <Label htmlFor="keywords">Palabras clave</Label>
                 <Input
