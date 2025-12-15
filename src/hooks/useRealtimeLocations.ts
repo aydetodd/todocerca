@@ -140,6 +140,38 @@ export const useRealtimeLocations = () => {
     }
   }, []);
 
+  // Polling rápido para ubicaciones (cada 1.5 segundos)
+  const fetchLocationsOnly = useCallback(async () => {
+    if (!isMounted.current) return;
+    
+    const { data: locationsData } = await supabase
+      .from('proveedor_locations')
+      .select('user_id, latitude, longitude, updated_at');
+    
+    if (!locationsData?.length) return;
+    
+    let hasChanges = false;
+    
+    for (const loc of locationsData) {
+      const existing = locationsMapRef.current.get(loc.user_id);
+      if (existing) {
+        // Check if position actually changed
+        if (Math.abs(existing.latitude - loc.latitude) > 0.000001 || 
+            Math.abs(existing.longitude - loc.longitude) > 0.000001) {
+          existing.latitude = loc.latitude;
+          existing.longitude = loc.longitude;
+          existing.updated_at = loc.updated_at;
+          hasChanges = true;
+          console.log(`🚀 [Poll] ${existing.profiles?.apodo}: ${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`);
+        }
+      }
+    }
+    
+    if (hasChanges && isMounted.current) {
+      setLocations(Array.from(locationsMapRef.current.values()));
+    }
+  }, []);
+
   useEffect(() => {
     isMounted.current = true;
     
@@ -179,15 +211,17 @@ export const useRealtimeLocations = () => {
         (payload: any) => {
           const data = payload.new;
           if (data?.user_id && data?.latitude && data?.longitude) {
-            // Actualización rápida solo de coordenadas
             updateLocationOnly(data.user_id, data.latitude, data.longitude);
           }
         }
       )
       .subscribe();
 
-    // Polling como respaldo (cada 3 segundos para refetch completo)
-    const pollInterval = setInterval(fetchFullData, 3000);
+    // Polling RÁPIDO cada 1.5 segundos para ubicaciones
+    const fastPollInterval = setInterval(fetchLocationsOnly, 1500);
+    
+    // Polling lento cada 30 segundos para refetch completo (nuevos proveedores, etc.)
+    const slowPollInterval = setInterval(fetchFullData, 30000);
 
     // Auto-track para proveedores
     const startProviderTracking = async () => {
@@ -218,12 +252,13 @@ export const useRealtimeLocations = () => {
       isMounted.current = false;
       supabase.removeChannel(profilesChannel);
       supabase.removeChannel(locationsChannel);
-      clearInterval(pollInterval);
+      clearInterval(fastPollInterval);
+      clearInterval(slowPollInterval);
       if (watchId) {
         clearWatch(watchId);
       }
     };
-  }, [fetchFullData, updateLocationOnly, watchId]);
+  }, [fetchFullData, fetchLocationsOnly, updateLocationOnly, watchId]);
 
   const updateLocation = async (latitude: number, longitude: number) => {
     const { data: { user } } = await supabase.auth.getUser();
