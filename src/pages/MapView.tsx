@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Home } from 'lucide-react';
@@ -17,9 +17,65 @@ export default function MapView() {
   const [isProvider, setIsProvider] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const watchIdRef = useRef<number | null>(null);
 
   // Enable background tracking for providers (always active to keep location updated)
   useBackgroundTracking(isProvider, null);
+
+  // Web geolocation tracking for providers (works in browser/PWA)
+  useEffect(() => {
+    if (!isProvider || !hasActiveSubscription) return;
+
+    const updateProviderLocation = async (latitude: number, longitude: number) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      console.log('[MapView] 📍 Actualizando ubicación proveedor:', { latitude, longitude });
+
+      const { error } = await supabase
+        .from('proveedor_locations')
+        .upsert({
+          user_id: user.id,
+          latitude,
+          longitude,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error('[MapView] Error updating location:', error);
+      }
+    };
+
+    // Start watching position with browser geolocation
+    if ('geolocation' in navigator) {
+      console.log('[MapView] 🛰️ Iniciando tracking de ubicación para proveedor...');
+      
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          updateProviderLocation(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.error('[MapView] Geolocation error:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 5000
+        }
+      );
+      
+      watchIdRef.current = watchId;
+    }
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [isProvider, hasActiveSubscription]);
 
   useEffect(() => {
     const checkSubscription = async () => {
