@@ -23,6 +23,7 @@ export interface ProveedorLocation {
 export const useRealtimeLocations = () => {
   const [locations, setLocations] = useState<ProveedorLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [watchId, setWatchId] = useState<string | null>(null);
   const isMounted = useRef(true);
 
@@ -137,6 +138,7 @@ export const useRealtimeLocations = () => {
       console.log('🔄 [Locations] Setting state with', merged.length, 'items');
       setLocations(merged);
       setLoading(false);
+      setInitialLoadDone(true);
     }
   }, []);
 
@@ -147,7 +149,7 @@ export const useRealtimeLocations = () => {
 
     // Canal para cambios de profiles - escuchar TODOS los updates de proveedores
     const profilesChannel = supabase
-      .channel('profiles_realtime_' + Date.now())
+      .channel('profiles_status_realtime')
       .on(
         'postgres_changes',
         { 
@@ -162,18 +164,17 @@ export const useRealtimeLocations = () => {
           // Solo nos interesan los proveedores
           if (newData?.role !== 'proveedor') return;
           
-          console.log('🔴🟡🟢 [Realtime] Proveedor estado cambió:', {
-            apodo: newData.apodo,
-            old_estado: oldData?.estado,
-            new_estado: newData.estado
-          });
-          
-          // Si el estado cambió a offline, forzar refetch inmediato
-          if (newData.estado === 'offline') {
-            console.log('⚠️ [Realtime] Proveedor ahora OFFLINE - removiendo del mapa');
+          // Solo refetch si el estado cambió
+          if (oldData?.estado !== newData?.estado) {
+            console.log('🔴🟡🟢 [Realtime] Proveedor estado cambió:', {
+              apodo: newData.apodo,
+              old_estado: oldData?.estado,
+              new_estado: newData.estado
+            });
+            
+            // Refetch inmediato - no setTimeout
+            fetchLocations();
           }
-          
-          fetchLocations();
         }
       )
       .subscribe((status) => {
@@ -252,5 +253,5 @@ export const useRealtimeLocations = () => {
     }
   };
 
-  return { locations, loading, updateLocation };
+  return { locations, loading, initialLoadDone, updateLocation };
 };
