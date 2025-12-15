@@ -308,7 +308,7 @@ const ProductSearch = () => {
               className="shadow-xl bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Volver a Resultados
+              Volver
             </Button>
           </div>
           <div className="absolute top-4 right-4 z-[9999]">

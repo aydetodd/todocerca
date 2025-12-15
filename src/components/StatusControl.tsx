@@ -39,8 +39,10 @@ export const StatusControl = () => {
     };
 
     fetchStatus();
-    
-    // Suscribirse a cambios en tiempo real SOLO del usuario actual
+  }, []);
+
+  // Suscripción en un useEffect separado que depende de userId
+  useEffect(() => {
     if (!userId) return;
     
     const channel = supabase
