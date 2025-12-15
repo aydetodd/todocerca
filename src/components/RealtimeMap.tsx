@@ -141,12 +141,16 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
     // Add/update markers for each location
     locations.forEach(location => {
-      if (!location.profiles || !location.profiles.estado) {
-        console.warn('⚠️ [Map] Missing profile/estado for', location.user_id);
+      // Usar estado directamente del location o de profiles
+      const estado = location.estado || location.profiles?.estado;
+      const apodo = location.apodo || location.profiles?.apodo || 'Usuario';
+      const telefono = location.profiles?.telefono || '';
+      
+      if (!estado) {
+        console.warn('⚠️ [Map] Missing estado for', location.user_id);
         return;
       }
 
-      const { apodo, estado, telefono } = location.profiles;
       const isCurrentUser = location.user_id === currentUserId;
       const isTaxi = location.is_taxi;
       const color = statusColors[estado];
