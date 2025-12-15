@@ -49,7 +49,21 @@ const TAXI_COLORS: Record<string, { body: string; roof: string }> = {
   offline: { body: '#ef4444', roof: '#dc2626' }
 };
 
-const createTaxiIcon = (providerStatus: string) => {
+// Calculate bearing between two points
+const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const toDeg = (rad: number) => (rad * 180) / Math.PI;
+  
+  const dLng = toRad(lng2 - lng1);
+  const y = Math.sin(dLng) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - 
+            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLng);
+  
+  let bearing = toDeg(Math.atan2(y, x));
+  return (bearing + 360) % 360; // Normalize to 0-360
+};
+
+const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   const taxiColor = TAXI_COLORS[providerStatus] || TAXI_COLORS.available;
 
   const taxiSvg = `
@@ -80,7 +94,7 @@ const createTaxiIcon = (providerStatus: string) => {
   `;
 
   return L.divIcon({
-    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">${taxiSvg}</div>`,
+    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${taxiSvg}</div>`,
     className: 'custom-taxi-marker',
     iconSize: [36, 52],
     iconAnchor: [18, 26]
@@ -91,6 +105,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const prevPositionsRef = useRef<Map<string, { lat: number; lng: number; rotation: number }>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -192,21 +207,45 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       // If marker exists, update position AND update icon if status changed
       if (existingMarker) {
         const currentLatLng = existingMarker.getLatLng();
+        const prevData = prevPositionsRef.current.get(provider.user_id);
+        let rotation = prevData?.rotation || 0;
 
         // Only update if position actually changed
-        if (
+        const positionChanged = 
           Math.abs(currentLatLng.lat - provider.latitude) > 0.000001 ||
-          Math.abs(currentLatLng.lng - provider.longitude) > 0.000001
-        ) {
-          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)}`);
+          Math.abs(currentLatLng.lng - provider.longitude) > 0.000001;
+          
+        if (positionChanged) {
+          // Calculate new bearing/rotation based on movement direction
+          rotation = calculateBearing(
+            currentLatLng.lat, 
+            currentLatLng.lng, 
+            provider.latitude, 
+            provider.longitude
+          );
+          
+          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)} - rotation: ${rotation.toFixed(0)}°`);
           existingMarker.setLatLng(newPos);
+          
+          // Store new position and rotation
+          prevPositionsRef.current.set(provider.user_id, { 
+            lat: provider.latitude, 
+            lng: provider.longitude, 
+            rotation 
+          });
+          
+          // Update icon with new rotation for taxis
+          if (isTaxi) {
+            existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
+            (existingMarker as any)._taxiStatus = providerStatus;
+          }
         }
 
         // IMPORTANT: also update taxi color when status changes (available <-> busy)
-        if (isTaxi) {
+        if (isTaxi && !positionChanged) {
           const prevStatus = (existingMarker as any)._taxiStatus as string | undefined;
           if (prevStatus !== providerStatus) {
-            existingMarker.setIcon(createTaxiIcon(providerStatus));
+            existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
             (existingMarker as any)._taxiStatus = providerStatus;
             console.log(`🎨 ${provider.business_name}: status ${prevStatus ?? 'unknown'} -> ${providerStatus}`);
           }
@@ -218,7 +257,7 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       // Create new marker only if it doesn't exist
       let icon;
       if (isTaxi) {
-        icon = createTaxiIcon(providerStatus);
+        icon = createTaxiIcon(providerStatus, 0);
       }
 
       const marker = isTaxi 
@@ -228,6 +267,13 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
       if (isTaxi) {
         (marker as any)._taxiStatus = providerStatus;
       }
+      
+      // Store initial position
+      prevPositionsRef.current.set(provider.user_id, { 
+        lat: provider.latitude, 
+        lng: provider.longitude, 
+        rotation: 0 
+      });
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
