@@ -107,212 +107,78 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
   useEffect(() => {
     if (!mapRef.current || !currentUserId) return;
 
-    console.log('🗺️ [RealtimeMap] Updating markers for', locations.length, 'locations');
+    console.log('🗺️ [Map] Updating', locations.length, 'markers');
     
-    // Simple approach: Clear all markers and recreate them (like TrackingMap)
+    // Clear all markers first
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
 
-    // Check if current user should be shown
-    const currentUserLocation = locations.find(loc => loc.user_id === currentUserId);
-    
-    // Get current user's profile even if not in locations
-    const addCurrentUserMarker = async () => {
-      if (!currentUserLocation) {
-        // Fetch current user's location and profile
-        const { data: locationData } = await supabase
-          .from('proveedor_locations')
-          .select('*')
-          .eq('user_id', currentUserId)
-          .single();
-
-        if (locationData) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('apodo, estado, telefono')
-            .eq('user_id', currentUserId)
-            .single();
-
-          if (profileData) {
-            // Add current user marker
-            const estado = profileData.estado;
-            console.log(`🚕 [CurrentUser Marker] estado=${estado}`);
-            
-            if (!estado) {
-              console.warn('⚠️ [CurrentUser] No estado, skipping marker');
-              return;
-            }
-            
-            const colors: Record<string, string> = {
-              available: '#22c55e',
-              busy: '#eab308',
-              offline: '#ef4444'
-            };
-
-            const iconHtml = `
-              <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-                <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
-                      fill="${colors[estado]}" 
-                      stroke="white" 
-                      stroke-width="2"/>
-              </svg>
-            `;
-
-            const icon = L.divIcon({
-              html: iconHtml,
-              className: 'custom-marker',
-              iconSize: [30, 30]
-            });
-
-            const marker = L.marker([Number(locationData.latitude), Number(locationData.longitude)], { icon })
-              .addTo(mapRef.current!);
-
-            const visibilityText = estado === 'offline' 
-              ? 'No visible para otros' 
-              : 'Visible para otros';
-            const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
-
-            const popupContent = `
-              <div class="p-3 min-w-[200px]">
-                <h3 class="font-bold text-lg mb-2">${profileData.apodo || 'Usuario'}</h3>
-                <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
-                <p class="text-xs mb-2" style="color: ${visibilityColor}">
-                  <strong>${visibilityText}</strong>
-                </p>
-                <p class="text-sm text-gray-500">Tu ubicación actual</p>
-              </div>
-            `;
-
-            marker.bindPopup(popupContent, {
-              closeButton: true,
-              autoClose: false,
-              closeOnClick: false,
-              maxWidth: 300
-            });
-
-            markersRef.current[currentUserId] = marker;
-          }
-        }
-      }
+    // Status colors
+    const statusColors: Record<string, string> = {
+      available: '#22c55e', // green
+      busy: '#eab308',      // yellow  
+      offline: '#ef4444'    // red
     };
 
-    addCurrentUserMarker();
-
-    // Add other users' markers
+    // Add markers for each location
     locations.forEach(location => {
-      if (!location.profiles) return;
-
-      const isCurrentUser = location.user_id === currentUserId;
-      const estado = location.profiles.estado;
-      const isTaxi = location.is_taxi;
-      
-      console.log(`🚕 [Marker] ${location.profiles.apodo}: estado=${estado}, isTaxi=${isTaxi}, user_id=${location.user_id}`);
-      
-      // If no estado, skip (shouldn't happen but safety check)
-      if (!estado) {
-        console.warn(`⚠️ [Marker] No estado for ${location.profiles.apodo}, skipping`);
+      if (!location.profiles || !location.profiles.estado) {
+        console.warn('⚠️ [Map] Missing profile/estado for', location.user_id);
         return;
       }
-      
-      // Color based on status
-      const colors: Record<string, string> = {
-        available: '#22c55e', // green
-        busy: '#eab308',      // yellow
-        offline: '#ef4444'    // red
-      };
 
+      const { apodo, estado, telefono } = location.profiles;
+      const isCurrentUser = location.user_id === currentUserId;
+      const isTaxi = location.is_taxi;
+      const color = statusColors[estado];
+      
+      console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}`);
+      
+
+      // Taxi colors based on status
+      const taxiColors: Record<string, { body: string; roof: string }> = {
+        available: { body: '#22c55e', roof: '#16a34a' }, // green
+        busy: { body: '#eab308', roof: '#d4a106' },      // yellow
+        offline: { body: '#ef4444', roof: '#dc2626' }    // red
+      };
+      
       let iconHtml: string;
       
-      // Colors based on status for taxi
-      const taxiColors = {
-        available: { body: '#22c55e', roof: '#16a34a' }, // green
-        busy: { body: '#FDB813', roof: '#FFD700' },      // yellow (original taxi color)
-        offline: { body: '#ef4444', roof: '#dc2626' }    // red (shouldn't show anyway)
-      };
-      
       if (isTaxi) {
-        const taxiColor = taxiColors[estado] || taxiColors.busy;
-        // Taxi icon - vista en perspectiva con llantas laterales
-        const taxiTopViewSvg = `
-          <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
-            <!-- Sombra del carro -->
-            <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
-            
-            <!-- Llanta trasera izquierda -->
-            <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
-            <ellipse cx="8" cy="34" rx="1.8" ry="2.5" fill="#4a4a4a"/>
-            
-            <!-- Llanta trasera derecha -->
-            <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
-            <ellipse cx="24" cy="34" rx="1.8" ry="2.5" fill="#4a4a4a"/>
-            
-            <!-- Cuerpo principal del taxi (parte trasera) -->
-            <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
-                  fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
-            
-            <!-- Llanta delantera izquierda -->
-            <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
-            <ellipse cx="8" cy="18" rx="1.8" ry="2.5" fill="#4a4a4a"/>
-            
-            <!-- Llanta delantera derecha -->
-            <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
-            <ellipse cx="24" cy="18" rx="1.8" ry="2.5" fill="#4a4a4a"/>
-            
-            <!-- Techo/Cabina superior -->
-            <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.5"/>
-            
-            <!-- Ventanas laterales izquierda -->
-            <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
-            
-            <!-- Ventanas laterales derecha -->
-            <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.3"/>
-            
-            <!-- Parabrisas frontal -->
-            <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" 
-                  fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.4"/>
-            
-            <!-- Ventana trasera -->
-            <path d="M 11 32 L 11 35 L 21 35 L 21 32 Z" 
-                  fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-            
-            <!-- Texto TAXI en el techo -->
-            <text x="16" y="26" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-            
-            <!-- Luces delanteras -->
-            <circle cx="11" cy="12" r="1.2" fill="#FFF" stroke="#333" stroke-width="0.3"/>
-            <circle cx="21" cy="12" r="1.2" fill="#FFF" stroke="#333" stroke-width="0.3"/>
-            
-            <!-- Luces traseras -->
-            <circle cx="11" cy="36" r="1" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-            <circle cx="21" cy="36" r="1" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-            
-            <!-- Detalles de puertas -->
-            <line x1="11" y1="22" x2="11" y2="29" stroke="#333" stroke-width="0.4" opacity="0.3"/>
-            <line x1="21" y1="22" x2="21" y2="29" stroke="#333" stroke-width="0.4" opacity="0.3"/>
-          </svg>
-        `;
+        const taxiColor = taxiColors[estado];
         iconHtml = `
-          <div style="
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-            transform: rotate(0deg);
-            transition: all 0.3s ease;
-          ">
-            ${taxiTopViewSvg}
+          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+            <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
+              <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
+              <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
+              <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
+                    fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
+              <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
+              <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}"/>
+              <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
+              <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
+              <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" fill="#4A90E2" opacity="0.7"/>
+              <text x="16" y="26" font-family="Arial" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+              <circle cx="11" cy="12" r="1.2" fill="#FFF"/>
+              <circle cx="21" cy="12" r="1.2" fill="#FFF"/>
+              <circle cx="11" cy="36" r="1" fill="#FF4444"/>
+              <circle cx="21" cy="36" r="1" fill="#FF4444"/>
+            </svg>
           </div>
         `;
       } else if (isCurrentUser) {
         iconHtml = `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
             <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
-                  fill="${colors[estado]}" 
-                  stroke="white" 
-                  stroke-width="2"/>
+                  fill="${color}" stroke="white" stroke-width="2"/>
           </svg>
         `;
       } else {
         iconHtml = `
           <div style="
-            background-color: ${colors[estado]};
+            background-color: ${color};
             width: 20px;
             height: 20px;
             border-radius: 50%;
@@ -329,15 +195,9 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         iconAnchor: [isTaxi ? 16 : (isCurrentUser ? 15 : 10), isTaxi ? 24 : (isCurrentUser ? 15 : 10)]
       });
 
-      // Check if marker exists and update it, or create new one
-      // Create new marker (simple approach like TrackingMap)
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
-      const marker = L.marker(newLatLng, { 
-        icon,
-        draggable: false
-      }).addTo(mapRef.current!);
+      const marker = L.marker(newLatLng, { icon }).addTo(mapRef.current!);
 
-      // Popup content
       const visibilityText = isCurrentUser && estado === 'offline' 
         ? 'No visible para otros' 
         : isCurrentUser ? 'Visible para otros' : '';
@@ -345,9 +205,9 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       const popupContent = `
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">${location.profiles.apodo || 'Usuario'}${isTaxi ? ' 🚕' : ''}</h3>
+          <h3 class="font-bold text-lg mb-2">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : ''}</h3>
           ${isTaxi ? '<p class="text-xs mb-2 text-blue-600 font-semibold">Servicio de Taxi</p>' : ''}
-          <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${colors[estado]}">${estado}</span></p>
+          <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${color}">${estado}</span></p>
           ${isCurrentUser ? `
             <p class="text-xs mb-2" style="color: ${visibilityColor}">
               <strong>${visibilityText}</strong>

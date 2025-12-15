@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   isNativeApp, 
@@ -24,165 +24,172 @@ export const useRealtimeLocations = () => {
   const [locations, setLocations] = useState<ProveedorLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [watchId, setWatchId] = useState<string | null>(null);
+  const isMounted = useRef(true);
+
+  const fetchLocations = useCallback(async () => {
+    if (!isMounted.current) return;
+    
+    console.log('🔄 [Locations] Fetching...');
+    
+    // 1. Get all provider locations
+    const { data: locationsData, error: locError } = await supabase
+      .from('proveedor_locations')
+      .select('*');
+
+    if (locError) {
+      console.error('Error fetching locations:', locError);
+      setLoading(false);
+      return;
+    }
+
+    if (!locationsData || locationsData.length === 0) {
+      console.log('📍 [Locations] No locations found');
+      setLocations([]);
+      setLoading(false);
+      return;
+    }
+
+    const userIds = locationsData.map(l => l.user_id);
+    
+    // 2. Get profiles - FRESH query cada vez, solo available/busy proveedores
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, user_id, apodo, estado, telefono, role')
+      .in('user_id', userIds)
+      .eq('role', 'proveedor')
+      .in('estado', ['available', 'busy']);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      setLoading(false);
+      return;
+    }
+
+    console.log('👤 [Profiles]', profilesData?.length || 0, 'found:');
+    profilesData?.forEach(p => {
+      console.log(`   - ${p.apodo}: estado=${p.estado}`);
+    });
+
+    if (!profilesData || profilesData.length === 0) {
+      setLocations([]);
+      setLoading(false);
+      return;
+    }
+
+    // 3. Check active subscriptions
+    const profileIds = profilesData.map(p => p.id);
+    const { data: subscriptionsData } = await supabase
+      .from('subscriptions')
+      .select('profile_id, status, end_date')
+      .in('profile_id', profileIds)
+      .eq('status', 'activa');
+
+    const profilesWithActiveSub = profilesData.filter(profile => {
+      const subscription = subscriptionsData?.find(s => s.profile_id === profile.id);
+      if (!subscription) return false;
+      if (subscription.end_date) {
+        return new Date(subscription.end_date) > new Date();
+      }
+      return true;
+    });
+
+    // 4. Get provider IDs for taxi check
+    const { data: proveedoresData } = await supabase
+      .from('proveedores')
+      .select('id, user_id')
+      .in('user_id', userIds);
+
+    const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
+    const proveedorIds = proveedoresData?.map(p => p.id) || [];
+    
+    // 5. Check for taxi products
+    const { data: taxiCategory } = await supabase
+      .from('categories')
+      .select('id')
+      .ilike('name', 'taxi')
+      .maybeSingle();
+    
+    let taxiQuery = supabase
+      .from('productos')
+      .select('proveedor_id')
+      .in('proveedor_id', proveedorIds);
+    
+    if (taxiCategory?.id) {
+      taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
+    } else {
+      taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
+    }
+    
+    const { data: taxiProducts } = await taxiQuery;
+    const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
+
+    // 6. Merge data - usar profilesWithActiveSub directamente
+    const merged: ProveedorLocation[] = [];
+    
+    for (const loc of locationsData) {
+      const profile = profilesWithActiveSub.find(p => p.user_id === loc.user_id);
+      
+      // Solo incluir si tiene perfil activo (ya filtrado por available/busy)
+      if (!profile) continue;
+      
+      const proveedorId = proveedorMap.get(loc.user_id);
+      const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
+      
+      merged.push({
+        ...loc,
+        profiles: {
+          apodo: profile.apodo,
+          estado: profile.estado as 'available' | 'busy' | 'offline',
+          telefono: profile.telefono
+        },
+        is_taxi: isTaxi
+      });
+    }
+
+    console.log('✅ [Locations] Final:', merged.length);
+    merged.forEach(loc => {
+      console.log(`   🚕 ${loc.profiles?.apodo}: estado=${loc.profiles?.estado}`);
+    });
+    
+    if (isMounted.current) {
+      setLocations(merged);
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Fetch initial locations
-    const fetchLocations = async () => {
-      console.log('🔄 [RealtimeLocations] Fetching all locations...');
-      
-      const { data: locationsData, error: locError } = await supabase
-        .from('proveedor_locations')
-        .select('*');
-
-      if (locError) {
-        console.error('Error fetching locations:', locError);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch profiles for all users - only providers with available/busy status
-      const userIds = locationsData?.map(l => l.user_id) || [];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, user_id, apodo, estado, telefono, role')
-        .in('user_id', userIds)
-        .eq('role', 'proveedor')
-        .in('estado', ['available', 'busy']);
-
-      console.log('📊 [RealtimeLocations] Profiles found:', profilesData?.length || 0);
-      profilesData?.forEach(p => {
-        console.log(`   👤 ${p.apodo}: estado=${p.estado}`);
-      });
-
-      if (!profilesData || profilesData.length === 0) {
-        setLocations([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get profile IDs to check subscriptions
-      const profileIds = profilesData.map(p => p.id);
-      const { data: subscriptionsData } = await supabase
-        .from('subscriptions')
-        .select('profile_id, status, end_date')
-        .in('profile_id', profileIds)
-        .eq('status', 'activa');
-
-      // Filter profiles with active subscriptions
-      const profilesWithActiveSub = profilesData.filter(profile => {
-        const subscription = subscriptionsData?.find(s => s.profile_id === profile.id);
-        if (!subscription) return false;
-        // Check if subscription hasn't ended
-        if (subscription.end_date) {
-          return new Date(subscription.end_date) > new Date();
-        }
-        return true;
-      });
-
-      // Get provider IDs to check for taxi services
-      const { data: proveedoresData } = await supabase
-        .from('proveedores')
-        .select('id, user_id')
-        .in('user_id', userIds);
-
-      const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
-      
-      // Check which providers have taxi products
-      const proveedorIds = proveedoresData?.map(p => p.id) || [];
-      
-      // First, get the Taxi category ID
-      const { data: taxiCategory } = await supabase
-        .from('categories')
-        .select('id')
-        .ilike('name', 'taxi')
-        .maybeSingle();
-      
-      // Build query to check for taxi products (by name, keywords, OR category)
-      let taxiQuery = supabase
-        .from('productos')
-        .select('proveedor_id')
-        .in('proveedor_id', proveedorIds);
-      
-      if (taxiCategory?.id) {
-        taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
-      } else {
-        taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
-      }
-      
-      const { data: taxiProducts } = await taxiQuery;
-      const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
-
-      // Merge data
-      const merged = locationsData?.map(loc => {
-        const profile = profilesWithActiveSub?.find(p => p.user_id === loc.user_id);
-        const proveedorId = proveedorMap.get(loc.user_id);
-        const isTaxi = proveedorId ? taxiProviderIds.has(proveedorId) : false;
-        
-        return {
-          ...loc,
-          profiles: profile ? {
-            apodo: profile.apodo,
-            estado: profile.estado as 'available' | 'busy' | 'offline',
-            telefono: profile.telefono
-          } : null,
-          is_taxi: isTaxi
-        };
-      }) || [];
-
-      // Only show users with active subscription, provider role, and available/busy status
-      const filtered = merged.filter(l => l.profiles) as ProveedorLocation[];
-      console.log('✅ [RealtimeLocations] Final locations:', filtered.length);
-      filtered.forEach(loc => {
-        console.log(`   🚕 ${loc.profiles?.apodo}: estado=${loc.profiles?.estado}, is_taxi=${loc.is_taxi}`);
-      });
-      setLocations(filtered);
-      setLoading(false);
-    };
-
+    isMounted.current = true;
+    
     fetchLocations();
 
-    // Subscribe to realtime changes - using unique channel name
-    const channelId = `locations_v3_${Date.now()}`;
-    console.log('📡 [RealtimeLocations] Creating channel:', channelId);
-    
+    // Realtime subscription
     const channel = supabase
-      .channel(channelId)
+      .channel('locations_realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'proveedor_locations'
-        },
-        (payload) => {
-          console.log('📍 [Realtime] Location changed, refetching...');
+        { event: '*', schema: 'public', table: 'proveedor_locations' },
+        () => {
+          console.log('📍 [Realtime] Location change');
           fetchLocations();
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles'
-        },
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
         (payload) => {
-          console.log('👤 [Realtime] Profile changed:', payload.new);
-          // Always refetch when profile changes - the estado filter will handle it
+          console.log('👤 [Realtime] Profile UPDATE:', payload.new);
+          // Refetch para obtener el estado actualizado
           fetchLocations();
         }
       )
       .subscribe((status) => {
-        console.log('📡 [RealtimeLocations] Subscription status:', status);
+        console.log('📡 [Subscription]', status);
       });
 
-    // Polling backup every 5 seconds to ensure status changes are reflected
-    const pollInterval = setInterval(() => {
-      console.log('⏰ [Polling] Checking for updates...');
-      fetchLocations();
-    }, 5000);
+    // Polling cada 3 segundos para asegurar actualizaciones
+    const pollInterval = setInterval(fetchLocations, 3000);
 
-    // Auto-track location for providers in native app
+    // Auto-track for providers
     const startProviderTracking = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -196,13 +203,11 @@ export const useRealtimeLocations = () => {
       if (profile?.role === 'proveedor' && isNativeApp()) {
         try {
           const id = await watchPosition((position) => {
-            console.log('[Capacitor Provider] New position:', position);
             updateLocation(position.latitude, position.longitude);
           });
           setWatchId(id);
-          console.log('[Capacitor Provider] Auto-tracking started');
         } catch (error) {
-          console.error('[Capacitor Provider] Error starting tracking:', error);
+          console.error('[Provider Tracking] Error:', error);
         }
       }
     };
@@ -210,21 +215,18 @@ export const useRealtimeLocations = () => {
     startProviderTracking();
 
     return () => {
-      console.log('🔌 [RealtimeLocations] Cleaning up...');
+      isMounted.current = false;
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
       if (watchId) {
         clearWatch(watchId);
       }
     };
-  }, []);
+  }, [fetchLocations]);
 
   const updateLocation = async (latitude: number, longitude: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const source = isNativeApp() ? 'capacitor' : 'web';
-    console.log(`[${source.toUpperCase()} Provider] Updating location:`, { latitude, longitude });
 
     const { error } = await supabase
       .from('proveedor_locations')
@@ -239,8 +241,6 @@ export const useRealtimeLocations = () => {
 
     if (error) {
       console.error('Error updating location:', error);
-    } else {
-      console.log(`[${source.toUpperCase()} Provider] Location updated successfully`);
     }
   };
 
