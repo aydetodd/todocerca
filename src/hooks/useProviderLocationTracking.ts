@@ -1,24 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isNativeApp, watchPosition, clearWatch } from '@/utils/capacitorLocation';
+import { isNativeApp, watchPosition, clearWatch, getCurrentPosition } from '@/utils/capacitorLocation';
 
 /**
  * Hook global para tracking de ubicación de proveedores.
  * Funciona en cualquier página mientras el proveedor esté logueado.
+ * Usa polling activo cada 1.5 segundos para garantizar actualizaciones continuas.
  */
 export const useProviderLocationTracking = () => {
   const watchIdRef = useRef<number | string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isTrackingRef = useRef(false);
   const lastUpdateRef = useRef(0);
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    const MIN_UPDATE_INTERVAL = 1000; // 1 segundo entre updates
+    const UPDATE_INTERVAL = 1500; // 1.5 segundos entre updates forzados
 
     const updateLocation = async (latitude: number, longitude: number) => {
       const now = Date.now();
-      if (now - lastUpdateRef.current < MIN_UPDATE_INTERVAL) return;
+      // Evitar actualizaciones muy frecuentes
+      if (now - lastUpdateRef.current < 1000) return;
       lastUpdateRef.current = now;
 
       try {
@@ -43,6 +46,31 @@ export const useProviderLocationTracking = () => {
         }
       } catch (err) {
         console.error('[GlobalTracking] Exception:', err);
+      }
+    };
+
+    // Función para obtener y enviar ubicación actual
+    const pollLocation = () => {
+      if (!mounted || !isTrackingRef.current) return;
+
+      if (isNativeApp()) {
+        getCurrentPosition()
+          .then(pos => {
+            if (mounted && isTrackingRef.current) {
+              updateLocation(pos.latitude, pos.longitude);
+            }
+          })
+          .catch(err => console.error('[GlobalTracking] Poll nativo error:', err));
+      } else if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (mounted && isTrackingRef.current) {
+              updateLocation(pos.coords.latitude, pos.coords.longitude);
+            }
+          },
+          (err) => console.error('[GlobalTracking] Poll GPS error:', err),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
       }
     };
 
@@ -85,7 +113,14 @@ export const useProviderLocationTracking = () => {
         isTrackingRef.current = true;
         setIsActive(true);
 
-        // Usar Capacitor si es app nativa
+        // Obtener posición inicial inmediatamente
+        pollLocation();
+
+        // POLLING ACTIVO cada 1.5 segundos - esto garantiza actualizaciones continuas
+        pollIntervalRef.current = setInterval(pollLocation, UPDATE_INTERVAL);
+        console.log('[GlobalTracking] ✅ Polling activo iniciado cada', UPDATE_INTERVAL, 'ms');
+
+        // Usar Capacitor si es app nativa (adicional al polling)
         if (isNativeApp()) {
           try {
             const id = await watchPosition((position) => {
@@ -94,47 +129,26 @@ export const useProviderLocationTracking = () => {
               }
             });
             watchIdRef.current = id;
-            console.log('[GlobalTracking] ✅ Tracking nativo iniciado');
+            console.log('[GlobalTracking] ✅ Watch nativo también activo');
           } catch (error) {
-            console.error('[GlobalTracking] Error tracking nativo:', error);
-            isTrackingRef.current = false;
-            setIsActive(false);
+            console.error('[GlobalTracking] Error watch nativo:', error);
           }
           return;
         }
 
-        // Usar geolocation del navegador
+        // También usar watchPosition como respaldo (además del polling)
         if ('geolocation' in navigator) {
-          // Posición inicial
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              if (mounted && isTrackingRef.current) {
-                updateLocation(pos.coords.latitude, pos.coords.longitude);
-              }
-            },
-            (err) => console.error('[GlobalTracking] GPS inicial error:', err),
-            { enableHighAccuracy: true, timeout: 10000 }
-          );
-
-          // Watch continuo
           const watchId = navigator.geolocation.watchPosition(
             (pos) => {
               if (mounted && isTrackingRef.current) {
                 updateLocation(pos.coords.latitude, pos.coords.longitude);
               }
             },
-            (err) => console.error('[GlobalTracking] GPS watch error:', err),
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0
-            }
+            (err) => console.error('[GlobalTracking] Watch error:', err),
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
           );
-
           watchIdRef.current = watchId;
-          console.log('[GlobalTracking] ✅ Tracking web iniciado, watchId:', watchId);
-        } else {
-          console.error('[GlobalTracking] Geolocation no disponible');
+          console.log('[GlobalTracking] ✅ Watch web también activo');
         }
       } catch (err) {
         console.error('[GlobalTracking] Exception en startTracking:', err);
@@ -146,6 +160,13 @@ export const useProviderLocationTracking = () => {
 
       console.log('[GlobalTracking] 🛑 Deteniendo tracking...');
 
+      // Limpiar polling
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+
+      // Limpiar watch
       if (isNativeApp() && typeof watchIdRef.current === 'string') {
         clearWatch(watchIdRef.current);
       } else if (typeof watchIdRef.current === 'number') {
@@ -161,7 +182,7 @@ export const useProviderLocationTracking = () => {
     startTracking();
 
     // Re-verificar cada 30 segundos en caso de que el estado cambie
-    const intervalId = setInterval(() => {
+    const checkInterval = setInterval(() => {
       if (!isTrackingRef.current) {
         startTracking();
       }
@@ -191,7 +212,7 @@ export const useProviderLocationTracking = () => {
 
     return () => {
       mounted = false;
-      clearInterval(intervalId);
+      clearInterval(checkInterval);
       stopTracking();
       supabase.removeChannel(channel);
     };
