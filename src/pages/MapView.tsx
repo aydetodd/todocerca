@@ -5,6 +5,7 @@ import { MessageCircle } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
+import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -118,6 +119,13 @@ export default function MapView() {
       {/* Map with overlays */}
       <div className="flex-1 relative">
         <RealtimeMap onOpenChat={handleOpenChat} />
+        
+        {/* Status Control overlay for providers on map */}
+        {isProvider && (
+          <div className="absolute top-4 right-4 z-30">
+            <StatusControl />
+          </div>
+        )}
       </div>
 
       {/* Floating Message Button */}

@@ -763,6 +763,10 @@ const TrackingGPS = () => {
               Volver
             </Button>
           </div>
+          {/* Status Control overlay on fullscreen map */}
+          <div className="absolute top-4 right-4 z-[1001]">
+            <StatusControl />
+          </div>
           <div className="w-full h-full">
             <TrackingMap locations={locations} currentUserId={currentUserId} />
           </div>
