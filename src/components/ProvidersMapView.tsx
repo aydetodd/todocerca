@@ -49,6 +49,44 @@ const TAXI_COLORS: Record<string, { body: string; roof: string }> = {
   offline: { body: '#ef4444', roof: '#dc2626' }
 };
 
+const createTaxiIcon = (providerStatus: string) => {
+  const taxiColor = TAXI_COLORS[providerStatus] || TAXI_COLORS.available;
+
+  const taxiSvg = `
+    <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+      <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
+      <ellipse cx="26" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="26" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
+      <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" fill="${taxiColor.body}" stroke="#333" stroke-width="0.7"/>
+      <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="10" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
+      <ellipse cx="26" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
+      <rect x="12" y="23" width="12" height="12" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.6"/>
+      <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+      <rect x="22.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
+      <path d="M 13 15 L 13 18 L 23 18 L 23 15 Q 18 13.5 13 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.5"/>
+      <path d="M 13 36 L 13 39 L 23 39 L 23 36 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.5"/>
+      <text x="18" y="30" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+      <circle cx="13" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+      <circle cx="23" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
+      <circle cx="13" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+      <circle cx="23" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
+      <line x1="13" y1="25" x2="13" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
+      <line x1="23" y1="25" x2="23" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">${taxiSvg}</div>`,
+    className: 'custom-taxi-marker',
+    iconSize: [36, 52],
+    iconAnchor: [18, 26]
+  });
+};
+
 function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -143,68 +181,53 @@ function ProvidersMap({ providers, onOpenChat }: ProvidersMapProps) {
     validProviders.forEach((provider) => {
       const existingMarker = markersRef.current.get(provider.user_id);
       const newPos: [number, number] = [provider.latitude, provider.longitude];
-      
-      // If marker exists, just update its position (smooth movement)
-      if (existingMarker) {
-        const currentLatLng = existingMarker.getLatLng();
-        // Only update if position actually changed
-        if (Math.abs(currentLatLng.lat - provider.latitude) > 0.000001 || 
-            Math.abs(currentLatLng.lng - provider.longitude) > 0.000001) {
-          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)}`);
-          existingMarker.setLatLng(newPos);
-        }
-        return; // Don't recreate marker
-      }
-      
-      // Create new marker only if it doesn't exist
+
       const isTaxi = provider.productos.some(p => 
         p.categoria?.toLowerCase().includes('taxi') || 
         p.nombre?.toLowerCase().includes('taxi')
       );
-      
+
       const providerStatus = (provider as any)._realtimeStatus || 'available';
-      
+
+      // If marker exists, update position AND update icon if status changed
+      if (existingMarker) {
+        const currentLatLng = existingMarker.getLatLng();
+
+        // Only update if position actually changed
+        if (
+          Math.abs(currentLatLng.lat - provider.latitude) > 0.000001 ||
+          Math.abs(currentLatLng.lng - provider.longitude) > 0.000001
+        ) {
+          console.log(`🚕 ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)}`);
+          existingMarker.setLatLng(newPos);
+        }
+
+        // IMPORTANT: also update taxi color when status changes (available <-> busy)
+        if (isTaxi) {
+          const prevStatus = (existingMarker as any)._taxiStatus as string | undefined;
+          if (prevStatus !== providerStatus) {
+            existingMarker.setIcon(createTaxiIcon(providerStatus));
+            (existingMarker as any)._taxiStatus = providerStatus;
+            console.log(`🎨 ${provider.business_name}: status ${prevStatus ?? 'unknown'} -> ${providerStatus}`);
+          }
+        }
+
+        return; // Don't recreate marker
+      }
+
+      // Create new marker only if it doesn't exist
       let icon;
       if (isTaxi) {
-        const taxiColor = TAXI_COLORS[providerStatus] || TAXI_COLORS.available;
-        const taxiSvg = `
-          <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-            <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-            <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-            <ellipse cx="26" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-            <ellipse cx="26" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-            <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" fill="${taxiColor.body}" stroke="#333" stroke-width="0.7"/>
-            <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-            <ellipse cx="10" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-            <ellipse cx="26" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-            <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-            <rect x="12" y="23" width="12" height="12" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.6"/>
-            <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-            <rect x="22.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-            <path d="M 13 15 L 13 18 L 23 18 L 23 15 Q 18 13.5 13 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.5"/>
-            <path d="M 13 36 L 13 39 L 23 39 L 23 36 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.5"/>
-            <text x="18" y="30" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-            <circle cx="13" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-            <circle cx="23" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-            <circle cx="13" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-            <circle cx="23" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-            <line x1="13" y1="25" x2="13" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-            <line x1="23" y1="25" x2="23" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-          </svg>
-        `;
-        
-        icon = L.divIcon({
-          html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">${taxiSvg}</div>`,
-          className: 'custom-taxi-marker',
-          iconSize: [36, 52],
-          iconAnchor: [18, 26]
-        });
+        icon = createTaxiIcon(providerStatus);
       }
-      
+
       const marker = isTaxi 
         ? L.marker(newPos, { icon }).addTo(mapRef.current!)
         : L.marker(newPos).addTo(mapRef.current!);
+
+      if (isTaxi) {
+        (marker as any)._taxiStatus = providerStatus;
+      }
       
       const productsList = provider.productos.map((producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
