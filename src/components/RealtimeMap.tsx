@@ -105,22 +105,35 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
   // Update markers including current user
   useEffect(() => {
-    if (!mapRef.current || !currentUserId) return;
+    if (!mapRef.current) return;
 
     console.log('🗺️ [Map] Updating', locations.length, 'markers');
     
-    // Clear all markers first
-    Object.values(markersRef.current).forEach(marker => marker.remove());
-    markersRef.current = {};
+    // Primero: remover TODOS los markers que ya no están en locations
+    const currentLocationUserIds = new Set(locations.map(loc => loc.user_id));
+    Object.keys(markersRef.current).forEach(userId => {
+      if (!currentLocationUserIds.has(userId)) {
+        console.log(`🗑️ [Map] Removing marker for ${userId} (no longer in locations)`);
+        markersRef.current[userId].remove();
+        delete markersRef.current[userId];
+      }
+    });
 
     // Status colors
     const statusColors: Record<string, string> = {
       available: '#22c55e', // green
       busy: '#eab308',      // yellow  
-      offline: '#ef4444'    // red
+      offline: '#ef4444'    // red - pero no debería llegar aquí porque se filtra antes
     };
 
-    // Add markers for each location
+    // Taxi colors based on status
+    const taxiColors: Record<string, { body: string; roof: string }> = {
+      available: { body: '#22c55e', roof: '#16a34a' }, // green
+      busy: { body: '#eab308', roof: '#d4a106' },      // yellow
+      offline: { body: '#ef4444', roof: '#dc2626' }    // red
+    };
+
+    // Add/update markers for each location
     locations.forEach(location => {
       if (!location.profiles || !location.profiles.estado) {
         console.warn('⚠️ [Map] Missing profile/estado for', location.user_id);
@@ -134,14 +147,12 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       
       console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}`);
       
+      // Remover marker existente para recrear con nuevo color
+      if (markersRef.current[location.user_id]) {
+        markersRef.current[location.user_id].remove();
+        delete markersRef.current[location.user_id];
+      }
 
-      // Taxi colors based on status
-      const taxiColors: Record<string, { body: string; roof: string }> = {
-        available: { body: '#22c55e', roof: '#16a34a' }, // green
-        busy: { body: '#eab308', roof: '#d4a106' },      // yellow
-        offline: { body: '#ef4444', roof: '#dc2626' }    // red
-      };
-      
       let iconHtml: string;
       
       if (isTaxi) {
@@ -216,21 +227,21 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
           ${!isCurrentUser ? `
           <div class="flex gap-2">
             <button 
-              onclick="window.makeCall('${location.profiles.telefono}')"
+              onclick="window.makeCall('${telefono}')"
               class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               Llamar
             </button>
             <button 
-              onclick="window.openWhatsApp('${location.profiles.telefono}')"
+              onclick="window.openWhatsApp('${telefono}')"
               class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
               WhatsApp
             </button>
             <button 
-              onclick="window.openInternalChat('${location.user_id}', '${location.profiles.apodo}')"
+              onclick="window.openInternalChat('${location.user_id}', '${apodo}')"
               class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -248,20 +259,11 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
         maxWidth: 300
       });
 
-      // Open popup on click
       marker.on('click', () => {
         marker.openPopup();
       });
 
       markersRef.current[location.user_id] = marker;
-    });
-    
-    // Remove markers for users no longer in locations
-    Object.keys(markersRef.current).forEach(userId => {
-      if (!locations.find(loc => loc.user_id === userId) && userId !== currentUserId) {
-        markersRef.current[userId].remove();
-        delete markersRef.current[userId];
-      }
     });
   }, [locations, currentUserId]);
 
