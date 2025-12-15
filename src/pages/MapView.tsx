@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Home } from 'lucide-react';
-import { StatusControl } from '@/components/StatusControl';
+import { MessageCircle } from 'lucide-react';
+import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,31 +113,11 @@ export default function MapView() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-primary text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Mapa en Tiempo Real</h1>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard')}
-            className="text-primary bg-white hover:bg-primary/20"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-        </div>
-      </header>
+      <GlobalHeader title="Mapa en Tiempo Real" />
 
       {/* Map with overlays */}
       <div className="flex-1 relative">
         <RealtimeMap onOpenChat={handleOpenChat} />
-        
-        {/* Status Control Overlay - Only show for providers with active subscription */}
-        {isProvider && hasActiveSubscription && (
-          <div className="absolute top-20 right-4 z-[1000] shadow-2xl">
-            <StatusControl />
-          </div>
-        )}
       </div>
 
       {/* Floating Message Button */}

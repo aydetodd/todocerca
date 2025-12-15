@@ -10,9 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+import { GlobalHeader } from '@/components/GlobalHeader';
 import { 
-  ArrowLeft, 
   CalendarIcon, 
   Download, 
   Route, 
@@ -166,27 +165,16 @@ const GpsReports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/tracking-gps')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Tracking
-          </Button>
-          
+    <div className="min-h-screen bg-background">
+      <GlobalHeader title="Reportes GPS" />
+      
+      <div className="container mx-auto p-4 space-y-6">
+        {/* Export button */}
+        <div className="flex justify-end">
           <Button variant="outline" onClick={handleExportCSV} disabled={locationHistory.length === 0}>
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Reportes GPS</h1>
-            <p className="text-muted-foreground">Historial de recorridos, alertas y estadísticas</p>
-          </div>
         </div>
 
         {/* Filtros */}

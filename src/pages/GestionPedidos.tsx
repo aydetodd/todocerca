@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, LogOut, ArrowLeft, User, Package } from 'lucide-react';
+import { GlobalHeader } from '@/components/GlobalHeader';
 import { OrdersManagement } from '@/components/OrdersManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -104,36 +104,9 @@ export default function GestionPedidos() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="default">Proveedor</Badge>
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/mi-perfil')}>
-                <User className="h-4 w-4 mr-2" />
-                Perfil
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/mis-productos')}>
-                <Package className="h-4 w-4 mr-2" />
-                Productos
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar Sesión
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <GlobalHeader>
+        <Badge variant="default">Proveedor</Badge>
+      </GlobalHeader>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
