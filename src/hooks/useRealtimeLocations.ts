@@ -76,22 +76,10 @@ export const useRealtimeLocations = () => {
       return;
     }
 
-    // 3. Check active subscriptions
-    const profileIds = profilesData.map(p => p.id);
-    const { data: subscriptionsData } = await supabase
-      .from('subscriptions')
-      .select('profile_id, status, end_date')
-      .in('profile_id', profileIds)
-      .eq('status', 'activa');
-
-    const profilesWithActiveSub = profilesData.filter(profile => {
-      const subscription = subscriptionsData?.find(s => s.profile_id === profile.id);
-      if (!subscription) return false;
-      if (subscription.end_date) {
-        return new Date(subscription.end_date) > new Date();
-      }
-      return true;
-    });
+    // 3. TEMPORALMENTE: usar todos los perfiles para pruebas (sin filtro de suscripción)
+    // TODO: restaurar filtro de suscripción después de confirmar que estados funcionan
+    const profilesWithActiveSub = profilesData;
+    console.log('🔓 [DEBUG] Usando TODOS los perfiles sin filtro de suscripción');
 
     // 4. Get provider IDs for taxi check
     const { data: proveedoresData } = await supabase
