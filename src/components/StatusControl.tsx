@@ -57,8 +57,9 @@ export const StatusControl = () => {
         },
         (payload) => {
           console.log('[StatusControl] Status changed for current user:', payload);
-          if (payload.new && 'estado' in payload.new) {
-            setStatus(payload.new.estado as UserStatus);
+          const next = (payload.new as any)?.estado as UserStatus | null | undefined;
+          if (next === 'available' || next === 'busy' || next === 'offline') {
+            setStatus(next);
           }
         }
       )
