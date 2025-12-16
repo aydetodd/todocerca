@@ -79,6 +79,13 @@ export const useRealtimeLocations = () => {
       .ilike('name', 'taxi')
       .maybeSingle();
     
+    const { data: rutaCategory } = await supabase
+      .from('product_categories')
+      .select('id')
+      .ilike('name', '%rutas de transporte%')
+      .maybeSingle();
+    
+    // Buscar proveedores con productos de taxi
     let taxiQuery = supabase
       .from('productos')
       .select('proveedor_id')
@@ -93,6 +100,26 @@ export const useRealtimeLocations = () => {
     const { data: taxiProducts } = await taxiQuery;
     const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 
+    // Buscar proveedores con productos de rutas (Ruta 1, Ruta 2, etc.)
+    let rutaQuery = supabase
+      .from('productos')
+      .select('proveedor_id, nombre')
+      .in('proveedor_id', proveedorIds);
+    
+    if (rutaCategory?.id) {
+      rutaQuery = rutaQuery.eq('category_id', rutaCategory.id);
+    } else {
+      rutaQuery = rutaQuery.ilike('nombre', 'Ruta %');
+    }
+    
+    const { data: rutaProducts } = await rutaQuery;
+    const rutaProviderMap = new Map<string, string>(); // proveedor_id -> route name
+    rutaProducts?.forEach(p => {
+      if (!rutaProviderMap.has(p.proveedor_id)) {
+        rutaProviderMap.set(p.proveedor_id, p.nombre);
+      }
+    });
+
     const newLocationsMap = new Map<string, ProveedorLocation>();
     
     for (const loc of locationsData) {
@@ -102,9 +129,14 @@ export const useRealtimeLocations = () => {
       const proveedorId = proveedorMap.get(loc.user_id);
       
       // Determine vehicle type: first check provider_type, then fall back to product check
-      const isBus = profile.provider_type === 'ruta';
-      const isTaxi = profile.provider_type === 'taxi' || 
-        (profile.provider_type === null && proveedorId ? taxiProviderIds.has(proveedorId) : false);
+      const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
+      const routeNameFromProduct = proveedorId ? rutaProviderMap.get(proveedorId) : null;
+      
+      const isBus = profile.provider_type === 'ruta' || hasRutaProduct;
+      const isTaxi = !isBus && (
+        profile.provider_type === 'taxi' || 
+        (profile.provider_type === null && proveedorId ? taxiProviderIds.has(proveedorId) : false)
+      );
       
       const location: ProveedorLocation = {
         ...loc,
@@ -113,7 +145,7 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          route_name: profile.route_name
+          route_name: profile.route_name || routeNameFromProduct || null
         },
         is_taxi: isTaxi,
         is_bus: isBus
