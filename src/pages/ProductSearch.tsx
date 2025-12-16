@@ -559,13 +559,13 @@ const ProductSearch = () => {
                       if (result.is_free_listing) {
                         return (
                           <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                            <div className="aspect-square w-full overflow-hidden relative">
+                            <div className="aspect-[4/3] w-full overflow-hidden relative">
                               <ListingPhotoCarousel listingId={result.product_id} />
                               <div className="absolute top-2 right-2">
                                 <FavoritoButton tipo="listing" itemId={result.product_id} />
                               </div>
                             </div>
-                            <div className="flex-1 flex flex-col p-3">
+                            <div className="flex-1 flex flex-col p-4">
                               <Badge variant="secondary" className="w-fit mb-2 bg-green-500/20 text-green-600">
                                 ¡Gratis!
                               </Badge>
@@ -596,7 +596,7 @@ const ProductSearch = () => {
                       // Regular product card
                       return (
                         <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                        <div className="aspect-square w-full overflow-hidden relative">
+                        <div className="aspect-[4/3] w-full overflow-hidden relative">
                           <ProductPhotoCarousel productoId={result.product_id} />
                           <div className="absolute top-2 right-2">
                             <FavoritoButton 
@@ -607,7 +607,7 @@ const ProductSearch = () => {
                             />
                           </div>
                         </div>
-                        <div className="flex-1 flex flex-col p-3">
+                        <div className="flex-1 flex flex-col p-4">
                             <h3 className="text-lg font-bold mb-0.5">{result.provider_name}</h3>
                             <p className="text-base font-medium text-muted-foreground mb-2">{result.product_name}</p>
                             
