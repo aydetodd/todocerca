@@ -94,17 +94,7 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
           // Check if we're the receiver
           const { data: { user } } = await supabase.auth.getUser();
-          const isForMe = !newMessage.receiver_id || newMessage.receiver_id === user?.id;
           const isFromOther = newMessage.sender_id !== user?.id;
-          
-          // Debug toast para ver qué está pasando
-          console.log('Mensaje:', {
-            de: newMessage.sender_id?.slice(-4),
-            para: newMessage.receiver_id?.slice(-4) || 'todos',
-            yo: user?.id?.slice(-4),
-            isForMe,
-            isFromOther
-          });
 
           // Handle panic alerts
           if (newMessage.is_panic) {
@@ -124,19 +114,30 @@ export const useRealtimeMessages = (receiverId?: string) => {
               variant: "destructive",
             });
           } else if (isFromOther) {
-            // Sonido para CUALQUIER mensaje de otro usuario (no solo si isForMe)
-            // Esto es temporal para debug - suena aunque no sea para mí
+            // Sonido ding-dong fuerte para mensajes recibidos
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
             audio.volume = 1.0;
             audio.play().catch(e => console.log('Audio play failed:', e));
             
-            // Browser notification if permission granted
+            // Notificación del sistema (funciona en segundo plano si el tab está abierto)
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Nuevo mensaje', {
-                body: newMessage.message,
-                icon: '/icon-192.png',
-                tag: 'message-notification'
-              });
+              // Intentar usar el Service Worker para mejor soporte en segundo plano
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `Mensaje de ${messageWithSender.sender?.apodo || 'Usuario'}`,
+                  body: newMessage.message,
+                  tag: 'new-message'
+                });
+              } else {
+                // Fallback a notificación directa
+                new Notification(`Mensaje de ${messageWithSender.sender?.apodo || 'Usuario'}`, {
+                  body: newMessage.message,
+                  icon: '/icon-192.png',
+                  tag: 'message-notification',
+                  requireInteraction: true
+                });
+              }
             }
           }
         }
