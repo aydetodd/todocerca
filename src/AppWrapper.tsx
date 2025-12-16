@@ -21,6 +21,7 @@ import JoinGroup from "./pages/JoinGroup";
 import GpsReports from "./pages/GpsReports";
 import MessagesInbox from "./pages/MessagesInbox";
 import AddContact from "./pages/AddContact";
+import Favoritos from "./pages/Favoritos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ export default function AppWrapper() {
           <Route path="/search" element={<ProductSearch />} />
           <Route path="/mensajes" element={<MessagesInbox />} />
           <Route path="/agregar-contacto" element={<AddContact />} />
+          <Route path="/favoritos" element={<Favoritos />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
