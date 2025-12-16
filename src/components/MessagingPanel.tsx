@@ -33,9 +33,15 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
   }, []);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    // Auto-scroll al final cuando hay nuevos mensajes
+    setTimeout(() => {
+      if (scrollRef.current) {
+        const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = viewport.scrollHeight;
+        }
+      }
+    }, 100);
   }, [messages]);
 
   const handleSend = async () => {

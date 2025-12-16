@@ -95,6 +95,14 @@ export const useRealtimeMessages = (receiverId?: string) => {
           // Check if we're the receiver
           const { data: { user } } = await supabase.auth.getUser();
           const isForMe = !newMessage.receiver_id || newMessage.receiver_id === user?.id;
+          
+          console.log('Nuevo mensaje recibido:', {
+            sender_id: newMessage.sender_id,
+            receiver_id: newMessage.receiver_id,
+            current_user_id: user?.id,
+            isForMe,
+            shouldPlaySound: isForMe && newMessage.sender_id !== user?.id
+          });
 
           if (isForMe && newMessage.sender_id !== user?.id) {
             // Browser notification if permission granted
