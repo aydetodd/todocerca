@@ -3,21 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ImageIcon } from 'lucide-react';
 
 interface ProductPhoto {
   id: string;
   url: string;
   alt_text: string | null;
-  es_principal: boolean;
 }
 
 interface ProductPhotoCarouselProps {
@@ -25,34 +17,28 @@ interface ProductPhotoCarouselProps {
 }
 
 export const ProductPhotoCarousel = ({ productoId }: ProductPhotoCarouselProps) => {
-  const [photos, setPhotos] = useState<ProductPhoto[]>([]);
+  const [photo, setPhoto] = useState<ProductPhoto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
-    loadPhotos();
+    loadPhoto();
   }, [productoId]);
 
-  const loadPhotos = async () => {
+  const loadPhoto = async () => {
     try {
-      console.log('🖼️ Cargando fotos para producto:', productoId);
       const { data, error } = await supabase
         .from('fotos_productos')
-        .select('id, url, alt_text, es_principal')
+        .select('id, url, alt_text')
         .eq('producto_id', productoId)
-        .order('es_principal', { ascending: false });
+        .eq('es_principal', true)
+        .limit(1)
+        .maybeSingle();
 
-      if (error) {
-        console.error('❌ Error cargando fotos:', error);
-        throw error;
-      }
-      
-      console.log('📸 Fotos encontradas:', data?.length || 0, data);
-      
-      if (data && data.length > 0) {
-        setPhotos(data);
-      }
+      if (error) throw error;
+      setPhoto(data);
     } catch (error) {
-      console.error('Error cargando fotos:', error);
+      console.error('Error cargando foto:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +48,7 @@ export const ProductPhotoCarousel = ({ productoId }: ProductPhotoCarouselProps) 
     return <Skeleton className="w-full h-48" />;
   }
 
-  if (photos.length === 0) {
+  if (!photo) {
     return (
       <Card className="flex items-center justify-center h-48 bg-muted">
         <div className="text-center text-muted-foreground">
@@ -73,46 +59,30 @@ export const ProductPhotoCarousel = ({ productoId }: ProductPhotoCarouselProps) 
     );
   }
 
-  if (photos.length === 1) {
-    return (
+  return (
+    <>
       <Card className="overflow-hidden">
         <AspectRatio ratio={16 / 9}>
           <img
-            src={photos[0].url}
-            alt={photos[0].alt_text || 'Foto del producto'}
-            className="w-full h-full object-cover"
+            src={photo.url}
+            alt={photo.alt_text || 'Foto del producto'}
+            className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
             loading="lazy"
+            onClick={() => setIsLightboxOpen(true)}
           />
         </AspectRatio>
       </Card>
-    );
-  }
-
-  return (
-    <div className="relative">
-      <Carousel className="w-full">
-        <CarouselContent>
-          {photos.map((photo) => (
-            <CarouselItem key={photo.id}>
-              <Card className="overflow-hidden">
-                <AspectRatio ratio={16 / 9}>
-                  <img
-                    src={photo.url}
-                    alt={photo.alt_text || 'Foto del producto'}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </AspectRatio>
-              </Card>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="left-2" />
-        <CarouselNext className="right-2" />
-      </Carousel>
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-        {photos.length} fotos
-      </div>
-    </div>
+      
+      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-transparent border-none">
+          <img
+            src={photo.url}
+            alt={photo.alt_text || 'Foto del producto'}
+            className="w-full h-full object-contain max-h-[90vh]"
+            onClick={() => setIsLightboxOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
