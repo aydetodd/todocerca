@@ -294,16 +294,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       const existingMarker = markersRef.current.get(provider.user_id);
       const newPos: [number, number] = [provider.latitude, provider.longitude];
 
-      // Determine vehicle type from realtime data first, then fall back to product check
-      const isBus = (provider as any)._isBus || (provider as any)._providerType === 'ruta';
-      const isTaxi = !isBus && (
-        (provider as any)._isTaxi || 
-        (provider as any)._providerType === 'taxi' ||
-        provider.productos.some(p => 
-          p.categoria?.toLowerCase().includes('taxi') || 
-          p.nombre?.toLowerCase().includes('taxi')
-        )
-      );
+      // Icon type is determined by the SEARCH FILTER (vehicleFilter), not provider type
+      const showAsTaxi = vehicleFilter === 'taxi';
+      const showAsBus = vehicleFilter === 'ruta';
       
       const routeName = (provider as any)._routeName || '';
       const providerStatus = (provider as any)._realtimeStatus || 'available';
@@ -328,7 +321,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             provider.longitude
           );
           
-          const vehicleEmoji = isBus ? '🚌' : '🚕';
+          const vehicleEmoji = showAsBus ? '🚌' : showAsTaxi ? '🚕' : '📍';
           console.log(`${vehicleEmoji} ${provider.business_name}: ${provider.latitude.toFixed(6)}, ${provider.longitude.toFixed(6)} - rotation: ${rotation.toFixed(0)}°`);
           existingMarker.setLatLng(newPos);
           
@@ -339,17 +332,17 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             rotation 
           });
           
-          // Update icon with new rotation
-          if (isBus) {
+          // Update icon with new rotation (only for taxi/bus)
+          if (showAsBus) {
             existingMarker.setIcon(createBusIcon(routeName, rotation));
-          } else if (isTaxi) {
+          } else if (showAsTaxi) {
             existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
             (existingMarker as any)._taxiStatus = providerStatus;
           }
         }
 
         // IMPORTANT: also update taxi color when status changes (available <-> busy)
-        if (isTaxi && !positionChanged) {
+        if (showAsTaxi && !positionChanged) {
           const prevStatus = (existingMarker as any)._taxiStatus as string | undefined;
           if (prevStatus !== providerStatus) {
             existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
@@ -362,22 +355,17 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       }
 
       // Create new marker only if it doesn't exist
-      let icon;
-      if (isBus) {
-        icon = createBusIcon(routeName, 0);
-      } else if (isTaxi) {
-        icon = createTaxiIcon(providerStatus, 0);
-      }
-
-      const marker = (isTaxi || isBus) 
-        ? L.marker(newPos, { icon }).addTo(mapRef.current!)
-        : L.marker(newPos).addTo(mapRef.current!);
-
-      if (isTaxi) {
-        (marker as any)._taxiStatus = providerStatus;
-      }
-      if (isBus) {
+      // Icon depends on search filter: taxi -> taxi icon, ruta -> bus icon, other -> default blue pin
+      let marker: L.Marker;
+      if (showAsBus) {
+        marker = L.marker(newPos, { icon: createBusIcon(routeName, 0) }).addTo(mapRef.current!);
         (marker as any)._isBus = true;
+      } else if (showAsTaxi) {
+        marker = L.marker(newPos, { icon: createTaxiIcon(providerStatus, 0) }).addTo(mapRef.current!);
+        (marker as any)._taxiStatus = providerStatus;
+      } else {
+        // Default blue location pin for all other categories
+        marker = L.marker(newPos).addTo(mapRef.current!);
       }
       
       // Store initial position
