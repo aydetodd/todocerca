@@ -124,10 +124,10 @@ export const useRealtimeMessages = (receiverId?: string) => {
               description: newMessage.message,
               variant: "destructive",
             });
-          } else {
-            // Play notification sound for regular messages - louder for recipient
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-            audio.volume = 0.8;
+          } else if (isForMe && newMessage.sender_id !== user?.id) {
+            // Sonido para el receptor (ding-dong) - fuerte
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
+            audio.volume = 1.0;
             audio.play().catch(e => console.log('Audio play failed:', e));
           }
         }
