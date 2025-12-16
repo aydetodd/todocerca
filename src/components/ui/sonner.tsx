@@ -1,4 +1,4 @@
-// Force cache clear: 2025-12-15T23:10:00
+// Force cache clear: 2025-12-16T02:00:00 - next-themes removed
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
