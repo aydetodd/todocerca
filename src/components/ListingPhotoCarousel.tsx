@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Gift } from 'lucide-react';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 
 interface ListingPhoto {
   id: string;
@@ -21,25 +15,28 @@ interface ListingPhotoCarouselProps {
 }
 
 export function ListingPhotoCarousel({ listingId }: ListingPhotoCarouselProps) {
-  const [photos, setPhotos] = useState<ListingPhoto[]>([]);
+  const [photo, setPhoto] = useState<ListingPhoto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
-    loadPhotos();
+    loadPhoto();
   }, [listingId]);
 
-  const loadPhotos = async () => {
+  const loadPhoto = async () => {
     try {
       const { data, error } = await supabase
         .from('fotos_listings')
         .select('id, url, alt_text')
         .eq('listing_id', listingId)
-        .order('es_principal', { ascending: false });
+        .eq('es_principal', true)
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
-      setPhotos(data || []);
+      setPhoto(data);
     } catch (error) {
-      console.error('Error loading listing photos:', error);
+      console.error('Error loading listing photo:', error);
     } finally {
       setLoading(false);
     }
@@ -49,7 +46,7 @@ export function ListingPhotoCarousel({ listingId }: ListingPhotoCarouselProps) {
     return <Skeleton className="w-full h-full" />;
   }
 
-  if (photos.length === 0) {
+  if (!photo) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-primary/10">
         <Gift className="h-12 w-12 text-primary/50 mb-2" />
@@ -58,31 +55,25 @@ export function ListingPhotoCarousel({ listingId }: ListingPhotoCarouselProps) {
     );
   }
 
-  if (photos.length === 1) {
-    return (
-      <img
-        src={photos[0].url}
-        alt={photos[0].alt_text || 'Foto del artículo'}
-        className="w-full h-full object-cover"
-      />
-    );
-  }
-
   return (
-    <Carousel className="w-full h-full">
-      <CarouselContent className="h-full">
-        {photos.map((photo) => (
-          <CarouselItem key={photo.id} className="h-full">
-            <img
-              src={photo.url}
-              alt={photo.alt_text || 'Foto del artículo'}
-              className="w-full h-full object-cover"
-            />
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <CarouselPrevious className="left-2" />
-      <CarouselNext className="right-2" />
-    </Carousel>
+    <>
+      <img
+        src={photo.url}
+        alt={photo.alt_text || 'Foto del artículo'}
+        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => setIsLightboxOpen(true)}
+      />
+      
+      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-transparent border-none">
+          <img
+            src={photo.url}
+            alt={photo.alt_text || 'Foto del artículo'}
+            className="w-full h-full object-contain max-h-[90vh]"
+            onClick={() => setIsLightboxOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
