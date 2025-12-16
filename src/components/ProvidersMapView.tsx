@@ -71,7 +71,7 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   const taxiColor = VEHICLE_COLORS[providerStatus] || VEHICLE_COLORS.available;
 
   const taxiSvg = `
-    <svg width="36" height="52" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
+    <svg width="27" height="39" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
       <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
       <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
@@ -100,15 +100,15 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   return L.divIcon({
     html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${taxiSvg}</div>`,
     className: 'custom-taxi-marker',
-    iconSize: [36, 52],
-    iconAnchor: [18, 26]
+    iconSize: [27, 39],
+    iconAnchor: [14, 20]
   });
 };
 
 // Create bus icon (white bus with route name) - longer design with side windows
 const createBusIcon = (routeName: string, rotation: number = 0) => {
   const busSvg = `
-    <svg width="36" height="80" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+    <svg width="18" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
       <!-- Shadow -->
       <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
       
@@ -166,8 +166,8 @@ const createBusIcon = (routeName: string, rotation: number = 0) => {
   return L.divIcon({
     html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${busSvg}</div>`,
     className: 'custom-bus-marker',
-    iconSize: [40, 60],
-    iconAnchor: [20, 30]
+    iconSize: [18, 40],
+    iconAnchor: [9, 20]
   });
 };
 
