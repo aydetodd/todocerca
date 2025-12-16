@@ -95,25 +95,16 @@ export const useRealtimeMessages = (receiverId?: string) => {
           // Check if we're the receiver
           const { data: { user } } = await supabase.auth.getUser();
           const isForMe = !newMessage.receiver_id || newMessage.receiver_id === user?.id;
+          const isFromOther = newMessage.sender_id !== user?.id;
           
-          console.log('Nuevo mensaje recibido:', {
-            sender_id: newMessage.sender_id,
-            receiver_id: newMessage.receiver_id,
-            current_user_id: user?.id,
+          // Debug toast para ver qué está pasando
+          console.log('Mensaje:', {
+            de: newMessage.sender_id?.slice(-4),
+            para: newMessage.receiver_id?.slice(-4) || 'todos',
+            yo: user?.id?.slice(-4),
             isForMe,
-            shouldPlaySound: isForMe && newMessage.sender_id !== user?.id
+            isFromOther
           });
-
-          if (isForMe && newMessage.sender_id !== user?.id) {
-            // Browser notification if permission granted
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Nuevo mensaje', {
-                body: newMessage.message,
-                icon: '/icon-192.png',
-                tag: 'message-notification'
-              });
-            }
-          }
 
           // Handle panic alerts
           if (newMessage.is_panic) {
@@ -132,11 +123,21 @@ export const useRealtimeMessages = (receiverId?: string) => {
               description: newMessage.message,
               variant: "destructive",
             });
-          } else if (isForMe && newMessage.sender_id !== user?.id) {
-            // Sonido para el receptor (ding-dong) - fuerte
+          } else if (isFromOther) {
+            // Sonido para CUALQUIER mensaje de otro usuario (no solo si isForMe)
+            // Esto es temporal para debug - suena aunque no sea para mí
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
             audio.volume = 1.0;
             audio.play().catch(e => console.log('Audio play failed:', e));
+            
+            // Browser notification if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Nuevo mensaje', {
+                body: newMessage.message,
+                icon: '/icon-192.png',
+                tag: 'message-notification'
+              });
+            }
           }
         }
       )
