@@ -125,9 +125,9 @@ export const useRealtimeMessages = (receiverId?: string) => {
               variant: "destructive",
             });
           } else {
-            // Play notification sound for regular messages
+            // Play notification sound for regular messages - louder for recipient
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-            audio.volume = 0.3;
+            audio.volume = 0.8;
             audio.play().catch(e => console.log('Audio play failed:', e));
           }
         }
