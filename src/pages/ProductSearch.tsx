@@ -430,21 +430,6 @@ const ProductSearch = () => {
             </div>
           </div>
         )}
-        <div className="mb-8">
-          <p className="text-sm font-medium mb-3">Categorías:</p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(category.id)}
-                size="sm"
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
-        </div>
 
         {!hasSearched && (
           <Card>
