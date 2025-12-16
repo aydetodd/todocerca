@@ -1,4 +1,4 @@
-// Cache bust: 2025-12-15 - Global provider tracking
+// Cache bust: 2025-12-16T02:00:00 - next-themes completely removed
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
