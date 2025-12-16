@@ -581,6 +581,7 @@ export type Database = {
           created_at: string
           entregado: boolean | null
           estado: string
+          exported_at: string | null
           id: string
           impreso: boolean | null
           notas: string | null
@@ -598,6 +599,7 @@ export type Database = {
           created_at?: string
           entregado?: boolean | null
           estado?: string
+          exported_at?: string | null
           id?: string
           impreso?: boolean | null
           notas?: string | null
@@ -615,6 +617,7 @@ export type Database = {
           created_at?: string
           entregado?: boolean | null
           estado?: string
+          exported_at?: string | null
           id?: string
           impreso?: boolean | null
           notas?: string | null

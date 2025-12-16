@@ -57,6 +57,7 @@ interface Order {
   pagado?: boolean;
   preparado?: boolean;
   entregado?: boolean;
+  exported_at?: string | null;
 }
 
 interface OrdersManagementProps {
@@ -236,11 +237,24 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
   const pagadosCount = orders.filter(o => o.pagado).length;
   const preparadosCount = orders.filter(o => o.preparado).length;
   const entregadosCount = orders.filter(o => o.entregado).length;
+  const newOrdersCount = orders.filter(o => !o.exported_at).length;
 
   const handleExportToCSV = async () => {
+    // Solo exportar registros que no han sido exportados
+    const ordersToExport = orders.filter(o => !o.exported_at);
+    
+    if (ordersToExport.length === 0) {
+      toast({
+        title: 'Sin registros nuevos',
+        description: 'No hay apartados nuevos para exportar',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const csvContent = [
       ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Hora', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
-      ...orders.map(order => [
+      ...ordersToExport.map(order => [
         order.numero_orden,
         order.cliente_nombre,
         order.cliente_telefono,
@@ -268,34 +282,34 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     link.click();
     document.body.removeChild(link);
 
-    // Eliminar todos los pedidos después de exportar
+    // Marcar los registros exportados con la fecha actual
     try {
-      const { error: deleteError } = await supabase
+      const orderIds = ordersToExport.map(o => o.id);
+      const { error } = await supabase
         .from('pedidos')
-        .delete()
-        .eq('proveedor_id', proveedorId);
-
-      if (deleteError) throw deleteError;
-
-      // Resetear el sequence del número de orden
-      const { error } = await supabase.rpc('reset_order_sequence', {
-        proveedor_id_param: proveedorId
-      });
+        .update({ exported_at: new Date().toISOString() })
+        .in('id', orderIds);
 
       if (error) throw error;
 
-      // Limpiar la pantalla
-      setOrders([]);
+      // Actualizar el estado local para reflejar la marca de exportación
+      setOrders(prev => 
+        prev.map(order => 
+          orderIds.includes(order.id) 
+            ? { ...order, exported_at: new Date().toISOString() }
+            : order
+        )
+      );
 
       toast({
-        title: 'Exportación y limpieza exitosa',
-        description: 'Los apartados han sido exportados y eliminados de la base de datos',
+        title: 'Exportación exitosa',
+        description: `${ordersToExport.length} apartados exportados y marcados`,
       });
     } catch (error: any) {
-      console.error('Error eliminando apartados:', error);
+      console.error('Error marcando apartados:', error);
       toast({
         title: 'CSV exportado',
-        description: 'El CSV se exportó pero hubo un error al eliminar los apartados',
+        description: 'El CSV se exportó pero hubo un error al marcar los registros',
         variant: 'destructive',
       });
     }
@@ -347,7 +361,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                 Gestión de Apartados
               </CardTitle>
               <CardDescription>
-                {orders.length} {orders.length === 1 ? 'apartado total' : 'apartados totales'}
+                {orders.length} {orders.length === 1 ? 'apartado total' : 'apartados totales'} • {newOrdersCount} nuevo{newOrdersCount !== 1 && 's'}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -364,11 +378,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>¿Exportar y limpiar apartados?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Exportar apartados nuevos?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta acción exportará todos los apartados a un archivo CSV y luego ELIMINARÁ todos los apartados de la base de datos.
-                      El contador de apartados se reiniciará a 1.
-                      Asegúrate de guardar el archivo CSV ya que no podrás recuperar estos apartados.
+                      Se exportarán {newOrdersCount} apartados nuevos a un archivo CSV.
+                      Los registros serán marcados como exportados y no aparecerán en futuras exportaciones.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -376,8 +389,9 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                     <AlertDialogAction
                       onClick={handleExportToCSV}
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      disabled={newOrdersCount === 0}
                     >
-                      Exportar y Limpiar
+                      Exportar ({newOrdersCount})
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -416,6 +430,9 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Badge className="bg-orange-500 text-white hover:bg-orange-600">
+              {newOrdersCount} Nuevo{newOrdersCount !== 1 && 's'}
+            </Badge>
             <Badge className="bg-amber-500 text-white hover:bg-amber-600">
               {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>
@@ -513,8 +530,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
                     {/* Información del pedido */}
                     <div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-lg flex items-center gap-2">
                         Apartado #{order.numero_orden}
+                        {order.exported_at && (
+                          <Badge variant="secondary" className="text-xs bg-gray-500 text-white">
+                            Exportado
+                          </Badge>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
