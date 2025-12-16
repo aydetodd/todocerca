@@ -45,30 +45,20 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('consecutive_number, role, nombre, apodo, telefono, email, codigo_postal, created_at')
-        .order('consecutive_number', { ascending: true });
+      // Call edge function that bypasses RLS
+      const { data, error } = await supabase.functions.invoke('user-registry-report');
 
       if (error) {
         console.error('Error loading users:', error);
-        // Check if it's a permission error
-        if (error.code === 'PGRST116' || error.message.includes('policy')) {
-          throw new Error('No tienes permisos para ver este reporte. Solo los administradores pueden acceder.');
-        }
-        throw error;
+        throw new Error('Error al cargar el reporte');
       }
 
-      const formattedUsers = data?.map(user => ({
-        ...user,
-        codigo: user.role === 'cliente' ? `C${user.consecutive_number}` : `P${user.consecutive_number}`
-      })) || [];
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-      setUsers(formattedUsers);
-      
-      const clientes = formattedUsers.filter(u => u.role === 'cliente').length;
-      const proveedores = formattedUsers.filter(u => u.role === 'proveedor').length;
-      setStats({ total: formattedUsers.length, clientes, proveedores });
+      setUsers(data.users || []);
+      setStats(data.stats || { total: 0, clientes: 0, proveedores: 0 });
     } catch (error: any) {
       console.error('Error loading users:', error);
       throw error;
