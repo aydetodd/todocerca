@@ -236,7 +236,8 @@ const ProductSearch = () => {
             user_id
           )
         `)
-        .eq('is_available', true);
+        .eq('is_available', true)
+        .gte('stock', 1);
       
       // Para rutas de transporte, buscar por nombre exacto de la ruta
       if (vehicleFilter === 'ruta' && selectedRouteNumber) {
