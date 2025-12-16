@@ -19,6 +19,7 @@ import GestionPedidos from "./pages/GestionPedidos";
 import TrackingGPS from "./pages/TrackingGPS";
 import JoinGroup from "./pages/JoinGroup";
 import GpsReports from "./pages/GpsReports";
+import MessagesInbox from "./pages/MessagesInbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -50,6 +51,7 @@ export default function AppWrapper() {
           <Route path="/join-group" element={<JoinGroup />} />
           <Route path="/gps-reports" element={<GpsReports />} />
           <Route path="/search" element={<ProductSearch />} />
+          <Route path="/mensajes" element={<MessagesInbox />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
