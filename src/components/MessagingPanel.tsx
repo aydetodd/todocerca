@@ -43,11 +43,6 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
     
     trackMessaging('sent');
     
-    // Play send sound
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-    audio.volume = 0.3;
-    audio.play().catch(e => console.log('Audio play failed:', e));
-    
     await sendMessage(message, receiverId);
     setMessage('');
   };
