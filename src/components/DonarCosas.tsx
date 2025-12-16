@@ -116,36 +116,26 @@ export function DonarCosas() {
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    const newPhotos: PhotoPreview[] = [];
-    const maxPhotos = 3;
-    const remaining = maxPhotos - photos.length;
-
-    for (let i = 0; i < Math.min(files.length, remaining); i++) {
-      const file = files[i];
-      if (file.type.startsWith('image/')) {
-        newPhotos.push({
-          file,
-          preview: URL.createObjectURL(file)
-        });
-      }
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
     }
 
-    if (files.length > remaining) {
-      toast.info(`Máximo ${maxPhotos} fotos permitidas`);
-    }
-
-    setPhotos(prev => [...prev, ...newPhotos]);
+    // Clear previous photo if any
+    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    
+    setPhotos([{
+      file,
+      preview: URL.createObjectURL(file)
+    }]);
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      URL.revokeObjectURL(newPhotos[index].preview);
-      newPhotos.splice(index, 1);
-      return newPhotos;
-    });
+  const removePhoto = () => {
+    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    setPhotos([]);
   };
 
   const uploadPhotos = async (listingId: string): Promise<void> => {
@@ -322,7 +312,6 @@ export function DonarCosas() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  multiple
                   onChange={handlePhotoSelect}
                   className="hidden"
                 />
@@ -331,34 +320,32 @@ export function DonarCosas() {
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
                   className="w-full"
-                  disabled={photos.length >= 3}
+                  disabled={photos.length >= 1}
                 >
                   <Camera className="h-4 w-4 mr-2" />
-                  {photos.length === 0 ? 'Agregar fotos' : `${photos.length}/3 fotos`}
+                  {photos.length === 0 ? 'Agregar foto' : 'Foto agregada ✓'}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Opcional: hasta 3 fotos del artículo
+                  Opcional: 1 foto del artículo
                 </p>
                 
-                {/* Photo previews */}
+                {/* Photo preview */}
                 {photos.length > 0 && (
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {photos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={photo.preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-20 h-20 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(index)}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative">
+                      <img
+                        src={photos[0].preview}
+                        alt="Preview"
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
