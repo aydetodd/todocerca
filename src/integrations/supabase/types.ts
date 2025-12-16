@@ -652,6 +652,7 @@ export type Database = {
           apodo: string | null
           codigo_postal: string | null
           consecutive_number: number
+          contact_token: string | null
           created_at: string
           email: string | null
           estado: Database["public"]["Enums"]["user_status"] | null
@@ -676,6 +677,7 @@ export type Database = {
           apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
+          contact_token?: string | null
           created_at?: string
           email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
@@ -700,6 +702,7 @@ export type Database = {
           apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
+          contact_token?: string | null
           created_at?: string
           email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
@@ -1044,6 +1047,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_contacts: {
+        Row: {
+          contact_user_id: string
+          created_at: string
+          id: string
+          nickname: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_user_id: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_user_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
