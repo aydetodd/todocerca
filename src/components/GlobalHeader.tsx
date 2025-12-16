@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, LogOut } from 'lucide-react';
+import { MapPin, LogOut, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 type UserStatus = 'available' | 'busy' | 'offline';
 
@@ -20,6 +21,7 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, children 
   const [status, setStatus] = useState<UserStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const { unreadCount } = useUnreadMessages();
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -120,8 +122,23 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, children 
         </div>
 
         <div className="flex items-center gap-3">
-          {children}
+          {/* Message indicator */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/mensajes')}
+            className="relative"
+            title="Mensajes"
+          >
+            <MessageCircle className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
           
+          {children}
           {/* Semáforo compacto horizontal para proveedores */}
           {isProvider && (
             <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-2 border border-border">
