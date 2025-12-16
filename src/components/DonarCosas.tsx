@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Gift, Plus, Trash2, MapPin } from 'lucide-react';
+import { Gift, Plus, Trash2, MapPin, Camera, X, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Listing {
@@ -19,6 +19,11 @@ interface Listing {
   is_active: boolean;
 }
 
+interface PhotoPreview {
+  file: File;
+  preview: string;
+}
+
 export function DonarCosas() {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -26,8 +31,11 @@ export function DonarCosas() {
   const [loading, setLoading] = useState(false);
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [cosasRegaladasCategoryId, setCosasRegaladasCategoryId] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [photos, setPhotos] = useState<PhotoPreview[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchUserProfile();
@@ -43,6 +51,8 @@ export function DonarCosas() {
   const fetchUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    setUserId(user.id);
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -104,6 +114,72 @@ export function DonarCosas() {
     );
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPhotos: PhotoPreview[] = [];
+    const maxPhotos = 3;
+    const remaining = maxPhotos - photos.length;
+
+    for (let i = 0; i < Math.min(files.length, remaining); i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        newPhotos.push({
+          file,
+          preview: URL.createObjectURL(file)
+        });
+      }
+    }
+
+    if (files.length > remaining) {
+      toast.info(`Máximo ${maxPhotos} fotos permitidas`);
+    }
+
+    setPhotos(prev => [...prev, ...newPhotos]);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      URL.revokeObjectURL(newPhotos[index].preview);
+      newPhotos.splice(index, 1);
+      return newPhotos;
+    });
+  };
+
+  const uploadPhotos = async (listingId: string): Promise<void> => {
+    if (!userId || photos.length === 0) return;
+
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      const fileExt = photo.file.name.split('.').pop();
+      const fileName = `${userId}/${listingId}/${Date.now()}_${i}.${fileExt}`;
+
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('listing-photos')
+        .upload(fileName, photo.file);
+
+      if (uploadError) {
+        console.error('Error uploading photo:', uploadError);
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('listing-photos')
+        .getPublicUrl(fileName);
+
+      await supabase.from('fotos_listings').insert({
+        listing_id: listingId,
+        url: publicUrl,
+        nombre_archivo: photo.file.name,
+        mime_type: photo.file.type,
+        file_size: photo.file.size,
+        es_principal: i === 0
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -120,7 +196,7 @@ export function DonarCosas() {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data: listing, error } = await supabase
         .from('listings')
         .insert({
           profile_id: profileId,
@@ -132,14 +208,22 @@ export function DonarCosas() {
           latitude: location?.lat || null,
           longitude: location?.lng || null,
           price: 0
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Upload photos if any
+      if (listing && photos.length > 0) {
+        await uploadPhotos(listing.id);
+      }
 
       toast.success('¡Publicación creada! Estará visible por 2 días.');
       setTitle('');
       setDescription('');
       setLocation(null);
+      setPhotos([]);
       setIsOpen(false);
       fetchMyListings();
     } catch (error) {
@@ -167,6 +251,14 @@ export function DonarCosas() {
     }
   };
 
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setLocation(null);
+    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    setPhotos([]);
+  };
+
   if (!profileId) {
     return (
       <Card className="border-dashed border-2 border-primary/30">
@@ -191,14 +283,17 @@ export function DonarCosas() {
           ¿Tienes algo que ya no necesitas? ¡Regálalo a la comunidad!
         </p>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => {
+          setIsOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
             <Button className="w-full">
               <Plus className="h-4 w-4 mr-2" />
               Publicar algo gratis
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Regalar algo</DialogTitle>
             </DialogHeader>
@@ -220,6 +315,54 @@ export function DonarCosas() {
                   rows={3}
                 />
               </div>
+
+              {/* Photo upload section */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                  disabled={photos.length >= 3}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {photos.length === 0 ? 'Agregar fotos' : `${photos.length}/3 fotos`}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Opcional: hasta 3 fotos del artículo
+                </p>
+                
+                {/* Photo previews */}
+                {photos.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {photos.map((photo, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={photo.preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <Button
                   type="button"

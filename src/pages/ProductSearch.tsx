@@ -12,6 +12,7 @@ import ProvidersMap from '@/components/ProvidersMapView';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
+import { ListingPhotoCarousel } from '@/components/ListingPhotoCarousel';
 import { trackProductSearch } from '@/lib/analytics';
 import { StatusControl } from '@/components/StatusControl';
 interface Category {
@@ -552,6 +553,42 @@ const ProductSearch = () => {
                       const productKey = `${result.product_id}-${index}`;
                       const isExpanded = expandedProducts.has(productKey);
                       
+                      // Check if this is a free listing
+                      if (result.is_free_listing) {
+                        return (
+                          <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                            <div className="aspect-square w-full overflow-hidden">
+                              <ListingPhotoCarousel listingId={result.product_id} />
+                            </div>
+                            <div className="flex-1 flex flex-col p-3">
+                              <Badge variant="secondary" className="w-fit mb-2 bg-green-500/20 text-green-600">
+                                ¡Gratis!
+                              </Badge>
+                              <h3 className="text-lg font-bold mb-0.5">{result.product_name}</h3>
+                              <p className="text-sm text-muted-foreground mb-1">Donado por: {result.provider_name}</p>
+                              
+                              {result.product_description && (
+                                <p className="text-sm text-muted-foreground mb-2">{result.product_description}</p>
+                              )}
+                              
+                              {result.donor_user_id && (
+                                <Button 
+                                  className="w-full mt-auto"
+                                  onClick={() => {
+                                    setSelectedReceiverId(result.donor_user_id);
+                                    setSelectedReceiverName(result.provider_name);
+                                    setIsMessagingOpen(true);
+                                  }}
+                                >
+                                  Contactar donador
+                                </Button>
+                              )}
+                            </div>
+                          </Card>
+                        );
+                      }
+                      
+                      // Regular product card
                       return (
                         <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                         <div className="aspect-square w-full overflow-hidden">

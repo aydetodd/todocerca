@@ -124,6 +124,50 @@ export type Database = {
         }
         Relationships: []
       }
+      fotos_listings: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          es_principal: boolean
+          file_size: number | null
+          id: string
+          listing_id: string
+          mime_type: string | null
+          nombre_archivo: string
+          url: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          es_principal?: boolean
+          file_size?: number | null
+          id?: string
+          listing_id: string
+          mime_type?: string | null
+          nombre_archivo: string
+          url: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          es_principal?: boolean
+          file_size?: number | null
+          id?: string
+          listing_id?: string
+          mime_type?: string | null
+          nombre_archivo?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_listings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fotos_productos: {
         Row: {
           alt_text: string | null
