@@ -69,11 +69,20 @@ const ProductSearch = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
-  const [vehicleFilter, setVehicleFilter] = useState<'taxi' | 'ruta'>('taxi');
   const [selectedRouteNumber, setSelectedRouteNumber] = useState<string>('');
   
   // Lista fija de 50 rutas para mostrar en el desplegable
   const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
+  
+  // Determinar el filtro de vehículo basado en la categoría seleccionada
+  const getVehicleFilter = (): 'all' | 'taxi' | 'ruta' => {
+    const selectedCat = categories.find(c => c.id === selectedCategory);
+    if (selectedCat?.name === 'Taxi') return 'taxi';
+    if (selectedCat?.name === 'Rutas de Transporte') return 'ruta';
+    return 'all';
+  };
+  
+  const vehicleFilter = getVehicleFilter();
 
   const handleOpenChat = async (providerId: string, providerName: string) => {
     // Get the user_id for this provider
@@ -382,50 +391,45 @@ const ProductSearch = () => {
           </div>
         </form>
 
-        {/* Filtro de Transporte */}
-        <div className="mb-4">
-          <p className="text-sm font-medium mb-3">Tipo de Transporte:</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={vehicleFilter === 'taxi' ? 'default' : 'outline'}
-              onClick={() => {
-                setVehicleFilter('taxi');
-                setSelectedRouteNumber('');
-              }}
-              size="sm"
-            >
-              🚕 Taxis
-            </Button>
-            <Button
-              variant={vehicleFilter === 'ruta' ? 'default' : 'outline'}
-              onClick={() => setVehicleFilter('ruta')}
-              size="sm"
-            >
-              🚌 Rutas de Transporte
-            </Button>
-          </div>
-          
-          {/* Selector de número de ruta cuando se elige "Rutas de Transporte" */}
-          {vehicleFilter === 'ruta' && (
-            <div className="mt-3">
-              <p className="text-sm font-medium mb-2">Selecciona una ruta:</p>
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                {allRouteNumbers.map((routeName) => (
-                  <Button
-                    key={routeName}
-                    variant={selectedRouteNumber === routeName ? 'default' : 'outline'}
-                    onClick={() => setSelectedRouteNumber(routeName)}
-                    size="sm"
-                  >
-                    {routeName}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Categorías */}
+        <div className="mb-4">
+          <p className="text-sm font-medium mb-3">Categorías:</p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? 'default' : 'outline'}
+                onClick={() => {
+                  setSelectedCategory(category.id);
+                  setSelectedRouteNumber('');
+                }}
+                size="sm"
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Selector de número de ruta cuando se selecciona "Rutas de Transporte" */}
+        {vehicleFilter === 'ruta' && (
+          <div className="mb-4">
+            <p className="text-sm font-medium mb-2">Selecciona una ruta:</p>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+              {allRouteNumbers.map((routeName) => (
+                <Button
+                  key={routeName}
+                  variant={selectedRouteNumber === routeName ? 'default' : 'outline'}
+                  onClick={() => setSelectedRouteNumber(routeName)}
+                  size="sm"
+                >
+                  {routeName}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mb-8">
           <p className="text-sm font-medium mb-3">Categorías:</p>
           <div className="flex flex-wrap gap-2">
