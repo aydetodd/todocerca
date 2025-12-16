@@ -34,6 +34,8 @@ interface SearchResult {
   provider_latitude: number | null;
   provider_longitude: number | null;
   provider_status: 'available' | 'busy';
+  is_free_listing?: boolean;
+  donor_user_id?: string;
 }
 
 interface MapProvider {
@@ -148,8 +150,70 @@ const ProductSearch = () => {
     setHasSearched(true);
     
     try {
-      // Search in productos table by name or keywords with provider location
-      let query = supabase
+      // Check if searching for free items category
+      const selectedCat = categories.find(c => c.id === selectedCategory);
+      const isFreeItemsCategory = selectedCat?.name === 'Cosas gratis';
+      
+      let allResults: SearchResult[] = [];
+
+      // Search in listings table for free items
+      if (isFreeItemsCategory || effectiveSearchTerm.toLowerCase().includes('gratis') || effectiveSearchTerm.toLowerCase().includes('regalo')) {
+        const { data: listings } = await supabase
+          .from('listings')
+          .select(`
+            id,
+            title,
+            description,
+            latitude,
+            longitude,
+            is_free,
+            profile_id,
+            profiles!listings_profile_id_fkey (
+              id,
+              nombre,
+              telefono,
+              user_id
+            )
+          `)
+          .eq('is_active', true)
+          .eq('is_free', true)
+          .gt('expires_at', new Date().toISOString());
+
+        if (listings && listings.length > 0) {
+          const listingResults: SearchResult[] = listings.map((listing: any) => ({
+            product_id: listing.id,
+            product_name: listing.title,
+            product_description: listing.description || '',
+            price: 0,
+            stock: 1,
+            unit: '',
+            provider_name: listing.profiles?.nombre || 'Anónimo',
+            provider_phone: listing.profiles?.telefono || '',
+            provider_postal_code: '',
+            provider_id: listing.profile_id,
+            provider_address: '',
+            provider_latitude: listing.latitude,
+            provider_longitude: listing.longitude,
+            provider_status: 'available' as const,
+            is_free_listing: true,
+            donor_user_id: listing.profiles?.user_id
+          }));
+          
+          allResults = [...listingResults];
+        }
+        
+        // If only searching for free items, set results and return
+        if (isFreeItemsCategory) {
+          setResults(allResults);
+          setMapProviders([]);
+          trackProductSearch(term, allResults.length);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Search in productos table (for non-free-items categories)
+      let productsQuery = supabase
         .from('productos')
         .select(`
           id,
@@ -175,22 +239,22 @@ const ProductSearch = () => {
       
       // Para rutas de transporte, buscar por nombre exacto de la ruta
       if (vehicleFilter === 'ruta' && selectedRouteNumber) {
-        query = query.eq('nombre', selectedRouteNumber);
+        productsQuery = productsQuery.eq('nombre', selectedRouteNumber);
       } else if (effectiveSearchTerm.trim()) {
         // Búsqueda normal por nombre o keywords
-        query = query.or(`nombre.ilike.%${effectiveSearchTerm}%,keywords.ilike.%${effectiveSearchTerm}%`);
+        productsQuery = productsQuery.or(`nombre.ilike.%${effectiveSearchTerm}%,keywords.ilike.%${effectiveSearchTerm}%`);
       }
       
       // Filtrar por categoría si hay una seleccionada
       if (selectedCategory) {
-        query = query.eq('category_id', selectedCategory);
+        productsQuery = productsQuery.eq('category_id', selectedCategory);
       }
       
-      const { data: productos, error } = await query;
+      const { data: productos, error } = await productsQuery;
 
       if (error) {
         console.error('Error searching:', error);
-        setResults([]);
+        setResults(allResults);
         setMapProviders([]);
         return;
       }
@@ -214,8 +278,9 @@ const ProductSearch = () => {
         );
 
         if (availableProductos.length === 0) {
-          setResults([]);
+          setResults(allResults);
           setMapProviders([]);
+          trackProductSearch(term, allResults.length);
           setLoading(false);
           return;
         }
@@ -261,7 +326,7 @@ const ProductSearch = () => {
           });
         }
 
-        const formattedResults: SearchResult[] = availableProductos.map((producto: any) => {
+        const productResults: SearchResult[] = availableProductos.map((producto: any) => {
           const proveedorData = providerLocationMap[producto.proveedor_id];
           const providerStatus = providerStatusMap[producto.proveedor_id] || 'offline';
           const coords = proveedorData?.user_id ? providerCoordsMap[proveedorData.user_id] : undefined;
@@ -283,12 +348,15 @@ const ProductSearch = () => {
             provider_status: (providerStatus === 'available' || providerStatus === 'busy') ? providerStatus : 'available',
           };
         });
-        setResults(formattedResults);
+        
+        // Merge with any listing results
+        allResults = [...allResults, ...productResults];
+        setResults(allResults);
 
         // Group products by provider for the map
         const providerMap: Record<string, MapProvider> = {};
         
-        formattedResults.forEach((result) => {
+        productResults.forEach((result) => {
           if (result.provider_latitude !== null && result.provider_longitude !== null) {
             if (!providerMap[result.provider_id]) {
               const proveedorData = providerLocationMap[result.provider_id];
@@ -327,11 +395,11 @@ const ProductSearch = () => {
         setMapProviders(providersArray);
         
         // Track successful search
-        trackProductSearch(term, formattedResults.length);
+        trackProductSearch(term, allResults.length);
       } else {
-        setResults([]);
+        setResults(allResults);
         setMapProviders([]);
-        trackProductSearch(term, 0);
+        trackProductSearch(term, allResults.length);
       }
     } catch (error) {
       console.error('Error searching:', error);

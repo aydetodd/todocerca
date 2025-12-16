@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Users, Package, ClipboardList, Navigation } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import ProviderRegistration from '@/components/ProviderRegistration';
+import { DonarCosas } from '@/components/DonarCosas';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -252,6 +253,9 @@ export default function DashboardMain() {
               </CardContent>
             </Card>
           )}
+
+          {/* Donar Cosas - Available for all users */}
+          <DonarCosas />
         </div>
       </main>
     </div>
