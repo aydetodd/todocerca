@@ -197,7 +197,7 @@ const ProductSearch = () => {
         // Get unique provider IDs
         const proveedorIds = [...new Set(availableProductos.map((p: any) => p.proveedor_id))];
         
-        // Fetch proveedores with all needed data including location
+        // Fetch proveedores with all needed data
         const { data: proveedoresData, error: proveedoresError } = await supabase
           .from('proveedores')
           .select('id, nombre, telefono, codigo_postal, business_address, business_phone, latitude, longitude, user_id')
@@ -206,6 +206,22 @@ const ProductSearch = () => {
         if (proveedoresError) {
           console.error('Error fetching proveedores:', proveedoresError);
         }
+
+        // Fetch provider coordinates from proveedor_locations (source of truth for map coordinates)
+        const availableUserIdsArray = Array.from(availableUserIds);
+        const { data: providerLocationsData, error: providerLocError } = await supabase
+          .from('proveedor_locations')
+          .select('user_id, latitude, longitude')
+          .in('user_id', availableUserIdsArray);
+
+        if (providerLocError) {
+          console.error('Error fetching proveedor_locations:', providerLocError);
+        }
+
+        const providerCoordsMap: Record<string, { latitude: number; longitude: number }> = {};
+        (providerLocationsData || []).forEach((l: any) => {
+          providerCoordsMap[l.user_id] = { latitude: l.latitude, longitude: l.longitude };
+        });
 
         // Create a map of proveedor_id to provider data with status
         const providerLocationMap: Record<string, any> = {};
@@ -222,6 +238,9 @@ const ProductSearch = () => {
         const formattedResults: SearchResult[] = availableProductos.map((producto: any) => {
           const proveedorData = providerLocationMap[producto.proveedor_id];
           const providerStatus = providerStatusMap[producto.proveedor_id] || 'offline';
+
+          const coords = proveedorData?.user_id ? providerCoordsMap[proveedorData.user_id] : undefined;
+
           return {
             product_id: producto.id || '',
             product_name: producto.nombre || '',
@@ -234,13 +253,11 @@ const ProductSearch = () => {
             provider_postal_code: proveedorData?.codigo_postal || '',
             provider_id: producto.proveedor_id || '',
             provider_address: proveedorData?.business_address || '',
-            provider_latitude: proveedorData?.latitude ?? null,
-            provider_longitude: proveedorData?.longitude ?? null,
+            provider_latitude: coords?.latitude ?? proveedorData?.latitude ?? null,
+            provider_longitude: coords?.longitude ?? proveedorData?.longitude ?? null,
             provider_status: (providerStatus === 'available' || providerStatus === 'busy') ? providerStatus : 'available',
           };
-          console.log('📍 Resultado formateado:', producto.nombre, 'coords:', proveedorData?.latitude, proveedorData?.longitude);
         });
-        
         setResults(formattedResults);
 
         // Group products by provider for the map

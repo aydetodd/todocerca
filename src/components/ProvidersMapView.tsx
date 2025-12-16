@@ -129,6 +129,7 @@ const createBusIcon = (routeName: string, rotation: number = 0) => {
       
       <!-- Roof -->
       <rect x="10" y="12" width="20" height="8" rx="2" fill="${BUS_COLOR.roof}" stroke="#888" stroke-width="0.5"/>
+      ${routeName ? `<text x="20" y="18" font-family="Arial, sans-serif" font-size="5.5" font-weight="700" fill="#111827" text-anchor="middle">${routeName}</text>` : ''}
       
       <!-- Windows -->
       <rect x="10" y="22" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
