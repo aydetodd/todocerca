@@ -248,14 +248,13 @@ const ProductSearch = () => {
           proveedoresData.forEach((p: any) => {
             providerLocationMap[p.id] = p;
             const profile = profilesData?.find(prof => prof.user_id === p.user_id);
-            providerStatusMap[p.id] = profile?.estado || 'available'; // Default to available for providers
+            providerStatusMap[p.id] = profile?.estado || 'available';
           });
         }
 
         const formattedResults: SearchResult[] = availableProductos.map((producto: any) => {
           const proveedorData = providerLocationMap[producto.proveedor_id];
           const providerStatus = providerStatusMap[producto.proveedor_id] || 'offline';
-
           const coords = proveedorData?.user_id ? providerCoordsMap[proveedorData.user_id] : undefined;
 
           return {
