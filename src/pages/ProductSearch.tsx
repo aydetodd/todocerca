@@ -113,13 +113,27 @@ const ProductSearch = () => {
     }
   }, [searchParams]);
 
+  // Auto-buscar cuando se selecciona una ruta específica
+  useEffect(() => {
+    if (vehicleFilter === 'ruta' && selectedRouteNumber) {
+      handleSearch(null);
+    }
+  }, [selectedRouteNumber]);
+
   // El usuario elige manualmente entre mapa y listado
 
   const handleSearch = async (e: React.FormEvent | null, query?: string) => {
     if (e) e.preventDefault();
     const term = query || searchTerm;
-    // No buscar si el campo está vacío y no hay categoría seleccionada
-    if (!term.trim() && !selectedCategory) return;
+    
+    // Para rutas de transporte, usar el número de ruta seleccionado como término de búsqueda
+    const effectiveSearchTerm = vehicleFilter === 'ruta' && selectedRouteNumber 
+      ? selectedRouteNumber 
+      : term;
+    
+    // No buscar si no hay término efectivo y no hay categoría seleccionada
+    // EXCEPTO cuando es una búsqueda de ruta específica
+    if (!effectiveSearchTerm.trim() && !selectedCategory && !(vehicleFilter === 'ruta' && selectedRouteNumber)) return;
     
     setLoading(true);
     setHasSearched(true);
@@ -150,9 +164,12 @@ const ProductSearch = () => {
         `)
         .eq('is_available', true);
       
-      // Solo aplicar filtro de nombre/keywords si hay término de búsqueda
-      if (term.trim()) {
-        query = query.or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`);
+      // Para rutas de transporte, buscar por nombre exacto de la ruta
+      if (vehicleFilter === 'ruta' && selectedRouteNumber) {
+        query = query.eq('nombre', selectedRouteNumber);
+      } else if (effectiveSearchTerm.trim()) {
+        // Búsqueda normal por nombre o keywords
+        query = query.or(`nombre.ilike.%${effectiveSearchTerm}%,keywords.ilike.%${effectiveSearchTerm}%`);
       }
       
       // Filtrar por categoría si hay una seleccionada
