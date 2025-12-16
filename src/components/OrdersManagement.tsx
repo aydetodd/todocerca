@@ -5,17 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useThermalPrinter } from '@/hooks/useThermalPrinter';
-import { ThermalPrinterControl } from '@/components/ThermalPrinterControl';
-import { OrderPrintButton } from '@/components/OrderPrintButton';
 import { formatCurrency } from '@/lib/utils';
 import { 
   ClipboardList, 
   User, 
   Phone, 
   Clock, 
-  CheckCircle2, 
-  XCircle,
   Package,
   Printer,
   CreditCard,
@@ -23,15 +18,7 @@ import {
   PackageCheck,
   Download,
   RotateCcw,
-  FileSpreadsheet
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,16 +84,6 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  
-  const {
-    isConnected,
-    isConnecting,
-    isPrinting,
-    printer,
-    connectToPrinter,
-    disconnectPrinter,
-    printReceipt,
-  } = useThermalPrinter();
 
   useEffect(() => {
     loadOrders();
@@ -260,40 +237,6 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
   const preparadosCount = orders.filter(o => o.preparado).length;
   const entregadosCount = orders.filter(o => o.entregado).length;
 
-  const handlePrintOrder = async (order: Order, copies: number) => {
-    const now = new Date();
-    const fecha = now.toLocaleDateString('es-MX', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    const hora = now.toLocaleTimeString('es-MX', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-
-    const items = order.items_pedido.map(item => ({
-      personIndex: 0, // Por ahora todos en persona 0
-      nombre: item.productos.nombre,
-      cantidad: item.cantidad,
-      unit: item.productos.unit,
-      precio: item.precio_unitario,
-    }));
-
-    await printReceipt({
-      numero_orden: order.numero_orden,
-      fecha,
-      hora,
-      cliente_nombre: order.cliente_nombre,
-      cliente_telefono: order.cliente_telefono,
-      items,
-      total: order.total,
-      numPeople: 1,
-      proveedorNombre,
-    }, copies);
-  };
-
   const handleExportToCSV = async () => {
     const csvContent = [
       ['Número Orden', 'Cliente', 'Teléfono', 'Fecha', 'Hora', 'Total', 'Estado', 'Impreso', 'Pagado', 'Preparado', 'Entregado', 'Productos'],
@@ -394,14 +337,6 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
   return (
     <div className="space-y-6">
-      <ThermalPrinterControl
-        isConnected={isConnected}
-        isConnecting={isConnecting}
-        printerName={printer?.device.name}
-        onConnect={connectToPrinter}
-        onDisconnect={disconnectPrinter}
-      />
-      
       <Card>
       <CardHeader>
         <div className="space-y-3">
@@ -481,16 +416,16 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Badge variant="outline" className="bg-yellow-50">
+            <Badge className="bg-amber-500 text-white hover:bg-amber-600">
               {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>
-            <Badge variant="outline" className="bg-green-50">
+            <Badge className="bg-emerald-500 text-white hover:bg-emerald-600">
               {pagadosCount} Pagado{pagadosCount !== 1 && 's'}
             </Badge>
-            <Badge variant="outline" className="bg-blue-50">
+            <Badge className="bg-sky-500 text-white hover:bg-sky-600">
               {preparadosCount} Preparado{preparadosCount !== 1 && 's'}
             </Badge>
-            <Badge variant="outline" className="bg-purple-50">
+            <Badge className="bg-violet-500 text-white hover:bg-violet-600">
               {entregadosCount} Entregado{entregadosCount !== 1 && 's'}
             </Badge>
           </div>
@@ -516,13 +451,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                         disabled={order.impreso}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.impreso 
-                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                            ? 'bg-emerald-500 border-emerald-600 text-white cursor-not-allowed' 
+                            : 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'impreso', !order.impreso)}
                       >
-                        <Printer className={`h-4 w-4 ${order.impreso ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.impreso ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <Printer className="h-4 w-4" />
+                        <span className="text-xs font-medium">
                           Impreso
                         </span>
                       </Button>
@@ -532,13 +467,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                         disabled={order.pagado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.pagado 
-                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                            ? 'bg-emerald-500 border-emerald-600 text-white cursor-not-allowed' 
+                            : 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'pagado', !order.pagado)}
                       >
-                        <CreditCard className={`h-4 w-4 ${order.pagado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.pagado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <CreditCard className="h-4 w-4" />
+                        <span className="text-xs font-medium">
                           Pagado
                         </span>
                       </Button>
@@ -548,13 +483,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                         disabled={order.preparado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.preparado 
-                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                            ? 'bg-emerald-500 border-emerald-600 text-white cursor-not-allowed' 
+                            : 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'preparado', !order.preparado)}
                       >
-                        <ChefHat className={`h-4 w-4 ${order.preparado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.preparado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <ChefHat className="h-4 w-4" />
+                        <span className="text-xs font-medium">
                           Preparado
                         </span>
                       </Button>
@@ -564,13 +499,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                         disabled={order.entregado}
                         className={`flex items-center justify-center gap-2 h-auto py-2 ${
                           order.entregado 
-                            ? 'bg-green-100 border-green-500 cursor-not-allowed' 
-                            : 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200'
+                            ? 'bg-emerald-500 border-emerald-600 text-white cursor-not-allowed' 
+                            : 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600'
                         }`}
                         onClick={() => updateOrderStep(order.id, 'entregado', !order.entregado)}
                       >
-                        <PackageCheck className={`h-4 w-4 ${order.entregado ? 'text-green-600' : 'text-yellow-600'}`} />
-                        <span className={`text-xs font-medium ${order.entregado ? 'text-green-700' : 'text-yellow-700'}`}>
+                        <PackageCheck className="h-4 w-4" />
+                        <span className="text-xs font-medium">
                           Entregado
                         </span>
                       </Button>
