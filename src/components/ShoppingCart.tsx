@@ -38,7 +38,7 @@ export const ShoppingCart = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CartIcon className="h-5 w-5" />
-          Pedido
+          Apartado
         </CardTitle>
       </CardHeader>
         <CardContent>
@@ -68,7 +68,7 @@ export const ShoppingCart = ({
           </Button>
         </div>
         <CardDescription>
-          Pedido con {numPeople} orden{numPeople > 1 ? 'es' : ''}
+          Apartado con {numPeople} orden{numPeople > 1 ? 'es' : ''}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -147,7 +147,7 @@ export const ShoppingCart = ({
         </div>
         <Button className="w-full" size="lg" onClick={onCheckout}>
           <Send className="h-4 w-4 mr-2" />
-          Enviar Pedido
+          Enviar Apartado
         </Button>
       </CardFooter>
     </Card>

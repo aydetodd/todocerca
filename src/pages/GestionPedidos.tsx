@@ -109,9 +109,9 @@ export default function GestionPedidos() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Gestión de Pedidos</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Gestión de Apartados</h2>
           <p className="text-muted-foreground">
-            Administra los pedidos de tus clientes
+            Administra los apartados de tus clientes
           </p>
         </div>
 

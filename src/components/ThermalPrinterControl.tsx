@@ -31,7 +31,7 @@ export const ThermalPrinterControl = ({
           </Badge>
         </div>
         <CardDescription>
-          Conecta tu impresora térmica Bluetooth para imprimir pedidos
+          Conecta tu impresora térmica Bluetooth para imprimir apartados
         </CardDescription>
       </CardHeader>
       <CardContent>

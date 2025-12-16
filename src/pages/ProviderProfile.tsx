@@ -70,7 +70,7 @@ const ProviderProfile = () => {
       localStorage.setItem('redirectAfterLogin', currentPath);
       toast({
         title: "Registro requerido",
-        description: "Por favor regístrate o inicia sesión para hacer pedidos",
+        description: "Por favor regístrate o inicia sesión para hacer apartados",
       });
       navigate('/auth');
     }
@@ -231,7 +231,7 @@ const ProviderProfile = () => {
     if (cart.length === 0) {
       toast({
         title: 'Carrito vacío',
-        description: 'Agrega productos antes de enviar el pedido',
+        description: 'Agrega productos antes de enviar el apartado',
         variant: 'destructive',
       });
       return;
@@ -308,15 +308,15 @@ const ProviderProfile = () => {
       setOrderNumber(pedido.numero_orden);
       
       toast({
-        title: `✅ Pedido #${pedido.numero_orden} enviado`,
-        description: `Tu pedido fue enviado correctamente`,
+        title: `✅ Apartado #${pedido.numero_orden} enviado`,
+        description: `Tu apartado fue enviado correctamente`,
         duration: 8000,
       });
     } catch (error: any) {
-      console.error('Error creando pedido:', error);
+      console.error('Error creando apartado:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear el pedido. Intenta de nuevo.',
+        description: 'No se pudo crear el apartado. Intenta de nuevo.',
         variant: 'destructive',
       });
     } finally {

@@ -235,20 +235,20 @@ export default function DashboardMain() {
             </Card>
           )}
 
-          {/* Gestión de Pedidos - Solo para proveedores */}
+          {/* Gestión de Apartados - Solo para proveedores */}
           {isProvider && (
             <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/gestion-pedidos')}>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <ClipboardList className="h-5 w-5" />
-                  <span>Mis Pedidos</span>
+                  <span>Mis Apartados</span>
                 </CardTitle>
-                <CardDescription>Administra los pedidos de clientes</CardDescription>
+                <CardDescription>Administra los apartados de clientes</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full">
                   <ClipboardList className="h-4 w-4 mr-2" />
-                  Ver Pedidos
+                  Ver Apartados
                 </Button>
               </CardContent>
             </Card>
