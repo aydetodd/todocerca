@@ -90,29 +90,17 @@ const AddContact = () => {
       return;
     }
 
-    // Agregar contacto bidireccional
-    const { error: error1 } = await supabase
-      .from('user_contacts')
-      .insert({
-        user_id: user.id,
-        contact_user_id: contactProfile.user_id,
-        nickname: nickname || null
-      });
+    // Agregar contacto bidireccional usando función de base de datos
+    const { error: fnError } = await supabase.rpc('add_bidirectional_contact', {
+      p_contact_user_id: contactProfile.user_id,
+      p_nickname: nickname || null
+    });
 
-    if (error1) {
+    if (fnError) {
       toast({ title: 'Error', description: 'No se pudo agregar el contacto', variant: 'destructive' });
       setAdding(false);
       return;
     }
-
-    // También agregar en reversa para que el otro usuario vea el contacto
-    await supabase
-      .from('user_contacts')
-      .insert({
-        user_id: contactProfile.user_id,
-        contact_user_id: user.id,
-        nickname: null
-      });
 
     setSuccess(true);
     setAdding(false);

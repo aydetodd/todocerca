@@ -1077,6 +1077,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_bidirectional_contact: {
+        Args: { p_contact_user_id: string; p_nickname?: string }
+        Returns: boolean
+      }
       find_user_by_phone: {
         Args: { phone_param: string }
         Returns: {
