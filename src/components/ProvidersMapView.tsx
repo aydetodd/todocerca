@@ -259,7 +259,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
 
     const center: [number, number] = [validProviders[0].latitude, validProviders[0].longitude];
     
-    const map = L.map(mapContainerRef.current, { attributionControl: false }).setView(center, 12);
+    const map = L.map(mapContainerRef.current, { attributionControl: false }).setView(center, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     mapRef.current = map;
