@@ -105,53 +105,61 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   });
 };
 
-// Create bus icon (white bus with route name)
+// Create bus icon (white bus with route name) - longer design with side windows
 const createBusIcon = (routeName: string, rotation: number = 0) => {
   const busSvg = `
-    <svg width="40" height="60" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+    <svg width="36" height="80" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
       <!-- Shadow -->
-      <ellipse cx="20" cy="56" rx="16" ry="3" fill="rgba(0,0,0,0.25)"/>
+      <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
       
       <!-- Rear wheels -->
-      <ellipse cx="10" cy="48" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="10" cy="48" rx="2.2" ry="3" fill="#4a4a4a"/>
-      <ellipse cx="30" cy="48" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="30" cy="48" rx="2.2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
       
-      <!-- Bus body (white) -->
-      <rect x="8" y="10" width="24" height="42" rx="4" fill="${BUS_COLOR.body}" stroke="#666" stroke-width="1"/>
+      <!-- Bus body (dark border) -->
+      <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
       
       <!-- Front wheels -->
-      <ellipse cx="10" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="10" cy="18" rx="2.2" ry="3" fill="#4a4a4a"/>
-      <ellipse cx="30" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="30" cy="18" rx="2.2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+      <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
       
-      <!-- Roof -->
-      <rect x="10" y="12" width="20" height="8" rx="2" fill="${BUS_COLOR.roof}" stroke="#888" stroke-width="0.5"/>
-      ${routeName ? `<text x="20" y="18" font-family="Arial, sans-serif" font-size="5.5" font-weight="700" fill="#111827" text-anchor="middle">${routeName}</text>` : ''}
+      <!-- White roof (center) -->
+      <rect x="9" y="10" width="18" height="56" rx="2" fill="#FFFFFF" stroke="#ccc" stroke-width="0.5"/>
       
-      <!-- Windows -->
-      <rect x="10" y="22" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
-      <rect x="10" y="30" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
-      <rect x="10" y="38" width="20" height="6" rx="1" fill="#87CEEB" opacity="0.8" stroke="#666" stroke-width="0.5"/>
+      <!-- Left side windows -->
+      <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      
+      <!-- Right side windows -->
+      <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+      <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
       
       <!-- Front windshield -->
-      <path d="M 12 12 L 12 18 L 28 18 L 28 12 Q 20 10 12 12 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+      <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
       
       <!-- Rear window -->
-      <rect x="12" y="46" width="16" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+      <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
       
       <!-- Headlights -->
-      <circle cx="13" cy="11" r="1.5" fill="#FFF" stroke="#666" stroke-width="0.4"/>
-      <circle cx="27" cy="11" r="1.5" fill="#FFF" stroke="#666" stroke-width="0.4"/>
+      <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+      <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
       
       <!-- Taillights -->
-      <rect x="12" y="50" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-      <rect x="25" y="50" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
       
-      <!-- Door indication -->
-      <line x1="20" y1="22" x2="20" y2="44" stroke="#999" stroke-width="0.8"/>
+      <!-- Route name on white roof -->
+      ${routeName ? `<text x="18" y="42" font-family="Arial, sans-serif" font-size="7" font-weight="700" fill="#111827" text-anchor="middle">${routeName}</text>` : ''}
     </svg>
   `;
 
