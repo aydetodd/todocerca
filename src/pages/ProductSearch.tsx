@@ -66,10 +66,10 @@ const ProductSearch = () => {
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('todas');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
-  const [vehicleFilter, setVehicleFilter] = useState<'all' | 'taxi' | 'ruta'>('all');
+  const [vehicleFilter, setVehicleFilter] = useState<'taxi' | 'ruta'>('taxi');
   const [selectedRouteNumber, setSelectedRouteNumber] = useState<string>('');
   
   // Lista fija de 50 rutas para mostrar en el desplegable
@@ -118,8 +118,8 @@ const ProductSearch = () => {
   const handleSearch = async (e: React.FormEvent | null, query?: string) => {
     if (e) e.preventDefault();
     const term = query || searchTerm;
-    // No buscar si el campo está vacío y la categoría es "todas"
-    if (!term.trim() && selectedCategory === 'todas') return;
+    // No buscar si el campo está vacío y no hay categoría seleccionada
+    if (!term.trim() && !selectedCategory) return;
     
     setLoading(true);
     setHasSearched(true);
@@ -155,8 +155,8 @@ const ProductSearch = () => {
         query = query.or(`nombre.ilike.%${term}%,keywords.ilike.%${term}%`);
       }
       
-      // Filtrar por categoría si no es "todas"
-      if (selectedCategory !== 'todas') {
+      // Filtrar por categoría si hay una seleccionada
+      if (selectedCategory) {
         query = query.eq('category_id', selectedCategory);
       }
       
@@ -371,16 +371,6 @@ const ProductSearch = () => {
           <p className="text-sm font-medium mb-3">Tipo de Transporte:</p>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={vehicleFilter === 'all' ? 'default' : 'outline'}
-              onClick={() => {
-                setVehicleFilter('all');
-                setSelectedRouteNumber('');
-              }}
-              size="sm"
-            >
-              🚗 Todos
-            </Button>
-            <Button
               variant={vehicleFilter === 'taxi' ? 'default' : 'outline'}
               onClick={() => {
                 setVehicleFilter('taxi');
@@ -404,13 +394,6 @@ const ProductSearch = () => {
             <div className="mt-3">
               <p className="text-sm font-medium mb-2">Selecciona una ruta:</p>
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                <Button
-                  variant={selectedRouteNumber === '' ? 'default' : 'outline'}
-                  onClick={() => setSelectedRouteNumber('')}
-                  size="sm"
-                >
-                  Todas las rutas
-                </Button>
                 {allRouteNumbers.map((routeName) => (
                   <Button
                     key={routeName}
@@ -430,13 +413,6 @@ const ProductSearch = () => {
         <div className="mb-8">
           <p className="text-sm font-medium mb-3">Categorías:</p>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedCategory === 'todas' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('todas')}
-              size="sm"
-            >
-              Todas
-            </Button>
             {categories.map((category) => (
               <Button
                 key={category.id}
