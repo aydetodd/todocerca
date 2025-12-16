@@ -47,7 +47,7 @@ export const OrderPrintButton = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Imprimir Pedido</DialogTitle>
+          <DialogTitle>Imprimir Apartado</DialogTitle>
           <DialogDescription>
             ¿Cuántas copias deseas imprimir?
           </DialogDescription>

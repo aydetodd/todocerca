@@ -158,10 +158,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       if (error) throw error;
       setOrders(data || []);
     } catch (error: any) {
-      console.error('Error cargando pedidos:', error);
+      console.error('Error cargando apartados:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los pedidos',
+        description: 'No se pudieron cargar los apartados',
         variant: 'destructive',
       });
     } finally {
@@ -180,13 +180,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       toast({
         title: 'Estado actualizado',
-        description: `El pedido ahora está ${estadoLabels[newStatus as keyof typeof estadoLabels].toLowerCase()}`,
+        description: `El apartado ahora está ${estadoLabels[newStatus as keyof typeof estadoLabels].toLowerCase()}`,
       });
     } catch (error: any) {
       console.error('Error actualizando estado:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo actualizar el estado del pedido',
+        description: 'No se pudo actualizar el estado del apartado',
         variant: 'destructive',
       });
     }
@@ -233,13 +233,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       toast({
         title: 'Estado actualizado',
-        description: `El pedido ha sido marcado como ${stepLabels[step]}`,
+        description: `El apartado ha sido marcado como ${stepLabels[step]}`,
       });
     } catch (error: any) {
       console.error('Error actualizando paso:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo actualizar el estado del pedido',
+        description: 'No se pudo actualizar el estado del apartado',
         variant: 'destructive',
       });
     }
@@ -249,7 +249,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Cargando pedidos...</CardTitle>
+          <CardTitle>Cargando apartados...</CardTitle>
         </CardHeader>
       </Card>
     );
@@ -319,7 +319,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     const now = new Date();
     const dateTime = `${now.toISOString().split('T')[0]}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
     link.setAttribute('href', url);
-    link.setAttribute('download', `pedidos-${proveedorNombre}-${dateTime}.csv`);
+    link.setAttribute('download', `apartados-${proveedorNombre}-${dateTime}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -346,13 +346,13 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       toast({
         title: 'Exportación y limpieza exitosa',
-        description: 'Los pedidos han sido exportados y eliminados de la base de datos',
+        description: 'Los apartados han sido exportados y eliminados de la base de datos',
       });
     } catch (error: any) {
-      console.error('Error eliminando pedidos:', error);
+      console.error('Error eliminando apartados:', error);
       toast({
         title: 'CSV exportado',
-        description: 'El CSV se exportó pero hubo un error al eliminar los pedidos',
+        description: 'El CSV se exportó pero hubo un error al eliminar los apartados',
         variant: 'destructive',
       });
     }
@@ -379,14 +379,14 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       setOrders([]);
 
       toast({
-        title: 'Pedidos eliminados',
-        description: 'Todos los pedidos han sido eliminados y el contador reiniciado a 1',
+        title: 'Apartados eliminados',
+        description: 'Todos los apartados han sido eliminados y el contador reiniciado a 1',
       });
     } catch (error: any) {
-      console.error('Error reseteando pedidos:', error);
+      console.error('Error reseteando apartados:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo resetear los pedidos',
+        description: 'No se pudo resetear los apartados',
         variant: 'destructive',
       });
     }
@@ -409,10 +409,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
             <div>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                Gestión de Pedidos
+                Gestión de Apartados
               </CardTitle>
               <CardDescription>
-                {orders.length} {orders.length === 1 ? 'pedido total' : 'pedidos totales'}
+                {orders.length} {orders.length === 1 ? 'apartado total' : 'apartados totales'}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -429,11 +429,11 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>¿Exportar y limpiar pedidos?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Exportar y limpiar apartados?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta acción exportará todos los pedidos a un archivo CSV y luego ELIMINARÁ todos los pedidos de la base de datos.
-                      El contador de pedidos se reiniciará a 1.
-                      Asegúrate de guardar el archivo CSV ya que no podrás recuperar estos pedidos.
+                      Esta acción exportará todos los apartados a un archivo CSV y luego ELIMINARÁ todos los apartados de la base de datos.
+                      El contador de apartados se reiniciará a 1.
+                      Asegúrate de guardar el archivo CSV ya que no podrás recuperar estos apartados.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -462,8 +462,8 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta acción eliminará TODOS los pedidos y reiniciará el contador a 1. 
-                      Te recomendamos exportar los pedidos actuales antes de continuar.
+                      Esta acción eliminará TODOS los apartados y reiniciará el contador a 1. 
+                      Te recomendamos exportar los apartados actuales antes de continuar.
                       Esta acción NO se puede deshacer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -500,7 +500,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
         {orders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="h-16 w-16 mx-auto text-muted-foreground opacity-50 mb-4" />
-            <p className="text-muted-foreground">No hay pedidos aún</p>
+            <p className="text-muted-foreground">No hay apartados aún</p>
           </div>
         ) : (
           <ScrollArea className="h-[600px] pr-4">
@@ -579,7 +579,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                     {/* Información del pedido */}
                     <div>
                       <CardTitle className="text-lg">
-                        Pedido #{order.numero_orden}
+                        Apartado #{order.numero_orden}
                       </CardTitle>
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
@@ -599,7 +599,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-sm mb-3">Detalle del Pedido:</h4>
+                      <h4 className="font-semibold text-sm mb-3">Detalle del Apartado:</h4>
                       {(() => {
                         // Agrupar items por persona
                         const itemsByPerson = order.items_pedido.reduce((acc, item) => {
@@ -654,7 +654,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                         );
                       })()}
                       <div className="flex justify-between pt-3 mt-3 border-t-2 border-primary font-bold text-base">
-                        <span>TOTAL DEL PEDIDO:</span>
+                        <span>TOTAL DEL APARTADO:</span>
                         <span className="text-primary text-lg">{formatCurrency(order.total)}</span>
                       </div>
                     </div>
