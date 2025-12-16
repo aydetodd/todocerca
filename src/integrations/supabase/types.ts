@@ -124,6 +124,64 @@ export type Database = {
         }
         Relationships: []
       }
+      favoritos: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string | null
+          precio_guardado: number | null
+          producto_id: string | null
+          proveedor_id: string | null
+          stock_guardado: number | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          precio_guardado?: number | null
+          producto_id?: string | null
+          proveedor_id?: string | null
+          stock_guardado?: number | null
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          precio_guardado?: number | null
+          producto_id?: string | null
+          proveedor_id?: string | null
+          stock_guardado?: number | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favoritos_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favoritos_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favoritos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fotos_listings: {
         Row: {
           alt_text: string | null

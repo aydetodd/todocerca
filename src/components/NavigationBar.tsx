@@ -29,7 +29,7 @@ export const NavigationBar = () => {
   };
 
   const handleFavorites = () => {
-    toast.info("Próximamente: Favoritos");
+    navigate('/favoritos');
   };
 
   return (
@@ -46,7 +46,7 @@ export const NavigationBar = () => {
         </Button>
         
         <Button
-          variant="ghost"
+          variant={location.pathname === '/favoritos' ? 'default' : 'ghost'}
           size="icon"
           onClick={handleFavorites}
           className="flex flex-col items-center gap-0.5 h-auto py-1"
