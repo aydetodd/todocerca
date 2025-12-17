@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map, List } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
@@ -379,7 +379,7 @@ const ProductSearch = () => {
                 className="flex-1 rounded-none"
                 onClick={() => setViewMode("map")}
               >
-                <Map className="w-4 h-4 mr-2" />
+                <MapIcon className="w-4 h-4 mr-2" />
                 Ver Mapa
               </Button>
               <Button
