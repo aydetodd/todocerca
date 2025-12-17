@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
-import { ESTADOS_MEXICO, CIUDADES_POR_ESTADO } from '@/data/ciudades-mexico';
+import { useMunicipios } from '@/hooks/useMunicipios';
 import {
   Dialog,
   DialogContent,
@@ -75,6 +75,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const { toast } = useToast();
+  const { estados: ESTADOS_MEXICO, getMunicipios } = useMunicipios();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -644,9 +645,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <SelectValue placeholder="Selecciona ciudad" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {(CIUDADES_POR_ESTADO[formData.estado] || []).map((ciudad) => (
-                        <SelectItem key={ciudad} value={ciudad}>
-                          {ciudad}
+                      {getMunicipios(formData.estado).map((municipio) => (
+                        <SelectItem key={municipio} value={municipio}>
+                          {municipio}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -17,7 +17,7 @@ import { trackProductSearch } from '@/lib/analytics';
 import { StatusControl } from '@/components/StatusControl';
 import { FavoritoButton } from '@/components/FavoritoButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ESTADOS_MEXICO, CIUDADES_POR_ESTADO } from '@/data/ciudades-mexico';
+import { useMunicipios } from '@/hooks/useMunicipios';
 
 interface Category {
   id: string;
@@ -102,8 +102,11 @@ const ProductSearch = () => {
   const [searchEstado, setSearchEstado] = useState<string>('Sonora');
   const [searchCiudad, setSearchCiudad] = useState<string>('Ciudad Obregón');
   
-  // Ciudades disponibles según el estado seleccionado
-  const ciudadesDisponibles = searchEstado ? (CIUDADES_POR_ESTADO[searchEstado] || []) : [];
+  // Hook para cargar municipios
+  const { estados: ESTADOS_MEXICO, getMunicipios } = useMunicipios();
+  
+  // Municipios disponibles según el estado seleccionado
+  const ciudadesDisponibles = searchEstado ? getMunicipios(searchEstado) : [];
   
   // Lista fija de 50 rutas para mostrar en el desplegable
   const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
