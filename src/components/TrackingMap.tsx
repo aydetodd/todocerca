@@ -45,15 +45,13 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
     const shouldRecenter = !hasInitializedView.current || locations.length !== previousLocationCount.current;
     previousLocationCount.current = locations.length;
 
-    // Limpiar marcadores antiguos
-    Object.values(markersRef.current).forEach(marker => marker.remove());
-    markersRef.current = {};
-
     const bounds = L.latLngBounds([]);
+    const currentMarkerIds = new Set<string>();
 
     locations.forEach((loc) => {
       const position: L.LatLngExpression = [loc.latitude, loc.longitude];
       bounds.extend(position);
+      currentMarkerIds.add(loc.user_id);
 
       // Crear icono personalizado según si es el dueño o no
       const isOwner = loc.member?.is_owner;
@@ -89,9 +87,7 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
         popupAnchor: [0, -32]
       });
 
-      const marker = L.marker(position, { icon: customIcon }).addTo(mapRef.current!);
-
-      // Popup con información
+      // Popup con información y botón de cerrar
       const popupContent = `
         <div style="font-family: system-ui; min-width: 150px;">
           <strong style="font-size: 16px; color: ${iconColor};">
@@ -105,14 +101,32 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
         </div>
       `;
 
-      // Crear popup que permanece abierto hasta cerrar manualmente
-      marker.bindPopup(popupContent, {
-        closeOnClick: false,
-        autoClose: false,
-        closeButton: true,
-      });
-      
-      markersRef.current[loc.user_id] = marker;
+      // Si el marcador ya existe, solo actualizar posición (preserva popup abierto)
+      if (markersRef.current[loc.user_id]) {
+        markersRef.current[loc.user_id].setLatLng(position);
+        markersRef.current[loc.user_id].setIcon(customIcon);
+        // Actualizar contenido del popup sin cerrarlo
+        markersRef.current[loc.user_id].getPopup()?.setContent(popupContent);
+      } else {
+        // Crear nuevo marcador
+        const marker = L.marker(position, { icon: customIcon }).addTo(mapRef.current!);
+        
+        marker.bindPopup(popupContent, {
+          closeOnClick: false,
+          autoClose: false,
+          closeButton: true,
+        });
+        
+        markersRef.current[loc.user_id] = marker;
+      }
+    });
+
+    // Eliminar marcadores que ya no existen
+    Object.keys(markersRef.current).forEach(userId => {
+      if (!currentMarkerIds.has(userId)) {
+        markersRef.current[userId].remove();
+        delete markersRef.current[userId];
+      }
     });
 
     // Solo ajustar vista inicialmente o cuando cambia el número de ubicaciones
