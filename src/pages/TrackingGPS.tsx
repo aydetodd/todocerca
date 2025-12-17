@@ -768,7 +768,7 @@ const TrackingGPS = () => {
             <StatusControl />
           </div>
           <div className="w-full h-full">
-            <TrackingMap locations={locations} currentUserId={currentUserId} />
+            <TrackingMap locations={locations} currentUserId={currentUserId} showNamesButton={true} />
           </div>
         </div>
       )}

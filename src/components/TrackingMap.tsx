@@ -16,9 +16,10 @@ L.Icon.Default.mergeOptions({
 interface TrackingMapProps {
   locations: MemberLocation[];
   currentUserId: string | null;
+  showNamesButton?: boolean;
 }
 
-const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
+const TrackingMap = ({ locations, currentUserId, showNamesButton = false }: TrackingMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const hasInitializedView = useRef(false);
@@ -167,19 +168,21 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
         className="w-full h-full rounded-lg shadow-lg border border-border"
       />
       
-      {/* Botón Nombres */}
-      <Button
-        onClick={toggleAllPopups}
-        className={`absolute top-3 right-3 z-[1000] backdrop-blur-sm border border-border shadow-lg ${
-          allPopupsOpen 
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-            : 'bg-background/95 text-foreground hover:bg-accent'
-        }`}
-        size="sm"
-      >
-        <Users className="w-4 h-4 mr-2" />
-        Nombres
-      </Button>
+      {/* Botón Nombres - solo si showNamesButton es true */}
+      {showNamesButton && (
+        <Button
+          onClick={toggleAllPopups}
+          className={`absolute top-3 right-3 z-[1000] backdrop-blur-sm border border-border shadow-lg ${
+            allPopupsOpen 
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+              : 'bg-background/95 text-foreground hover:bg-accent'
+          }`}
+          size="sm"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Nombres
+        </Button>
+      )}
     </div>
   );
 };
