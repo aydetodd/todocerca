@@ -36,6 +36,7 @@ const ProductSearch = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [searchEstado, setSearchEstado] = useState<string>('Sonora');
+  const ALL_MUNICIPIOS_VALUE = '__ALL__';
   const [searchCiudad, setSearchCiudad] = useState<string>('Ciudad Obregón');
   const [results, setResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -58,7 +59,9 @@ const ProductSearch = () => {
         .gte('stock', 1);
       
       if (searchEstado) query = query.eq('estado', searchEstado);
-      if (searchCiudad) query = query.eq('ciudad', searchCiudad);
+      if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+        query = query.eq('ciudad', searchCiudad);
+      }
       if (searchTerm.trim()) {
         query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
       }
@@ -106,7 +109,7 @@ const ProductSearch = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <span className="text-sm text-muted-foreground mb-1 block">Estado:</span>
-              <Select value={searchEstado} onValueChange={(v) => { setSearchEstado(v); setSearchCiudad(''); }}>
+              <Select value={searchEstado} onValueChange={(v) => { setSearchEstado(v); setSearchCiudad(ALL_MUNICIPIOS_VALUE); }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona estado" />
                 </SelectTrigger>
@@ -125,7 +128,7 @@ const ProductSearch = () => {
                   <SelectValue placeholder="Selecciona municipio" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value={ALL_MUNICIPIOS_VALUE}>Todos</SelectItem>
                   {ciudadesDisponibles.map(ciudad => (
                     <SelectItem key={ciudad} value={ciudad}>{ciudad}</SelectItem>
                   ))}
