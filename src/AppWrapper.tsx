@@ -1,4 +1,5 @@
-// Cache bust: 2025-12-17T10:00:00 - next-themes completely removed
+// AppWrapper v2025-12-17-fix - stable React instance
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,16 +25,17 @@ import AddContact from "./pages/AddContact";
 import Favoritos from "./pages/Favoritos";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      retry: 1,
-    },
-  },
-});
-
 export default function AppWrapper() {
+  // QueryClient creado dentro del componente para evitar problemas de HMR
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000,
+        retry: 1,
+      },
+    },
+  }));
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
