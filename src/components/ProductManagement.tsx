@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
+import { ESTADOS_MEXICO, CIUDADES_POR_ESTADO } from '@/data/ciudades-mexico';
 import {
   Dialog,
   DialogContent,
@@ -45,14 +46,10 @@ interface Product {
   ciudad?: string;
 }
 
-// Estados de México
-const ESTADOS_MEXICO = [
-  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
-  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
-  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
-  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
-];
+interface Category {
+  id: string;
+  name: string;
+}
 
 interface Category {
   id: string;
@@ -638,13 +635,22 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 </div>
                 <div>
                   <Label htmlFor="ciudad">Ciudad *</Label>
-                  <Input
-                    id="ciudad"
+                  <Select
                     value={formData.ciudad}
-                    onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
-                    placeholder="Ej: Obregón"
+                    onValueChange={(value) => setFormData({...formData, ciudad: value})}
                     disabled={!formData.estado}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona ciudad" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {(CIUDADES_POR_ESTADO[formData.estado] || []).map((ciudad) => (
+                        <SelectItem key={ciudad} value={ciudad}>
+                          {ciudad}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
