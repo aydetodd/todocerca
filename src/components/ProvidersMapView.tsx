@@ -232,16 +232,16 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     // Apply vehicle type filter
     if (vehicleFilter !== 'all') {
       filtered = filtered.filter(p => {
+        // A provider can be BOTH taxi AND bus if they have products in both categories
         const isBus = (p as any)._isBus || (p as any)._providerType === 'ruta';
-        const isTaxi = !isBus && (
-          (p as any)._isTaxi || 
+        const isTaxi = (p as any)._isTaxi || 
           (p as any)._providerType === 'taxi' ||
           p.productos.some(prod => 
             prod.categoria?.toLowerCase().includes('taxi') || 
             prod.nombre?.toLowerCase().includes('taxi')
-          )
-        );
+          );
         
+        // Filter based on search - provider shows if they have matching products
         if (vehicleFilter === 'taxi') return isTaxi;
         if (vehicleFilter === 'ruta') return isBus;
         return true;
