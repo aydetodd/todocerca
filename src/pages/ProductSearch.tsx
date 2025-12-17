@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMunicipios } from "@/hooks/useMunicipios";
 
 interface Category {
   id: string;
@@ -43,61 +44,7 @@ type MapProvider = {
   }[];
 };
 
-// Estados de México (lista corta para UI) + municipios principales
-const ESTADOS_MEXICO = [
-  "Aguascalientes",
-  "Baja California",
-  "Baja California Sur",
-  "Campeche",
-  "Chiapas",
-  "Chihuahua",
-  "Ciudad de México",
-  "Coahuila",
-  "Colima",
-  "Durango",
-  "Guanajuato",
-  "Guerrero",
-  "Hidalgo",
-  "Jalisco",
-  "México",
-  "Michoacán",
-  "Morelos",
-  "Nayarit",
-  "Nuevo León",
-  "Oaxaca",
-  "Puebla",
-  "Querétaro",
-  "Quintana Roo",
-  "San Luis Potosí",
-  "Sinaloa",
-  "Sonora",
-  "Tabasco",
-  "Tamaulipas",
-  "Tlaxcala",
-  "Veracruz",
-  "Yucatán",
-  "Zacatecas",
-];
-
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
-
-const MUNICIPIOS: Record<string, string[]> = {
-  Sonora: [
-    "Cajeme",
-    "Ciudad Obregón",
-    "Hermosillo",
-    "Nogales",
-    "Guaymas",
-    "Navojoa",
-    "San Luis Río Colorado",
-  ],
-  Sinaloa: ["Culiacán", "Mazatlán", "Los Mochis", "Guasave", "Ahome"],
-  Chihuahua: ["Chihuahua", "Ciudad Juárez", "Delicias", "Cuauhtémoc", "Parral"],
-  "Baja California": ["Tijuana", "Mexicali", "Ensenada", "Tecate", "Rosarito"],
-  Jalisco: ["Guadalajara", "Puerto Vallarta", "Zapopan", "Tlaquepaque", "Tonalá"],
-  "Nuevo León": ["Monterrey", "San Pedro Garza García", "Guadalupe", "San Nicolás", "Apodaca"],
-  "Ciudad de México": ["Benito Juárez", "Coyoacán", "Miguel Hidalgo", "Cuauhtémoc", "Álvaro Obregón"],
-};
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
@@ -115,9 +62,11 @@ const ProductSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
+  const { getEstados, getMunicipios } = useMunicipios();
+
   const municipiosDisponibles = useMemo(
-    () => MUNICIPIOS[searchEstado] || [],
-    [searchEstado]
+    () => getMunicipios(searchEstado),
+    [searchEstado, getMunicipios]
   );
 
   const categoryNameById = useMemo(() => {
@@ -321,7 +270,7 @@ const ProductSearch = () => {
                   <SelectValue placeholder="Selecciona estado" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {ESTADOS_MEXICO.map((estado) => (
+                  {getEstados().map((estado) => (
                     <SelectItem key={estado} value={estado}>
                       {estado}
                     </SelectItem>
