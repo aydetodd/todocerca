@@ -1189,14 +1189,17 @@ const TrackingGPS = () => {
           )}
 
           {/* Mapa de Ubicaciones en Tiempo Real */}
-          {isActive && locations.length > 0 && (
+          {isActive && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
                     <CardDescription>
-                      {locations.length} miembro(s) compartiendo ubicación
+                      {locations.length > 0 
+                        ? `${locations.length} miembro(s) compartiendo ubicación`
+                        : 'No hay miembros activos en este momento'
+                      }
                     </CardDescription>
                   </div>
                   <Button
