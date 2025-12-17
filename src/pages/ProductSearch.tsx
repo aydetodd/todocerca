@@ -394,8 +394,22 @@ const ProductSearch = () => {
             </div>
 
             {viewMode === "map" ? (
-              <section aria-label="Mapa" className="mb-6">
-                <div className="h-[60vh] sm:h-[70vh]">
+              <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
+                <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="shadow-lg"
+                  >
+                    <List className="w-4 h-4 mr-2" />
+                    Ver Listado
+                  </Button>
+                  <Badge variant="secondary" className="shadow-lg">
+                    {mapProviders.length} proveedor{mapProviders.length !== 1 ? "es" : ""}
+                  </Badge>
+                </div>
+                <div className="h-full w-full">
                   <ProvidersMapView providers={mapProviders as any} vehicleFilter={vehicleFilter} />
                 </div>
               </section>
