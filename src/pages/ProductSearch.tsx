@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,95 @@ import { Badge } from "@/components/ui/badge";
 import { Search as SearchIcon, MapPin, Map, List } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
+import ProvidersMapView from "@/components/ProvidersMapView";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Category {
   id: string;
   name: string;
 }
+
+type VehicleFilter = "all" | "taxi" | "ruta";
+
+type MapProvider = {
+  id: string;
+  business_name: string;
+  business_address: string;
+  business_phone: string | null;
+  latitude: number;
+  longitude: number;
+  user_id: string;
+  productos: {
+    nombre: string;
+    precio: number;
+    descripcion: string;
+    stock: number;
+    unit: string;
+    categoria: string;
+  }[];
+};
+
+// Estados de México (lista corta para UI) + municipios principales
+const ESTADOS_MEXICO = [
+  "Aguascalientes",
+  "Baja California",
+  "Baja California Sur",
+  "Campeche",
+  "Chiapas",
+  "Chihuahua",
+  "Ciudad de México",
+  "Coahuila",
+  "Colima",
+  "Durango",
+  "Guanajuato",
+  "Guerrero",
+  "Hidalgo",
+  "Jalisco",
+  "México",
+  "Michoacán",
+  "Morelos",
+  "Nayarit",
+  "Nuevo León",
+  "Oaxaca",
+  "Puebla",
+  "Querétaro",
+  "Quintana Roo",
+  "San Luis Potosí",
+  "Sinaloa",
+  "Sonora",
+  "Tabasco",
+  "Tamaulipas",
+  "Tlaxcala",
+  "Veracruz",
+  "Yucatán",
+  "Zacatecas",
+];
+
+const ALL_MUNICIPIOS_VALUE = "__ALL__";
+
+const MUNICIPIOS: Record<string, string[]> = {
+  Sonora: [
+    "Cajeme",
+    "Ciudad Obregón",
+    "Hermosillo",
+    "Nogales",
+    "Guaymas",
+    "Navojoa",
+    "San Luis Río Colorado",
+  ],
+  Sinaloa: ["Culiacán", "Mazatlán", "Los Mochis", "Guasave", "Ahome"],
+  Chihuahua: ["Chihuahua", "Ciudad Juárez", "Delicias", "Cuauhtémoc", "Parral"],
+  "Baja California": ["Tijuana", "Mexicali", "Ensenada", "Tecate", "Rosarito"],
+  Jalisco: ["Guadalajara", "Puerto Vallarta", "Zapopan", "Tlaquepaque", "Tonalá"],
+  "Nuevo León": ["Monterrey", "San Pedro Garza García", "Guadalupe", "San Nicolás", "Apodaca"],
+  "Ciudad de México": ["Benito Juárez", "Coyoacán", "Miguel Hidalgo", "Cuauhtémoc", "Álvaro Obregón"],
+};
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
@@ -22,18 +106,56 @@ const ProductSearch = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
+  const [searchEstado, setSearchEstado] = useState<string>("Sonora");
+  const [searchCiudad, setSearchCiudad] = useState<string>("Cajeme");
+
   const [results, setResults] = useState<any[]>([]);
+  const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
+  const municipiosDisponibles = useMemo(
+    () => MUNICIPIOS[searchEstado] || [],
+    [searchEstado]
+  );
+
+  const categoryNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    categories.forEach((c) => m.set(c.id, c.name));
+    return m;
+  }, [categories]);
+
+  const selectedCategoryName = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId)?.name,
+    [categories, selectedCategoryId]
+  );
+
+  const isCosasGratis = (selectedCategoryName || "").toLowerCase().includes("gratis");
+
+  const vehicleFilter: VehicleFilter = useMemo(() => {
+    if (selectedCategoryName === "Taxi") return "taxi";
+    if (selectedCategoryName === "Rutas de Transporte") return "ruta";
+    return "all";
+  }, [selectedCategoryName]);
+
   useEffect(() => {
-    document.title = "Buscar Productos y Servicios | TodoCerca";
+    document.title = "Buscar productos, taxi y rutas | TodoCerca";
 
     const meta = document.querySelector('meta[name="description"]');
     meta?.setAttribute(
       "content",
-      "Busca productos, servicios, taxi, rutas y cosas gratis en TodoCerca."
+      "Busca productos, taxi, rutas y cosas gratis por estado y municipio en TodoCerca."
     );
+
+    // Canonical
+    const canonicalHref = `${window.location.origin}/search`;
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = canonicalHref;
 
     let cancelled = false;
 
@@ -70,12 +192,20 @@ const ProductSearch = () => {
         .from("productos")
         .select(
           `
-            id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id,
-            proveedores (id, nombre, telefono, business_address)
+            id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id, estado, ciudad,
+            proveedores (
+              id, nombre, user_id, telefono, business_address, business_phone, latitude, longitude
+            )
           `
         )
         .eq("is_available", true)
         .gte("stock", 1);
+
+      // Location filters
+      if (searchEstado) query = query.eq("estado", searchEstado);
+      if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+        query = query.eq("ciudad", searchCiudad);
+      }
 
       // Category filter
       if (selectedCategoryId) {
@@ -92,12 +222,54 @@ const ProductSearch = () => {
       if (error) {
         console.error("[ProductSearch] Error searching:", error);
         setResults([]);
-      } else {
-        setResults(data || []);
+        setMapProviders([]);
+        return;
       }
+
+      const rows = data || [];
+      setResults(rows);
+
+      // Build providers list for map from product rows
+      const providerMap = new Map<string, MapProvider>();
+      rows.forEach((producto: any) => {
+        const prov = producto.proveedores;
+        if (!prov?.id || !prov?.user_id) return;
+
+        const providerId = String(prov.id);
+        const existing = providerMap.get(providerId);
+
+        const categoria = categoryNameById.get(String(producto.category_id)) || selectedCategoryName || "";
+
+        const productForMap = {
+          nombre: String(producto.nombre ?? ""),
+          precio: Number(producto.precio ?? 0),
+          descripcion: String(producto.descripcion ?? ""),
+          stock: Number(producto.stock ?? 0),
+          unit: String(producto.unit ?? ""),
+          categoria,
+        };
+
+        if (!existing) {
+          providerMap.set(providerId, {
+            id: providerId,
+            business_name: String(prov.nombre ?? "Proveedor"),
+            business_address: String(prov.business_address ?? ""),
+            business_phone: (prov.business_phone ?? prov.telefono ?? null) as string | null,
+            latitude: Number(prov.latitude ?? 0),
+            longitude: Number(prov.longitude ?? 0),
+            user_id: String(prov.user_id),
+            productos: [productForMap],
+          });
+        } else {
+          existing.productos.push(productForMap);
+        }
+      });
+
+      setMapProviders(Array.from(providerMap.values()));
     } catch (err) {
       console.error("[ProductSearch] Error:", err);
       setResults([]);
+      setMapProviders([]);
     } finally {
       setLoading(false);
     }
@@ -108,9 +280,6 @@ const ProductSearch = () => {
     setSelectedCategoryId(newSelected);
   };
 
-  const selectedCategoryName = categories.find(c => c.id === selectedCategoryId)?.name;
-  const isCosasGratis = selectedCategoryName?.toLowerCase().includes("gratis");
-
   return (
     <div className="min-h-screen bg-background">
       <GlobalHeader />
@@ -120,7 +289,7 @@ const ProductSearch = () => {
           <h1 className="text-3xl font-bold">Buscar Productos y Servicios</h1>
         </header>
 
-        <form onSubmit={handleSearch} className="mb-6">
+        <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-2">
             <Input
               type="text"
@@ -135,6 +304,49 @@ const ProductSearch = () => {
             </Button>
           </div>
         </form>
+
+        <section aria-label="Ubicación" className="mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Estado:</p>
+              <Select
+                value={searchEstado}
+                onValueChange={(v) => {
+                  setSearchEstado(v);
+                  setSearchCiudad(ALL_MUNICIPIOS_VALUE);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona estado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {ESTADOS_MEXICO.map((estado) => (
+                    <SelectItem key={estado} value={estado}>
+                      {estado}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Municipio:</p>
+              <Select value={searchCiudad} onValueChange={setSearchCiudad}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona municipio" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value={ALL_MUNICIPIOS_VALUE}>Todos</SelectItem>
+                  {municipiosDisponibles.map((ciudad) => (
+                    <SelectItem key={ciudad} value={ciudad}>
+                      {ciudad}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </section>
 
         <section aria-label="Categorías" className="mb-6">
           <p className="text-sm text-muted-foreground mb-3">Categorías:</p>
@@ -181,48 +393,54 @@ const ProductSearch = () => {
               </Button>
             </div>
 
-            <section aria-label="Resultados" className="space-y-4">
-              {results.length === 0 ? (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <p className="text-muted-foreground">No se encontraron resultados.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                results.map((producto) => (
-                  <Card key={producto.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="font-semibold text-lg truncate">{producto.nombre}</h2>
-                          {producto.descripcion && (
-                            <p className="text-muted-foreground text-sm line-clamp-2">
-                              {producto.descripcion}
-                            </p>
-                          )}
-                        </div>
-
-                        {isCosasGratis && (
-                          <Badge variant="secondary">¡Gratis!</Badge>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge variant="secondary">${producto.precio}</Badge>
-                        <Badge variant="outline">Stock: {producto.stock}</Badge>
-                      </div>
-
-                      {producto.proveedores && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          <MapPin className="w-3 h-3 inline mr-1" />
-                          {producto.proveedores.nombre}
-                        </p>
-                      )}
+            {viewMode === "map" ? (
+              <section aria-label="Mapa" className="mb-6">
+                <div className="h-[60vh] sm:h-[70vh]">
+                  <ProvidersMapView providers={mapProviders as any} vehicleFilter={vehicleFilter} />
+                </div>
+              </section>
+            ) : (
+              <section aria-label="Resultados" className="space-y-4">
+                {results.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <p className="text-muted-foreground">No se encontraron resultados.</p>
                     </CardContent>
                   </Card>
-                ))
-              )}
-            </section>
+                ) : (
+                  results.map((producto) => (
+                    <Card key={producto.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h2 className="font-semibold text-lg truncate">{producto.nombre}</h2>
+                            {producto.descripcion && (
+                              <p className="text-muted-foreground text-sm line-clamp-2">
+                                {producto.descripcion}
+                              </p>
+                            )}
+                          </div>
+
+                          {isCosasGratis && <Badge variant="secondary">¡Gratis!</Badge>}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <Badge variant="secondary">${producto.precio}</Badge>
+                          <Badge variant="outline">Stock: {producto.stock}</Badge>
+                        </div>
+
+                        {producto.proveedores && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            {producto.proveedores.nombre}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </section>
+            )}
           </>
         )}
       </main>
