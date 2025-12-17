@@ -97,6 +97,19 @@ const ProductSearch = () => {
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
   
+  // Estados para filtro por estado/ciudad
+  const [searchEstado, setSearchEstado] = useState<string>('Sonora');
+  const [searchCiudad, setSearchCiudad] = useState<string>('Obregón');
+  
+  // Lista de estados de México
+  const ESTADOS_MEXICO = [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+    'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+    'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+  ];
+  
   // Lista fija de 50 rutas para mostrar en el desplegable
   const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
   
@@ -296,6 +309,16 @@ const ProductSearch = () => {
         `)
         .eq('is_available', true)
         .gte('stock', 1);
+      
+      // Filtrar por estado si hay uno seleccionado
+      if (searchEstado) {
+        productsQuery = productsQuery.eq('estado', searchEstado);
+      }
+      
+      // Filtrar por ciudad si hay una ingresada
+      if (searchCiudad.trim()) {
+        productsQuery = productsQuery.ilike('ciudad', `%${searchCiudad.trim()}%`);
+      }
       
       // Para rutas de transporte, buscar por nombre exacto de la ruta
       if (vehicleFilter === 'ruta' && selectedRouteNumber) {
@@ -554,68 +577,99 @@ const ProductSearch = () => {
           </div>
         </form>
 
-        {/* Filtro de ubicación y radio */}
+        {/* Filtro de ubicación por Estado/Ciudad */}
         <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex items-center gap-2">
-              {loadingLocation ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : userLocation ? (
-                <Navigation className="h-4 w-4 text-green-500" />
-              ) : (
-                <MapPin className="h-4 w-4 text-destructive" />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <span className="text-sm text-muted-foreground mb-1 block">Estado:</span>
+                <Select value={searchEstado} onValueChange={(v) => { setSearchEstado(v); setSearchCiudad(''); }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona estado" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="">Todo México</SelectItem>
+                    {ESTADOS_MEXICO.map(estado => (
+                      <SelectItem key={estado} value={estado}>
+                        {estado}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex-1">
+                <span className="text-sm text-muted-foreground mb-1 block">Ciudad:</span>
+                <Input
+                  placeholder="Ej: Obregón"
+                  value={searchCiudad}
+                  onChange={(e) => setSearchCiudad(e.target.value)}
+                  disabled={!searchEstado}
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex items-center gap-2">
+                {loadingLocation ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : userLocation ? (
+                  <Navigation className="h-4 w-4 text-green-500" />
+                ) : (
+                  <MapPin className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-sm">
+                  {loadingLocation 
+                    ? 'Obteniendo ubicación...' 
+                    : userLocation 
+                      ? 'Ubicación detectada' 
+                      : locationError || 'Sin ubicación'}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Radio:</span>
+                <Select value={searchRadius} onValueChange={setSearchRadius}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {radiusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {!userLocation && !loadingLocation && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setLoadingLocation(true);
+                    navigator.geolocation?.getCurrentPosition(
+                      (position) => {
+                        setUserLocation({
+                          lat: position.coords.latitude,
+                          lng: position.coords.longitude
+                        });
+                        setLoadingLocation(false);
+                        setLocationError(null);
+                      },
+                      () => {
+                        setLocationError('No se pudo obtener ubicación');
+                        setLoadingLocation(false);
+                      }
+                    );
+                  }}
+                >
+                  <Navigation className="h-4 w-4 mr-2" />
+                  Reintentar
+                </Button>
               )}
-              <span className="text-sm">
-                {loadingLocation 
-                  ? 'Obteniendo ubicación...' 
-                  : userLocation 
-                    ? 'Ubicación detectada' 
-                    : locationError || 'Sin ubicación'}
-              </span>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Radio:</span>
-              <Select value={searchRadius} onValueChange={setSearchRadius}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {radiusOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {!userLocation && !loadingLocation && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setLoadingLocation(true);
-                  navigator.geolocation?.getCurrentPosition(
-                    (position) => {
-                      setUserLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                      });
-                      setLoadingLocation(false);
-                      setLocationError(null);
-                    },
-                    () => {
-                      setLocationError('No se pudo obtener ubicación');
-                      setLoadingLocation(false);
-                    }
-                  );
-                }}
-              >
-                <Navigation className="h-4 w-4 mr-2" />
-                Reintentar
-              </Button>
-            )}
           </div>
         </div>
 
