@@ -128,15 +128,14 @@ export const useRealtimeLocations = () => {
       
       const proveedorId = proveedorMap.get(loc.user_id);
       
-      // Determine vehicle type: first check provider_type, then fall back to product check
+      // Determine vehicle type: provider can be BOTH taxi AND bus if they have products in both categories
       const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
       const routeNameFromProduct = proveedorId ? rutaProviderMap.get(proveedorId) : null;
+      const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
+      // A provider can have BOTH flags true if they have products in both categories
       const isBus = profile.provider_type === 'ruta' || hasRutaProduct;
-      const isTaxi = !isBus && (
-        profile.provider_type === 'taxi' || 
-        (profile.provider_type === null && proveedorId ? taxiProviderIds.has(proveedorId) : false)
-      );
+      const isTaxi = profile.provider_type === 'taxi' || hasTaxiProduct;
       
       const location: ProveedorLocation = {
         ...loc,
