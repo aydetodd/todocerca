@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MemberLocation } from '@/hooks/useTrackingLocations';
+import { Users, X, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Fix default Leaflet icon paths
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -21,6 +23,9 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const hasInitializedView = useRef(false);
   const previousLocationCount = useRef(0);
+  
+  const [showNamesList, setShowNamesList] = useState(false);
+  const [hiddenMembers, setHiddenMembers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -50,8 +55,19 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
 
     locations.forEach((loc) => {
       const position: L.LatLngExpression = [loc.latitude, loc.longitude];
-      bounds.extend(position);
       currentMarkerIds.add(loc.user_id);
+      
+      // Si el miembro está oculto, no mostrar en el mapa
+      if (hiddenMembers.has(loc.user_id)) {
+        // Si existe el marcador, removerlo
+        if (markersRef.current[loc.user_id]) {
+          markersRef.current[loc.user_id].remove();
+          delete markersRef.current[loc.user_id];
+        }
+        return;
+      }
+      
+      bounds.extend(position);
 
       // Crear icono personalizado según si es el dueño o no
       const isOwner = loc.member?.is_owner;
@@ -123,7 +139,7 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
 
     // Eliminar marcadores que ya no existen
     Object.keys(markersRef.current).forEach(userId => {
-      if (!currentMarkerIds.has(userId)) {
+      if (!currentMarkerIds.has(userId) || hiddenMembers.has(userId)) {
         markersRef.current[userId].remove();
         delete markersRef.current[userId];
       }
@@ -138,13 +154,103 @@ const TrackingMap = ({ locations, currentUserId }: TrackingMapProps) => {
       }
       hasInitializedView.current = true;
     }
-  }, [locations, currentUserId]);
+  }, [locations, currentUserId, hiddenMembers]);
+
+  const toggleMemberVisibility = (userId: string) => {
+    setHiddenMembers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const showAllMembers = () => {
+    setHiddenMembers(new Set());
+  };
 
   return (
-    <div 
-      id="tracking-map" 
-      className="w-full h-full rounded-lg shadow-lg border border-border"
-    />
+    <div className="relative w-full h-full">
+      <div 
+        id="tracking-map" 
+        className="w-full h-full rounded-lg shadow-lg border border-border"
+      />
+      
+      {/* Botón Nombres */}
+      <Button
+        onClick={() => setShowNamesList(!showNamesList)}
+        className="absolute top-3 right-3 z-[1000] bg-background/95 backdrop-blur-sm border border-border text-foreground hover:bg-accent shadow-lg"
+        size="sm"
+      >
+        <Users className="w-4 h-4 mr-2" />
+        Nombres
+      </Button>
+
+      {/* Panel de nombres */}
+      {showNamesList && (
+        <div className="absolute top-14 right-3 z-[1000] bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl p-3 min-w-[200px] max-w-[280px] max-h-[300px] overflow-y-auto">
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+            <span className="font-semibold text-sm">Miembros ({locations.length})</span>
+            <button 
+              onClick={() => setShowNamesList(false)}
+              className="p-1 hover:bg-accent rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {hiddenMembers.size > 0 && (
+            <button
+              onClick={showAllMembers}
+              className="w-full text-xs text-primary hover:underline mb-2 text-left"
+            >
+              Mostrar todos
+            </button>
+          )}
+          
+          <div className="space-y-2">
+            {locations.map((loc) => {
+              const isHidden = hiddenMembers.has(loc.user_id);
+              const isOwner = loc.member?.is_owner;
+              
+              return (
+                <div 
+                  key={loc.user_id}
+                  className={`flex items-center justify-between p-2 rounded-lg transition-colors ${
+                    isHidden ? 'bg-muted/50 opacity-60' : 'bg-accent/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: isOwner ? '#ea580c' : '#2d9d78' }}
+                    />
+                    <span className={`text-sm truncate ${isHidden ? 'line-through' : ''}`}>
+                      {loc.member?.nickname || 'Miembro'}
+                    </span>
+                    {isOwner && <span className="text-xs">👑</span>}
+                  </div>
+                  <button
+                    onClick={() => toggleMemberVisibility(loc.user_id)}
+                    className="p-1.5 hover:bg-background rounded ml-2 flex-shrink-0"
+                    title={isHidden ? 'Mostrar en mapa' : 'Ocultar del mapa'}
+                  >
+                    {isHidden ? (
+                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
