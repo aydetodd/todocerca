@@ -692,8 +692,10 @@ export type Database = {
       productos: {
         Row: {
           category_id: string | null
+          ciudad: string | null
           created_at: string
           descripcion: string | null
+          estado: string | null
           id: string
           is_available: boolean | null
           is_mobile: boolean
@@ -707,8 +709,10 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          ciudad?: string | null
           created_at?: string
           descripcion?: string | null
+          estado?: string | null
           id?: string
           is_available?: boolean | null
           is_mobile?: boolean
@@ -722,8 +726,10 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          ciudad?: string | null
           created_at?: string
           descripcion?: string | null
+          estado?: string | null
           id?: string
           is_available?: boolean | null
           is_mobile?: boolean

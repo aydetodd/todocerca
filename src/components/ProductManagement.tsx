@@ -41,7 +41,18 @@ interface Product {
   is_mobile: boolean;
   stock: number;
   foto_url?: string;
+  estado?: string;
+  ciudad?: string;
 }
+
+// Estados de México
+const ESTADOS_MEXICO = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+];
 
 interface Category {
   id: string;
@@ -78,6 +89,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     is_available: true,
     is_mobile: false,
     stock: 0,
+    estado: '',
+    ciudad: '',
   });
 
   // Detectar si la categoría seleccionada es "Rutas de Transporte"
@@ -173,6 +186,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: product.is_available,
         is_mobile: product.is_mobile,
         stock: product.stock,
+        estado: product.estado || '',
+        ciudad: product.ciudad || '',
       });
     } else {
       setEditingProduct(null);
@@ -186,6 +201,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: true,
         is_mobile: false,
         stock: 0,
+        estado: '',
+        ciudad: '',
       });
       setSelectedRoute('');
     }
@@ -597,6 +614,38 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   onChange={(e) => setFormData({...formData, keywords: e.target.value})}
                   placeholder="Ej: fresco, orgánico, temporada"
                 />
+              </div>
+              
+              {/* Ubicación: Estado y Ciudad */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="estado">Estado *</Label>
+                  <Select
+                    value={formData.estado}
+                    onValueChange={(value) => setFormData({...formData, estado: value, ciudad: ''})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona estado" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {ESTADOS_MEXICO.map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estado}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="ciudad">Ciudad *</Label>
+                  <Input
+                    id="ciudad"
+                    value={formData.ciudad}
+                    onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
+                    placeholder="Ej: Obregón"
+                    disabled={!formData.estado}
+                  />
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <input
