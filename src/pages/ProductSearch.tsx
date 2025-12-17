@@ -17,6 +17,7 @@ import { trackProductSearch } from '@/lib/analytics';
 import { StatusControl } from '@/components/StatusControl';
 import { FavoritoButton } from '@/components/FavoritoButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ESTADOS_MEXICO, CIUDADES_POR_ESTADO } from '@/data/ciudades-mexico';
 
 interface Category {
   id: string;
@@ -99,16 +100,10 @@ const ProductSearch = () => {
   
   // Estados para filtro por estado/ciudad
   const [searchEstado, setSearchEstado] = useState<string>('Sonora');
-  const [searchCiudad, setSearchCiudad] = useState<string>('Obregón');
+  const [searchCiudad, setSearchCiudad] = useState<string>('Ciudad Obregón');
   
-  // Lista de estados de México
-  const ESTADOS_MEXICO = [
-    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-    'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
-    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
-    'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
-    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
-  ];
+  // Ciudades disponibles según el estado seleccionado
+  const ciudadesDisponibles = searchEstado ? (CIUDADES_POR_ESTADO[searchEstado] || []) : [];
   
   // Lista fija de 50 rutas para mostrar en el desplegable
   const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
@@ -315,9 +310,9 @@ const ProductSearch = () => {
         productsQuery = productsQuery.eq('estado', searchEstado);
       }
       
-      // Filtrar por ciudad si hay una ingresada
-      if (searchCiudad.trim()) {
-        productsQuery = productsQuery.ilike('ciudad', `%${searchCiudad.trim()}%`);
+      // Filtrar por ciudad si hay una seleccionada
+      if (searchCiudad) {
+        productsQuery = productsQuery.eq('ciudad', searchCiudad);
       }
       
       // Para rutas de transporte, buscar por nombre exacto de la ruta
@@ -600,12 +595,19 @@ const ProductSearch = () => {
               
               <div className="flex-1">
                 <span className="text-sm text-muted-foreground mb-1 block">Ciudad:</span>
-                <Input
-                  placeholder="Ej: Obregón"
-                  value={searchCiudad}
-                  onChange={(e) => setSearchCiudad(e.target.value)}
-                  disabled={!searchEstado}
-                />
+                <Select value={searchCiudad} onValueChange={setSearchCiudad} disabled={!searchEstado}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona ciudad" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="">Todas las ciudades</SelectItem>
+                    {ciudadesDisponibles.map(ciudad => (
+                      <SelectItem key={ciudad} value={ciudad}>
+                        {ciudad}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
