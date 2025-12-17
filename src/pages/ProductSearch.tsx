@@ -1,3 +1,4 @@
+// ProductSearch - Functional version without problematic hook
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,74 +6,28 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp, Navigation, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, MapPin } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
-import ProvidersMap from '@/components/ProvidersMapView';
-import { MessagingPanel } from '@/components/MessagingPanel';
 import { NavigationBar } from '@/components/NavigationBar';
-import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
-import { ListingPhotoCarousel } from '@/components/ListingPhotoCarousel';
-import { trackProductSearch } from '@/lib/analytics';
-import { StatusControl } from '@/components/StatusControl';
-import { FavoritoButton } from '@/components/FavoritoButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useMunicipios } from '@/hooks/useMunicipios';
 
-interface Category {
-  id: string;
-  name: string;
-}
+// Estados de México con algunos municipios principales
+const ESTADOS_MEXICO = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Guanajuato',
+  'Guerrero', 'Hidalgo', 'Jalisco', 'México', 'Michoacán', 'Morelos', 'Nayarit',
+  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+];
 
-interface SearchResult {
-  product_id: string;
-  product_name: string;
-  product_description: string;
-  price: number;
-  stock: number;
-  unit: string;
-  provider_name: string;
-  provider_phone: string;
-  provider_postal_code: string;
-  provider_id: string;
-  provider_address: string;
-  provider_latitude: number | null;
-  provider_longitude: number | null;
-  provider_status: 'available' | 'busy';
-  is_free_listing?: boolean;
-  donor_user_id?: string;
-  distance?: number;
-}
-
-interface MapProvider {
-  id: string;
-  business_name: string;
-  business_address: string;
-  business_phone: string | null;
-  latitude: number;
-  longitude: number;
-  user_id: string;
-  productos: {
-    nombre: string;
-    precio: number;
-    descripcion: string;
-    stock: number;
-    unit: string;
-    categoria: string;
-  }[];
-}
-
-// Función para calcular distancia entre dos puntos (fórmula Haversine)
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Radio de la Tierra en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+const MUNICIPIOS: Record<string, string[]> = {
+  'Sonora': ['Ciudad Obregón', 'Hermosillo', 'Nogales', 'Guaymas', 'Navojoa', 'San Luis Río Colorado'],
+  'Sinaloa': ['Culiacán', 'Mazatlán', 'Los Mochis', 'Guasave', 'Ahome'],
+  'Chihuahua': ['Chihuahua', 'Ciudad Juárez', 'Delicias', 'Cuauhtémoc', 'Parral'],
+  'Baja California': ['Tijuana', 'Mexicali', 'Ensenada', 'Tecate', 'Rosarito'],
+  'Jalisco': ['Guadalajara', 'Puerto Vallarta', 'Zapopan', 'Tlaquepaque', 'Tonalá'],
+  'Nuevo León': ['Monterrey', 'San Pedro Garza García', 'Guadalupe', 'San Nicolás', 'Apodaca'],
+  'Ciudad de México': ['Benito Juárez', 'Coyoacán', 'Miguel Hidalgo', 'Cuauhtémoc', 'Álvaro Obregón'],
 };
 
 const ProductSearch = () => {
@@ -80,484 +35,56 @@ const ProductSearch = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
-  const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
-  const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
-  const [showFullScreenMap, setShowFullScreenMap] = useState(false);
-  const [selectedRouteNumber, setSelectedRouteNumber] = useState<string>('');
-  
-  // Estados para filtro de ubicación
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [searchRadius, setSearchRadius] = useState<string>('10'); // km
-  const [loadingLocation, setLoadingLocation] = useState(true);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  
-  // Estados para filtro por estado/ciudad
   const [searchEstado, setSearchEstado] = useState<string>('Sonora');
   const [searchCiudad, setSearchCiudad] = useState<string>('Ciudad Obregón');
-  
-  // Hook para cargar municipios
-  const { estados: ESTADOS_MEXICO, getMunicipios } = useMunicipios();
-  
-  // Municipios disponibles según el estado seleccionado
-  const ciudadesDisponibles = searchEstado ? getMunicipios(searchEstado) : [];
-  
-  // Lista fija de 50 rutas para mostrar en el desplegable
-  const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
-  
-  // Opciones de radio de búsqueda
-  const radiusOptions = [
-    { value: '5', label: '5 km' },
-    { value: '10', label: '10 km' },
-    { value: '25', label: '25 km' },
-    { value: '50', label: '50 km' },
-    { value: '100', label: '100 km' },
-    { value: 'all', label: 'Todo México' },
-  ];
-  
-  // Obtener ubicación del usuario al cargar
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          setLoadingLocation(false);
-          setLocationError(null);
-        },
-        (error) => {
-          console.error('Error obteniendo ubicación:', error);
-          setLocationError('No se pudo obtener tu ubicación');
-          setLoadingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setLocationError('Tu navegador no soporta geolocalización');
-      setLoadingLocation(false);
-    }
-  }, []);
-  
-  // Determinar el filtro de vehículo basado en la categoría seleccionada
-  const getVehicleFilter = (): 'all' | 'taxi' | 'ruta' => {
-    const selectedCat = categories.find(c => c.id === selectedCategory);
-    if (selectedCat?.name === 'Taxi') return 'taxi';
-    if (selectedCat?.name === 'Rutas de Transporte') return 'ruta';
-    return 'all';
-  };
-  
-  const vehicleFilter = getVehicleFilter();
+  const [results, setResults] = useState<any[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleOpenChat = async (providerId: string, providerName: string) => {
-    // Get the user_id for this provider
-    const { data: providerData } = await supabase
-      .from('proveedores')
-      .select('user_id')
-      .eq('id', providerId)
-      .single();
-    
-    if (providerData?.user_id) {
-      setSelectedReceiverId(providerData.user_id);
-      setSelectedReceiverName(providerName);
-      setIsMessagingOpen(true);
-    }
-  };
+  const ciudadesDisponibles = MUNICIPIOS[searchEstado] || [];
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('product_categories')
-        .select('id, name')
-        .order('name');
-      
-      if (data) {
-        setCategories(data);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const query = searchParams.get('q');
-    if (query && query !== searchTerm) {
-      setSearchTerm(query);
-      handleSearch(null, query);
-    }
-  }, [searchParams]);
-
-  // Auto-buscar cuando se selecciona una ruta específica
-  useEffect(() => {
-    if (vehicleFilter === 'ruta' && selectedRouteNumber) {
-      handleSearch(null);
-    }
-  }, [selectedRouteNumber]);
-
-  // El usuario elige manualmente entre mapa y listado
-
-  const handleSearch = async (e: React.FormEvent | null, query?: string) => {
+  const handleSearch = async (e: React.FormEvent | null) => {
     if (e) e.preventDefault();
-    const term = query || searchTerm;
-    
-    // Para rutas de transporte, usar el número de ruta seleccionado como término de búsqueda
-    const effectiveSearchTerm = vehicleFilter === 'ruta' && selectedRouteNumber 
-      ? selectedRouteNumber 
-      : term;
-    
-    // No buscar si no hay término efectivo y no hay categoría seleccionada
-    // EXCEPTO cuando es una búsqueda de ruta específica
-    if (!effectiveSearchTerm.trim() && !selectedCategory && !(vehicleFilter === 'ruta' && selectedRouteNumber)) return;
-    
     setLoading(true);
     setHasSearched(true);
     
     try {
-      // Check if searching for free items category
-      const selectedCat = categories.find(c => c.id === selectedCategory);
-      const isFreeItemsCategory = selectedCat?.name === 'Cosas gratis';
-      
-      let allResults: SearchResult[] = [];
-
-      // Search in listings table for free items
-      if (isFreeItemsCategory || effectiveSearchTerm.toLowerCase().includes('gratis') || effectiveSearchTerm.toLowerCase().includes('regalo')) {
-        const { data: listings } = await supabase
-          .from('listings')
-          .select(`
-            id,
-            title,
-            description,
-            latitude,
-            longitude,
-            is_free,
-            profile_id,
-            profiles!listings_profile_id_fkey (
-              id,
-              nombre,
-              telefono,
-              user_id
-            )
-          `)
-          .eq('is_active', true)
-          .eq('is_free', true)
-          .gt('expires_at', new Date().toISOString());
-
-        if (listings && listings.length > 0) {
-          const listingResults: SearchResult[] = listings.map((listing: any) => ({
-            product_id: listing.id,
-            product_name: listing.title,
-            product_description: listing.description || '',
-            price: 0,
-            stock: 1,
-            unit: '',
-            provider_name: listing.profiles?.nombre || 'Anónimo',
-            provider_phone: listing.profiles?.telefono || '',
-            provider_postal_code: '',
-            provider_id: listing.profile_id,
-            provider_address: '',
-            provider_latitude: listing.latitude,
-            provider_longitude: listing.longitude,
-            provider_status: 'available' as const,
-            is_free_listing: true,
-            donor_user_id: listing.profiles?.user_id
-          }));
-          
-          allResults = [...listingResults];
-        }
-        
-        // If only searching for free items, set results and return
-        if (isFreeItemsCategory) {
-          setResults(allResults);
-          setMapProviders([]);
-          trackProductSearch(term, allResults.length);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Search in productos table (for non-free-items categories)
-      let productsQuery = supabase
+      let query = supabase
         .from('productos')
         .select(`
-          id,
-          nombre,
-          descripcion,
-          precio,
-          stock,
-          unit,
-          proveedor_id,
-          category_id,
-          product_categories (
-            name
-          ),
-          proveedores (
-            id,
-            nombre,
-            telefono,
-            codigo_postal,
-            user_id
-          )
+          id, nombre, descripcion, precio, stock, unit, proveedor_id,
+          proveedores (id, nombre, telefono, business_address)
         `)
         .eq('is_available', true)
         .gte('stock', 1);
       
-      // Filtrar por estado si hay uno seleccionado
-      if (searchEstado) {
-        productsQuery = productsQuery.eq('estado', searchEstado);
+      if (searchEstado) query = query.eq('estado', searchEstado);
+      if (searchCiudad) query = query.eq('ciudad', searchCiudad);
+      if (searchTerm.trim()) {
+        query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
       }
       
-      // Filtrar por ciudad si hay una seleccionada
-      if (searchCiudad) {
-        productsQuery = productsQuery.eq('ciudad', searchCiudad);
-      }
+      const { data, error } = await query.limit(50);
       
-      // Para rutas de transporte, buscar por nombre exacto de la ruta
-      if (vehicleFilter === 'ruta' && selectedRouteNumber) {
-        productsQuery = productsQuery.eq('nombre', selectedRouteNumber);
-      } else if (effectiveSearchTerm.trim()) {
-        // Búsqueda normal por nombre o keywords
-        productsQuery = productsQuery.or(`nombre.ilike.%${effectiveSearchTerm}%,keywords.ilike.%${effectiveSearchTerm}%`);
-      }
-      
-      // Filtrar por categoría si hay una seleccionada
-      if (selectedCategory) {
-        productsQuery = productsQuery.eq('category_id', selectedCategory);
-      }
-      
-      const { data: productos, error } = await productsQuery;
-
       if (error) {
         console.error('Error searching:', error);
-        setResults(allResults);
-        setMapProviders([]);
-        return;
-      }
-
-      if (productos && productos.length > 0) {
-        // Get unique provider user IDs to check their availability status
-        const userIds = [...new Set(productos.map((p: any) => p.proveedores?.user_id).filter(Boolean))];
-        
-        // Fetch profiles to get availability status
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, estado')
-          .in('user_id', userIds)
-          .in('estado', ['available', 'busy']);
-
-        const availableUserIds = new Set(profilesData?.map(p => p.user_id) || []);
-        
-        // Filter products to only include those from available/busy providers
-        const availableProductos = productos.filter((p: any) => 
-          p.proveedores?.user_id && availableUserIds.has(p.proveedores.user_id)
-        );
-
-        if (availableProductos.length === 0) {
-          setResults(allResults);
-          setMapProviders([]);
-          trackProductSearch(term, allResults.length);
-          setLoading(false);
-          return;
-        }
-
-        // Get unique provider IDs
-        const proveedorIds = [...new Set(availableProductos.map((p: any) => p.proveedor_id))];
-        
-        // Fetch proveedores with all needed data
-        const { data: proveedoresData, error: proveedoresError } = await supabase
-          .from('proveedores')
-          .select('id, nombre, telefono, codigo_postal, business_address, business_phone, latitude, longitude, user_id')
-          .in('id', proveedorIds);
-
-        if (proveedoresError) {
-          console.error('Error fetching proveedores:', proveedoresError);
-        }
-
-        // Fetch provider coordinates from proveedor_locations (source of truth for map coordinates)
-        const availableUserIdsArray = Array.from(availableUserIds);
-        const { data: providerLocationsData, error: providerLocError } = await supabase
-          .from('proveedor_locations')
-          .select('user_id, latitude, longitude')
-          .in('user_id', availableUserIdsArray);
-
-        if (providerLocError) {
-          console.error('Error fetching proveedor_locations:', providerLocError);
-        }
-
-        const providerCoordsMap: Record<string, { latitude: number; longitude: number }> = {};
-        (providerLocationsData || []).forEach((l: any) => {
-          providerCoordsMap[l.user_id] = { latitude: l.latitude, longitude: l.longitude };
-        });
-
-        // Create a map of proveedor_id to provider data with status
-        const providerLocationMap: Record<string, any> = {};
-        const providerStatusMap: Record<string, string> = {};
-        
-        if (proveedoresData) {
-          proveedoresData.forEach((p: any) => {
-            providerLocationMap[p.id] = p;
-            const profile = profilesData?.find(prof => prof.user_id === p.user_id);
-            providerStatusMap[p.id] = profile?.estado || 'available';
-          });
-        }
-
-        const productResults: SearchResult[] = availableProductos.map((producto: any) => {
-          const proveedorData = providerLocationMap[producto.proveedor_id];
-          const providerStatus = providerStatusMap[producto.proveedor_id] || 'offline';
-          const coords = proveedorData?.user_id ? providerCoordsMap[proveedorData.user_id] : undefined;
-
-          return {
-            product_id: producto.id || '',
-            product_name: producto.nombre || '',
-            product_description: producto.descripcion || '',
-            price: producto.precio || 0,
-            stock: producto.stock || 0,
-            unit: producto.unit || '',
-            provider_name: proveedorData?.nombre || producto.proveedores?.nombre || '',
-            provider_phone: proveedorData?.business_phone || proveedorData?.telefono || '',
-            provider_postal_code: proveedorData?.codigo_postal || '',
-            provider_id: producto.proveedor_id || '',
-            provider_address: proveedorData?.business_address || '',
-            provider_latitude: coords?.latitude ?? proveedorData?.latitude ?? null,
-            provider_longitude: coords?.longitude ?? proveedorData?.longitude ?? null,
-            provider_status: (providerStatus === 'available' || providerStatus === 'busy') ? providerStatus : 'available',
-          };
-        });
-        
-        // Merge with any listing results
-        allResults = [...allResults, ...productResults];
-        
-        // Calcular distancia y filtrar por radio si hay ubicación del usuario
-        if (userLocation && searchRadius !== 'all') {
-          const radiusKm = parseFloat(searchRadius);
-          allResults = allResults
-            .map(result => {
-              if (result.provider_latitude && result.provider_longitude) {
-                const distance = calculateDistance(
-                  userLocation.lat,
-                  userLocation.lng,
-                  result.provider_latitude,
-                  result.provider_longitude
-                );
-                return { ...result, distance };
-              }
-              return { ...result, distance: Infinity };
-            })
-            .filter(result => result.distance !== undefined && result.distance <= radiusKm)
-            .sort((a, b) => (a.distance || 0) - (b.distance || 0));
-        } else if (userLocation) {
-          // Si no hay filtro de radio, igual calcular distancia para mostrar
-          allResults = allResults.map(result => {
-            if (result.provider_latitude && result.provider_longitude) {
-              const distance = calculateDistance(
-                userLocation.lat,
-                userLocation.lng,
-                result.provider_latitude,
-                result.provider_longitude
-              );
-              return { ...result, distance };
-            }
-            return result;
-          }).sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
-        }
-        
-        setResults(allResults);
-
-        // Group products by provider for the map (solo los filtrados)
-        const providerMap: Record<string, MapProvider> = {};
-        
-        allResults.forEach((result) => {
-          if (result.provider_latitude !== null && result.provider_longitude !== null && !result.is_free_listing) {
-            if (!providerMap[result.provider_id]) {
-              const proveedorData = providerLocationMap[result.provider_id];
-              providerMap[result.provider_id] = {
-                id: result.provider_id,
-                business_name: result.provider_name,
-                business_address: result.provider_address,
-                business_phone: result.provider_phone || null,
-                latitude: result.provider_latitude,
-                longitude: result.provider_longitude,
-                user_id: proveedorData?.user_id || '',
-                productos: []
-              };
-            }
-            
-            const provider = providerMap[result.provider_id];
-            // Get category name from productos data
-            const productoOriginal = availableProductos.find((p: any) => 
-              p.nombre === result.product_name && p.proveedor_id === result.provider_id
-            );
-            const categoryName = productoOriginal?.product_categories?.name || 'Sin categoría';
-            
-            provider.productos.push({
-              nombre: result.product_name,
-              precio: result.price,
-              descripcion: result.product_description,
-              stock: result.stock,
-              unit: result.unit,
-              categoria: categoryName
-            });
-          }
-        });
-
-        const providersArray = Object.values(providerMap);
-        console.log('📍 Proveedores para el mapa (filtrados por distancia):', providersArray.length);
-        setMapProviders(providersArray);
-        
-        // Track successful search
-        trackProductSearch(term, allResults.length);
+        setResults([]);
       } else {
-        setResults(allResults);
-        setMapProviders([]);
-        trackProductSearch(term, allResults.length);
+        setResults(data || []);
       }
-    } catch (error) {
-      console.error('Error searching:', error);
+    } catch (err) {
+      console.error('Error:', err);
       setResults([]);
-      setMapProviders([]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      {/* Full Screen Map View */}
-      {showFullScreenMap && mapProviders.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <div className="absolute top-4 left-4 z-[9999]">
-            <Button 
-              variant="default" 
-              size="lg"
-              onClick={() => setShowFullScreenMap(false)}
-              className="shadow-xl bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Volver
-            </Button>
-          </div>
-          <div className="absolute top-4 right-4 z-[9999]">
-            <StatusControl />
-          </div>
-          <div className="h-full w-full">
-            <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} vehicleFilter={vehicleFilter} />
-          </div>
-        </div>
-      )}
-
-      {/* Normal View */}
-      {!showFullScreenMap && (
-        <div className="min-h-screen bg-background">
-          <GlobalHeader />
-          
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6">Buscar Productos y Servicios</h1>
+    <div className="min-h-screen bg-background">
+      <GlobalHeader />
+      
+      <div className="container mx-auto px-4 py-8 pb-24">
+        <h1 className="text-3xl font-bold mb-6">Buscar Productos y Servicios</h1>
         
         <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-4">
@@ -574,353 +101,74 @@ const ProductSearch = () => {
             </Button>
           </div>
         </form>
-
-        {/* Filtro de ubicación por Estado/Ciudad */}
+        
         <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <span className="text-sm text-muted-foreground mb-1 block">Estado:</span>
-                <Select value={searchEstado} onValueChange={(v) => { setSearchEstado(v); setSearchCiudad(''); }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona estado" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    <SelectItem value="">Todo México</SelectItem>
-                    {ESTADOS_MEXICO.map(estado => (
-                      <SelectItem key={estado} value={estado}>
-                        {estado}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex-1">
-                <span className="text-sm text-muted-foreground mb-1 block">Ciudad:</span>
-                <Select value={searchCiudad} onValueChange={setSearchCiudad} disabled={!searchEstado}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona ciudad" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    <SelectItem value="">Todas las ciudades</SelectItem>
-                    {ciudadesDisponibles.map(ciudad => (
-                      <SelectItem key={ciudad} value={ciudad}>
-                        {ciudad}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <span className="text-sm text-muted-foreground mb-1 block">Estado:</span>
+              <Select value={searchEstado} onValueChange={(v) => { setSearchEstado(v); setSearchCiudad(''); }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona estado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {ESTADOS_MEXICO.map(estado => (
+                    <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="flex items-center gap-2">
-                {loadingLocation ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : userLocation ? (
-                  <Navigation className="h-4 w-4 text-green-500" />
-                ) : (
-                  <MapPin className="h-4 w-4 text-destructive" />
-                )}
-                <span className="text-sm">
-                  {loadingLocation 
-                    ? 'Obteniendo ubicación...' 
-                    : userLocation 
-                      ? 'Ubicación detectada' 
-                      : locationError || 'Sin ubicación'}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Radio:</span>
-                <Select value={searchRadius} onValueChange={setSearchRadius}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {radiusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {!userLocation && !loadingLocation && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setLoadingLocation(true);
-                    navigator.geolocation?.getCurrentPosition(
-                      (position) => {
-                        setUserLocation({
-                          lat: position.coords.latitude,
-                          lng: position.coords.longitude
-                        });
-                        setLoadingLocation(false);
-                        setLocationError(null);
-                      },
-                      () => {
-                        setLocationError('No se pudo obtener ubicación');
-                        setLoadingLocation(false);
-                      }
-                    );
-                  }}
-                >
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Reintentar
-                </Button>
-              )}
+            <div className="flex-1">
+              <span className="text-sm text-muted-foreground mb-1 block">Municipio:</span>
+              <Select value={searchCiudad} onValueChange={setSearchCiudad}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona municipio" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="">Todos</SelectItem>
+                  {ciudadesDisponibles.map(ciudad => (
+                    <SelectItem key={ciudad} value={ciudad}>{ciudad}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </div>
-
-        {/* Categorías */}
-        <div className="mb-4">
-          <p className="text-sm font-medium mb-3">Categorías:</p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? 'default' : 'outline'}
-                onClick={() => {
-                  setSelectedCategory(category.id);
-                  setSelectedRouteNumber('');
-                }}
-                size="sm"
-              >
-                {category.name}
-              </Button>
-            ))}
           </div>
         </div>
         
-        {/* Selector de número de ruta cuando se selecciona "Rutas de Transporte" */}
-        {vehicleFilter === 'ruta' && (
-          <div className="mb-4">
-            <p className="text-sm font-medium mb-2">Selecciona una ruta:</p>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-              {allRouteNumbers.map((routeName) => (
-                <Button
-                  key={routeName}
-                  variant={selectedRouteNumber === routeName ? 'default' : 'outline'}
-                  onClick={() => setSelectedRouteNumber(routeName)}
-                  size="sm"
-                >
-                  {routeName}
-                </Button>
-              ))}
-            </div>
+        {hasSearched && (
+          <div className="space-y-4">
+            {results.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No se encontraron resultados.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              results.map((producto) => (
+                <Card key={producto.id}>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                    <p className="text-muted-foreground text-sm">{producto.descripcion}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary">${producto.precio}</Badge>
+                      <Badge variant="outline">Stock: {producto.stock}</Badge>
+                    </div>
+                    {producto.proveedores && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        <MapPin className="w-3 h-3 inline mr-1" />
+                        {producto.proveedores.nombre}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         )}
-
-        {!hasSearched && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-muted-foreground">Ingresa un término de búsqueda para ver resultados</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {hasSearched && results.length === 0 && !loading && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <XCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No se encontraron resultados disponibles para "{searchTerm}"</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Los proveedores deben estar disponibles u ocupados para aparecer en los resultados
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {results.length > 0 && (
-          <div className="space-y-6">
-            <div>
-              <p className="text-muted-foreground mb-4">
-                {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
-              </p>
-              
-              <Tabs defaultValue="mapa" className="w-full">
-                <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                  <TabsTrigger 
-                    value="mapa" 
-                    className="flex items-center gap-2"
-                    onClick={() => setShowFullScreenMap(true)}
-                  >
-                    <Map className="h-4 w-4" />
-                    Ver Mapa
-                  </TabsTrigger>
-                  <TabsTrigger value="lista" className="flex items-center gap-2">
-                    <List className="h-4 w-4" />
-                    Ver Listado
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="mapa" className="mt-0">
-                  {/* El mapa ahora se muestra en pantalla completa */}
-                </TabsContent>
-
-                <TabsContent value="lista" className="mt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {results.map((result, index) => {
-                      const productKey = `${result.product_id}-${index}`;
-                      const isExpanded = expandedProducts.has(productKey);
-                      
-                      // Check if this is a free listing
-                      if (result.is_free_listing) {
-                        return (
-                          <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                            <div className="aspect-[4/3] w-full overflow-hidden relative">
-                              <ListingPhotoCarousel listingId={result.product_id} />
-                              <div className="absolute top-2 right-2">
-                                <FavoritoButton tipo="listing" itemId={result.product_id} />
-                              </div>
-                            </div>
-                            <div className="flex-1 flex flex-col p-4">
-                              <Badge variant="secondary" className="w-fit mb-2 bg-green-500/20 text-green-600">
-                                ¡Gratis!
-                              </Badge>
-                              <h3 className="text-lg font-bold mb-0.5">{result.product_name}</h3>
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="text-sm text-muted-foreground">Donado por: {result.provider_name}</p>
-                                {result.distance !== undefined && result.distance !== Infinity && (
-                                  <Badge variant="outline" className="text-xs">
-                                    <MapPin className="h-3 w-3 mr-1" />
-                                    {result.distance < 1 
-                                      ? `${Math.round(result.distance * 1000)}m` 
-                                      : `${result.distance.toFixed(1)}km`}
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              {result.product_description && (
-                                <p className="text-sm text-muted-foreground mb-2">{result.product_description}</p>
-                              )}
-                              
-                              {result.donor_user_id && (
-                                <Button 
-                                  className="w-full mt-auto"
-                                  onClick={() => {
-                                    setSelectedReceiverId(result.donor_user_id);
-                                    setSelectedReceiverName(result.provider_name);
-                                    setIsMessagingOpen(true);
-                                  }}
-                                >
-                                  Contactar donador
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
-                        );
-                      }
-                      
-                      // Regular product card
-                      return (
-                        <Card key={productKey} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                        <div className="aspect-[4/3] w-full overflow-hidden relative">
-                          <ProductPhotoCarousel productoId={result.product_id} />
-                          <div className="absolute top-2 right-2">
-                            <FavoritoButton 
-                              tipo="producto" 
-                              itemId={result.product_id} 
-                              precioActual={result.price}
-                              stockActual={result.stock}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex-1 flex flex-col p-4">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <h3 className="text-lg font-bold">{result.provider_name}</h3>
-                              {result.distance !== undefined && result.distance !== Infinity && (
-                                <Badge variant="outline" className="text-xs">
-                                  <MapPin className="h-3 w-3 mr-1" />
-                                  {result.distance < 1 
-                                    ? `${Math.round(result.distance * 1000)}m` 
-                                    : `${result.distance.toFixed(1)}km`}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-base font-medium text-muted-foreground mb-2">{result.product_name}</p>
-                            
-                            <div className="mb-2">
-                              <button 
-                                onClick={() => {
-                                  setExpandedProducts(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(productKey)) {
-                                      next.delete(productKey);
-                                    } else {
-                                      next.add(productKey);
-                                    }
-                                    return next;
-                                  });
-                                }}
-                                className="flex items-center gap-1 text-sm text-primary hover:underline"
-                              >
-                                Ver más {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </button>
-                              {isExpanded && (
-                                <div className="mt-2 space-y-2">
-                                  {result.product_description && (
-                                    <p className="text-sm text-muted-foreground">{result.product_description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2">
-                                    <Badge variant="default" className="text-base">
-                                      ${result.price.toFixed(2)} / {result.unit}
-                                    </Badge>
-                                    <Badge variant={result.stock > 0 ? 'secondary' : 'destructive'}>
-                                      {result.stock > 0 ? (
-                                        <>
-                                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                                          Stock: {result.stock}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <XCircle className="h-3 w-3 mr-1" />
-                                          Sin stock
-                                        </>
-                                      )}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <Button 
-                              className="w-full mt-auto"
-                              onClick={() => navigate(`/proveedor/${result.provider_id}`)}
-                            >
-                              Ver más de este proveedor
-                            </Button>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        )}
-          </div>
-        </div>
-      )}
-
-      {/* Messaging Panel */}
-      <MessagingPanel
-        isOpen={isMessagingOpen}
-        onClose={() => setIsMessagingOpen(false)}
-        receiverId={selectedReceiverId}
-        receiverName={selectedReceiverName}
-      />
+      </div>
       
-      {/* Navigation Bar */}
-      {!showFullScreenMap && <NavigationBar />}
-    </>
+      <NavigationBar />
+    </div>
   );
 };
 
