@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Phone, Package, ArrowLeft, CheckCircle2, XCircle, Map, List, ChevronDown, ChevronUp, Navigation, Loader2 } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import ProvidersMap from '@/components/ProvidersMapView';
 import { MessagingPanel } from '@/components/MessagingPanel';
@@ -16,6 +16,8 @@ import { ListingPhotoCarousel } from '@/components/ListingPhotoCarousel';
 import { trackProductSearch } from '@/lib/analytics';
 import { StatusControl } from '@/components/StatusControl';
 import { FavoritoButton } from '@/components/FavoritoButton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 interface Category {
   id: string;
   name: string;
@@ -38,6 +40,7 @@ interface SearchResult {
   provider_status: 'available' | 'busy';
   is_free_listing?: boolean;
   donor_user_id?: string;
+  distance?: number;
 }
 
 interface MapProvider {
@@ -58,6 +61,19 @@ interface MapProvider {
   }[];
 }
 
+// Función para calcular distancia entre dos puntos (fórmula Haversine)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -75,8 +91,49 @@ const ProductSearch = () => {
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
   const [selectedRouteNumber, setSelectedRouteNumber] = useState<string>('');
   
+  // Estados para filtro de ubicación
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchRadius, setSearchRadius] = useState<string>('10'); // km
+  const [loadingLocation, setLoadingLocation] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  
   // Lista fija de 50 rutas para mostrar en el desplegable
   const allRouteNumbers = Array.from({ length: 50 }, (_, i) => `Ruta ${i + 1}`);
+  
+  // Opciones de radio de búsqueda
+  const radiusOptions = [
+    { value: '5', label: '5 km' },
+    { value: '10', label: '10 km' },
+    { value: '25', label: '25 km' },
+    { value: '50', label: '50 km' },
+    { value: '100', label: '100 km' },
+    { value: 'all', label: 'Todo México' },
+  ];
+  
+  // Obtener ubicación del usuario al cargar
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLoadingLocation(false);
+          setLocationError(null);
+        },
+        (error) => {
+          console.error('Error obteniendo ubicación:', error);
+          setLocationError('No se pudo obtener tu ubicación');
+          setLoadingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setLocationError('Tu navegador no soporta geolocalización');
+      setLoadingLocation(false);
+    }
+  }, []);
   
   // Determinar el filtro de vehículo basado en la categoría seleccionada
   const getVehicleFilter = (): 'all' | 'taxi' | 'ruta' => {
@@ -354,13 +411,48 @@ const ProductSearch = () => {
         
         // Merge with any listing results
         allResults = [...allResults, ...productResults];
+        
+        // Calcular distancia y filtrar por radio si hay ubicación del usuario
+        if (userLocation && searchRadius !== 'all') {
+          const radiusKm = parseFloat(searchRadius);
+          allResults = allResults
+            .map(result => {
+              if (result.provider_latitude && result.provider_longitude) {
+                const distance = calculateDistance(
+                  userLocation.lat,
+                  userLocation.lng,
+                  result.provider_latitude,
+                  result.provider_longitude
+                );
+                return { ...result, distance };
+              }
+              return { ...result, distance: Infinity };
+            })
+            .filter(result => result.distance !== undefined && result.distance <= radiusKm)
+            .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        } else if (userLocation) {
+          // Si no hay filtro de radio, igual calcular distancia para mostrar
+          allResults = allResults.map(result => {
+            if (result.provider_latitude && result.provider_longitude) {
+              const distance = calculateDistance(
+                userLocation.lat,
+                userLocation.lng,
+                result.provider_latitude,
+                result.provider_longitude
+              );
+              return { ...result, distance };
+            }
+            return result;
+          }).sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+        }
+        
         setResults(allResults);
 
-        // Group products by provider for the map
+        // Group products by provider for the map (solo los filtrados)
         const providerMap: Record<string, MapProvider> = {};
         
-        productResults.forEach((result) => {
-          if (result.provider_latitude !== null && result.provider_longitude !== null) {
+        allResults.forEach((result) => {
+          if (result.provider_latitude !== null && result.provider_longitude !== null && !result.is_free_listing) {
             if (!providerMap[result.provider_id]) {
               const proveedorData = providerLocationMap[result.provider_id];
               providerMap[result.provider_id] = {
@@ -394,7 +486,7 @@ const ProductSearch = () => {
         });
 
         const providersArray = Object.values(providerMap);
-        console.log('📍 Proveedores para el mapa:', providersArray);
+        console.log('📍 Proveedores para el mapa (filtrados por distancia):', providersArray.length);
         setMapProviders(providersArray);
         
         // Track successful search
@@ -462,6 +554,70 @@ const ProductSearch = () => {
           </div>
         </form>
 
+        {/* Filtro de ubicación y radio */}
+        <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex items-center gap-2">
+              {loadingLocation ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : userLocation ? (
+                <Navigation className="h-4 w-4 text-green-500" />
+              ) : (
+                <MapPin className="h-4 w-4 text-destructive" />
+              )}
+              <span className="text-sm">
+                {loadingLocation 
+                  ? 'Obteniendo ubicación...' 
+                  : userLocation 
+                    ? 'Ubicación detectada' 
+                    : locationError || 'Sin ubicación'}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Radio:</span>
+              <Select value={searchRadius} onValueChange={setSearchRadius}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {radiusOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {!userLocation && !loadingLocation && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setLoadingLocation(true);
+                  navigator.geolocation?.getCurrentPosition(
+                    (position) => {
+                      setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                      });
+                      setLoadingLocation(false);
+                      setLocationError(null);
+                    },
+                    () => {
+                      setLocationError('No se pudo obtener ubicación');
+                      setLoadingLocation(false);
+                    }
+                  );
+                }}
+              >
+                <Navigation className="h-4 w-4 mr-2" />
+                Reintentar
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Categorías */}
         <div className="mb-4">
@@ -570,7 +726,17 @@ const ProductSearch = () => {
                                 ¡Gratis!
                               </Badge>
                               <h3 className="text-lg font-bold mb-0.5">{result.product_name}</h3>
-                              <p className="text-sm text-muted-foreground mb-1">Donado por: {result.provider_name}</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm text-muted-foreground">Donado por: {result.provider_name}</p>
+                                {result.distance !== undefined && result.distance !== Infinity && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <MapPin className="h-3 w-3 mr-1" />
+                                    {result.distance < 1 
+                                      ? `${Math.round(result.distance * 1000)}m` 
+                                      : `${result.distance.toFixed(1)}km`}
+                                  </Badge>
+                                )}
+                              </div>
                               
                               {result.product_description && (
                                 <p className="text-sm text-muted-foreground mb-2">{result.product_description}</p>
@@ -608,7 +774,17 @@ const ProductSearch = () => {
                           </div>
                         </div>
                         <div className="flex-1 flex flex-col p-4">
-                            <h3 className="text-lg font-bold mb-0.5">{result.provider_name}</h3>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <h3 className="text-lg font-bold">{result.provider_name}</h3>
+                              {result.distance !== undefined && result.distance !== Infinity && (
+                                <Badge variant="outline" className="text-xs">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {result.distance < 1 
+                                    ? `${Math.round(result.distance * 1000)}m` 
+                                    : `${result.distance.toFixed(1)}km`}
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-base font-medium text-muted-foreground mb-2">{result.product_name}</p>
                             
                             <div className="mb-2">
