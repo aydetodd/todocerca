@@ -10,28 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
-
-// Estados de México para selector
-const ESTADOS_MEXICO = [
-  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
-  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
-  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
-  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
-];
-
-// Municipios principales por estado (simplificado)
-const MUNICIPIOS: Record<string, string[]> = {
-  'Sonora': ['Hermosillo', 'Ciudad Obregón', 'Nogales', 'San Luis Río Colorado', 'Guaymas', 'Navojoa', 'Agua Prieta', 'Caborca', 'Empalme', 'Puerto Peñasco'],
-  'Ciudad de México': ['Álvaro Obregón', 'Azcapotzalco', 'Benito Juárez', 'Coyoacán', 'Cuajimalpa', 'Cuauhtémoc', 'Gustavo A. Madero', 'Iztacalco', 'Iztapalapa', 'Miguel Hidalgo', 'Milpa Alta', 'Tláhuac', 'Tlalpan', 'Venustiano Carranza', 'Xochimilco'],
-  'Jalisco': ['Guadalajara', 'Zapopan', 'Tlaquepaque', 'Tonalá', 'Puerto Vallarta', 'Lagos de Moreno', 'Tepatitlán', 'El Salto', 'Tlajomulco'],
-  'Nuevo León': ['Monterrey', 'Guadalupe', 'San Nicolás', 'Apodaca', 'Santa Catarina', 'San Pedro Garza García', 'Escobedo', 'García'],
-  'Estado de México': ['Ecatepec', 'Nezahualcóyotl', 'Naucalpan', 'Tlalnepantla', 'Toluca', 'Chimalhuacán', 'Cuautitlán Izcalli', 'Atizapán', 'Texcoco'],
-};
-
-const getMunicipios = (estado: string): string[] => {
-  return MUNICIPIOS[estado] || ['Centro', 'Norte', 'Sur', 'Este', 'Oeste'];
-};
+import { useMunicipios } from '@/hooks/useMunicipios';
 import {
   Dialog,
   DialogContent,
@@ -96,6 +75,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const { toast } = useToast();
+  const { getEstados, getMunicipios } = useMunicipios();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -646,7 +626,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <SelectValue placeholder="Selecciona estado" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {ESTADOS_MEXICO.map((estado) => (
+                      {getEstados().map((estado) => (
                         <SelectItem key={estado} value={estado}>
                           {estado}
                         </SelectItem>
