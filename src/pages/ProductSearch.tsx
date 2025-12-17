@@ -9,6 +9,7 @@ import { Search as SearchIcon, MapPin, Map as MapIcon, List } from "lucide-react
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
+import { StatusControl } from "@/components/StatusControl";
 import {
   Select,
   SelectContent,
@@ -395,7 +396,7 @@ const ProductSearch = () => {
 
             {viewMode === "map" ? (
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
-                <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
+                <div className="absolute top-4 left-4 z-10">
                   <Button
                     variant="secondary"
                     size="sm"
@@ -405,6 +406,11 @@ const ProductSearch = () => {
                     <List className="w-4 h-4 mr-2" />
                     Ver Listado
                   </Button>
+                </div>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                  <StatusControl />
+                </div>
+                <div className="absolute top-4 right-4 z-10">
                   <Badge variant="secondary" className="shadow-lg">
                     {mapProviders.length} proveedor{mapProviders.length !== 1 ? "es" : ""}
                   </Badge>
