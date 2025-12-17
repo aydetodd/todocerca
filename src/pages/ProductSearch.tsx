@@ -38,8 +38,54 @@ const ProductSearch = () => {
   const [searchEstado, setSearchEstado] = useState<string>('Sonora');
   const ALL_MUNICIPIOS_VALUE = '__ALL__';
   const [searchCiudad, setSearchCiudad] = useState<string>('Ciudad Obregón');
+
+  type SearchCategory = 'todos' | 'taxi' | 'rutas' | 'cosas_regaladas';
+  const [searchCategory, setSearchCategory] = useState<SearchCategory>('todos');
+  const [taxiCategoryId, setTaxiCategoryId] = useState<string | null>(null);
+  const [rutasCategoryId, setRutasCategoryId] = useState<string | null>(null);
+  const [cosasRegaladasCategoryId, setCosasRegaladasCategoryId] = useState<string | null>(null);
+
   const [results, setResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    // SEO basics
+    document.title = 'Buscar productos y servicios | TodoCerca';
+    const meta = document.querySelector('meta[name="description"]');
+    meta?.setAttribute('content', 'Busca taxis, rutas y productos cerca de ti en TodoCerca.');
+
+    let cancelled = false;
+    const loadCategoryIds = async () => {
+      try {
+        const { data: pcats } = await supabase
+          .from('product_categories')
+          .select('id, name')
+          .in('name', ['Taxi', 'Rutas de Transporte']);
+
+        if (!cancelled) {
+          setTaxiCategoryId(pcats?.find(c => c.name === 'Taxi')?.id ?? null);
+          setRutasCategoryId(pcats?.find(c => c.name === 'Rutas de Transporte')?.id ?? null);
+        }
+
+        const { data: freeCat } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('name', 'Cosas Regaladas')
+          .maybeSingle();
+
+        if (!cancelled) {
+          setCosasRegaladasCategoryId(freeCat?.id ?? null);
+        }
+      } catch (err) {
+        console.error('[ProductSearch] Error loading category IDs:', err);
+      }
+    };
+
+    loadCategoryIds();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const ciudadesDisponibles = MUNICIPIOS[searchEstado] || [];
 
