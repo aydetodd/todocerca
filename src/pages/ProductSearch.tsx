@@ -407,13 +407,8 @@ const ProductSearch = () => {
                     Ver Listado
                   </Button>
                 </div>
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
-                  <StatusControl />
-                </div>
                 <div className="absolute top-4 right-4 z-[1000]">
-                  <Badge variant="secondary" className="shadow-lg">
-                    {mapProviders.length} proveedor{mapProviders.length !== 1 ? "es" : ""}
-                  </Badge>
+                  <StatusControl />
                 </div>
                 <div className="h-full w-full">
                   <ProvidersMapView providers={mapProviders as any} vehicleFilter={vehicleFilter} />
