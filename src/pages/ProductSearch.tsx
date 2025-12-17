@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map as MapIcon, List } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
@@ -398,13 +398,13 @@ const ProductSearch = () => {
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
                 <div className="absolute top-4 left-4 z-[1000]">
                   <Button
-                    variant="secondary"
-                    size="sm"
+                    variant="default"
+                    size="lg"
                     onClick={() => setViewMode("list")}
-                    className="shadow-lg"
+                    className="shadow-2xl bg-primary hover:bg-primary/90"
                   >
-                    <List className="w-4 h-4 mr-2" />
-                    Ver Listado
+                    <ArrowLeft className="h-5 w-5 mr-2" />
+                    Volver
                   </Button>
                 </div>
                 <div className="absolute top-4 right-4 z-[1000]">
