@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
+import { registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { isNativeApp, watchPosition, clearWatch, getCurrentPosition } from '@/utils/capacitorLocation';
-import { isPermissionConfigured } from '@/components/LocationPermissionGuide';
+import { isPermissionConfigured, resetPermissionConfigured } from '@/components/LocationPermissionGuide';
+
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
 /**
  * Hook global para tracking de ubicación de proveedores.
  * Funciona en cualquier página mientras el proveedor esté logueado.
- * Usa polling activo cada 1.5 segundos para garantizar actualizaciones continuas.
+ * En app nativa usa foreground service para funcionar con pantalla apagada.
  */
 export const useProviderLocationTracking = () => {
-  const watchIdRef = useRef<number | string | null>(null);
+  const watcherIdRef = useRef<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isTrackingRef = useRef(false);
   const lastUpdateRef = useRef(0);
@@ -19,7 +22,7 @@ export const useProviderLocationTracking = () => {
 
   useEffect(() => {
     let mounted = true;
-    const UPDATE_INTERVAL = 1500; // 1.5 segundos entre updates forzados
+    const UPDATE_INTERVAL = 2000; // 2 segundos para web
 
     const updateLocation = async (latitude: number, longitude: number) => {
       const now = Date.now();
@@ -52,29 +55,115 @@ export const useProviderLocationTracking = () => {
       }
     };
 
-    // Función para obtener y enviar ubicación actual
-    const pollLocation = () => {
-      if (!mounted || !isTrackingRef.current) return;
+    const stopTracking = async () => {
+      if (!isTrackingRef.current) return;
 
-      if (isNativeApp()) {
-        getCurrentPosition()
-          .then(pos => {
-            if (mounted && isTrackingRef.current) {
-              updateLocation(pos.latitude, pos.longitude);
-            }
-          })
-          .catch(err => console.error('[GlobalTracking] Poll nativo error:', err));
-      } else if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (mounted && isTrackingRef.current) {
-              updateLocation(pos.coords.latitude, pos.coords.longitude);
-            }
-          },
-          (err) => console.error('[GlobalTracking] Poll GPS error:', err),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
+      console.log('[GlobalTracking] 🛑 Deteniendo tracking...');
+
+      // Limpiar polling web
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
+
+      // Limpiar watcher nativo de background-geolocation
+      if (watcherIdRef.current && Capacitor.isNativePlatform()) {
+        try {
+          await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+          console.log('[GlobalTracking] Watcher nativo removido');
+        } catch (e) {
+          console.error('[GlobalTracking] Error removiendo watcher:', e);
+        }
+      }
+
+      watcherIdRef.current = null;
+      isTrackingRef.current = false;
+      setIsActive(false);
+    };
+
+    const startNativeTracking = async (userId: string) => {
+      try {
+        console.log('[GlobalTracking] 🚀 Iniciando tracking nativo con foreground service...');
+
+        // Mostrar guía si no está configurado el permiso "todo el tiempo"
+        if (!isPermissionConfigured()) {
+          setTimeout(() => {
+            if (mounted) {
+              console.log('[GlobalTracking] Mostrando guía de permisos');
+              setShowPermissionGuide(true);
+            }
+          }, 1500);
+        }
+
+        const watcherId = await BackgroundGeolocation.addWatcher(
+          {
+            // Estas opciones activan el foreground service
+            backgroundMessage: "Compartiendo tu ubicación con clientes",
+            backgroundTitle: "TodoCerca - Proveedor Activo",
+            requestPermissions: true,
+            stale: false,
+            distanceFilter: 15, // Actualizar cada 15 metros
+          },
+          async (location, error) => {
+            if (error) {
+              console.error('[GlobalTracking] ❌ Error en ubicación:', error);
+              
+              if (error.code === "NOT_AUTHORIZED") {
+                console.log('[GlobalTracking] Permisos no autorizados, mostrando guía...');
+                resetPermissionConfigured();
+                if (mounted) {
+                  setShowPermissionGuide(true);
+                }
+              }
+              return;
+            }
+
+            if (location && mounted && isTrackingRef.current) {
+              console.log('[GlobalTracking] 📍 Ubicación nativa:', {
+                lat: location.latitude.toFixed(6),
+                lng: location.longitude.toFixed(6),
+                time: new Date(location.time).toLocaleTimeString()
+              });
+              
+              updateLocation(location.latitude, location.longitude);
+            }
+          }
+        );
+
+        watcherIdRef.current = watcherId;
+        console.log('[GlobalTracking] ✅ Watcher nativo iniciado con ID:', watcherId);
+        
+      } catch (error) {
+        console.error('[GlobalTracking] ❌ Error iniciando tracking nativo:', error);
+      }
+    };
+
+    const startWebTracking = () => {
+      console.log('[GlobalTracking] 🚀 Iniciando tracking web con polling...');
+      
+      // Polling activo para web
+      const pollLocation = () => {
+        if (!mounted || !isTrackingRef.current) return;
+        
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              if (mounted && isTrackingRef.current) {
+                updateLocation(pos.coords.latitude, pos.coords.longitude);
+              }
+            },
+            (err) => console.error('[GlobalTracking] Poll GPS error:', err),
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          );
+        }
+      };
+
+      // Obtener posición inicial
+      pollLocation();
+
+      // Polling cada 2 segundos
+      pollIntervalRef.current = setInterval(pollLocation, UPDATE_INTERVAL);
+      console.log('[GlobalTracking] ✅ Polling web iniciado');
     };
 
     const startTracking = async () => {
@@ -112,82 +201,22 @@ export const useProviderLocationTracking = () => {
           return;
         }
 
-        console.log('[GlobalTracking] 🚀 Iniciando tracking global para proveedor:', profile.estado);
+        console.log('[GlobalTracking] 🚀 Iniciando tracking para proveedor:', profile.estado);
         isTrackingRef.current = true;
         setIsActive(true);
 
-        // Mostrar guía de permisos en plataforma nativa si no se ha configurado
-        if (Capacitor.isNativePlatform() && !isPermissionConfigured()) {
-          setTimeout(() => {
-            if (mounted) {
-              setShowPermissionGuide(true);
-            }
-          }, 2000);
-        }
-
-        // Obtener posición inicial inmediatamente
-        pollLocation();
-
-        // POLLING ACTIVO cada 1.5 segundos - esto garantiza actualizaciones continuas
-        pollIntervalRef.current = setInterval(pollLocation, UPDATE_INTERVAL);
-        console.log('[GlobalTracking] ✅ Polling activo iniciado cada', UPDATE_INTERVAL, 'ms');
-
-        // Usar Capacitor si es app nativa (adicional al polling)
-        if (isNativeApp()) {
-          try {
-            const id = await watchPosition((position) => {
-              if (mounted && isTrackingRef.current) {
-                updateLocation(position.latitude, position.longitude);
-              }
-            });
-            watchIdRef.current = id;
-            console.log('[GlobalTracking] ✅ Watch nativo también activo');
-          } catch (error) {
-            console.error('[GlobalTracking] Error watch nativo:', error);
-          }
-          return;
-        }
-
-        // También usar watchPosition como respaldo (además del polling)
-        if ('geolocation' in navigator) {
-          const watchId = navigator.geolocation.watchPosition(
-            (pos) => {
-              if (mounted && isTrackingRef.current) {
-                updateLocation(pos.coords.latitude, pos.coords.longitude);
-              }
-            },
-            (err) => console.error('[GlobalTracking] Watch error:', err),
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-          );
-          watchIdRef.current = watchId;
-          console.log('[GlobalTracking] ✅ Watch web también activo');
+        // En app nativa usar background-geolocation con foreground service
+        if (Capacitor.isNativePlatform()) {
+          await startNativeTracking(user.id);
+        } else {
+          // En web usar polling
+          startWebTracking();
         }
       } catch (err) {
         console.error('[GlobalTracking] Exception en startTracking:', err);
+        isTrackingRef.current = false;
+        setIsActive(false);
       }
-    };
-
-    const stopTracking = () => {
-      if (!isTrackingRef.current) return;
-
-      console.log('[GlobalTracking] 🛑 Deteniendo tracking...');
-
-      // Limpiar polling
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-
-      // Limpiar watch
-      if (isNativeApp() && typeof watchIdRef.current === 'string') {
-        clearWatch(watchIdRef.current);
-      } else if (typeof watchIdRef.current === 'number') {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-
-      watchIdRef.current = null;
-      isTrackingRef.current = false;
-      setIsActive(false);
     };
 
     // Iniciar tracking inmediatamente
