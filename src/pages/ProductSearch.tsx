@@ -542,28 +542,31 @@ const ProductSearch = () => {
               </p>
             </div>
 
-            <div className="flex rounded-lg overflow-hidden border border-border mb-6">
-              <Button
-                type="button"
-                variant={viewMode === "map" ? "default" : "ghost"}
-                className="flex-1 rounded-none"
-                onClick={() => setViewMode("map")}
-              >
-                <MapIcon className="w-4 h-4 mr-2" />
-                Ver Mapa
-              </Button>
-              <Button
-                type="button"
-                variant={viewMode === "list" ? "default" : "ghost"}
-                className="flex-1 rounded-none"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="w-4 h-4 mr-2" />
-                Ver Listado
-              </Button>
-            </div>
+            {/* Hide map toggle for Cosas Gratis - only show list */}
+            {!isCosasGratis && (
+              <div className="flex rounded-lg overflow-hidden border border-border mb-6">
+                <Button
+                  type="button"
+                  variant={viewMode === "map" ? "default" : "ghost"}
+                  className="flex-1 rounded-none"
+                  onClick={() => setViewMode("map")}
+                >
+                  <MapIcon className="w-4 h-4 mr-2" />
+                  Ver Mapa
+                </Button>
+                <Button
+                  type="button"
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  className="flex-1 rounded-none"
+                  onClick={() => setViewMode("list")}
+                >
+                  <List className="w-4 h-4 mr-2" />
+                  Ver Listado
+                </Button>
+              </div>
+            )}
 
-            {viewMode === "map" ? (
+            {viewMode === "map" && !isCosasGratis ? (
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
                 <div className="absolute top-4 left-4 z-[1000]">
                   <Button
