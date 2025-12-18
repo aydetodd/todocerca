@@ -179,6 +179,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const isRouteSearch = vehicleFilter === 'ruta';
+
   // Get real-time locations - don't block on loading if we have static coordinates
   const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations();
 
@@ -375,14 +377,41 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         rotation: 0 
       });
       
-      const productsList = provider.productos.map((producto, idx) => `
+      const productsList = isRouteSearch
+        ? provider.productos
+            .map(
+              (producto) => `
+        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;">${producto.nombre}</div>
+          <div style="font-size: 0.85rem; margin-bottom: 4px;"><strong>$${Number(producto.precio).toFixed(2)}</strong></div>
+          ${producto.descripcion ? `<div style="font-size: 0.8rem; color: #6b7280; line-height: 1.2;">${producto.descripcion}</div>` : ''}
+        </div>
+      `
+            )
+            .join('')
+        : provider.productos
+            .map(
+              (producto, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
           <span style="font-size: 0.875rem;">${producto.nombre}</span>
           <button onclick="window.showProductDetails('${provider.id}', ${idx})" style="color: #3b82f6; font-size: 0.75rem; text-decoration: underline; background: none; border: none; cursor: pointer;">Ver más...</button>
         </div>
-      `).join('');
-      
-      const popupContent = `
+      `
+            )
+            .join('');
+       
+      const popupContent = isRouteSearch
+        ? `
+        <div style="padding: 12px; min-width: 250px;">
+          <h3 style="font-weight: 700; font-size: 1.05rem; margin-bottom: 12px;">Rutas de Transporte</h3>
+          ${
+            provider.productos.length > 0
+              ? `<div style="max-height: 260px; overflow-y: auto;">${productsList}</div>`
+              : `<p style="font-size: 0.875rem; color: #6b7280;">Sin rutas disponibles</p>`
+          }
+        </div>
+      `
+        : `
         <div style="padding: 12px; min-width: 250px;">
           <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px;">${provider.business_name}</h3>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
@@ -458,63 +487,82 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
                 <DialogTitle className="text-2xl font-bold">{selectedProduct.product.nombre}</DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-6 py-4">
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-1">Proveedor</p>
-                  <p className="text-base">{selectedProduct.provider.business_name}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-1">Precio</p>
-                  <p className="text-3xl font-bold text-primary">
-                    ${selectedProduct.product.precio.toFixed(2)}
-                    {selectedProduct.product.unit && `/${selectedProduct.product.unit}`}
-                  </p>
-                </div>
-                
-                {selectedProduct.product.descripcion && (
+              {isRouteSearch ? (
+                <div className="space-y-5 py-4">
                   <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">Descripción</p>
-                    <p className="text-sm text-muted-foreground">{selectedProduct.product.descripcion}</p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Precio</p>
+                    <p className="text-3xl font-bold text-primary">
+                      ${selectedProduct.product.precio.toFixed(2)}
+                      {selectedProduct.product.unit && `/${selectedProduct.product.unit}`}
+                    </p>
                   </div>
-                )}
-                
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-1">Categoría</p>
-                  <p className="text-base">{selectedProduct.product.categoria}</p>
+
+                  {selectedProduct.product.descripcion && (
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Descripción</p>
+                      <p className="text-sm text-muted-foreground">{selectedProduct.product.descripcion}</p>
+                    </div>
+                  )}
                 </div>
-                
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-1">Stock disponible</p>
-                  <p className="text-base">{selectedProduct.product.stock} {selectedProduct.product.unit || 'unidades'}</p>
-                </div>
-                
-                <div className="pt-4 border-t">
-                  <p className="text-sm font-semibold text-muted-foreground mb-3">Contactar</p>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => window.location.href = `tel:${selectedProduct.provider.business_phone}`}>
-                      <Phone className="w-4 h-4 mr-2" />
-                      Llamar
-                    </Button>
-                    <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => {
-                      const formattedPhone = selectedProduct.provider.business_phone?.startsWith('+') ? selectedProduct.provider.business_phone : `+52${selectedProduct.provider.business_phone}`;
-                      window.open(`https://wa.me/${formattedPhone}`, '_blank');
-                    }}>
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </Button>
-                    <Button className="flex-1 bg-yellow-600 hover:bg-yellow-700" onClick={async () => {
-                      if (onOpenChat) {
-                        const { data: providerData } = await supabase.from('proveedores').select('user_id').eq('id', selectedProduct.provider.id).single();
-                        if (providerData?.user_id) onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
-                      }
-                    }}>
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Chat
-                    </Button>
+              ) : (
+                <div className="space-y-6 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Proveedor</p>
+                    <p className="text-base">{selectedProduct.provider.business_name}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Precio</p>
+                    <p className="text-3xl font-bold text-primary">
+                      ${selectedProduct.product.precio.toFixed(2)}
+                      {selectedProduct.product.unit && `/${selectedProduct.product.unit}`}
+                    </p>
+                  </div>
+                  
+                  {selectedProduct.product.descripcion && (
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Descripción</p>
+                      <p className="text-sm text-muted-foreground">{selectedProduct.product.descripcion}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Categoría</p>
+                    <p className="text-base">{selectedProduct.product.categoria}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Stock disponible</p>
+                    <p className="text-base">{selectedProduct.product.stock} {selectedProduct.product.unit || 'unidades'}</p>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-semibold text-muted-foreground mb-3">Contactar</p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => window.location.href = `tel:${selectedProduct.provider.business_phone}`}>
+                        <Phone className="w-4 h-4 mr-2" />
+                        Llamar
+                      </Button>
+                      <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => {
+                        const formattedPhone = selectedProduct.provider.business_phone?.startsWith('+') ? selectedProduct.provider.business_phone : `+52${selectedProduct.provider.business_phone}`;
+                        window.open(`https://wa.me/${formattedPhone}`, '_blank');
+                      }}>
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        WhatsApp
+                      </Button>
+                      <Button className="flex-1 bg-yellow-600 hover:bg-yellow-700" onClick={async () => {
+                        if (onOpenChat) {
+                          const { data: providerData } = await supabase.from('proveedores').select('user_id').eq('id', selectedProduct.provider.id).single();
+                          if (providerData?.user_id) onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
+                        }
+                      }}>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Chat
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </DialogContent>
