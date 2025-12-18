@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrackingGroup } from '@/hooks/useTrackingGroup';
 import { useTrackingLocations } from '@/hooks/useTrackingLocations';
@@ -250,12 +251,18 @@ const TrackingGPS = () => {
 
   // Seguimiento automático de ubicación basado en el estado del perfil
   useEffect(() => {
+    // En app nativa el tracking lo maneja useBackgroundTracking (BackgroundGeolocation + foreground service).
+    // Evitamos usar navigator.geolocation en Android/iOS porque solo da permiso "con la app en uso" y se corta al apagar pantalla.
+    if (Capacitor.isNativePlatform()) {
+      return;
+    }
+
     if (isSharing && group?.subscription_status === 'active') {
       let watchId: number | null = null;
       let lastUpdateTime = 0;
       const MIN_UPDATE_INTERVAL = 3000; // 3 segundos mínimo entre actualizaciones
 
-      console.log('[GPS] 🚀 Iniciando seguimiento automático de ubicación');
+      console.log('[GPS] 🚀 Iniciando seguimiento automático de ubicación (web)');
       console.log('[GPS] Estado del usuario:', userStatus);
       console.log('[GPS] Suscripción activa:', group?.subscription_status === 'active');
 
