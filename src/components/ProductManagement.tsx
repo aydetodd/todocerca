@@ -60,8 +60,8 @@ interface ProductManagementProps {
   proveedorId: string;
 }
 
-// Generar lista de rutas disponibles (1-100)
-const AVAILABLE_ROUTES = Array.from({ length: 100 }, (_, i) => `Ruta ${i + 1}`);
+// Generar lista de rutas disponibles (1-30)
+const AVAILABLE_ROUTES = Array.from({ length: 30 }, (_, i) => `Ruta ${i + 1}`);
 
 export default function ProductManagement({ proveedorId }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -479,42 +479,70 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               
               {/* Selector especial para Rutas de Transporte */}
               {isRutasCategory && !editingProduct && (
-                <div>
-                  <Label htmlFor="route">Selecciona tu Ruta *</Label>
-                  <Select
-                    value={selectedRoute}
-                    onValueChange={(value) => {
-                      setSelectedRoute(value);
-                      setFormData({
-                        ...formData, 
-                        nombre: value,
-                        descripcion: `Servicio de transporte urbano - ${value}`,
-                        unit: 'viaje',
-                        keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}`
-                      });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una ruta disponible" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {availableRoutes.length > 0 ? (
-                        availableRoutes.map((route) => (
-                          <SelectItem key={route} value={route}>
-                            {route}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="px-2 py-4 text-center text-muted-foreground text-sm">
-                          Ya tienes todas las rutas registradas
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Solo se muestran las rutas que aún no has registrado
-                  </p>
-                </div>
+                <>
+                  <div>
+                    <Label htmlFor="route">Selecciona tu Ruta *</Label>
+                    <Select
+                      value={selectedRoute}
+                      onValueChange={(value) => {
+                        setSelectedRoute(value);
+                        setFormData({
+                          ...formData, 
+                          nombre: value,
+                          unit: 'viaje',
+                          keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}`
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una ruta disponible" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {availableRoutes.length > 0 ? (
+                          availableRoutes.map((route) => (
+                            <SelectItem key={route} value={route}>
+                              {route}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+                            Ya tienes todas las rutas registradas
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Solo se muestran las rutas que aún no has registrado
+                    </p>
+                  </div>
+                  
+                  {/* Campo de recorrido para rutas */}
+                  {selectedRoute && (
+                    <div>
+                      <Label htmlFor="recorrido">Recorrido / Puntos Importantes *</Label>
+                      <Textarea
+                        id="recorrido"
+                        value={formData.descripcion}
+                        onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                        placeholder="Describe las calles principales y puntos importantes. Ej: Calle 200, Calle Michoacán, Centro Comercial X, Hospital Y..."
+                        rows={4}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Escribe las calles y lugares por donde pasa tu ruta para que los usuarios puedan identificarla
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Nota sobre nomenclatura específica */}
+                  <Alert className="bg-muted/50">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>¿Tu ruta necesita un nombre especial?</strong><br />
+                      Si en tu ciudad hay varias "Ruta 1" con diferentes recorridos, 
+                      contacta a soporte para solicitar nomenclatura específica (ej: "Ruta 1 - Centro-Miramar").
+                    </AlertDescription>
+                  </Alert>
+                </>
               )}
 
               {/* Nombre del producto (solo si no es categoría rutas o está editando) */}
@@ -529,16 +557,21 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   />
                 </div>
               )}
-              <div>
-                <Label htmlFor="descripcion">Descripción *</Label>
-                <Textarea
-                  id="descripcion"
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                  placeholder="Describe tu producto..."
-                  rows={3}
-                />
-              </div>
+              
+              {/* Descripción para productos normales */}
+              {(!isRutasCategory || editingProduct) && (
+                <div>
+                  <Label htmlFor="descripcion">Descripción *</Label>
+                  <Textarea
+                    id="descripcion"
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                    placeholder="Describe tu producto..."
+                    rows={3}
+                  />
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="precio">Precio *</Label>
@@ -581,29 +614,6 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   </Select>
                 </div>
               </div>
-              {/* Campo descripción (solo si no es rutas o está editando) */}
-              {(!isRutasCategory || editingProduct) && (
-                <div>
-                  <Label htmlFor="descripcion">Descripción *</Label>
-                  <Textarea
-                    id="descripcion"
-                    value={formData.descripcion}
-                    onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                    placeholder="Describe tu producto..."
-                    rows={3}
-                  />
-                </div>
-              )}
-              
-              {/* Mostrar descripción solo lectura para rutas */}
-              {isRutasCategory && !editingProduct && selectedRoute && (
-                <div>
-                  <Label>Descripción</Label>
-                  <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                    {formData.descripcion}
-                  </p>
-                </div>
-              )}
               <div>
                 <Label htmlFor="keywords">Palabras clave</Label>
                 <Input
