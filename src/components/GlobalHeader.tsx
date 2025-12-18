@@ -119,6 +119,12 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
   };
 
   const handleBack = () => {
+    // En /mis-productos siempre regresar al Dashboard (Gestión de productos)
+    if (location.pathname === '/mis-productos') {
+      navigate('/dashboard');
+      return;
+    }
+
     const idx = (window.history.state && (window.history.state as any).idx) ?? 0;
     if (typeof idx === "number" && idx > 0) navigate(-1);
     else navigate('/dashboard');
@@ -133,7 +139,11 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
               type="button"
               variant="ghost"
               size="icon"
-              onClick={handleBack}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleBack();
+              }}
               className="shrink-0"
               aria-label="Regresar"
             >
