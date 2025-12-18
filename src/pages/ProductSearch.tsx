@@ -515,7 +515,7 @@ const ProductSearch = () => {
                     className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
                     onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
                   >
-                    {route.nombre} ({route.count})
+                    {route.nombre}
                   </Badge>
                 ))}
               </div>
