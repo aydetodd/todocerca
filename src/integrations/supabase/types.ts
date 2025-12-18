@@ -464,12 +464,14 @@ export type Database = {
           category_id: string
           created_at: string
           description: string | null
+          estado: string | null
           expires_at: string
           id: string
           is_active: boolean | null
           is_free: boolean | null
           latitude: number | null
           longitude: number | null
+          municipio: string | null
           price: number | null
           profile_id: string
           title: string
@@ -478,12 +480,14 @@ export type Database = {
           category_id: string
           created_at?: string
           description?: string | null
+          estado?: string | null
           expires_at?: string
           id?: string
           is_active?: boolean | null
           is_free?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          municipio?: string | null
           price?: number | null
           profile_id: string
           title: string
@@ -492,12 +496,14 @@ export type Database = {
           category_id?: string
           created_at?: string
           description?: string | null
+          estado?: string | null
           expires_at?: string
           id?: string
           is_active?: boolean | null
           is_free?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          municipio?: string | null
           price?: number | null
           profile_id?: string
           title?: string

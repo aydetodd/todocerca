@@ -5,15 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Gift, Plus, Trash2, MapPin, Camera, X, Image } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Gift, Plus, Trash2, Camera, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMunicipios } from '@/hooks/useMunicipios';
 
 interface Listing {
   id: string;
   title: string;
   description: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  estado: string | null;
+  municipio: string | null;
   created_at: string;
   expires_at: string;
   is_active: boolean;
@@ -33,9 +35,14 @@ export function DonarCosas() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [cosasRegaladasCategoryId, setCosasRegaladasCategoryId] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [estado, setEstado] = useState('Sonora');
+  const [municipio, setMunicipio] = useState('Cajeme');
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { getEstados, getMunicipios, loading: municipiosLoading } = useMunicipios();
+  const estados = getEstados();
+  const municipios = getMunicipios(estado);
 
   useEffect(() => {
     fetchUserProfile();
@@ -93,43 +100,12 @@ export function DonarCosas() {
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Tu navegador no soporta geolocalización');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        toast.success('Ubicación obtenida');
-      },
-      (error) => {
-        console.error('Error getting location:', error);
-        toast.error('No se pudo obtener tu ubicación');
-      }
-    );
-  };
-
-  // Auto-get location when dialog opens
+  // Reset municipio when estado changes
   useEffect(() => {
-    if (isOpen && !location && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error getting auto location:', error);
-        }
-      );
+    if (municipios.length > 0 && !municipios.includes(municipio)) {
+      setMunicipio(municipios[0] || '');
     }
-  }, [isOpen]);
+  }, [estado, municipios]);
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -212,8 +188,8 @@ export function DonarCosas() {
           description: description.trim() || null,
           is_free: true,
           is_active: true,
-          latitude: location?.lat || null,
-          longitude: location?.lng || null,
+          estado: estado,
+          municipio: municipio,
           price: 0
         })
         .select('id')
@@ -229,7 +205,8 @@ export function DonarCosas() {
       toast.success('¡Publicación creada! Estará visible por 2 días.');
       setTitle('');
       setDescription('');
-      setLocation(null);
+      setEstado('Sonora');
+      setMunicipio('Cajeme');
       setPhotos([]);
       setIsOpen(false);
       fetchMyListings();
@@ -261,7 +238,8 @@ export function DonarCosas() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setLocation(null);
+    setEstado('Sonora');
+    setMunicipio('Cajeme');
     photos.forEach(p => URL.revokeObjectURL(p.preview));
     setPhotos([]);
   };
@@ -367,19 +345,34 @@ export function DonarCosas() {
                 )}
               </div>
 
+              {/* Estado selector */}
               <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={getCurrentLocation}
-                  className="w-full"
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  {location ? 'Ubicación agregada ✓' : 'Agregar mi ubicación'}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Opcional: ayuda a que te encuentren cerca
-                </p>
+                <label className="text-sm font-medium mb-1 block">Estado *</label>
+                <Select value={estado} onValueChange={setEstado} disabled={municipiosLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estados.map((est) => (
+                      <SelectItem key={est} value={est}>{est}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Municipio selector */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Municipio *</label>
+                <Select value={municipio} onValueChange={setMunicipio} disabled={municipiosLoading || municipios.length === 0}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona municipio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {municipios.map((mun) => (
+                      <SelectItem key={mun} value={mun}>{mun}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Publicando...' : 'Publicar gratis'}
