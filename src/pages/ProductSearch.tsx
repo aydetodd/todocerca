@@ -148,7 +148,7 @@ const ProductSearch = () => {
         let query = supabase
           .from("listings")
           .select(`
-            id, title, description, price, is_free, latitude, longitude, profile_id, created_at,
+            id, title, description, price, is_free, latitude, longitude, profile_id, created_at, expires_at,
             profiles (
               id, nombre, user_id, telefono
             ),
