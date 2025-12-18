@@ -74,6 +74,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
+  const [routeVariant, setRouteVariant] = useState<string>('');
   const { toast } = useToast();
   const { getEstados, getMunicipios } = useMunicipios();
 
@@ -203,6 +204,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         ciudad: '',
       });
       setSelectedRoute('');
+      setRouteVariant('');
     }
     setSelectedFiles([]);
     setIsDialogOpen(true);
@@ -480,41 +482,67 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               {/* Selector especial para Rutas de Transporte */}
               {isRutasCategory && !editingProduct && (
                 <>
-                  <div>
-                    <Label htmlFor="route">Selecciona tu Ruta *</Label>
-                    <Select
-                      value={selectedRoute}
-                      onValueChange={(value) => {
-                        setSelectedRoute(value);
-                        setFormData({
-                          ...formData, 
-                          nombre: value,
-                          unit: 'viaje',
-                          keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}`
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una ruta disponible" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {availableRoutes.length > 0 ? (
-                          availableRoutes.map((route) => (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="route">Número de Ruta *</Label>
+                      <Select
+                        value={selectedRoute}
+                        onValueChange={(value) => {
+                          setSelectedRoute(value);
+                          const fullName = routeVariant ? `${value} - ${routeVariant}` : value;
+                          setFormData({
+                            ...formData, 
+                            nombre: fullName,
+                            unit: 'viaje',
+                            keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}, ${routeVariant.toLowerCase()}`
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona ruta" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 bg-background">
+                          {AVAILABLE_ROUTES.map((route) => (
                             <SelectItem key={route} value={route}>
                               {route}
                             </SelectItem>
-                          ))
-                        ) : (
-                          <div className="px-2 py-4 text-center text-muted-foreground text-sm">
-                            Ya tienes todas las rutas registradas
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Solo se muestran las rutas que aún no has registrado
-                    </p>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="routeVariant">Variante (opcional)</Label>
+                      <Input
+                        id="routeVariant"
+                        value={routeVariant}
+                        onChange={(e) => {
+                          const variant = e.target.value;
+                          setRouteVariant(variant);
+                          if (selectedRoute) {
+                            const fullName = variant ? `${selectedRoute} - ${variant}` : selectedRoute;
+                            setFormData({
+                              ...formData,
+                              nombre: fullName,
+                              keywords: `transporte, urbano, camion, autobus, ${selectedRoute.toLowerCase()}, ${variant.toLowerCase()}`
+                            });
+                          }
+                        }}
+                        placeholder="Ej: Centro, Periférico, Manga"
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Si hay varias rutas con el mismo número pero diferente recorrido, agrega una variante para identificarla. 
+                    Ejemplo: "Ruta 1 - Centro" o "Ruta 1 - Periférico"
+                  </p>
+                  
+                  {/* Mostrar nombre final */}
+                  {selectedRoute && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <Label className="text-xs text-muted-foreground">Nombre de tu ruta:</Label>
+                      <p className="font-semibold text-lg">{formData.nombre || selectedRoute}</p>
+                    </div>
+                  )}
                   
                   {/* Campo de recorrido para rutas */}
                   {selectedRoute && (
@@ -532,16 +560,6 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       </p>
                     </div>
                   )}
-                  
-                  {/* Nota sobre nomenclatura específica */}
-                  <Alert className="bg-muted/50">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      <strong>¿Tu ruta necesita un nombre especial?</strong><br />
-                      Si en tu ciudad hay varias "Ruta 1" con diferentes recorridos, 
-                      contacta a soporte para solicitar nomenclatura específica (ej: "Ruta 1 - Centro-Miramar").
-                    </AlertDescription>
-                  </Alert>
                 </>
               )}
 
