@@ -65,6 +65,7 @@ const AVAILABLE_ROUTES = Array.from({ length: 30 }, (_, i) => `Ruta ${i + 1}`);
 
 export default function ProductManagement({ proveedorId }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [allRouteProducts, setAllRouteProducts] = useState<{nombre: string}[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -94,20 +95,47 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
 
   // Detectar si la categoría seleccionada es "Rutas de Transporte"
   const isRutasCategory = categories.find(c => c.id === formData.category_id)?.name === 'Rutas de Transporte';
+  const rutasCategoryId = categories.find(c => c.name === 'Rutas de Transporte')?.id;
 
-  // Obtener rutas ya registradas por este proveedor
-  const registeredRoutes = products
-    .filter(p => categories.find(c => c.id === p.category_id)?.name === 'Rutas de Transporte')
-    .map(p => p.nombre);
+  // Contar variantes por número de ruta (globalmente)
+  const routeVariantCount = AVAILABLE_ROUTES.reduce((acc, route) => {
+    // Contar cuántos productos tienen este número de ruta (exacto o con variante)
+    const count = allRouteProducts.filter(p => 
+      p.nombre === route || p.nombre.startsWith(`${route} - `)
+    ).length;
+    acc[route] = count;
+    return acc;
+  }, {} as Record<string, number>);
 
-  // Rutas disponibles (no registradas aún)
-  const availableRoutes = AVAILABLE_ROUTES.filter(r => !registeredRoutes.includes(r));
+  // Rutas disponibles (con menos de 3 variantes)
+  const availableRoutes = AVAILABLE_ROUTES.filter(r => routeVariantCount[r] < 3);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     checkUserRole();
   }, [proveedorId]);
+
+  // Fetch all route products globally when category changes
+  useEffect(() => {
+    if (rutasCategoryId) {
+      fetchAllRouteProducts();
+    }
+  }, [rutasCategoryId]);
+
+  const fetchAllRouteProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('nombre')
+        .eq('category_id', rutasCategoryId);
+
+      if (error) throw error;
+      setAllRouteProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching route products:', error);
+    }
+  };
 
   const checkUserRole = async () => {
     try {
@@ -502,11 +530,17 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                           <SelectValue placeholder="Selecciona ruta" />
                         </SelectTrigger>
                         <SelectContent className="max-h-60 bg-background">
-                          {AVAILABLE_ROUTES.map((route) => (
-                            <SelectItem key={route} value={route}>
-                              {route}
-                            </SelectItem>
-                          ))}
+                          {availableRoutes.length > 0 ? (
+                            availableRoutes.map((route) => (
+                              <SelectItem key={route} value={route}>
+                                {route} {routeVariantCount[route] > 0 && `(${routeVariantCount[route]}/3)`}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+                              Todas las rutas tienen 3 variantes registradas
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
