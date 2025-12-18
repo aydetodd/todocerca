@@ -37,6 +37,16 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Parse request body for optional coupon code
+    let couponCode: string | undefined;
+    try {
+      const body = await req.json();
+      couponCode = body.couponCode;
+      if (couponCode) logStep("Coupon code provided", { couponCode });
+    } catch {
+      // No body or invalid JSON, continue without coupon
+    }
+
     // Verificar que el usuario sea cliente
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
@@ -61,7 +71,7 @@ serve(async (req) => {
     }
 
     // Crear sesión de checkout para el pago de upgrade
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -73,13 +83,15 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/mi-perfil?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/mi-perfil?upgrade=cancelled`,
-      payment_intent_data: {
-        metadata: {
-          user_id: user.id,
-          upgrade_type: "cliente_to_proveedor",
-        },
-      },
-    });
+    };
+
+    // Apply coupon if provided
+    if (couponCode) {
+      sessionConfig.discounts = [{ coupon: couponCode }];
+      logStep("Applying coupon to session", { couponCode });
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
