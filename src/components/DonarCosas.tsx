@@ -114,6 +114,23 @@ export function DonarCosas() {
     );
   };
 
+  // Auto-get location when dialog opens
+  useEffect(() => {
+    if (isOpen && !location && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error getting auto location:', error);
+        }
+      );
+    }
+  }, [isOpen]);
+
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
