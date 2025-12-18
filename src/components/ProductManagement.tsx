@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 import { useMunicipios } from '@/hooks/useMunicipios';
+import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +78,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [routeVariant, setRouteVariant] = useState<string>('');
+  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const { toast } = useToast();
   const { getEstados, getMunicipios } = useMunicipios();
 
@@ -724,7 +727,15 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   type="checkbox"
                   id="is_mobile"
                   checked={formData.is_mobile}
-                  onChange={(e) => setFormData({...formData, is_mobile: e.target.checked})}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setFormData({...formData, is_mobile: isChecked});
+                    
+                    // Mostrar guía de permisos si es plataforma nativa y está activando
+                    if (isChecked && Capacitor.isNativePlatform()) {
+                      setShowPermissionGuide(true);
+                    }
+                  }}
                   className="h-4 w-4 rounded border-input"
                 />
                 <Label htmlFor="is_mobile" className="text-sm font-normal cursor-pointer">
@@ -919,6 +930,12 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Guía de permisos de ubicación para proveedores ambulantes */}
+      <LocationPermissionGuide 
+        open={showPermissionGuide} 
+        onClose={() => setShowPermissionGuide(false)} 
+      />
     </div>
   );
 }
