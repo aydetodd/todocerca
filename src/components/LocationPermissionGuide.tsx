@@ -3,10 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Settings, ChevronRight, CheckCircle } from 'lucide-react';
-import { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
-import { registerPlugin } from '@capacitor/core';
-
-const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
+import { BackgroundGeolocation } from '@/integrations/capacitor/backgroundGeolocation';
 
 // Key para localStorage - recordar si ya configuró los permisos
 const PERMISSION_CONFIGURED_KEY = 'bg_location_permission_configured';

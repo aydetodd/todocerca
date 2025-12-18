@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
-import { registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { isPermissionConfigured, resetPermissionConfigured } from '@/components/LocationPermissionGuide';
-
-const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
+import { BackgroundGeolocation } from '@/integrations/capacitor/backgroundGeolocation';
 
 export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: string | null) => {
   const watcherIdRef = useRef<string | null>(null);
