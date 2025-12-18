@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft, X } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
 import { StatusControl } from "@/components/StatusControl";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -61,6 +62,7 @@ const ProductSearch = () => {
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const { getEstados, getMunicipios } = useMunicipios();
 
@@ -469,11 +471,14 @@ const ProductSearch = () => {
                           <div className="flex gap-3">
                             {/* Photo thumbnail for free items */}
                             {foto?.url && (
-                              <div className="flex-shrink-0">
+                              <div 
+                                className="flex-shrink-0 cursor-pointer"
+                                onClick={() => setLightboxImage(foto.url)}
+                              >
                                 <img
                                   src={foto.url}
                                   alt={item.nombre}
-                                  className="w-20 h-20 object-cover rounded-lg"
+                                  className="w-20 h-20 object-cover rounded-lg hover:opacity-80 transition-opacity"
                                 />
                               </div>
                             )}
@@ -527,6 +532,25 @@ const ProductSearch = () => {
       </main>
 
       <NavigationBar />
+
+      {/* Lightbox Dialog */}
+      <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/90 border-none">
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-2 right-2 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          {lightboxImage && (
+            <img
+              src={lightboxImage}
+              alt="Imagen ampliada"
+              className="w-full h-full object-contain max-h-[90vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
