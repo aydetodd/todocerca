@@ -88,7 +88,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     keywords: '',
     is_available: true,
     is_mobile: false,
-    stock: 0,
+    stock: 1,
     estado: '',
     ciudad: '',
   });
@@ -227,7 +227,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         keywords: '',
         is_available: true,
         is_mobile: false,
-        stock: 0,
+        stock: 1,
         estado: '',
         ciudad: '',
       });
@@ -522,7 +522,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                             ...formData, 
                             nombre: fullName,
                             unit: 'viaje',
-                            keywords: `transporte, urbano, camion, autobus, ${value.toLowerCase()}, ${routeVariant.toLowerCase()}`
+                            keywords: ''
                           });
                         }}
                       >
@@ -533,7 +533,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                           {availableRoutes.length > 0 ? (
                             availableRoutes.map((route) => (
                               <SelectItem key={route} value={route}>
-                                {route} {routeVariantCount[route] > 0 && `(${routeVariantCount[route]}/3)`}
+                                {route}
                               </SelectItem>
                             ))
                           ) : (
@@ -556,8 +556,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                             const fullName = variant ? `${selectedRoute} - ${variant}` : selectedRoute;
                             setFormData({
                               ...formData,
-                              nombre: fullName,
-                              keywords: `transporte, urbano, camion, autobus, ${selectedRoute.toLowerCase()}, ${variant.toLowerCase()}`
+                              nombre: fullName
                             });
                           }
                         }}
@@ -592,6 +591,19 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <p className="text-xs text-muted-foreground mt-1">
                         Escribe las calles y lugares por donde pasa tu ruta para que los usuarios puedan identificarla
                       </p>
+                    </div>
+                  )}
+                  
+                  {/* Campo de concepto/detalle para rutas */}
+                  {selectedRoute && (
+                    <div>
+                      <Label htmlFor="concepto">Concepto / Detalle Adicional</Label>
+                      <Input
+                        id="concepto"
+                        value={formData.keywords}
+                        onChange={(e) => setFormData({...formData, keywords: e.target.value})}
+                        placeholder="Ej: Servicio express, Aire acondicionado, Horario nocturno..."
+                      />
                     </div>
                   )}
                 </>
@@ -665,15 +677,6 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="keywords">Palabras clave</Label>
-                <Input
-                  id="keywords"
-                  value={formData.keywords}
-                  onChange={(e) => setFormData({...formData, keywords: e.target.value})}
-                  placeholder="Ej: fresco, orgánico, temporada"
-                />
               </div>
               
               {/* Ubicación: Estado y Ciudad */}
