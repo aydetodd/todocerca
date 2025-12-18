@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Users, Briefcase } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -16,7 +15,6 @@ export default function MiPerfil() {
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -115,8 +113,7 @@ export default function MiPerfil() {
       const { data, error } = await supabase.functions.invoke('upgrade-to-provider', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
-        },
-        body: couponCode.trim() ? { couponCode: couponCode.trim() } : undefined
+        }
       });
       
       if (error) throw error;
@@ -266,15 +263,8 @@ export default function MiPerfil() {
               
               {/* Botón para convertirse en proveedor si es cliente */}
               {profile?.role === 'cliente' && (
-                <div className="pt-4 border-t space-y-3">
-                  <Input
-                    placeholder="Código de descuento (opcional)"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="text-center"
-                    maxLength={50}
-                  />
-                  <Button 
+                <div className="pt-4 border-t">
+                  <Button
                     onClick={handleUpgradeToProvider}
                     disabled={upgrading}
                     className="w-full"
