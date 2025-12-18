@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft, X } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft, X, Clock } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
 import { StatusControl } from "@/components/StatusControl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { formatDistanceToNow, format } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -187,6 +189,8 @@ const ProductSearch = () => {
           longitude: listing.longitude,
           profiles: listing.profiles,
           fotos: listing.fotos_listings,
+          created_at: listing.created_at,
+          expires_at: listing.expires_at,
         }));
 
         setResults(transformedResults);
@@ -517,6 +521,21 @@ const ProductSearch = () => {
                                   <MapPin className="w-3 h-3 inline mr-1" />
                                   {item.profiles.nombre}
                                 </p>
+                              )}
+
+                              {/* Date info for free items */}
+                              {item.is_listing && item.created_at && (
+                                <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                  <span>
+                                    Publicado: {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                                  </span>
+                                  {item.expires_at && (
+                                    <span className="flex items-center gap-1 text-orange-500">
+                                      <Clock className="w-3 h-3" />
+                                      Expira {formatDistanceToNow(new Date(item.expires_at), { locale: es, addSuffix: true })}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
