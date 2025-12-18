@@ -16,6 +16,7 @@ import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { GpsTrackerManagement } from '@/components/GpsTrackerManagement';
 import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
+import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import { useGpsTrackers } from '@/hooks/useGpsTrackers';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +46,7 @@ const TrackingGPS = () => {
   const [generatingLink, setGeneratingLink] = useState(false);
 
   // Hook para background tracking - se activa automáticamente cuando isSharing es true
-  useBackgroundTracking(isSharing, group?.id || null);
+  const { showPermissionGuide, closePermissionGuide } = useBackgroundTracking(isSharing, group?.id || null);
 
   // Verificar y sincronizar el estado del usuario automáticamente
   useEffect(() => {
@@ -1288,6 +1289,12 @@ const TrackingGPS = () => {
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Guía de permisos de ubicación en background */}
+    <LocationPermissionGuide 
+      open={showPermissionGuide} 
+      onClose={closePermissionGuide} 
+    />
 
     </>
   );
