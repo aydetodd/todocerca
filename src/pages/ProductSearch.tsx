@@ -507,18 +507,29 @@ const ProductSearch = () => {
                 No hay rutas registradas en esta ubicación.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {availableRoutes.map((route) => (
-                  <Badge
-                    key={route.nombre}
-                    variant={selectedRoute === route.nombre ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
-                    onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
-                  >
-                    {route.nombre}
-                  </Badge>
-                ))}
-              </div>
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {availableRoutes.map((route) => (
+                    <Badge
+                      key={route.nombre}
+                      variant={selectedRoute === route.nombre ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                      onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
+                    >
+                      {route.nombre}
+                    </Badge>
+                  ))}
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={handleSearch} 
+                  disabled={loading}
+                  className="mt-4 w-full sm:w-auto"
+                >
+                  <SearchIcon className="w-4 h-4 mr-2" />
+                  {loading ? "Buscando…" : "Buscar"}
+                </Button>
+              </>
             )}
           </section>
         )}
