@@ -508,12 +508,12 @@ const ProductSearch = () => {
               </p>
             ) : (
               <>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {availableRoutes.map((route) => (
                     <Badge
                       key={route.nombre}
                       variant={selectedRoute === route.nombre ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                      className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
                       onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
                     >
                       {route.nombre}
