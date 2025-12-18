@@ -24,11 +24,27 @@ export const GlobalGroupTracking = () => {
   }, [subscriptionStatus]);
 
   const isTrackingEnabled = useMemo(() => {
-    if (!userId || !groupId) return false;
-    if (!isSubscriptionActive) return false;
-    if (userStatus === "offline") return false;
-    return true;
-  }, [userId, groupId, isSubscriptionActive, userStatus]);
+    const reasons: string[] = [];
+    if (!userId) reasons.push("sin userId");
+    if (!groupId) reasons.push("sin groupId");
+    if (!isSubscriptionActive) reasons.push(`suscripción no activa (${subscriptionStatus})`);
+    if (userStatus === "offline") reasons.push("estado offline");
+    
+    const enabled = reasons.length === 0;
+    
+    // Log de diagnóstico siempre visible
+    console.log('[GlobalGroupTracking] ===== DIAGNÓSTICO =====');
+    console.log('[GlobalGroupTracking] userId:', userId);
+    console.log('[GlobalGroupTracking] groupId:', groupId);
+    console.log('[GlobalGroupTracking] subscriptionStatus:', subscriptionStatus);
+    console.log('[GlobalGroupTracking] isSubscriptionActive:', isSubscriptionActive);
+    console.log('[GlobalGroupTracking] userStatus:', userStatus);
+    console.log('[GlobalGroupTracking] isTrackingEnabled:', enabled);
+    if (!enabled) console.log('[GlobalGroupTracking] Razones deshabilitado:', reasons.join(', '));
+    console.log('[GlobalGroupTracking] =======================');
+    
+    return enabled;
+  }, [userId, groupId, isSubscriptionActive, userStatus, subscriptionStatus]);
 
   // En nativo, este hook enciende BackgroundGeolocation + foreground service.
   // En web, el hook no hace nada (y abajo usamos navigator.geolocation).
