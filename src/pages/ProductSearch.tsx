@@ -581,14 +581,16 @@ const ProductSearch = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  results.map((item) => {
+                results.map((item) => {
                     const foto = item.fotos?.find((f: any) => f.es_principal) || item.fotos?.[0];
+                    const isRoute = vehicleFilter === "ruta";
+                    
                     return (
                       <Card key={item.id}>
                         <CardContent className="p-4">
                           <div className="flex gap-3">
-                            {/* Photo thumbnail for free items */}
-                            {foto?.url && (
+                            {/* Photo thumbnail for free items (not for routes) */}
+                            {!isRoute && foto?.url && (
                               <div 
                                 className="flex-shrink-0 cursor-pointer"
                                 onClick={() => setLightboxImage(foto.url)}
@@ -619,26 +621,28 @@ const ProductSearch = () => {
                                 {!item.is_free && (
                                   <Badge variant="secondary">${item.precio}</Badge>
                                 )}
-                                {!item.is_listing && (
+                                {/* Hide stock for routes */}
+                                {!item.is_listing && !isRoute && (
                                   <Badge variant="outline">Stock: {item.stock}</Badge>
                                 )}
                               </div>
 
-                              {item.proveedores && (
+                              {/* Hide provider info for routes - privacy */}
+                              {!isRoute && item.proveedores && (
                                 <p className="text-sm text-muted-foreground mt-2">
                                   <MapPin className="w-3 h-3 inline mr-1" />
                                   {item.proveedores.nombre}
                                 </p>
                               )}
-                              {item.profiles && (
+                              {!isRoute && item.profiles && (
                                 <p className="text-sm text-muted-foreground mt-2">
                                   <MapPin className="w-3 h-3 inline mr-1" />
                                   {item.profiles.nombre}
                                 </p>
                               )}
 
-                              {/* Date info for free items */}
-                              {item.is_listing && item.created_at && (
+                              {/* Date info for free items (not for routes) */}
+                              {!isRoute && item.is_listing && item.created_at && (
                                 <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                                   <span>
                                     Publicado: {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
