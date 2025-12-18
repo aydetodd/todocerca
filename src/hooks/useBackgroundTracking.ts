@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
 import { registerPlugin } from '@capacitor/core';
-import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import { supabase } from '@/integrations/supabase/client';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
@@ -27,9 +26,6 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
           watcherIdRef.current = null;
         }
         
-        await ForegroundService.stopForegroundService();
-        console.log('[BackgroundTracking] Foreground service detenido');
-        
         isRunningRef.current = false;
       } catch (error) {
         console.error('[BackgroundTracking] Error deteniendo tracking:', error);
@@ -38,7 +34,6 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
 
     if (!isTrackingEnabled || !groupId) {
       console.log('[BackgroundTracking] Tracking deshabilitado o sin grupo');
-      // Detener si estaba corriendo
       if (isRunningRef.current) {
         stopBackgroundTracking();
       }
@@ -52,31 +47,9 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
       }
 
       try {
-        console.log('[BackgroundTracking] 🚀 Iniciando servicio de background...');
+        console.log('[BackgroundTracking] 🚀 Iniciando background geolocation...');
 
-        // 1. Crear canal de notificación con máxima importancia
-        await ForegroundService.createNotificationChannel({
-          id: 'tracking_location',
-          name: 'Seguimiento de Ubicación',
-          description: 'Mantiene activo el seguimiento de ubicación en background',
-          importance: 5, // MAX importance para que no se cierre
-        });
-
-        console.log('[BackgroundTracking] ✅ Canal de notificación creado');
-
-        // 2. Iniciar servicio en foreground con tipo LOCATION
-        await ForegroundService.startForegroundService({
-          id: 1,
-          title: 'TodoCerca - GPS Activo',
-          body: 'Compartiendo tu ubicación con el grupo',
-          smallIcon: 'ic_launcher',
-          silent: false, // Mostrar notificación visible
-          notificationChannelId: 'tracking_location',
-        });
-
-        console.log('[BackgroundTracking] ✅ Foreground service iniciado');
-
-        // 3. Obtener user ID actual
+        // Obtener user ID actual
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('Usuario no autenticado');
@@ -84,20 +57,21 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
 
         console.log('[BackgroundTracking] Usuario:', user.id);
 
-        // 4. Configurar background geolocation
+        // El plugin background-geolocation maneja su propio foreground service
+        // cuando backgroundMessage está definido
         const watcherId = await BackgroundGeolocation.addWatcher(
           {
-            backgroundMessage: "TodoCerca está rastreando tu ubicación",
-            backgroundTitle: "GPS Activo",
+            // CRÍTICO: Estas opciones activan el foreground service del plugin
+            backgroundMessage: "Compartiendo tu ubicación en tiempo real",
+            backgroundTitle: "TodoCerca - GPS Activo",
             requestPermissions: true,
             stale: false,
-            distanceFilter: 30, // Actualizar cada 30 metros para mayor frecuencia
+            distanceFilter: 20, // Actualizar cada 20 metros
           },
           async (location, error) => {
             if (error) {
               console.error('[BackgroundTracking] ❌ Error en ubicación:', error);
               
-              // Si es error de permisos, abrir configuración
               if (error.code === "NOT_AUTHORIZED") {
                 console.log('[BackgroundTracking] Permisos no autorizados, abriendo configuración...');
                 BackgroundGeolocation.openSettings();
@@ -165,7 +139,6 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
         isRunningRef.current = false;
       }
     };
-
 
     startBackgroundTracking();
 
