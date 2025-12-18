@@ -18,12 +18,17 @@ export const GlobalGroupTracking = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [userStatus, setUserStatus] = useState<UserStatus>(null);
 
+  const isSubscriptionActive = useMemo(() => {
+    const s = (subscriptionStatus ?? "").toLowerCase();
+    return s === "active" || s === "activa";
+  }, [subscriptionStatus]);
+
   const isTrackingEnabled = useMemo(() => {
     if (!userId || !groupId) return false;
-    if (subscriptionStatus !== "active") return false;
+    if (!isSubscriptionActive) return false;
     if (userStatus === "offline") return false;
     return true;
-  }, [userId, groupId, subscriptionStatus, userStatus]);
+  }, [userId, groupId, isSubscriptionActive, userStatus]);
 
   // En nativo, este hook enciende BackgroundGeolocation + foreground service.
   // En web, el hook no hace nada (y abajo usamos navigator.geolocation).
@@ -71,6 +76,10 @@ export const GlobalGroupTracking = () => {
           return;
         }
 
+        // Elegir grupo:
+        // 1) el guardado en localStorage (si existe y aún soy miembro)
+        // 2) si no hay guardado, priorizar uno con suscripción activa
+        // 3) fallback al primero
         let chosenGroupId: string | null = null;
         try {
           const stored = localStorage.getItem(STORAGE_KEY);
@@ -79,19 +88,31 @@ export const GlobalGroupTracking = () => {
           // ignore
         }
 
+        // Traer estados de suscripción para priorizar un grupo activo
+        const { data: groupRows } = await supabase
+          .from("tracking_groups")
+          .select("id, subscription_status")
+          .in("id", groupIds);
+
+        if (!chosenGroupId) {
+          const activeRow = (groupRows || []).find((g) => {
+            const s = (g.subscription_status ?? "").toLowerCase();
+            return s === "active" || s === "activa";
+          });
+          if (activeRow) chosenGroupId = activeRow.id;
+        }
+
         if (!chosenGroupId) chosenGroupId = groupIds[0];
 
-        if (!cancelled) setGroupId(chosenGroupId);
+        const chosenSubscriptionStatus =
+          (groupRows || []).find((g) => g.id === chosenGroupId)?.subscription_status ?? null;
 
-        const { data: groupRow } = await supabase
-          .from("tracking_groups")
-          .select("subscription_status")
-          .eq("id", chosenGroupId)
-          .single();
-
-        if (!cancelled) setSubscriptionStatus(groupRow?.subscription_status ?? null);
-      } catch {
-        // silencioso: si falla aquí, el tracking no debe romper la app
+        if (!cancelled) {
+          setGroupId(chosenGroupId);
+          setSubscriptionStatus(chosenSubscriptionStatus);
+        }
+      } catch (e) {
+        console.error('[GlobalGroupTracking] Error cargando contexto:', e);
       }
     };
 

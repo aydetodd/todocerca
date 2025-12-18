@@ -51,7 +51,8 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
             Permiso de Ubicación en Background
           </DialogTitle>
           <DialogDescription>
-            Para rastrear tu ubicación con la pantalla apagada, necesitas activar "Permitir todo el tiempo"
+            Para rastrear tu ubicación con la pantalla apagada, Android debe permitir <strong>Ubicación en segundo plano</strong>.
+            Si tu teléfono solo muestra "Solo con la app en uso", entonces el GPS se cortará al apagar la pantalla.
           </DialogDescription>
         </DialogHeader>
 
@@ -61,7 +62,8 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <h4 className="font-medium text-sm">¿Por qué es necesario?</h4>
                 <p className="text-sm text-muted-foreground">
-                  Android solo permite rastrear ubicación con pantalla apagada si activas <strong>"Permitir todo el tiempo"</strong> en los ajustes de la app.
+                  Android solo permite rastrear con pantalla apagada si la app tiene permiso de <strong>Ubicación en segundo plano</strong>.
+                  En algunos teléfonos esa opción no aparece; en ese caso, no es posible enviar ubicación con la pantalla apagada.
                 </p>
               </div>
 
@@ -74,7 +76,10 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded bg-muted/30">
                     <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0">2</span>
-                    <span>Selecciona <strong>"Permitir todo el tiempo"</strong></span>
+                    <span>
+                      Busca una opción como <strong>"Permitir todo el tiempo"</strong> o <strong>"Permitir siempre"</strong> (si existe).
+                      Si no existe, tu Android no permitirá GPS con pantalla apagada.
+                    </span>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded bg-muted/30">
                     <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0">3</span>
@@ -99,9 +104,10 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
                 <CheckCircle className="h-16 w-16 text-green-500" />
                 <div className="text-center space-y-2">
                   <h4 className="font-medium">¿Ya activaste el permiso?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Si seleccionaste "Permitir todo el tiempo", el rastreo en background ya está funcionando.
-                  </p>
+                    <p className="text-sm text-muted-foreground">
+                      Si pudiste activar una opción tipo "Permitir siempre", el rastreo con pantalla apagada debería funcionar.
+                      Si tu Android solo permite "Solo con la app en uso", el envío se detendrá al apagar la pantalla.
+                    </p>
                 </div>
               </div>
 
