@@ -525,14 +525,14 @@ const ProductSearch = () => {
 
                               {/* Date info for free items */}
                               {item.is_listing && item.created_at && (
-                                <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                                   <span>
                                     Publicado: {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
                                   </span>
                                   {item.expires_at && (
                                     <span className="flex items-center gap-1 text-orange-500">
                                       <Clock className="w-3 h-3" />
-                                      Expira {formatDistanceToNow(new Date(item.expires_at), { locale: es, addSuffix: true })}
+                                      Expira: {format(new Date(item.expires_at), "dd/MM/yyyy HH:mm", { locale: es })} ({formatDistanceToNow(new Date(item.expires_at), { locale: es, addSuffix: true })})
                                     </span>
                                   )}
                                 </div>
