@@ -3,11 +3,9 @@ import { Capacitor } from '@capacitor/core';
 import { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
 import { registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { isPermissionConfigured, resetPermissionConfigured } from '@/components/LocationPermissionGuide';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
-
-// Key para localStorage - evitar mostrar el modal cada vez
-const PERMISSION_GUIDE_SHOWN_KEY = 'bg_location_permission_guide_shown';
 
 export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: string | null) => {
   const watcherIdRef = useRef<string | null>(null);
@@ -16,17 +14,12 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
 
   // Mostrar guía de permisos cuando se activa el tracking en plataforma nativa
   useEffect(() => {
-    if (isTrackingEnabled && Capacitor.isNativePlatform()) {
-      // Solo mostrar si no se ha mostrado antes en esta sesión
-      const hasBeenShown = sessionStorage.getItem(PERMISSION_GUIDE_SHOWN_KEY);
-      if (!hasBeenShown) {
-        // Pequeño delay para que la UI se estabilice primero
-        const timer = setTimeout(() => {
-          setShowPermissionGuide(true);
-          sessionStorage.setItem(PERMISSION_GUIDE_SHOWN_KEY, 'true');
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
+    if (isTrackingEnabled && Capacitor.isNativePlatform() && !isPermissionConfigured()) {
+      // Pequeño delay para que la UI se estabilice primero
+      const timer = setTimeout(() => {
+        setShowPermissionGuide(true);
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [isTrackingEnabled]);
 
@@ -93,7 +86,9 @@ export const useBackgroundTracking = (isTrackingEnabled: boolean, groupId: strin
               console.error('[BackgroundTracking] ❌ Error en ubicación:', error);
               
               if (error.code === "NOT_AUTHORIZED") {
-                console.log('[BackgroundTracking] Permisos no autorizados, mostrando guía...');
+                console.log('[BackgroundTracking] Permisos no autorizados, reseteando y mostrando guía...');
+                // Resetear el flag para que el usuario vea el aviso de nuevo
+                resetPermissionConfigured();
                 setShowPermissionGuide(true);
               }
               return;

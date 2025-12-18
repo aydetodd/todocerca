@@ -8,6 +8,9 @@ import { registerPlugin } from '@capacitor/core';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
+// Key para localStorage - recordar si ya configuró los permisos
+const PERMISSION_CONFIGURED_KEY = 'bg_location_permission_configured';
+
 interface LocationPermissionGuideProps {
   open: boolean;
   onClose: () => void;
@@ -23,7 +26,15 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
     setStep(2);
   };
 
+  // Cuando el usuario dice "Listo, ya lo configuré" - marcar como configurado
   const handleDone = () => {
+    localStorage.setItem(PERMISSION_CONFIGURED_KEY, 'true');
+    setStep(1);
+    onClose();
+  };
+
+  // "Ahora no" - cerrar sin marcar como configurado (verá el aviso de nuevo)
+  const handleLater = () => {
     setStep(1);
     onClose();
   };
@@ -35,7 +46,7 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
   }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleLater()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -81,8 +92,8 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
                 <ChevronRight className="h-4 w-4" />
               </Button>
 
-              <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
-                Ahora no
+              <Button variant="ghost" onClick={handleLater} className="w-full text-muted-foreground">
+                Ahora no (se mostrará de nuevo)
               </Button>
             </>
           ) : (
@@ -110,4 +121,14 @@ export const LocationPermissionGuide = ({ open, onClose }: LocationPermissionGui
       </DialogContent>
     </Dialog>
   );
+};
+
+// Función helper para verificar si ya se configuró
+export const isPermissionConfigured = () => {
+  return localStorage.getItem(PERMISSION_CONFIGURED_KEY) === 'true';
+};
+
+// Función para resetear (útil si hay error de permisos)
+export const resetPermissionConfigured = () => {
+  localStorage.removeItem(PERMISSION_CONFIGURED_KEY);
 };

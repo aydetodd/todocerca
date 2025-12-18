@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp, watchPosition, clearWatch, getCurrentPosition } from '@/utils/capacitorLocation';
-
-const PROVIDER_PERMISSION_GUIDE_KEY = 'provider_bg_location_permission_shown';
+import { isPermissionConfigured } from '@/components/LocationPermissionGuide';
 
 /**
  * Hook global para tracking de ubicación de proveedores.
@@ -117,17 +116,13 @@ export const useProviderLocationTracking = () => {
         isTrackingRef.current = true;
         setIsActive(true);
 
-        // Mostrar guía de permisos en plataforma nativa (solo una vez por sesión)
-        if (Capacitor.isNativePlatform()) {
-          const hasBeenShown = sessionStorage.getItem(PROVIDER_PERMISSION_GUIDE_KEY);
-          if (!hasBeenShown) {
-            setTimeout(() => {
-              if (mounted) {
-                setShowPermissionGuide(true);
-                sessionStorage.setItem(PROVIDER_PERMISSION_GUIDE_KEY, 'true');
-              }
-            }, 2000);
-          }
+        // Mostrar guía de permisos en plataforma nativa si no se ha configurado
+        if (Capacitor.isNativePlatform() && !isPermissionConfigured()) {
+          setTimeout(() => {
+            if (mounted) {
+              setShowPermissionGuide(true);
+            }
+          }, 2000);
         }
 
         // Obtener posición inicial inmediatamente
