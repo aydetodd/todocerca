@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
+import { GlobalGroupTracking } from "@/components/GlobalGroupTracking";
 import { useRegistrationNotifications } from "@/hooks/useRegistrationNotifications";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
@@ -50,6 +51,8 @@ export default function AppWrapper() {
         <RegistrationNotifier />
         {/* Tracking global de ubicación para proveedores */}
         <GlobalProviderTracking />
+        {/* Tracking global para grupos (tracking_member_locations) */}
+        <GlobalGroupTracking />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/landing" element={<Index />} />

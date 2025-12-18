@@ -33,9 +33,17 @@ export interface TrackingInvitation {
   expires_at: string;
 }
 
+const STORAGE_KEY = 'todocerca.selectedTrackingGroupId';
+
 export const useTrackingGroup = () => {
   const [allGroups, setAllGroups] = useState<TrackingGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
   const [group, setGroup] = useState<TrackingGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [invitations, setInvitations] = useState<TrackingInvitation[]>([]);
@@ -46,6 +54,22 @@ export const useTrackingGroup = () => {
     fetchAllGroups();
     checkPendingInvitations();
   }, []);
+
+  // Persistir el grupo seleccionado para poder trackear fuera de /tracking-gps
+  useEffect(() => {
+    try {
+      if (selectedGroupId) {
+        localStorage.setItem(STORAGE_KEY, selectedGroupId);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      window.dispatchEvent(
+        new CustomEvent('todocerca:tracking-group-changed', { detail: { groupId: selectedGroupId } })
+      );
+    } catch {
+      // ignore
+    }
+  }, [selectedGroupId]);
 
   // Cuando cambia el grupo seleccionado, actualizar el grupo actual
   useEffect(() => {
@@ -273,11 +297,14 @@ export const useTrackingGroup = () => {
 
       setAllGroups(allGroupsData);
 
-      // Si no hay grupo seleccionado, seleccionar el primero
-      if (allGroupsData.length > 0 && !selectedGroupId) {
-        console.log('Setting default selected group:', allGroupsData[0].id);
-        setSelectedGroupId(allGroupsData[0].id);
-      } else if (allGroupsData.length === 0) {
+      // Mantener el grupo seleccionado si sigue siendo válido; si no, elegir el primero.
+      if (allGroupsData.length > 0) {
+        const isValidSelected = selectedGroupId && allGroupsData.some(g => g.id === selectedGroupId);
+        if (!isValidSelected) {
+          console.log('Setting default selected group:', allGroupsData[0].id);
+          setSelectedGroupId(allGroupsData[0].id);
+        }
+      } else {
         console.log('No groups found for user');
         setSelectedGroupId(null);
         setGroup(null);
