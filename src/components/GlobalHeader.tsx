@@ -126,7 +126,13 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (window.history.length > 2) {
+                  navigate(-1);
+                } else {
+                  navigate('/dashboard');
+                }
+              }}
               className="shrink-0"
               aria-label="Regresar"
             >
