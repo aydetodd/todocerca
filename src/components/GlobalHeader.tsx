@@ -118,15 +118,22 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
     navigate('/');
   };
 
+  const handleBack = () => {
+    const idx = (window.history.state && (window.history.state as any).idx) ?? 0;
+    if (typeof idx === "number" && idx > 0) navigate(-1);
+    else navigate('/dashboard');
+  };
+
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           {showBack && !isMainPage && (
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="shrink-0"
               aria-label="Regresar"
             >
