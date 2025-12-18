@@ -138,84 +138,173 @@ const ProductSearch = () => {
     setHasSearched(true);
 
     try {
-      let query = supabase
-        .from("productos")
-        .select(
-          `
+      // Check if searching for "Cosas gratis" category
+      if (isCosasGratis) {
+        // Search in listings table for free items
+        let query = supabase
+          .from("listings")
+          .select(`
+            id, title, description, price, is_free, latitude, longitude, profile_id, created_at,
+            profiles (
+              id, nombre, user_id, telefono
+            ),
+            fotos_listings (
+              url, es_principal
+            )
+          `)
+          .eq("is_active", true)
+          .gt("expires_at", new Date().toISOString());
+
+        // Keyword search
+        if (searchTerm.trim()) {
+          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error } = await query.limit(50);
+
+        if (error) {
+          console.error("[ProductSearch] Error searching listings:", error);
+          setResults([]);
+          setMapProviders([]);
+          return;
+        }
+
+        const rows = data || [];
+        
+        // Transform listings to match product format for display
+        const transformedResults = rows.map((listing: any) => ({
+          id: listing.id,
+          nombre: listing.title,
+          descripcion: listing.description,
+          precio: listing.price || 0,
+          stock: 1,
+          unit: "unidad",
+          is_listing: true,
+          is_free: listing.is_free,
+          latitude: listing.latitude,
+          longitude: listing.longitude,
+          profiles: listing.profiles,
+          fotos: listing.fotos_listings,
+        }));
+
+        setResults(transformedResults);
+
+        // Build map providers from listings with coordinates
+        const providerMap = new Map<string, MapProvider>();
+        rows.forEach((listing: any) => {
+          if (!listing.latitude || !listing.longitude) return;
+          
+          const profile = listing.profiles;
+          if (!profile?.id || !profile?.user_id) return;
+
+          const providerId = String(profile.id);
+          const existing = providerMap.get(providerId);
+
+          const productForMap = {
+            nombre: String(listing.title ?? ""),
+            precio: Number(listing.price ?? 0),
+            descripcion: String(listing.description ?? ""),
+            stock: 1,
+            unit: "unidad",
+            categoria: "Cosas gratis",
+          };
+
+          if (!existing) {
+            providerMap.set(providerId, {
+              id: providerId,
+              business_name: String(profile.nombre ?? "Usuario"),
+              business_address: "",
+              business_phone: profile.telefono || null,
+              latitude: Number(listing.latitude),
+              longitude: Number(listing.longitude),
+              user_id: String(profile.user_id),
+              productos: [productForMap],
+            });
+          } else {
+            existing.productos.push(productForMap);
+          }
+        });
+
+        setMapProviders(Array.from(providerMap.values()));
+      } else {
+        // Regular product search
+        let query = supabase
+          .from("productos")
+          .select(`
             id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id, estado, ciudad,
             proveedores (
               id, nombre, user_id, telefono, business_address, business_phone, latitude, longitude
             )
-          `
-        )
-        .eq("is_available", true)
-        .gte("stock", 1);
+          `)
+          .eq("is_available", true)
+          .gte("stock", 1);
 
-      // Location filters
-      if (searchEstado) query = query.eq("estado", searchEstado);
-      if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
-        query = query.eq("ciudad", searchCiudad);
-      }
-
-      // Category filter
-      if (selectedCategoryId) {
-        query = query.eq("category_id", selectedCategoryId);
-      }
-
-      // Keyword search
-      if (searchTerm.trim()) {
-        query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.limit(50);
-
-      if (error) {
-        console.error("[ProductSearch] Error searching:", error);
-        setResults([]);
-        setMapProviders([]);
-        return;
-      }
-
-      const rows = data || [];
-      setResults(rows);
-
-      // Build providers list for map from product rows
-      const providerMap = new Map<string, MapProvider>();
-      rows.forEach((producto: any) => {
-        const prov = producto.proveedores;
-        if (!prov?.id || !prov?.user_id) return;
-
-        const providerId = String(prov.id);
-        const existing = providerMap.get(providerId);
-
-        const categoria = categoryNameById.get(String(producto.category_id)) || selectedCategoryName || "";
-
-        const productForMap = {
-          nombre: String(producto.nombre ?? ""),
-          precio: Number(producto.precio ?? 0),
-          descripcion: String(producto.descripcion ?? ""),
-          stock: Number(producto.stock ?? 0),
-          unit: String(producto.unit ?? ""),
-          categoria,
-        };
-
-        if (!existing) {
-          providerMap.set(providerId, {
-            id: providerId,
-            business_name: String(prov.nombre ?? "Proveedor"),
-            business_address: String(prov.business_address ?? ""),
-            business_phone: (prov.business_phone ?? prov.telefono ?? null) as string | null,
-            latitude: Number(prov.latitude ?? 0),
-            longitude: Number(prov.longitude ?? 0),
-            user_id: String(prov.user_id),
-            productos: [productForMap],
-          });
-        } else {
-          existing.productos.push(productForMap);
+        // Location filters
+        if (searchEstado) query = query.eq("estado", searchEstado);
+        if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+          query = query.eq("ciudad", searchCiudad);
         }
-      });
 
-      setMapProviders(Array.from(providerMap.values()));
+        // Category filter
+        if (selectedCategoryId) {
+          query = query.eq("category_id", selectedCategoryId);
+        }
+
+        // Keyword search
+        if (searchTerm.trim()) {
+          query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error } = await query.limit(50);
+
+        if (error) {
+          console.error("[ProductSearch] Error searching:", error);
+          setResults([]);
+          setMapProviders([]);
+          return;
+        }
+
+        const rows = data || [];
+        setResults(rows);
+
+        // Build providers list for map from product rows
+        const providerMap = new Map<string, MapProvider>();
+        rows.forEach((producto: any) => {
+          const prov = producto.proveedores;
+          if (!prov?.id || !prov?.user_id) return;
+
+          const providerId = String(prov.id);
+          const existing = providerMap.get(providerId);
+
+          const categoria = categoryNameById.get(String(producto.category_id)) || selectedCategoryName || "";
+
+          const productForMap = {
+            nombre: String(producto.nombre ?? ""),
+            precio: Number(producto.precio ?? 0),
+            descripcion: String(producto.descripcion ?? ""),
+            stock: Number(producto.stock ?? 0),
+            unit: String(producto.unit ?? ""),
+            categoria,
+          };
+
+          if (!existing) {
+            providerMap.set(providerId, {
+              id: providerId,
+              business_name: String(prov.nombre ?? "Proveedor"),
+              business_address: String(prov.business_address ?? ""),
+              business_phone: (prov.business_phone ?? prov.telefono ?? null) as string | null,
+              latitude: Number(prov.latitude ?? 0),
+              longitude: Number(prov.longitude ?? 0),
+              user_id: String(prov.user_id),
+              productos: [productForMap],
+            });
+          } else {
+            existing.productos.push(productForMap);
+          }
+        });
+
+        setMapProviders(Array.from(providerMap.values()));
+      }
     } catch (err) {
       console.error("[ProductSearch] Error:", err);
       setResults([]);
@@ -372,31 +461,43 @@ const ProductSearch = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  results.map((producto) => (
-                    <Card key={producto.id}>
+                  results.map((item) => (
+                    <Card key={item.id}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <h2 className="font-semibold text-lg truncate">{producto.nombre}</h2>
-                            {producto.descripcion && (
+                            <h2 className="font-semibold text-lg truncate">{item.nombre}</h2>
+                            {item.descripcion && (
                               <p className="text-muted-foreground text-sm line-clamp-2">
-                                {producto.descripcion}
+                                {item.descripcion}
                               </p>
                             )}
                           </div>
 
-                          {isCosasGratis && <Badge variant="secondary">¡Gratis!</Badge>}
+                          {(isCosasGratis || item.is_free) && (
+                            <Badge className="bg-green-500 text-white">¡Gratis!</Badge>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <Badge variant="secondary">${producto.precio}</Badge>
-                          <Badge variant="outline">Stock: {producto.stock}</Badge>
+                          {!item.is_free && (
+                            <Badge variant="secondary">${item.precio}</Badge>
+                          )}
+                          {!item.is_listing && (
+                            <Badge variant="outline">Stock: {item.stock}</Badge>
+                          )}
                         </div>
 
-                        {producto.proveedores && (
+                        {item.proveedores && (
                           <p className="text-sm text-muted-foreground mt-2">
                             <MapPin className="w-3 h-3 inline mr-1" />
-                            {producto.proveedores.nombre}
+                            {item.proveedores.nombre}
+                          </p>
+                        )}
+                        {item.profiles && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            {item.profiles.nombre}
                           </p>
                         )}
                       </CardContent>
