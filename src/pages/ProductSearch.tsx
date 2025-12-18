@@ -461,48 +461,64 @@ const ProductSearch = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  results.map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h2 className="font-semibold text-lg truncate">{item.nombre}</h2>
-                            {item.descripcion && (
-                              <p className="text-muted-foreground text-sm line-clamp-2">
-                                {item.descripcion}
-                              </p>
+                  results.map((item) => {
+                    const foto = item.fotos?.find((f: any) => f.es_principal) || item.fotos?.[0];
+                    return (
+                      <Card key={item.id}>
+                        <CardContent className="p-4">
+                          <div className="flex gap-3">
+                            {/* Photo thumbnail for free items */}
+                            {foto?.url && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={foto.url}
+                                  alt={item.nombre}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              </div>
                             )}
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <h2 className="font-semibold text-lg truncate">{item.nombre}</h2>
+                                {(isCosasGratis || item.is_free) && (
+                                  <Badge className="bg-green-500 text-white flex-shrink-0">¡Gratis!</Badge>
+                                )}
+                              </div>
+                              
+                              {item.descripcion && (
+                                <p className="text-muted-foreground text-sm line-clamp-2 mt-1">
+                                  {item.descripcion}
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                {!item.is_free && (
+                                  <Badge variant="secondary">${item.precio}</Badge>
+                                )}
+                                {!item.is_listing && (
+                                  <Badge variant="outline">Stock: {item.stock}</Badge>
+                                )}
+                              </div>
+
+                              {item.proveedores && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  <MapPin className="w-3 h-3 inline mr-1" />
+                                  {item.proveedores.nombre}
+                                </p>
+                              )}
+                              {item.profiles && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  <MapPin className="w-3 h-3 inline mr-1" />
+                                  {item.profiles.nombre}
+                                </p>
+                              )}
+                            </div>
                           </div>
-
-                          {(isCosasGratis || item.is_free) && (
-                            <Badge className="bg-green-500 text-white">¡Gratis!</Badge>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          {!item.is_free && (
-                            <Badge variant="secondary">${item.precio}</Badge>
-                          )}
-                          {!item.is_listing && (
-                            <Badge variant="outline">Stock: {item.stock}</Badge>
-                          )}
-                        </div>
-
-                        {item.proveedores && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            <MapPin className="w-3 h-3 inline mr-1" />
-                            {item.proveedores.nombre}
-                          </p>
-                        )}
-                        {item.profiles && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            <MapPin className="w-3 h-3 inline mr-1" />
-                            {item.profiles.nombre}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 )}
               </section>
             )}
