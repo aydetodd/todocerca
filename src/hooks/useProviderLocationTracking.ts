@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp, watchPosition, clearWatch, getCurrentPosition } from '@/utils/capacitorLocation';
+
+const PROVIDER_PERMISSION_GUIDE_KEY = 'provider_bg_location_permission_shown';
 
 /**
  * Hook global para tracking de ubicación de proveedores.
@@ -13,6 +16,7 @@ export const useProviderLocationTracking = () => {
   const isTrackingRef = useRef(false);
   const lastUpdateRef = useRef(0);
   const [isActive, setIsActive] = useState(false);
+  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -112,6 +116,19 @@ export const useProviderLocationTracking = () => {
         console.log('[GlobalTracking] 🚀 Iniciando tracking global para proveedor:', profile.estado);
         isTrackingRef.current = true;
         setIsActive(true);
+
+        // Mostrar guía de permisos en plataforma nativa (solo una vez por sesión)
+        if (Capacitor.isNativePlatform()) {
+          const hasBeenShown = sessionStorage.getItem(PROVIDER_PERMISSION_GUIDE_KEY);
+          if (!hasBeenShown) {
+            setTimeout(() => {
+              if (mounted) {
+                setShowPermissionGuide(true);
+                sessionStorage.setItem(PROVIDER_PERMISSION_GUIDE_KEY, 'true');
+              }
+            }, 2000);
+          }
+        }
 
         // Obtener posición inicial inmediatamente
         pollLocation();
@@ -218,5 +235,9 @@ export const useProviderLocationTracking = () => {
     };
   }, []);
 
-  return { isActive };
+  const closePermissionGuide = () => {
+    setShowPermissionGuide(false);
+  };
+
+  return { isActive, showPermissionGuide, closePermissionGuide };
 };
