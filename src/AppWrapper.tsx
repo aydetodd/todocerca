@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
+import { useRegistrationNotifications } from "@/hooks/useRegistrationNotifications";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -25,6 +26,12 @@ import AddContact from "./pages/AddContact";
 import Favoritos from "./pages/Favoritos";
 import NotFound from "./pages/NotFound";
 
+// Component to activate registration notifications
+const RegistrationNotifier = () => {
+  useRegistrationNotifications();
+  return null;
+};
+
 export default function AppWrapper() {
   // QueryClient creado dentro del componente para evitar problemas de HMR
   const [queryClient] = useState(() => new QueryClient({
@@ -39,6 +46,8 @@ export default function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        {/* Notificaciones de nuevos registros */}
+        <RegistrationNotifier />
         {/* Tracking global de ubicación para proveedores */}
         <GlobalProviderTracking />
         <Routes>
