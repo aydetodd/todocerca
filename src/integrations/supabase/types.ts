@@ -524,6 +524,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_panic: boolean | null
+          is_read: boolean | null
           message: string
           receiver_id: string | null
           sender_id: string
@@ -532,6 +533,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_panic?: boolean | null
+          is_read?: boolean | null
           message: string
           receiver_id?: string | null
           sender_id: string
@@ -540,6 +542,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_panic?: boolean | null
+          is_read?: boolean | null
           message?: string
           receiver_id?: string | null
           sender_id?: string

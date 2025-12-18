@@ -12,12 +12,18 @@ import { MessageCircle, Clock, User, Users, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const MessagesInbox = () => {
-  const { conversations, loading: loadingConversations } = useUnreadMessages();
+  const { conversations, loading: loadingConversations, markAsRead } = useUnreadMessages();
   const { contacts, loading: loadingContacts } = useContacts();
   const [selectedChat, setSelectedChat] = useState<{
     id: string;
     name: string;
   } | null>(null);
+
+  const handleOpenChat = (senderId: string, senderName: string) => {
+    // Mark messages as read when opening the chat
+    markAsRead(senderId);
+    setSelectedChat({ id: senderId, name: senderName });
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -77,10 +83,10 @@ const MessagesInbox = () => {
                     <Card
                       key={conversation.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedChat({
-                        id: conversation.sender_id,
-                        name: conversation.sender_apodo
-                      })}
+                      onClick={() => handleOpenChat(
+                        conversation.sender_id,
+                        conversation.sender_apodo
+                      )}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">

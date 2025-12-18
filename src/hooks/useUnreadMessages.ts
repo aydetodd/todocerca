@@ -68,8 +68,10 @@ export const useUnreadMessages = () => {
 
     conversationMap.forEach((data, senderId) => {
       const profile = profilesData?.find(p => p.user_id === senderId);
-      const unreadCount = data.messages.length; // All received messages for now
-      totalUnread += unreadCount;
+      // Only count messages where is_read is false
+      const unreadMessages = data.messages.filter((msg: any) => msg.is_read === false);
+      const unreadCountForConversation = unreadMessages.length;
+      totalUnread += unreadCountForConversation;
 
       conversationsList.push({
         id: senderId,
@@ -77,7 +79,7 @@ export const useUnreadMessages = () => {
         sender_apodo: profile?.apodo || 'Usuario',
         last_message: data.lastMessage.message,
         last_message_time: data.lastMessage.created_at || '',
-        unread_count: unreadCount
+        unread_count: unreadCountForConversation
       });
     });
 
@@ -89,6 +91,22 @@ export const useUnreadMessages = () => {
     setConversations(conversationsList);
     setUnreadCount(totalUnread);
     setLoading(false);
+  };
+
+  // Mark messages as read for a specific sender
+  const markAsRead = async (senderId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('receiver_id', user.id)
+      .eq('sender_id', senderId)
+      .eq('is_read', false);
+
+    // Refresh conversations
+    fetchConversations();
   };
 
   useEffect(() => {
@@ -121,6 +139,7 @@ export const useUnreadMessages = () => {
     conversations, 
     loading, 
     currentUserId,
-    refresh: fetchConversations 
+    refresh: fetchConversations,
+    markAsRead
   };
 };
