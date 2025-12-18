@@ -47,6 +47,11 @@ type MapProvider = {
   }[];
 };
 
+interface AvailableRoute {
+  nombre: string;
+  count: number;
+}
+
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
 
 const ProductSearch = () => {
@@ -59,6 +64,10 @@ const ProductSearch = () => {
 
   const [searchEstado, setSearchEstado] = useState<string>("Sonora");
   const [searchCiudad, setSearchCiudad] = useState<string>("Cajeme");
+
+  const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
 
   const [results, setResults] = useState<any[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
@@ -91,6 +100,76 @@ const ProductSearch = () => {
     if (selectedCategoryName === "Rutas de Transporte") return "ruta";
     return "all";
   }, [selectedCategoryName]);
+
+  const isRutasCategory = selectedCategoryName === "Rutas de Transporte";
+
+  // Fetch available routes when "Rutas de Transporte" is selected
+  useEffect(() => {
+    if (!isRutasCategory) {
+      setAvailableRoutes([]);
+      setSelectedRoute(null);
+      return;
+    }
+
+    const fetchAvailableRoutes = async () => {
+      setLoadingRoutes(true);
+      try {
+        // Get the "Rutas de Transporte" category ID
+        const rutasCategory = categories.find(c => c.name === "Rutas de Transporte");
+        if (!rutasCategory) {
+          setAvailableRoutes([]);
+          return;
+        }
+
+        let query = supabase
+          .from("productos")
+          .select("nombre")
+          .eq("category_id", rutasCategory.id)
+          .eq("is_available", true)
+          .gte("stock", 1);
+
+        // Location filters
+        if (searchEstado) query = query.eq("estado", searchEstado);
+        if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+          query = query.eq("ciudad", searchCiudad);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("[ProductSearch] Error fetching routes:", error);
+          setAvailableRoutes([]);
+          return;
+        }
+
+        // Group routes and count them
+        const routeCountMap = new Map<string, number>();
+        (data || []).forEach((producto: any) => {
+          const routeName = producto.nombre;
+          routeCountMap.set(routeName, (routeCountMap.get(routeName) || 0) + 1);
+        });
+
+        // Convert to array and sort
+        const routes: AvailableRoute[] = Array.from(routeCountMap.entries())
+          .map(([nombre, count]) => ({ nombre, count }))
+          .sort((a, b) => {
+            // Extract route number for natural sorting
+            const numA = parseInt(a.nombre.match(/\d+/)?.[0] || "0");
+            const numB = parseInt(b.nombre.match(/\d+/)?.[0] || "0");
+            return numA - numB;
+          });
+
+        setAvailableRoutes(routes);
+      } catch (err) {
+        console.error("[ProductSearch] Error:", err);
+        setAvailableRoutes([]);
+      } finally {
+        setLoadingRoutes(false);
+      }
+    };
+
+    fetchAvailableRoutes();
+  }, [isRutasCategory, searchEstado, searchCiudad, categories]);
 
   useEffect(() => {
     document.title = "Buscar productos, taxi y rutas | TodoCerca";
@@ -256,6 +335,11 @@ const ProductSearch = () => {
           query = query.eq("category_id", selectedCategoryId);
         }
 
+        // Route filter (for "Rutas de Transporte")
+        if (isRutasCategory && selectedRoute) {
+          query = query.eq("nombre", selectedRoute);
+        }
+
         // Keyword search
         if (searchTerm.trim()) {
           query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
@@ -323,6 +407,7 @@ const ProductSearch = () => {
   const handleCategoryClick = (categoryId: string) => {
     const newSelected = selectedCategoryId === categoryId ? null : categoryId;
     setSelectedCategoryId(newSelected);
+    setSelectedRoute(null); // Reset route selection when changing category
   };
 
   return (
@@ -408,6 +493,35 @@ const ProductSearch = () => {
             ))}
           </div>
         </section>
+
+        {/* Route selector when "Rutas de Transporte" is selected */}
+        {isRutasCategory && (
+          <section aria-label="Rutas disponibles" className="mb-6">
+            <p className="text-sm text-muted-foreground mb-3">
+              Rutas disponibles en {searchCiudad === ALL_MUNICIPIOS_VALUE ? searchEstado : `${searchCiudad}, ${searchEstado}`}:
+            </p>
+            {loadingRoutes ? (
+              <p className="text-sm text-muted-foreground">Cargando rutas...</p>
+            ) : availableRoutes.length === 0 ? (
+              <p className="text-sm text-orange-500">
+                No hay rutas registradas en esta ubicación.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {availableRoutes.map((route) => (
+                  <Badge
+                    key={route.nombre}
+                    variant={selectedRoute === route.nombre ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                    onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
+                  >
+                    {route.nombre} ({route.count})
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {hasSearched && (
           <>
