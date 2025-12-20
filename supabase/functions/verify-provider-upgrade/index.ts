@@ -80,30 +80,59 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    // Buscar pagos completados con el metadata de upgrade
-    const charges = await stripe.charges.list({
+    const UPGRADE_PRICE_ID = "price_1SDaOLGyH05pxWZzSeqEjiE1";
+
+    // Preferimos verificar por suscripción activa (funciona también cuando el total fue $0 y no existe un charge)
+    logStep("Checking Stripe subscriptions for upgrade", { upgradePriceId: UPGRADE_PRICE_ID });
+
+    const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      limit: 10,
+      status: "all",
+      limit: 20,
     });
 
-    const upgradeCharge = charges.data.find(charge => 
-      charge.paid && 
-      charge.status === 'succeeded' &&
-      charge.metadata?.upgrade_type === 'cliente_to_proveedor'
-    );
+    const upgradeSubscription = subscriptions.data.find((sub) => {
+      const statusOk = sub.status === "active" || sub.status === "trialing";
+      const hasPrice = sub.items.data.some((item) => item.price?.id === UPGRADE_PRICE_ID);
+      return statusOk && hasPrice;
+    });
 
-    if (!upgradeCharge) {
-      logStep("No successful upgrade payment found");
-      return new Response(JSON.stringify({ 
-        upgraded: false, 
-        message: "No se encontró pago completado" 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    if (!upgradeSubscription) {
+      // Fallback: Buscar pagos completados con metadata (por compatibilidad con flujos antiguos)
+      logStep("No upgrade subscription found; checking charges metadata");
+
+      const charges = await stripe.charges.list({
+        customer: customerId,
+        limit: 10,
+      });
+
+      const upgradeCharge = charges.data.find((charge) =>
+        charge.paid &&
+        charge.status === "succeeded" &&
+        charge.metadata?.upgrade_type === "cliente_to_proveedor"
+      );
+
+      if (!upgradeCharge) {
+        logStep("No successful upgrade payment found");
+        return new Response(
+          JSON.stringify({
+            upgraded: false,
+            message: "No se encontró suscripción/pago completado",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      }
+
+      logStep("Upgrade payment found", { chargeId: upgradeCharge.id });
+    } else {
+      logStep("Upgrade subscription found", {
+        subscriptionId: upgradeSubscription.id,
+        status: upgradeSubscription.status,
       });
     }
-
-    logStep("Upgrade payment found", { chargeId: upgradeCharge.id });
 
     // Actualizar rol a proveedor
     const { error: updateError } = await supabaseClient
