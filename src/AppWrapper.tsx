@@ -26,6 +26,7 @@ import MessagesInbox from "./pages/MessagesInbox";
 import AddContact from "./pages/AddContact";
 import Favoritos from "./pages/Favoritos";
 import Privacidad from "./pages/Privacidad";
+import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
 
 // Component to activate registration notifications
@@ -73,6 +74,7 @@ export default function AppWrapper() {
           <Route path="/favoritos" element={<Favoritos />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
