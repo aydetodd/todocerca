@@ -65,10 +65,14 @@ serve(async (req) => {
       payment_method_collection: "if_required",
     };
 
-    // Add coupon if provided
+    // Add coupon if provided, otherwise allow user to enter promo codes in Stripe UI
     if (couponCode) {
       sessionConfig.discounts = [{ coupon: couponCode }];
       console.log("[CREATE-CHECKOUT] Applying coupon:", couponCode);
+    } else {
+      // Show promo code field in Stripe Checkout UI
+      sessionConfig.allow_promotion_codes = true;
+      console.log("[CREATE-CHECKOUT] Allowing promotion codes in checkout");
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);

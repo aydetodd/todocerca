@@ -85,10 +85,14 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/mi-perfil?upgrade=cancelled`,
     };
 
-    // Apply coupon if provided
+    // Apply coupon if provided, otherwise allow user to enter promo codes in Stripe UI
     if (couponCode) {
       sessionConfig.discounts = [{ coupon: couponCode }];
       logStep("Applying coupon to session", { couponCode });
+    } else {
+      // Show promo code field in Stripe Checkout UI
+      sessionConfig.allow_promotion_codes = true;
+      logStep("Allowing promotion codes in checkout");
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
