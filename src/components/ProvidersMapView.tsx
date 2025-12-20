@@ -3,7 +3,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 
@@ -415,11 +414,11 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         <div style="padding: 12px; min-width: 250px;">
           <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px;">${provider.business_name}</h3>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <button onclick="window.makeCall('${provider.business_phone}')" style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
-            <button onclick="window.openWhatsApp('${provider.business_phone}')" style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
-            <button onclick="window.openInternalChat('${provider.user_id}', '${provider.business_name}')" style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
+            <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
+            <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
+            <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
           </div>
-          <button onclick="window.goToProviderProfile('${provider.id}')" style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 12px;">🛒 Ver productos y hacer pedido</button>
+          <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 12px;">🛒 Ver productos y hacer pedido</button>
           ${provider.productos.length > 0 ? `<div style="margin-top: 12px;"><p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos:</p><div style="max-height: 200px; overflow-y: auto;">${productsList}</div></div>` : ''}
         </div>
       `;
@@ -536,22 +535,6 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
                     <p className="text-base">{selectedProduct.product.stock} {selectedProduct.product.unit || 'unidades'}</p>
                   </div>
                   
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-semibold text-muted-foreground mb-3">Contactar</p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => window.location.href = `tel:${selectedProduct.provider.business_phone}`}>
-                        <Phone className="w-4 h-4 mr-2" />
-                        Llamar
-                      </Button>
-                      <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => {
-                        const formattedPhone = selectedProduct.provider.business_phone?.startsWith('+') ? selectedProduct.provider.business_phone : `+52${selectedProduct.provider.business_phone}`;
-                        window.open(`https://wa.me/${formattedPhone}`, '_blank');
-                      }}>
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        WhatsApp
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               )}
             </>
