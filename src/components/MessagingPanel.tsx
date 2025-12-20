@@ -17,7 +17,7 @@ interface MessagingPanelProps {
 export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: MessagingPanelProps) => {
   const [message, setMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { messages, sendMessage } = useRealtimeMessages(receiverId);
+  const { messages, loading, sendMessage } = useRealtimeMessages(receiverId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,36 +77,43 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        {messages.map((msg) => {
-          const isOwn = msg.sender_id === currentUserId;
-          
-          return (
-            <div
-              key={msg.id}
-              className={`mb-4 ${isOwn ? 'text-right' : 'text-left'}`}
-            >
-              {!isOwn && (
-                <p className="text-xs text-muted-foreground mb-1">
-                  {msg.sender?.apodo || 'Usuario'}
-                </p>
-              )}
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center mt-8">
+            Cargando mensajes…
+          </p>
+        ) : messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center mt-8">
+            No hay mensajes aún.
+          </p>
+        ) : (
+          messages.map((msg) => {
+            const isOwn = msg.sender_id === currentUserId;
+
+            return (
               <div
-                className={`
-                  inline-block p-3 rounded-lg max-w-[80%]
-                  ${isOwn 
-                    ? 'bg-primary text-white' 
-                    : 'bg-muted'
-                  }
-                `}
+                key={msg.id}
+                className={`mb-4 ${isOwn ? 'text-right' : 'text-left'}`}
               >
-                <span className="text-sm">{msg.message}</span>
+                {!isOwn && (
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {msg.sender?.apodo || 'Usuario'}
+                  </p>
+                )}
+                <div
+                  className={`
+                  inline-block p-3 rounded-lg max-w-[80%]
+                  ${isOwn ? 'bg-primary text-white' : 'bg-muted'}
+                `}
+                >
+                  <span className="text-sm">{msg.message}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(msg.created_at).toLocaleTimeString()}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {new Date(msg.created_at).toLocaleTimeString()}
-              </p>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollArea>
 
       {/* Input */}

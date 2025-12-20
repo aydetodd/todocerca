@@ -23,11 +23,21 @@ import {
 } from 'lucide-react';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
 import { ListingPhotoCarousel } from '@/components/ListingPhotoCarousel';
+import { MessagingPanel } from '@/components/MessagingPanel';
 import ProvidersMap from '@/components/ProvidersMapView';
 
 export default function Favoritos() {
   const { favoritos, loading, userId, removeFavorito, getChangedFavoritos } = useFavoritos();
   const [showMap, setShowMap] = useState(false);
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
+  const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+
+  const handleOpenChat = (userId: string, apodo: string) => {
+    setSelectedReceiverId(userId);
+    setSelectedReceiverName(apodo);
+    setIsMessagingOpen(true);
+  };
   
   const productos = favoritos.filter(f => f.tipo === 'producto' && f.producto);
   const proveedores = favoritos.filter(f => f.tipo === 'proveedor' && f.proveedor);
@@ -122,7 +132,7 @@ export default function Favoritos() {
             </Button>
           </div>
           <div className="h-full w-full">
-            <ProvidersMap providers={mapProviders} onOpenChat={() => {}} vehicleFilter="all" />
+            <ProvidersMap providers={mapProviders} onOpenChat={handleOpenChat} vehicleFilter="all" />
           </div>
         </div>
       )}
@@ -249,6 +259,13 @@ export default function Favoritos() {
           <NavigationBar />
         </div>
       )}
+
+      <MessagingPanel
+        isOpen={isMessagingOpen}
+        onClose={() => setIsMessagingOpen(false)}
+        receiverId={selectedReceiverId}
+        receiverName={selectedReceiverName}
+      />
     </>
   );
 }
