@@ -58,16 +58,16 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   return (
     <div 
-      className="fixed inset-0 bg-background z-[9999] flex flex-col"
+      className="fixed inset-0 bg-background z-[9999] flex flex-col overflow-x-hidden items-center"
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-        paddingRight: 'env(safe-area-inset-right, 0px)',
+        paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground shrink-0">
+      <div className="w-full max-w-[640px] flex items-center justify-between p-4 border-b bg-primary text-primary-foreground shrink-0">
         <h3 className="font-bold truncate pr-2">
           {receiverName ? `Chat con ${receiverName}` : 'Mensajes'}
         </h3>
@@ -82,7 +82,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 px-4 py-4" ref={scrollRef}>
+      <ScrollArea className="w-full max-w-[640px] flex-1 px-4 py-4" ref={scrollRef}>
         <div className="pb-4">
           {loading ? (
             <p className="text-sm text-muted-foreground text-center mt-8">
@@ -126,7 +126,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
       {/* Input */}
       <div
-        className="p-4 border-t shrink-0 bg-background"
+        className="w-full max-w-[640px] p-4 border-t shrink-0 bg-background"
         style={{
           paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 1rem))',
         }}
