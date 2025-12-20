@@ -58,7 +58,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
 
   return (
     <div 
-      className="fixed inset-0 bg-background z-[9999] flex flex-col"
+      className="fixed inset-0 bg-background z-[9999] flex flex-col h-[100dvh] overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-primary text-white">
@@ -76,7 +76,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4 pb-24" ref={scrollRef}>
         {loading ? (
           <p className="text-sm text-muted-foreground text-center mt-8">
             Cargando mensajes…
@@ -117,7 +117,14 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 pb-8 border-t" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+      <div
+        className="p-4 pb-16 border-t"
+        style={{
+          paddingBottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+          paddingLeft: 'calc(1rem + env(safe-area-inset-left, 0px))',
+          paddingRight: 'calc(1rem + env(safe-area-inset-right, 0px))',
+        }}
+      >
         <div className="flex gap-2">
           <Input
             value={message}
