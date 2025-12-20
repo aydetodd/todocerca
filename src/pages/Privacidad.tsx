@@ -1,0 +1,116 @@
+import { ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const Privacidad = () => {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="bg-primary text-primary-foreground p-4">
+        <div className="container mx-auto flex items-center gap-4">
+          <Link to="/" className="hover:opacity-80">
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+          <h1 className="text-xl font-bold">Política de Privacidad</h1>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
+        <div className="prose prose-sm sm:prose lg:prose-lg dark:prose-invert">
+          <h1 className="text-2xl font-bold text-foreground mb-6">Política de Privacidad de TodoCerca</h1>
+          
+          <p className="text-muted-foreground mb-4">
+            <strong>Última actualización:</strong> 20 de diciembre de 2024
+          </p>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">1. Información que Recopilamos</h2>
+            <p className="text-muted-foreground mb-2">TodoCerca recopila la siguiente información:</p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li><strong>Información de cuenta:</strong> Nombre, correo electrónico y número de teléfono.</li>
+              <li><strong>Ubicación:</strong> Con tu permiso, recopilamos datos de ubicación en tiempo real para mostrar proveedores cercanos y permitir el seguimiento GPS.</li>
+              <li><strong>Datos de uso:</strong> Información sobre cómo utilizas la aplicación.</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">2. Uso de la Información</h2>
+            <p className="text-muted-foreground mb-2">Utilizamos tu información para:</p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>Proporcionar y mantener nuestros servicios.</li>
+              <li>Mostrar proveedores y productos cercanos a tu ubicación.</li>
+              <li>Permitir el seguimiento de ubicación en grupos familiares (con tu consentimiento).</li>
+              <li>Enviar notificaciones relevantes sobre pedidos y servicios.</li>
+              <li>Mejorar la experiencia del usuario.</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">3. Permisos de Ubicación</h2>
+            <p className="text-muted-foreground mb-2">
+              TodoCerca solicita acceso a tu ubicación para las siguientes funciones:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li><strong>Ubicación en primer plano:</strong> Para mostrar proveedores cercanos.</li>
+              <li><strong>Ubicación en segundo plano:</strong> Para el seguimiento GPS familiar (solo si activas esta función).</li>
+            </ul>
+            <p className="text-muted-foreground mt-2">
+              Puedes revocar estos permisos en cualquier momento desde la configuración de tu dispositivo.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">4. Compartir Información</h2>
+            <p className="text-muted-foreground mb-2">
+              No vendemos ni compartimos tu información personal con terceros, excepto:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>Con miembros de tu grupo de seguimiento (solo ubicación, con tu consentimiento).</li>
+              <li>Con proveedores cuando realizas un pedido (solo información necesaria para la entrega).</li>
+              <li>Cuando sea requerido por ley.</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">5. Seguridad de los Datos</h2>
+            <p className="text-muted-foreground">
+              Implementamos medidas de seguridad técnicas y organizativas para proteger tu información personal contra acceso no autorizado, pérdida o alteración.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">6. Retención de Datos</h2>
+            <p className="text-muted-foreground">
+              Conservamos tu información mientras mantengas una cuenta activa. Puedes solicitar la eliminación de tu cuenta y datos en cualquier momento contactándonos.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">7. Tus Derechos</h2>
+            <p className="text-muted-foreground mb-2">Tienes derecho a:</p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>Acceder a tu información personal.</li>
+              <li>Corregir datos inexactos.</li>
+              <li>Solicitar la eliminación de tus datos.</li>
+              <li>Revocar permisos de ubicación.</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">8. Cambios a esta Política</h2>
+            <p className="text-muted-foreground">
+              Podemos actualizar esta política ocasionalmente. Te notificaremos sobre cambios significativos a través de la aplicación.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-3">9. Contacto</h2>
+            <p className="text-muted-foreground">
+              Si tienes preguntas sobre esta política de privacidad, contáctanos a través de la aplicación o en nuestro sitio web.
+            </p>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Privacidad;
