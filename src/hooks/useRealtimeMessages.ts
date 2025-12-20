@@ -26,8 +26,19 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('[useRealtimeMessages] Fetching messages', { receiverId });
 
       let query = supabase
         .from('messages')
@@ -35,13 +46,21 @@ export const useRealtimeMessages = (receiverId?: string) => {
         .order('created_at', { ascending: true });
 
       if (receiverId) {
-        query = query.or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id}),is_panic.eq.true`);
+        query = query.or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id}),is_panic.eq.true`
+        );
       }
 
       const { data: messagesData, error } = await query;
 
       if (error) {
         console.error('Error fetching messages:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'No se pudieron cargar los mensajes',
+          variant: 'destructive',
+        });
+        setMessages([]);
         setLoading(false);
         return;
       }
@@ -54,10 +73,11 @@ export const useRealtimeMessages = (receiverId?: string) => {
         .in('user_id', senderIds);
 
       // Merge data
-      const merged = messagesData?.map(msg => ({
-        ...msg,
-        sender: profilesData?.find(p => p.user_id === msg.sender_id) || null
-      })) || [];
+      const merged =
+        messagesData?.map(msg => ({
+          ...msg,
+          sender: profilesData?.find(p => p.user_id === msg.sender_id) || null,
+        })) || [];
 
       setMessages(merged as Message[]);
       setLoading(false);

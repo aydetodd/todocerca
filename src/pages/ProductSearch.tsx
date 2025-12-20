@@ -9,6 +9,7 @@ import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft, X, Clock
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
+import { MessagingPanel } from "@/components/MessagingPanel";
 import { StatusControl } from "@/components/StatusControl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
@@ -74,6 +75,16 @@ const ProductSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
+  const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+
+  const handleOpenChat = (userId: string, apodo: string) => {
+    setSelectedReceiverId(userId);
+    setSelectedReceiverName(apodo);
+    setIsMessagingOpen(true);
+  };
 
   const { getEstados, getMunicipios } = useMunicipios();
 
@@ -583,7 +594,11 @@ const ProductSearch = () => {
                   <StatusControl />
                 </div>
                 <div className="h-full w-full">
-                  <ProvidersMapView providers={mapProviders as any} vehicleFilter={vehicleFilter} />
+                  <ProvidersMapView
+                    providers={mapProviders as any}
+                    vehicleFilter={vehicleFilter}
+                    onOpenChat={handleOpenChat}
+                  />
                 </div>
               </section>
             ) : (
@@ -683,6 +698,13 @@ const ProductSearch = () => {
       </main>
 
       <NavigationBar />
+
+      <MessagingPanel
+        isOpen={isMessagingOpen}
+        onClose={() => setIsMessagingOpen(false)}
+        receiverId={selectedReceiverId}
+        receiverName={selectedReceiverName}
+      />
 
       {/* Lightbox Dialog */}
       <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
