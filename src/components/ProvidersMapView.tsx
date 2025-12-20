@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle, MessageSquare } from 'lucide-react';
+import { Phone, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 
@@ -441,8 +441,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     };
     (window as any).openInternalChat = (userId: string, providerName: string) => {
       if (onOpenChat) {
-        const provider = providers.find(p => p.user_id === userId);
-        if (provider) onOpenChat(provider.id, providerName);
+        // Pass user_id directly (not provider.id) since MessagingPanel expects user_id
+        onOpenChat(userId, providerName);
       }
     };
     (window as any).goToProviderProfile = (providerId: string) => {
@@ -549,15 +549,6 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
                       }}>
                         <MessageCircle className="w-4 h-4 mr-2" />
                         WhatsApp
-                      </Button>
-                      <Button className="flex-1 bg-yellow-600 hover:bg-yellow-700" onClick={async () => {
-                        if (onOpenChat) {
-                          const { data: providerData } = await supabase.from('proveedores').select('user_id').eq('id', selectedProduct.provider.id).single();
-                          if (providerData?.user_id) onOpenChat(selectedProduct.provider.id, selectedProduct.provider.business_name);
-                        }
-                      }}>
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Chat
                       </Button>
                     </div>
                   </div>
