@@ -117,15 +117,16 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t">
+      <div className="p-4 pb-8 border-t" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
         <div className="flex gap-2">
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Escribe un mensaje..."
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            className="flex-1"
           />
-          <Button onClick={handleSend} size="icon" className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleSend} size="icon" className="bg-primary hover:bg-primary/90 shrink-0">
             <Send className="h-4 w-4" />
           </Button>
         </div>
