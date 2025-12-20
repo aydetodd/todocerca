@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Briefcase } from 'lucide-react';
+import { Users, Briefcase, Trash2, LogOut } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
+import { Link } from 'react-router-dom';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -287,6 +288,28 @@ export default function MiPerfil() {
                   />
                 </div>
               )}
+              
+              {/* Account Actions */}
+              <div className="pt-4 border-t space-y-3">
+                <Button
+                  onClick={handleSignOut}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+                
+                <Link to="/eliminar-cuenta" className="block">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar mi cuenta
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
