@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, User, Store } from "lucide-react";
+import { MapPin, User, Store, RefreshCw } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -341,43 +342,133 @@ const Auth = () => {
     }
   };
 
+  // Web OTP API para auto-llenar el código
+  useEffect(() => {
+    if (!showVerification) return;
+
+    // Verificar si el navegador soporta Web OTP API
+    if ('OTPCredential' in window) {
+      const abortController = new AbortController();
+      
+      navigator.credentials.get({
+        // @ts-ignore - OTP credential type
+        otp: { transport: ['sms'] },
+        signal: abortController.signal
+      }).then((otp: any) => {
+        if (otp?.code) {
+          console.log('📱 OTP auto-detected:', otp.code);
+          setVerificationCode(otp.code);
+          // Auto-verificar si tenemos 6 dígitos
+          if (otp.code.length === 6) {
+            toast({
+              title: "Código detectado",
+              description: "Verificando automáticamente...",
+            });
+          }
+        }
+      }).catch((err) => {
+        // Error silencioso - el usuario puede ingresar manualmente
+        console.log('OTP auto-detect not available:', err.name);
+      });
+
+      return () => abortController.abort();
+    }
+  }, [showVerification]);
+
+  // Auto-verificar cuando el código tiene 6 dígitos
+  useEffect(() => {
+    if (verificationCode.length === 6 && showVerification && !loading) {
+      handleVerifyCode();
+    }
+  }, [verificationCode]);
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    try {
+      const { error: smsError } = await supabase.functions.invoke('send-verification-sms', {
+        body: { phone: telefono }
+      });
+
+      if (smsError) throw smsError;
+
+      toast({
+        title: "Código reenviado",
+        description: "Revisa tu SMS",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo reenviar el código",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showVerification) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Verificar Teléfono</CardTitle>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl">Verificar Teléfono</CardTitle>
             <CardDescription>
-              Ingresa el código de 6 dígitos enviado a {telefono}
+              Ingresa el código de 6 dígitos enviado a
+              <br />
+              <span className="font-semibold text-foreground">{telefono}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="code">Código de verificación</Label>
-              <Input
-                id="code"
-                type="text"
-                inputMode="numeric"
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Label className="text-center text-sm text-muted-foreground">
+                Código de verificación
+              </Label>
+              <InputOTP
                 maxLength={6}
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-              />
+                onChange={(value) => setVerificationCode(value)}
+                autoFocus
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} className="w-12 h-14 text-xl" />
+                  <InputOTPSlot index={1} className="w-12 h-14 text-xl" />
+                  <InputOTPSlot index={2} className="w-12 h-14 text-xl" />
+                  <InputOTPSlot index={3} className="w-12 h-14 text-xl" />
+                  <InputOTPSlot index={4} className="w-12 h-14 text-xl" />
+                  <InputOTPSlot index={5} className="w-12 h-14 text-xl" />
+                </InputOTPGroup>
+              </InputOTP>
+              <p className="text-xs text-muted-foreground text-center">
+                El código se verificará automáticamente
+              </p>
             </div>
+            
             <Button 
               onClick={handleVerifyCode} 
-              disabled={loading}
+              disabled={loading || verificationCode.length !== 6}
               className="w-full"
             >
               {loading ? "Verificando..." : "Verificar"}
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setShowVerification(false)}
-              className="w-full"
-            >
-              Cancelar
-            </Button>
+            
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                onClick={handleResendCode}
+                disabled={loading}
+                className="w-full"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reenviar código
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowVerification(false)}
+                className="w-full"
+              >
+                Cancelar
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
