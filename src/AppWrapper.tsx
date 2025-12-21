@@ -1,4 +1,4 @@
-// AppWrapper v2025-12-17-fix - stable React instance
+// AppWrapper v2025-12-21 - with geography routes for LATAM expansion
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -28,6 +28,7 @@ import Favoritos from "./pages/Favoritos";
 import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
+import GpsLocationPage from "./pages/GpsLocationPage";
 
 // Component to activate registration notifications
 const RegistrationNotifier = () => {
@@ -68,6 +69,13 @@ export default function AppWrapper() {
           <Route path="/tracking-gps" element={<TrackingGPS />} />
           <Route path="/join-group" element={<JoinGroup />} />
           <Route path="/gps-reports" element={<GpsReports />} />
+          {/* Rutas geográficas amigables para LATAM */}
+          <Route path="/gps/:paisCode" element={<GpsLocationPage />} />
+          <Route path="/gps/:paisCode/:nivel1Slug" element={<GpsLocationPage />} />
+          <Route path="/gps/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage />} />
+          <Route path="/transporte/:paisCode" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
+          <Route path="/transporte/:paisCode/:nivel1Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
+          <Route path="/transporte/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
           <Route path="/search" element={<ProductSearch />} />
           <Route path="/mensajes" element={<MessagesInbox />} />
           <Route path="/agregar-contacto" element={<AddContact />} />
