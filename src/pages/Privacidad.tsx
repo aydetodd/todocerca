@@ -94,17 +94,34 @@ const Privacidad = () => {
             </ul>
           </section>
 
+          <section className="mb-8" id="seguridad-infantil">
+            <h2 className="text-xl font-semibold text-foreground mb-3">8. Estándares de Seguridad Infantil</h2>
+            <p className="text-muted-foreground mb-4">
+              TodoCerca está comprometido con la seguridad de todos los usuarios, especialmente los menores de edad. Implementamos las siguientes medidas para prevenir la explotación y abuso de menores:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+              <li><strong>Prohibición de contenido dañino:</strong> Prohibimos estrictamente cualquier contenido que involucre, promueva o facilite la explotación o abuso sexual de menores (CSAM).</li>
+              <li><strong>Monitoreo y reporte:</strong> Cualquier contenido o comportamiento sospechoso será reportado a las autoridades competentes.</li>
+              <li><strong>Función de seguimiento familiar:</strong> Nuestra función de rastreo GPS está diseñada para que los padres puedan monitorear la ubicación de sus hijos de manera segura, requiriendo consentimiento mutuo para unirse a grupos.</li>
+              <li><strong>Sin interacción directa entre desconocidos:</strong> Los mensajes solo pueden enviarse entre usuarios que han establecido una relación comercial (cliente-proveedor) o familiar (grupos de rastreo con invitación).</li>
+              <li><strong>Eliminación inmediata:</strong> Eliminaremos inmediatamente cualquier cuenta o contenido que viole estas políticas.</li>
+            </ul>
+            <p className="text-muted-foreground mt-4">
+              <strong>Reporte de abuso:</strong> Si detectas contenido inapropiado o comportamiento sospechoso, repórtalo inmediatamente a: <a href="mailto:construcabanasdemexico@gmail.com" className="text-primary underline">construcabanasdemexico@gmail.com</a>
+            </p>
+          </section>
+
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-3">8. Cambios a esta Política</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">9. Cambios a esta Política</h2>
             <p className="text-muted-foreground">
               Podemos actualizar esta política ocasionalmente. Te notificaremos sobre cambios significativos a través de la aplicación.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-3">9. Contacto</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">10. Contacto</h2>
             <p className="text-muted-foreground">
-              Si tienes preguntas sobre esta política de privacidad, contáctanos a través de la aplicación o en nuestro sitio web.
+              Si tienes preguntas sobre esta política de privacidad o seguridad infantil, contáctanos en: <a href="mailto:construcabanasdemexico@gmail.com" className="text-primary underline">construcabanasdemexico@gmail.com</a>
             </p>
           </section>
         </div>
