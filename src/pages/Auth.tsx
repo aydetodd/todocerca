@@ -499,15 +499,24 @@ const Auth = () => {
           
           {/* Toggle Login/Register Button - Moved to top */}
           <div className="mt-6">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline font-bold text-xl underline decoration-2"
-            >
-              {isLogin 
-                ? <span>¿No tienes cuenta? <span className="text-2xl">Regístrate</span></span>
-                : "¿Ya tienes cuenta? Inicia sesión"
-              }
-            </button>
+            {isLogin ? (
+              <button
+                onClick={() => setIsLogin(false)}
+                className="w-full p-4 rounded-xl border-2 border-primary bg-primary/10 hover:bg-primary/20 transition-all duration-300 group"
+              >
+                <p className="text-lg font-medium text-muted-foreground mb-1">¿Eres nuevo en TodoCerca?</p>
+                <p className="text-2xl font-bold text-primary group-hover:scale-105 transition-transform">
+                  ¡Regístrate ahora!
+                </p>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsLogin(true)}
+                className="text-primary hover:underline font-medium"
+              >
+                ¿Ya tienes cuenta? <span className="font-bold">Inicia sesión</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -535,7 +544,7 @@ const Auth = () => {
                       >
                         {userType === 'cliente' && <span className="mr-1">✓</span>}
                         <User className="h-4 w-4" />
-                        <span>Cliente</span>
+                        <span>Usuario</span>
                       </TabsTrigger>
                       <TabsTrigger 
                         value="proveedor" 
