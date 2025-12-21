@@ -32,6 +32,26 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
     });
   }, []);
 
+  // Mark messages as read when panel opens and we have a receiverId
+  useEffect(() => {
+    const markMessagesAsRead = async () => {
+      if (!isOpen || !receiverId) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update all unread messages from this sender to read
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('receiver_id', user.id)
+        .eq('sender_id', receiverId)
+        .eq('is_read', false);
+    };
+
+    markMessagesAsRead();
+  }, [isOpen, receiverId]);
+
   useEffect(() => {
     // Auto-scroll al final cuando hay nuevos mensajes
     setTimeout(() => {
