@@ -555,6 +555,39 @@ export type Database = {
         }
         Relationships: []
       }
+      paises: {
+        Row: {
+          codigo_iso: string
+          codigo_iso3: string | null
+          codigo_telefono: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          moneda: string | null
+          nombre: string
+        }
+        Insert: {
+          codigo_iso: string
+          codigo_iso3?: string | null
+          codigo_telefono?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          moneda?: string | null
+          nombre: string
+        }
+        Update: {
+          codigo_iso?: string
+          codigo_iso3?: string | null
+          codigo_telefono?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          moneda?: string | null
+          nombre?: string
+        }
+        Relationships: []
+      }
       password_recovery_codes: {
         Row: {
           code: string
@@ -917,6 +950,97 @@ export type Database = {
         }
         Relationships: []
       }
+      subdivisiones_nivel1: {
+        Row: {
+          codigo: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          nombre: string
+          pais_id: string
+          slug: string
+          tipo: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre: string
+          pais_id: string
+          slug: string
+          tipo?: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre?: string
+          pais_id?: string
+          slug?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivisiones_nivel1_pais_id_fkey"
+            columns: ["pais_id"]
+            isOneToOne: false
+            referencedRelation: "paises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subdivisiones_nivel2: {
+        Row: {
+          codigo_postal: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          latitud: number | null
+          longitud: number | null
+          nivel1_id: string
+          nombre: string
+          poblacion: number | null
+          slug: string
+          tipo: string
+        }
+        Insert: {
+          codigo_postal?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitud?: number | null
+          longitud?: number | null
+          nivel1_id: string
+          nombre: string
+          poblacion?: number | null
+          slug: string
+          tipo?: string
+        }
+        Update: {
+          codigo_postal?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitud?: number | null
+          longitud?: number | null
+          nivel1_id?: string
+          nombre?: string
+          poblacion?: number | null
+          slug?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivisiones_nivel2_nivel1_id_fkey"
+            columns: ["nivel1_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisiones_nivel1"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number
@@ -1211,6 +1335,39 @@ export type Database = {
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_geografia_completa: {
+        Args: { p_nivel2_id: string }
+        Returns: {
+          nivel1_id: string
+          nivel1_nombre: string
+          nivel1_slug: string
+          nivel1_tipo: string
+          nivel2_id: string
+          nivel2_nombre: string
+          nivel2_slug: string
+          nivel2_tipo: string
+          pais_codigo: string
+          pais_id: string
+          pais_nombre: string
+        }[]
+      }
+      get_nivel2_by_slugs: {
+        Args: {
+          p_nivel1_slug: string
+          p_nivel2_slug: string
+          p_pais_codigo: string
+        }
+        Returns: {
+          latitud: number
+          longitud: number
+          nivel1_id: string
+          nivel1_nombre: string
+          nivel2_id: string
+          nivel2_nombre: string
+          pais_id: string
+          pais_nombre: string
+        }[]
       }
       get_user_email_by_id: { Args: { p_user_id: string }; Returns: string }
       has_valid_tracking_invitation: {
