@@ -105,21 +105,54 @@ const Privacidad = () => {
               <li><strong>Función de seguimiento familiar:</strong> Nuestra función de rastreo GPS está diseñada para que los padres puedan monitorear la ubicación de sus hijos de manera segura, requiriendo consentimiento mutuo para unirse a grupos.</li>
               <li><strong>Sin interacción directa entre desconocidos:</strong> Los mensajes solo pueden enviarse entre usuarios que han establecido una relación comercial (cliente-proveedor) o familiar (grupos de rastreo con invitación).</li>
               <li><strong>Eliminación inmediata:</strong> Eliminaremos inmediatamente cualquier cuenta o contenido que viole estas políticas.</li>
+              <li><strong>Cumplimiento legal:</strong> Cumplimos con todas las leyes de seguridad infantil aplicables en México y reportamos a las autoridades pertinentes (SIPINNA, DIF, Fiscalía) cuando es necesario.</li>
+            </ul>
+          </section>
+
+          <section className="mb-8" id="reportar">
+            <h2 className="text-xl font-semibold text-foreground mb-3">9. Reportar Contenido o Comportamiento Inapropiado</h2>
+            <p className="text-muted-foreground mb-4">
+              TodoCerca permite reportar cualquier problema de seguridad de forma <strong>anónima</strong>. Si detectas contenido inapropiado, comportamiento sospechoso, o cualquier situación que ponga en riesgo a menores:
+            </p>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+              <p className="text-foreground font-semibold mb-2">Canales de Reporte:</p>
+              <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+                <li>
+                  <strong>Email de reporte:</strong>{" "}
+                  <a href="mailto:reportes@todocerca.app?subject=Reporte%20de%20Seguridad" className="text-primary underline">
+                    reportes@todocerca.app
+                  </a>
+                </li>
+                <li>
+                  <strong>Email alternativo:</strong>{" "}
+                  <a href="mailto:construcabanasdemexico@gmail.com?subject=Reporte%20de%20Seguridad%20Anonimo" className="text-primary underline">
+                    construcabanasdemexico@gmail.com
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <p className="text-muted-foreground mb-2">
+              <strong>Tu reporte puede ser completamente anónimo.</strong> No necesitas proporcionar tu nombre o información personal. Incluye en tu reporte:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>Descripción del problema o comportamiento observado</li>
+              <li>Nombre de usuario o negocio involucrado (si lo conoces)</li>
+              <li>Capturas de pantalla (opcional)</li>
             </ul>
             <p className="text-muted-foreground mt-4">
-              <strong>Reporte de abuso:</strong> Si detectas contenido inapropiado o comportamiento sospechoso, repórtalo inmediatamente a: <a href="mailto:construcabanasdemexico@gmail.com" className="text-primary underline">construcabanasdemexico@gmail.com</a>
+              Todos los reportes son revisados en un plazo máximo de 24 horas y se toman acciones inmediatas cuando es necesario, incluyendo la notificación a las autoridades competentes.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-3">9. Cambios a esta Política</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">10. Cambios a esta Política</h2>
             <p className="text-muted-foreground">
               Podemos actualizar esta política ocasionalmente. Te notificaremos sobre cambios significativos a través de la aplicación.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-3">10. Contacto</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">11. Contacto</h2>
             <p className="text-muted-foreground">
               Si tienes preguntas sobre esta política de privacidad o seguridad infantil, contáctanos en: <a href="mailto:construcabanasdemexico@gmail.com" className="text-primary underline">construcabanasdemexico@gmail.com</a>
             </p>
