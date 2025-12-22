@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
-import { useMunicipios } from '@/hooks/useMunicipios';
+import { useHispanoamerica } from '@/hooks/useHispanoamerica';
+import { PAISES_HISPANOAMERICA, getPaisPorCodigo } from '@/data/paises-hispanoamerica';
 import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import {
   Dialog,
@@ -44,6 +45,7 @@ interface Product {
   is_mobile: boolean;
   stock: number;
   foto_url?: string;
+  pais?: string;
   estado?: string;
   ciudad?: string;
 }
@@ -80,7 +82,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [routeVariant, setRouteVariant] = useState<string>('');
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const { toast } = useToast();
-  const { getEstados, getMunicipios } = useMunicipios();
+  const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -92,9 +94,19 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     is_available: true,
     is_mobile: false,
     stock: 1,
+    pais: 'MX',
     estado: '',
     ciudad: '',
   });
+
+  // Get labels based on selected country
+  const selectedPaisData = getPaisPorCodigo(formData.pais);
+  const nivel1Label = selectedPaisData?.nivel1Tipo 
+    ? selectedPaisData.nivel1Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel1Tipo.slice(1) 
+    : 'Estado';
+  const nivel2Label = selectedPaisData?.nivel2Tipo 
+    ? selectedPaisData.nivel2Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel2Tipo.slice(1) 
+    : 'Municipio';
 
   // Detectar si la categoría seleccionada es "Rutas de Transporte"
   const isRutasCategory = categories.find(c => c.id === formData.category_id)?.name === 'Rutas de Transporte';
@@ -216,6 +228,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: product.is_available,
         is_mobile: product.is_mobile,
         stock: product.stock,
+        pais: product.pais || 'MX',
         estado: product.estado || '',
         ciudad: product.ciudad || '',
       });
@@ -231,6 +244,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: true,
         is_mobile: false,
         stock: 1,
+        pais: 'MX',
         estado: '',
         ciudad: '',
       });
@@ -682,19 +696,41 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 </div>
               </div>
               
-              {/* Ubicación: Estado y Ciudad */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Ubicación: País, Estado y Ciudad */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="estado">Estado *</Label>
+                  <Label htmlFor="pais">País *</Label>
+                  <Select
+                    value={formData.pais}
+                    onValueChange={(value) => setFormData({...formData, pais: value, estado: '', ciudad: ''})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona país" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {allPaises.map((pais) => (
+                        <SelectItem key={pais.codigo} value={pais.codigo}>
+                          <span className="flex items-center gap-2">
+                            <span>{pais.bandera}</span>
+                            <span>{pais.nombre}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="estado">{nivel1Label} *</Label>
                   <Select
                     value={formData.estado}
                     onValueChange={(value) => setFormData({...formData, estado: value, ciudad: ''})}
+                    disabled={!formData.pais}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona estado" />
+                      <SelectValue placeholder={`Selecciona ${nivel1Label.toLowerCase()}`} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {getEstados().map((estado) => (
+                      {getNivel1(formData.pais).map((estado) => (
                         <SelectItem key={estado} value={estado}>
                           {estado}
                         </SelectItem>
@@ -703,17 +739,17 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="ciudad">Ciudad *</Label>
+                  <Label htmlFor="ciudad">{nivel2Label} *</Label>
                   <Select
                     value={formData.ciudad}
                     onValueChange={(value) => setFormData({...formData, ciudad: value})}
                     disabled={!formData.estado}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona ciudad" />
+                      <SelectValue placeholder={`Selecciona ${nivel2Label.toLowerCase()}`} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {getMunicipios(formData.estado).map((municipio) => (
+                      {getNivel2(formData.pais, formData.estado).map((municipio) => (
                         <SelectItem key={municipio} value={municipio}>
                           {municipio}
                         </SelectItem>

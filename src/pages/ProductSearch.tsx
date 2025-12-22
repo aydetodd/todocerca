@@ -63,6 +63,7 @@ const ProductSearch = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
+  const [searchPais, setSearchPais] = useState<string>("MX");
   const [searchEstado, setSearchEstado] = useState<string>("Sonora");
   const [searchCiudad, setSearchCiudad] = useState<string>("Cajeme");
 
@@ -87,6 +88,7 @@ const ProductSearch = () => {
   };
 
   const { getEstados, getMunicipios } = useMunicipios();
+  const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
 
   const municipiosDisponibles = useMemo(
     () => getMunicipios(searchEstado),
@@ -447,9 +449,35 @@ const ProductSearch = () => {
         </form>
 
         <section aria-label="Ubicación" className="mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Estado:</p>
+              <p className="text-sm text-muted-foreground mb-2">País:</p>
+              <Select
+                value={searchPais}
+                onValueChange={(v) => {
+                  setSearchPais(v);
+                  setSearchEstado('');
+                  setSearchCiudad(ALL_MUNICIPIOS_VALUE);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona país" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {allPaises.map((pais) => (
+                    <SelectItem key={pais.codigo} value={pais.codigo}>
+                      <span className="flex items-center gap-2">
+                        <span>{pais.bandera}</span>
+                        <span>{pais.nombre}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Estado/Región:</p>
               <Select
                 value={searchEstado}
                 onValueChange={(v) => {
@@ -461,7 +489,7 @@ const ProductSearch = () => {
                   <SelectValue placeholder="Selecciona estado" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {getEstados().map((estado) => (
+                  {getNivel1(searchPais).map((estado) => (
                     <SelectItem key={estado} value={estado}>
                       {estado}
                     </SelectItem>
@@ -471,14 +499,14 @@ const ProductSearch = () => {
             </div>
 
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Municipio:</p>
+              <p className="text-sm text-muted-foreground mb-2">Ciudad/Municipio:</p>
               <Select value={searchCiudad} onValueChange={setSearchCiudad}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecciona municipio" />
+                  <SelectValue placeholder="Selecciona ciudad" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value={ALL_MUNICIPIOS_VALUE}>Todos</SelectItem>
-                  {municipiosDisponibles.map((ciudad) => (
+                  {getNivel2(searchPais, searchEstado).map((ciudad) => (
                     <SelectItem key={ciudad} value={ciudad}>
                       {ciudad}
                     </SelectItem>
