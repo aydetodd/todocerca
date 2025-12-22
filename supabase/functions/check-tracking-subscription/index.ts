@@ -12,6 +12,15 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-TRACKING-SUB] ${step}${detailsStr}`);
 };
 
+const stringifyError = (err: unknown) => {
+  if (err instanceof Error) return err.message;
+  try {
+    return typeof err === 'string' ? err : JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +40,7 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    
+
     if (userError) throw userError;
     const user = userData.user;
     if (!user?.email) throw new Error('Usuario no autenticado');
@@ -59,7 +68,7 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Cliente encontrado", { customerId });
 
-    // Buscar suscripciones activas o en trial
+    // Buscar suscripciones
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       limit: 10,
@@ -113,36 +122,35 @@ serve(async (req) => {
         hasValidEnd: !!subscriptionEnd,
       });
 
-      // Actualizar el grupo del usuario
-      const { data: group, error: groupError } = await supabaseClient
+      // Actualizar todos los grupos del usuario (evita error si existen varios)
+      const { data: groups, error: groupError } = await supabaseClient
         .from('tracking_groups')
         .select('id')
-        .eq('owner_id', user.id)
-        .maybeSingle();
+        .eq('owner_id', user.id);
 
       if (groupError) {
-        logStep("Error buscando grupo", { error: groupError });
+        logStep("Error buscando grupos", { error: groupError });
         throw groupError;
       }
 
-      if (group) {
-        logStep("Actualizando grupo existente", { groupId: group.id });
-        
+      if (groups && groups.length > 0) {
+        logStep("Actualizando grupos existentes", { count: groups.length });
+
         const { error: updateError } = await supabaseClient
           .from('tracking_groups')
           .update({
             subscription_status: 'active',
             subscription_end: subscriptionEnd,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', group.id);
+          .in('id', groups.map(g => g.id));
 
         if (updateError) {
-          logStep("Error actualizando grupo", { error: updateError });
+          logStep("Error actualizando grupos", { error: updateError });
           throw updateError;
         }
 
-        logStep("Grupo actualizado exitosamente");
+        logStep("Grupos actualizados exitosamente");
       } else {
         logStep("Usuario tiene suscripción activa pero aún no ha creado su grupo");
       }
@@ -165,8 +173,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    const errorMessage = stringifyError(error);
+    logStep("ERROR", { message: errorMessage, raw: error });
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
