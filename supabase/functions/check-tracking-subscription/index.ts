@@ -74,13 +74,43 @@ serve(async (req) => {
     logStep("Estado de suscripción", { hasActiveSub, totalSubs: subscriptions.data.length });
 
     if (hasActiveSub) {
-      const subscription = activeSubscriptions[0];
-      const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      
-      logStep("Suscripción activa encontrada", { 
+      // Elegir la suscripción con current_period_end válido (y la más lejana)
+      const subscriptionsWithEnd = activeSubscriptions
+        .map((sub) => {
+          const raw = (sub as any)?.current_period_end;
+          const ts =
+            typeof raw === 'number'
+              ? raw
+              : typeof raw === 'string'
+                ? Number(raw)
+                : null;
+          return { sub, ts };
+        })
+        .filter(({ ts }) => typeof ts === 'number' && Number.isFinite(ts));
+
+      const subscription =
+        subscriptionsWithEnd.length > 0
+          ? subscriptionsWithEnd.sort((a, b) => (b.ts as number) - (a.ts as number))[0].sub
+          : activeSubscriptions[0];
+
+      const rawEnd = (subscription as any)?.current_period_end;
+      const endTs =
+        typeof rawEnd === 'number'
+          ? rawEnd
+          : typeof rawEnd === 'string'
+            ? Number(rawEnd)
+            : null;
+
+      const subscriptionEnd =
+        typeof endTs === 'number' && Number.isFinite(endTs)
+          ? new Date(endTs * 1000).toISOString()
+          : null;
+
+      logStep("Suscripción activa encontrada", {
         subscriptionId: subscription.id,
         status: subscription.status,
-        endDate: subscriptionEnd 
+        endDate: subscriptionEnd,
+        hasValidEnd: !!subscriptionEnd,
       });
 
       // Actualizar el grupo del usuario
