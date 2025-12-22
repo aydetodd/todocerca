@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +39,7 @@ serve(async (req) => {
     logStep("Usuario autenticado", { email: user.email });
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-08-27.basil',
     });
 
     // Buscar cliente en Stripe
@@ -59,22 +59,27 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Cliente encontrado", { customerId });
 
-    // Buscar suscripciones activas
+    // Buscar suscripciones activas o en trial
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: 'active',
-      limit: 1,
+      limit: 10,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    logStep("Estado de suscripción", { hasActiveSub });
+    // Filtrar suscripciones activas o en trial
+    const activeSubscriptions = subscriptions.data.filter(
+      sub => sub.status === 'active' || sub.status === 'trialing'
+    );
+
+    const hasActiveSub = activeSubscriptions.length > 0;
+    logStep("Estado de suscripción", { hasActiveSub, totalSubs: subscriptions.data.length });
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+      const subscription = activeSubscriptions[0];
       const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       
       logStep("Suscripción activa encontrada", { 
         subscriptionId: subscription.id,
+        status: subscription.status,
         endDate: subscriptionEnd 
       });
 
@@ -116,6 +121,7 @@ serve(async (req) => {
         JSON.stringify({
           subscribed: true,
           subscription_end: subscriptionEnd,
+          subscription_status: subscription.status,
           message: 'Subscription active and database updated'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
