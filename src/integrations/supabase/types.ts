@@ -743,6 +743,7 @@ export type Database = {
           is_mobile: boolean
           keywords: string | null
           nombre: string
+          pais: string | null
           precio: number
           proveedor_id: string
           stock: number
@@ -760,6 +761,7 @@ export type Database = {
           is_mobile?: boolean
           keywords?: string | null
           nombre: string
+          pais?: string | null
           precio: number
           proveedor_id: string
           stock?: number
@@ -777,6 +779,7 @@ export type Database = {
           is_mobile?: boolean
           keywords?: string | null
           nombre?: string
+          pais?: string | null
           precio?: number
           proveedor_id?: string
           stock?: number
