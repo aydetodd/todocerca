@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMunicipios } from "@/hooks/useMunicipios";
+import { useHispanoamerica } from "@/hooks/useHispanoamerica";
 
 interface Category {
   id: string;
