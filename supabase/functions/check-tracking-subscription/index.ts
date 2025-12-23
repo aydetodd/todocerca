@@ -152,15 +152,21 @@ serve(async (req) => {
 
         logStep("Grupos actualizados exitosamente");
       } else {
-        logStep("Usuario tiene suscripción activa pero aún no ha creado su grupo");
+        logStep("Usuario tiene suscripción activa pero aún no ha creado su grupo - guardando estado para uso posterior");
       }
+
+      // También devolver la información de grupos actualizados
+      const groupCount = groups?.length || 0;
 
       return new Response(
         JSON.stringify({
           subscribed: true,
           subscription_end: subscriptionEnd,
           subscription_status: subscription.status,
-          message: 'Subscription active and database updated'
+          groups_updated: groupCount,
+          message: groupCount > 0 
+            ? 'Subscription active and database updated' 
+            : 'Subscription active, create a group to start tracking'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
