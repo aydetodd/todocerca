@@ -350,7 +350,7 @@ export const useTrackingGroup = () => {
     }
   };
 
-  const createGroup = async (name: string) => {
+  const createGroup = async (name: string, subscriptionActive: boolean = false) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
@@ -361,12 +361,13 @@ export const useTrackingGroup = () => {
         .eq('user_id', user.id)
         .single();
 
+      // Si la suscripción está activa (usuario acaba de pagar), crear grupo como activo
       const { data: newGroup, error: groupError } = await supabase
         .from('tracking_groups')
         .insert({
           owner_id: user.id,
           name,
-          subscription_status: 'expired'
+          subscription_status: subscriptionActive ? 'active' : 'expired'
         })
         .select()
         .single();
@@ -385,9 +386,13 @@ export const useTrackingGroup = () => {
 
       if (memberError) throw memberError;
 
+      const message = subscriptionActive 
+        ? '¡Tu grupo está listo para rastrear ubicaciones!'
+        : 'Ahora necesitas activar la suscripción para empezar a usar el tracking.';
+
       toast({
         title: '¡Grupo creado!',
-        description: 'Ahora necesitas activar la suscripción para empezar a usar el tracking.'
+        description: message
       });
 
       await fetchAllGroups();

@@ -331,7 +331,8 @@ const TrackingGPS = () => {
       return;
     }
     try {
-      await createGroup(groupName);
+      // Pasar true porque el grupo se crea después de un pago exitoso
+      await createGroup(groupName, true);
       setShowGroupNameDialog(false);
       setGroupName('');
     } catch (error) {
