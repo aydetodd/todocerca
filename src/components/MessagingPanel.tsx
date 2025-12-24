@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { X, Send, Check, CheckCheck } from 'lucide-react';
+import { X, Send, Circle } from 'lucide-react';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -140,9 +140,9 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                     </p>
                     {isOwn && (
                       msg.is_read ? (
-                        <CheckCheck className="h-3 w-3 text-primary" />
+                        <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
                       ) : (
-                        <Check className="h-3 w-3 text-muted-foreground" />
+                        <Circle className="h-2.5 w-2.5 fill-red-500 text-red-500" />
                       )
                     )}
                   </div>
