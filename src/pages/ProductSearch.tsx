@@ -12,6 +12,7 @@ import ProvidersMapView from "@/components/ProvidersMapView";
 import { MessagingPanel } from "@/components/MessagingPanel";
 import { StatusControl } from "@/components/StatusControl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ListingPublicChat } from "@/components/ListingPublicChat";
 import { formatDistanceToNow, format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -715,6 +716,15 @@ const ProductSearch = () => {
                               )}
                             </div>
                           </div>
+
+                          {/* Chat público para cosas gratis */}
+                          {item.is_listing && (
+                            <ListingPublicChat 
+                              listingId={item.id}
+                              listingTitle={item.nombre}
+                              ownerName={item.profiles?.nombre}
+                            />
+                          )}
                         </CardContent>
                       </Card>
                     );
