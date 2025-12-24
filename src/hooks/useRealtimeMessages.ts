@@ -13,6 +13,7 @@ export interface Message {
   receiver_id: string | null;
   message: string;
   is_panic: boolean;
+  is_read: boolean;
   created_at: string;
   sender?: {
     apodo: string | null;
@@ -85,7 +86,7 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
     fetchMessages();
 
-    // Subscribe to new messages
+    // Subscribe to new messages and updates (for read receipts)
     const channel = supabase
       .channel('messages_changes')
       .on(
@@ -160,6 +161,25 @@ export const useRealtimeMessages = (receiverId?: string) => {
               }
             }
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload: any) => {
+          const updatedMessage = payload.new as Message;
+          // Update is_read status in real-time
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === updatedMessage.id 
+                ? { ...msg, is_read: updatedMessage.is_read }
+                : msg
+            )
+          );
         }
       )
       .subscribe();

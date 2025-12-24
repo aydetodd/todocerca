@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { X, Send } from 'lucide-react';
+import { X, Send, Check, CheckCheck } from 'lucide-react';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -134,9 +134,18 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                   >
                     <span className="text-sm break-words">{msg.message}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(msg.created_at).toLocaleTimeString()}
-                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(msg.created_at).toLocaleTimeString()}
+                    </p>
+                    {isOwn && (
+                      msg.is_read ? (
+                        <CheckCheck className="h-3 w-3 text-primary" />
+                      ) : (
+                        <Check className="h-3 w-3 text-muted-foreground" />
+                      )
+                    )}
+                  </div>
                 </div>
               );
             })
