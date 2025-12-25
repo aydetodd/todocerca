@@ -723,6 +723,7 @@ const ProductSearch = () => {
                               listingId={item.id}
                               listingTitle={item.nombre}
                               ownerName={item.profiles?.nombre}
+                              ownerId={item.profiles?.user_id}
                             />
                           )}
                         </CardContent>

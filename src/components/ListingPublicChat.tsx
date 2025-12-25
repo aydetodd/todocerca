@@ -13,6 +13,7 @@ interface Comment {
   user_id: string;
   message: string;
   created_at: string;
+  is_read?: boolean;
   profile?: {
     apodo: string | null;
     nombre: string;
@@ -23,9 +24,10 @@ interface ListingPublicChatProps {
   listingId: string;
   listingTitle: string;
   ownerName?: string;
+  ownerId?: string;
 }
 
-export function ListingPublicChat({ listingId, listingTitle, ownerName }: ListingPublicChatProps) {
+export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId }: ListingPublicChatProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -34,6 +36,8 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [commentCount, setCommentCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const isOwner = currentUserId === ownerId;
 
   // Fetch current user
   useEffect(() => {
@@ -73,6 +77,20 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
 
         setComments(commentsWithProfiles);
         setCommentCount(commentsWithProfiles.length);
+
+        // If current user is the owner, mark all unread comments as read
+        if (isOwner && commentsWithProfiles.length > 0) {
+          const unreadIds = commentsWithProfiles
+            .filter(c => !c.is_read && c.user_id !== currentUserId)
+            .map(c => c.id);
+          
+          if (unreadIds.length > 0) {
+            await supabase
+              .from('listing_comments')
+              .update({ is_read: true })
+              .in('id', unreadIds);
+          }
+        }
       } catch (error) {
         console.error('Error fetching comments:', error);
       } finally {
@@ -82,7 +100,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
 
     fetchComments();
 
-    // Subscribe to new comments
+    // Subscribe to new comments and updates
     const channel = supabase
       .channel(`listing_comments_${listingId}`)
       .on(
@@ -110,6 +128,29 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
 
           setComments(prev => [...prev, commentWithProfile]);
           setCommentCount(prev => prev + 1);
+
+          // If owner is viewing, mark as read immediately
+          if (isOwner && newComment.user_id !== currentUserId) {
+            await supabase
+              .from('listing_comments')
+              .update({ is_read: true })
+              .eq('id', newComment.id);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'listing_comments',
+          filter: `listing_id=eq.${listingId}`
+        },
+        (payload) => {
+          const updatedComment = payload.new as Comment;
+          setComments(prev => 
+            prev.map(c => c.id === updatedComment.id ? { ...c, is_read: updatedComment.is_read } : c)
+          );
         }
       )
       .subscribe();
@@ -117,7 +158,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [listingId, isExpanded]);
+  }, [listingId, isExpanded, isOwner, currentUserId]);
 
   // Auto-scroll when new comments arrive
   useEffect(() => {
@@ -237,7 +278,11 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName }: Listin
                         )}
                         <p className="text-sm break-words">{comment.message}</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
+                      <span className={`text-[10px] mt-0.5 px-1 ${
+                        isOwn 
+                          ? (comment.is_read ? 'text-green-500' : 'text-red-500')
+                          : 'text-muted-foreground'
+                      }`}>
                         {formatDistanceToNow(new Date(comment.created_at), {
                           addSuffix: true,
                           locale: es
