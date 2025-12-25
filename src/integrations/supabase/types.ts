@@ -857,6 +857,7 @@ export type Database = {
           provider_type: Database["public"]["Enums"]["provider_type"] | null
           role: Database["public"]["Enums"]["user_role"]
           route_name: string | null
+          tarifa_km: number | null
           telefono: string | null
           updated_at: string
           user_id: string
@@ -882,6 +883,7 @@ export type Database = {
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
+          tarifa_km?: number | null
           telefono?: string | null
           updated_at?: string
           user_id: string
@@ -907,6 +909,7 @@ export type Database = {
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
+          tarifa_km?: number | null
           telefono?: string | null
           updated_at?: string
           user_id?: string
@@ -1128,6 +1131,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      taxi_requests: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          destination_address: string | null
+          destination_lat: number
+          destination_lng: number
+          distance_km: number
+          driver_id: string
+          driver_start_lat: number | null
+          driver_start_lng: number | null
+          id: string
+          passenger_id: string
+          pickup_address: string | null
+          pickup_lat: number
+          pickup_lng: number
+          status: string
+          tarifa_km: number
+          total_fare: number
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          destination_address?: string | null
+          destination_lat: number
+          destination_lng: number
+          distance_km: number
+          driver_id: string
+          driver_start_lat?: number | null
+          driver_start_lng?: number | null
+          id?: string
+          passenger_id: string
+          pickup_address?: string | null
+          pickup_lat: number
+          pickup_lng: number
+          status?: string
+          tarifa_km: number
+          total_fare: number
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          destination_address?: string | null
+          destination_lat?: number
+          destination_lng?: number
+          distance_km?: number
+          driver_id?: string
+          driver_start_lat?: number | null
+          driver_start_lng?: number | null
+          id?: string
+          passenger_id?: string
+          pickup_address?: string | null
+          pickup_lat?: number
+          pickup_lng?: number
+          status?: string
+          tarifa_km?: number
+          total_fare?: number
+        }
+        Relationships: []
       }
       tracking_devices: {
         Row: {
