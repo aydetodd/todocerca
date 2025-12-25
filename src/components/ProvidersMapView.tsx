@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
+import TaxiRequestModal from '@/components/TaxiRequestModal';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -177,6 +178,13 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
   const prevPositionsRef = useRef<Map<string, { lat: number; lng: number; rotation: number }>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [taxiRequestDriver, setTaxiRequestDriver] = useState<{
+    user_id: string;
+    business_name: string;
+    latitude: number;
+    longitude: number;
+    tarifa_km?: number;
+  } | null>(null);
 
   const isRouteSearch = vehicleFilter === 'ruta';
 
@@ -215,7 +223,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             _providerType: providerType,
             _routeName: routeName,
             _isBus: realtimeLocation.is_bus,
-            _isTaxi: realtimeLocation.is_taxi
+            _isTaxi: realtimeLocation.is_taxi,
+            _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15
           };
         }
         
@@ -399,6 +408,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             )
             .join('');
        
+      // Build popup content based on filter type
+      const isTaxiView = vehicleFilter === 'taxi';
+      const tarifaKm = (provider as any)._tarifaKm || 15;
+      
       const popupContent = isRouteSearch
         ? `
         <div style="padding: 12px; min-width: 250px;">
@@ -408,6 +421,19 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
               ? `<div style="max-height: 260px; overflow-y: auto;">${productsList}</div>`
               : `<p style="font-size: 0.875rem; color: #6b7280;">Sin rutas disponibles</p>`
           }
+        </div>
+      `
+        : isTaxiView
+        ? `
+        <div style="padding: 12px; min-width: 250px;">
+          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">${provider.business_name}</h3>
+          <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 12px;">💰 Tarifa: $${tarifaKm.toFixed(2)} MXN/km</p>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
+            <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
+            <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
+          </div>
+          <button onclick='window.requestTaxi(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)}, ${provider.latitude}, ${provider.longitude}, ${tarifaKm})' style="width: 100%; background-color: #22c55e; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 1rem;">🚕 Solicitar Taxi</button>
         </div>
       `
         : `
@@ -453,6 +479,15 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         setSelectedProduct({ provider, product: provider.productos[productIndex] });
         setIsDialogOpen(true);
       }
+    };
+    (window as any).requestTaxi = (userId: string, businessName: string, lat: number, lng: number, tarifaKm: number) => {
+      setTaxiRequestDriver({
+        user_id: userId,
+        business_name: businessName,
+        latitude: lat,
+        longitude: lng,
+        tarifa_km: tarifaKm
+      });
     };
   }, [onOpenChat, providers]);
 
@@ -541,6 +576,15 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Taxi Request Modal */}
+      {taxiRequestDriver && (
+        <TaxiRequestModal
+          isOpen={!!taxiRequestDriver}
+          onClose={() => setTaxiRequestDriver(null)}
+          driver={taxiRequestDriver}
+        />
+      )}
     </>
   );
 }

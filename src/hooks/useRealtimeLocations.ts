@@ -18,6 +18,7 @@ export interface ProveedorLocation {
     telefono: string | null;
     provider_type: 'taxi' | 'ruta' | null;
     route_name: string | null;
+    tarifa_km: number | null;
   };
   is_taxi?: boolean;
   is_bus?: boolean;
@@ -39,7 +40,7 @@ export const useRealtimeLocations = () => {
     
     const { data: activeProfiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, user_id, apodo, estado, telefono, provider_type, route_name')
+      .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
       .eq('role', 'proveedor')
       .in('estado', ['available', 'busy']);
 
@@ -144,7 +145,8 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          route_name: profile.route_name || routeNameFromProduct || null
+          route_name: profile.route_name || routeNameFromProduct || null,
+          tarifa_km: (profile as any).tarifa_km || 15
         },
         is_taxi: isTaxi,
         is_bus: isBus
