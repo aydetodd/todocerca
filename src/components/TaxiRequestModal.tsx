@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, Car, DollarSign, Loader2, Map, Check } from 'lucide-react';
+import { MapPin, Navigation, Car, DollarSign, Loader2, Map, Check, Edit2 } from 'lucide-react';
 import L from 'leaflet';
 
 interface TaxiRequestModalProps {
@@ -31,6 +31,8 @@ interface AddressSuggestion {
   lng: number;
   display_name: string;
 }
+
+type SelectionMode = 'none' | 'pickup' | 'destination';
 
 // Función para calcular ruta usando OSRM
 async function calculateRoute(
@@ -98,17 +100,18 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const taxiMarkerRef = useRef<L.Marker | null>(null);
+  const pickupMarkerRef = useRef<L.Marker | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pickupAddress, setPickupAddress] = useState<string>('');
   const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<AddressSuggestion | null>(null);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectingOnMap, setSelectingOnMap] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
   const [routeInfo, setRouteInfo] = useState<{
     driverToPickup: RouteInfo | null;
     pickupToDestination: RouteInfo | null;
@@ -123,13 +126,12 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   
   // Obtener ubicación del usuario
   useEffect(() => {
-    if (isOpen && !userLocation) {
+    if (isOpen && !pickupCoords) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setUserLocation(coords);
-          // Obtener dirección de la ubicación
+          setPickupCoords(coords);
           const address = await reverseGeocode(coords.lat, coords.lng);
           setPickupAddress(address);
           setLoading(false);
@@ -138,7 +140,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           console.error('Error obteniendo ubicación:', err);
           toast({
             title: "Error de ubicación",
-            description: "No pudimos obtener tu ubicación. Verifica los permisos.",
+            description: "No pudimos obtener tu ubicación. Selecciona el punto de recogida en el mapa.",
             variant: "destructive"
           });
           setLoading(false);
@@ -161,7 +163,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     mapRef.current = map;
     
     // Marcador del taxi
-    const taxiMarker = L.marker([driver.latitude, driver.longitude], {
+    taxiMarkerRef.current = L.marker([driver.latitude, driver.longitude], {
       icon: L.divIcon({
         html: '<div style="font-size: 24px;">🚕</div>',
         className: 'taxi-marker',
@@ -169,15 +171,18 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
         iconAnchor: [15, 15]
       })
     }).addTo(map);
-    markersRef.current.push(taxiMarker);
     
-    // Click en mapa para seleccionar destino
+    // Click en mapa para seleccionar origen o destino
     map.on('click', async (e: L.LeafletMouseEvent) => {
-      if (selectingOnMap) {
-        const { lat, lng } = e.latlng;
-        const address = await reverseGeocode(lat, lng);
+      const { lat, lng } = e.latlng;
+      const address = await reverseGeocode(lat, lng);
+      
+      if (selectionMode === 'pickup') {
+        selectPickup({ lat, lng }, address);
+        setSelectionMode('none');
+      } else if (selectionMode === 'destination') {
         selectDestination({ lat, lng, display_name: address });
-        setSelectingOnMap(false);
+        setSelectionMode('none');
       }
     });
     
@@ -185,32 +190,40 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        markersRef.current = [];
+        taxiMarkerRef.current = null;
+        pickupMarkerRef.current = null;
         destMarkerRef.current = null;
       }
     };
   }, [isOpen]);
 
-  // Actualizar mapa con ubicación del usuario
+  // Actualizar marcador de recogida
   useEffect(() => {
-    if (!mapRef.current || !userLocation) return;
+    if (!mapRef.current || !pickupCoords) return;
     
-    const userMarker = L.marker([userLocation.lat, userLocation.lng], {
-      icon: L.divIcon({
-        html: '<div style="font-size: 24px;">📍</div>',
-        className: 'user-marker',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
-    }).addTo(mapRef.current);
-    markersRef.current.push(userMarker);
+    if (pickupMarkerRef.current) {
+      pickupMarkerRef.current.setLatLng([pickupCoords.lat, pickupCoords.lng]);
+    } else {
+      pickupMarkerRef.current = L.marker([pickupCoords.lat, pickupCoords.lng], {
+        icon: L.divIcon({
+          html: '<div style="font-size: 24px;">📍</div>',
+          className: 'pickup-marker',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(mapRef.current);
+    }
     
+    // Ajustar vista
     const bounds = L.latLngBounds([
       [driver.latitude, driver.longitude],
-      [userLocation.lat, userLocation.lng]
+      [pickupCoords.lat, pickupCoords.lng]
     ]);
+    if (destinationCoords) {
+      bounds.extend([destinationCoords.lat, destinationCoords.lng]);
+    }
     mapRef.current.fitBounds(bounds, { padding: [30, 30] });
-  }, [userLocation]);
+  }, [pickupCoords, driver.latitude, driver.longitude]);
 
   // Buscar sugerencias mientras escribe
   useEffect(() => {
@@ -239,47 +252,66 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     };
   }, [destination]);
 
+  // Seleccionar punto de recogida
+  const selectPickup = useCallback(async (coords: { lat: number; lng: number }, address: string) => {
+    setPickupCoords(coords);
+    setPickupAddress(address);
+    
+    // Recalcular ruta si ya hay destino
+    if (destinationCoords) {
+      await calculateFullRoute(coords, destinationCoords);
+    }
+  }, [destinationCoords]);
+
   // Seleccionar destino de la lista o mapa
   const selectDestination = useCallback(async (dest: AddressSuggestion) => {
     setDestinationCoords(dest);
-    setDestination(dest.display_name.split(',')[0]); // Solo mostrar la parte principal
+    setDestination(dest.display_name.split(',')[0]);
     setShowSuggestions(false);
     
     // Actualizar marcador de destino
     if (mapRef.current) {
       if (destMarkerRef.current) {
-        destMarkerRef.current.remove();
+        destMarkerRef.current.setLatLng([dest.lat, dest.lng]);
+      } else {
+        destMarkerRef.current = L.marker([dest.lat, dest.lng], {
+          icon: L.divIcon({
+            html: '<div style="font-size: 24px;">🏁</div>',
+            className: 'dest-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        }).addTo(mapRef.current);
       }
       
-      destMarkerRef.current = L.marker([dest.lat, dest.lng], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">🏁</div>',
-          className: 'dest-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(mapRef.current);
+      // Ajustar vista
+      if (pickupCoords) {
+        const bounds = L.latLngBounds([
+          [driver.latitude, driver.longitude],
+          [pickupCoords.lat, pickupCoords.lng],
+          [dest.lat, dest.lng]
+        ]);
+        mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+      }
     }
     
     // Calcular ruta
-    if (userLocation) {
-      await calculateFullRoute(dest);
+    if (pickupCoords) {
+      await calculateFullRoute(pickupCoords, dest);
     }
-  }, [userLocation]);
+  }, [pickupCoords, driver.latitude, driver.longitude]);
 
   // Calcular ruta completa: taxi → usuario → destino
-  const calculateFullRoute = async (dest: { lat: number; lng: number }) => {
-    if (!userLocation) return;
-    
+  const calculateFullRoute = async (pickup: { lat: number; lng: number }, dest: { lat: number; lng: number }) => {
     setLoading(true);
     
     const driverToPickup = await calculateRoute(
       driver.latitude, driver.longitude,
-      userLocation.lat, userLocation.lng
+      pickup.lat, pickup.lng
     );
     
     const pickupToDestination = await calculateRoute(
-      userLocation.lat, userLocation.lng,
+      pickup.lat, pickup.lng,
       dest.lat, dest.lng
     );
     
@@ -325,7 +357,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
 
   // Enviar solicitud
   const handleSubmitRequest = async () => {
-    if (!userLocation || !destinationCoords || !routeInfo) return;
+    if (!pickupCoords || !destinationCoords || !routeInfo) return;
     
     setSubmitting(true);
     
@@ -345,8 +377,8 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
         .insert({
           passenger_id: user.id,
           driver_id: driver.user_id,
-          pickup_lat: userLocation.lat,
-          pickup_lng: userLocation.lng,
+          pickup_lat: pickupCoords.lat,
+          pickup_lng: pickupCoords.lng,
           pickup_address: pickupAddress,
           destination_lat: destinationCoords.lat,
           destination_lng: destinationCoords.lng,
@@ -387,7 +419,9 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       setRouteInfo(null);
       setSuggestions([]);
       setShowSuggestions(false);
-      setSelectingOnMap(false);
+      setSelectionMode('none');
+      setPickupCoords(null);
+      setPickupAddress('');
       if (routeLayerRef.current) {
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
@@ -396,8 +430,20 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
         destMarkerRef.current.remove();
         destMarkerRef.current = null;
       }
+      if (pickupMarkerRef.current) {
+        pickupMarkerRef.current.remove();
+        pickupMarkerRef.current = null;
+      }
     }
   }, [isOpen]);
+
+  const getSelectionModeLabel = () => {
+    switch (selectionMode) {
+      case 'pickup': return 'Toca el mapa para seleccionar punto de recogida';
+      case 'destination': return 'Toca el mapa para seleccionar destino';
+      default: return null;
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -423,33 +469,49 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           <div className="relative">
             <div 
               ref={mapContainerRef} 
-              className={`h-48 rounded-lg border overflow-hidden ${selectingOnMap ? 'ring-2 ring-primary' : ''}`}
+              className={`h-56 rounded-lg border overflow-hidden ${selectionMode !== 'none' ? 'ring-2 ring-primary' : ''}`}
             />
-            {selectingOnMap && (
+            {selectionMode !== 'none' && (
               <div className="absolute top-2 left-2 right-2 bg-primary text-primary-foreground text-sm px-3 py-1.5 rounded-lg text-center">
-                Toca el mapa para seleccionar destino
+                {getSelectionModeLabel()}
               </div>
             )}
           </div>
           
-          {/* Ubicación del usuario */}
-          <div className="space-y-1">
+          {/* Punto de recogida */}
+          <div className="space-y-2">
             <Label className="flex items-center gap-1">
               <MapPin className="h-4 w-4 text-primary" />
               Punto de recogida
             </Label>
-            {loading && !userLocation ? (
+            {loading && !pickupCoords ? (
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Obteniendo tu ubicación...
               </p>
-            ) : userLocation ? (
-              <div className="bg-muted/50 p-2 rounded text-sm text-muted-foreground flex items-center gap-2">
+            ) : pickupCoords ? (
+              <div className="bg-muted/50 p-2 rounded text-sm flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span className="line-clamp-2">{pickupAddress || 'Tu ubicación actual'}</span>
+                <span className="line-clamp-2 flex-1 text-muted-foreground">{pickupAddress || 'Ubicación seleccionada'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 flex-shrink-0"
+                  onClick={() => setSelectionMode(selectionMode === 'pickup' ? 'none' : 'pickup')}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
               </div>
             ) : (
-              <p className="text-sm text-destructive">No se pudo obtener ubicación</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectionMode('pickup')}
+                className="w-full"
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Seleccionar en el mapa
+              </Button>
             )}
           </div>
           
@@ -489,15 +551,15 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
               )}
             </div>
             
-            {/* Botón seleccionar en mapa */}
+            {/* Botón seleccionar destino en mapa */}
             <Button
-              variant={selectingOnMap ? "default" : "outline"}
+              variant={selectionMode === 'destination' ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectingOnMap(!selectingOnMap)}
+              onClick={() => setSelectionMode(selectionMode === 'destination' ? 'none' : 'destination')}
               className="w-full"
             >
               <Map className="h-4 w-4 mr-2" />
-              {selectingOnMap ? 'Cancelar selección' : 'Seleccionar en el mapa'}
+              {selectionMode === 'destination' ? 'Cancelar selección' : 'Seleccionar destino en el mapa'}
             </Button>
             
             {destinationCoords && (
@@ -542,7 +604,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           </Button>
           <Button 
             onClick={handleSubmitRequest}
-            disabled={!routeInfo || submitting}
+            disabled={!routeInfo || submitting || !pickupCoords}
           >
             {submitting ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
