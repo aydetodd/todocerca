@@ -16,9 +16,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Flespi sends data as JSON array of messages
-    const messages = await req.json();
-    console.log('[FLESPI WEBHOOK] Received messages:', JSON.stringify(messages).slice(0, 500));
+    const payload = await req.json();
+
+    // Flespi may send: an array of messages, a single message, or an envelope like { data: [...] }
+    const messages = Array.isArray(payload)
+      ? payload
+      : (payload?.messages ?? payload?.data ?? payload?.items ?? (payload ? [payload] : []));
+
+    console.log('[FLESPI WEBHOOK] Received payload:', JSON.stringify(payload).slice(0, 500));
+    console.log('[FLESPI WEBHOOK] Normalized messages count:', Array.isArray(messages) ? messages.length : 0);
 
     if (!Array.isArray(messages) || messages.length === 0) {
       console.log('[FLESPI WEBHOOK] No messages to process');
@@ -32,17 +38,36 @@ Deno.serve(async (req) => {
     let processedCount = 0;
 
     for (const message of messages) {
-      // Flespi message format includes ident (IMEI), position.latitude, position.longitude
-      const imei = message.ident || message.device?.ident;
-      const latitude = message['position.latitude'] || message.position?.latitude;
-      const longitude = message['position.longitude'] || message.position?.longitude;
-      const speed = message['position.speed'] || message.position?.speed;
-      const altitude = message['position.altitude'] || message.position?.altitude;
-      const course = message['position.direction'] || message.position?.direction;
-      const batteryLevel = message['battery.level'] || message.battery?.level;
+      // Flespi message format: ident/device.ident (IMEI), position.latitude, position.longitude
+      const imeiRaw =
+        message?.ident ??
+        message?.device?.ident ??
+        message?.device?.imei ??
+        message?.['device.ident'] ??
+        message?.['device.imei'];
+      const imei = imeiRaw != null ? String(imeiRaw).trim() : null;
 
-      if (!imei || latitude === undefined || longitude === undefined) {
-        console.log('[FLESPI WEBHOOK] Skipping message - missing data:', { imei, latitude, longitude });
+      const latitudeRaw = message?.['position.latitude'] ?? message?.position?.latitude;
+      const longitudeRaw = message?.['position.longitude'] ?? message?.position?.longitude;
+      const speedRaw = message?.['position.speed'] ?? message?.position?.speed;
+      const altitudeRaw = message?.['position.altitude'] ?? message?.position?.altitude;
+      const courseRaw = message?.['position.direction'] ?? message?.position?.direction;
+      const batteryLevelRaw = message?.['battery.level'] ?? message?.battery?.level;
+
+      const toFiniteNumberOrNull = (value: unknown): number | null => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const latitude = toFiniteNumberOrNull(latitudeRaw);
+      const longitude = toFiniteNumberOrNull(longitudeRaw);
+      const speed = speedRaw != null ? toFiniteNumberOrNull(speedRaw) : null;
+      const altitude = altitudeRaw != null ? toFiniteNumberOrNull(altitudeRaw) : null;
+      const course = courseRaw != null ? toFiniteNumberOrNull(courseRaw) : null;
+      const batteryLevel = batteryLevelRaw != null ? toFiniteNumberOrNull(batteryLevelRaw) : undefined;
+
+      if (!imei || latitude === null || longitude === null) {
+        console.log('[FLESPI WEBHOOK] Skipping message - missing data:', { imei, latitudeRaw, longitudeRaw });
         continue;
       }
 
@@ -72,7 +97,7 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       };
       
-      if (batteryLevel !== undefined) {
+      if (batteryLevel != null) {
         updateData.battery_level = Math.round(batteryLevel);
       }
 
@@ -86,9 +111,9 @@ Deno.serve(async (req) => {
         tracker_id: tracker.id,
         latitude,
         longitude,
-        speed: speed || null,
-        altitude: altitude || null,
-        course: course || null,
+        speed: speed ?? null,
+        altitude: altitude ?? null,
+        course: course ?? null,
         updated_at: new Date().toISOString(),
       };
 
