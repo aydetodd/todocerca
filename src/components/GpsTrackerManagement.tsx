@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from '@/components/ui/separator';
 import { Radio, Plus, Trash2, MapPin, Battery, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useGpsTrackers, GpsTracker } from '@/hooks/useGpsTrackers';
+import { isGpsTrackerOnline } from '@/lib/gpsTrackers';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -54,9 +55,7 @@ export const GpsTrackerManagement = ({ groupId, isOwner }: GpsTrackerManagementP
   };
 
   const isOnline = (lastSeen: string | null) => {
-    if (!lastSeen) return false;
-    const diff = Date.now() - new Date(lastSeen).getTime();
-    return diff < 5 * 60 * 1000; // Online if seen in last 5 minutes
+    return isGpsTrackerOnline(lastSeen);
   };
 
   if (loading) {
