@@ -22,6 +22,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { GpsTracker } from '@/hooks/useGpsTrackers';
+import { isGpsTrackerOnline } from '@/lib/gpsTrackers';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -45,9 +46,7 @@ export const GpsTrackerDetailCard = ({
   const navigate = useNavigate();
 
   const isOnline = () => {
-    if (!tracker.last_seen) return false;
-    const diff = Date.now() - new Date(tracker.last_seen).getTime();
-    return diff < 5 * 60 * 1000;
+    return isGpsTrackerOnline(tracker.last_seen);
   };
 
   const getBatteryColor = (level: number | null) => {
