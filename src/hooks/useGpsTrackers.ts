@@ -49,17 +49,19 @@ export const useGpsTrackers = (groupId: string | null) => {
 
       if (error) throw error;
 
-      // Flatten the location data
-      const flattenedTrackers = (trackersData || []).map(tracker => {
-        const location = tracker.gps_tracker_locations?.[0];
+      // Flatten the location data (PostgREST may return object for 1:1 relationships)
+      const flattenedTrackers = (trackersData || []).map((tracker: any) => {
+        const nested = tracker.gps_tracker_locations;
+        const location = Array.isArray(nested) ? nested[0] : nested;
+
         return {
           ...tracker,
-          latitude: location?.latitude,
-          longitude: location?.longitude,
-          speed: location?.speed,
-          location_updated_at: location?.updated_at,
+          latitude: location?.latitude ?? undefined,
+          longitude: location?.longitude ?? undefined,
+          speed: location?.speed ?? undefined,
+          location_updated_at: location?.updated_at ?? undefined,
           gps_tracker_locations: undefined,
-        };
+        } as GpsTracker;
       });
 
       setTrackers(flattenedTrackers);
