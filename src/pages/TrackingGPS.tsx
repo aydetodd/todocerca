@@ -29,6 +29,7 @@ const TrackingGPS = () => {
   const { toast } = useToast();
   const { allGroups, selectedGroupId, setSelectedGroupId, group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, acceptInvitation, checkPendingInvitations, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
+  const { trackers } = useGpsTrackers(group?.id || null);
   const [myInvitations, setMyInvitations] = useState<any[]>([]);
   
   const [groupName, setGroupName] = useState('');
@@ -777,7 +778,7 @@ const TrackingGPS = () => {
             <StatusControl />
           </div>
           <div className="w-full h-full">
-            <TrackingMap locations={locations} currentUserId={currentUserId} showNamesButton={true} />
+            <TrackingMap locations={locations} currentUserId={currentUserId} showNamesButton={true} gpsTrackers={trackers} />
           </div>
         </div>
       )}
@@ -1223,7 +1224,7 @@ const TrackingGPS = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="h-[300px] rounded-b-lg overflow-hidden">
-                  <TrackingMap locations={locations} currentUserId={currentUserId} />
+                  <TrackingMap locations={locations} currentUserId={currentUserId} gpsTrackers={trackers} />
                 </div>
               </CardContent>
             </Card>
