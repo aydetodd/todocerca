@@ -242,7 +242,7 @@ const TrackingMap = ({ locations, currentUserId, showNamesButton = false, gpsTra
             ${tracker.speed !== undefined ? `<div><strong>Velocidad:</strong> ${tracker.speed.toFixed(0)} km/h</div>` : ''}
             ${tracker.battery_level !== null ? `<div><strong>Batería:</strong> ${tracker.battery_level}%</div>` : ''}
             <div style="margin-top: 4px; font-size: 11px; color: #888;">
-              Última señal: ${lastSeenText}
+              Última señal: ${lastSeenText}${tracker.last_seen ? ` (${new Date(tracker.last_seen).toLocaleString()})` : ''}
             </div>
           </div>
         </div>

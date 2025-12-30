@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrackingGroup } from '@/hooks/useTrackingGroup';
@@ -29,8 +29,27 @@ const TrackingGPS = () => {
   const { toast } = useToast();
   const { allGroups, selectedGroupId, setSelectedGroupId, group, members, invitations, loading, createGroup, sendInvitation, cancelInvitation, removeMember, acceptInvitation, checkPendingInvitations, refetch } = useTrackingGroup();
   const { locations, updateMyLocation } = useTrackingLocations(group?.id || null);
-  const { trackers } = useGpsTrackers(group?.id || null);
+  const { trackers, refetch: refetchTrackers } = useGpsTrackers(group?.id || null);
+  const refetchTrackersRef = useRef(refetchTrackers);
   const [myInvitations, setMyInvitations] = useState<any[]>([]);
+
+  // Mantener referencia estable a refetch para usarla dentro del interval
+  useEffect(() => {
+    refetchTrackersRef.current = refetchTrackers;
+  }, [refetchTrackers]);
+
+  // Refrescar trackers cada 2s (siempre que la pestaña esté visible)
+  useEffect(() => {
+    if (!group?.id) return;
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refetchTrackersRef.current?.();
+      }
+    }, 2000);
+
+    return () => window.clearInterval(intervalId);
+  }, [group?.id]);
   
   const [groupName, setGroupName] = useState('');
   const [showGroupNameDialog, setShowGroupNameDialog] = useState(false);
