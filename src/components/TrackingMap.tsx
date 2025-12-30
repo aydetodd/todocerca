@@ -161,7 +161,10 @@ const TrackingMap = ({ locations, currentUserId, showNamesButton = false, gpsTra
     const trackersWithLocation = gpsTrackers.filter(t => t.latitude && t.longitude);
 
     trackersWithLocation.forEach((tracker) => {
-      const position: L.LatLngExpression = [tracker.latitude!, tracker.longitude!];
+      // Agregar pequeño offset para separar el marcador del tracker de los usuarios
+      const offsetLat = 0.00015; // ~15 metros al norte
+      const offsetLng = 0.00015; // ~15 metros al este
+      const position: L.LatLngExpression = [tracker.latitude! + offsetLat, tracker.longitude! + offsetLng];
       currentTrackerIds.add(tracker.id);
 
       const online = isGpsTrackerOnline(tracker.last_seen);
