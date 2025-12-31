@@ -1,4 +1,4 @@
-export const GPS_TRACKER_ONLINE_WINDOW_MS = 60 * 60 * 1000; // 60 min
+export const GPS_TRACKER_ONLINE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 export const isGpsTrackerOnline = (
   lastSeen: string | null | undefined,
