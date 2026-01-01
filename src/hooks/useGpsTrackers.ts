@@ -112,8 +112,15 @@ export const useGpsTrackers = (groupId: string | null) => {
       )
       .subscribe();
 
+    // Polling cada 30 segundos para asegurar datos frescos
+    const pollInterval = setInterval(() => {
+      console.log('[GPS TRACKERS] Polling for updates...');
+      fetchTrackers();
+    }, 30000);
+
     return () => {
       supabase.removeChannel(trackersChannel);
+      clearInterval(pollInterval);
     };
   }, [groupId]);
 
