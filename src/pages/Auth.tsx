@@ -202,8 +202,13 @@ const Auth = () => {
         
         const finalEmail = `${telefono.replace(/\+/g, '')}@todocerca.app`;
         
-        // Crear usuario
-        const { data, error } = await supabase.auth.signUp({
+        // Timeout para evitar que la app se quede colgada
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('La conexión tardó demasiado. Verifica tu conexión a internet e intenta de nuevo.')), 30000)
+        );
+        
+        // Crear usuario con timeout
+        const signUpPromise = supabase.auth.signUp({
           email: finalEmail,
           password,
           options: {
@@ -217,9 +222,14 @@ const Auth = () => {
           },
         });
 
+        const { data, error } = await Promise.race([signUpPromise, timeoutPromise]) as any;
+
         if (error) {
           if (error.message.includes('already registered')) {
-            throw new Error('Este teléfono ya está registrado');
+            throw new Error('Este teléfono ya está registrado. Intenta iniciar sesión.');
+          }
+          if (error.message.includes('network') || error.message.includes('fetch')) {
+            throw new Error('Error de conexión. Verifica tu internet e intenta de nuevo.');
           }
           throw error;
         }
@@ -228,30 +238,45 @@ const Auth = () => {
           console.log('✅ User created:', data.user.id);
           setPendingUserId(data.user.id);
 
-          // Actualizar perfil
-          await supabase
-            .from('profiles')
-            .update({ telefono })
-            .eq('user_id', data.user.id);
+          // Actualizar perfil (con timeout corto, no es crítico)
+          try {
+            await Promise.race([
+              supabase.from('profiles').update({ telefono }).eq('user_id', data.user.id),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+            ]);
+          } catch (e) {
+            console.warn('Profile update timeout, continuing...', e);
+          }
 
           // Enviar código de verificación SMS
-          const { error: smsError } = await supabase.functions.invoke('send-verification-sms', {
+          console.log('📱 Sending SMS verification code...');
+          const smsPromise = supabase.functions.invoke('send-verification-sms', {
             body: { phone: telefono }
           });
+          
+          const smsResult = await Promise.race([
+            smsPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('El envío del SMS tardó demasiado. Intenta reenviar el código.')), 20000))
+          ]) as any;
 
-          if (smsError) {
-            console.error('Error enviando SMS:', smsError);
-            throw new Error('Error al enviar código de verificación');
+          if (smsResult.error) {
+            console.error('Error enviando SMS:', smsResult.error);
+            // No bloquear, el usuario puede reenviar
+            toast({
+              title: "Aviso",
+              description: "Hubo un problema enviando el SMS. Usa el botón de reenviar código.",
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "¡Código enviado!",
+              description: "Revisa tu SMS e ingresa el código de verificación",
+              duration: 5000,
+            });
           }
 
           // Cerrar sesión temporal
           await supabase.auth.signOut();
-
-          toast({
-            title: "¡Código enviado!",
-            description: "Revisa tu SMS e ingresa el código de verificación",
-            duration: 5000,
-          });
 
           setShowVerification(true);
         }
