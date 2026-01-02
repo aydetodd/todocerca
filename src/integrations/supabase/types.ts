@@ -270,13 +270,263 @@ export type Database = {
           },
         ]
       }
+      gps_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          geofence_id: string | null
+          group_id: string
+          id: string
+          is_read: boolean | null
+          is_resolved: boolean | null
+          latitude: number | null
+          longitude: number | null
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          speed: number | null
+          title: string
+          tracker_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          geofence_id?: string | null
+          group_id: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          speed?: number | null
+          title: string
+          tracker_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          geofence_id?: string | null
+          group_id?: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          speed?: number | null
+          title?: string
+          tracker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_alerts_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "gps_geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_alerts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_alerts_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_geofences: {
+        Row: {
+          alert_on_enter: boolean | null
+          alert_on_exit: boolean | null
+          center_lat: number | null
+          center_lng: number | null
+          created_at: string
+          description: string | null
+          fence_type: string
+          group_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          polygon_points: Json | null
+          radius_meters: number | null
+          updated_at: string
+        }
+        Insert: {
+          alert_on_enter?: boolean | null
+          alert_on_exit?: boolean | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          description?: string | null
+          fence_type?: string
+          group_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          polygon_points?: Json | null
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alert_on_enter?: boolean | null
+          alert_on_exit?: boolean | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          description?: string | null
+          fence_type?: string
+          group_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          polygon_points?: Json | null
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_geofences_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_tracker_geofences: {
+        Row: {
+          created_at: string
+          geofence_id: string
+          id: string
+          is_inside: boolean | null
+          last_checked_at: string | null
+          tracker_id: string
+        }
+        Insert: {
+          created_at?: string
+          geofence_id: string
+          id?: string
+          is_inside?: boolean | null
+          last_checked_at?: string | null
+          tracker_id: string
+        }
+        Update: {
+          created_at?: string
+          geofence_id?: string
+          id?: string
+          is_inside?: boolean | null
+          last_checked_at?: string | null
+          tracker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_geofences_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "gps_geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_tracker_geofences_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_tracker_history: {
+        Row: {
+          altitude: number | null
+          course: number | null
+          created_at: string
+          engine_status: boolean | null
+          external_voltage: number | null
+          fuel_level: number | null
+          gsm_signal: number | null
+          hdop: number | null
+          id: string
+          ignition: boolean | null
+          latitude: number
+          longitude: number
+          odometer: number | null
+          satellites: number | null
+          speed: number | null
+          timestamp: string
+          tracker_id: string
+        }
+        Insert: {
+          altitude?: number | null
+          course?: number | null
+          created_at?: string
+          engine_status?: boolean | null
+          external_voltage?: number | null
+          fuel_level?: number | null
+          gsm_signal?: number | null
+          hdop?: number | null
+          id?: string
+          ignition?: boolean | null
+          latitude: number
+          longitude: number
+          odometer?: number | null
+          satellites?: number | null
+          speed?: number | null
+          timestamp?: string
+          tracker_id: string
+        }
+        Update: {
+          altitude?: number | null
+          course?: number | null
+          created_at?: string
+          engine_status?: boolean | null
+          external_voltage?: number | null
+          fuel_level?: number | null
+          gsm_signal?: number | null
+          hdop?: number | null
+          id?: string
+          ignition?: boolean | null
+          latitude?: number
+          longitude?: number
+          odometer?: number | null
+          satellites?: number | null
+          speed?: number | null
+          timestamp?: string
+          tracker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_history_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gps_tracker_locations: {
         Row: {
           altitude: number | null
           course: number | null
+          external_voltage: number | null
+          gsm_signal: number | null
           id: string
+          ignition: boolean | null
           latitude: number
           longitude: number
+          odometer: number | null
+          satellites: number | null
           speed: number | null
           tracker_id: string
           updated_at: string
@@ -284,9 +534,14 @@ export type Database = {
         Insert: {
           altitude?: number | null
           course?: number | null
+          external_voltage?: number | null
+          gsm_signal?: number | null
           id?: string
+          ignition?: boolean | null
           latitude: number
           longitude: number
+          odometer?: number | null
+          satellites?: number | null
           speed?: number | null
           tracker_id: string
           updated_at?: string
@@ -294,9 +549,14 @@ export type Database = {
         Update: {
           altitude?: number | null
           course?: number | null
+          external_voltage?: number | null
+          gsm_signal?: number | null
           id?: string
+          ignition?: boolean | null
           latitude?: number
           longitude?: number
+          odometer?: number | null
+          satellites?: number | null
           speed?: number | null
           tracker_id?: string
           updated_at?: string
@@ -311,41 +571,121 @@ export type Database = {
           },
         ]
       }
+      gps_tracker_settings: {
+        Row: {
+          battery_alert_enabled: boolean | null
+          created_at: string
+          engine_kill_enabled: boolean | null
+          engine_kill_password: string | null
+          id: string
+          ignition_alert_enabled: boolean | null
+          low_battery_threshold: number | null
+          odometer_offset: number | null
+          offline_alert_enabled: boolean | null
+          offline_threshold_minutes: number | null
+          power_cut_alert_enabled: boolean | null
+          speed_alert_enabled: boolean | null
+          speed_limit_kmh: number | null
+          tracker_id: string
+          updated_at: string
+        }
+        Insert: {
+          battery_alert_enabled?: boolean | null
+          created_at?: string
+          engine_kill_enabled?: boolean | null
+          engine_kill_password?: string | null
+          id?: string
+          ignition_alert_enabled?: boolean | null
+          low_battery_threshold?: number | null
+          odometer_offset?: number | null
+          offline_alert_enabled?: boolean | null
+          offline_threshold_minutes?: number | null
+          power_cut_alert_enabled?: boolean | null
+          speed_alert_enabled?: boolean | null
+          speed_limit_kmh?: number | null
+          tracker_id: string
+          updated_at?: string
+        }
+        Update: {
+          battery_alert_enabled?: boolean | null
+          created_at?: string
+          engine_kill_enabled?: boolean | null
+          engine_kill_password?: string | null
+          id?: string
+          ignition_alert_enabled?: boolean | null
+          low_battery_threshold?: number | null
+          odometer_offset?: number | null
+          offline_alert_enabled?: boolean | null
+          offline_threshold_minutes?: number | null
+          power_cut_alert_enabled?: boolean | null
+          speed_alert_enabled?: boolean | null
+          speed_limit_kmh?: number | null
+          tracker_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_settings_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: true
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gps_trackers: {
         Row: {
           battery_level: number | null
           created_at: string
+          engine_blocked: boolean | null
+          external_voltage: number | null
           group_id: string
+          gsm_signal: number | null
           id: string
+          ignition: boolean | null
           imei: string
           is_active: boolean | null
           last_seen: string | null
           model: string | null
           name: string
+          odometer: number | null
+          satellites: number | null
           updated_at: string | null
         }
         Insert: {
           battery_level?: number | null
           created_at?: string
+          engine_blocked?: boolean | null
+          external_voltage?: number | null
           group_id: string
+          gsm_signal?: number | null
           id?: string
+          ignition?: boolean | null
           imei: string
           is_active?: boolean | null
           last_seen?: string | null
           model?: string | null
           name: string
+          odometer?: number | null
+          satellites?: number | null
           updated_at?: string | null
         }
         Update: {
           battery_level?: number | null
           created_at?: string
+          engine_blocked?: boolean | null
+          external_voltage?: number | null
           group_id?: string
+          gsm_signal?: number | null
           id?: string
+          ignition?: boolean | null
           imei?: string
           is_active?: boolean | null
           last_seen?: string | null
           model?: string | null
           name?: string
+          odometer?: number | null
+          satellites?: number | null
           updated_at?: string | null
         }
         Relationships: [

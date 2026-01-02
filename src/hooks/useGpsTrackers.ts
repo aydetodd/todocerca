@@ -12,10 +12,19 @@ export interface GpsTracker {
   battery_level: number | null;
   last_seen: string | null;
   created_at: string;
+  // New enhanced fields
+  ignition: boolean | null;
+  engine_blocked: boolean | null;
+  odometer: number | null;
+  external_voltage: number | null;
+  gsm_signal: number | null;
+  satellites: number | null;
   // Location data (joined)
   latitude?: number;
   longitude?: number;
   speed?: number;
+  altitude?: number;
+  course?: number;
   location_updated_at?: string;
 }
 
@@ -59,6 +68,8 @@ export const useGpsTrackers = (groupId: string | null) => {
           latitude: location?.latitude ?? undefined,
           longitude: location?.longitude ?? undefined,
           speed: location?.speed ?? undefined,
+          altitude: location?.altitude ?? undefined,
+          course: location?.course ?? undefined,
           location_updated_at: location?.updated_at ?? undefined,
           gps_tracker_locations: undefined,
         } as GpsTracker;
