@@ -452,8 +452,8 @@ const TrackingGPS = () => {
 
       const link = `${window.location.origin}/join-group?token=${data.invite_token}`;
       setInviteLink(link);
-      setNewMemberName('');
-      
+      setLinkCopied(false);
+
       toast({
         title: 'Link generado',
         description: 'Comparte el link por WhatsApp u otro medio',
