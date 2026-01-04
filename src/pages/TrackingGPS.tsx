@@ -13,7 +13,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check, Radio } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check, Radio, ChevronDown } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
 import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
@@ -65,6 +65,7 @@ const TrackingGPS = () => {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [showSmsOption, setShowSmsOption] = useState(false);
 
   // Hook para background tracking - se activa automáticamente cuando isSharing es true
   const { showPermissionGuide, closePermissionGuide } = useBackgroundTracking(isSharing, group?.id || null);
@@ -1120,11 +1121,11 @@ const TrackingGPS = () => {
                   )}
                 </div>
 
-                {/* Opción 1: Link Gratis */}
-                <div className="border rounded-lg p-4 space-y-3">
+                {/* Opción principal: WhatsApp */}
+                <div className="border border-green-500/30 bg-green-500/5 rounded-lg p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Link className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Invitación por Link</span>
+                    <span className="font-medium">Invitar por WhatsApp</span>
                   </div>
                   
                   <div>
@@ -1139,8 +1140,7 @@ const TrackingGPS = () => {
 
                   <Button 
                     onClick={handleGenerateLink} 
-                    className="w-full" 
-                    variant="outline"
+                    className="w-full bg-green-600 hover:bg-green-700" 
                     disabled={generatingLink || !newMemberName.trim()}
                   >
                     <Link className="mr-2 h-4 w-4" />
@@ -1170,36 +1170,46 @@ const TrackingGPS = () => {
                   )}
                 </div>
 
-                <Separator />
+                {/* Toggle para mostrar opción alternativa */}
+                <button
+                  type="button"
+                  onClick={() => setShowSmsOption(!showSmsOption)}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 py-2"
+                >
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showSmsOption ? 'rotate-180' : ''}`} />
+                  {showSmsOption ? 'Ocultar otra opción' : 'Enviar invitación por otro método'}
+                </button>
 
-                {/* Opción 2: SMS */}
-                <div className="border rounded-lg p-4 space-y-3 opacity-75">
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-blue-600" />
-                    <span className="font-medium">Invitación por SMS</span>
+                {/* Opción 2: SMS (oculta por defecto) */}
+                {showSmsOption && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <UserPlus className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium">Invitación por SMS</span>
+                    </div>
+
+                    <PhoneInput
+                      label="Número de teléfono"
+                      value={newMemberPhone}
+                      onChange={setNewMemberPhone}
+                      placeholder="5512345678"
+                      id="memberPhone"
+                      required
+                    />
+                    <Button 
+                      onClick={handleSendInvitation} 
+                      className="w-full" 
+                      variant="secondary"
+                      disabled={!newMemberName.trim() || !newMemberPhone.trim()}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Enviar por SMS
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Se enviará un SMS automático con instrucciones
+                    </p>
                   </div>
-
-                  <PhoneInput
-                    label="Teléfono (con WhatsApp)"
-                    value={newMemberPhone}
-                    onChange={setNewMemberPhone}
-                    placeholder="5512345678"
-                    id="memberPhone"
-                    required
-                  />
-                  <Button 
-                    onClick={handleSendInvitation} 
-                    className="w-full" 
-                    variant="secondary"
-                    disabled={!newMemberName.trim() || !newMemberPhone.trim()}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Enviar por SMS (costo)
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Se enviará un SMS automático con instrucciones
-                  </p>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
