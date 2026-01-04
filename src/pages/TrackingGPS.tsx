@@ -11,11 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check, Radio } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
-import { GpsTrackerManagement } from '@/components/GpsTrackerManagement';
 import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
 import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import { useGpsTrackers } from '@/hooks/useGpsTrackers';
@@ -1053,21 +1053,8 @@ const TrackingGPS = () => {
                 );
               })}
               
-              {isActive && locations.length < members.length && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-4">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                    💡 Nota: Para aparecer en el mapa
-                  </p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                    Cada miembro debe tener su semáforo en verde (disponible) o amarillo (ocupado) y tener señal de datos o WiFi. El seguimiento es automático.
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
-
-          {/* Rastreadores GPS - Gestión */}
-          <GpsTrackerManagement groupId={group.id} isOwner={isOwner} />
 
           {/* Tarjetas Expandibles de Rastreadores GPS */}
           <GpsTrackerCards groupId={group.id} isOwner={isOwner} />
@@ -1328,27 +1315,141 @@ const TrackingGPS = () => {
   );
 };
 
-// Componente para mostrar tarjetas expandibles de trackers GPS
+// Componente para mostrar tarjetas expandibles de trackers GPS con botón de agregar
 const GpsTrackerCards = ({ groupId, isOwner }: { groupId: string; isOwner: boolean }) => {
-  const { trackers, loading } = useGpsTrackers(groupId);
+  const { trackers, loading, addTracker, removeTracker } = useGpsTrackers(groupId);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newTrackerImei, setNewTrackerImei] = useState('');
+  const [newTrackerName, setNewTrackerName] = useState('');
+  const [newTrackerModel, setNewTrackerModel] = useState('GT06');
+  const [isAdding, setIsAdding] = useState(false);
 
-  if (loading || trackers.length === 0) {
-    return null;
-  }
+  const GPS_MODELS = [
+    { value: 'GT06', label: 'GT06 (Estándar)' },
+    { value: 'KS199A', label: 'KS199A (Vehículos)' },
+    { value: 'KS300', label: 'KS300 (Portátil)' },
+  ];
+
+  const handleAddTracker = async () => {
+    if (!newTrackerImei.trim() || !newTrackerName.trim()) return;
+    
+    setIsAdding(true);
+    const success = await addTracker(newTrackerImei, newTrackerName, newTrackerModel);
+    setIsAdding(false);
+    
+    if (success) {
+      setNewTrackerImei('');
+      setNewTrackerName('');
+      setNewTrackerModel('GT06');
+      setShowAddDialog(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Radio className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">Información de Dispositivos GPS</h3>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Radio className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">Rastreadores GPS</h3>
+        </div>
+        {isOwner && (
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Agregar
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Registrar Rastreador GPS</DialogTitle>
+                <DialogDescription>
+                  Ingresa el IMEI del dispositivo. Lo encontrarás en la etiqueta del rastreador o en la caja.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tracker-imei">IMEI del dispositivo</Label>
+                  <Input
+                    id="tracker-imei"
+                    value={newTrackerImei}
+                    onChange={(e) => setNewTrackerImei(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ej: 123456789012345"
+                    maxLength={15}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    15 dígitos que identifican únicamente al dispositivo
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tracker-name">Nombre del rastreador</Label>
+                  <Input
+                    id="tracker-name"
+                    value={newTrackerName}
+                    onChange={(e) => setNewTrackerName(e.target.value)}
+                    placeholder="Ej: Auto de Papá, Moto, Bicicleta..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tracker-model">Modelo</Label>
+                  <Select value={newTrackerModel} onValueChange={setNewTrackerModel}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GPS_MODELS.map((model) => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Separator />
+                <Button 
+                  onClick={handleAddTracker} 
+                  className="w-full"
+                  disabled={!newTrackerImei.trim() || !newTrackerName.trim() || isAdding}
+                >
+                  {isAdding ? 'Registrando...' : 'Registrar Rastreador'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
-      {trackers.map((tracker) => (
-        <GpsTrackerDetailCard
-          key={tracker.id}
-          tracker={tracker}
-          isOwner={isOwner}
-        />
-      ))}
+
+      {loading ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 bg-muted rounded w-1/3"></div>
+              <div className="h-10 bg-muted rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : trackers.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-8 text-muted-foreground">
+            <Radio className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p>No hay rastreadores GPS registrados</p>
+            {isOwner && (
+              <p className="text-sm mt-2">
+                Haz clic en "Agregar" para vincular un dispositivo
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        trackers.map((tracker) => (
+          <GpsTrackerDetailCard
+            key={tracker.id}
+            tracker={tracker}
+            isOwner={isOwner}
+            onRemove={() => removeTracker(tracker.id)}
+          />
+        ))
+      )}
     </div>
   );
 };

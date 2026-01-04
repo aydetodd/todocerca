@@ -19,7 +19,8 @@ import {
   Shield,
   Route,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { GpsTracker } from '@/hooks/useGpsTrackers';
 import { isGpsTrackerOnline } from '@/lib/gpsTrackers';
@@ -32,13 +33,15 @@ interface GpsTrackerDetailCardProps {
   isOwner: boolean;
   onCenterMap?: (lat: number, lng: number) => void;
   onShowRoute?: (trackerId: string) => void;
+  onRemove?: () => void;
 }
 
 export const GpsTrackerDetailCard = ({ 
   tracker, 
   isOwner, 
   onCenterMap,
-  onShowRoute 
+  onShowRoute,
+  onRemove
 }: GpsTrackerDetailCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [engineKillEnabled, setEngineKillEnabled] = useState(false);
@@ -246,6 +249,18 @@ export const GpsTrackerDetailCard = ({
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Reportes Detallados
               </Button>
+
+              {isOwner && onRemove && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
+                  onClick={onRemove}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar Dispositivo
+                </Button>
+              )}
             </div>
           </CardContent>
         </CollapsibleContent>
