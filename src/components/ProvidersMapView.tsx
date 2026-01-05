@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import TaxiRequestModal from '@/components/TaxiRequestModal';
+import { AppointmentBooking } from '@/components/AppointmentBooking';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -184,6 +185,11 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     latitude: number;
     longitude: number;
     tarifa_km?: number;
+  } | null>(null);
+  const [appointmentProvider, setAppointmentProvider] = useState<{
+    id: string;
+    nombre: string;
+    telefono: string | null;
   } | null>(null);
 
   const isRouteSearch = vehicleFilter === 'ruta';
@@ -444,7 +450,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
             <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
           </div>
-          <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 12px;">🛒 Ver productos y hacer pedido</button>
+          <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 8px;">🛒 Ver productos y hacer pedido</button>
+          <button onclick='window.bookAppointment(${JSON.stringify(provider.id)}, ${JSON.stringify(provider.business_name)}, ${JSON.stringify(provider.business_phone || "")})' style="width: 100%; background-color: #ec4899; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">📅 Agendar Cita</button>
           ${provider.productos.length > 0 ? `<div style="margin-top: 12px;"><p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos:</p><div style="max-height: 200px; overflow-y: auto;">${productsList}</div></div>` : ''}
         </div>
       `;
@@ -487,6 +494,13 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         latitude: lat,
         longitude: lng,
         tarifa_km: tarifaKm
+      });
+    };
+    (window as any).bookAppointment = (providerId: string, providerName: string, providerPhone: string) => {
+      setAppointmentProvider({
+        id: providerId,
+        nombre: providerName,
+        telefono: providerPhone || null
       });
     };
   }, [onOpenChat, providers]);
@@ -585,6 +599,20 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
           driver={taxiRequestDriver}
         />
       )}
+
+      {/* Appointment Booking Modal */}
+      <Dialog open={!!appointmentProvider} onOpenChange={() => setAppointmentProvider(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {appointmentProvider && (
+            <AppointmentBooking
+              proveedorId={appointmentProvider.id}
+              proveedorNombre={appointmentProvider.nombre}
+              proveedorTelefono={appointmentProvider.telefono}
+              onClose={() => setAppointmentProvider(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
