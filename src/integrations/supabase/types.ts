@@ -91,6 +91,62 @@ export type Database = {
           },
         ]
       }
+      citas: {
+        Row: {
+          cliente_nombre: string
+          cliente_telefono: string
+          cliente_user_id: string | null
+          created_at: string
+          estado: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          notas: string | null
+          proveedor_id: string
+          servicio: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_nombre: string
+          cliente_telefono: string
+          cliente_user_id?: string | null
+          created_at?: string
+          estado?: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          notas?: string | null
+          proveedor_id: string
+          servicio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_nombre?: string
+          cliente_telefono?: string
+          cliente_user_id?: string | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          notas?: string | null
+          proveedor_id?: string
+          servicio?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citas_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           codigo_postal: string | null
@@ -694,6 +750,50 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      horarios_proveedor: {
+        Row: {
+          created_at: string
+          dia_semana: number
+          duracion_cita_minutos: number
+          es_descanso: boolean
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          proveedor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dia_semana: number
+          duracion_cita_minutos?: number
+          es_descanso?: boolean
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          proveedor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dia_semana?: number
+          duracion_cita_minutos?: number
+          es_descanso?: boolean
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          proveedor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "horarios_proveedor_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
             referencedColumns: ["id"]
           },
         ]
