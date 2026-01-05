@@ -334,6 +334,9 @@ const ProductSearch = () => {
             id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id, estado, ciudad,
             proveedores (
               id, nombre, user_id, telefono, business_address, business_phone, latitude, longitude
+            ),
+            fotos_productos (
+              url, es_principal
             )
           `)
           .eq("is_available", true)
@@ -370,7 +373,12 @@ const ProductSearch = () => {
         }
 
         const rows = data || [];
-        setResults(rows);
+        // Add fotos field for consistency with listings
+        const transformedRows = rows.map((producto: any) => ({
+          ...producto,
+          fotos: producto.fotos_productos,
+        }));
+        setResults(transformedRows);
 
         // Build providers list for map from product rows
         const providerMap = new Map<string, MapProvider>();
@@ -648,19 +656,19 @@ const ProductSearch = () => {
                       <Card key={item.id}>
                         <CardContent className="p-4">
                           <div className="flex gap-3">
-                            {/* Photo thumbnail for free items (not for routes) */}
-                            {!isRoute && foto?.url && (
-                              <div 
-                                className="flex-shrink-0 cursor-pointer"
-                                onClick={() => setLightboxImage(foto.url)}
-                              >
-                                <img
-                                  src={foto.url}
-                                  alt={item.nombre}
-                                  className="w-20 h-20 object-cover rounded-lg hover:opacity-80 transition-opacity"
-                                />
-                              </div>
-                            )}
+                          {/* Photo thumbnail (not for routes) */}
+                          {!isRoute && foto?.url && (
+                            <div 
+                              className="flex-shrink-0 cursor-pointer"
+                              onClick={() => setLightboxImage(foto.url)}
+                            >
+                              <img
+                                src={foto.url}
+                                alt={item.nombre}
+                                className="w-20 h-20 object-cover rounded-lg hover:opacity-80 transition-opacity"
+                              />
+                            </div>
+                          )}
                             
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
