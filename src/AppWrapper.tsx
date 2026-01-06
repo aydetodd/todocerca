@@ -42,45 +42,21 @@ const RegistrationNotifier = () => {
   return null;
 };
 
-// Splash screen handler - shows splash and redirects based on auth
-const SplashHandler = () => {
-  const [showSplash, setShowSplash] = useState(true);
+// Direct navigation handler - no splash screen
+const NavigationHandler = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Solo mostrar splash en la ruta raíz al cargar la app
-    if (location.pathname !== '/') {
-      setShowSplash(false);
-    }
-  }, [location.pathname]);
-
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-    if (!loading) {
+    if (!loading && location.pathname === '/') {
       if (user) {
         navigate('/home', { replace: true });
       } else {
         navigate('/auth', { replace: true });
       }
     }
-  };
-
-  // Si está cargando auth después del splash, esperar
-  useEffect(() => {
-    if (!showSplash && !loading && location.pathname === '/') {
-      if (user) {
-        navigate('/home', { replace: true });
-      } else {
-        navigate('/auth', { replace: true });
-      }
-    }
-  }, [showSplash, loading, user, navigate, location.pathname]);
-
-  if (showSplash && location.pathname === '/') {
-    return <SplashScreen onComplete={handleSplashComplete} />;
-  }
+  }, [loading, user, navigate, location.pathname]);
 
   return null;
 };
@@ -105,8 +81,8 @@ export default function AppWrapper() {
         <GlobalProviderTracking />
         {/* Tracking global para grupos (tracking_member_locations) */}
         <GlobalGroupTracking />
-        {/* Splash Screen Handler */}
-        <SplashHandler />
+        {/* Navigation Handler - redirects root to auth/home */}
+        <NavigationHandler />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
