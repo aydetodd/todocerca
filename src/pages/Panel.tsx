@@ -21,16 +21,17 @@ export default function Panel() {
   const [isProvider, setIsProvider] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/auth', { replace: true });
       return;
     }
     fetchProfile();
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const fetchProfile = async () => {
     try {
