@@ -5,6 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gift, Plus, Trash2, Camera, X, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,8 +52,9 @@ export function DonarCosas() {
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [chatListingId, setChatListingId] = useState<string | null>(null);
   const [chatListingTitle, setChatListingTitle] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { getEstados, getMunicipios, loading: municipiosLoading } = useMunicipios();
   const estados = getEstados();
   const municipios = getMunicipios(estado);
@@ -60,16 +71,14 @@ export function DonarCosas() {
   }, [profileId]);
 
   const fetchUserProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
     setUserId(user.id);
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
 
     if (profile) {
       setProfileId(profile.id);
@@ -77,11 +86,7 @@ export function DonarCosas() {
   };
 
   const fetchCosasRegaladasCategory = async () => {
-    const { data } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', 'Cosas Regaladas')
-      .single();
+    const { data } = await supabase.from('categories').select('id').eq('name', 'Cosas Regaladas').single();
 
     if (data) {
       setCosasRegaladasCategoryId(data.id);
@@ -107,9 +112,9 @@ export function DonarCosas() {
             .from('listing_comments')
             .select('*', { count: 'exact', head: true })
             .eq('listing_id', listing.id)
-            .eq('is_read', false)
-            .neq('user_id', userId);
-          
+            .neq('user_id', userId)
+            .or('is_read.is.null,is_read.eq.false');
+
           return { ...listing, unread_count: count || 0 };
         })
       );
@@ -135,16 +140,18 @@ export function DonarCosas() {
     }
 
     // Clear previous photo if any
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
-    
-    setPhotos([{
-      file,
-      preview: URL.createObjectURL(file)
-    }]);
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
+
+    setPhotos([
+      {
+        file,
+        preview: URL.createObjectURL(file),
+      },
+    ]);
   };
 
   const removePhoto = () => {
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
     setPhotos([]);
   };
 
@@ -165,9 +172,9 @@ export function DonarCosas() {
         continue;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('listing-photos')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('listing-photos').getPublicUrl(fileName);
 
       await supabase.from('fotos_listings').insert({
         listing_id: listingId,
@@ -175,14 +182,14 @@ export function DonarCosas() {
         nombre_archivo: photo.file.name,
         mime_type: photo.file.type,
         file_size: photo.file.size,
-        es_principal: i === 0
+        es_principal: i === 0,
       });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!profileId || !cosasRegaladasCategoryId) {
       toast.error('Debes iniciar sesión para publicar');
       return;
@@ -207,7 +214,7 @@ export function DonarCosas() {
           is_active: true,
           estado: estado,
           municipio: municipio,
-          price: 0
+          price: 0,
         })
         .select('id')
         .single();
@@ -237,10 +244,7 @@ export function DonarCosas() {
 
   const handleDelete = async (listingId: string) => {
     try {
-      const { error } = await supabase
-        .from('listings')
-        .update({ is_active: false })
-        .eq('id', listingId);
+      const { error } = await supabase.from('listings').update({ is_active: false }).eq('id', listingId);
 
       if (error) throw error;
 
@@ -252,12 +256,19 @@ export function DonarCosas() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const targetId = deleteTarget.id;
+    setDeleteTarget(null);
+    await handleDelete(targetId);
+  };
+
   const resetForm = () => {
     setTitle('');
     setDescription('');
     setEstado('Sonora');
     setMunicipio('Cajeme');
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
     setPhotos([]);
   };
 
@@ -281,14 +292,15 @@ export function DonarCosas() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          ¿Tienes algo que ya no necesitas? ¡Regálalo a la comunidad!
-        </p>
+        <p className="text-sm text-muted-foreground">¿Tienes algo que ya no necesitas? ¡Regálalo a la comunidad!</p>
 
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog
+          open={isOpen}
+          onOpenChange={(open) => {
+            setIsOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="w-full">
               <Plus className="h-4 w-4 mr-2" />
@@ -337,19 +349,13 @@ export function DonarCosas() {
                   <Camera className="h-4 w-4 mr-2" />
                   {photos.length === 0 ? 'Agregar foto' : 'Foto agregada ✓'}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Opcional: 1 foto del artículo
-                </p>
-                
+                <p className="text-xs text-muted-foreground mt-1">Opcional: 1 foto del artículo</p>
+
                 {/* Photo preview */}
                 {photos.length > 0 && (
                   <div className="flex gap-2 mt-2">
                     <div className="relative">
-                      <img
-                        src={photos[0].preview}
-                        alt="Preview"
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
+                      <img src={photos[0].preview} alt="Preview" className="w-20 h-20 object-cover rounded-lg" />
                       <button
                         type="button"
                         onClick={removePhoto}
@@ -371,7 +377,9 @@ export function DonarCosas() {
                   </SelectTrigger>
                   <SelectContent>
                     {estados.map((est) => (
-                      <SelectItem key={est} value={est}>{est}</SelectItem>
+                      <SelectItem key={est} value={est}>
+                        {est}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -380,13 +388,19 @@ export function DonarCosas() {
               {/* Municipio selector */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Municipio *</label>
-                <Select value={municipio} onValueChange={setMunicipio} disabled={municipiosLoading || municipios.length === 0}>
+                <Select
+                  value={municipio}
+                  onValueChange={setMunicipio}
+                  disabled={municipiosLoading || municipios.length === 0}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona municipio" />
                   </SelectTrigger>
                   <SelectContent>
                     {municipios.map((mun) => (
-                      <SelectItem key={mun} value={mun}>{mun}</SelectItem>
+                      <SelectItem key={mun} value={mun}>
+                        {mun}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -402,23 +416,19 @@ export function DonarCosas() {
           <div className="space-y-2">
             <p className="text-sm font-medium">Mis publicaciones activas:</p>
             {myListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="flex items-center justify-between p-3 bg-muted rounded-lg"
-              >
+              <div key={listing.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
                   <p className="font-medium text-sm">{listing.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Expira: {new Date(listing.expires_at).toLocaleDateString()}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Expira: {new Date(listing.expires_at).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                       setChatListingId(listing.id);
                       setChatListingTitle(listing.title);
+                      setMyListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, unread_count: 0 } : l)));
                     }}
                     className="relative"
                   >
@@ -429,11 +439,7 @@ export function DonarCosas() {
                       </span>
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(listing.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget({ id: listing.id, title: listing.title })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -443,13 +449,16 @@ export function DonarCosas() {
         )}
 
         {/* Chat Dialog */}
-        <Dialog open={!!chatListingId} onOpenChange={(open) => {
-          if (!open) {
-            setChatListingId(null);
-            setChatListingTitle('');
-            fetchMyListings(); // Refresh to update unread counts
-          }
-        }}>
+        <Dialog
+          open={!!chatListingId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setChatListingId(null);
+              setChatListingTitle('');
+              fetchMyListings(); // Refresh to update unread counts
+            }
+          }}
+        >
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Mensajes: {chatListingTitle}</DialogTitle>
@@ -462,14 +471,34 @@ export function DonarCosas() {
                 isOwnerView={true}
                 defaultExpanded={true}
                 onUnreadChange={(count) => {
-                  setMyListings(prev => prev.map(l => 
-                    l.id === chatListingId ? { ...l, unread_count: count } : l
-                  ));
+                  setMyListings((prev) => prev.map((l) => (l.id === chatListingId ? { ...l, unread_count: count } : l)));
                 }}
               />
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar esta publicación?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteTarget?.title ? (
+                  <>
+                    Se eliminará <span className="font-medium">“{deleteTarget.title}”</span>. Esta acción no se puede deshacer.
+                  </>
+                ) : (
+                  'Esta acción no se puede deshacer.'
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
