@@ -66,20 +66,21 @@ export function AppointmentBooking({
     };
   }, [proveedorId]);
 
-  // Realtime: si alguien agenda/cancela mientras el usuario está viendo, se actualiza al instante
+  // Realtime: todos ven el mismo estado (ocupado/libre) leyendo desde una tabla pública sin PII
+  // Esto evita inconsistencias por RLS en `citas`.
   useEffect(() => {
     const channel = supabase
-      .channel(`citas-booking-${proveedorId}`)
+      .channel(`citas-publicas-booking-${proveedorId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'citas',
+          table: 'citas_publicas',
           filter: `proveedor_id=eq.${proveedorId}`,
         },
         (payload) => {
-          console.log('Realtime citas (booking) payload:', payload);
+          console.log('Realtime citas_publicas (booking) payload:', payload);
 
           setExistingAppointments((prev) => {
             const eventType = (payload as any).eventType as string;
@@ -87,16 +88,13 @@ export function AppointmentBooking({
             const oldRow = (payload as any).old;
 
             if (eventType === 'INSERT') {
-              if (!newRow || newRow.estado === 'cancelada') return prev;
+              if (!newRow) return prev;
               if (prev.some((p) => p.id === newRow.id)) return prev;
               return [...prev, newRow];
             }
 
             if (eventType === 'UPDATE') {
               if (!newRow) return prev;
-              if (newRow.estado === 'cancelada') {
-                return prev.filter((p) => p.id !== newRow.id);
-              }
               return prev.map((p) => (p.id === newRow.id ? newRow : p));
             }
 
