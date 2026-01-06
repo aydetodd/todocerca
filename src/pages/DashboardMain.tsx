@@ -7,6 +7,7 @@ import { Search, Users, Package, ClipboardList, Navigation } from 'lucide-react'
 import { GlobalHeader } from '@/components/GlobalHeader';
 import ProviderRegistration from '@/components/ProviderRegistration';
 import { DonarCosas } from '@/components/DonarCosas';
+import { CosasExtraviadas } from '@/components/CosasExtraviadas';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -256,6 +257,9 @@ export default function DashboardMain() {
 
           {/* Donar Cosas - Available for all users */}
           <DonarCosas />
+
+          {/* Cosas Extraviadas - Available for all users */}
+          <CosasExtraviadas />
         </div>
       </main>
     </div>
