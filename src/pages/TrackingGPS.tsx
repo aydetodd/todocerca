@@ -780,7 +780,7 @@ const TrackingGPS = () => {
   return (
     <>
       {/* Full Screen Map View */}
-      {showFullScreenMap && isActive && locations.length > 0 && (
+      {showFullScreenMap && isActive && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
           <div className="absolute top-4 left-4 z-[1001]">
             <Button 
