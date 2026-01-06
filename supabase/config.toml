@@ -36,6 +36,9 @@ verify_jwt = true
 [functions.send-whatsapp-welcome]
 verify_jwt = true
 
+[functions.send-whatsapp-appointment-update]
+verify_jwt = false
+
 [functions.flespi-webhook]
 verify_jwt = false
 

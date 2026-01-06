@@ -56,6 +56,78 @@ export function AppointmentBooking({
     loadUserProfile();
   }, [proveedorId]);
 
+  // Realtime: si alguien agenda/cancela mientras el usuario está viendo, se actualiza al instante
+  useEffect(() => {
+    const channel = supabase
+      .channel(`citas-booking-${proveedorId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'citas',
+          filter: `proveedor_id=eq.${proveedorId}`,
+        },
+        (payload) => {
+          console.log('Realtime citas (booking) payload:', payload);
+
+          setExistingAppointments((prev) => {
+            const eventType = (payload as any).eventType as string;
+            const newRow = (payload as any).new;
+            const oldRow = (payload as any).old;
+
+            if (eventType === 'INSERT') {
+              if (!newRow || newRow.estado === 'cancelada') return prev;
+              if (prev.some((p) => p.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            }
+
+            if (eventType === 'UPDATE') {
+              if (!newRow) return prev;
+              if (newRow.estado === 'cancelada') {
+                return prev.filter((p) => p.id !== newRow.id);
+              }
+              return prev.map((p) => (p.id === newRow.id ? newRow : p));
+            }
+
+            if (eventType === 'DELETE') {
+              const oldId = oldRow?.id;
+              if (!oldId) return prev;
+              return prev.filter((p) => p.id !== oldId);
+            }
+
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [proveedorId]);
+
+  // Si el usuario tenía un horario seleccionado y alguien más lo toma, lo deseleccionamos
+  useEffect(() => {
+    if (!selectedDate || !selectedTime) return;
+
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const nowBooked = existingAppointments.some((apt) => {
+      if (apt.fecha !== dateStr) return false;
+      if (apt.estado === 'cancelada') return false;
+      const aptStart = String(apt.hora_inicio).slice(0, 5);
+      return aptStart === selectedTime;
+    });
+
+    if (nowBooked) {
+      setSelectedTime(null);
+      toast({
+        title: 'Horario ocupado',
+        description: 'Alguien más tomó ese horario. Elige otro.',
+      });
+    }
+  }, [existingAppointments, selectedDate, selectedTime]);
+
   const loadUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -193,53 +265,81 @@ export function AppointmentBooking({
       toast({
         title: 'Datos incompletos',
         description: 'Por favor completa todos los campos requeridos',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
 
     setSubmitting(true);
     try {
-      const slot = availableSlots.find(s => s.hora_inicio === selectedTime);
+      const slot = availableSlots.find((s) => s.hora_inicio === selectedTime);
       if (!slot) throw new Error('Slot no encontrado');
+
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const alreadyBooked = existingAppointments.some((apt) => {
+        if (apt.fecha !== dateStr) return false;
+        if (apt.estado === 'cancelada') return false;
+        const aptStart = String(apt.hora_inicio).slice(0, 5);
+        return aptStart === selectedTime;
+      });
+
+      if (alreadyBooked) {
+        toast({
+          title: 'Horario ya no disponible',
+          description: 'Alguien más lo agendó. Selecciona otro horario.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Crear la cita
-      const { error } = await supabase
-        .from('citas')
-        .insert({
-          proveedor_id: proveedorId,
-          cliente_user_id: user?.id || null,
-          cliente_nombre: clienteNombre,
-          cliente_telefono: clienteTelefono,
-          fecha: format(selectedDate, 'yyyy-MM-dd'),
-          hora_inicio: selectedTime,
-          hora_fin: slot.hora_fin,
-          servicio: servicio || null,
-          notas: notas || null,
-          estado: 'pendiente'
-        });
+      // Crear la cita (protegida contra duplicados en DB)
+      const { error } = await supabase.from('citas').insert({
+        proveedor_id: proveedorId,
+        cliente_user_id: user?.id || null,
+        cliente_nombre: clienteNombre,
+        cliente_telefono: clienteTelefono,
+        fecha: dateStr,
+        hora_inicio: selectedTime,
+        hora_fin: slot.hora_fin,
+        servicio: servicio || null,
+        notas: notas || null,
+        estado: 'pendiente',
+      });
 
-      if (error) throw error;
+      if (error) {
+        // 23505 = unique_violation (alguien lo tomó al mismo tiempo)
+        if ((error as any).code === '23505') {
+          toast({
+            title: 'Horario ocupado',
+            description: 'Ese horario acaba de ser reservado por otra persona.',
+            variant: 'destructive',
+          });
+          await loadScheduleAndAppointments();
+          return;
+        }
+        throw error;
+      }
 
-      // Enviar por WhatsApp
+      // Enviar por WhatsApp (al proveedor) - abre WhatsApp en el teléfono del cliente
       if (proveedorTelefono) {
-        const mensaje = `🗓️ *Nueva Cita Agendada*\n\n` +
+        const mensaje =
+          `🗓️ *Nueva Cita Agendada*\n\n` +
           `📅 Fecha: ${format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}\n` +
           `🕐 Hora: ${selectedTime} - ${slot.hora_fin}\n` +
           `👤 Cliente: ${clienteNombre}\n` +
           `📱 Teléfono: ${clienteTelefono}\n` +
           (servicio ? `💼 Servicio: ${servicio}\n` : '') +
           (notas ? `📝 Notas: ${notas}` : '');
-        
+
         const whatsappUrl = `https://wa.me/${proveedorTelefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
         window.open(whatsappUrl, '_blank');
       }
 
       toast({
         title: '¡Cita agendada!',
-        description: `Tu cita para el ${format(selectedDate, "d 'de' MMMM", { locale: es })} a las ${selectedTime} ha sido registrada.`
+        description: `Tu cita para el ${format(selectedDate, "d 'de' MMMM", { locale: es })} a las ${selectedTime} ha sido registrada.`,
       });
 
       onClose?.();
@@ -248,7 +348,7 @@ export function AppointmentBooking({
       toast({
         title: 'Error',
         description: 'No se pudo agendar la cita',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
