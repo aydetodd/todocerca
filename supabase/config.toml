@@ -47,3 +47,21 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = true
+
+[functions.send-taxi-request-whatsapp]
+verify_jwt = false
+
+[functions.send-taxi-accepted-whatsapp]
+verify_jwt = false
+
+[functions.accept-tracking-invitation]
+verify_jwt = true
+
+[functions.accept-link-invitation]
+verify_jwt = true
+
+[functions.send-verification-sms]
+verify_jwt = false
+
+[functions.verify-phone-code]
+verify_jwt = false

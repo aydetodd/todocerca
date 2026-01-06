@@ -319,7 +319,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
         return;
       }
       
-      const { error } = await supabase
+      const { data: insertedRequest, error } = await supabase
         .from('taxi_requests')
         .insert({
           passenger_id: user.id,
@@ -336,13 +336,28 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           tarifa_km: tarifaKm,
           total_fare: routeInfo.totalFare,
           status: 'pending'
-        });
+        })
+        .select()
+        .single();
       
       if (error) throw error;
       
+      // Enviar WhatsApp al conductor
+      if (insertedRequest) {
+        try {
+          await supabase.functions.invoke('send-taxi-request-whatsapp', {
+            body: { requestId: insertedRequest.id }
+          });
+          console.log('WhatsApp enviado al conductor');
+        } catch (whatsappError) {
+          console.error('Error enviando WhatsApp al conductor:', whatsappError);
+          // No fallar la solicitud por esto
+        }
+      }
+      
       toast({
         title: "¡Solicitud enviada!",
-        description: `Se ha notificado a ${driver.business_name}. Kilometraje: ${routeInfo.totalKm.toFixed(2)} km`,
+        description: `Se ha notificado a ${driver.business_name} por WhatsApp. Kilometraje: ${routeInfo.totalKm.toFixed(2)} km`,
       });
       
       onClose();

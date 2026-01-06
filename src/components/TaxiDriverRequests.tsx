@@ -160,9 +160,20 @@ export default function TaxiDriverRequests() {
 
       if (error) throw error;
 
+      // Enviar WhatsApp al pasajero
+      try {
+        await supabase.functions.invoke('send-taxi-accepted-whatsapp', {
+          body: { requestId }
+        });
+        console.log('WhatsApp enviado al pasajero');
+      } catch (whatsappError) {
+        console.error('Error enviando WhatsApp al pasajero:', whatsappError);
+        // No fallar la aceptación por esto
+      }
+
       toast({
         title: "¡Solicitud aceptada!",
-        description: "El pasajero ha sido notificado. Ve al punto de recogida.",
+        description: "El pasajero ha sido notificado por WhatsApp. Ve al punto de recogida.",
       });
 
       fetchRequests();
