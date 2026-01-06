@@ -61,9 +61,32 @@ const ProviderProfile = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [invalidRoute, setInvalidRoute] = useState(false);
+
+  // Lista de rutas reservadas que no deben ser tratadas como slugs de proveedor
+  const reservedRoutes = [
+    'home', 'panel', 'auth', 'landing', 'dashboard', 'mi-perfil', 'mis-productos',
+    'gestion-pedidos', 'mapa', 'tracking-gps', 'join-group', 'gps-reports',
+    'search', 'mensajes', 'agregar-contacto', 'favoritos', 'donar', 'extraviados',
+    'privacidad', 'eliminar-cuenta', 'proveedor', 'gps', 'transporte'
+  ];
+
+  // Verificar si es una ruta reservada
+  useEffect(() => {
+    if (consecutiveNumber && reservedRoutes.includes(consecutiveNumber.toLowerCase())) {
+      console.log('Ruta reservada detectada:', consecutiveNumber);
+      setInvalidRoute(true);
+      setLoading(false);
+      // Redirigir a la ruta correcta
+      navigate(`/${consecutiveNumber}`, { replace: true });
+      return;
+    }
+  }, [consecutiveNumber, navigate]);
 
   // Verificar autenticación al cargar
   useEffect(() => {
+    if (invalidRoute) return;
+    
     if (!authLoading && !user) {
       // Guardar la URL actual para redirigir después del login
       const currentPath = proveedorId ? `/proveedor/${proveedorId}` : window.location.pathname;
@@ -74,7 +97,7 @@ const ProviderProfile = () => {
       });
       navigate('/auth');
     }
-  }, [authLoading, user, navigate, toast, proveedorId]);
+  }, [authLoading, user, navigate, toast, proveedorId, invalidRoute]);
 
   const {
     cart,
@@ -95,6 +118,11 @@ const ProviderProfile = () => {
   };
 
   useEffect(() => {
+    // No cargar si es ruta reservada
+    if (invalidRoute) {
+      return;
+    }
+    
     // Solo cargar datos si hay usuario
     if (authLoading) {
       return;
@@ -106,7 +134,7 @@ const ProviderProfile = () => {
     
     loadProviderData();
     loadUserProfile();
-  }, [proveedorId, consecutiveNumber, user, authLoading]);
+  }, [proveedorId, consecutiveNumber, user, authLoading, invalidRoute]);
 
   const loadUserProfile = async () => {
     if (!user) return;
