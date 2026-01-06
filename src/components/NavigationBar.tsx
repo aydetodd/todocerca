@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Heart, Share2 } from "lucide-react";
+import { Home, Heart, Share2, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ export const NavigationBar = () => {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        // Fallback: copiar al portapapeles
         await navigator.clipboard.writeText(window.location.href);
         toast.success("Enlace copiado al portapapeles");
       }
@@ -28,41 +27,49 @@ export const NavigationBar = () => {
     }
   };
 
-  const handleFavorites = () => {
-    navigate('/favoritos');
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50">
-      <div className="container flex items-center justify-around py-1.5">
+    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
+      <div className="container flex items-center justify-around py-2">
         <Button
-          variant={location.pathname === '/' ? 'default' : 'ghost'}
-          size="icon"
-          onClick={() => navigate('/')}
-          className="flex flex-col items-center gap-0.5 h-auto py-1"
+          variant={isActive('/home') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/home')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
         >
-          <Home className="h-4 w-4" />
+          <Home className="h-5 w-5" />
           <span className="text-[10px]">Inicio</span>
         </Button>
         
         <Button
-          variant={location.pathname === '/favoritos' ? 'default' : 'ghost'}
-          size="icon"
-          onClick={handleFavorites}
-          className="flex flex-col items-center gap-0.5 h-auto py-1"
+          variant={isActive('/favoritos') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/favoritos')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
         >
-          <Heart className="h-4 w-4" />
+          <Heart className="h-5 w-5" />
           <span className="text-[10px]">Favoritos</span>
         </Button>
         
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={handleShare}
-          className="flex flex-col items-center gap-0.5 h-auto py-1"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-5 w-5" />
           <span className="text-[10px]">Compartir</span>
+        </Button>
+
+        <Button
+          variant={isActive('/panel') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/panel')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
+        >
+          <LayoutGrid className="h-5 w-5" />
+          <span className="text-[10px]">Panel</span>
         </Button>
       </div>
     </div>
