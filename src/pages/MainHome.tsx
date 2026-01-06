@@ -16,78 +16,82 @@ export default function MainHome() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Botón de búsqueda */}
-        <Button
+      <main className="container mx-auto px-4 py-6 space-y-4">
+        {/* Todos los botones del mismo tamaño */}
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
           onClick={() => navigate('/search')}
-          className="w-full h-14 text-lg rounded-full"
-          size="lg"
         >
-          <Search className="h-5 w-5 mr-2" />
-          Búsqueda
-        </Button>
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Search className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Búsqueda</h3>
+              <p className="text-sm text-muted-foreground">Encuentra productos y servicios</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Categorías rápidas: Rutas y Taxis */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg group"
-            onClick={() => navigate('/search?category=rutas')}
-          >
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <Bus className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold text-lg">Rutas</h3>
-              <p className="text-sm text-muted-foreground">Transporte público</p>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg group"
-            onClick={() => navigate('/mapa?type=taxi')}
-          >
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <Car className="h-8 w-8 text-primary" />
-              </div>
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/mapa?type=taxi')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Car className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
               <h3 className="font-semibold text-lg">Taxis</h3>
-              <p className="text-sm text-muted-foreground">Servicio de taxi</p>
-            </CardContent>
-          </Card>
-        </div>
+              <p className="text-sm text-muted-foreground">Ver taxis disponibles en el mapa</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Secciones principales */}
-        <div className="space-y-4">
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-            onClick={() => navigate('/donar')}
-          >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Gift className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Cosas Regaladas</h3>
-                <p className="text-sm text-muted-foreground">Encuentra o regala cosas gratis</p>
-              </div>
-            </CardContent>
-          </Card>
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/search?category=rutas')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Bus className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Rutas de Transporte</h3>
+              <p className="text-sm text-muted-foreground">Buscar rutas de transporte público</p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-            onClick={() => navigate('/extraviados')}
-          >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <HelpCircle className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Cosas Extraviadas</h3>
-                <p className="text-sm text-muted-foreground">Reporta o encuentra objetos perdidos</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/donar')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Gift className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Cosas Regaladas</h3>
+              <p className="text-sm text-muted-foreground">Encuentra o regala cosas gratis</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/extraviados')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Cosas Extraviadas</h3>
+              <p className="text-sm text-muted-foreground">Reporta o encuentra objetos perdidos</p>
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       <NavigationBar />
