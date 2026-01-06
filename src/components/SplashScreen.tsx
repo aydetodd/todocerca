@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import splashIcon from '@/assets/todocerca-splash-icon.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -7,8 +7,14 @@ interface SplashScreenProps {
 
 export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [fadeOut, setFadeOut] = useState(false);
+  const [shrink, setShrink] = useState(false);
 
   useEffect(() => {
+    // Iniciar animación de shrink después de 0.5 segundos
+    const shrinkTimer = setTimeout(() => {
+      setShrink(true);
+    }, 500);
+
     // Iniciar fade out después de 2 segundos
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
@@ -20,6 +26,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     }, 2500);
 
     return () => {
+      clearTimeout(shrinkTimer);
       clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
     };
@@ -31,9 +38,21 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="flex flex-col items-center justify-center animate-pulse">
-        <MapPin className="h-[70vw] w-[70vw] max-h-[70vh] max-w-[70vh] text-primary" />
-        <h1 className="text-4xl md:text-6xl font-bold text-foreground mt-4">TodoCerca</h1>
+      <div className="flex flex-col items-center justify-center">
+        <img 
+          src={splashIcon} 
+          alt="TodoCerca" 
+          className={`transition-all duration-1000 ease-out ${
+            shrink 
+              ? 'w-[20vw] h-[20vw] max-w-[20vh] max-h-[20vh]' 
+              : 'w-[80vw] h-[80vw] max-w-[80vh] max-h-[80vh]'
+          }`}
+        />
+        <p className={`text-lg text-muted-foreground mt-6 transition-opacity duration-500 ${
+          shrink ? 'opacity-100' : 'opacity-0'
+        }`}>
+          Encuentra todo cerca de ti
+        </p>
       </div>
     </div>
   );
