@@ -54,6 +54,16 @@ export function AppointmentBooking({
   useEffect(() => {
     loadScheduleAndAppointments();
     loadUserProfile();
+
+    // Recargar citas cuando la ventana vuelve a tener foco (el usuario regresa)
+    const handleFocus = () => {
+      loadScheduleAndAppointments();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [proveedorId]);
 
   // Realtime: si alguien agenda/cancela mientras el usuario está viendo, se actualiza al instante
