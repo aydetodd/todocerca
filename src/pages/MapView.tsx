@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageCircle } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function MapView() {
+  const [searchParams] = useSearchParams();
+  const filterType = searchParams.get('type') as 'taxi' | 'ruta' | null;
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
@@ -114,11 +116,11 @@ export default function MapView() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <GlobalHeader title="Mapa en Tiempo Real" />
+      <GlobalHeader title={filterType === 'taxi' ? 'Taxis Disponibles' : filterType === 'ruta' ? 'Rutas de Transporte' : 'Mapa en Tiempo Real'} />
 
       {/* Map with overlays */}
       <div className="flex-1 relative">
-        <RealtimeMap onOpenChat={handleOpenChat} />
+        <RealtimeMap onOpenChat={handleOpenChat} filterType={filterType} />
         
         {/* Status Control overlay for providers on map */}
         {isProvider && (
