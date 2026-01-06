@@ -333,7 +333,16 @@ export function AppointmentBooking({
           (servicio ? `💼 Servicio: ${servicio}\n` : '') +
           (notas ? `📝 Notas: ${notas}` : '');
 
-        const whatsappUrl = `https://wa.me/${proveedorTelefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
+        // Limpiar número y asegurar prefijo 52 para México
+        let phoneClean = proveedorTelefono.replace(/\D/g, '');
+        if (phoneClean.length === 10) {
+          phoneClean = '52' + phoneClean;
+        } else if (phoneClean.startsWith('1') && phoneClean.length === 11) {
+          // Algunos números vienen como 1XXXXXXXXXX
+          phoneClean = '52' + phoneClean.slice(1);
+        }
+
+        const whatsappUrl = `https://wa.me/${phoneClean}?text=${encodeURIComponent(mensaje)}`;
         window.open(whatsappUrl, '_blank');
       }
 
