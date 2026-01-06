@@ -293,6 +293,8 @@ export default function TaxiDriverRequests() {
     setProcessingId(requestId);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('taxi_requests')
         .update({ 
@@ -302,6 +304,20 @@ export default function TaxiDriverRequests() {
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Cambiar estado del conductor a "busy" (amarillo) - actualiza el semáforo automáticamente
+      if (user) {
+        const { error: statusError } = await supabase
+          .from('profiles')
+          .update({ estado: 'busy' })
+          .eq('user_id', user.id);
+        
+        if (statusError) {
+          console.error('Error actualizando estado del conductor:', statusError);
+        } else {
+          console.log('🟡 Estado del conductor cambiado a OCUPADO (amarillo)');
+        }
+      }
 
       // Enviar WhatsApp al pasajero
       try {
@@ -315,7 +331,7 @@ export default function TaxiDriverRequests() {
 
       toast({
         title: "¡Solicitud aceptada!",
-        description: "El pasajero ha sido notificado por WhatsApp. Ve al punto de recogida.",
+        description: "Tu semáforo cambió a AMARILLO (ocupado). El pasajero ha sido notificado.",
       });
 
       fetchRequests();
@@ -369,6 +385,8 @@ export default function TaxiDriverRequests() {
     setCompletingTrip(true);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('taxi_requests')
         .update({ 
@@ -379,9 +397,23 @@ export default function TaxiDriverRequests() {
 
       if (error) throw error;
 
+      // Cambiar estado del conductor a "available" (verde) - semáforo vuelve a disponible
+      if (user) {
+        const { error: statusError } = await supabase
+          .from('profiles')
+          .update({ estado: 'available' })
+          .eq('user_id', user.id);
+        
+        if (statusError) {
+          console.error('Error actualizando estado del conductor:', statusError);
+        } else {
+          console.log('🟢 Estado del conductor cambiado a DISPONIBLE (verde)');
+        }
+      }
+
       toast({
         title: "¡Viaje completado!",
-        description: `Tarifa cobrada: $${activeTrip.total_fare.toFixed(2)} MXN`,
+        description: `Tarifa: $${activeTrip.total_fare.toFixed(2)} MXN. Tu semáforo volvió a VERDE (disponible).`,
       });
 
       // Limpiar mapa del viaje activo
