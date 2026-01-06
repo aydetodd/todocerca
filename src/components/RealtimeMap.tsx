@@ -23,6 +23,7 @@ interface RealtimeMapProps {
 export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
+  const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track estado for each marker
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
 
@@ -162,13 +163,26 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
       const isTaxi = location.is_taxi;
       const color = statusColors[estado];
       
-      console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}`);
+      const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
+      const existingMarker = markersRef.current[location.user_id];
+      const previousEstado = markerStatesRef.current[location.user_id];
       
-      // Remover marker existente para recrear con nuevo color
-      if (markersRef.current[location.user_id]) {
-        markersRef.current[location.user_id].remove();
+      // If marker exists and estado hasn't changed, just update position (keeps popup open)
+      if (existingMarker && previousEstado === estado) {
+        existingMarker.setLatLng(newLatLng);
+        return;
+      }
+      
+      console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}, recreating=${!!existingMarker}`);
+      
+      // Remover marker existente solo si el estado cambió
+      if (existingMarker) {
+        existingMarker.remove();
         delete markersRef.current[location.user_id];
       }
+      
+      // Track the new estado
+      markerStatesRef.current[location.user_id] = estado;
 
       let iconHtml: string;
       
@@ -223,9 +237,7 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
         iconAnchor: [isTaxi ? 16 : (isCurrentUser ? 15 : 10), isTaxi ? 24 : (isCurrentUser ? 15 : 10)]
       });
 
-      const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
       const marker = L.marker(newLatLng, { icon }).addTo(mapRef.current!);
-
       const visibilityText = isCurrentUser && estado === 'offline' 
         ? 'No visible para otros' 
         : isCurrentUser ? 'Visible para otros' : '';

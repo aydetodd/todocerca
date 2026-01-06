@@ -59,11 +59,13 @@ const ALL_MUNICIPIOS_VALUE = "__ALL__";
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category");
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
 
   const [searchPais, setSearchPais] = useState<string>("MX");
   const [searchEstado, setSearchEstado] = useState<string>("Sonora");
@@ -219,6 +221,22 @@ const ProductSearch = () => {
         if (cancelled) return;
 
         setCategories(data || []);
+        
+        // Auto-select category from URL param
+        if (initialCategory && !categoryParamProcessed && data) {
+          let targetCategory: Category | undefined;
+          
+          if (initialCategory === 'rutas') {
+            targetCategory = data.find(c => c.name === "Rutas de Transporte");
+          } else if (initialCategory === 'taxi') {
+            targetCategory = data.find(c => c.name === "Taxi");
+          }
+          
+          if (targetCategory) {
+            setSelectedCategoryId(targetCategory.id);
+            setCategoryParamProcessed(true);
+          }
+        }
       } catch (err) {
         console.error("[ProductSearch] Error loading categories:", err);
       }
@@ -228,7 +246,7 @@ const ProductSearch = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialCategory, categoryParamProcessed]);
 
   const handleSearch = async (e?: FormEvent) => {
     e?.preventDefault();
