@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, Car, DollarSign, Loader2, Map, Check, Edit2 } from 'lucide-react';
+import { MapPin, Navigation, Car, DollarSign, Loader2, Check, Target } from 'lucide-react';
 import L from 'leaflet';
 
 interface TaxiRequestModalProps {
@@ -61,26 +60,6 @@ async function calculateRoute(
   }
 }
 
-// Buscar direcciones con Nominatim (múltiples resultados)
-async function searchAddresses(query: string): Promise<AddressSuggestion[]> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=mx`;
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'TodoCerca-App' }
-    });
-    const data = await response.json();
-    
-    return data.map((item: any) => ({
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-      display_name: item.display_name
-    }));
-  } catch (error) {
-    console.error('Error buscando direcciones:', error);
-    return [];
-  }
-}
-
 // Reverse geocoding
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
@@ -103,14 +82,10 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   const taxiMarkerRef = useRef<L.Marker | null>(null);
   const pickupMarkerRef = useRef<L.Marker | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pickupAddress, setPickupAddress] = useState<string>('');
-  const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<AddressSuggestion | null>(null);
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
   const [routeInfo, setRouteInfo] = useState<{
     driverToPickup: RouteInfo | null;
@@ -119,8 +94,9 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     totalFare: number;
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [centerAddress, setCenterAddress] = useState<string>('');
+  const [loadingCenterAddress, setLoadingCenterAddress] = useState(false);
   
   const tarifaKm = driver.tarifa_km || 15;
   
@@ -172,20 +148,6 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       })
     }).addTo(map);
     
-    // Click en mapa para seleccionar origen o destino
-    map.on('click', async (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      const address = await reverseGeocode(lat, lng);
-      
-      if (selectionMode === 'pickup') {
-        selectPickup({ lat, lng }, address);
-        setSelectionMode('none');
-      } else if (selectionMode === 'destination') {
-        selectDestination({ lat, lng, display_name: address });
-        setSelectionMode('none');
-      }
-    });
-    
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -196,6 +158,30 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       }
     };
   }, [isOpen]);
+
+  // Actualizar dirección del centro cuando el mapa se mueve (solo en modo selección)
+  useEffect(() => {
+    if (!mapRef.current || selectionMode === 'none') return;
+    
+    const handleMoveEnd = async () => {
+      const center = mapRef.current?.getCenter();
+      if (!center) return;
+      
+      setLoadingCenterAddress(true);
+      const address = await reverseGeocode(center.lat, center.lng);
+      setCenterAddress(address);
+      setLoadingCenterAddress(false);
+    };
+    
+    mapRef.current.on('moveend', handleMoveEnd);
+    
+    // Obtener dirección inicial del centro
+    handleMoveEnd();
+    
+    return () => {
+      mapRef.current?.off('moveend', handleMoveEnd);
+    };
+  }, [selectionMode]);
 
   // Actualizar marcador de recogida
   useEffect(() => {
@@ -214,92 +200,64 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       }).addTo(mapRef.current);
     }
     
-    // Ajustar vista
-    const bounds = L.latLngBounds([
-      [driver.latitude, driver.longitude],
-      [pickupCoords.lat, pickupCoords.lng]
-    ]);
-    if (destinationCoords) {
-      bounds.extend([destinationCoords.lat, destinationCoords.lng]);
-    }
-    mapRef.current.fitBounds(bounds, { padding: [30, 30] });
-  }, [pickupCoords, driver.latitude, driver.longitude]);
-
-  // Buscar sugerencias mientras escribe
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    if (destination.length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    
-    searchTimeoutRef.current = setTimeout(async () => {
-      setSearching(true);
-      const results = await searchAddresses(destination);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
-      setSearching(false);
-    }, 500);
-    
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+    // Ajustar vista solo si no estamos en modo selección
+    if (selectionMode === 'none') {
+      const bounds = L.latLngBounds([
+        [driver.latitude, driver.longitude],
+        [pickupCoords.lat, pickupCoords.lng]
+      ]);
+      if (destinationCoords) {
+        bounds.extend([destinationCoords.lat, destinationCoords.lng]);
       }
-    };
-  }, [destination]);
-
-  // Seleccionar punto de recogida
-  const selectPickup = useCallback(async (coords: { lat: number; lng: number }, address: string) => {
-    setPickupCoords(coords);
-    setPickupAddress(address);
-    
-    // Recalcular ruta si ya hay destino
-    if (destinationCoords) {
-      await calculateFullRoute(coords, destinationCoords);
+      mapRef.current.fitBounds(bounds, { padding: [30, 30] });
     }
-  }, [destinationCoords]);
+  }, [pickupCoords, driver.latitude, driver.longitude, selectionMode]);
 
-  // Seleccionar destino de la lista o mapa
-  const selectDestination = useCallback(async (dest: AddressSuggestion) => {
-    setDestinationCoords(dest);
-    setDestination(dest.display_name.split(',')[0]);
-    setShowSuggestions(false);
+  // Confirmar selección del centro del mapa
+  const confirmCenterSelection = useCallback(async () => {
+    const center = mapRef.current?.getCenter();
+    if (!center) return;
     
-    // Actualizar marcador de destino
-    if (mapRef.current) {
-      if (destMarkerRef.current) {
-        destMarkerRef.current.setLatLng([dest.lat, dest.lng]);
-      } else {
-        destMarkerRef.current = L.marker([dest.lat, dest.lng], {
-          icon: L.divIcon({
-            html: '<div style="font-size: 24px;">🏁</div>',
-            className: 'dest-marker',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-          })
-        }).addTo(mapRef.current);
+    const coords = { lat: center.lat, lng: center.lng };
+    const address = centerAddress || await reverseGeocode(center.lat, center.lng);
+    
+    if (selectionMode === 'pickup') {
+      setPickupCoords(coords);
+      setPickupAddress(address);
+      
+      // Recalcular ruta si ya hay destino
+      if (destinationCoords) {
+        await calculateFullRoute(coords, destinationCoords);
+      }
+    } else if (selectionMode === 'destination') {
+      const dest = { lat: coords.lat, lng: coords.lng, display_name: address };
+      setDestinationCoords(dest);
+      
+      // Actualizar marcador de destino
+      if (mapRef.current) {
+        if (destMarkerRef.current) {
+          destMarkerRef.current.setLatLng([dest.lat, dest.lng]);
+        } else {
+          destMarkerRef.current = L.marker([dest.lat, dest.lng], {
+            icon: L.divIcon({
+              html: '<div style="font-size: 24px;">🏁</div>',
+              className: 'dest-marker',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            })
+          }).addTo(mapRef.current);
+        }
       }
       
-      // Ajustar vista
+      // Calcular ruta
       if (pickupCoords) {
-        const bounds = L.latLngBounds([
-          [driver.latitude, driver.longitude],
-          [pickupCoords.lat, pickupCoords.lng],
-          [dest.lat, dest.lng]
-        ]);
-        mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+        await calculateFullRoute(pickupCoords, dest);
       }
     }
     
-    // Calcular ruta
-    if (pickupCoords) {
-      await calculateFullRoute(pickupCoords, dest);
-    }
-  }, [pickupCoords, driver.latitude, driver.longitude]);
+    setSelectionMode('none');
+    setCenterAddress('');
+  }, [selectionMode, centerAddress, destinationCoords, pickupCoords]);
 
   // Calcular ruta completa: taxi → usuario → destino
   const calculateFullRoute = async (pickup: { lat: number; lng: number }, dest: { lat: number; lng: number }) => {
@@ -414,14 +372,12 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setDestination('');
       setDestinationCoords(null);
       setRouteInfo(null);
-      setSuggestions([]);
-      setShowSuggestions(false);
       setSelectionMode('none');
       setPickupCoords(null);
       setPickupAddress('');
+      setCenterAddress('');
       if (routeLayerRef.current) {
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
@@ -437,25 +393,37 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     }
   }, [isOpen]);
 
-  const getSelectionModeLabel = () => {
-    switch (selectionMode) {
-      case 'pickup': return 'Toca el mapa para seleccionar punto de recogida';
-      case 'destination': return 'Toca el mapa para seleccionar destino';
-      default: return null;
+  // Iniciar modo selección de pickup
+  const startPickupSelection = () => {
+    if (mapRef.current && pickupCoords) {
+      mapRef.current.setView([pickupCoords.lat, pickupCoords.lng], 16);
     }
+    setSelectionMode('pickup');
+  };
+
+  // Iniciar modo selección de destino
+  const startDestinationSelection = () => {
+    if (mapRef.current) {
+      if (destinationCoords) {
+        mapRef.current.setView([destinationCoords.lat, destinationCoords.lng], 16);
+      } else if (pickupCoords) {
+        mapRef.current.setView([pickupCoords.lat, pickupCoords.lng], 16);
+      }
+    }
+    setSelectionMode('destination');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="p-4 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Car className="h-5 w-5" />
             Solicitar Taxi
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-4 px-4">
           {/* Info del taxista */}
           <div className="bg-muted p-3 rounded-lg">
             <p className="font-semibold">{driver.business_name}</p>
@@ -465,16 +433,62 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
             </p>
           </div>
           
-          {/* Mini mapa */}
+          {/* Mapa con crosshair */}
           <div className="relative">
             <div 
               ref={mapContainerRef} 
-              className={`h-56 rounded-lg border overflow-hidden ${selectionMode !== 'none' ? 'ring-2 ring-primary' : ''}`}
+              className={`h-64 rounded-lg border overflow-hidden ${selectionMode !== 'none' ? 'ring-2 ring-primary' : ''}`}
             />
+            
+            {/* Crosshair - líneas cruzadas en el centro */}
             {selectionMode !== 'none' && (
-              <div className="absolute top-2 left-2 right-2 bg-primary text-primary-foreground text-sm px-3 py-1.5 rounded-lg text-center">
-                {getSelectionModeLabel()}
-              </div>
+              <>
+                {/* Línea vertical */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
+                {/* Línea horizontal */}
+                <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
+                {/* Punto central */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
+                
+                {/* Instrucción arriba */}
+                <div className="absolute top-2 left-2 right-2 bg-primary text-primary-foreground text-sm px-3 py-1.5 rounded-lg text-center z-[1001]">
+                  {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar recogida' : 'Mueve el mapa para seleccionar destino'}
+                </div>
+                
+                {/* Dirección del centro y botón confirmar */}
+                <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur text-sm p-2 rounded-lg z-[1001] space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary flex-shrink-0" />
+                    {loadingCenterAddress ? (
+                      <span className="text-muted-foreground text-xs">Cargando dirección...</span>
+                    ) : (
+                      <span className="line-clamp-2 text-xs">{centerAddress || 'Moviendo mapa...'}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectionMode('none');
+                        setCenterAddress('');
+                      }}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={confirmCenterSelection}
+                      disabled={loadingCenterAddress}
+                      className="flex-1"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Confirmar
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
           
@@ -490,27 +504,25 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
                 Obteniendo tu ubicación...
               </p>
             ) : pickupCoords ? (
-              <div className="bg-muted/50 p-2 rounded text-sm flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span className="line-clamp-2 flex-1 text-muted-foreground">{pickupAddress || 'Ubicación seleccionada'}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 flex-shrink-0"
-                  onClick={() => setSelectionMode(selectionMode === 'pickup' ? 'none' : 'pickup')}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
+              <div 
+                onClick={startPickupSelection}
+                className="bg-muted/50 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="line-clamp-2 flex-1 text-sm">{pickupAddress || 'Ubicación seleccionada'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
               </div>
             ) : (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSelectionMode('pickup')}
+                onClick={startPickupSelection}
                 className="w-full"
               >
-                <Map className="h-4 w-4 mr-2" />
-                Seleccionar en el mapa
+                <MapPin className="h-4 w-4 mr-2" />
+                Seleccionar punto de recogida
               </Button>
             )}
           </div>
@@ -521,52 +533,27 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
               <Navigation className="h-4 w-4 text-green-600" />
               Destino
             </Label>
-            <div className="relative">
-              <Input
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value);
-                  setDestinationCoords(null);
-                }}
-                placeholder="Escribe tu destino..."
-                className="pr-10"
-              />
-              {searching && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-              
-              {/* Lista de sugerencias */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => selectDestination(suggestion)}
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm border-b last:border-b-0 transition-colors"
-                    >
-                      <span className="line-clamp-2">{suggestion.display_name}</span>
-                    </button>
-                  ))}
+            {destinationCoords ? (
+              <div 
+                onClick={startDestinationSelection}
+                className="bg-green-500/10 p-3 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="line-clamp-2 flex-1 text-sm">{destinationCoords.display_name}</span>
                 </div>
-              )}
-            </div>
-            
-            {/* Botón seleccionar destino en mapa */}
-            <Button
-              variant={selectionMode === 'destination' ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectionMode(selectionMode === 'destination' ? 'none' : 'destination')}
-              className="w-full"
-            >
-              <Map className="h-4 w-4 mr-2" />
-              {selectionMode === 'destination' ? 'Cancelar selección' : 'Seleccionar destino en el mapa'}
-            </Button>
-            
-            {destinationCoords && (
-              <div className="bg-green-500/10 text-green-700 dark:text-green-400 p-2 rounded text-xs flex items-center gap-2">
-                <Check className="h-4 w-4 flex-shrink-0" />
-                <span className="line-clamp-2">{destinationCoords.display_name}</span>
+                <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
               </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startDestinationSelection}
+                className="w-full"
+              >
+                <Navigation className="h-4 w-4 mr-2" />
+                Seleccionar destino en el mapa
+              </Button>
             )}
           </div>
           
@@ -598,7 +585,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           )}
         </div>
         
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 p-4 pt-2">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
