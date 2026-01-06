@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, Car, DollarSign, Loader2, Check, Target } from 'lucide-react';
+import { MapPin, Navigation, Car, DollarSign, Loader2, Check, Target, Search, X } from 'lucide-react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface TaxiRequestModalProps {
   isOpen: boolean;
@@ -74,14 +76,31 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
+// Buscar direcciones por texto
+async function searchAddress(query: string): Promise<AddressSuggestion[]> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'TodoCerca-App' }
+    });
+    const data = await response.json();
+    return data.map((item: any) => ({
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      display_name: item.display_name
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiRequestModalProps) {
   const { toast } = useToast();
-  const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const miniMapRef = useRef<L.Map | null>(null);
+  const fullMapRef = useRef<L.Map | null>(null);
+  const miniMapContainerRef = useRef<HTMLDivElement>(null);
+  const fullMapContainerRef = useRef<HTMLDivElement>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
-  const taxiMarkerRef = useRef<L.Marker | null>(null);
-  const pickupMarkerRef = useRef<L.Marker | null>(null);
-  const destMarkerRef = useRef<L.Marker | null>(null);
   
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pickupAddress, setPickupAddress] = useState<string>('');
@@ -98,6 +117,11 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   const [centerAddress, setCenterAddress] = useState<string>('');
   const [loadingCenterAddress, setLoadingCenterAddress] = useState(false);
   const [tarifaKm, setTarifaKm] = useState<number>(driver.tarifa_km || 15);
+  
+  // Búsqueda de dirección
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<AddressSuggestion[]>([]);
+  const [searchingAddress, setSearchingAddress] = useState(false);
   
   // Obtener precio del producto taxi del proveedor
   useEffect(() => {
@@ -127,7 +151,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     }
   }, [isOpen, driver.user_id]);
   
-  // Obtener ubicación del usuario
+  // Obtener ubicación del usuario automáticamente
   useEffect(() => {
     if (isOpen && !pickupCoords) {
       setLoading(true);
@@ -153,96 +177,113 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     }
   }, [isOpen]);
 
-  // Inicializar mapa mini
+  // Inicializar mapa mini (vista previa)
   useEffect(() => {
-    if (!isOpen || !mapContainerRef.current || mapRef.current) return;
+    if (!isOpen || !miniMapContainerRef.current || miniMapRef.current || selectionMode !== 'none') return;
     
-    const map = L.map(mapContainerRef.current, { 
-      attributionControl: false,
-      zoomControl: true
-    }).setView([driver.latitude, driver.longitude], 13);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    mapRef.current = map;
-    
-    // Marcador del taxi
-    taxiMarkerRef.current = L.marker([driver.latitude, driver.longitude], {
-      icon: L.divIcon({
-        html: '<div style="font-size: 24px;">🚕</div>',
-        className: 'taxi-marker',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
-    }).addTo(map);
-    
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        taxiMarkerRef.current = null;
-        pickupMarkerRef.current = null;
-        destMarkerRef.current = null;
-      }
-    };
-  }, [isOpen]);
-
-  // Actualizar dirección del centro cuando el mapa se mueve (solo en modo selección)
-  useEffect(() => {
-    if (!mapRef.current || selectionMode === 'none') return;
-    
-    const handleMoveEnd = async () => {
-      const center = mapRef.current?.getCenter();
-      if (!center) return;
+    const timer = setTimeout(() => {
+      if (!miniMapContainerRef.current) return;
       
-      setLoadingCenterAddress(true);
-      const address = await reverseGeocode(center.lat, center.lng);
-      setCenterAddress(address);
-      setLoadingCenterAddress(false);
-    };
-    
-    mapRef.current.on('moveend', handleMoveEnd);
-    
-    // Obtener dirección inicial del centro
-    handleMoveEnd();
-    
-    return () => {
-      mapRef.current?.off('moveend', handleMoveEnd);
-    };
-  }, [selectionMode]);
-
-  // Actualizar marcador de recogida
-  useEffect(() => {
-    if (!mapRef.current || !pickupCoords) return;
-    
-    if (pickupMarkerRef.current) {
-      pickupMarkerRef.current.setLatLng([pickupCoords.lat, pickupCoords.lng]);
-    } else {
-      pickupMarkerRef.current = L.marker([pickupCoords.lat, pickupCoords.lng], {
+      const map = L.map(miniMapContainerRef.current, { 
+        attributionControl: false,
+        zoomControl: false
+      }).setView([driver.latitude, driver.longitude], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      miniMapRef.current = map;
+      
+      // Marcador del taxi
+      L.marker([driver.latitude, driver.longitude], {
         icon: L.divIcon({
-          html: '<div style="font-size: 24px;">📍</div>',
-          className: 'pickup-marker',
+          html: '<div style="font-size: 24px;">🚕</div>',
+          className: 'taxi-marker',
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })
-      }).addTo(mapRef.current);
+      }).addTo(map);
+      
+      setTimeout(() => map.invalidateSize(), 100);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isOpen, driver.latitude, driver.longitude, selectionMode]);
+  
+  // Limpiar mapa mini al cerrar o cambiar modo
+  useEffect(() => {
+    if (!isOpen || selectionMode !== 'none') {
+      if (miniMapRef.current) {
+        miniMapRef.current.remove();
+        miniMapRef.current = null;
+      }
+    }
+  }, [isOpen, selectionMode]);
+
+  // Inicializar mapa fullscreen para selección
+  useEffect(() => {
+    if (selectionMode === 'none' || !fullMapContainerRef.current) return;
+    
+    // Limpiar mapa anterior si existe
+    if (fullMapRef.current) {
+      fullMapRef.current.remove();
+      fullMapRef.current = null;
     }
     
-    // Ajustar vista solo si no estamos en modo selección
-    if (selectionMode === 'none') {
-      const bounds = L.latLngBounds([
-        [driver.latitude, driver.longitude],
-        [pickupCoords.lat, pickupCoords.lng]
-      ]);
-      if (destinationCoords) {
-        bounds.extend([destinationCoords.lat, destinationCoords.lng]);
+    const timer = setTimeout(() => {
+      if (!fullMapContainerRef.current) return;
+      
+      // Determinar centro inicial
+      let initialCenter: [number, number] = [driver.latitude, driver.longitude];
+      if (selectionMode === 'pickup' && pickupCoords) {
+        initialCenter = [pickupCoords.lat, pickupCoords.lng];
+      } else if (selectionMode === 'destination') {
+        if (destinationCoords) {
+          initialCenter = [destinationCoords.lat, destinationCoords.lng];
+        } else if (pickupCoords) {
+          initialCenter = [pickupCoords.lat, pickupCoords.lng];
+        }
       }
-      mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+      
+      const map = L.map(fullMapContainerRef.current, { 
+        attributionControl: false,
+        zoomControl: true
+      }).setView(initialCenter, 16);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      fullMapRef.current = map;
+      
+      // Evento moveend para actualizar dirección
+      const handleMoveEnd = async () => {
+        const center = map.getCenter();
+        setLoadingCenterAddress(true);
+        const address = await reverseGeocode(center.lat, center.lng);
+        setCenterAddress(address);
+        setLoadingCenterAddress(false);
+      };
+      
+      map.on('moveend', handleMoveEnd);
+      handleMoveEnd(); // Obtener dirección inicial
+      
+      setTimeout(() => map.invalidateSize(), 100);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [selectionMode, driver.latitude, driver.longitude]);
+  
+  // Limpiar mapa fullscreen al salir del modo selección
+  useEffect(() => {
+    if (selectionMode === 'none' && fullMapRef.current) {
+      fullMapRef.current.remove();
+      fullMapRef.current = null;
     }
-  }, [pickupCoords, driver.latitude, driver.longitude, selectionMode]);
+  }, [selectionMode]);
 
   // Confirmar selección del centro del mapa
   const confirmCenterSelection = useCallback(async () => {
-    const center = mapRef.current?.getCenter();
+    const center = fullMapRef.current?.getCenter();
     if (!center) return;
     
     const coords = { lat: center.lat, lng: center.lng };
@@ -259,22 +300,6 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     } else if (selectionMode === 'destination') {
       const dest = { lat: coords.lat, lng: coords.lng, display_name: address };
       setDestinationCoords(dest);
-      
-      // Actualizar marcador de destino
-      if (mapRef.current) {
-        if (destMarkerRef.current) {
-          destMarkerRef.current.setLatLng([dest.lat, dest.lng]);
-        } else {
-          destMarkerRef.current = L.marker([dest.lat, dest.lng], {
-            icon: L.divIcon({
-              html: '<div style="font-size: 24px;">🏁</div>',
-              className: 'dest-marker',
-              iconSize: [30, 30],
-              iconAnchor: [15, 15]
-            })
-          }).addTo(mapRef.current);
-        }
-      }
       
       // Calcular ruta
       if (pickupCoords) {
@@ -310,25 +335,6 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
         totalKm,
         totalFare
       });
-      
-      if (mapRef.current) {
-        if (routeLayerRef.current) {
-          routeLayerRef.current.remove();
-        }
-        
-        const fullGeometry = [
-          ...driverToPickup.geometry,
-          ...pickupToDestination.geometry
-        ];
-        
-        routeLayerRef.current = L.polyline(fullGeometry, {
-          color: '#3b82f6',
-          weight: 4,
-          opacity: 0.8
-        }).addTo(mapRef.current);
-        
-        mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [30, 30] });
-      }
     } else {
       toast({
         title: "Error calculando ruta",
@@ -405,70 +411,121 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       setPickupCoords(null);
       setPickupAddress('');
       setCenterAddress('');
+      setSearchQuery('');
+      setSearchResults([]);
       if (routeLayerRef.current) {
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
-      }
-      if (destMarkerRef.current) {
-        destMarkerRef.current.remove();
-        destMarkerRef.current = null;
-      }
-      if (pickupMarkerRef.current) {
-        pickupMarkerRef.current.remove();
-        pickupMarkerRef.current = null;
       }
     }
   }, [isOpen]);
 
   // Iniciar modo selección de pickup
   const startPickupSelection = () => {
-    if (mapRef.current && pickupCoords) {
-      mapRef.current.setView([pickupCoords.lat, pickupCoords.lng], 16);
-    }
     setSelectionMode('pickup');
   };
 
   // Iniciar modo selección de destino
   const startDestinationSelection = () => {
-    if (mapRef.current) {
-      if (destinationCoords) {
-        mapRef.current.setView([destinationCoords.lat, destinationCoords.lng], 16);
-      } else if (pickupCoords) {
-        mapRef.current.setView([pickupCoords.lat, pickupCoords.lng], 16);
-      }
-    }
     setSelectionMode('destination');
   };
+  
+  // Buscar direcciones
+  const handleSearchAddress = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSearchingAddress(true);
+    const results = await searchAddress(searchQuery);
+    setSearchResults(results);
+    setSearchingAddress(false);
+  };
+  
+  // Seleccionar resultado de búsqueda y ir al mapa para ajustar
+  const selectSearchResult = (result: AddressSuggestion) => {
+    setSearchResults([]);
+    setSearchQuery('');
+    // Ir al mapa para ajustar la ubicación exacta
+    if (fullMapRef.current) {
+      fullMapRef.current.setView([result.lat, result.lng], 17);
+    }
+    setCenterAddress(result.display_name);
+  };
 
-  // Modo pantalla completa para selección en mapa
-  if (selectionMode !== 'none') {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-none w-screen h-screen m-0 p-0 rounded-none">
-          <div className="relative w-full h-full">
+  // Render principal - usar un solo contenedor de mapa
+  return (
+    <>
+      {/* Mapa pantalla completa cuando está en modo selección */}
+      {selectionMode !== 'none' && (
+        <div className="fixed inset-0 bg-background z-50 flex flex-col">
+          <div className="relative flex-1">
             <div 
-              ref={mapContainerRef} 
+              ref={fullMapContainerRef} 
               className="absolute inset-0 w-full h-full"
             />
             
             {/* Crosshair - líneas cruzadas en el centro */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
             <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-3 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
             
             {/* Instrucción arriba */}
-            <div className="absolute top-4 left-4 right-4 bg-primary text-primary-foreground text-base font-medium px-4 py-2 rounded-lg text-center z-[1001]">
+            <div className="absolute top-4 left-4 right-4 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg text-center z-[1001]">
               {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar punto de recogida' : 'Mueve el mapa para seleccionar destino'}
             </div>
             
+            {/* Búsqueda de dirección (solo para destino) */}
+            {selectionMode === 'destination' && (
+              <div className="absolute top-16 left-4 right-4 z-[1001] space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Buscar dirección... ej: Autozone"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchAddress()}
+                    className="flex-1 bg-background/95"
+                  />
+                  <Button 
+                    onClick={handleSearchAddress} 
+                    size="icon"
+                    disabled={searchingAddress}
+                  >
+                    {searchingAddress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                {/* Resultados de búsqueda */}
+                {searchResults.length > 0 && (
+                  <div className="bg-background/95 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {searchResults.map((result, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => selectSearchResult(result)}
+                        className="p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted/50"
+                      >
+                        <p className="text-sm line-clamp-2">{result.display_name}</p>
+                      </div>
+                    ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchResults([])}
+                      className="w-full"
+                    >
+                      <X className="h-4 w-4 mr-1" /> Cerrar resultados
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Dirección del centro y botones */}
-            <div className="absolute bottom-8 left-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg z-[1001] space-y-3 shadow-lg">
+            <div className="absolute bottom-4 left-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg z-[1001] space-y-3 shadow-lg">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary flex-shrink-0" />
                 {loadingCenterAddress ? (
-                  <span className="text-muted-foreground">Cargando dirección...</span>
+                  <span className="text-sm text-muted-foreground">Cargando dirección...</span>
                 ) : (
-                  <span className="line-clamp-2 flex-1">{centerAddress || 'Moviendo mapa...'}</span>
+                  <span className="line-clamp-2 flex-1 text-sm">{centerAddress || 'Mueve el mapa...'}</span>
                 )}
               </div>
               <div className="flex gap-3">
@@ -477,6 +534,8 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
                   onClick={() => {
                     setSelectionMode('none');
                     setCenterAddress('');
+                    setSearchQuery('');
+                    setSearchResults([]);
                   }}
                   className="flex-1"
                 >
@@ -493,149 +552,147 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
               </div>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Dialog principal */}
+      <Dialog open={isOpen && selectionMode === 'none'} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              <Car className="h-5 w-5" />
+              Solicitar Taxi
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 px-4">
+            {/* Info del taxista */}
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="font-semibold">{driver.business_name}</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <DollarSign className="h-4 w-4" />
+                Tarifa: ${tarifaKm.toFixed(2)} MXN/km
+              </p>
+            </div>
+            
+            {/* Mapa mini preview - solo se muestra cuando no está en modo selección */}
+            {selectionMode === 'none' && (
+              <div 
+                ref={miniMapContainerRef} 
+                className="h-48 rounded-lg border overflow-hidden"
+              />
+            )}
+            
+            {/* Punto de recogida */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <MapPin className="h-4 w-4 text-primary" />
+                Punto de recogida
+              </Label>
+              {loading && !pickupCoords ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Obteniendo tu ubicación...
+                </p>
+              ) : pickupCoords ? (
+                <div 
+                  onClick={startPickupSelection}
+                  className="bg-muted/50 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span className="line-clamp-2 flex-1 text-sm">{pickupAddress || 'Ubicación seleccionada'}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Toca para cambiar (por si el taxi es para otra persona)</p>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startPickupSelection}
+                  className="w-full"
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Seleccionar punto de recogida
+                </Button>
+              )}
+            </div>
+            
+            {/* Destino */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Navigation className="h-4 w-4 text-green-600" />
+                Destino
+              </Label>
+              {destinationCoords ? (
+                <div 
+                  onClick={startDestinationSelection}
+                  className="bg-green-500/10 p-3 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span className="line-clamp-2 flex-1 text-sm">{destinationCoords.display_name}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startDestinationSelection}
+                  className="w-full"
+                >
+                  <Navigation className="h-4 w-4 mr-2" />
+                  Seleccionar destino en el mapa
+                </Button>
+              )}
+            </div>
+            
+            {/* Resumen de ruta */}
+            {routeInfo && (
+              <div className="bg-primary/10 p-4 rounded-lg space-y-2 border border-primary/20">
+                <h4 className="font-semibold text-primary">Resumen del viaje</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Taxi → Recogida</p>
+                    <p className="font-medium">{routeInfo.driverToPickup?.distance_km.toFixed(2)} km</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Recogida → Destino</p>
+                    <p className="font-medium">{routeInfo.pickupToDestination?.distance_km.toFixed(2)} km</p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-primary/20">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Distancia total:</span>
+                    <span className="font-bold text-lg">{routeInfo.totalKm.toFixed(2)} km</span>
+                  </div>
+                  <div className="flex justify-between items-center text-primary">
+                    <span className="font-semibold">Tarifa estimada:</span>
+                    <span className="font-bold text-xl">${routeInfo.totalFare.toFixed(2)} MXN</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2 p-4 pt-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSubmitRequest}
+              disabled={!routeInfo || submitting || !pickupCoords}
+            >
+              {submitting ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
+              ) : (
+                <>Solicitar Taxi</>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            Solicitar Taxi
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4 px-4">
-          {/* Info del taxista */}
-          <div className="bg-muted p-3 rounded-lg">
-            <p className="font-semibold">{driver.business_name}</p>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
-              Tarifa: ${tarifaKm.toFixed(2)} MXN/km
-            </p>
-          </div>
-          
-          {/* Mapa mini preview */}
-          <div className="relative">
-            <div 
-              ref={mapContainerRef} 
-              className="h-48 rounded-lg border overflow-hidden"
-            />
-            
-          </div>
-          
-          {/* Punto de recogida */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1">
-              <MapPin className="h-4 w-4 text-primary" />
-              Punto de recogida
-            </Label>
-            {loading && !pickupCoords ? (
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Obteniendo tu ubicación...
-              </p>
-            ) : pickupCoords ? (
-              <div 
-                onClick={startPickupSelection}
-                className="bg-muted/50 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <span className="line-clamp-2 flex-1 text-sm">{pickupAddress || 'Ubicación seleccionada'}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={startPickupSelection}
-                className="w-full"
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                Seleccionar punto de recogida
-              </Button>
-            )}
-          </div>
-          
-          {/* Destino */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1">
-              <Navigation className="h-4 w-4 text-green-600" />
-              Destino
-            </Label>
-            {destinationCoords ? (
-              <div 
-                onClick={startDestinationSelection}
-                className="bg-green-500/10 p-3 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <span className="line-clamp-2 flex-1 text-sm">{destinationCoords.display_name}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={startDestinationSelection}
-                className="w-full"
-              >
-                <Navigation className="h-4 w-4 mr-2" />
-                Seleccionar destino en el mapa
-              </Button>
-            )}
-          </div>
-          
-          {/* Resumen de ruta */}
-          {routeInfo && (
-            <div className="bg-primary/10 p-4 rounded-lg space-y-2 border border-primary/20">
-              <h4 className="font-semibold text-primary">Resumen del viaje</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Taxi → Recogida</p>
-                  <p className="font-medium">{routeInfo.driverToPickup?.distance_km.toFixed(2)} km</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Recogida → Destino</p>
-                  <p className="font-medium">{routeInfo.pickupToDestination?.distance_km.toFixed(2)} km</p>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-primary/20">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold">Distancia total:</span>
-                  <span className="font-bold text-lg">{routeInfo.totalKm.toFixed(2)} km</span>
-                </div>
-                <div className="flex justify-between items-center text-primary">
-                  <span className="font-semibold">Tarifa estimada:</span>
-                  <span className="font-bold text-xl">${routeInfo.totalFare.toFixed(2)} MXN</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <DialogFooter className="gap-2 p-4 pt-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleSubmitRequest}
-            disabled={!routeInfo || submitting || !pickupCoords}
-          >
-            {submitting ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
-            ) : (
-              <>Solicitar Taxi</>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }
