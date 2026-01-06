@@ -49,8 +49,8 @@ const Auth = () => {
         localStorage.removeItem('redirectAfterLogin');
         navigate(redirectUrl);
       } else {
-        // Nota: /profile ya no existe; enviamos al dashboard principal
-        navigate("/dashboard");
+        // Ir a la pantalla principal después del login
+        navigate("/home");
       }
     }
   }, [user, authLoading, navigate, showProviderRegistration, skipAutoRedirect]);
@@ -298,7 +298,7 @@ const Auth = () => {
   const handleProviderRegistrationComplete = () => {
     setShowProviderRegistration(false);
     setSkipAutoRedirect(false);
-    navigate('/dashboard');
+    navigate('/home');
   };
 
   const handleForgotPassword = () => {
