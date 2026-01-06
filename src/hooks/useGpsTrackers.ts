@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,18 +30,40 @@ export interface GpsTracker {
 
 export const useGpsTrackers = (groupId: string | null) => {
   const [trackers, setTrackers] = useState<GpsTracker[]>([]);
+  const [allTrackers, setAllTrackers] = useState<GpsTracker[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const { toast } = useToast();
 
-  const fetchTrackers = async () => {
+  const fetchTrackers = useCallback(async () => {
     if (!groupId) {
       setTrackers([]);
+      setAllTrackers([]);
       setLoading(false);
       return;
     }
 
     try {
-      // Fetch trackers with their latest location
+      // 1. Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setTrackers([]);
+        setAllTrackers([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Check if user is owner of the group
+      const { data: groupData } = await supabase
+        .from('tracking_groups')
+        .select('owner_id')
+        .eq('id', groupId)
+        .single();
+
+      const userIsOwner = groupData?.owner_id === user.id;
+      setIsOwner(userIsOwner);
+
+      // 3. Fetch all trackers with their latest location
       const { data: trackersData, error } = await supabase
         .from('gps_trackers')
         .select(`
@@ -75,7 +97,49 @@ export const useGpsTrackers = (groupId: string | null) => {
         } as GpsTracker;
       });
 
-      setTrackers(flattenedTrackers);
+      setAllTrackers(flattenedTrackers);
+
+      // 4. If owner, show all trackers. Otherwise filter by sub-group membership.
+      if (userIsOwner) {
+        setTrackers(flattenedTrackers);
+      } else {
+        // Get member ID for current user in this group
+        const { data: memberData } = await supabase
+          .from('tracking_group_members')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!memberData) {
+          setTrackers([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get subgroups where this member is assigned
+        const { data: memberSubgroups } = await supabase
+          .from('gps_tracker_subgroup_members')
+          .select('subgroup_id')
+          .eq('member_id', memberData.id);
+
+        const subgroupIds = (memberSubgroups || []).map(s => s.subgroup_id);
+
+        if (subgroupIds.length === 0) {
+          // No subgroups assigned = no trackers visible (unless owner, handled above)
+          setTrackers([]);
+        } else {
+          // Get tracker IDs from those subgroups
+          const { data: subgroupDevices } = await supabase
+            .from('gps_tracker_subgroup_devices')
+            .select('tracker_id')
+            .in('subgroup_id', subgroupIds);
+
+          const visibleTrackerIds = new Set((subgroupDevices || []).map(d => d.tracker_id));
+          const filteredTrackers = flattenedTrackers.filter(t => visibleTrackerIds.has(t.id));
+          setTrackers(filteredTrackers);
+        }
+      }
     } catch (error: any) {
       console.error('[GPS TRACKERS] Error fetching:', error);
       toast({
@@ -86,7 +150,7 @@ export const useGpsTrackers = (groupId: string | null) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId, toast]);
 
   useEffect(() => {
     fetchTrackers();
@@ -236,7 +300,9 @@ export const useGpsTrackers = (groupId: string | null) => {
 
   return {
     trackers,
+    allTrackers, // All trackers (for owner use in sub-group management)
     loading,
+    isOwner,
     addTracker,
     removeTracker,
     toggleTrackerActive,

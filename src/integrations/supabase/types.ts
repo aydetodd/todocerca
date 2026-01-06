@@ -689,6 +689,113 @@ export type Database = {
           },
         ]
       }
+      gps_tracker_subgroup_devices: {
+        Row: {
+          created_at: string
+          id: string
+          subgroup_id: string
+          tracker_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subgroup_id: string
+          tracker_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subgroup_id?: string
+          tracker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_subgroup_devices_subgroup_id_fkey"
+            columns: ["subgroup_id"]
+            isOneToOne: false
+            referencedRelation: "gps_tracker_subgroups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_tracker_subgroup_devices_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "gps_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_tracker_subgroup_members: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          subgroup_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          subgroup_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          subgroup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_subgroup_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_group_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_tracker_subgroup_members_subgroup_id_fkey"
+            columns: ["subgroup_id"]
+            isOneToOne: false
+            referencedRelation: "gps_tracker_subgroups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_tracker_subgroups: {
+        Row: {
+          created_at: string
+          description: string | null
+          group_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          group_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracker_subgroups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gps_trackers: {
         Row: {
           battery_level: number | null
@@ -1917,12 +2024,20 @@ export type Database = {
         }[]
       }
       get_user_email_by_id: { Args: { p_user_id: string }; Returns: string }
+      get_visible_tracker_ids: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: string[]
+      }
       has_valid_tracking_invitation: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
       is_tracking_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_tracking_group_owner: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
