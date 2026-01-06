@@ -50,11 +50,13 @@ export function ListingPublicChat({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [commentCount, setCommentCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasMarkedAsRead = useRef(false);
 
   const isOwner = currentUserId === ownerId;
 
@@ -71,7 +73,7 @@ export function ListingPublicChat({
 
   // Fetch comments when expanded
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!isExpanded || initialLoadDone) return;
 
     const fetchComments = async () => {
       setLoading(true);
@@ -91,35 +93,30 @@ export function ListingPublicChat({
           .select('user_id, apodo, nombre')
           .in('user_id', userIds);
 
-        let commentsWithProfiles: Comment[] =
+        const commentsWithProfiles: Comment[] =
           commentsData?.map((comment) => ({
             ...comment,
             profile: profilesData?.find((p) => p.user_id === comment.user_id),
           })) || [];
 
-        // If current user is the owner, mark all unread comments as read
-        if (isOwner && commentsWithProfiles.length > 0) {
-          const { error: markError } = await supabase
+        setComments(commentsWithProfiles);
+        setCommentCount(commentsWithProfiles.length);
+        setInitialLoadDone(true);
+
+        // If current user is the owner, mark all unread comments as read (only once)
+        if (isOwner && !hasMarkedAsRead.current && commentsWithProfiles.length > 0) {
+          hasMarkedAsRead.current = true;
+          
+          await supabase
             .from('listing_comments')
             .update({ is_read: true })
             .eq('listing_id', listingId)
             .neq('user_id', currentUserId)
             .or('is_read.is.null,is_read.eq.false');
 
-          if (markError) {
-            console.error('Error marking comments as read:', markError);
-          }
-
-          commentsWithProfiles = commentsWithProfiles.map((c) =>
-            c.user_id !== currentUserId ? { ...c, is_read: true } : c
-          );
-
           setUnreadCount(0);
           onUnreadChange?.(0);
         }
-
-        setComments(commentsWithProfiles);
-        setCommentCount(commentsWithProfiles.length);
       } catch (error) {
         console.error('Error fetching comments:', error);
       } finally {
@@ -128,8 +125,12 @@ export function ListingPublicChat({
     };
 
     fetchComments();
+  }, [listingId, isExpanded, isOwner, currentUserId, onUnreadChange, initialLoadDone]);
 
-    // Subscribe to new comments and updates
+  // Subscribe to new comments and updates
+  useEffect(() => {
+    if (!isExpanded) return;
+
     const channel = supabase
       .channel(`listing_comments_${listingId}`)
       .on(
@@ -174,15 +175,10 @@ export function ListingPublicChat({
 
           // If owner is viewing, mark as read immediately
           if (isOwner && newComment.user_id !== currentUserId) {
-            const { error: markError } = await supabase
+            await supabase
               .from('listing_comments')
               .update({ is_read: true })
               .eq('id', newComment.id);
-
-            if (markError) {
-              console.error('Error marking new comment as read:', markError);
-              return;
-            }
 
             setComments((prev) =>
               prev.map((c) => (c.id === newComment.id ? { ...c, is_read: true } : c))
