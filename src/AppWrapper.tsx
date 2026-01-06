@@ -18,7 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
 import MapView from "./pages/MapView";
 import ProductSearch from "./pages/ProductSearch";
-import Profile from "./pages/Profile";
+
 import ProviderProfile from "./pages/ProviderProfile";
 import MiPerfil from "./pages/MiPerfil";
 import MisProductos from "./pages/MisProductos";
@@ -113,7 +113,7 @@ export default function AppWrapper() {
           <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/profile" element={<Profile />} />
+          
           <Route path="/dashboard" element={<DashboardMain />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
           <Route path="/mis-productos" element={<MisProductos />} />
