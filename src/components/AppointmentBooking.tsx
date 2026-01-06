@@ -163,12 +163,13 @@ export function AppointmentBooking({
       if (horariosError) throw horariosError;
       setSchedule(horarios || []);
 
-      // Cargar citas existentes (próximos 30 días)
+      // Cargar citas existentes (próximos 30 días) desde una tabla pública sin PII
+      // (todos los usuarios ven exactamente lo mismo, sin depender de RLS en `citas`).
       const today = startOfToday();
       const endDate = addDays(today, 30);
-      
-      const { data: citas, error: citasError } = await supabase
-        .from('citas')
+
+      const { data: citasPublicas, error: citasError } = await supabase
+        .from('citas_publicas')
         .select('*')
         .eq('proveedor_id', proveedorId)
         .gte('fecha', format(today, 'yyyy-MM-dd'))
@@ -176,7 +177,7 @@ export function AppointmentBooking({
         .neq('estado', 'cancelada');
 
       if (citasError) throw citasError;
-      setExistingAppointments(citas || []);
+      setExistingAppointments(citasPublicas || []);
 
     } catch (error) {
       console.error('Error loading data:', error);
