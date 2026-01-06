@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, LogOut, Package, Users, ShoppingCart, Search, Calendar, Clock } from "lucide-react";
+import { MapPin, LogOut, Package, Users, ShoppingCart, Search, Calendar, Clock, Car } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import { OrdersManagement } from "@/components/OrdersManagement";
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration";
 import { ProviderAppointments } from "@/components/ProviderAppointments";
+import TaxiDriverRequests from "@/components/TaxiDriverRequests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -249,8 +250,14 @@ const Dashboard = () => {
         {/* Product Management and Appointments for Providers */}
         {isProvider && userSpecificData?.id && (
           <div className="mt-8 space-y-8">
-            <Tabs defaultValue="products" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+            <Tabs defaultValue={profile?.provider_type === 'taxi' ? 'taxi' : 'products'} className="w-full">
+              <TabsList className={`grid w-full ${profile?.provider_type === 'taxi' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                {profile?.provider_type === 'taxi' && (
+                  <TabsTrigger value="taxi" className="flex items-center gap-2">
+                    <Car className="h-4 w-4" />
+                    <span className="hidden sm:inline">Taxi</span>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="products" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
                   <span className="hidden sm:inline">Productos</span>
@@ -268,6 +275,12 @@ const Dashboard = () => {
                   <span className="hidden sm:inline">Horario</span>
                 </TabsTrigger>
               </TabsList>
+
+              {profile?.provider_type === 'taxi' && (
+                <TabsContent value="taxi" className="mt-6">
+                  <TaxiDriverRequests />
+                </TabsContent>
+              )}
 
               <TabsContent value="products" className="mt-6">
                 <ProductManagement proveedorId={userSpecificData.id} />
