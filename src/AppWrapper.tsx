@@ -90,7 +90,7 @@ export default function AppWrapper() {
           <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           
-          <Route path="/dashboard" element={<DashboardMain />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
           <Route path="/mis-productos" element={<MisProductos />} />
           <Route path="/gestion-pedidos" element={<GestionPedidos />} />

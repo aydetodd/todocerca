@@ -63,9 +63,9 @@ export const NavigationBar = () => {
         </Button>
 
         <Button
-          variant={isActive('/panel') ? 'default' : 'ghost'}
+          variant={isActive('/dashboard') ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => navigate('/panel')}
+          onClick={() => navigate('/dashboard')}
           className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
         >
           <LayoutGrid className="h-5 w-5" />

@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showTaxiTab, setShowTaxiTab] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -65,6 +66,25 @@ const Dashboard = () => {
       }
 
       setProfile(profileData);
+
+      // Mostrar pestaña Taxi si el proveedor es taxi o si ya tiene solicitudes asignadas
+      if (profileData.role === 'proveedor') {
+        const isTaxiByProfile = profileData.provider_type === 'taxi';
+
+        if (isTaxiByProfile) {
+          setShowTaxiTab(true);
+        } else {
+          const { data: anyTaxi, error: anyTaxiError } = await supabase
+            .from('taxi_requests')
+            .select('id')
+            .eq('driver_id', user.id)
+            .limit(1);
+
+          setShowTaxiTab(!anyTaxiError && !!anyTaxi && anyTaxi.length > 0);
+        }
+      } else {
+        setShowTaxiTab(false);
+      }
 
       // Obtener datos específicos según el rol
       if (profileData.role === 'cliente') {
@@ -120,6 +140,7 @@ const Dashboard = () => {
   }
 
   const isProvider = profile?.role === 'proveedor';
+  const showTaxi = isProvider && showTaxiTab;
 
   return (
     <div className="min-h-screen bg-background">
@@ -250,9 +271,9 @@ const Dashboard = () => {
         {/* Product Management and Appointments for Providers */}
         {isProvider && userSpecificData?.id && (
           <div className="mt-8 space-y-8">
-            <Tabs defaultValue={profile?.provider_type === 'taxi' ? 'taxi' : 'products'} className="w-full">
-              <TabsList className={`grid w-full ${profile?.provider_type === 'taxi' ? 'grid-cols-5' : 'grid-cols-4'}`}>
-                {profile?.provider_type === 'taxi' && (
+            <Tabs defaultValue={showTaxi ? 'taxi' : 'products'} className="w-full">
+              <TabsList className={`grid w-full ${showTaxi ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                {showTaxi && (
                   <TabsTrigger value="taxi" className="flex items-center gap-2">
                     <Car className="h-4 w-4" />
                     <span className="hidden sm:inline">Taxi</span>
@@ -276,7 +297,7 @@ const Dashboard = () => {
                 </TabsTrigger>
               </TabsList>
 
-              {profile?.provider_type === 'taxi' && (
+              {showTaxi && (
                 <TabsContent value="taxi" className="mt-6">
                   <TaxiDriverRequests />
                 </TabsContent>
