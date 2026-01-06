@@ -78,7 +78,6 @@ export default function TaxiDriverRequests() {
   const [completingTrip, setCompletingTrip] = useState(false);
   const [showFullscreenMap, setShowFullscreenMap] = useState(false);
   const mapRefs = useRef<{ [key: string]: L.Map }>({});
-  const activeTripMapRef = useRef<L.Map | null>(null);
   const previousRequestIdsRef = useRef<Set<string>>(new Set());
 
   // Cargar solicitudes pendientes y viaje activo
@@ -186,9 +185,6 @@ export default function TaxiDriverRequests() {
     return () => {
       supabase.removeChannel(channel);
       Object.values(mapRefs.current).forEach(map => map.remove());
-      if (activeTripMapRef.current) {
-        activeTripMapRef.current.remove();
-      }
     };
   }, []);
 
@@ -236,57 +232,6 @@ export default function TaxiDriverRequests() {
       }
     });
   }, [pendingRequests]);
-
-  // Inicializar mapa para viaje activo
-  useEffect(() => {
-    if (!activeTrip) {
-      if (activeTripMapRef.current) {
-        activeTripMapRef.current.remove();
-        activeTripMapRef.current = null;
-      }
-      return;
-    }
-
-    const containerId = 'active-trip-map';
-    const container = document.getElementById(containerId);
-    
-    if (container && !activeTripMapRef.current) {
-      const map = L.map(container, {
-        attributionControl: false,
-        zoomControl: true,
-        dragging: true,
-        scrollWheelZoom: true
-      }).setView([activeTrip.pickup_lat, activeTrip.pickup_lng], 14);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-      L.marker([activeTrip.pickup_lat, activeTrip.pickup_lng], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">📍</div>',
-          className: 'pickup-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map).bindPopup('Punto de recogida');
-
-      L.marker([activeTrip.destination_lat, activeTrip.destination_lng], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">🏁</div>',
-          className: 'destination-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map).bindPopup('Destino');
-
-      const bounds = L.latLngBounds(
-        [activeTrip.pickup_lat, activeTrip.pickup_lng],
-        [activeTrip.destination_lat, activeTrip.destination_lng]
-      );
-      map.fitBounds(bounds, { padding: [30, 30] });
-
-      activeTripMapRef.current = map;
-    }
-  }, [activeTrip]);
 
   // Aceptar solicitud
   const handleAccept = async (requestId: string) => {
@@ -416,11 +361,6 @@ export default function TaxiDriverRequests() {
         description: `Tarifa: $${activeTrip.total_fare.toFixed(2)} MXN. Tu semáforo volvió a VERDE (disponible).`,
       });
 
-      // Limpiar mapa del viaje activo
-      if (activeTripMapRef.current) {
-        activeTripMapRef.current.remove();
-        activeTripMapRef.current = null;
-      }
 
       setActiveTrip(null);
       fetchRequests();
@@ -502,21 +442,15 @@ export default function TaxiDriverRequests() {
                 )}
               </div>
 
-              {/* Mapa con botón fullscreen */}
-              <div className="relative">
-                <div 
-                  id="active-trip-map"
-                  className="h-48 rounded-lg overflow-hidden"
-                />
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="absolute top-2 right-2 bg-background/80 shadow-lg z-[400]"
-                  onClick={() => setShowFullscreenMap(true)}
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {/* Botón para abrir mapa fullscreen */}
+              <Button
+                variant="default"
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-yellow-950"
+                onClick={() => setShowFullscreenMap(true)}
+              >
+                <Maximize2 className="h-4 w-4 mr-2" />
+                Ver mapa GPS en pantalla completa
+              </Button>
               
               {/* Direcciones */}
               <div className="space-y-2 text-sm">
@@ -556,31 +490,21 @@ export default function TaxiDriverRequests() {
                 </div>
               </div>
               
-              {/* Botones */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowFullscreenMap(true)}
-                >
-                  <Maximize2 className="h-4 w-4 mr-2" />
-                  Ver mapa GPS
-                </Button>
-                <Button
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                  onClick={handleCompleteTrip}
-                  disabled={completingTrip}
-                >
-                  {completingTrip ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
-                      Completar
-                    </>
-                  )}
-                </Button>
-              </div>
+              {/* Botón completar viaje */}
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={handleCompleteTrip}
+                disabled={completingTrip}
+              >
+                {completingTrip ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    Completar Viaje
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </>

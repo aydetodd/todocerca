@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Navigation, DollarSign, Loader2, Clock, User, Car, Phone, X, CheckCircle2, Maximize2 } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import TaxiLiveMap from './TaxiLiveMap';
 
 interface TripData {
@@ -34,7 +32,6 @@ export default function PassengerActiveTrip() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [showFullscreenMap, setShowFullscreenMap] = useState(false);
-  const mapRef = useRef<L.Map | null>(null);
 
   // Cargar viaje activo del pasajero
   const fetchTrip = async () => {
@@ -115,63 +112,8 @@ export default function PassengerActiveTrip() {
 
     return () => {
       supabase.removeChannel(channel);
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
     };
   }, []);
-
-  // Inicializar mapa
-  useEffect(() => {
-    if (!trip) {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      return;
-    }
-
-    const containerId = 'passenger-trip-map';
-    const container = document.getElementById(containerId);
-    
-    if (container && !mapRef.current) {
-      const map = L.map(container, {
-        attributionControl: false,
-        zoomControl: true,
-        dragging: true,
-        scrollWheelZoom: true
-      }).setView([trip.pickup_lat, trip.pickup_lng], 14);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-      L.marker([trip.pickup_lat, trip.pickup_lng], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">📍</div>',
-          className: 'pickup-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map).bindPopup('Punto de recogida');
-
-      L.marker([trip.destination_lat, trip.destination_lng], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">🏁</div>',
-          className: 'destination-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map).bindPopup('Destino');
-
-      const bounds = L.latLngBounds(
-        [trip.pickup_lat, trip.pickup_lng],
-        [trip.destination_lat, trip.destination_lng]
-      );
-      map.fitBounds(bounds, { padding: [30, 30] });
-
-      mapRef.current = map;
-    }
-  }, [trip]);
 
   // Cancelar viaje
   const handleCancelTrip = async () => {
@@ -194,11 +136,6 @@ export default function PassengerActiveTrip() {
         title: "Viaje cancelado",
         description: "Has cancelado tu solicitud de taxi.",
       });
-
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
 
       setTrip(null);
     } catch (error: any) {
@@ -295,21 +232,15 @@ export default function PassengerActiveTrip() {
             </div>
           )}
 
-          {/* Mapa con botón fullscreen */}
-          <div className="relative">
-            <div 
-              id="passenger-trip-map"
-              className="h-40 rounded-lg overflow-hidden"
-            />
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute top-2 right-2 bg-background/80 shadow-lg z-[400]"
-              onClick={() => setShowFullscreenMap(true)}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Botón para abrir mapa fullscreen */}
+          <Button
+            variant="default"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-yellow-950"
+            onClick={() => setShowFullscreenMap(true)}
+          >
+            <Maximize2 className="h-4 w-4 mr-2" />
+            Ver mapa GPS en pantalla completa
+          </Button>
           
           {/* Direcciones */}
           <div className="space-y-2 text-sm">
@@ -349,35 +280,24 @@ export default function PassengerActiveTrip() {
             </div>
           </div>
           
-          {/* Botones */}
-          <div className="flex gap-2">
+          {/* Botón cancelar solo si está pendiente */}
+          {isPending && (
             <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowFullscreenMap(true)}
+              variant="destructive"
+              className="w-full"
+              onClick={handleCancelTrip}
+              disabled={cancelling}
             >
-              <Maximize2 className="h-4 w-4 mr-2" />
-              Ver mapa GPS
+              {cancelling ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar solicitud
+                </>
+              )}
             </Button>
-            
-            {isPending && (
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleCancelTrip}
-                disabled={cancelling}
-              >
-                {cancelling ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
-                ) : (
-                  <>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
     </>
