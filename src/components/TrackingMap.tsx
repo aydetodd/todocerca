@@ -22,9 +22,20 @@ interface TrackingMapProps {
   currentUserId: string | null;
   showNamesButton?: boolean;
   gpsTrackers?: GpsTracker[];
+  /**
+   * Evita ajustes automáticos de la vista (fitBounds/setView) cuando cambie el número
+   * de ubicaciones. Útil para mantener el zoom/posición actual al cambiar el semáforo.
+   */
+  preserveViewOnUpdates?: boolean;
 }
 
-const TrackingMap = ({ locations, currentUserId, showNamesButton = false, gpsTrackers = [] }: TrackingMapProps) => {
+const TrackingMap = ({
+  locations,
+  currentUserId,
+  showNamesButton = false,
+  gpsTrackers = [],
+  preserveViewOnUpdates = false,
+}: TrackingMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const trackerMarkersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -53,7 +64,11 @@ const TrackingMap = ({ locations, currentUserId, showNamesButton = false, gpsTra
     if (!mapRef.current || locations.length === 0) return;
 
     // Determinar si debemos recentrar el mapa
-    const shouldRecenter = !hasInitializedView.current || locations.length !== previousLocationCount.current;
+    // - Siempre centramos en la primera carga
+    // - En actualizaciones posteriores, solo recentramos si preserveViewOnUpdates es false
+    const shouldRecenter =
+      !hasInitializedView.current ||
+      (!preserveViewOnUpdates && locations.length !== previousLocationCount.current);
     previousLocationCount.current = locations.length;
 
     const bounds = L.latLngBounds([]);
@@ -149,7 +164,7 @@ const TrackingMap = ({ locations, currentUserId, showNamesButton = false, gpsTra
       }
       hasInitializedView.current = true;
     }
-  }, [locations, currentUserId]);
+  }, [locations, currentUserId, preserveViewOnUpdates]);
 
   // Effect para GPS Trackers
   useEffect(() => {
