@@ -109,6 +109,7 @@ const ProductSearch = () => {
   );
 
   const isCosasGratis = (selectedCategoryName || "").toLowerCase().includes("gratis");
+  const isCosasExtraviadas = (selectedCategoryName || "").toLowerCase().includes("extraviadas");
 
   const vehicleFilter: VehicleFilter = useMemo(() => {
     if (selectedCategoryName === "Taxi") return "taxi";
@@ -236,13 +237,21 @@ const ProductSearch = () => {
     setHasSearched(true);
 
     try {
-      // Check if searching for "Cosas gratis" category
-      if (isCosasGratis) {
-        // Search in listings table for free items
+      // Check if searching for "Cosas gratis" or "Cosas Extraviadas" category
+      if (isCosasGratis || isCosasExtraviadas) {
+        // Get the category ID for filtering
+        const categoryName = isCosasExtraviadas ? "Cosas Extraviadas" : "Cosas gratis";
+        const { data: categoryData } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", categoryName)
+          .single();
+
+        // Search in listings table
         let query = supabase
           .from("listings")
           .select(`
-            id, title, description, price, is_free, latitude, longitude, profile_id, created_at, expires_at,
+            id, title, description, price, is_free, latitude, longitude, profile_id, created_at, expires_at, estado, municipio, category_id,
             profiles (
               id, nombre, user_id, telefono
             ),
@@ -252,6 +261,19 @@ const ProductSearch = () => {
           `)
           .eq("is_active", true)
           .gt("expires_at", new Date().toISOString());
+
+        // Filter by category
+        if (categoryData?.id) {
+          query = query.eq("category_id", categoryData.id);
+        }
+
+        // Location filter for extraviadas
+        if (isCosasExtraviadas) {
+          if (searchEstado) query = query.eq("estado", searchEstado);
+          if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+            query = query.eq("municipio", searchCiudad);
+          }
+        }
 
         // Keyword search
         if (searchTerm.trim()) {
@@ -279,12 +301,15 @@ const ProductSearch = () => {
           unit: "unidad",
           is_listing: true,
           is_free: listing.is_free,
+          is_extraviado: isCosasExtraviadas,
           latitude: listing.latitude,
           longitude: listing.longitude,
           profiles: listing.profiles,
           fotos: listing.fotos_listings,
           created_at: listing.created_at,
           expires_at: listing.expires_at,
+          estado: listing.estado,
+          municipio: listing.municipio,
         }));
 
         setResults(transformedResults);
@@ -306,7 +331,7 @@ const ProductSearch = () => {
             descripcion: String(listing.description ?? ""),
             stock: 1,
             unit: "unidad",
-            categoria: "Cosas gratis",
+            categoria: categoryName,
           };
 
           if (!existing) {
@@ -591,8 +616,8 @@ const ProductSearch = () => {
               </p>
             </div>
 
-            {/* Hide map toggle for Cosas Gratis - only show list */}
-            {!isCosasGratis && (
+            {/* Hide map toggle for Cosas Gratis and Cosas Extraviadas - only show list */}
+            {!isCosasGratis && !isCosasExtraviadas && (
               <div className="flex rounded-lg overflow-hidden border border-border mb-6">
                 <Button
                   type="button"
@@ -615,7 +640,7 @@ const ProductSearch = () => {
               </div>
             )}
 
-            {viewMode === "map" && !isCosasGratis ? (
+            {viewMode === "map" && !isCosasGratis && !isCosasExtraviadas ? (
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
                 <div className="absolute top-4 left-4 z-[1000]">
                   <Button
@@ -651,12 +676,13 @@ const ProductSearch = () => {
                 results.map((item) => {
                     const foto = item.fotos?.find((f: any) => f.es_principal) || item.fotos?.[0];
                     const isRoute = vehicleFilter === "ruta";
+                    const isExtraviado = item.is_extraviado;
                     
                     return (
-                      <Card key={item.id}>
+                      <Card key={item.id} className={isExtraviado ? "border-orange-500/30" : ""}>
                         <CardContent className="p-4">
                           <div className="flex gap-3">
-                          {/* Photo thumbnail (not for routes) */}
+                          {/* Photo thumbnail (not for routes, optional for extraviados) */}
                           {!isRoute && foto?.url && (
                             <div 
                               className="flex-shrink-0 cursor-pointer"
@@ -673,23 +699,39 @@ const ProductSearch = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
                                 <h2 className="font-semibold text-lg truncate">{item.nombre}</h2>
-                                {(isCosasGratis || item.is_free) && (
+                                {/* Badge for extraviados */}
+                                {isExtraviado && (
+                                  <Badge className={`flex-shrink-0 ${item.is_free ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                                    {item.is_free ? '🔍 Perdido' : '✅ Encontrado'}
+                                  </Badge>
+                                )}
+                                {/* Badge for cosas gratis (non-extraviadas) */}
+                                {!isExtraviado && (isCosasGratis || item.is_free) && (
                                   <Badge className="bg-green-500 text-white flex-shrink-0">¡Gratis!</Badge>
                                 )}
                               </div>
                               
+                              {/* Description - more prominent for extraviados */}
                               {item.descripcion && (
-                                <p className="text-muted-foreground text-sm line-clamp-2 mt-1">
+                                <p className={`text-muted-foreground text-sm mt-1 ${isExtraviado ? 'line-clamp-4' : 'line-clamp-2'}`}>
                                   {item.descripcion}
                                 </p>
                               )}
 
+                              {/* Location info for extraviados */}
+                              {isExtraviado && (item.estado || item.municipio) && (
+                                <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {item.municipio && item.estado ? `${item.municipio}, ${item.estado}` : item.estado || item.municipio}
+                                </p>
+                              )}
+
                               <div className="flex flex-wrap items-center gap-2 mt-2">
-                                {!item.is_free && (
+                                {!isExtraviado && !item.is_free && (
                                   <Badge variant="secondary">${item.precio}</Badge>
                                 )}
-                                {/* Hide stock for routes */}
-                                {!item.is_listing && !isRoute && (
+                                {/* Hide stock for routes and extraviados */}
+                                {!item.is_listing && !isRoute && !isExtraviado && (
                                   <Badge variant="outline">Stock: {item.stock}</Badge>
                                 )}
                               </div>
@@ -701,20 +743,27 @@ const ProductSearch = () => {
                                   {item.proveedores.nombre}
                                 </p>
                               )}
-                              {!isRoute && item.profiles && (
+                              {!isRoute && !isExtraviado && item.profiles && (
                                 <p className="text-sm text-muted-foreground mt-2">
                                   <MapPin className="w-3 h-3 inline mr-1" />
                                   {item.profiles.nombre}
                                 </p>
                               )}
+                              {/* Show author name for extraviados */}
+                              {isExtraviado && item.profiles && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Publicado por: {item.profiles.nombre}
+                                </p>
+                              )}
 
-                              {/* Date info for free items (not for routes) */}
+                              {/* Date info for listings (not for routes) */}
                               {!isRoute && item.is_listing && item.created_at && (
                                 <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                                   <span>
                                     Publicado: {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
                                   </span>
-                                  {item.expires_at && (
+                                  {/* Only show expiration for non-extraviados */}
+                                  {!isExtraviado && item.expires_at && (
                                     <span className="flex items-center gap-1 text-orange-500">
                                       <Clock className="w-3 h-3" />
                                       Expira: {format(new Date(item.expires_at), "dd/MM/yyyy HH:mm", { locale: es })} ({formatDistanceToNow(new Date(item.expires_at), { locale: es, addSuffix: true })})
@@ -725,7 +774,18 @@ const ProductSearch = () => {
                             </div>
                           </div>
 
-                          {/* Chat público para cosas gratis */}
+                          {/* Info adicional para extraviados */}
+                          {isExtraviado && (
+                            <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm">
+                              <p className="text-muted-foreground">
+                                {item.is_free 
+                                  ? "💬 Si encontraste este objeto, usa el chat para contactar al dueño."
+                                  : "💬 Si este es tu objeto, describe cómo es para demostrar que es tuyo."}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Chat público para cosas gratis y extraviadas */}
                           {item.is_listing && (
                             <ListingPublicChat 
                               listingId={item.id}
