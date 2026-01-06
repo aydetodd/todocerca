@@ -329,6 +329,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
               <div className="space-y-2 pr-3">
                 {comments.map((comment) => {
                   const isOwn = comment.user_id === currentUserId;
+                  const isReadByOwner = comment.is_read && !isOwn;
                   return (
                     <div
                       key={comment.id}
@@ -338,11 +339,13 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
                         className={`max-w-[85%] rounded-lg px-3 py-2 ${
                           isOwn
                             ? 'bg-primary text-primary-foreground'
-                            : 'bg-background border'
+                            : isReadByOwner
+                              ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
+                              : 'bg-background border'
                         }`}
                       >
                         {!isOwn && (
-                          <p className="text-xs font-medium mb-1 text-primary">
+                          <p className={`text-xs font-medium mb-1 ${isReadByOwner ? 'text-green-700 dark:text-green-400' : 'text-primary'}`}>
                             {getDisplayName(comment)}
                           </p>
                         )}
@@ -350,13 +353,16 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
                       </div>
                       <span className={`text-[10px] mt-0.5 px-1 ${
                         isOwn 
-                          ? (comment.is_read ? 'text-green-500' : 'text-red-500')
-                          : 'text-muted-foreground'
+                          ? (comment.is_read ? 'text-green-500' : 'text-muted-foreground')
+                          : isReadByOwner
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-muted-foreground'
                       }`}>
                         {formatDistanceToNow(new Date(comment.created_at), {
                           addSuffix: true,
                           locale: es
                         })}
+                        {isReadByOwner && ' ✓ Leído'}
                       </span>
                     </div>
                   );
