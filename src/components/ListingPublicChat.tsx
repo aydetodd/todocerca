@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageCircle, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -34,10 +34,18 @@ interface ListingPublicChatProps {
 const playNotificationSound = () => {
   const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
   audio.volume = 1.0;
-  audio.play().catch(e => console.log('Audio play failed:', e));
+  audio.play().catch((e) => console.log('Audio play failed:', e));
 };
 
-export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId, isOwnerView = false, defaultExpanded = false, onUnreadChange }: ListingPublicChatProps) {
+export function ListingPublicChat({
+  listingId,
+  listingTitle,
+  ownerName,
+  ownerId,
+  isOwnerView = false,
+  defaultExpanded = false,
+  onUnreadChange,
+}: ListingPublicChatProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -53,7 +61,9 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
   // Fetch current user
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
     };
     fetchUser();
@@ -75,35 +85,41 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
         if (error) throw error;
 
         // Fetch profiles for users
-        const userIds = [...new Set(commentsData?.map(c => c.user_id) || [])];
+        const userIds = [...new Set(commentsData?.map((c) => c.user_id) || [])];
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('user_id, apodo, nombre')
           .in('user_id', userIds);
 
-        const commentsWithProfiles = commentsData?.map(comment => ({
-          ...comment,
-          profile: profilesData?.find(p => p.user_id === comment.user_id)
-        })) || [];
-
-        setComments(commentsWithProfiles);
-        setCommentCount(commentsWithProfiles.length);
+        let commentsWithProfiles: Comment[] =
+          commentsData?.map((comment) => ({
+            ...comment,
+            profile: profilesData?.find((p) => p.user_id === comment.user_id),
+          })) || [];
 
         // If current user is the owner, mark all unread comments as read
         if (isOwner && commentsWithProfiles.length > 0) {
-          const unreadIds = commentsWithProfiles
-            .filter(c => !c.is_read && c.user_id !== currentUserId)
-            .map(c => c.id);
-          
-          if (unreadIds.length > 0) {
-            await supabase
-              .from('listing_comments')
-              .update({ is_read: true })
-              .in('id', unreadIds);
+          const { error: markError } = await supabase
+            .from('listing_comments')
+            .update({ is_read: true })
+            .eq('listing_id', listingId)
+            .neq('user_id', currentUserId)
+            .or('is_read.is.null,is_read.eq.false');
+
+          if (markError) {
+            console.error('Error marking comments as read:', markError);
           }
+
+          commentsWithProfiles = commentsWithProfiles.map((c) =>
+            c.user_id !== currentUserId ? { ...c, is_read: true } : c
+          );
+
           setUnreadCount(0);
           onUnreadChange?.(0);
         }
+
+        setComments(commentsWithProfiles);
+        setCommentCount(commentsWithProfiles.length);
       } catch (error) {
         console.error('Error fetching comments:', error);
       } finally {
@@ -122,11 +138,11 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
           event: 'INSERT',
           schema: 'public',
           table: 'listing_comments',
-          filter: `listing_id=eq.${listingId}`
+          filter: `listing_id=eq.${listingId}`,
         },
         async (payload) => {
           const newComment = payload.new as Comment;
-          
+
           // Fetch profile for the new comment
           const { data: profileData } = await supabase
             .from('profiles')
@@ -134,34 +150,45 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
             .eq('user_id', newComment.user_id)
             .single();
 
-          const commentWithProfile = {
+          const commentWithProfile: Comment = {
             ...newComment,
-            profile: profileData
+            profile: profileData || undefined,
           };
 
-          setComments(prev => [...prev, commentWithProfile]);
-          setCommentCount(prev => prev + 1);
+          setComments((prev) => [...prev, commentWithProfile]);
+          setCommentCount((prev) => prev + 1);
 
           // Play sound if it's from another user
           if (newComment.user_id !== currentUserId) {
             playNotificationSound();
-            
+
             // Show system notification if owner
             if (isOwner && 'Notification' in window && Notification.permission === 'granted') {
               new Notification(`Nuevo comentario en: ${listingTitle}`, {
                 body: newComment.message,
                 icon: '/icon-192.png',
-                tag: 'listing-comment'
+                tag: 'listing-comment',
               });
             }
           }
 
           // If owner is viewing, mark as read immediately
           if (isOwner && newComment.user_id !== currentUserId) {
-            await supabase
+            const { error: markError } = await supabase
               .from('listing_comments')
               .update({ is_read: true })
               .eq('id', newComment.id);
+
+            if (markError) {
+              console.error('Error marking new comment as read:', markError);
+              return;
+            }
+
+            setComments((prev) =>
+              prev.map((c) => (c.id === newComment.id ? { ...c, is_read: true } : c))
+            );
+            setUnreadCount(0);
+            onUnreadChange?.(0);
           }
         }
       )
@@ -171,13 +198,11 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
           event: 'UPDATE',
           schema: 'public',
           table: 'listing_comments',
-          filter: `listing_id=eq.${listingId}`
+          filter: `listing_id=eq.${listingId}`,
         },
         (payload) => {
           const updatedComment = payload.new as Comment;
-          setComments(prev => 
-            prev.map(c => c.id === updatedComment.id ? { ...c, is_read: updatedComment.is_read } : c)
-          );
+          setComments((prev) => prev.map((c) => (c.id === updatedComment.id ? { ...c, is_read: updatedComment.is_read } : c)));
         }
       )
       .subscribe();
@@ -185,7 +210,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [listingId, isExpanded, isOwner, currentUserId, listingTitle]);
+  }, [listingId, isExpanded, isOwner, currentUserId, listingTitle, onUnreadChange]);
 
   // Auto-scroll when new comments arrive
   useEffect(() => {
@@ -201,7 +226,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
         .from('listing_comments')
         .select('*', { count: 'exact', head: true })
         .eq('listing_id', listingId);
-      
+
       setCommentCount(count || 0);
 
       // Fetch unread count for owner
@@ -210,9 +235,9 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
           .from('listing_comments')
           .select('*', { count: 'exact', head: true })
           .eq('listing_id', listingId)
-          .eq('is_read', false)
-          .neq('user_id', currentUserId);
-        
+          .neq('user_id', currentUserId)
+          .or('is_read.is.null,is_read.eq.false');
+
         setUnreadCount(unread || 0);
       }
     };
@@ -228,13 +253,13 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
             event: 'INSERT',
             schema: 'public',
             table: 'listing_comments',
-            filter: `listing_id=eq.${listingId}`
+            filter: `listing_id=eq.${listingId}`,
           },
           (payload) => {
             const newComment = payload.new as Comment;
             if (newComment.user_id !== currentUserId) {
-              setUnreadCount(prev => prev + 1);
-              setCommentCount(prev => prev + 1);
+              setUnreadCount((prev) => prev + 1);
+              setCommentCount((prev) => prev + 1);
               playNotificationSound();
             }
           }
@@ -257,13 +282,11 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
 
     setSending(true);
     try {
-      const { error } = await supabase
-        .from('listing_comments')
-        .insert({
-          listing_id: listingId,
-          user_id: currentUserId,
-          message: newMessage.trim()
-        });
+      const { error } = await supabase.from('listing_comments').insert({
+        listing_id: listingId,
+        user_id: currentUserId,
+        message: newMessage.trim(),
+      });
 
       if (error) throw error;
       setNewMessage('');
@@ -333,10 +356,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
                   const isOwn = comment.user_id === currentUserId;
                   const isReadByOwner = comment.is_read && !isOwn;
                   return (
-                    <div
-                      key={comment.id}
-                      className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-                    >
+                    <div key={comment.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                       <div
                         className={`max-w-[85%] rounded-lg px-3 py-2 ${
                           isOwn
@@ -347,22 +367,30 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
                         }`}
                       >
                         {!isOwn && (
-                          <p className={`text-xs font-medium mb-1 ${isReadByOwner ? 'text-green-700 dark:text-green-400' : 'text-primary'}`}>
+                          <p
+                            className={`text-xs font-medium mb-1 ${
+                              isReadByOwner ? 'text-green-700 dark:text-green-400' : 'text-primary'
+                            }`}
+                          >
                             {getDisplayName(comment)}
                           </p>
                         )}
                         <p className="text-sm break-words">{comment.message}</p>
                       </div>
-                      <span className={`text-[10px] mt-0.5 px-1 ${
-                        isOwn 
-                          ? (comment.is_read ? 'text-green-500' : 'text-muted-foreground')
-                          : isReadByOwner
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-muted-foreground'
-                      }`}>
+                      <span
+                        className={`text-[10px] mt-0.5 px-1 ${
+                          isOwn
+                            ? comment.is_read
+                              ? 'text-green-500'
+                              : 'text-muted-foreground'
+                            : isReadByOwner
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
                         {formatDistanceToNow(new Date(comment.created_at), {
                           addSuffix: true,
-                          locale: es
+                          locale: es,
                         })}
                         {isReadByOwner && ' ✓ Leído'}
                       </span>
@@ -376,7 +404,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
           {/* Input Area */}
           <div className="flex gap-2">
             <Input
-              placeholder={currentUserId ? "Escribe una pregunta..." : "Inicia sesión para preguntar"}
+              placeholder={currentUserId ? 'Escribe una pregunta...' : 'Inicia sesión para preguntar'}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -397,3 +425,4 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
     </div>
   );
 }
+

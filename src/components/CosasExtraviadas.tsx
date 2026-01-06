@@ -5,6 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -45,8 +55,9 @@ export function CosasExtraviadas() {
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [chatListingId, setChatListingId] = useState<string | null>(null);
   const [chatListingTitle, setChatListingTitle] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { getEstados, getMunicipios, loading: municipiosLoading } = useMunicipios();
   const estados = getEstados();
   const municipios = getMunicipios(estado);
@@ -63,16 +74,14 @@ export function CosasExtraviadas() {
   }, [profileId, categoryId]);
 
   const fetchUserProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
     setUserId(user.id);
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
 
     if (profile) {
       setProfileId(profile.id);
@@ -80,11 +89,7 @@ export function CosasExtraviadas() {
   };
 
   const fetchCategory = async () => {
-    const { data } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', 'Cosas Extraviadas')
-      .single();
+    const { data } = await supabase.from('categories').select('id').eq('name', 'Cosas Extraviadas').single();
 
     if (data) {
       setCategoryId(data.id);
@@ -110,9 +115,9 @@ export function CosasExtraviadas() {
             .from('listing_comments')
             .select('*', { count: 'exact', head: true })
             .eq('listing_id', listing.id)
-            .eq('is_read', false)
-            .neq('user_id', userId);
-          
+            .neq('user_id', userId)
+            .or('is_read.is.null,is_read.eq.false');
+
           return { ...listing, unread_count: count || 0 };
         })
       );
@@ -138,16 +143,18 @@ export function CosasExtraviadas() {
     }
 
     // Clear previous photo if any
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
-    
-    setPhotos([{
-      file,
-      preview: URL.createObjectURL(file)
-    }]);
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
+
+    setPhotos([
+      {
+        file,
+        preview: URL.createObjectURL(file),
+      },
+    ]);
   };
 
   const removePhoto = () => {
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
     setPhotos([]);
   };
 
@@ -159,18 +166,16 @@ export function CosasExtraviadas() {
       const fileExt = photo.file.name.split('.').pop();
       const fileName = `${userId}/${listingId}/${Date.now()}_${i}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('listing-photos')
-        .upload(fileName, photo.file);
+      const { error: uploadError } = await supabase.storage.from('listing-photos').upload(fileName, photo.file);
 
       if (uploadError) {
         console.error('Error uploading photo:', uploadError);
         continue;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('listing-photos')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('listing-photos').getPublicUrl(fileName);
 
       await supabase.from('fotos_listings').insert({
         listing_id: listingId,
@@ -178,14 +183,14 @@ export function CosasExtraviadas() {
         nombre_archivo: photo.file.name,
         mime_type: photo.file.type,
         file_size: photo.file.size,
-        es_principal: i === 0
+        es_principal: i === 0,
       });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!profileId || !categoryId) {
       toast.error('Debes iniciar sesión para publicar');
       return;
@@ -215,7 +220,7 @@ export function CosasExtraviadas() {
           estado: estado,
           municipio: municipio,
           price: 0,
-          expires_at: farFuture.toISOString()
+          expires_at: farFuture.toISOString(),
         })
         .select('id')
         .single();
@@ -241,10 +246,7 @@ export function CosasExtraviadas() {
 
   const handleDelete = async (listingId: string) => {
     try {
-      const { error } = await supabase
-        .from('listings')
-        .update({ is_active: false })
-        .eq('id', listingId);
+      const { error } = await supabase.from('listings').update({ is_active: false }).eq('id', listingId);
 
       if (error) throw error;
 
@@ -256,13 +258,20 @@ export function CosasExtraviadas() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const targetId = deleteTarget.id;
+    setDeleteTarget(null);
+    await handleDelete(targetId);
+  };
+
   const resetForm = () => {
     setTitle('');
     setDescription('');
     setTipoPost('perdido');
     setEstado('Sonora');
     setMunicipio('Cajeme');
-    photos.forEach(p => URL.revokeObjectURL(p.preview));
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
     setPhotos([]);
   };
 
@@ -286,14 +295,15 @@ export function CosasExtraviadas() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          ¿Perdiste o encontraste algo? Publica aquí para ayudar a la comunidad.
-        </p>
+        <p className="text-sm text-muted-foreground">¿Perdiste o encontraste algo? Publica aquí para ayudar a la comunidad.</p>
 
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog
+          open={isOpen}
+          onOpenChange={(open) => {
+            setIsOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="w-full bg-blue-500 hover:bg-blue-600">
               <Plus className="h-4 w-4 mr-2" />
@@ -315,11 +325,15 @@ export function CosasExtraviadas() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="perdido" id="perdido" />
-                    <Label htmlFor="perdido" className="cursor-pointer">Perdí algo</Label>
+                    <Label htmlFor="perdido" className="cursor-pointer">
+                      Perdí algo
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="encontrado" id="encontrado" />
-                    <Label htmlFor="encontrado" className="cursor-pointer">Encontré algo</Label>
+                    <Label htmlFor="encontrado" className="cursor-pointer">
+                      Encontré algo
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -361,19 +375,13 @@ export function CosasExtraviadas() {
                   <Camera className="h-4 w-4 mr-2" />
                   {photos.length === 0 ? 'Agregar foto' : 'Foto agregada ✓'}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Opcional: 1 foto del objeto
-                </p>
-                
+                <p className="text-xs text-muted-foreground mt-1">Opcional: 1 foto del objeto</p>
+
                 {/* Photo preview */}
                 {photos.length > 0 && (
                   <div className="flex gap-2 mt-2">
                     <div className="relative">
-                      <img
-                        src={photos[0].preview}
-                        alt="Preview"
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
+                      <img src={photos[0].preview} alt="Preview" className="w-20 h-20 object-cover rounded-lg" />
                       <button
                         type="button"
                         onClick={removePhoto}
@@ -395,7 +403,9 @@ export function CosasExtraviadas() {
                   </SelectTrigger>
                   <SelectContent>
                     {estados.map((est) => (
-                      <SelectItem key={est} value={est}>{est}</SelectItem>
+                      <SelectItem key={est} value={est}>
+                        {est}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -404,13 +414,19 @@ export function CosasExtraviadas() {
               {/* Municipio selector */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Municipio *</label>
-                <Select value={municipio} onValueChange={setMunicipio} disabled={municipiosLoading || municipios.length === 0}>
+                <Select
+                  value={municipio}
+                  onValueChange={setMunicipio}
+                  disabled={municipiosLoading || municipios.length === 0}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona municipio" />
                   </SelectTrigger>
                   <SelectContent>
                     {municipios.map((mun) => (
-                      <SelectItem key={mun} value={mun}>{mun}</SelectItem>
+                      <SelectItem key={mun} value={mun}>
+                        {mun}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -426,13 +442,14 @@ export function CosasExtraviadas() {
           <div className="space-y-2">
             <p className="text-sm font-medium">Mis reportes activos:</p>
             {myListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="flex items-center justify-between p-3 bg-muted rounded-lg"
-              >
+              <div key={listing.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded ${listing.is_free ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        listing.is_free ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                      }`}
+                    >
                       {listing.is_free ? 'Perdido' : 'Encontrado'}
                     </span>
                     <p className="font-medium text-sm">{listing.title}</p>
@@ -441,13 +458,14 @@ export function CosasExtraviadas() {
                     {listing.estado}, {listing.municipio}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                       setChatListingId(listing.id);
                       setChatListingTitle(listing.title);
+                      setMyListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, unread_count: 0 } : l)));
                     }}
                     className="relative"
                   >
@@ -458,11 +476,7 @@ export function CosasExtraviadas() {
                       </span>
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(listing.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget({ id: listing.id, title: listing.title })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -472,13 +486,16 @@ export function CosasExtraviadas() {
         )}
 
         {/* Chat Dialog */}
-        <Dialog open={!!chatListingId} onOpenChange={(open) => {
-          if (!open) {
-            setChatListingId(null);
-            setChatListingTitle('');
-            fetchMyListings(); // Refresh to update unread counts
-          }
-        }}>
+        <Dialog
+          open={!!chatListingId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setChatListingId(null);
+              setChatListingTitle('');
+              fetchMyListings(); // Refresh to update unread counts
+            }
+          }}
+        >
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Mensajes: {chatListingTitle}</DialogTitle>
@@ -491,14 +508,34 @@ export function CosasExtraviadas() {
                 isOwnerView={true}
                 defaultExpanded={true}
                 onUnreadChange={(count) => {
-                  setMyListings(prev => prev.map(l => 
-                    l.id === chatListingId ? { ...l, unread_count: count } : l
-                  ));
+                  setMyListings((prev) => prev.map((l) => (l.id === chatListingId ? { ...l, unread_count: count } : l)));
                 }}
               />
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar este reporte?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteTarget?.title ? (
+                  <>
+                    Se eliminará <span className="font-medium">“{deleteTarget.title}”</span>. Esta acción no se puede deshacer.
+                  </>
+                ) : (
+                  'Esta acción no se puede deshacer.'
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
