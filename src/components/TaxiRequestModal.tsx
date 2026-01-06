@@ -97,8 +97,35 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   const [submitting, setSubmitting] = useState(false);
   const [centerAddress, setCenterAddress] = useState<string>('');
   const [loadingCenterAddress, setLoadingCenterAddress] = useState(false);
+  const [tarifaKm, setTarifaKm] = useState<number>(driver.tarifa_km || 15);
   
-  const tarifaKm = driver.tarifa_km || 15;
+  // Obtener precio del producto taxi del proveedor
+  useEffect(() => {
+    const fetchTaxiPrice = async () => {
+      const { data: proveedor } = await supabase
+        .from('proveedores')
+        .select('id')
+        .eq('user_id', driver.user_id)
+        .single();
+      
+      if (proveedor) {
+        const { data: producto } = await supabase
+          .from('productos')
+          .select('precio')
+          .eq('proveedor_id', proveedor.id)
+          .ilike('nombre', '%taxi%')
+          .single();
+        
+        if (producto) {
+          setTarifaKm(producto.precio);
+        }
+      }
+    };
+    
+    if (isOpen) {
+      fetchTaxiPrice();
+    }
+  }, [isOpen, driver.user_id]);
   
   // Obtener ubicación del usuario
   useEffect(() => {
@@ -413,6 +440,64 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     setSelectionMode('destination');
   };
 
+  // Modo pantalla completa para selección en mapa
+  if (selectionMode !== 'none') {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-none w-screen h-screen m-0 p-0 rounded-none">
+          <div className="relative w-full h-full">
+            <div 
+              ref={mapContainerRef} 
+              className="absolute inset-0 w-full h-full"
+            />
+            
+            {/* Crosshair - líneas cruzadas en el centro */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-3 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
+            
+            {/* Instrucción arriba */}
+            <div className="absolute top-4 left-4 right-4 bg-primary text-primary-foreground text-base font-medium px-4 py-2 rounded-lg text-center z-[1001]">
+              {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar punto de recogida' : 'Mueve el mapa para seleccionar destino'}
+            </div>
+            
+            {/* Dirección del centro y botones */}
+            <div className="absolute bottom-8 left-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg z-[1001] space-y-3 shadow-lg">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary flex-shrink-0" />
+                {loadingCenterAddress ? (
+                  <span className="text-muted-foreground">Cargando dirección...</span>
+                ) : (
+                  <span className="line-clamp-2 flex-1">{centerAddress || 'Moviendo mapa...'}</span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectionMode('none');
+                    setCenterAddress('');
+                  }}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={confirmCenterSelection}
+                  disabled={loadingCenterAddress}
+                  className="flex-1"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
@@ -433,63 +518,13 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
             </p>
           </div>
           
-          {/* Mapa con crosshair */}
+          {/* Mapa mini preview */}
           <div className="relative">
             <div 
               ref={mapContainerRef} 
-              className={`h-64 rounded-lg border overflow-hidden ${selectionMode !== 'none' ? 'ring-2 ring-primary' : ''}`}
+              className="h-48 rounded-lg border overflow-hidden"
             />
             
-            {/* Crosshair - líneas cruzadas en el centro */}
-            {selectionMode !== 'none' && (
-              <>
-                {/* Línea vertical */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
-                {/* Línea horizontal */}
-                <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
-                {/* Punto central */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
-                
-                {/* Instrucción arriba */}
-                <div className="absolute top-2 left-2 right-2 bg-primary text-primary-foreground text-sm px-3 py-1.5 rounded-lg text-center z-[1001]">
-                  {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar recogida' : 'Mueve el mapa para seleccionar destino'}
-                </div>
-                
-                {/* Dirección del centro y botón confirmar */}
-                <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur text-sm p-2 rounded-lg z-[1001] space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary flex-shrink-0" />
-                    {loadingCenterAddress ? (
-                      <span className="text-muted-foreground text-xs">Cargando dirección...</span>
-                    ) : (
-                      <span className="line-clamp-2 text-xs">{centerAddress || 'Moviendo mapa...'}</span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectionMode('none');
-                        setCenterAddress('');
-                      }}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={confirmCenterSelection}
-                      disabled={loadingCenterAddress}
-                      className="flex-1"
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Confirmar
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
           
           {/* Punto de recogida */}
