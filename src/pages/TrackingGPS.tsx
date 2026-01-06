@@ -19,6 +19,8 @@ import { StatusControl } from '@/components/StatusControl';
 import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
 import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import { useGpsTrackers } from '@/hooks/useGpsTrackers';
+import { GpsSubgroupManagement } from '@/components/GpsSubgroupManagement';
+import { GroupMember } from '@/hooks/useTrackingGroup';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { trackGPSSubscription, trackConversion } from '@/lib/analytics';
@@ -1064,7 +1066,7 @@ const TrackingGPS = () => {
           </Card>
 
           {/* Tarjetas Expandibles de Rastreadores GPS */}
-          <GpsTrackerCards groupId={group.id} isOwner={isOwner} />
+          <GpsTrackerCards groupId={group.id} isOwner={isOwner} members={members} />
 
           {/* Invitaciones Pendientes */}
           {invitations.length > 0 && (
@@ -1332,8 +1334,8 @@ const TrackingGPS = () => {
 };
 
 // Componente para mostrar tarjetas expandibles de trackers GPS con botón de agregar
-const GpsTrackerCards = ({ groupId, isOwner }: { groupId: string; isOwner: boolean }) => {
-  const { trackers, loading, addTracker, removeTracker } = useGpsTrackers(groupId);
+const GpsTrackerCards = ({ groupId, isOwner, members }: { groupId: string; isOwner: boolean; members: GroupMember[] }) => {
+  const { trackers, allTrackers, loading, addTracker, removeTracker } = useGpsTrackers(groupId);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newTrackerImei, setNewTrackerImei] = useState('');
   const [newTrackerName, setNewTrackerName] = useState('');
@@ -1465,6 +1467,20 @@ const GpsTrackerCards = ({ groupId, isOwner }: { groupId: string; isOwner: boole
             onRemove={() => removeTracker(tracker.id)}
           />
         ))
+      )}
+
+      {/* Sub-grupos de visibilidad */}
+      {isOwner && allTrackers.length > 0 && (
+        <Card className="mt-4">
+          <CardContent className="pt-6">
+            <GpsSubgroupManagement
+              groupId={groupId}
+              trackers={allTrackers}
+              members={members}
+              isOwner={isOwner}
+            />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
