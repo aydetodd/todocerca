@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCircle2, Volume2 } from 'lucide-react';
+import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCircle2, Volume2, Maximize2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import TaxiLiveMap from './TaxiLiveMap';
 
 interface TaxiRequest {
   id: string;
@@ -75,6 +76,7 @@ export default function TaxiDriverRequests() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [completingTrip, setCompletingTrip] = useState(false);
+  const [showFullscreenMap, setShowFullscreenMap] = useState(false);
   const mapRefs = useRef<{ [key: string]: L.Map }>({});
   const activeTripMapRef = useRef<L.Map | null>(null);
   const previousRequestIdsRef = useRef<Set<string>>(new Set());
@@ -431,89 +433,125 @@ export default function TaxiDriverRequests() {
 
       {/* Viaje activo */}
       {activeTrip && (
-        <Card className="border-green-500 bg-green-500/10">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                Viaje en curso
-              </CardTitle>
-              <Badge className="bg-green-600">Activo</Badge>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            {/* Info del pasajero */}
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="font-semibold">{activeTrip.passengerName}</span>
-              {activeTrip.passengerPhone && (
-                <span className="text-muted-foreground">- {activeTrip.passengerPhone}</span>
-              )}
-            </div>
-
-            {/* Mapa */}
-            <div 
-              id="active-trip-map"
-              className="h-48 rounded-lg overflow-hidden"
+        <>
+          {/* Mapa pantalla completa */}
+          {showFullscreenMap && (
+            <TaxiLiveMap
+              pickupLat={activeTrip.pickup_lat}
+              pickupLng={activeTrip.pickup_lng}
+              destinationLat={activeTrip.destination_lat}
+              destinationLng={activeTrip.destination_lng}
+              pickupAddress={activeTrip.pickup_address}
+              destinationAddress={activeTrip.destination_address}
+              isDriver={true}
+              tripStatus="accepted"
+              onClose={() => setShowFullscreenMap(false)}
             />
+          )}
+
+          <Card className="border-green-500 bg-green-500/10">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Viaje en curso
+                </CardTitle>
+                <Badge className="bg-yellow-500 text-yellow-950">🚕 Activo</Badge>
+              </div>
+            </CardHeader>
             
-            {/* Direcciones */}
-            <div className="space-y-2 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Recogida</p>
-                  <p className="text-muted-foreground line-clamp-2">
-                    {activeTrip.pickup_address || `${activeTrip.pickup_lat.toFixed(5)}, ${activeTrip.pickup_lng.toFixed(5)}`}
-                  </p>
+            <CardContent className="space-y-4">
+              {/* Info del pasajero */}
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span className="font-semibold">{activeTrip.passengerName}</span>
+                {activeTrip.passengerPhone && (
+                  <span className="text-muted-foreground">- {activeTrip.passengerPhone}</span>
+                )}
+              </div>
+
+              {/* Mapa con botón fullscreen */}
+              <div className="relative">
+                <div 
+                  id="active-trip-map"
+                  className="h-48 rounded-lg overflow-hidden"
+                />
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-background/80 shadow-lg z-[400]"
+                  onClick={() => setShowFullscreenMap(true)}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Direcciones */}
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Recogida</p>
+                    <p className="text-muted-foreground line-clamp-2">
+                      {activeTrip.pickup_address || `${activeTrip.pickup_lat.toFixed(5)}, ${activeTrip.pickup_lng.toFixed(5)}`}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Destino</p>
+                    <p className="text-muted-foreground line-clamp-2">
+                      {activeTrip.destination_address || `${activeTrip.destination_lat.toFixed(5)}, ${activeTrip.destination_lng.toFixed(5)}`}
+                    </p>
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-start gap-2">
-                <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Destino</p>
-                  <p className="text-muted-foreground line-clamp-2">
-                    {activeTrip.destination_address || `${activeTrip.destination_lat.toFixed(5)}, ${activeTrip.destination_lng.toFixed(5)}`}
-                  </p>
+              {/* Resumen económico */}
+              <div className="bg-background p-3 rounded-lg border">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Distancia:</span>
+                  <span className="font-medium">{activeTrip.distance_km.toFixed(2)} km</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t mt-2">
+                  <span className="font-semibold flex items-center gap-1">
+                    <DollarSign className="h-4 w-4" />
+                    Total a cobrar:
+                  </span>
+                  <span className="text-xl font-bold text-green-600">${activeTrip.total_fare.toFixed(2)} MXN</span>
                 </div>
               </div>
-            </div>
-            
-            {/* Resumen económico */}
-            <div className="bg-background p-3 rounded-lg border">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Distancia:</span>
-                <span className="font-medium">{activeTrip.distance_km.toFixed(2)} km</span>
+              
+              {/* Botones */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowFullscreenMap(true)}
+                >
+                  <Maximize2 className="h-4 w-4 mr-2" />
+                  Ver mapa GPS
+                </Button>
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={handleCompleteTrip}
+                  disabled={completingTrip}
+                >
+                  {completingTrip ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      Completar
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t mt-2">
-                <span className="font-semibold flex items-center gap-1">
-                  <DollarSign className="h-4 w-4" />
-                  Total a cobrar:
-                </span>
-                <span className="text-xl font-bold text-green-600">${activeTrip.total_fare.toFixed(2)} MXN</span>
-              </div>
-            </div>
-            
-            {/* Botón completar */}
-            <Button
-              className="w-full bg-green-600 hover:bg-green-700"
-              size="lg"
-              onClick={handleCompleteTrip}
-              disabled={completingTrip}
-            >
-              {completingTrip ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Completando...</>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  Completar Viaje
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Solicitudes pendientes */}

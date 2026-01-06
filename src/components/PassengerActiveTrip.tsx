@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, DollarSign, Loader2, Clock, User, Car, Phone, X, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, DollarSign, Loader2, Clock, User, Car, Phone, X, CheckCircle2, Maximize2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import TaxiLiveMap from './TaxiLiveMap';
 
 interface TripData {
   id: string;
@@ -32,6 +33,7 @@ export default function PassengerActiveTrip() {
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [showFullscreenMap, setShowFullscreenMap] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
 
   // Cargar viaje activo del pasajero
@@ -231,115 +233,153 @@ export default function PassengerActiveTrip() {
   const isAccepted = trip.status === 'accepted';
 
   return (
-    <Card className={`border-2 ${isAccepted ? 'border-green-500 bg-green-500/10' : 'border-yellow-500 bg-yellow-500/10'}`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            {isPending ? 'Esperando confirmación' : 'Tu taxi viene en camino'}
-          </CardTitle>
-          <Badge className={isPending ? 'bg-yellow-600' : 'bg-green-600'}>
-            {isPending ? 'Pendiente' : 'Confirmado'}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Info del conductor */}
-        <div className="flex items-center justify-between bg-background p-3 rounded-lg">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="font-semibold">{trip.driverName}</span>
-          </div>
-          {trip.driverPhone && (
-            <a 
-              href={`tel:${trip.driverPhone}`}
-              className="flex items-center gap-1 text-primary hover:underline"
-            >
-              <Phone className="h-4 w-4" />
-              Llamar
-            </a>
-          )}
-        </div>
-
-        {/* Status message */}
-        {isPending && (
-          <div className="flex items-center gap-2 text-yellow-600 animate-pulse">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-medium">Esperando que el conductor acepte tu solicitud...</span>
-          </div>
-        )}
-        
-        {isAccepted && (
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="text-sm font-medium">¡El conductor está en camino! Aceptado: {formatTime(trip.accepted_at!)}</span>
-          </div>
-        )}
-
-        {/* Mapa */}
-        <div 
-          id="passenger-trip-map"
-          className="h-40 rounded-lg overflow-hidden"
+    <>
+      {/* Mapa pantalla completa */}
+      {showFullscreenMap && trip && (
+        <TaxiLiveMap
+          pickupLat={trip.pickup_lat}
+          pickupLng={trip.pickup_lng}
+          destinationLat={trip.destination_lat}
+          destinationLng={trip.destination_lng}
+          pickupAddress={trip.pickup_address}
+          destinationAddress={trip.destination_address}
+          isDriver={false}
+          tripStatus={trip.status as 'pending' | 'accepted'}
+          onClose={() => setShowFullscreenMap(false)}
         />
+      )}
+
+      <Card className={`border-2 ${isAccepted ? 'border-yellow-500 bg-yellow-500/10' : 'border-muted bg-muted/10'}`}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Car className="h-5 w-5" />
+              {isPending ? 'Esperando confirmación' : '🚕 Tu taxi viene en camino'}
+            </CardTitle>
+            <Badge className={isPending ? 'bg-muted-foreground' : 'bg-yellow-500 text-yellow-950'}>
+              {isPending ? 'Pendiente' : '🚕 Confirmado'}
+            </Badge>
+          </div>
+        </CardHeader>
         
-        {/* Direcciones */}
-        <div className="space-y-2 text-sm">
-          <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Recogida</p>
-              <p className="text-muted-foreground line-clamp-2">
-                {trip.pickup_address || `${trip.pickup_lat.toFixed(5)}, ${trip.pickup_lng.toFixed(5)}`}
-              </p>
+        <CardContent className="space-y-4">
+          {/* Info del conductor */}
+          <div className="flex items-center justify-between bg-background p-3 rounded-lg">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="font-semibold">{trip.driverName}</span>
+            </div>
+            {trip.driverPhone && (
+              <a 
+                href={`tel:${trip.driverPhone}`}
+                className="flex items-center gap-1 text-primary hover:underline"
+              >
+                <Phone className="h-4 w-4" />
+                Llamar
+              </a>
+            )}
+          </div>
+
+          {/* Status message */}
+          {isPending && (
+            <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm font-medium">Esperando que el conductor acepte tu solicitud...</span>
+            </div>
+          )}
+          
+          {isAccepted && (
+            <div className="flex items-center gap-2 text-yellow-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-sm font-medium">¡El conductor está en camino! Aceptado: {formatTime(trip.accepted_at!)}</span>
+            </div>
+          )}
+
+          {/* Mapa con botón fullscreen */}
+          <div className="relative">
+            <div 
+              id="passenger-trip-map"
+              className="h-40 rounded-lg overflow-hidden"
+            />
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 shadow-lg z-[400]"
+              onClick={() => setShowFullscreenMap(true)}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Direcciones */}
+          <div className="space-y-2 text-sm">
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Recogida</p>
+                <p className="text-muted-foreground line-clamp-2">
+                  {trip.pickup_address || `${trip.pickup_lat.toFixed(5)}, ${trip.pickup_lng.toFixed(5)}`}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Destino</p>
+                <p className="text-muted-foreground line-clamp-2">
+                  {trip.destination_address || `${trip.destination_lat.toFixed(5)}, ${trip.destination_lng.toFixed(5)}`}
+                </p>
+              </div>
             </div>
           </div>
           
-          <div className="flex items-start gap-2">
-            <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Destino</p>
-              <p className="text-muted-foreground line-clamp-2">
-                {trip.destination_address || `${trip.destination_lat.toFixed(5)}, ${trip.destination_lng.toFixed(5)}`}
-              </p>
+          {/* Resumen económico */}
+          <div className="bg-background p-3 rounded-lg border">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Distancia:</span>
+              <span className="font-medium">{trip.distance_km.toFixed(2)} km</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t mt-2">
+              <span className="font-semibold flex items-center gap-1">
+                <DollarSign className="h-4 w-4" />
+                Tarifa estimada:
+              </span>
+              <span className="text-xl font-bold text-primary">${trip.total_fare.toFixed(2)} MXN</span>
             </div>
           </div>
-        </div>
-        
-        {/* Resumen económico */}
-        <div className="bg-background p-3 rounded-lg border">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Distancia:</span>
-            <span className="font-medium">{trip.distance_km.toFixed(2)} km</span>
-          </div>
-          <div className="flex justify-between items-center pt-2 border-t mt-2">
-            <span className="font-semibold flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
-              Tarifa estimada:
-            </span>
-            <span className="text-xl font-bold text-primary">${trip.total_fare.toFixed(2)} MXN</span>
-          </div>
-        </div>
-        
-        {/* Botón cancelar (solo si está pendiente) */}
-        {isPending && (
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={handleCancelTrip}
-            disabled={cancelling}
-          >
-            {cancelling ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Cancelando...</>
-            ) : (
-              <>
-                <X className="h-4 w-4 mr-2" />
-                Cancelar solicitud
-              </>
+          
+          {/* Botones */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowFullscreenMap(true)}
+            >
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Ver mapa GPS
+            </Button>
+            
+            {isPending && (
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleCancelTrip}
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />...</>
+                ) : (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }
