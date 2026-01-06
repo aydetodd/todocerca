@@ -147,6 +147,47 @@ export type Database = {
           },
         ]
       }
+      citas_publicas: {
+        Row: {
+          created_at: string
+          estado: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          proveedor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estado: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          proveedor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          proveedor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citas_publicas_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "citas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           codigo_postal: string | null
