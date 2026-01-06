@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Gift, HelpCircle, Bus, Car } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
+import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -17,8 +18,11 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
+        {/* Viaje activo del pasajero */}
+        <PassengerActiveTrip />
+        
         {/* Todos los botones del mismo tamaño */}
-        <Card 
+        <Card
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
           onClick={() => navigate('/search')}
         >
