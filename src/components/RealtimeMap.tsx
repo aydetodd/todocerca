@@ -5,7 +5,7 @@ import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Phone, MessageCircle } from 'lucide-react';
-// Removed react-dom/server import - using plain SVG instead
+import TaxiRequestModal from './TaxiRequestModal';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -14,6 +14,14 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+interface TaxiDriver {
+  user_id: string;
+  business_name: string;
+  latitude: number;
+  longitude: number;
+  tarifa_km?: number;
+}
 
 interface RealtimeMapProps {
   onOpenChat: (userId: string, apodo: string) => void;
@@ -26,6 +34,10 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track estado for each marker
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
+  
+  // Taxi request modal state
+  const [showTaxiModal, setShowTaxiModal] = useState(false);
+  const [selectedTaxiDriver, setSelectedTaxiDriver] = useState<TaxiDriver | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -254,28 +266,38 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
             </p>
           ` : ''}
           ${!isCurrentUser ? `
-          <div class="flex gap-2">
+          <div class="flex flex-col gap-2">
+            ${isTaxi && estado === 'available' ? `
             <button 
-              onclick='window.makeCall(${JSON.stringify(telefono || "")})'
-              class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+              onclick='window.requestTaxi(${JSON.stringify(location.user_id)}, ${JSON.stringify(apodo || "Taxi")}, ${location.latitude}, ${location.longitude}, ${location.profiles?.tarifa_km || 15})'
+              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1 font-semibold"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              Llamar
+              🚕 Solicitar Taxi
             </button>
-            <button 
-              onclick='window.openWhatsApp(${JSON.stringify(telefono || "")})'
-              class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-              WhatsApp
-            </button>
-            <button 
-              onclick='window.openInternalChat(${JSON.stringify(location.user_id)}, ${JSON.stringify(apodo || "Usuario")})'
-              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Mensaje
-            </button>
+            ` : ''}
+            <div class="flex gap-2">
+              <button 
+                onclick='window.makeCall(${JSON.stringify(telefono || "")})'
+                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                Llamar
+              </button>
+              <button 
+                onclick='window.openWhatsApp(${JSON.stringify(telefono || "")})'
+                class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                WhatsApp
+              </button>
+              <button 
+                onclick='window.openInternalChat(${JSON.stringify(location.user_id)}, ${JSON.stringify(apodo || "Usuario")})'
+                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Mensaje
+              </button>
+            </div>
           </div>
           ` : `<p class="text-sm text-gray-500">Tu ubicación actual</p>`}
         </div>
@@ -309,9 +331,34 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
     (window as any).openInternalChat = (userId: string, apodo: string) => {
       onOpenChat(userId, apodo);
     };
+
+    (window as any).requestTaxi = (userId: string, businessName: string, lat: number, lng: number, tarifaKm: number) => {
+      setSelectedTaxiDriver({
+        user_id: userId,
+        business_name: businessName,
+        latitude: lat,
+        longitude: lng,
+        tarifa_km: tarifaKm
+      });
+      setShowTaxiModal(true);
+    };
   }, [onOpenChat]);
 
   return (
-    <div id="map" className="w-full h-[calc(100vh-120px)]"></div>
+    <>
+      <div id="map" className="w-full h-[calc(100vh-120px)]"></div>
+      
+      {/* Taxi Request Modal */}
+      {selectedTaxiDriver && (
+        <TaxiRequestModal
+          isOpen={showTaxiModal}
+          onClose={() => {
+            setShowTaxiModal(false);
+            setSelectedTaxiDriver(null);
+          }}
+          driver={selectedTaxiDriver}
+        />
+      )}
+    </>
   );
 };
