@@ -412,26 +412,27 @@ export function AppointmentBooking({
             <Label className="mb-2 block">
               Horarios disponibles para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}:
             </Label>
-            {(() => {
-              const slotsDisponibles = availableSlots.filter(slot => slot.disponible);
-              return slotsDisponibles.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay horarios disponibles para esta fecha.</p>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {slotsDisponibles.map((slot) => (
-                    <Badge
-                      key={slot.hora_inicio}
-                      variant={selectedTime === slot.hora_inicio ? "default" : "outline"}
-                      className="cursor-pointer justify-center py-2 hover:bg-primary/80"
-                      onClick={() => setSelectedTime(slot.hora_inicio)}
-                    >
-                      <Clock className="h-3 w-3 mr-1" />
-                      {slot.hora_inicio}
-                    </Badge>
-                  ))}
-                </div>
-              );
-            })()}
+            {availableSlots.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay horarios configurados para esta fecha.</p>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {availableSlots.map((slot) => (
+                  <Badge
+                    key={slot.hora_inicio}
+                    variant={selectedTime === slot.hora_inicio ? "default" : "outline"}
+                    className={`justify-center py-2 ${
+                      slot.disponible
+                        ? 'cursor-pointer hover:bg-primary/80'
+                        : 'cursor-not-allowed bg-black text-white border-black opacity-70'
+                    }`}
+                    onClick={() => slot.disponible && setSelectedTime(slot.hora_inicio)}
+                  >
+                    <Clock className="h-3 w-3 mr-1" />
+                    {slot.hora_inicio}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
