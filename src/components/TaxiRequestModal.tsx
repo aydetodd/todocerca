@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { MapPin, Navigation, Car, DollarSign, Loader2, Check, Target, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
 interface TaxiRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -451,109 +451,113 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
     setCenterAddress(result.display_name);
   };
 
-  // Render principal - usar un solo contenedor de mapa
-  return (
-    <>
-      {/* Mapa pantalla completa cuando está en modo selección */}
-      {selectionMode !== 'none' && (
-        <div className="fixed inset-0 bg-background z-50 flex flex-col">
-          <div className="relative flex-1">
-            <div 
-              ref={fullMapContainerRef} 
-              className="absolute inset-0 w-full h-full"
-            />
-            
-            {/* Crosshair - líneas cruzadas en el centro */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
-            
-            {/* Instrucción arriba */}
-            <div className="absolute top-4 left-4 right-4 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg text-center z-[1001]">
-              {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar punto de recogida' : 'Mueve el mapa para seleccionar destino'}
+  // Renderizar mapa fullscreen usando portal para estar encima de todo
+  const fullscreenMap = selectionMode !== 'none' ? createPortal(
+    <div className="fixed inset-0 bg-background flex flex-col" style={{ zIndex: 99999 }}>
+      <div className="relative flex-1">
+        <div 
+          ref={fullMapContainerRef} 
+          className="absolute inset-0 w-full h-full"
+        />
+        
+        {/* Crosshair - líneas cruzadas en el centro */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-primary/70 pointer-events-none z-[1000]" />
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 h-0.5 w-full bg-primary/70 pointer-events-none z-[1000]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 border-primary bg-primary/20 rounded-full pointer-events-none z-[1000]" />
+        
+        {/* Instrucción arriba */}
+        <div className="absolute top-4 left-4 right-4 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg text-center z-[1001]">
+          {selectionMode === 'pickup' ? 'Mueve el mapa para seleccionar punto de recogida' : 'Mueve el mapa para seleccionar destino'}
+        </div>
+        
+        {/* Búsqueda de dirección (solo para destino) */}
+        {selectionMode === 'destination' && (
+          <div className="absolute top-16 left-4 right-4 z-[1001] space-y-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Buscar dirección... ej: Autozone"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchAddress()}
+                className="flex-1 bg-background/95"
+              />
+              <Button 
+                onClick={handleSearchAddress} 
+                size="icon"
+                disabled={searchingAddress}
+              >
+                {searchingAddress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
             </div>
             
-            {/* Búsqueda de dirección (solo para destino) */}
-            {selectionMode === 'destination' && (
-              <div className="absolute top-16 left-4 right-4 z-[1001] space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Buscar dirección... ej: Autozone"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchAddress()}
-                    className="flex-1 bg-background/95"
-                  />
-                  <Button 
-                    onClick={handleSearchAddress} 
-                    size="icon"
-                    disabled={searchingAddress}
+            {/* Resultados de búsqueda */}
+            {searchResults.length > 0 && (
+              <div className="bg-background/95 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {searchResults.map((result, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => selectSearchResult(result)}
+                    className="p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted/50"
                   >
-                    {searchingAddress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  </Button>
-                </div>
-                
-                {/* Resultados de búsqueda */}
-                {searchResults.length > 0 && (
-                  <div className="bg-background/95 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {searchResults.map((result, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => selectSearchResult(result)}
-                        className="p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted/50"
-                      >
-                        <p className="text-sm line-clamp-2">{result.display_name}</p>
-                      </div>
-                    ))}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchResults([])}
-                      className="w-full"
-                    >
-                      <X className="h-4 w-4 mr-1" /> Cerrar resultados
-                    </Button>
+                    <p className="text-sm line-clamp-2">{result.display_name}</p>
                   </div>
-                )}
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchResults([])}
+                  className="w-full"
+                >
+                  <X className="h-4 w-4 mr-1" /> Cerrar resultados
+                </Button>
               </div>
             )}
-            
-            {/* Dirección del centro y botones */}
-            <div className="absolute bottom-4 left-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg z-[1001] space-y-3 shadow-lg">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary flex-shrink-0" />
-                {loadingCenterAddress ? (
-                  <span className="text-sm text-muted-foreground">Cargando dirección...</span>
-                ) : (
-                  <span className="line-clamp-2 flex-1 text-sm">{centerAddress || 'Mueve el mapa...'}</span>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectionMode('none');
-                    setCenterAddress('');
-                    setSearchQuery('');
-                    setSearchResults([]);
-                  }}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={confirmCenterSelection}
-                  disabled={loadingCenterAddress}
-                  className="flex-1"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  Confirmar
-                </Button>
-              </div>
-            </div>
+          </div>
+        )}
+        
+        {/* Dirección del centro y botones */}
+        <div className="absolute bottom-4 left-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg z-[1001] space-y-3 shadow-lg">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary flex-shrink-0" />
+            {loadingCenterAddress ? (
+              <span className="text-sm text-muted-foreground">Cargando dirección...</span>
+            ) : (
+              <span className="line-clamp-2 flex-1 text-sm">{centerAddress || 'Mueve el mapa...'}</span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectionMode('none');
+                setCenterAddress('');
+                setSearchQuery('');
+                setSearchResults([]);
+              }}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmCenterSelection}
+              disabled={loadingCenterAddress}
+              className="flex-1"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Confirmar
+            </Button>
           </div>
         </div>
-      )}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  // Render principal
+  return (
+    <>
+      {/* Mapa pantalla completa usando portal */}
+      {fullscreenMap}
       
       {/* Dialog principal */}
       <Dialog open={isOpen && selectionMode === 'none'} onOpenChange={(open) => !open && onClose()}>
