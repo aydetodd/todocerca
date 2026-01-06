@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User } from 'lucide-react';
+import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCircle2, Volume2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,22 +22,96 @@ interface TaxiRequest {
   total_fare: number;
   status: string;
   created_at: string;
+  accepted_at: string | null;
   passengerName?: string;
   passengerPhone?: string;
 }
 
+// Sonido de alerta fuerte
+const playAlertSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Crear múltiples osciladores para un sonido más fuerte
+    const playTone = (frequency: number, startTime: number, duration: number) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'square';
+      
+      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime + startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
+      
+      oscillator.start(audioContext.currentTime + startTime);
+      oscillator.stop(audioContext.currentTime + startTime + duration);
+    };
+    
+    // Secuencia de tonos de alerta (repetir 3 veces)
+    for (let i = 0; i < 3; i++) {
+      const offset = i * 0.6;
+      playTone(800, offset, 0.15);
+      playTone(1000, offset + 0.15, 0.15);
+      playTone(800, offset + 0.3, 0.15);
+      playTone(1000, offset + 0.45, 0.15);
+    }
+    
+    // Vibrar si está disponible
+    if ('vibrate' in navigator) {
+      navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
+    }
+  } catch (error) {
+    console.error('Error reproduciendo sonido:', error);
+  }
+};
+
 export default function TaxiDriverRequests() {
   const { toast } = useToast();
-  const [requests, setRequests] = useState<TaxiRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<TaxiRequest[]>([]);
+  const [activeTrip, setActiveTrip] = useState<TaxiRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [completingTrip, setCompletingTrip] = useState(false);
   const mapRefs = useRef<{ [key: string]: L.Map }>({});
+  const activeTripMapRef = useRef<L.Map | null>(null);
+  const previousRequestIdsRef = useRef<Set<string>>(new Set());
 
-  // Cargar solicitudes pendientes
+  // Cargar solicitudes pendientes y viaje activo
   const fetchRequests = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Cargar viaje activo (aceptado pero no completado)
+    const { data: activeData, error: activeError } = await supabase
+      .from('taxi_requests')
+      .select('*')
+      .eq('driver_id', user.id)
+      .eq('status', 'accepted')
+      .order('accepted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!activeError && activeData) {
+      // Obtener nombre del pasajero
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nombre, telefono')
+        .eq('user_id', activeData.passenger_id)
+        .single();
+      
+      setActiveTrip({
+        ...activeData,
+        passengerName: profile?.nombre || 'Usuario',
+        passengerPhone: profile?.telefono || ''
+      });
+    } else {
+      setActiveTrip(null);
+    }
+
+    // Cargar solicitudes pendientes
     const { data, error } = await supabase
       .from('taxi_requests')
       .select('*')
@@ -49,6 +123,19 @@ export default function TaxiDriverRequests() {
       console.error('Error cargando solicitudes:', error);
       return;
     }
+
+    const currentIds = new Set((data || []).map(r => r.id));
+    
+    // Detectar nuevas solicitudes para reproducir sonido
+    const newRequests = (data || []).filter(r => !previousRequestIdsRef.current.has(r.id));
+    if (newRequests.length > 0 && previousRequestIdsRef.current.size > 0) {
+      playAlertSound();
+      toast({
+        title: "🚕 ¡Nueva solicitud de taxi!",
+        description: `${newRequests.length} solicitud(es) nueva(s)`,
+      });
+    }
+    previousRequestIdsRef.current = currentIds;
 
     // Obtener nombres de pasajeros
     const requestsWithNames = await Promise.all(
@@ -67,7 +154,7 @@ export default function TaxiDriverRequests() {
       })
     );
 
-    setRequests(requestsWithNames);
+    setPendingRequests(requestsWithNames);
     setLoading(false);
   };
 
@@ -84,7 +171,11 @@ export default function TaxiDriverRequests() {
           schema: 'public',
           table: 'taxi_requests'
         },
-        () => {
+        (payload) => {
+          // Si es INSERT, reproducir sonido inmediatamente
+          if (payload.eventType === 'INSERT') {
+            playAlertSound();
+          }
           fetchRequests();
         }
       )
@@ -92,14 +183,16 @@ export default function TaxiDriverRequests() {
 
     return () => {
       supabase.removeChannel(channel);
-      // Limpiar mapas
       Object.values(mapRefs.current).forEach(map => map.remove());
+      if (activeTripMapRef.current) {
+        activeTripMapRef.current.remove();
+      }
     };
   }, []);
 
-  // Inicializar mapas cuando cambian las solicitudes
+  // Inicializar mapas para solicitudes pendientes
   useEffect(() => {
-    requests.forEach((req) => {
+    pendingRequests.forEach((req) => {
       const containerId = `request-map-${req.id}`;
       const container = document.getElementById(containerId);
       
@@ -113,7 +206,6 @@ export default function TaxiDriverRequests() {
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // Marcador de recogida
         L.marker([req.pickup_lat, req.pickup_lng], {
           icon: L.divIcon({
             html: '<div style="font-size: 20px;">📍</div>',
@@ -123,7 +215,6 @@ export default function TaxiDriverRequests() {
           })
         }).addTo(map);
 
-        // Marcador de destino
         L.marker([req.destination_lat, req.destination_lng], {
           icon: L.divIcon({
             html: '<div style="font-size: 20px;">🏁</div>',
@@ -133,7 +224,6 @@ export default function TaxiDriverRequests() {
           })
         }).addTo(map);
 
-        // Ajustar vista para mostrar ambos puntos
         const bounds = L.latLngBounds(
           [req.pickup_lat, req.pickup_lng],
           [req.destination_lat, req.destination_lng]
@@ -143,7 +233,58 @@ export default function TaxiDriverRequests() {
         mapRefs.current[req.id] = map;
       }
     });
-  }, [requests]);
+  }, [pendingRequests]);
+
+  // Inicializar mapa para viaje activo
+  useEffect(() => {
+    if (!activeTrip) {
+      if (activeTripMapRef.current) {
+        activeTripMapRef.current.remove();
+        activeTripMapRef.current = null;
+      }
+      return;
+    }
+
+    const containerId = 'active-trip-map';
+    const container = document.getElementById(containerId);
+    
+    if (container && !activeTripMapRef.current) {
+      const map = L.map(container, {
+        attributionControl: false,
+        zoomControl: true,
+        dragging: true,
+        scrollWheelZoom: true
+      }).setView([activeTrip.pickup_lat, activeTrip.pickup_lng], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+      L.marker([activeTrip.pickup_lat, activeTrip.pickup_lng], {
+        icon: L.divIcon({
+          html: '<div style="font-size: 24px;">📍</div>',
+          className: 'pickup-marker',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map).bindPopup('Punto de recogida');
+
+      L.marker([activeTrip.destination_lat, activeTrip.destination_lng], {
+        icon: L.divIcon({
+          html: '<div style="font-size: 24px;">🏁</div>',
+          className: 'destination-marker',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map).bindPopup('Destino');
+
+      const bounds = L.latLngBounds(
+        [activeTrip.pickup_lat, activeTrip.pickup_lng],
+        [activeTrip.destination_lat, activeTrip.destination_lng]
+      );
+      map.fitBounds(bounds, { padding: [30, 30] });
+
+      activeTripMapRef.current = map;
+    }
+  }, [activeTrip]);
 
   // Aceptar solicitud
   const handleAccept = async (requestId: string) => {
@@ -168,7 +309,6 @@ export default function TaxiDriverRequests() {
         console.log('WhatsApp enviado al pasajero');
       } catch (whatsappError) {
         console.error('Error enviando WhatsApp al pasajero:', whatsappError);
-        // No fallar la aceptación por esto
       }
 
       toast({
@@ -220,9 +360,55 @@ export default function TaxiDriverRequests() {
     }
   };
 
+  // Completar viaje
+  const handleCompleteTrip = async () => {
+    if (!activeTrip) return;
+    
+    setCompletingTrip(true);
+    
+    try {
+      const { error } = await supabase
+        .from('taxi_requests')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', activeTrip.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Viaje completado!",
+        description: `Tarifa cobrada: $${activeTrip.total_fare.toFixed(2)} MXN`,
+      });
+
+      // Limpiar mapa del viaje activo
+      if (activeTripMapRef.current) {
+        activeTripMapRef.current.remove();
+        activeTripMapRef.current = null;
+      }
+
+      setActiveTrip(null);
+      fetchRequests();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo completar el viaje",
+        variant: "destructive"
+      });
+    } finally {
+      setCompletingTrip(false);
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Test sound button
+  const testSound = () => {
+    playAlertSound();
   };
 
   if (loading) {
@@ -233,48 +419,43 @@ export default function TaxiDriverRequests() {
     );
   }
 
-  if (requests.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center text-muted-foreground">
-          <p>No hay solicitudes de taxi pendientes</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
-        <Badge variant="destructive" className="animate-pulse">
-          {requests.length}
-        </Badge>
-        Solicitudes pendientes
-      </h2>
-      
-      {requests.map((request) => (
-        <Card key={request.id} className="border-primary/30 bg-primary/5">
+    <div className="space-y-6">
+      {/* Botón de prueba de sonido */}
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={testSound}>
+          <Volume2 className="h-4 w-4 mr-2" />
+          Probar sonido
+        </Button>
+      </div>
+
+      {/* Viaje activo */}
+      {activeTrip && (
+        <Card className="border-green-500 bg-green-500/10">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {request.passengerName}
+              <CardTitle className="text-lg flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="h-5 w-5" />
+                Viaje en curso
               </CardTitle>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatTime(request.created_at)}
-              </Badge>
+              <Badge className="bg-green-600">Activo</Badge>
             </div>
-            {request.passengerPhone && (
-              <p className="text-sm text-muted-foreground">{request.passengerPhone}</p>
-            )}
           </CardHeader>
           
-          <CardContent className="space-y-3">
-            {/* Mapa pequeño */}
+          <CardContent className="space-y-4">
+            {/* Info del pasajero */}
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="font-semibold">{activeTrip.passengerName}</span>
+              {activeTrip.passengerPhone && (
+                <span className="text-muted-foreground">- {activeTrip.passengerPhone}</span>
+              )}
+            </div>
+
+            {/* Mapa */}
             <div 
-              id={`request-map-${request.id}`}
-              className="h-32 rounded-lg overflow-hidden"
+              id="active-trip-map"
+              className="h-48 rounded-lg overflow-hidden"
             />
             
             {/* Direcciones */}
@@ -284,7 +465,7 @@ export default function TaxiDriverRequests() {
                 <div>
                   <p className="font-medium">Recogida</p>
                   <p className="text-muted-foreground line-clamp-2">
-                    {request.pickup_address || `${request.pickup_lat.toFixed(5)}, ${request.pickup_lng.toFixed(5)}`}
+                    {activeTrip.pickup_address || `${activeTrip.pickup_lat.toFixed(5)}, ${activeTrip.pickup_lng.toFixed(5)}`}
                   </p>
                 </div>
               </div>
@@ -294,7 +475,7 @@ export default function TaxiDriverRequests() {
                 <div>
                   <p className="font-medium">Destino</p>
                   <p className="text-muted-foreground line-clamp-2">
-                    {request.destination_address || `${request.destination_lat.toFixed(5)}, ${request.destination_lng.toFixed(5)}`}
+                    {activeTrip.destination_address || `${activeTrip.destination_lat.toFixed(5)}, ${activeTrip.destination_lng.toFixed(5)}`}
                   </p>
                 </div>
               </div>
@@ -304,56 +485,156 @@ export default function TaxiDriverRequests() {
             <div className="bg-background p-3 rounded-lg border">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Distancia:</span>
-                <span className="font-medium">{request.distance_km.toFixed(2)} km</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Tarifa:</span>
-                <span className="font-medium">${request.tarifa_km.toFixed(2)}/km</span>
+                <span className="font-medium">{activeTrip.distance_km.toFixed(2)} km</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t mt-2">
                 <span className="font-semibold flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
                   Total a cobrar:
                 </span>
-                <span className="text-xl font-bold text-primary">${request.total_fare.toFixed(2)} MXN</span>
+                <span className="text-xl font-bold text-green-600">${activeTrip.total_fare.toFixed(2)} MXN</span>
               </div>
             </div>
             
-            {/* Botones de acción */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => handleReject(request.id)}
-                disabled={processingId === request.id}
-              >
-                {processingId === request.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <X className="h-4 w-4 mr-1" />
-                    Rechazar
-                  </>
-                )}
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => handleAccept(request.id)}
-                disabled={processingId === request.id}
-              >
-                {processingId === request.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-1" />
-                    Aceptar
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* Botón completar */}
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700"
+              size="lg"
+              onClick={handleCompleteTrip}
+              disabled={completingTrip}
+            >
+              {completingTrip ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Completando...</>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Completar Viaje
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
-      ))}
+      )}
+
+      {/* Solicitudes pendientes */}
+      {pendingRequests.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Badge variant="destructive" className="animate-pulse">
+              {pendingRequests.length}
+            </Badge>
+            Solicitudes pendientes
+          </h2>
+          
+          {pendingRequests.map((request) => (
+            <Card key={request.id} className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {request.passengerName}
+                  </CardTitle>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTime(request.created_at)}
+                  </Badge>
+                </div>
+                {request.passengerPhone && (
+                  <p className="text-sm text-muted-foreground">{request.passengerPhone}</p>
+                )}
+              </CardHeader>
+              
+              <CardContent className="space-y-3">
+                <div 
+                  id={`request-map-${request.id}`}
+                  className="h-32 rounded-lg overflow-hidden"
+                />
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Recogida</p>
+                      <p className="text-muted-foreground line-clamp-2">
+                        {request.pickup_address || `${request.pickup_lat.toFixed(5)}, ${request.pickup_lng.toFixed(5)}`}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Destino</p>
+                      <p className="text-muted-foreground line-clamp-2">
+                        {request.destination_address || `${request.destination_lat.toFixed(5)}, ${request.destination_lng.toFixed(5)}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-background p-3 rounded-lg border">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Distancia:</span>
+                    <span className="font-medium">{request.distance_km.toFixed(2)} km</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Tarifa:</span>
+                    <span className="font-medium">${request.tarifa_km.toFixed(2)}/km</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t mt-2">
+                    <span className="font-semibold flex items-center gap-1">
+                      <DollarSign className="h-4 w-4" />
+                      Total a cobrar:
+                    </span>
+                    <span className="text-xl font-bold text-primary">${request.total_fare.toFixed(2)} MXN</span>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleReject(request.id)}
+                    disabled={processingId === request.id}
+                  >
+                    {processingId === request.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <X className="h-4 w-4 mr-1" />
+                        Rechazar
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleAccept(request.id)}
+                    disabled={processingId === request.id}
+                  >
+                    {processingId === request.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-1" />
+                        Aceptar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      )}
+
+      {/* Sin solicitudes ni viaje activo */}
+      {!activeTrip && pendingRequests.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            <p>No hay solicitudes de taxi pendientes</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
