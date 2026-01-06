@@ -96,9 +96,7 @@ async function searchAddress(query: string): Promise<AddressSuggestion[]> {
 
 export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiRequestModalProps) {
   const { toast } = useToast();
-  const miniMapRef = useRef<L.Map | null>(null);
   const fullMapRef = useRef<L.Map | null>(null);
-  const miniMapContainerRef = useRef<HTMLDivElement>(null);
   const fullMapContainerRef = useRef<HTMLDivElement>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   
@@ -176,49 +174,7 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       );
     }
   }, [isOpen]);
-
-  // Inicializar mapa mini (vista previa)
-  useEffect(() => {
-    if (!isOpen || !miniMapContainerRef.current || miniMapRef.current || selectionMode !== 'none') return;
-    
-    const timer = setTimeout(() => {
-      if (!miniMapContainerRef.current) return;
-      
-      const map = L.map(miniMapContainerRef.current, { 
-        attributionControl: false,
-        zoomControl: false
-      }).setView([driver.latitude, driver.longitude], 13);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      miniMapRef.current = map;
-      
-      // Marcador del taxi
-      L.marker([driver.latitude, driver.longitude], {
-        icon: L.divIcon({
-          html: '<div style="font-size: 24px;">🚕</div>',
-          className: 'taxi-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(map);
-      
-      setTimeout(() => map.invalidateSize(), 100);
-    }, 100);
-    
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [isOpen, driver.latitude, driver.longitude, selectionMode]);
   
-  // Limpiar mapa mini al cerrar o cambiar modo
-  useEffect(() => {
-    if (!isOpen || selectionMode !== 'none') {
-      if (miniMapRef.current) {
-        miniMapRef.current.remove();
-        miniMapRef.current = null;
-      }
-    }
-  }, [isOpen, selectionMode]);
 
   // Inicializar mapa fullscreen para selección
   useEffect(() => {
@@ -579,13 +535,6 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
               </p>
             </div>
             
-            {/* Mapa mini preview - solo se muestra cuando no está en modo selección */}
-            {selectionMode === 'none' && (
-              <div 
-                ref={miniMapContainerRef} 
-                className="h-48 rounded-lg border overflow-hidden"
-              />
-            )}
             
             {/* Punto de recogida */}
             <div className="space-y-2">
