@@ -189,7 +189,16 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
 
   const contactWhatsApp = (telefono: string, nombre: string) => {
     const mensaje = `Hola ${nombre}, te contactamos respecto a tu cita.`;
-    const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
+    
+    // Limpiar número y asegurar prefijo 52 para México
+    let phoneClean = telefono.replace(/\D/g, '');
+    if (phoneClean.length === 10) {
+      phoneClean = '52' + phoneClean;
+    } else if (phoneClean.startsWith('1') && phoneClean.length === 11) {
+      phoneClean = '52' + phoneClean.slice(1);
+    }
+    
+    const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
   };
 
@@ -274,17 +283,23 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
               </Button>
             )}
             
-            {apt.estado === 'confirmada' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => updateStatus(apt.id, 'completada')}
-                className="text-green-600"
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Completar
-              </Button>
-            )}
+            {apt.estado === 'confirmada' && (() => {
+              // Solo mostrar "Completar" si la fecha/hora de la cita ya pasó
+              const appointmentDateTime = new Date(`${apt.fecha}T${apt.hora_fin}`);
+              const canComplete = appointmentDateTime <= new Date();
+              
+              return canComplete ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatus(apt.id, 'completada')}
+                  className="text-green-600"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Completar
+                </Button>
+              ) : null;
+            })()}
             
             <Button
               variant="outline"
