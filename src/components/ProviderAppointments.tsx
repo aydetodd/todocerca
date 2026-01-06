@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,21 +28,68 @@ interface ProviderAppointmentsProps {
 export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const lastNotifiedIdRef = useRef<string | null>(null);
+
+  const playNewAppointmentSound = () => {
+    try {
+      // Nota: en algunos navegadores requiere una interacción previa del usuario
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+
+      o.type = 'sine';
+      o.frequency.value = 880;
+      g.gain.value = 0.06;
+
+      o.connect(g);
+      g.connect(ctx.destination);
+
+      o.start();
+      o.stop(ctx.currentTime + 0.16);
+
+      setTimeout(() => {
+        ctx.close().catch(() => undefined);
+      }, 350);
+    } catch (e) {
+      console.log('No se pudo reproducir sonido de notificación', e);
+    }
+  };
 
   useEffect(() => {
     loadAppointments();
-    
+
     // Suscribirse a cambios en tiempo real
     const channel = supabase
-      .channel('citas-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'citas',
-        filter: `proveedor_id=eq.${proveedorId}`
-      }, () => {
-        loadAppointments();
-      })
+      .channel(`citas-changes-${proveedorId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'citas',
+          filter: `proveedor_id=eq.${proveedorId}`,
+        },
+        (payload) => {
+          console.log('Realtime citas payload:', payload);
+
+          if (payload.eventType === 'INSERT') {
+            const newId = (payload as any).new?.id as string | undefined;
+            if (newId && lastNotifiedIdRef.current !== newId) {
+              lastNotifiedIdRef.current = newId;
+              playNewAppointmentSound();
+              toast({
+                title: 'Nueva cita',
+                description: 'Te acaban de agendar una nueva cita.',
+              });
+            }
+          }
+
+          loadAppointments();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -82,9 +129,29 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
 
       if (error) throw error;
 
+      let whatsappOk: boolean | null = null;
+      if (estado === 'confirmada') {
+        const { error: fnError } = await supabase.functions.invoke(
+          'send-whatsapp-appointment-update',
+          {
+            body: { appointmentId: id, status: estado },
+          }
+        );
+
+        whatsappOk = !fnError;
+        if (fnError) {
+          console.error('Error enviando WhatsApp al cliente:', fnError);
+        }
+      }
+
       toast({
         title: 'Estado actualizado',
-        description: `La cita ha sido marcada como ${estado}`
+        description:
+          estado === 'confirmada'
+            ? whatsappOk
+              ? 'Cita confirmada y se notificó al cliente por WhatsApp.'
+              : 'Cita confirmada (no se pudo enviar WhatsApp).'
+            : `La cita ha sido marcada como ${estado}`,
       });
 
       loadAppointments();
@@ -93,7 +160,7 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el estado',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
