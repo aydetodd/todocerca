@@ -17,9 +17,10 @@ L.Icon.Default.mergeOptions({
 
 interface RealtimeMapProps {
   onOpenChat: (userId: string, apodo: string) => void;
+  filterType?: 'taxi' | 'ruta' | null;
 }
 
-export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -113,10 +114,20 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
       return;
     }
 
-    console.log('🗺️ [Map] Updating', locations.length, 'markers (initial load done)');
+    // Filter locations based on filterType
+    let filteredLocations = locations;
+    if (filterType === 'taxi') {
+      filteredLocations = locations.filter(loc => loc.is_taxi === true);
+      console.log('🚕 [Map] Filtering to show only taxis:', filteredLocations.length);
+    } else if (filterType === 'ruta') {
+      filteredLocations = locations.filter(loc => loc.is_bus === true);
+      console.log('🚌 [Map] Filtering to show only rutas:', filteredLocations.length);
+    }
+
+    console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
     
-    // Primero: remover TODOS los markers que ya no están en locations
-    const currentLocationUserIds = new Set(locations.map(loc => loc.user_id));
+    // Primero: remover TODOS los markers que ya no están en filteredLocations
+    const currentLocationUserIds = new Set(filteredLocations.map(loc => loc.user_id));
     Object.keys(markersRef.current).forEach(userId => {
       if (!currentLocationUserIds.has(userId)) {
         console.log(`🗑️ [Map] Removing marker for ${userId} (no longer in locations)`);
@@ -140,7 +151,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
     };
 
     // Add/update markers for each location
-    locations.forEach(location => {
+    filteredLocations.forEach(location => {
       if (!location.profiles || !location.profiles.estado) {
         console.warn('⚠️ [Map] Missing profile/estado for', location.user_id);
         return;
@@ -271,7 +282,7 @@ export const RealtimeMap = ({ onOpenChat }: RealtimeMapProps) => {
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone]);
+  }, [locations, currentUserId, initialLoadDone, filterType]);
 
   // Add global functions for popup buttons
   useEffect(() => {
