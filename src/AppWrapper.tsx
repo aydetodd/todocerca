@@ -1,13 +1,17 @@
-// AppWrapper v2025-12-21 - with geography routes for LATAM expansion
-import { useState } from "react";
+// AppWrapper v2025-01-06 - Redesigned navigation flow with splash screen
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
 import { GlobalGroupTracking } from "@/components/GlobalGroupTracking";
 import { useRegistrationNotifications } from "@/hooks/useRegistrationNotifications";
+import { SplashScreen } from "@/components/SplashScreen";
+import { useAuth } from "@/hooks/useAuth";
 import Home from "./pages/Home";
+import MainHome from "./pages/MainHome";
+import Panel from "./pages/Panel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +29,8 @@ import GpsReports from "./pages/GpsReports";
 import MessagesInbox from "./pages/MessagesInbox";
 import AddContact from "./pages/AddContact";
 import Favoritos from "./pages/Favoritos";
+import Donar from "./pages/Donar";
+import Extraviados from "./pages/Extraviados";
 import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
@@ -33,6 +39,49 @@ import GpsLocationPage from "./pages/GpsLocationPage";
 // Component to activate registration notifications
 const RegistrationNotifier = () => {
   useRegistrationNotifications();
+  return null;
+};
+
+// Splash screen handler - shows splash and redirects based on auth
+const SplashHandler = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Solo mostrar splash en la ruta raíz al cargar la app
+    if (location.pathname !== '/') {
+      setShowSplash(false);
+    }
+  }, [location.pathname]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    if (!loading) {
+      if (user) {
+        navigate('/home', { replace: true });
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    }
+  };
+
+  // Si está cargando auth después del splash, esperar
+  useEffect(() => {
+    if (!showSplash && !loading && location.pathname === '/') {
+      if (user) {
+        navigate('/home', { replace: true });
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    }
+  }, [showSplash, loading, user, navigate, location.pathname]);
+
+  if (showSplash && location.pathname === '/') {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
   return null;
 };
 
@@ -56,8 +105,12 @@ export default function AppWrapper() {
         <GlobalProviderTracking />
         {/* Tracking global para grupos (tracking_member_locations) */}
         <GlobalGroupTracking />
+        {/* Splash Screen Handler */}
+        <SplashHandler />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/home" element={<MainHome />} />
+          <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
@@ -80,6 +133,8 @@ export default function AppWrapper() {
           <Route path="/mensajes" element={<MessagesInbox />} />
           <Route path="/agregar-contacto" element={<AddContact />} />
           <Route path="/favoritos" element={<Favoritos />} />
+          <Route path="/donar" element={<Donar />} />
+          <Route path="/extraviados" element={<Extraviados />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
