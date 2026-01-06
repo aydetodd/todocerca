@@ -19,13 +19,32 @@ export interface MemberLocation {
 export const useTrackingLocations = (groupId: string | null) => {
   const [locations, setLocations] = useState<MemberLocation[]>([]);
   const [loading, setLoading] = useState(true);
-  const groupMemberUserIds = useRef<string[]>([]);
+  const isFetching = useRef(false);
+  const lastFetchTime = useRef(0);
 
-  const fetchLocations = useCallback(async () => {
+  const fetchLocations = useCallback(async (source?: string) => {
     if (!groupId) return;
+    
+    // Evitar fetches simultáneos
+    if (isFetching.current) {
+      console.log('[REALTIME] Skipping fetch, already in progress');
+      return;
+    }
+
+    // Throttle: mínimo 200ms entre fetches
+    const now = Date.now();
+    if (now - lastFetchTime.current < 200) {
+      console.log('[REALTIME] Throttling fetch');
+      return;
+    }
+
+    isFetching.current = true;
+    lastFetchTime.current = now;
 
     try {
-      // Primero obtener los miembros del grupo para saber qué user_ids monitorear
+      console.log('[REALTIME] Fetching locations, source:', source || 'manual');
+
+      // Obtener miembros del grupo
       const { data: membersData, error: membersError } = await supabase
         .from('tracking_group_members')
         .select('user_id, nickname, is_owner')
@@ -34,36 +53,36 @@ export const useTrackingLocations = (groupId: string | null) => {
       if (membersError) throw membersError;
 
       const memberUserIds = membersData?.map(m => m.user_id) || [];
-      groupMemberUserIds.current = memberUserIds;
 
       if (memberUserIds.length === 0) {
         setLocations([]);
         return;
       }
 
-      // Obtener ubicaciones
-      const { data: locationsData, error: locError } = await supabase
-        .from('tracking_member_locations')
-        .select('*')
-        .eq('group_id', groupId);
+      // Obtener ubicaciones y perfiles en paralelo
+      const [locationsResult, profilesResult] = await Promise.all([
+        supabase
+          .from('tracking_member_locations')
+          .select('*')
+          .eq('group_id', groupId),
+        supabase
+          .from('profiles')
+          .select('user_id, estado')
+          .in('user_id', memberUserIds)
+      ]);
 
-      if (locError) throw locError;
+      if (locationsResult.error) throw locationsResult.error;
+      if (profilesResult.error) throw profilesResult.error;
 
-      // Obtener estados de usuarios desde profiles (solo los del grupo)
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, estado')
-        .in('user_id', memberUserIds);
+      const locationsData = locationsResult.data;
+      const profilesData = profilesResult.data;
 
-      if (profilesError) throw profilesError;
+      console.log('[REALTIME] Profiles states:', profilesData?.map(p => ({
+        id: p.user_id.slice(-6),
+        estado: p.estado
+      })));
 
-      console.log('[REALTIME] Fetched data:', {
-        members: membersData?.length,
-        locations: locationsData?.length,
-        profiles: profilesData?.map(p => ({ user_id: p.user_id.slice(-6), estado: p.estado }))
-      });
-
-      // Combinar datos y filtrar por estado (solo mostrar si NO está offline)
+      // Combinar datos y filtrar por estado
       const merged = locationsData?.map(loc => {
         const member = membersData?.find(m => m.user_id === loc.user_id);
         const profile = profilesData?.find(p => p.user_id === loc.user_id);
@@ -76,18 +95,17 @@ export const useTrackingLocations = (groupId: string | null) => {
           } : undefined
         };
       }).filter(loc => {
-        // Solo mostrar si el estado NO es offline (rojo)
         const estado = loc.member?.estado;
         const shouldShow = estado !== 'offline';
-        console.log('[REALTIME] Filter:', loc.member?.nickname, 'estado:', estado, 'show:', shouldShow);
         return shouldShow;
       }) || [];
 
-      console.log('[REALTIME] Final count:', merged.length);
+      console.log('[REALTIME] Visible locations:', merged.length, 'of', locationsData?.length);
       setLocations(merged);
     } catch (error) {
       console.error('Error fetching locations:', error);
     } finally {
+      isFetching.current = false;
       setLoading(false);
     }
   }, [groupId]);
@@ -99,78 +117,75 @@ export const useTrackingLocations = (groupId: string | null) => {
     }
 
     // Fetch inicial
-    fetchLocations();
+    fetchLocations('initial');
 
-    // Crear un canal único para este grupo
-    const channelName = `tracking_realtime_${groupId}_${Date.now()}`;
+    // Canal único para este grupo
+    const channelName = `tracking_${groupId}`;
     
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tracking_member_locations',
-          filter: `group_id=eq.${groupId}`
-        },
-        (payload) => {
-          console.log('[REALTIME] Location change detected:', payload.eventType);
-          fetchLocations();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles'
-        },
-        (payload) => {
-          // Solo refrescar si el usuario actualizado está en nuestro grupo
-          const updatedUserId = (payload.new as any)?.user_id;
-          if (updatedUserId && groupMemberUserIds.current.includes(updatedUserId)) {
-            console.log('[REALTIME] Profile update for group member:', updatedUserId.slice(-6), 'new estado:', (payload.new as any)?.estado);
-            // Pequeño delay para asegurar que la BD esté sincronizada
-            setTimeout(() => {
-              fetchLocations();
-            }, 100);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('[REALTIME] Subscription status:', status);
-      });
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: groupId } }
+    });
+
+    // Escuchar cambios en ubicaciones
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tracking_member_locations',
+        filter: `group_id=eq.${groupId}`
+      },
+      () => {
+        fetchLocations('location_change');
+      }
+    );
+
+    // Escuchar TODOS los cambios en profiles (INSERT, UPDATE, DELETE)
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'profiles'
+      },
+      (payload) => {
+        console.log('[REALTIME] Profile change:', payload.eventType, (payload.new as any)?.estado || (payload.old as any)?.estado);
+        // Delay pequeño para asegurar consistencia
+        setTimeout(() => fetchLocations('profile_change'), 150);
+      }
+    );
+
+    channel.subscribe((status) => {
+      console.log('[REALTIME] Channel status:', status);
+      if (status === 'SUBSCRIBED') {
+        // Refetch cuando se suscribe exitosamente
+        fetchLocations('subscribed');
+      }
+    });
+
+    // Polling de respaldo cada 5 segundos para garantizar sincronización
+    const pollInterval = setInterval(() => {
+      fetchLocations('poll');
+    }, 5000);
 
     return () => {
-      console.log('[REALTIME] Cleaning up channel:', channelName);
+      console.log('[REALTIME] Cleanup channel:', channelName);
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [groupId, fetchLocations]);
 
   const updateMyLocation = async (latitude: number, longitude: number) => {
-    if (!groupId) {
-      console.log('[DEBUG] No groupId, cannot update location');
-      return;
-    }
+    if (!groupId) return;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('[DEBUG] No user found');
-        return;
-      }
+      if (!user) return;
 
       const source = isNativeApp() ? 'capacitor' : 'web';
-      console.log(`[${source.toUpperCase()}] Updating location:`, {
-        user_id: user.id,
-        group_id: groupId,
-        latitude,
-        longitude
-      });
+      console.log(`[${source.toUpperCase()}] Updating location`);
 
-      // Actualizar en tracking_member_locations
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tracking_member_locations')
         .upsert({
           user_id: user.id,
@@ -180,17 +195,11 @@ export const useTrackingLocations = (groupId: string | null) => {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,group_id'
-        })
-        .select();
+        });
 
-      if (error) {
-        console.error('[DEBUG] Error updating tracking location:', error);
-        throw error;
-      }
-      
-      console.log('[DEBUG] Tracking location updated successfully:', data);
+      if (error) throw error;
 
-      // TAMBIÉN actualizar en proveedor_locations para que aparezca en el mapa de proveedores
+      // También actualizar proveedor_locations si es proveedor
       const { data: profileData } = await supabase
         .from('profiles')
         .select('role')
@@ -198,7 +207,7 @@ export const useTrackingLocations = (groupId: string | null) => {
         .single();
 
       if (profileData?.role === 'proveedor') {
-        const { error: proveedorError } = await supabase
+        await supabase
           .from('proveedor_locations')
           .upsert({
             user_id: user.id,
@@ -208,12 +217,6 @@ export const useTrackingLocations = (groupId: string | null) => {
           }, {
             onConflict: 'user_id'
           });
-
-        if (proveedorError) {
-          console.error('[DEBUG] Error updating proveedor location:', proveedorError);
-        } else {
-          console.log('[DEBUG] ✅ Proveedor location ALSO updated for taxi map');
-        }
       }
     } catch (error) {
       console.error('Error updating location:', error);
