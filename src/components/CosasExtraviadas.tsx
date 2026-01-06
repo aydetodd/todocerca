@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Search, Plus, Trash2, Camera, X } from 'lucide-react';
+import { Search, Plus, Trash2, Camera, X, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMunicipios } from '@/hooks/useMunicipios';
+import { ListingPublicChat } from './ListingPublicChat';
 
 interface Listing {
   id: string;
@@ -21,6 +22,7 @@ interface Listing {
   created_at: string;
   is_active: boolean;
   is_free: boolean; // true = perdido, false = encontrado
+  unread_count?: number;
 }
 
 interface PhotoPreview {
@@ -41,6 +43,8 @@ export function CosasExtraviadas() {
   const [estado, setEstado] = useState('Sonora');
   const [municipio, setMunicipio] = useState('Cajeme');
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
+  const [chatListingId, setChatListingId] = useState<string | null>(null);
+  const [chatListingTitle, setChatListingTitle] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { getEstados, getMunicipios, loading: municipiosLoading } = useMunicipios();
@@ -88,7 +92,7 @@ export function CosasExtraviadas() {
   };
 
   const fetchMyListings = async () => {
-    if (!profileId || !categoryId) return;
+    if (!profileId || !categoryId || !userId) return;
 
     const { data } = await supabase
       .from('listings')
@@ -99,7 +103,20 @@ export function CosasExtraviadas() {
       .order('created_at', { ascending: false });
 
     if (data) {
-      setMyListings(data);
+      // Fetch unread counts for each listing
+      const listingsWithUnread = await Promise.all(
+        data.map(async (listing) => {
+          const { count } = await supabase
+            .from('listing_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('listing_id', listing.id)
+            .eq('is_read', false)
+            .neq('user_id', userId);
+          
+          return { ...listing, unread_count: count || 0 };
+        })
+      );
+      setMyListings(listingsWithUnread);
     }
   };
 
@@ -424,17 +441,59 @@ export function CosasExtraviadas() {
                     {listing.estado}, {listing.municipio}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(listing.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setChatListingId(listing.id);
+                      setChatListingTitle(listing.title);
+                    }}
+                    className="relative"
+                  >
+                    <MessageCircle className="h-4 w-4 text-orange-500" />
+                    {(listing.unread_count ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs px-1 py-0.5 rounded-full min-w-[16px] text-center">
+                        {listing.unread_count}
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(listing.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Chat Dialog */}
+        <Dialog open={!!chatListingId} onOpenChange={(open) => {
+          if (!open) {
+            setChatListingId(null);
+            setChatListingTitle('');
+            fetchMyListings(); // Refresh to update unread counts
+          }
+        }}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Mensajes: {chatListingTitle}</DialogTitle>
+            </DialogHeader>
+            {chatListingId && (
+              <ListingPublicChat
+                listingId={chatListingId}
+                listingTitle={chatListingTitle}
+                ownerId={userId || undefined}
+                isOwnerView={true}
+                defaultExpanded={true}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
