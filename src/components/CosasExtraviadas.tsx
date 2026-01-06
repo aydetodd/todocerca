@@ -268,9 +268,9 @@ export function CosasExtraviadas() {
 
   if (!profileId) {
     return (
-      <Card className="border-dashed border-2 border-orange-500/30">
+      <Card className="border-dashed border-2 border-blue-500/30">
         <CardContent className="py-8 text-center">
-          <Search className="h-12 w-12 mx-auto mb-4 text-orange-500/50" />
+          <Search className="h-12 w-12 mx-auto mb-4 text-blue-500/50" />
           <p className="text-muted-foreground">Inicia sesión para reportar objetos extraviados</p>
         </CardContent>
       </Card>
@@ -278,10 +278,10 @@ export function CosasExtraviadas() {
   }
 
   return (
-    <Card className="border-orange-500/30">
+    <Card className="border-blue-500/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5 text-orange-500" />
+          <Search className="h-5 w-5 text-blue-500" />
           Cosas Extraviadas
         </CardTitle>
       </CardHeader>
@@ -295,7 +295,7 @@ export function CosasExtraviadas() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button className="w-full bg-orange-500 hover:bg-orange-600">
+            <Button className="w-full bg-blue-500 hover:bg-blue-600">
               <Plus className="h-4 w-4 mr-2" />
               Reportar objeto
             </Button>
@@ -415,7 +415,7 @@ export function CosasExtraviadas() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={loading}>
                 {loading ? 'Publicando...' : 'Publicar reporte'}
               </Button>
             </form>
@@ -451,7 +451,7 @@ export function CosasExtraviadas() {
                     }}
                     className="relative"
                   >
-                    <MessageCircle className="h-4 w-4 text-orange-500" />
+                    <MessageCircle className="h-4 w-4 text-blue-500" />
                     {(listing.unread_count ?? 0) > 0 && (
                       <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs px-1 py-0.5 rounded-full min-w-[16px] text-center">
                         {listing.unread_count}
@@ -490,6 +490,11 @@ export function CosasExtraviadas() {
                 ownerId={userId || undefined}
                 isOwnerView={true}
                 defaultExpanded={true}
+                onUnreadChange={(count) => {
+                  setMyListings(prev => prev.map(l => 
+                    l.id === chatListingId ? { ...l, unread_count: count } : l
+                  ));
+                }}
               />
             )}
           </DialogContent>

@@ -461,6 +461,11 @@ export function DonarCosas() {
                 ownerId={userId || undefined}
                 isOwnerView={true}
                 defaultExpanded={true}
+                onUnreadChange={(count) => {
+                  setMyListings(prev => prev.map(l => 
+                    l.id === chatListingId ? { ...l, unread_count: count } : l
+                  ));
+                }}
               />
             )}
           </DialogContent>

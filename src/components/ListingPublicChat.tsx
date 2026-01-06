@@ -27,6 +27,7 @@ interface ListingPublicChatProps {
   ownerId?: string;
   isOwnerView?: boolean;
   defaultExpanded?: boolean;
+  onUnreadChange?: (count: number) => void;
 }
 
 // Play notification sound
@@ -36,7 +37,7 @@ const playNotificationSound = () => {
   audio.play().catch(e => console.log('Audio play failed:', e));
 };
 
-export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId, isOwnerView = false, defaultExpanded = false }: ListingPublicChatProps) {
+export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId, isOwnerView = false, defaultExpanded = false, onUnreadChange }: ListingPublicChatProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -101,6 +102,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId,
               .in('id', unreadIds);
           }
           setUnreadCount(0);
+          onUnreadChange?.(0);
         }
       } catch (error) {
         console.error('Error fetching comments:', error);
