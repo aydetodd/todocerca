@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Gift, HelpCircle, Bus, Car } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
+import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 
 export default function MainHome() {
   const navigate = useNavigate();
