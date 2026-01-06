@@ -129,29 +129,35 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
 
       if (error) throw error;
 
-      let whatsappOk: boolean | null = null;
+      // Si se confirma, abrir WhatsApp con mensaje de ticket de confirmación
       if (estado === 'confirmada') {
-        const { error: fnError } = await supabase.functions.invoke(
-          'send-whatsapp-appointment-update',
-          {
-            body: { appointmentId: id, status: estado },
+        const apt = appointments.find(a => a.id === id);
+        if (apt) {
+          // Formatear fecha bonita
+          const fechaCita = parseISO(apt.fecha);
+          const diaNum = format(fechaCita, 'd');
+          const mes = format(fechaCita, 'MMMM', { locale: es });
+          const anio = format(fechaCita, 'yyyy');
+          const hora = apt.hora_inicio.slice(0, 5);
+          
+          const mensaje = `Hola ${apt.cliente_nombre}, te envío ticket de confirmación de cita para el día ${diaNum} de ${mes} ${anio} a las ${hora} hrs. ¡Agradecemos tu puntualidad y tu preferencia! 🎟️`;
+          
+          // Limpiar número y asegurar prefijo 52 para México
+          let phoneClean = apt.cliente_telefono.replace(/\D/g, '');
+          if (phoneClean.length === 10) {
+            phoneClean = '52' + phoneClean;
+          } else if (phoneClean.startsWith('1') && phoneClean.length === 11) {
+            phoneClean = '52' + phoneClean.slice(1);
           }
-        );
-
-        whatsappOk = !fnError;
-        if (fnError) {
-          console.error('Error enviando WhatsApp al cliente:', fnError);
+          
+          const url = `https://wa.me/${phoneClean}?text=${encodeURIComponent(mensaje)}`;
+          window.open(url, '_blank');
         }
       }
 
       toast({
         title: 'Estado actualizado',
-        description:
-          estado === 'confirmada'
-            ? whatsappOk
-              ? 'Cita confirmada y se notificó al cliente por WhatsApp.'
-              : 'Cita confirmada (no se pudo enviar WhatsApp).'
-            : `La cita ha sido marcada como ${estado}`,
+        description: `La cita ha sido marcada como ${estado}`,
       });
 
       loadAppointments();
@@ -263,15 +269,6 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
 
         {apt.estado !== 'cancelada' && apt.estado !== 'completada' && (
           <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => contactWhatsApp(apt.cliente_telefono, apt.cliente_nombre)}
-            >
-              <MessageCircle className="h-4 w-4 mr-1" />
-              WhatsApp
-            </Button>
-            
             {apt.estado === 'pendiente' && (
               <Button
                 variant="outline"
