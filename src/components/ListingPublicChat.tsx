@@ -25,16 +25,26 @@ interface ListingPublicChatProps {
   listingTitle: string;
   ownerName?: string;
   ownerId?: string;
+  isOwnerView?: boolean;
+  defaultExpanded?: boolean;
 }
 
-export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId }: ListingPublicChatProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+// Play notification sound
+const playNotificationSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
+  audio.volume = 1.0;
+  audio.play().catch(e => console.log('Audio play failed:', e));
+};
+
+export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId, isOwnerView = false, defaultExpanded = false }: ListingPublicChatProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [commentCount, setCommentCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isOwner = currentUserId === ownerId;
@@ -90,6 +100,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId 
               .update({ is_read: true })
               .in('id', unreadIds);
           }
+          setUnreadCount(0);
         }
       } catch (error) {
         console.error('Error fetching comments:', error);
@@ -129,6 +140,20 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId 
           setComments(prev => [...prev, commentWithProfile]);
           setCommentCount(prev => prev + 1);
 
+          // Play sound if it's from another user
+          if (newComment.user_id !== currentUserId) {
+            playNotificationSound();
+            
+            // Show system notification if owner
+            if (isOwner && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification(`Nuevo comentario en: ${listingTitle}`, {
+                body: newComment.message,
+                icon: '/icon-192.png',
+                tag: 'listing-comment'
+              });
+            }
+          }
+
           // If owner is viewing, mark as read immediately
           if (isOwner && newComment.user_id !== currentUserId) {
             await supabase
@@ -158,7 +183,7 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [listingId, isExpanded, isOwner, currentUserId]);
+  }, [listingId, isExpanded, isOwner, currentUserId, listingTitle]);
 
   // Auto-scroll when new comments arrive
   useEffect(() => {
@@ -167,18 +192,58 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId 
     }
   }, [comments, isExpanded]);
 
-  // Fetch initial comment count
+  // Fetch initial comment count and unread count for owner
   useEffect(() => {
-    const fetchCount = async () => {
+    const fetchCounts = async () => {
       const { count } = await supabase
         .from('listing_comments')
         .select('*', { count: 'exact', head: true })
         .eq('listing_id', listingId);
       
       setCommentCount(count || 0);
+
+      // Fetch unread count for owner
+      if (isOwner) {
+        const { count: unread } = await supabase
+          .from('listing_comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('listing_id', listingId)
+          .eq('is_read', false)
+          .neq('user_id', currentUserId);
+        
+        setUnreadCount(unread || 0);
+      }
     };
-    fetchCount();
-  }, [listingId]);
+    fetchCounts();
+
+    // Subscribe to count changes (for badge updates when not expanded)
+    if (!isExpanded && isOwner) {
+      const channel = supabase
+        .channel(`listing_comments_count_${listingId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'listing_comments',
+            filter: `listing_id=eq.${listingId}`
+          },
+          (payload) => {
+            const newComment = payload.new as Comment;
+            if (newComment.user_id !== currentUserId) {
+              setUnreadCount(prev => prev + 1);
+              setCommentCount(prev => prev + 1);
+              playNotificationSound();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [listingId, isOwner, currentUserId, isExpanded]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId) {
@@ -231,6 +296,11 @@ export function ListingPublicChat({ listingId, listingTitle, ownerName, ownerId 
         <span className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4" />
           Chat público ({commentCount} {commentCount === 1 ? 'mensaje' : 'mensajes'})
+          {unreadCount > 0 && (
+            <span className="bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
         </span>
         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </Button>
