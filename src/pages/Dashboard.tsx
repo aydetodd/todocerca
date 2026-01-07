@@ -1,12 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, LogOut, Package, Users, ShoppingCart, Search, Calendar, Clock, Car } from "lucide-react";
+import {
+  Calendar,
+  Car,
+  Clock,
+  LogOut,
+  Map as MapIcon,
+  MapPin,
+  Package,
+  ShoppingCart,
+  User,
+} from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
@@ -14,21 +30,31 @@ import { OrdersManagement } from "@/components/OrdersManagement";
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration";
 import { ProviderAppointments } from "@/components/ProviderAppointments";
 import TaxiDriverRequests from "@/components/TaxiDriverRequests";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type DashboardSection =
+  | "perfil"
+  | "tracking"
+  | "productos"
+  | "apartados"
+  | "citas"
+  | "horarios"
+  | "taxi";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
+  const [activeSection, setActiveSection] = useState<DashboardSection>("perfil");
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
 
   // Format user ID with 6 digits and role suffix
   const formatUserId = (consecutiveNumber: number, role: string) => {
-    const paddedNumber = String(consecutiveNumber).padStart(6, '0');
-    const suffix = role === 'proveedor' ? 'p' : 'c';
+    const paddedNumber = String(consecutiveNumber).padStart(6, "0");
+    const suffix = role === "proveedor" ? "p" : "c";
     return `${paddedNumber}${suffix}`;
   };
 
@@ -39,8 +65,8 @@ const Dashboard = () => {
       return;
     }
     getProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, navigate]);
-
 
   async function getProfile() {
     try {
@@ -48,18 +74,18 @@ const Dashboard = () => {
 
       // Obtener perfil
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (profileError) {
-        console.error('Error obteniendo perfil:', profileError);
+        console.error("Error obteniendo perfil:", profileError);
         throw profileError;
       }
 
       if (!profileData) {
-        console.warn('No se encontró perfil para el usuario');
+        console.warn("No se encontró perfil para el usuario");
         setProfile(null);
         setLoading(false);
         return;
@@ -68,16 +94,16 @@ const Dashboard = () => {
       setProfile(profileData);
 
       // Mostrar pestaña Taxi si el proveedor es taxi o si ya tiene solicitudes asignadas
-      if (profileData.role === 'proveedor') {
-        const isTaxiByProfile = profileData.provider_type === 'taxi';
+      if (profileData.role === "proveedor") {
+        const isTaxiByProfile = profileData.provider_type === "taxi";
 
         if (isTaxiByProfile) {
           setShowTaxiTab(true);
         } else {
           const { data: anyTaxi, error: anyTaxiError } = await supabase
-            .from('taxi_requests')
-            .select('id')
-            .eq('driver_id', user.id)
+            .from("taxi_requests")
+            .select("id")
+            .eq("driver_id", user.id)
             .limit(1);
 
           setShowTaxiTab(!anyTaxiError && !!anyTaxi && anyTaxi.length > 0);
@@ -87,27 +113,27 @@ const Dashboard = () => {
       }
 
       // Obtener datos específicos según el rol
-      if (profileData.role === 'cliente') {
+      if (profileData.role === "cliente") {
         const { data: clienteData, error: clienteError } = await supabase
-          .from('clientes')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("clientes")
+          .select("*")
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (clienteError) {
-          console.error('Error obteniendo datos de cliente:', clienteError);
+          console.error("Error obteniendo datos de cliente:", clienteError);
         } else {
           setUserSpecificData(clienteData);
         }
-      } else if (profileData.role === 'proveedor') {
+      } else if (profileData.role === "proveedor") {
         const { data: proveedorData, error: proveedorError } = await supabase
-          .from('proveedores')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("proveedores")
+          .select("*")
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (proveedorError) {
-          console.error('Error obteniendo datos de proveedor:', proveedorError);
+          console.error("Error obteniendo datos de proveedor:", proveedorError);
         } else {
           setUserSpecificData(proveedorData);
         }
@@ -128,23 +154,73 @@ const Dashboard = () => {
     navigate("/");
   }
 
+  const isProvider = profile?.role === "proveedor";
+  const showTaxi = isProvider && showTaxiTab;
+
+  const navItems = useMemo(
+    () =>
+      [
+        { key: "perfil" as const, label: "Perfil", icon: User, visible: true },
+        {
+          key: "tracking" as const,
+          label: "Tracking GPS",
+          icon: MapIcon,
+          visible: true,
+        },
+        {
+          key: "productos" as const,
+          label: "Productos",
+          icon: Package,
+          visible: isProvider,
+        },
+        {
+          key: "apartados" as const,
+          label: "Apartados",
+          icon: ShoppingCart,
+          visible: isProvider,
+        },
+        {
+          key: "citas" as const,
+          label: "Citas",
+          icon: Calendar,
+          visible: isProvider,
+        },
+        {
+          key: "horarios" as const,
+          label: "Horarios",
+          icon: Clock,
+          visible: isProvider,
+        },
+        {
+          key: "taxi" as const,
+          label: "Taxista",
+          icon: Car,
+          visible: showTaxi,
+        },
+      ].filter((i) => i.visible),
+    [isProvider, showTaxi]
+  );
+
+  // Si el usuario cambia de rol (o se oculta Taxi), asegurar que la sección activa exista
+  useEffect(() => {
+    if (!navItems.some((i) => i.key === activeSection)) {
+      setActiveSection(navItems[0]?.key ?? "perfil");
+    }
+  }, [navItems, activeSection]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
   }
 
-  const isProvider = profile?.role === 'proveedor';
-  const showTaxi = isProvider && showTaxiTab;
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -152,10 +228,15 @@ const Dashboard = () => {
               <MapPin className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">TodoCerca</h1>
             </div>
+
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Semáforo arriba */}
+              <StatusControl />
+
               <Badge variant={isProvider ? "default" : "secondary"}>
                 {isProvider ? "Proveedor" : "Cliente"}
               </Badge>
+
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
@@ -165,165 +246,217 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              ¡Bienvenido, {profile?.nombre}!
-            </h2>
-            <p className="text-muted-foreground">
-              {isProvider ? "Gestiona tu negocio y productos" : "Explora productos y servicios cerca de ti"}
-            </p>
-          </div>
-          <Button size="lg" onClick={() => navigate("/search")}>
-            <Search className="h-4 w-4 mr-2" />
-            Buscar Productos
-          </Button>
+      <main className="container mx-auto px-4 py-6">
+        <div className="mb-4">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            ¡Bienvenido, {profile?.nombre}!
+          </h2>
+          <p className="text-muted-foreground">
+            {isProvider
+              ? "Gestiona tu negocio desde el panel"
+              : "Gestiona tu cuenta y tus herramientas"}
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Explorar - Available for all users */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Search className="h-5 w-5" />
-                <span>Buscar</span>
-              </CardTitle>
-              <CardDescription>Encuentra productos y servicios cerca de ti</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <Button className="w-full" onClick={() => navigate("/search")}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Buscar Productos
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => navigate("/search?category=servicios")}>
-                  Buscar Servicios
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex gap-4">
+          {/* Sidebar de iconos (siempre visible) */}
+          <aside className="w-14 shrink-0">
+            <nav className="sticky top-4 flex flex-col items-center gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.key;
+                return (
+                  <Button
+                    key={item.key}
+                    size="icon"
+                    variant={isActive ? "default" : "ghost"}
+                    onClick={() => setActiveSection(item.key)}
+                    aria-label={item.label}
+                    title={item.label}
+                    className="h-11 w-11"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </Button>
+                );
+              })}
+            </nav>
+          </aside>
 
-          {/* Mi Perfil */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>Mi Perfil</span>
-              </CardTitle>
-              <CardDescription>Información de tu cuenta y estado</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <div className="flex-1 space-y-2">
-                  {profile?.consecutive_number && (
+          {/* Contenido */}
+          <section className="flex-1 min-w-0">
+            {activeSection === "perfil" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mi Perfil</CardTitle>
+                  <CardDescription>Información de tu cuenta</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {profile?.consecutive_number && (
+                      <div>
+                        <span className="text-sm font-medium">ID Usuario:</span>
+                        <p className="text-sm font-mono font-bold text-primary">
+                          {formatUserId(profile.consecutive_number, profile.role)}
+                        </p>
+                      </div>
+                    )}
+
                     <div>
-                      <span className="text-sm font-medium">ID Usuario:</span>
-                      <p className="text-sm font-mono font-bold text-primary">
-                        {formatUserId(profile.consecutive_number, profile.role)}
+                      <span className="text-sm font-medium">Email:</span>
+                      <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    </div>
+
+                    <div>
+                      <span className="text-sm font-medium">Rol:</span>
+                      <p className="text-sm text-muted-foreground">
+                        {isProvider ? "Proveedor" : "Cliente"}
                       </p>
                     </div>
-                  )}
-                  <div>
-                    <span className="text-sm font-medium">Email:</span>
-                    <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Rol:</span>
-                    <p className="text-sm text-muted-foreground">
-                      {isProvider ? "Proveedor" : "Cliente"}
-                    </p>
-                  </div>
-                  {userSpecificData?.telefono && (
-                    <div>
-                      <span className="text-sm font-medium">Teléfono:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.telefono}</p>
-                    </div>
-                  )}
-                  {userSpecificData?.codigo_postal && (
-                    <div>
-                      <span className="text-sm font-medium">Código Postal:</span>
-                      <p className="text-sm text-muted-foreground">{userSpecificData.codigo_postal}</p>
-                    </div>
-                  )}
-                  
-                  {/* QR Code Generator for Providers */}
-                  {isProvider && userSpecificData?.id && (
-                    <div className="pt-4">
-                      <QRCodeGenerator 
-                        proveedorId={userSpecificData.id} 
-                        businessName={userSpecificData.nombre || profile.nombre}
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Status Control - Traffic Light */}
-                <div className="flex-shrink-0">
-                  <StatusControl />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Product Management and Appointments for Providers */}
-        {isProvider && userSpecificData?.id && (
-          <div className="mt-8 space-y-8">
-            <Tabs defaultValue={showTaxi ? 'taxi' : 'products'} className="w-full">
-              <TabsList className={`grid w-full ${showTaxi ? 'grid-cols-5' : 'grid-cols-4'}`}>
-                {showTaxi && (
-                  <TabsTrigger value="taxi" className="flex items-center gap-2">
-                    <Car className="h-4 w-4" />
-                    <span className="hidden sm:inline">Taxi</span>
-                  </TabsTrigger>
+                    {userSpecificData?.telefono && (
+                      <div>
+                        <span className="text-sm font-medium">Teléfono:</span>
+                        <p className="text-sm text-muted-foreground">
+                          {userSpecificData.telefono}
+                        </p>
+                      </div>
+                    )}
+
+                    {userSpecificData?.codigo_postal && (
+                      <div>
+                        <span className="text-sm font-medium">Código Postal:</span>
+                        <p className="text-sm text-muted-foreground">
+                          {userSpecificData.codigo_postal}
+                        </p>
+                      </div>
+                    )}
+
+                    {isProvider && userSpecificData?.id && (
+                      <div className="pt-4">
+                        <QRCodeGenerator
+                          proveedorId={userSpecificData.id}
+                          businessName={userSpecificData.nombre || profile.nombre}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "tracking" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tracking GPS</CardTitle>
+                  <CardDescription>
+                    Administra tu grupo y ve ubicaciones en tiempo real
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button onClick={() => navigate("/tracking-gps")}>Abrir Tracking GPS</Button>
+                  <p className="text-sm text-muted-foreground">
+                    (Se abre en una pantalla completa para ver el mapa y las opciones.)
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "productos" && (
+              <div>
+                {isProvider && userSpecificData?.id ? (
+                  <ProductManagement proveedorId={userSpecificData.id} />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Productos</CardTitle>
+                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
                 )}
-                <TabsTrigger value="products" className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  <span className="hidden sm:inline">Productos</span>
-                </TabsTrigger>
-                <TabsTrigger value="orders" className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span className="hidden sm:inline">Pedidos</span>
-                </TabsTrigger>
-                <TabsTrigger value="appointments" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Citas</span>
-                </TabsTrigger>
-                <TabsTrigger value="schedule" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span className="hidden sm:inline">Horario</span>
-                </TabsTrigger>
-              </TabsList>
+              </div>
+            )}
 
-              {showTaxi && (
-                <TabsContent value="taxi" className="mt-6">
+            {activeSection === "apartados" && (
+              <div>
+                {isProvider && userSpecificData?.id ? (
+                  <OrdersManagement
+                    proveedorId={userSpecificData.id}
+                    proveedorNombre={userSpecificData.nombre || profile.nombre}
+                  />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Apartados</CardTitle>
+                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeSection === "citas" && (
+              <div>
+                {isProvider && userSpecificData?.id ? (
+                  <ProviderAppointments proveedorId={userSpecificData.id} />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Citas</CardTitle>
+                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeSection === "horarios" && (
+              <div>
+                {isProvider && userSpecificData?.id ? (
+                  <ScheduleConfiguration proveedorId={userSpecificData.id} />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Horarios</CardTitle>
+                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeSection === "taxi" && (
+              <div>
+                {showTaxi ? (
                   <TaxiDriverRequests />
-                </TabsContent>
-              )}
-
-              <TabsContent value="products" className="mt-6">
-                <ProductManagement proveedorId={userSpecificData.id} />
-              </TabsContent>
-
-              <TabsContent value="orders" className="mt-6">
-                <OrdersManagement 
-                  proveedorId={userSpecificData.id} 
-                  proveedorNombre={userSpecificData.nombre || profile.nombre}
-                />
-              </TabsContent>
-
-              <TabsContent value="appointments" className="mt-6">
-                <ProviderAppointments proveedorId={userSpecificData.id} />
-              </TabsContent>
-
-              <TabsContent value="schedule" className="mt-6">
-                <ScheduleConfiguration proveedorId={userSpecificData.id} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Taxista</CardTitle>
+                      <CardDescription>
+                        Esta sección solo aparece para proveedores taxi.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
