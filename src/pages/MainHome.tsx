@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Gift, HelpCircle, Bus, Car } from 'lucide-react';
+import { Search, Gift, Bus, Car } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 
@@ -82,20 +81,6 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/extraviados')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <HelpCircle className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Cosas Extraviadas</h3>
-              <p className="text-sm text-muted-foreground">Reporta o encuentra objetos perdidos</p>
-            </div>
-          </CardContent>
-        </Card>
       </main>
 
       <NavigationBar />
