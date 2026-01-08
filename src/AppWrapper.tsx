@@ -32,6 +32,7 @@ import Favoritos from "./pages/Favoritos";
 import Donar from "./pages/Donar";
 import Extraviados from "./pages/Extraviados";
 import Votaciones from "./pages/Votaciones";
+import CrearVotacion from "./pages/CrearVotacion";
 import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
@@ -113,6 +114,7 @@ export default function AppWrapper() {
           <Route path="/donar" element={<Donar />} />
           <Route path="/extraviados" element={<Extraviados />} />
           <Route path="/votaciones" element={<Votaciones />} />
+          <Route path="/votaciones/crear" element={<CrearVotacion />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
