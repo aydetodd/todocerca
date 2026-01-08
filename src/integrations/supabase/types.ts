@@ -2011,6 +2011,253 @@ export type Database = {
         }
         Relationships: []
       }
+      votacion_miembros: {
+        Row: {
+          agregado_por: string | null
+          created_at: string
+          id: string
+          user_id: string
+          votacion_id: string
+        }
+        Insert: {
+          agregado_por?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+          votacion_id: string
+        }
+        Update: {
+          agregado_por?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+          votacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votacion_miembros_votacion_id_fkey"
+            columns: ["votacion_id"]
+            isOneToOne: false
+            referencedRelation: "votaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votacion_opciones: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          imagen_url: string | null
+          nombre: string
+          orden: number | null
+          votacion_id: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          nombre: string
+          orden?: number | null
+          votacion_id: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          nombre?: string
+          orden?: number | null
+          votacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votacion_opciones_votacion_id_fkey"
+            columns: ["votacion_id"]
+            isOneToOne: false
+            referencedRelation: "votaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votacion_solicitudes: {
+        Row: {
+          created_at: string
+          estado: string
+          id: string
+          mensaje: string | null
+          respondido_at: string | null
+          respondido_por: string | null
+          user_id: string
+          votacion_id: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          id?: string
+          mensaje?: string | null
+          respondido_at?: string | null
+          respondido_por?: string | null
+          user_id: string
+          votacion_id: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          id?: string
+          mensaje?: string | null
+          respondido_at?: string | null
+          respondido_por?: string | null
+          user_id?: string
+          votacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votacion_solicitudes_votacion_id_fkey"
+            columns: ["votacion_id"]
+            isOneToOne: false
+            referencedRelation: "votaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votaciones: {
+        Row: {
+          barrio: string | null
+          ciudad_id: string | null
+          creador_id: string
+          created_at: string
+          descripcion: string | null
+          escuela: string | null
+          estado_id: string | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          is_active: boolean | null
+          max_votos_por_usuario: number | null
+          nivel: string
+          pais_id: string | null
+          requiere_verificacion_telefono: boolean | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          barrio?: string | null
+          ciudad_id?: string | null
+          creador_id: string
+          created_at?: string
+          descripcion?: string | null
+          escuela?: string | null
+          estado_id?: string | null
+          fecha_fin: string
+          fecha_inicio?: string
+          id?: string
+          is_active?: boolean | null
+          max_votos_por_usuario?: number | null
+          nivel?: string
+          pais_id?: string | null
+          requiere_verificacion_telefono?: boolean | null
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          barrio?: string | null
+          ciudad_id?: string | null
+          creador_id?: string
+          created_at?: string
+          descripcion?: string | null
+          escuela?: string | null
+          estado_id?: string | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          is_active?: boolean | null
+          max_votos_por_usuario?: number | null
+          nivel?: string
+          pais_id?: string | null
+          requiere_verificacion_telefono?: boolean | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votaciones_ciudad_id_fkey"
+            columns: ["ciudad_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisiones_nivel2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votaciones_estado_id_fkey"
+            columns: ["estado_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisiones_nivel1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votaciones_pais_id_fkey"
+            columns: ["pais_id"]
+            isOneToOne: false
+            referencedRelation: "paises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votos: {
+        Row: {
+          fecha_voto: string
+          id: string
+          ip_address: string | null
+          observacion: string | null
+          opcion_id: string
+          telefono: string | null
+          user_agent: string | null
+          user_id: string
+          votacion_id: string
+        }
+        Insert: {
+          fecha_voto?: string
+          id?: string
+          ip_address?: string | null
+          observacion?: string | null
+          opcion_id: string
+          telefono?: string | null
+          user_agent?: string | null
+          user_id: string
+          votacion_id: string
+        }
+        Update: {
+          fecha_voto?: string
+          id?: string
+          ip_address?: string | null
+          observacion?: string | null
+          opcion_id?: string
+          telefono?: string | null
+          user_agent?: string | null
+          user_id?: string
+          votacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votos_opcion_id_fkey"
+            columns: ["opcion_id"]
+            isOneToOne: false
+            referencedRelation: "votacion_opciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votos_votacion_id_fkey"
+            columns: ["votacion_id"]
+            isOneToOne: false
+            referencedRelation: "votaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
