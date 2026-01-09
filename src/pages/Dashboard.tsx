@@ -22,6 +22,8 @@ import {
   Package,
   ShoppingCart,
   User,
+  Briefcase,
+  Trash2,
 } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
@@ -45,6 +47,7 @@ const Dashboard = () => {
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [activeSection, setActiveSection] = useState<DashboardSection>("perfil");
 
   const navigate = useNavigate();
@@ -152,6 +155,38 @@ const Dashboard = () => {
   async function handleSignOut() {
     await signOut();
     navigate("/");
+  }
+
+  async function handleUpgradeToProvider() {
+    try {
+      setUpgrading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No estás autenticado");
+
+      const { data, error } = await supabase.functions.invoke("upgrade-to-provider", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast({
+          title: "Redirigiendo a pago",
+          description: "Completa el pago para convertirte en proveedor",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpgrading(false);
+    }
   }
 
   const isProvider = profile?.role === "proveedor";
@@ -339,6 +374,37 @@ const Dashboard = () => {
                         />
                       </div>
                     )}
+
+                    {/* Acciones de cuenta */}
+                    <div className="pt-4 border-t space-y-3">
+                      {/* Convertirse en proveedor (solo clientes) */}
+                      {!isProvider && (
+                        <div>
+                          <Button
+                            onClick={handleUpgradeToProvider}
+                            disabled={upgrading}
+                            className="w-full"
+                          >
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            {upgrading
+                              ? "Procesando..."
+                              : "Convertirme en Proveedor ($200 MXN/año)"}
+                          </Button>
+                          <p className="text-xs text-muted-foreground text-center mt-1">
+                            Publica hasta 500 productos y servicios
+                          </p>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => navigate("/eliminar-cuenta")}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar mi cuenta
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
