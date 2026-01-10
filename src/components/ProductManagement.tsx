@@ -67,6 +67,58 @@ interface ProductManagementProps {
 // Generar lista de rutas disponibles (1-30)
 const AVAILABLE_ROUTES = Array.from({ length: 30 }, (_, i) => `Ruta ${i + 1}`);
 
+// Lista de profesiones y oficios comunes
+const PROFESIONES_OFICIOS = [
+  'Electricista',
+  'Plomero',
+  'Carpintero',
+  'Albañil',
+  'Pintor',
+  'Mecánico',
+  'Cerrajero',
+  'Jardinero',
+  'Técnico en refrigeración',
+  'Técnico en aire acondicionado',
+  'Soldador',
+  'Herrero',
+  'Vidriero',
+  'Tapicero',
+  'Fumigador',
+  'Abogado',
+  'Contador',
+  'Médico',
+  'Dentista',
+  'Enfermero/a',
+  'Psicólogo/a',
+  'Veterinario/a',
+  'Arquitecto',
+  'Ingeniero',
+  'Diseñador gráfico',
+  'Fotógrafo',
+  'Profesor/a particular',
+  'Traductor/a',
+  'Nutriólogo/a',
+  'Fisioterapeuta',
+  'Estilista',
+  'Barbero',
+  'Manicurista',
+  'Masajista',
+  'Costurera/Sastre',
+  'Chef / Cocinero',
+  'Mesero/a',
+  'Chofer privado',
+  'Mudanzas',
+  'Instalador de pisos',
+  'Instalador de abanicos',
+  'Instalador de cortinas',
+  'Limpieza del hogar',
+  'Cuidador/a de adultos mayores',
+  'Niñera',
+  'Paseador de perros',
+  'Entrenador personal',
+  'Otro (especificar)',
+];
+
 export default function ProductManagement({ proveedorId }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [allRouteProducts, setAllRouteProducts] = useState<{nombre: string}[]>([]);
@@ -80,6 +132,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [routeVariant, setRouteVariant] = useState<string>('');
+  const [selectedProfesion, setSelectedProfesion] = useState<string>('');
+  const [customProfesion, setCustomProfesion] = useState<string>('');
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const { toast } = useToast();
   const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
@@ -108,8 +162,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     ? selectedPaisData.nivel2Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel2Tipo.slice(1) 
     : 'Municipio';
 
-  // Detectar si la categoría seleccionada es "Rutas de Transporte"
+  // Detectar si la categoría seleccionada es "Rutas de Transporte" o "Profesiones y oficios"
   const isRutasCategory = categories.find(c => c.id === formData.category_id)?.name === 'Rutas de Transporte';
+  const isProfesionesCategory = categories.find(c => c.id === formData.category_id)?.name === 'Profesiones y oficios';
   const rutasCategoryId = categories.find(c => c.name === 'Rutas de Transporte')?.id;
 
   // Contar variantes por número de ruta (globalmente)
@@ -250,6 +305,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
       });
       setSelectedRoute('');
       setRouteVariant('');
+      setSelectedProfesion('');
+      setCustomProfesion('');
     }
     setSelectedFiles([]);
     setIsDialogOpen(true);
@@ -626,8 +683,105 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 </>
               )}
 
-              {/* Nombre del producto (solo si no es categoría rutas o está editando) */}
-              {(!isRutasCategory || editingProduct) && (
+              {/* Selector especial para Profesiones y oficios */}
+              {isProfesionesCategory && !editingProduct && (
+                <>
+                  <div>
+                    <Label htmlFor="profesion">Profesión u Oficio *</Label>
+                    <Select
+                      value={selectedProfesion}
+                      onValueChange={(value) => {
+                        setSelectedProfesion(value);
+                        if (value !== 'Otro (especificar)') {
+                          setFormData({
+                            ...formData,
+                            nombre: value,
+                            unit: 'servicio',
+                          });
+                          setCustomProfesion('');
+                        } else {
+                          setFormData({
+                            ...formData,
+                            nombre: '',
+                            unit: 'servicio',
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona tu profesión u oficio" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 bg-background">
+                        {PROFESIONES_OFICIOS.map((profesion) => (
+                          <SelectItem key={profesion} value={profesion}>
+                            {profesion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Campo personalizado si selecciona "Otro" */}
+                  {selectedProfesion === 'Otro (especificar)' && (
+                    <div>
+                      <Label htmlFor="customProfesion">Especifica tu profesión *</Label>
+                      <Input
+                        id="customProfesion"
+                        value={customProfesion}
+                        onChange={(e) => {
+                          setCustomProfesion(e.target.value);
+                          setFormData({
+                            ...formData,
+                            nombre: e.target.value,
+                          });
+                        }}
+                        placeholder="Ej: Técnico en paneles solares"
+                      />
+                    </div>
+                  )}
+
+                  {/* Mostrar nombre seleccionado */}
+                  {(selectedProfesion && selectedProfesion !== 'Otro (especificar)') && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <Label className="text-xs text-muted-foreground">Tu profesión/oficio:</Label>
+                      <p className="font-semibold text-lg">{formData.nombre}</p>
+                    </div>
+                  )}
+
+                  {/* Campo de descripción del servicio */}
+                  {selectedProfesion && (
+                    <div>
+                      <Label htmlFor="descripcionServicio">Descripción de tus servicios *</Label>
+                      <Textarea
+                        id="descripcionServicio"
+                        value={formData.descripcion}
+                        onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                        placeholder="Describe los servicios que ofreces, tu experiencia, horarios de trabajo, zonas que cubres, etc."
+                        rows={4}
+                      />
+                    </div>
+                  )}
+
+                  {/* Campo de palabras clave */}
+                  {selectedProfesion && (
+                    <div>
+                      <Label htmlFor="keywordsProfesion">Palabras clave (opcional)</Label>
+                      <Input
+                        id="keywordsProfesion"
+                        value={formData.keywords}
+                        onChange={(e) => setFormData({...formData, keywords: e.target.value})}
+                        placeholder="Ej: instalación, reparación, urgencias, 24 horas..."
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Agrega palabras que ayuden a los clientes a encontrarte
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Nombre del producto (solo si no es categoría especial o está editando) */}
+              {(!isRutasCategory && !isProfesionesCategory || editingProduct) && (
                 <div>
                   <Label htmlFor="nombre">Nombre del Producto *</Label>
                   <Input
@@ -640,7 +794,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               )}
               
               {/* Descripción para productos normales */}
-              {(!isRutasCategory || editingProduct) && (
+              {(!isRutasCategory && !isProfesionesCategory || editingProduct) && (
                 <div>
                   <Label htmlFor="descripcion">Descripción *</Label>
                   <Textarea
@@ -690,6 +844,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <SelectItem value="proceso">Procesos</SelectItem>
                       <SelectItem value="evento">Eventos</SelectItem>
                       <SelectItem value="viaje">Viajes</SelectItem>
+                      <SelectItem value="servicio">Servicios</SelectItem>
+                      <SelectItem value="hora">Hora</SelectItem>
+                      <SelectItem value="visita">Visitas</SelectItem>
                       <SelectItem value="otros">Otros</SelectItem>
                     </SelectContent>
                   </Select>
