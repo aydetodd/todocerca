@@ -75,6 +75,11 @@ const ProductSearch = () => {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
 
+  // State for "Profesiones y oficios" subcategories
+  const [availableProfesiones, setAvailableProfesiones] = useState<AvailableRoute[]>([]);
+  const [selectedProfesion, setSelectedProfesion] = useState<string | null>(null);
+  const [loadingProfesiones, setLoadingProfesiones] = useState(false);
+
   const [results, setResults] = useState<any[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -120,6 +125,7 @@ const ProductSearch = () => {
   }, [selectedCategoryName]);
 
   const isRutasCategory = selectedCategoryName === "Rutas de Transporte";
+  const isProfesionesCategory = selectedCategoryName === "Profesiones y oficios";
 
   // Fetch available routes when "Rutas de Transporte" is selected
   useEffect(() => {
@@ -188,6 +194,68 @@ const ProductSearch = () => {
 
     fetchAvailableRoutes();
   }, [isRutasCategory, searchEstado, searchCiudad, categories]);
+
+  // Fetch available professions when "Profesiones y oficios" is selected
+  useEffect(() => {
+    if (!isProfesionesCategory) {
+      setAvailableProfesiones([]);
+      setSelectedProfesion(null);
+      return;
+    }
+
+    const fetchAvailableProfesiones = async () => {
+      setLoadingProfesiones(true);
+      try {
+        const profesionesCategory = categories.find(c => c.name === "Profesiones y oficios");
+        if (!profesionesCategory) {
+          setAvailableProfesiones([]);
+          return;
+        }
+
+        let query = supabase
+          .from("productos")
+          .select("nombre")
+          .eq("category_id", profesionesCategory.id)
+          .eq("is_available", true)
+          .gte("stock", 1);
+
+        // Location filters
+        if (searchEstado) query = query.eq("estado", searchEstado);
+        if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+          query = query.eq("ciudad", searchCiudad);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("[ProductSearch] Error fetching profesiones:", error);
+          setAvailableProfesiones([]);
+          return;
+        }
+
+        // Group professions and count providers
+        const profesionCountMap = new Map<string, number>();
+        (data || []).forEach((producto: any) => {
+          const profesionName = producto.nombre;
+          profesionCountMap.set(profesionName, (profesionCountMap.get(profesionName) || 0) + 1);
+        });
+
+        // Convert to array and sort alphabetically
+        const profesiones: AvailableRoute[] = Array.from(profesionCountMap.entries())
+          .map(([nombre, count]) => ({ nombre, count }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+        setAvailableProfesiones(profesiones);
+      } catch (err) {
+        console.error("[ProductSearch] Error:", err);
+        setAvailableProfesiones([]);
+      } finally {
+        setLoadingProfesiones(false);
+      }
+    };
+
+    fetchAvailableProfesiones();
+  }, [isProfesionesCategory, searchEstado, searchCiudad, categories]);
 
   useEffect(() => {
     document.title = "Buscar productos, taxi y rutas | TodoCerca";
@@ -401,6 +469,11 @@ const ProductSearch = () => {
           query = query.eq("nombre", selectedRoute);
         }
 
+        // Profession filter (for "Profesiones y oficios")
+        if (isProfesionesCategory && selectedProfesion) {
+          query = query.eq("nombre", selectedProfesion);
+        }
+
         // Keyword search
         if (searchTerm.trim()) {
           query = query.or(`nombre.ilike.%${searchTerm}%,keywords.ilike.%${searchTerm}%`);
@@ -474,6 +547,7 @@ const ProductSearch = () => {
     const newSelected = selectedCategoryId === categoryId ? null : categoryId;
     setSelectedCategoryId(newSelected);
     setSelectedRoute(null); // Reset route selection when changing category
+    setSelectedProfesion(null); // Reset profession selection when changing category
   };
 
   return (
@@ -609,6 +683,46 @@ const ProductSearch = () => {
                       onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
                     >
                       {route.nombre}
+                    </Badge>
+                  ))}
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={handleSearch} 
+                  disabled={loading}
+                  className="mt-4 w-full sm:w-auto"
+                >
+                  <SearchIcon className="w-4 h-4 mr-2" />
+                  {loading ? "Buscando…" : "Buscar"}
+                </Button>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* Profession selector when "Profesiones y oficios" is selected */}
+        {isProfesionesCategory && (
+          <section aria-label="Profesiones disponibles" className="mb-6">
+            <p className="text-sm text-muted-foreground mb-3">
+              Profesiones y oficios disponibles en {searchCiudad === ALL_MUNICIPIOS_VALUE ? searchEstado : `${searchCiudad}, ${searchEstado}`}:
+            </p>
+            {loadingProfesiones ? (
+              <p className="text-sm text-muted-foreground">Cargando profesiones...</p>
+            ) : availableProfesiones.length === 0 ? (
+              <p className="text-sm text-orange-500">
+                No hay profesiones u oficios registrados en esta ubicación.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {availableProfesiones.map((profesion) => (
+                    <Badge
+                      key={profesion.nombre}
+                      variant={selectedProfesion === profesion.nombre ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                      onClick={() => setSelectedProfesion(selectedProfesion === profesion.nombre ? null : profesion.nombre)}
+                    >
+                      {profesion.nombre} ({profesion.count})
                     </Badge>
                   ))}
                 </div>
