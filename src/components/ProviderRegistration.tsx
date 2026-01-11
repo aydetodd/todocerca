@@ -38,14 +38,72 @@ interface ProviderRegistrationProps {
   };
 }
 
+// Plan types and pricing
+type PlanType = 'basico' | 'plan100' | 'plan500';
+
+interface PlanInfo {
+  id: PlanType;
+  name: string;
+  price: number;
+  maxProducts: number;
+  priceId: string;
+  description: string;
+}
+
+const SUBSCRIPTION_PLANS: PlanInfo[] = [
+  {
+    id: 'basico',
+    name: 'Plan Básico',
+    price: 200,
+    maxProducts: 10,
+    priceId: 'price_1SDaOLGyH05pxWZzSeqEjiE1',
+    description: 'Ideal para negocios pequeños (hasta 10 productos)'
+  },
+  {
+    id: 'plan100',
+    name: 'Plan 100',
+    price: 300,
+    maxProducts: 100,
+    priceId: 'price_1SoDm6GyH05pxWZzEbLT9Ag8',
+    description: 'Para negocios medianos (hasta 100 productos)'
+  },
+  {
+    id: 'plan500',
+    name: 'Plan 500',
+    price: 400,
+    maxProducts: 500,
+    priceId: 'price_1SoDmZGyH05pxWZzIRwoID4Q',
+    description: 'Para negocios grandes (hasta 500 productos)'
+  }
+];
+
+// Taxi/Ruta categories get special treatment - max 2 products, $200
+const TAXI_RUTA_MAX_PRODUCTS = 2;
+
 export default function ProviderRegistration({ onComplete, userData }: ProviderRegistrationProps) {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [couponCode, setCouponCode] = useState('');
   const [apodo, setApodo] = useState('');
-  const [providerType, setProviderType] = useState<'taxi' | 'ruta'>('taxi');
+  const [providerType, setProviderType] = useState<'taxi' | 'ruta' | 'normal'>('normal');
   const [routeName, setRouteName] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('basico');
   const { toast } = useToast();
+
+  // Check if this is a taxi/ruta provider
+  const isTaxiRuta = providerType === 'taxi' || providerType === 'ruta';
+
+  // Get current plan info
+  const currentPlan = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan) || SUBSCRIPTION_PLANS[0];
+  
+  // Max products depends on type
+  const maxProducts = isTaxiRuta ? TAXI_RUTA_MAX_PRODUCTS : currentPlan.maxProducts;
+  
+  // Price for taxi/ruta is always $200
+  const currentPrice = isTaxiRuta ? 200 : currentPlan.price;
+  
+  // Price ID for taxi/ruta is always the basic plan
+  const currentPriceId = isTaxiRuta ? 'price_1SDaOLGyH05pxWZzSeqEjiE1' : currentPlan.priceId;
 
   // Provider data - simplified
   const [providerData, setProviderData] = useState({
@@ -99,10 +157,12 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   };
 
   const addProduct = () => {
-    if (products.length >= 500) {
+    if (products.length >= maxProducts) {
       toast({
         title: "Límite alcanzado",
-        description: "No puedes registrar más de 500 productos",
+        description: isTaxiRuta 
+          ? `Taxi y Rutas permite máximo ${TAXI_RUTA_MAX_PRODUCTS} productos`
+          : `Tu plan permite máximo ${maxProducts} productos. Selecciona un plan superior para más.`,
         variant: "destructive",
       });
       return;
@@ -187,7 +247,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         .update({ 
           apodo,
           role: 'proveedor',
-          provider_type: providerType,
+          provider_type: isTaxiRuta ? providerType as 'taxi' | 'ruta' : null,
           route_name: providerType === 'ruta' ? routeName : null
         })
         .eq('user_id', currentUser.id);
@@ -322,7 +382,13 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
       
       // Redirect to payment
       console.log('💳 Calling create-checkout edge function...');
-      const checkoutBody = couponCode ? { couponCode } : {};
+      const checkoutBody: { couponCode?: string; priceId: string; planType: string } = {
+        priceId: currentPriceId,
+        planType: isTaxiRuta ? 'taxi_ruta' : selectedPlan
+      };
+      if (couponCode) {
+        checkoutBody.couponCode = couponCode;
+      }
       console.log('💳 Checkout body:', checkoutBody);
       
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
@@ -380,17 +446,71 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         <Label>Tipo de Servicio *</Label>
         <Select
           value={providerType}
-          onValueChange={(value: 'taxi' | 'ruta') => setProviderType(value)}
+          onValueChange={(value: 'taxi' | 'ruta' | 'normal') => {
+            setProviderType(value);
+            // Reset products if switching to taxi/ruta (limit to 2)
+            if ((value === 'taxi' || value === 'ruta') && products.length > TAXI_RUTA_MAX_PRODUCTS) {
+              setProducts(products.slice(0, TAXI_RUTA_MAX_PRODUCTS));
+            }
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecciona tipo de servicio" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="normal">🏪 Negocio / Tienda / Servicios</SelectItem>
             <SelectItem value="taxi">🚕 Taxi</SelectItem>
             <SelectItem value="ruta">🚌 Ruta de Transporte Público</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {/* Selector de plan (solo para negocios normales) */}
+      {!isTaxiRuta && (
+        <div className="space-y-3">
+          <Label>Plan de Suscripción *</Label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {SUBSCRIPTION_PLANS.map((plan) => (
+              <Card 
+                key={plan.id}
+                className={`p-4 cursor-pointer transition-all ${
+                  selectedPlan === plan.id 
+                    ? 'border-primary ring-2 ring-primary bg-primary/5' 
+                    : 'hover:border-primary/50'
+                }`}
+                onClick={() => {
+                  setSelectedPlan(plan.id);
+                  // Trim products if exceeding new plan limit
+                  if (products.length > plan.maxProducts) {
+                    setProducts(products.slice(0, plan.maxProducts));
+                  }
+                }}
+              >
+                <div className="text-center space-y-2">
+                  <h4 className="font-semibold">{plan.name}</h4>
+                  <div className="text-2xl font-bold text-primary">${plan.price} MXN</div>
+                  <p className="text-xs text-muted-foreground">/año</p>
+                  <Badge variant="secondary">{plan.maxProducts} productos</Badge>
+                  <p className="text-xs text-muted-foreground">{plan.description}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info especial para taxi/ruta */}
+      {isTaxiRuta && (
+        <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <div className="text-center space-y-2">
+            <h4 className="font-semibold">Plan Taxi / Transporte</h4>
+            <div className="text-2xl font-bold text-primary">$200 MXN</div>
+            <p className="text-xs text-muted-foreground">/año</p>
+            <Badge variant="secondary">Máximo 2 servicios</Badge>
+            <p className="text-xs text-muted-foreground">Ideal para taxistas y rutas de transporte</p>
+          </div>
+        </Card>
+      )}
       
       {/* Nombre de ruta (solo para transporte público) */}
       {providerType === 'ruta' && (
@@ -462,10 +582,12 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   const renderProducts = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Productos ({products.length}/500)</h3>
-        <Button onClick={addProduct} disabled={products.length >= 500}>
+        <h3 className="text-lg font-medium">
+          {isTaxiRuta ? 'Servicios' : 'Productos'} ({products.length}/{maxProducts})
+        </h3>
+        <Button onClick={addProduct} disabled={products.length >= maxProducts}>
           <Plus className="w-4 h-4 mr-2" />
-          Agregar Producto
+          Agregar {isTaxiRuta ? 'Servicio' : 'Producto'}
         </Button>
       </div>
 
@@ -625,7 +747,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
               disabled={loading || !validateForm()}
               size="lg"
             >
-              {loading ? 'Procesando...' : 'Continuar al Pago ($200 MXN/año)'}
+              {loading ? 'Procesando...' : `Continuar al Pago ($${currentPrice} MXN/año)`}
             </Button>
           </div>
         </CardContent>

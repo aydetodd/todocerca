@@ -28,8 +28,20 @@ serve(async (req) => {
 
     console.log("[CREATE-CHECKOUT] User authenticated:", user.email);
 
-    // Get optional coupon code from request body
-    const { couponCode } = await req.json().catch(() => ({}));
+    // Get optional coupon code and priceId from request body
+    const { couponCode, priceId, planType } = await req.json().catch(() => ({}));
+    
+    // Validate priceId - use default if not provided
+    const validPriceIds = [
+      'price_1SDaOLGyH05pxWZzSeqEjiE1', // Plan Básico $200 - 10 productos o taxi/ruta
+      'price_1SoDm6GyH05pxWZzEbLT9Ag8', // Plan 100 $300 - 100 productos
+      'price_1SoDmZGyH05pxWZzIRwoID4Q', // Plan 500 $400 - 500 productos
+    ];
+    
+    const selectedPriceId = validPriceIds.includes(priceId) ? priceId : validPriceIds[0];
+    console.log("[CREATE-CHECKOUT] Selected price ID:", selectedPriceId);
+    console.log("[CREATE-CHECKOUT] Plan type:", planType);
+    
     if (couponCode) {
       console.log("[CREATE-CHECKOUT] Coupon code provided:", couponCode);
     }
@@ -48,13 +60,13 @@ serve(async (req) => {
       console.log("[CREATE-CHECKOUT] Creating new customer");
     }
 
-    // Create checkout session for annual subscription
+    // Create checkout session for subscription
     const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1SDaOLGyH05pxWZzSeqEjiE1",
+          price: selectedPriceId,
           quantity: 1,
         },
       ],
@@ -63,6 +75,10 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard?subscription=cancelled`,
       // Permitir completar checkout sin tarjeta cuando el total es $0
       payment_method_collection: "if_required",
+      metadata: {
+        plan_type: planType || 'basico',
+        user_id: user.id,
+      },
     };
 
     // Add coupon if provided, otherwise allow user to enter promo codes in Stripe UI
