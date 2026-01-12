@@ -91,6 +91,21 @@ serve(async (req) => {
 
     const subscription = subscriptions.data[0];
     
+    // Get product and price info
+    const priceId = subscription.items.data[0]?.price?.id;
+    const productId = subscription.items.data[0]?.price?.product as string;
+    const amount = (subscription.items.data[0]?.price?.unit_amount || 20000) / 100; // Convert from cents
+    
+    // Determine plan type based on price ID
+    const planMapping: { [key: string]: { type: string; maxProducts: number } } = {
+      'price_1SDaOLGyH05pxWZzSeqEjiE1': { type: 'basico', maxProducts: 10 },
+      'price_1SoDm6GyH05pxWZzEbLT9Ag8': { type: 'plan100', maxProducts: 100 },
+      'price_1SoDmZGyH05pxWZzIRwoID4Q': { type: 'plan500', maxProducts: 500 },
+    };
+    
+    const planInfo = planMapping[priceId] || { type: 'basico', maxProducts: 10 };
+    logStep("Determined plan info", { priceId, productId, planType: planInfo.type, maxProducts: planInfo.maxProducts });
+    
     // Handle subscription dates - use defaults for manual/lifetime subscriptions
     let subscriptionEnd: Date;
     let subscriptionStart: Date;
@@ -121,7 +136,9 @@ serve(async (req) => {
     logStep("Active subscription found", { 
       subscriptionId: subscription.id, 
       startDate: subscriptionStart.toISOString(),
-      endDate: subscriptionEnd.toISOString()
+      endDate: subscriptionEnd.toISOString(),
+      planType: planInfo.type,
+      amount
     });
 
     // Sync subscription to database
@@ -158,7 +175,7 @@ serve(async (req) => {
           status: 'activa',
           start_date: subscriptionStart.toISOString(),
           end_date: subscriptionEnd.toISOString(),
-          amount: 200.00,
+          amount: amount,
           currency: 'MXN',
           payment_method: 'stripe'
         });
@@ -173,6 +190,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: true,
       subscription_end: subscriptionEnd.toISOString(),
+      plan_type: planInfo.type,
+      max_products: planInfo.maxProducts,
+      product_id: productId,
+      price_id: priceId,
+      amount: amount,
       message: 'Suscripción sincronizada correctamente'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
