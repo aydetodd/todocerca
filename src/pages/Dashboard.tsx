@@ -16,6 +16,7 @@ import {
   Calendar,
   Car,
   Clock,
+  CreditCard,
   LogOut,
   Map as MapIcon,
   MapPin,
@@ -32,9 +33,11 @@ import { OrdersManagement } from "@/components/OrdersManagement";
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration";
 import { ProviderAppointments } from "@/components/ProviderAppointments";
 import TaxiDriverRequests from "@/components/TaxiDriverRequests";
+import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 
 type DashboardSection =
   | "perfil"
+  | "suscripcion"
   | "tracking"
   | "productos"
   | "apartados"
@@ -45,6 +48,7 @@ type DashboardSection =
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
@@ -140,6 +144,9 @@ const Dashboard = () => {
         } else {
           setUserSpecificData(proveedorData);
         }
+
+        // Fetch subscription info for providers
+        await fetchSubscriptionInfo();
       }
     } catch (error: any) {
       toast({
@@ -149,6 +156,19 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchSubscriptionInfo() {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (error) {
+        console.error("Error checking subscription:", error);
+        return;
+      }
+      setSubscriptionInfo(data);
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
     }
   }
 
@@ -196,6 +216,12 @@ const Dashboard = () => {
     () =>
       [
         { key: "perfil" as const, label: "Perfil", icon: User, visible: true },
+        {
+          key: "suscripcion" as const,
+          label: "Suscripción",
+          icon: CreditCard,
+          visible: isProvider,
+        },
         {
           key: "tracking" as const,
           label: "Tracking GPS",
@@ -406,6 +432,26 @@ const Dashboard = () => {
                       </Button>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "suscripcion" && isProvider && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Mi Suscripción
+                  </CardTitle>
+                  <CardDescription>
+                    Administra tu plan y actualiza a un plan superior
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SubscriptionUpgrade 
+                    currentPlanType={subscriptionInfo?.plan_type || 'basico'}
+                    onUpgradeComplete={() => fetchSubscriptionInfo()}
+                  />
                 </CardContent>
               </Card>
             )}
