@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Globe, Lock, Building, MapPin, Users, School } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Globe, Lock, Building, MapPin, Users, School, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 const NIVELES = [
+  { id: 'familiar', label: 'Familiar', icon: Home },
   { id: 'nacional', label: 'Nacional', icon: Globe },
   { id: 'estatal', label: 'Estatal', icon: Building },
   { id: 'ciudad', label: 'Ciudad', icon: MapPin },
