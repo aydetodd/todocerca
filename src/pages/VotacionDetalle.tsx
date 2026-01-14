@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, Trash2, UserPlus, Download, Users, Vote, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, UserPlus, Download, Users, Vote, Clock, CheckCircle, XCircle, AlertCircle, Share2, Link, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,9 @@ interface Votacion {
   is_active: boolean;
   creador_id: string;
   requiere_verificacion_telefono: boolean;
+  pais_id: string | null;
+  estado_id: string | null;
+  ciudad_id: string | null;
 }
 
 interface Opcion {
@@ -81,11 +84,16 @@ export default function VotacionDetalle() {
   // Invite state
   const [invitePhone, setInvitePhone] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
 
   // Vote state
   const [selectedOpcion, setSelectedOpcion] = useState('');
   const [observacion, setObservacion] = useState('');
   const [voting, setVoting] = useState(false);
+  
+  // Access control state
+  const [canVote, setCanVote] = useState(true);
+  const [accessMessage, setAccessMessage] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -106,6 +114,12 @@ export default function VotacionDetalle() {
       setVotacion(vot);
       setIsCreator(vot.creador_id === user?.id);
       setVotacionCerrada(new Date(vot.fecha_fin) < new Date());
+      
+      // Generar link de invitación para votaciones cerradas
+      if (vot.tipo === 'cerrada') {
+        const baseUrl = window.location.origin;
+        setInviteLink(`${baseUrl}/votaciones/${vot.id}?invite=1`);
+      }
 
       // Cargar opciones con conteo de votos
       const { data: opts, error: optsError } = await supabase
@@ -156,6 +170,13 @@ export default function VotacionDetalle() {
         }
       }
 
+      // Verificar acceso para votaciones abiertas por geografía (prefijo telefónico)
+      if (vot.tipo === 'abierta' && user) {
+        const canAccess = await checkPhoneAccess(vot, user.id);
+        setCanVote(canAccess.allowed);
+        setAccessMessage(canAccess.message);
+      }
+
       // Cargar voto del usuario actual
       if (user) {
         const { data: miVoto } = await supabase
@@ -198,6 +219,140 @@ export default function VotacionDetalle() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Verificar acceso por prefijo telefónico para votaciones abiertas
+  const checkPhoneAccess = async (vot: Votacion, userId: string): Promise<{ allowed: boolean; message: string }> => {
+    // Si es nacional o familiar, todos pueden votar
+    if (vot.nivel === 'nacional' || vot.nivel === 'familiar') {
+      return { allowed: true, message: '' };
+    }
+
+    // Obtener teléfono del usuario
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('telefono, phone')
+      .eq('user_id', userId)
+      .single();
+
+    const userPhone = profile?.telefono || profile?.phone || '';
+    
+    if (!userPhone) {
+      return { allowed: false, message: 'Necesitas verificar tu número de teléfono para votar' };
+    }
+
+    // Normalizar teléfono (quitar espacios, guiones, etc.)
+    const cleanPhone = userPhone.replace(/[\s\-\(\)]/g, '');
+    
+    // Para México (+52), obtener prefijo de ciudad según nivel
+    if (vot.nivel === 'ciudad' && vot.ciudad_id) {
+      // Obtener info de la ciudad
+      const { data: ciudad } = await supabase
+        .from('subdivisiones_nivel2')
+        .select('nombre, codigo_postal')
+        .eq('id', vot.ciudad_id)
+        .single();
+      
+      if (ciudad) {
+        // Mapeo de ciudades mexicanas a prefijos telefónicos (ladas)
+        const prefijos = getCityPhonePrefixes(ciudad.nombre);
+        if (prefijos.length > 0) {
+          const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
+          if (!hasValidPrefix) {
+            return { 
+              allowed: false, 
+              message: `Esta votación es solo para residentes de ${ciudad.nombre}. Tu número no coincide con el área.`
+            };
+          }
+        }
+      }
+    }
+
+    if (vot.nivel === 'estatal' && vot.estado_id) {
+      const { data: estado } = await supabase
+        .from('subdivisiones_nivel1')
+        .select('nombre')
+        .eq('id', vot.estado_id)
+        .single();
+      
+      if (estado) {
+        const prefijos = getStatePhonePrefixes(estado.nombre);
+        if (prefijos.length > 0) {
+          const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
+          if (!hasValidPrefix) {
+            return { 
+              allowed: false, 
+              message: `Esta votación es solo para residentes de ${estado.nombre}. Tu número no coincide con el área.`
+            };
+          }
+        }
+      }
+    }
+
+    return { allowed: true, message: '' };
+  };
+
+  // Mapeo de ciudades mexicanas a prefijos telefónicos (ladas)
+  const getCityPhonePrefixes = (cityName: string): string[] => {
+    const normalizedName = cityName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    const cityPrefixes: Record<string, string[]> = {
+      'hermosillo': ['+52662', '52662', '662'],
+      'cajeme': ['+52644', '52644', '644'],
+      'ciudad obregon': ['+52644', '52644', '644'],
+      'guaymas': ['+52622', '52622', '622'],
+      'nogales': ['+52631', '52631', '631'],
+      'navojoa': ['+52642', '52642', '642'],
+      'san luis rio colorado': ['+52653', '52653', '653'],
+      // Agregar más ciudades según sea necesario
+      'guadalajara': ['+5233', '5233', '33'],
+      'monterrey': ['+5281', '5281', '81'],
+      'tijuana': ['+52664', '52664', '664'],
+      'ciudad de mexico': ['+5255', '5255', '55'],
+      'mexico': ['+5255', '5255', '55'],
+      'puebla': ['+52222', '52222', '222'],
+      'leon': ['+52477', '52477', '477'],
+      'zapopan': ['+5233', '5233', '33'],
+    };
+
+    return cityPrefixes[normalizedName] || [];
+  };
+
+  // Mapeo de estados mexicanos a prefijos telefónicos
+  const getStatePhonePrefixes = (stateName: string): string[] => {
+    const normalizedName = stateName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    const statePrefixes: Record<string, string[]> = {
+      'sonora': ['+52662', '+52644', '+52622', '+52631', '+52642', '+52653', '662', '644', '622', '631', '642', '653'],
+      'jalisco': ['+5233', '+52341', '+52378', '33', '341', '378'],
+      'nuevo leon': ['+5281', '+5282', '81', '82'],
+      'baja california': ['+52664', '+52665', '+52686', '664', '665', '686'],
+      'ciudad de mexico': ['+5255', '55'],
+      'estado de mexico': ['+5255', '+52722', '55', '722'],
+      // Agregar más estados según sea necesario
+    };
+
+    return statePrefixes[normalizedName] || [];
+  };
+
+  // Compartir link por WhatsApp
+  const shareViaWhatsApp = () => {
+    const message = encodeURIComponent(
+      `🗳️ Te invito a votar en: "${votacion?.titulo}"\n\n` +
+      `📅 Cierra: ${votacion ? new Date(votacion.fecha_fin).toLocaleString() : ''}\n\n` +
+      `🔗 Vota aquí: ${inviteLink}`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  // Copiar link al portapapeles
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      toast({ title: "Link copiado al portapapeles" });
+    } catch (err) {
+      toast({ title: "Error al copiar", variant: "destructive" });
     }
   };
 
@@ -541,8 +696,19 @@ export default function VotacionDetalle() {
           </Card>
         )}
 
-        {/* Votar (si no ha votado y no está cerrada) */}
-        {!userVote && !votacionCerrada && user && (
+        {/* Mensaje de acceso restringido por geografía */}
+        {!canVote && user && votacion.tipo === 'abierta' && !votacionCerrada && (
+          <Card className="border-destructive/50">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="h-8 w-8 mx-auto text-destructive mb-2" />
+              <p className="text-sm text-destructive font-medium">No puedes votar en esta votación</p>
+              <p className="text-xs text-muted-foreground mt-1">{accessMessage}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Votar (si no ha votado, no está cerrada y tiene acceso) */}
+        {!userVote && !votacionCerrada && user && canVote && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Emitir Voto</CardTitle>
@@ -592,7 +758,7 @@ export default function VotacionDetalle() {
           </Card>
         )}
 
-        {/* Miembros (solo si es cerrada y creador) */}
+        {/* Miembros y Compartir (solo si es cerrada y creador) */}
         {votacion.tipo === 'cerrada' && isCreator && (
           <Card>
             <CardHeader className="pb-2">
@@ -601,46 +767,74 @@ export default function VotacionDetalle() {
                   <Users className="h-5 w-5" />
                   Miembros ({miembros.length})
                 </CardTitle>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline">
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Invitar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Invitar Miembro</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label>Número de teléfono</Label>
-                        <Input
-                          placeholder="Ej: +52 1234567890"
-                          value={invitePhone}
-                          onChange={(e) => setInvitePhone(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          El usuario debe estar registrado en la app
-                        </p>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="outline">Cancelar</Button>
-                      </DialogClose>
-                      <Button onClick={handleInvite} disabled={inviting || !invitePhone.trim()}>
-                        {inviting ? 'Invitando...' : 'Agregar'}
+                <div className="flex gap-1">
+                  {/* Botón compartir por WhatsApp */}
+                  <Button size="sm" variant="outline" onClick={shareViaWhatsApp} className="text-green-600">
+                    <Share2 className="h-4 w-4 mr-1" />
+                    WhatsApp
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Invitar
                       </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Invitar Miembro</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {/* Link de invitación */}
+                        <div className="space-y-2">
+                          <Label>Link de invitación</Label>
+                          <div className="flex gap-2">
+                            <Input value={inviteLink} readOnly className="text-xs" />
+                            <Button size="icon" variant="outline" onClick={copyInviteLink}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Comparte este link para que otros puedan unirse
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={shareViaWhatsApp}>
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Enviar por WhatsApp
+                          </Button>
+                        </div>
+
+                        <div className="border-t pt-4 space-y-2">
+                          <Label>O buscar por teléfono</Label>
+                          <Input
+                            placeholder="Ej: +52 1234567890"
+                            value={invitePhone}
+                            onChange={(e) => setInvitePhone(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            El usuario debe estar registrado en la app
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button onClick={handleInvite} disabled={inviting || !invitePhone.trim()}>
+                          {inviting ? 'Invitando...' : 'Agregar'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               {miembros.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay miembros aún. Usa "Invitar" para agregar.
+                  No hay miembros aún. Comparte el link por WhatsApp o usa "Invitar".
                 </p>
               ) : (
                 <div className="space-y-2">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Globe, Lock, Building, MapPin, Users, School, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +21,22 @@ const NIVELES = [
   { id: 'barrio', label: 'Barrio', icon: Users },
   { id: 'escuela', label: 'Escuela/Salón', icon: School },
 ];
+
+interface Pais {
+  id: string;
+  nombre: string;
+  codigo_iso: string;
+}
+
+interface Estado {
+  id: string;
+  nombre: string;
+}
+
+interface Ciudad {
+  id: string;
+  nombre: string;
+}
 
 export default function CrearVotacion() {
   const navigate = useNavigate();
@@ -35,6 +52,68 @@ export default function CrearVotacion() {
   const [requiereVerificacion, setRequiereVerificacion] = useState(true);
   const [opciones, setOpciones] = useState<string[]>(['', '']);
   const [ubicacionExtra, setUbicacionExtra] = useState('');
+  
+  // Geografía para votaciones abiertas
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
+  const [selectedPais, setSelectedPais] = useState<string>('');
+  const [selectedEstado, setSelectedEstado] = useState<string>('');
+  const [selectedCiudad, setSelectedCiudad] = useState<string>('');
+
+  // Cargar países al inicio
+  useEffect(() => {
+    loadPaises();
+  }, []);
+
+  // Cargar estados cuando se selecciona país
+  useEffect(() => {
+    if (selectedPais) {
+      loadEstados(selectedPais);
+    } else {
+      setEstados([]);
+      setSelectedEstado('');
+    }
+  }, [selectedPais]);
+
+  // Cargar ciudades cuando se selecciona estado
+  useEffect(() => {
+    if (selectedEstado) {
+      loadCiudades(selectedEstado);
+    } else {
+      setCiudades([]);
+      setSelectedCiudad('');
+    }
+  }, [selectedEstado]);
+
+  const loadPaises = async () => {
+    const { data } = await supabase
+      .from('paises')
+      .select('id, nombre, codigo_iso')
+      .eq('is_active', true)
+      .order('nombre');
+    if (data) setPaises(data);
+  };
+
+  const loadEstados = async (paisId: string) => {
+    const { data } = await supabase
+      .from('subdivisiones_nivel1')
+      .select('id, nombre')
+      .eq('pais_id', paisId)
+      .eq('is_active', true)
+      .order('nombre');
+    if (data) setEstados(data);
+  };
+
+  const loadCiudades = async (estadoId: string) => {
+    const { data } = await supabase
+      .from('subdivisiones_nivel2')
+      .select('id, nombre')
+      .eq('nivel1_id', estadoId)
+      .eq('is_active', true)
+      .order('nombre');
+    if (data) setCiudades(data);
+  };
 
   const addOpcion = () => {
     if (opciones.length < 10) {
@@ -98,7 +177,7 @@ export default function CrearVotacion() {
     setLoading(true);
 
     try {
-      // Crear la votación
+      // Crear la votación con geografía
       const { data: votacion, error: votacionError } = await supabase
         .from('votaciones')
         .insert({
@@ -111,6 +190,11 @@ export default function CrearVotacion() {
           creador_id: user.id,
           barrio: nivel === 'barrio' ? ubicacionExtra : null,
           escuela: nivel === 'escuela' ? ubicacionExtra : null,
+          // Geografía para votaciones abiertas
+          pais_id: tipo === 'abierta' && selectedPais ? selectedPais : null,
+          estado_id: tipo === 'abierta' && nivel === 'estatal' && selectedEstado ? selectedEstado : 
+                     (tipo === 'abierta' && nivel === 'ciudad' && selectedEstado ? selectedEstado : null),
+          ciudad_id: tipo === 'abierta' && nivel === 'ciudad' && selectedCiudad ? selectedCiudad : null,
         })
         .select()
         .single();
@@ -269,6 +353,68 @@ export default function CrearVotacion() {
                     value={ubicacionExtra}
                     onChange={(e) => setUbicacionExtra(e.target.value)}
                   />
+                </div>
+              )}
+
+              {/* Selección de geografía para votaciones abiertas */}
+              {tipo === 'abierta' && (nivel === 'nacional' || nivel === 'estatal' || nivel === 'ciudad') && (
+                <div className="mt-4 space-y-3 p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground">
+                    Selecciona la ubicación para filtrar quién puede votar por prefijo telefónico:
+                  </p>
+                  
+                  {/* País */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">País</Label>
+                    <Select value={selectedPais} onValueChange={setSelectedPais}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un país" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paises.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Estado (si nivel es estatal o ciudad) */}
+                  {(nivel === 'estatal' || nivel === 'ciudad') && selectedPais && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Estado/Provincia</Label>
+                      <Select value={selectedEstado} onValueChange={setSelectedEstado}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estados.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Ciudad (si nivel es ciudad) */}
+                  {nivel === 'ciudad' && selectedEstado && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Ciudad/Municipio</Label>
+                      <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una ciudad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ciudades.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground italic">
+                    Solo usuarios con número telefónico del área seleccionada podrán votar
+                  </p>
                 </div>
               )}
             </CardContent>
