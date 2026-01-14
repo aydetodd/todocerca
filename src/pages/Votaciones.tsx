@@ -57,7 +57,11 @@ export default function Votaciones() {
         ) : (
           <div className="space-y-3">
             {votaciones.map((v) => (
-              <Card key={v.id} className="hover:shadow-sm transition-shadow">
+              <Card 
+                key={v.id} 
+                className="hover:shadow-sm transition-shadow cursor-pointer"
+                onClick={() => navigate(`/votaciones/${v.id}`)}
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
