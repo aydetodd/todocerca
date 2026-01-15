@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 const NIVELES_ABIERTA = [
   { id: 'nacional', label: 'Nacional', icon: Globe, description: 'Todo el país' },
   { id: 'estatal', label: 'Estatal', icon: Building, description: 'Un estado/provincia' },
-  { id: 'ciudad', label: 'Ciudad', icon: MapPin, description: 'Una ciudad/municipio' },
+  { id: 'ciudad', label: 'Localidad', icon: MapPin, description: 'Un municipio/ciudad específico' },
 ];
 
 const NIVELES_CERRADA = [
@@ -190,6 +190,34 @@ export default function CrearVotacion() {
       return;
     }
 
+    // Validar geografía para votaciones abiertas
+    if (tipo === 'abierta') {
+      if (!selectedPais) {
+        toast({
+          title: "Error",
+          description: "Debes seleccionar un país",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (nivel === 'estatal' && !selectedEstado) {
+        toast({
+          title: "Error",
+          description: "Debes seleccionar un estado específico para votación estatal",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (nivel === 'ciudad' && (!selectedEstado || !selectedCiudad)) {
+        toast({
+          title: "Error",
+          description: "Debes seleccionar un estado y una localidad específica",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -206,10 +234,10 @@ export default function CrearVotacion() {
           creador_id: user.id,
           barrio: nivel === 'barrio' ? ubicacionExtra : null,
           escuela: nivel === 'escuela' ? ubicacionExtra : null,
-          // Geografía para votaciones abiertas (null si "todos" o no seleccionado)
+          // Geografía para votaciones abiertas
           pais_id: tipo === 'abierta' && selectedPais ? selectedPais : null,
-          estado_id: tipo === 'abierta' && selectedEstado && selectedEstado !== 'todos' ? selectedEstado : null,
-          ciudad_id: tipo === 'abierta' && selectedCiudad && selectedCiudad !== 'todos' ? selectedCiudad : null,
+          estado_id: tipo === 'abierta' && selectedEstado ? selectedEstado : null,
+          ciudad_id: tipo === 'abierta' && selectedCiudad ? selectedCiudad : null,
         })
         .select()
         .single();
@@ -413,16 +441,15 @@ export default function CrearVotacion() {
                   {/* Estado - visible si hay país y nivel es estatal o ciudad */}
                   {selectedPais && (nivel === 'estatal' || nivel === 'ciudad') && (
                     <div className="space-y-1">
-                      <Label className="text-xs">Estado/Provincia</Label>
+                      <Label className="text-xs">Estado/Provincia *</Label>
                       <Select value={selectedEstado} onValueChange={(v) => {
                         setSelectedEstado(v);
                         setSelectedCiudad('');
                       }}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Todos los estados" />
+                          <SelectValue placeholder="Selecciona un estado" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="todos">📍 Todos los estados</SelectItem>
                           {estados.map((e) => (
                             <SelectItem key={e.id} value={e.id}>{e.nombre}</SelectItem>
                           ))}
@@ -431,16 +458,15 @@ export default function CrearVotacion() {
                     </div>
                   )}
 
-                  {/* Ciudad - visible si hay estado seleccionado y nivel es ciudad */}
-                  {selectedEstado && selectedEstado !== 'todos' && nivel === 'ciudad' && (
+                  {/* Localidad - visible si hay estado seleccionado y nivel es ciudad */}
+                  {selectedEstado && nivel === 'ciudad' && (
                     <div className="space-y-1">
-                      <Label className="text-xs">Ciudad/Municipio</Label>
+                      <Label className="text-xs">Localidad (Municipio/Ciudad) *</Label>
                       <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Todos los municipios" />
+                          <SelectValue placeholder="Selecciona un municipio/ciudad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="todos">📍 Todos los municipios</SelectItem>
                           {ciudades.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
                           ))}
@@ -455,19 +481,19 @@ export default function CrearVotacion() {
                       <span>🗳️ Votarán usuarios con número de <strong>{paises.find(p => p.id === selectedPais)?.nombre || 'país seleccionado'}</strong></span>
                     )}
                     {nivel === 'estatal' && selectedPais && (
-                      selectedEstado === 'todos' || !selectedEstado ? (
-                        <span>🗳️ Votarán usuarios de todo <strong>{paises.find(p => p.id === selectedPais)?.nombre}</strong></span>
+                      !selectedEstado ? (
+                        <span className="text-amber-500">⚠️ Selecciona un estado específico</span>
                       ) : (
                         <span>🗳️ Votarán usuarios del estado <strong>{estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
                       )
                     )}
                     {nivel === 'ciudad' && selectedPais && (
-                      selectedEstado === 'todos' || !selectedEstado ? (
-                        <span>🗳️ Votarán usuarios de todo <strong>{paises.find(p => p.id === selectedPais)?.nombre}</strong></span>
-                      ) : selectedCiudad === 'todos' || !selectedCiudad ? (
-                        <span>🗳️ Votarán usuarios de <strong>{estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
+                      !selectedEstado ? (
+                        <span className="text-amber-500">⚠️ Selecciona un estado para ver las localidades</span>
+                      ) : !selectedCiudad ? (
+                        <span className="text-amber-500">⚠️ Selecciona una localidad específica</span>
                       ) : (
-                        <span>🗳️ Votarán usuarios de <strong>{ciudades.find(c => c.id === selectedCiudad)?.nombre}</strong></span>
+                        <span>🗳️ Votarán usuarios de <strong>{ciudades.find(c => c.id === selectedCiudad)?.nombre}, {estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
                       )
                     )}
                     {!selectedPais && <span>Selecciona un país para continuar</span>}
