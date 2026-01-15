@@ -13,13 +13,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
-const NIVELES = [
-  { id: 'familiar', label: 'Familiar', icon: Home },
-  { id: 'nacional', label: 'Nacional', icon: Globe },
-  { id: 'estatal', label: 'Estatal', icon: Building },
-  { id: 'ciudad', label: 'Ciudad', icon: MapPin },
-  { id: 'barrio', label: 'Barrio', icon: Users },
-  { id: 'escuela', label: 'Escuela/Salón', icon: School },
+const NIVELES_ABIERTA = [
+  { id: 'nacional', label: 'Nacional', icon: Globe, description: 'Todo el país' },
+  { id: 'estatal', label: 'Estatal', icon: Building, description: 'Un estado/provincia' },
+  { id: 'ciudad', label: 'Ciudad', icon: MapPin, description: 'Una ciudad/municipio' },
+];
+
+const NIVELES_CERRADA = [
+  { id: 'familiar', label: 'Familiar', icon: Home, description: 'Solo familia' },
+  { id: 'barrio', label: 'Barrio', icon: Users, description: 'Vecinos del barrio' },
+  { id: 'escuela', label: 'Escuela/Salón', icon: School, description: 'Grupo escolar' },
 ];
 
 interface Pais {
@@ -48,6 +51,19 @@ export default function CrearVotacion() {
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<'abierta' | 'cerrada'>('abierta');
   const [nivel, setNivel] = useState('nacional');
+  
+  // Reset nivel cuando cambia el tipo
+  useEffect(() => {
+    if (tipo === 'abierta') {
+      setNivel('nacional');
+    } else {
+      setNivel('familiar');
+    }
+    setSelectedPais('');
+    setSelectedEstado('');
+    setSelectedCiudad('');
+    setUbicacionExtra('');
+  }, [tipo]);
   const [fechaFin, setFechaFin] = useState('');
   const [requiereVerificacion, setRequiereVerificacion] = useState(true);
   const [opciones, setOpciones] = useState<string[]>(['', '']);
@@ -190,11 +206,10 @@ export default function CrearVotacion() {
           creador_id: user.id,
           barrio: nivel === 'barrio' ? ubicacionExtra : null,
           escuela: nivel === 'escuela' ? ubicacionExtra : null,
-          // Geografía para votaciones abiertas
+          // Geografía para votaciones abiertas (null si "todos" o no seleccionado)
           pais_id: tipo === 'abierta' && selectedPais ? selectedPais : null,
-          estado_id: tipo === 'abierta' && nivel === 'estatal' && selectedEstado ? selectedEstado : 
-                     (tipo === 'abierta' && nivel === 'ciudad' && selectedEstado ? selectedEstado : null),
-          ciudad_id: tipo === 'abierta' && nivel === 'ciudad' && selectedCiudad ? selectedCiudad : null,
+          estado_id: tipo === 'abierta' && selectedEstado && selectedEstado !== 'todos' ? selectedEstado : null,
+          ciudad_id: tipo === 'abierta' && selectedCiudad && selectedCiudad !== 'todos' ? selectedCiudad : null,
         })
         .select()
         .single();
@@ -326,27 +341,42 @@ export default function CrearVotacion() {
             </CardContent>
           </Card>
 
-          {/* Nivel */}
+          {/* Nivel y Ubicación */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Nivel de Votación</CardTitle>
+              <CardTitle className="text-base">
+                {tipo === 'abierta' ? 'Alcance de la Votación' : 'Tipo de Grupo'}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <RadioGroup value={nivel} onValueChange={setNivel}>
-                {NIVELES.map((n) => (
+            <CardContent className="space-y-4">
+              {/* Niveles según tipo */}
+              <RadioGroup 
+                value={nivel} 
+                onValueChange={(v) => {
+                  setNivel(v);
+                  // Reset selections when changing level
+                  setSelectedEstado('');
+                  setSelectedCiudad('');
+                }}
+              >
+                {(tipo === 'abierta' ? NIVELES_ABIERTA : NIVELES_CERRADA).map((n) => (
                   <div 
                     key={n.id}
                     className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50"
                   >
                     <RadioGroupItem value={n.id} id={n.id} />
                     <n.icon className="h-5 w-5 text-primary" />
-                    <Label htmlFor={n.id} className="cursor-pointer flex-1">{n.label}</Label>
+                    <div className="flex-1">
+                      <Label htmlFor={n.id} className="cursor-pointer font-medium">{n.label}</Label>
+                      <p className="text-xs text-muted-foreground">{n.description}</p>
+                    </div>
                   </div>
                 ))}
               </RadioGroup>
 
-              {(nivel === 'barrio' || nivel === 'escuela') && (
-                <div className="mt-4 space-y-2">
+              {/* Ubicación extra para cerradas */}
+              {tipo === 'cerrada' && (nivel === 'barrio' || nivel === 'escuela') && (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/30">
                   <Label>{nivel === 'barrio' ? 'Nombre del barrio' : 'Nombre de la escuela/salón'}</Label>
                   <Input
                     placeholder={nivel === 'barrio' ? 'Ej: Colonia Centro' : 'Ej: Escuela Primaria #5, Salón 6°A'}
@@ -356,17 +386,19 @@ export default function CrearVotacion() {
                 </div>
               )}
 
-              {/* Selección de geografía para votaciones abiertas */}
-              {tipo === 'abierta' && (nivel === 'nacional' || nivel === 'estatal' || nivel === 'ciudad') && (
-                <div className="mt-4 space-y-3 p-3 rounded-lg bg-muted/30">
-                  <p className="text-xs text-muted-foreground">
-                    Selecciona la ubicación para filtrar quién puede votar por prefijo telefónico:
-                  </p>
+              {/* Selector dinámico de geografía para votaciones abiertas */}
+              {tipo === 'abierta' && (
+                <div className="space-y-3 p-3 rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium">📍 Seleccionar ubicación</p>
                   
-                  {/* País */}
+                  {/* País - siempre visible */}
                   <div className="space-y-1">
                     <Label className="text-xs">País</Label>
-                    <Select value={selectedPais} onValueChange={setSelectedPais}>
+                    <Select value={selectedPais} onValueChange={(v) => {
+                      setSelectedPais(v);
+                      setSelectedEstado('');
+                      setSelectedCiudad('');
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un país" />
                       </SelectTrigger>
@@ -378,15 +410,19 @@ export default function CrearVotacion() {
                     </Select>
                   </div>
 
-                  {/* Estado (si nivel es estatal o ciudad) */}
-                  {(nivel === 'estatal' || nivel === 'ciudad') && selectedPais && (
+                  {/* Estado - visible si hay país y nivel es estatal o ciudad */}
+                  {selectedPais && (nivel === 'estatal' || nivel === 'ciudad') && (
                     <div className="space-y-1">
                       <Label className="text-xs">Estado/Provincia</Label>
-                      <Select value={selectedEstado} onValueChange={setSelectedEstado}>
+                      <Select value={selectedEstado} onValueChange={(v) => {
+                        setSelectedEstado(v);
+                        setSelectedCiudad('');
+                      }}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un estado" />
+                          <SelectValue placeholder="Todos los estados" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="todos">📍 Todos los estados</SelectItem>
                           {estados.map((e) => (
                             <SelectItem key={e.id} value={e.id}>{e.nombre}</SelectItem>
                           ))}
@@ -395,15 +431,16 @@ export default function CrearVotacion() {
                     </div>
                   )}
 
-                  {/* Ciudad (si nivel es ciudad) */}
-                  {nivel === 'ciudad' && selectedEstado && (
+                  {/* Ciudad - visible si hay estado seleccionado y nivel es ciudad */}
+                  {selectedEstado && selectedEstado !== 'todos' && nivel === 'ciudad' && (
                     <div className="space-y-1">
                       <Label className="text-xs">Ciudad/Municipio</Label>
                       <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecciona una ciudad" />
+                          <SelectValue placeholder="Todos los municipios" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="todos">📍 Todos los municipios</SelectItem>
                           {ciudades.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
                           ))}
@@ -412,9 +449,29 @@ export default function CrearVotacion() {
                     </div>
                   )}
 
-                  <p className="text-xs text-muted-foreground italic">
-                    Solo usuarios con número telefónico del área seleccionada podrán votar
-                  </p>
+                  {/* Resumen de alcance */}
+                  <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                    {nivel === 'nacional' && selectedPais && (
+                      <span>🗳️ Votarán usuarios con número de <strong>{paises.find(p => p.id === selectedPais)?.nombre || 'país seleccionado'}</strong></span>
+                    )}
+                    {nivel === 'estatal' && selectedPais && (
+                      selectedEstado === 'todos' || !selectedEstado ? (
+                        <span>🗳️ Votarán usuarios de todo <strong>{paises.find(p => p.id === selectedPais)?.nombre}</strong></span>
+                      ) : (
+                        <span>🗳️ Votarán usuarios del estado <strong>{estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
+                      )
+                    )}
+                    {nivel === 'ciudad' && selectedPais && (
+                      selectedEstado === 'todos' || !selectedEstado ? (
+                        <span>🗳️ Votarán usuarios de todo <strong>{paises.find(p => p.id === selectedPais)?.nombre}</strong></span>
+                      ) : selectedCiudad === 'todos' || !selectedCiudad ? (
+                        <span>🗳️ Votarán usuarios de <strong>{estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
+                      ) : (
+                        <span>🗳️ Votarán usuarios de <strong>{ciudades.find(c => c.id === selectedCiudad)?.nombre}</strong></span>
+                      )
+                    )}
+                    {!selectedPais && <span>Selecciona un país para continuar</span>}
+                  </div>
                 </div>
               )}
             </CardContent>

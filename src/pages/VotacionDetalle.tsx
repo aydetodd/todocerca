@@ -82,8 +82,6 @@ export default function VotacionDetalle() {
   const [saving, setSaving] = useState(false);
 
   // Invite state
-  const [invitePhone, setInvitePhone] = useState('');
-  const [inviting, setInviting] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
 
   // Vote state
@@ -224,8 +222,8 @@ export default function VotacionDetalle() {
 
   // Verificar acceso por prefijo telefónico para votaciones abiertas
   const checkPhoneAccess = async (vot: Votacion, userId: string): Promise<{ allowed: boolean; message: string }> => {
-    // Si es nacional o familiar, todos pueden votar
-    if (vot.nivel === 'nacional' || vot.nivel === 'familiar') {
+    // Si es tipo cerrada (familiar, barrio, escuela), el acceso es por invitación
+    if (vot.tipo === 'cerrada') {
       return { allowed: true, message: '' };
     }
 
@@ -245,31 +243,36 @@ export default function VotacionDetalle() {
     // Normalizar teléfono (quitar espacios, guiones, etc.)
     const cleanPhone = userPhone.replace(/[\s\-\(\)]/g, '');
     
-    // Para México (+52), obtener prefijo de ciudad según nivel
-    if (vot.nivel === 'ciudad' && vot.ciudad_id) {
-      // Obtener info de la ciudad
-      const { data: ciudad } = await supabase
-        .from('subdivisiones_nivel2')
-        .select('nombre, codigo_postal')
-        .eq('id', vot.ciudad_id)
-        .single();
-      
-      if (ciudad) {
-        // Mapeo de ciudades mexicanas a prefijos telefónicos (ladas)
-        const prefijos = getCityPhonePrefixes(ciudad.nombre);
-        if (prefijos.length > 0) {
-          const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
-          if (!hasValidPrefix) {
-            return { 
-              allowed: false, 
-              message: `Esta votación es solo para residentes de ${ciudad.nombre}. Tu número no coincide con el área.`
-            };
-          }
-        }
+    // Si no hay pais_id definido, permitir (votación sin restricción geográfica)
+    if (!vot.pais_id) {
+      return { allowed: true, message: '' };
+    }
+
+    // Obtener código del país para verificar prefijo base
+    const { data: pais } = await supabase
+      .from('paises')
+      .select('codigo_telefono, nombre')
+      .eq('id', vot.pais_id)
+      .single();
+
+    if (pais?.codigo_telefono) {
+      // Verificar que el teléfono tenga el prefijo del país
+      const paisPrefix = pais.codigo_telefono.replace('+', '');
+      if (!cleanPhone.includes(paisPrefix)) {
+        return { 
+          allowed: false, 
+          message: `Esta votación es solo para usuarios de ${pais.nombre}. Tu número no coincide.`
+        };
       }
     }
 
-    if (vot.nivel === 'estatal' && vot.estado_id) {
+    // Si es nivel nacional (solo país seleccionado), ya está verificado
+    if (vot.nivel === 'nacional' || !vot.estado_id) {
+      return { allowed: true, message: '' };
+    }
+
+    // Si tiene estado específico, verificar prefijos del estado
+    if (vot.estado_id) {
       const { data: estado } = await supabase
         .from('subdivisiones_nivel1')
         .select('nombre')
@@ -284,6 +287,33 @@ export default function VotacionDetalle() {
             return { 
               allowed: false, 
               message: `Esta votación es solo para residentes de ${estado.nombre}. Tu número no coincide con el área.`
+            };
+          }
+        }
+      }
+      
+      // Si es nivel estatal, ya verificamos
+      if (vot.nivel === 'estatal' || !vot.ciudad_id) {
+        return { allowed: true, message: '' };
+      }
+    }
+
+    // Si tiene ciudad específica, verificar prefijos de la ciudad
+    if (vot.ciudad_id) {
+      const { data: ciudad } = await supabase
+        .from('subdivisiones_nivel2')
+        .select('nombre')
+        .eq('id', vot.ciudad_id)
+        .single();
+      
+      if (ciudad) {
+        const prefijos = getCityPhonePrefixes(ciudad.nombre);
+        if (prefijos.length > 0) {
+          const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
+          if (!hasValidPrefix) {
+            return { 
+              allowed: false, 
+              message: `Esta votación es solo para residentes de ${ciudad.nombre}. Tu número no coincide con el área.`
             };
           }
         }
@@ -414,69 +444,6 @@ export default function VotacionDetalle() {
     }
   };
 
-  const handleInvite = async () => {
-    if (!votacion || !invitePhone.trim()) return;
-    setInviting(true);
-
-    try {
-      // Buscar usuario por teléfono
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, nombre')
-        .or(`telefono.eq.${invitePhone.trim()},phone.eq.${invitePhone.trim()}`);
-
-      if (!profiles || profiles.length === 0) {
-        toast({
-          title: "Usuario no encontrado",
-          description: "No existe un usuario con ese número de teléfono",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const profile = profiles[0];
-
-      // Verificar si ya es miembro
-      const { data: existing } = await supabase
-        .from('votacion_miembros')
-        .select('id')
-        .eq('votacion_id', votacion.id)
-        .eq('user_id', profile.user_id)
-        .maybeSingle();
-
-      if (existing) {
-        toast({
-          title: "Ya es miembro",
-          description: "Este usuario ya está en la votación",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Agregar como miembro
-      const { error } = await supabase
-        .from('votacion_miembros')
-        .insert({
-          votacion_id: votacion.id,
-          user_id: profile.user_id,
-          agregado_por: user?.id
-        });
-
-      if (error) throw error;
-
-      toast({ title: `${profile.nombre} agregado a la votación` });
-      setInvitePhone('');
-      loadVotacion();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setInviting(false);
-    }
-  };
 
   const handleVote = async () => {
     if (!votacion || !selectedOpcion || !user) return;
@@ -782,7 +749,7 @@ export default function VotacionDetalle() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Invitar Miembro</DialogTitle>
+                        <DialogTitle>Invitar Miembros</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         {/* Link de invitación */}
@@ -795,36 +762,19 @@ export default function VotacionDetalle() {
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Comparte este link para que otros puedan unirse
+                            Comparte este link para que otros puedan unirse a votar
                           </p>
                         </div>
 
-                        <div className="flex gap-2">
-                          <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={shareViaWhatsApp}>
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Enviar por WhatsApp
-                          </Button>
-                        </div>
-
-                        <div className="border-t pt-4 space-y-2">
-                          <Label>O buscar por teléfono</Label>
-                          <Input
-                            placeholder="Ej: +52 1234567890"
-                            value={invitePhone}
-                            onChange={(e) => setInvitePhone(e.target.value)}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            El usuario debe estar registrado en la app
-                          </p>
-                        </div>
+                        <Button className="w-full bg-green-600 hover:bg-green-700" onClick={shareViaWhatsApp}>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Enviar por WhatsApp
+                        </Button>
                       </div>
                       <DialogFooter>
                         <DialogClose asChild>
-                          <Button variant="outline">Cancelar</Button>
+                          <Button variant="outline" className="w-full">Cerrar</Button>
                         </DialogClose>
-                        <Button onClick={handleInvite} disabled={inviting || !invitePhone.trim()}>
-                          {inviting ? 'Invitando...' : 'Agregar'}
-                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
