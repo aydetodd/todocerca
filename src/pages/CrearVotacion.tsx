@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Globe, Lock, Building, MapPin, Users, School, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { VotingGeographySelector, VotingGeographySelection } from '@/components/VotingGeographySelector';
 
 const NIVELES_ABIERTA = [
   { id: 'nacional', label: 'Nacional', icon: Globe, description: 'Todo el país' },
@@ -25,22 +25,6 @@ const NIVELES_CERRADA = [
   { id: 'escuela', label: 'Escuela/Salón', icon: School, description: 'Grupo escolar' },
 ];
 
-interface Pais {
-  id: string;
-  nombre: string;
-  codigo_iso: string;
-}
-
-interface Estado {
-  id: string;
-  nombre: string;
-}
-
-interface Ciudad {
-  id: string;
-  nombre: string;
-}
-
 export default function CrearVotacion() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,85 +35,34 @@ export default function CrearVotacion() {
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<'abierta' | 'cerrada'>('abierta');
   const [nivel, setNivel] = useState('nacional');
+  const [fechaFin, setFechaFin] = useState('');
+  const [requiereVerificacion, setRequiereVerificacion] = useState(true);
+  const [opciones, setOpciones] = useState<string[]>(['', '']);
+  const [ubicacionExtra, setUbicacionExtra] = useState('');
   
-  // Reset nivel cuando cambia el tipo
+  // Geografía para votaciones abiertas (usando nombres, no IDs)
+  const [geoSelection, setGeoSelection] = useState<VotingGeographySelection>({
+    paisCodigo: '',
+    paisNombre: '',
+    estadoNombre: '',
+    localidadNombre: ''
+  });
+
+  // Reset nivel y geografía cuando cambia el tipo
   useEffect(() => {
     if (tipo === 'abierta') {
       setNivel('nacional');
     } else {
       setNivel('familiar');
     }
-    setSelectedPais('');
-    setSelectedEstado('');
-    setSelectedCiudad('');
+    setGeoSelection({ paisCodigo: '', paisNombre: '', estadoNombre: '', localidadNombre: '' });
     setUbicacionExtra('');
   }, [tipo]);
-  const [fechaFin, setFechaFin] = useState('');
-  const [requiereVerificacion, setRequiereVerificacion] = useState(true);
-  const [opciones, setOpciones] = useState<string[]>(['', '']);
-  const [ubicacionExtra, setUbicacionExtra] = useState('');
-  
-  // Geografía para votaciones abiertas
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [estados, setEstados] = useState<Estado[]>([]);
-  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
-  const [selectedPais, setSelectedPais] = useState<string>('');
-  const [selectedEstado, setSelectedEstado] = useState<string>('');
-  const [selectedCiudad, setSelectedCiudad] = useState<string>('');
 
-  // Cargar países al inicio
-  useEffect(() => {
-    loadPaises();
+  // Callback para el selector de geografía
+  const handleGeoChange = useCallback((selection: VotingGeographySelection) => {
+    setGeoSelection(selection);
   }, []);
-
-  // Cargar estados cuando se selecciona país
-  useEffect(() => {
-    if (selectedPais) {
-      loadEstados(selectedPais);
-    } else {
-      setEstados([]);
-      setSelectedEstado('');
-    }
-  }, [selectedPais]);
-
-  // Cargar ciudades cuando se selecciona estado
-  useEffect(() => {
-    if (selectedEstado) {
-      loadCiudades(selectedEstado);
-    } else {
-      setCiudades([]);
-      setSelectedCiudad('');
-    }
-  }, [selectedEstado]);
-
-  const loadPaises = async () => {
-    const { data } = await supabase
-      .from('paises')
-      .select('id, nombre, codigo_iso')
-      .eq('is_active', true)
-      .order('nombre');
-    if (data) setPaises(data);
-  };
-
-  const loadEstados = async (paisId: string) => {
-    const { data } = await supabase
-      .from('subdivisiones_nivel1')
-      .select('id, nombre')
-      .eq('pais_id', paisId)
-      .eq('is_active', true)
-      .order('nombre');
-    if (data) setEstados(data);
-  };
-
-  const loadCiudades = async (estadoId: string) => {
-    const { data } = await supabase
-      .from('subdivisiones_nivel2')
-      .select('id, nombre')
-      .eq('nivel1_id', estadoId)
-      .eq('is_active', true)
-      .order('nombre');
-    if (data) setCiudades(data);
-  };
 
   const addOpcion = () => {
     if (opciones.length < 10) {
@@ -192,7 +125,7 @@ export default function CrearVotacion() {
 
     // Validar geografía para votaciones abiertas
     if (tipo === 'abierta') {
-      if (!selectedPais) {
+      if (!geoSelection.paisCodigo) {
         toast({
           title: "Error",
           description: "Debes seleccionar un país",
@@ -200,7 +133,7 @@ export default function CrearVotacion() {
         });
         return;
       }
-      if (nivel === 'estatal' && !selectedEstado) {
+      if (nivel === 'estatal' && !geoSelection.estadoNombre) {
         toast({
           title: "Error",
           description: "Debes seleccionar un estado específico para votación estatal",
@@ -208,7 +141,7 @@ export default function CrearVotacion() {
         });
         return;
       }
-      if (nivel === 'ciudad' && (!selectedEstado || !selectedCiudad)) {
+      if (nivel === 'ciudad' && (!geoSelection.estadoNombre || !geoSelection.localidadNombre)) {
         toast({
           title: "Error",
           description: "Debes seleccionar un estado y una localidad específica",
@@ -221,7 +154,9 @@ export default function CrearVotacion() {
     setLoading(true);
 
     try {
-      // Crear la votación con geografía
+      // Crear la votación con geografía (guardamos nombres, no IDs ya que las tablas están vacías)
+      // Usamos los campos barrio/escuela para almacenar estado/localidad temporalmente
+      // O mejor: guardamos en campos específicos si existen
       const { data: votacion, error: votacionError } = await supabase
         .from('votaciones')
         .insert({
@@ -232,12 +167,10 @@ export default function CrearVotacion() {
           fecha_fin: new Date(fechaFin).toISOString(),
           requiere_verificacion_telefono: requiereVerificacion,
           creador_id: user.id,
-          barrio: nivel === 'barrio' ? ubicacionExtra : null,
+          barrio: nivel === 'barrio' ? ubicacionExtra : (tipo === 'abierta' ? `${geoSelection.paisCodigo}|${geoSelection.estadoNombre}|${geoSelection.localidadNombre}` : null),
           escuela: nivel === 'escuela' ? ubicacionExtra : null,
-          // Geografía para votaciones abiertas
-          pais_id: tipo === 'abierta' && selectedPais ? selectedPais : null,
-          estado_id: tipo === 'abierta' && selectedEstado ? selectedEstado : null,
-          ciudad_id: tipo === 'abierta' && selectedCiudad ? selectedCiudad : null,
+          // Nota: pais_id, estado_id, ciudad_id quedan null ya que las tablas están vacías
+          // La validación de acceso se hará por código de país + nombre de estado/localidad
         })
         .select()
         .single();
@@ -382,9 +315,8 @@ export default function CrearVotacion() {
                 value={nivel} 
                 onValueChange={(v) => {
                   setNivel(v);
-                  // Reset selections when changing level
-                  setSelectedEstado('');
-                  setSelectedCiudad('');
+                  // Reset geo selection when changing level
+                  setGeoSelection({ paisCodigo: '', paisNombre: '', estadoNombre: '', localidadNombre: '' });
                 }}
               >
                 {(tipo === 'abierta' ? NIVELES_ABIERTA : NIVELES_CERRADA).map((n) => (
@@ -414,90 +346,17 @@ export default function CrearVotacion() {
                 </div>
               )}
 
-              {/* Selector dinámico de geografía para votaciones abiertas */}
+              {/* Selector reutilizable de geografía para votaciones abiertas */}
               {tipo === 'abierta' && (
-                <div className="space-y-3 p-3 rounded-lg bg-muted/30">
-                  <p className="text-sm font-medium">📍 Seleccionar ubicación</p>
-                  
-                  {/* País - siempre visible */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">País</Label>
-                    <Select value={selectedPais} onValueChange={(v) => {
-                      setSelectedPais(v);
-                      setSelectedEstado('');
-                      setSelectedCiudad('');
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un país" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paises.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Estado - visible si hay país y nivel es estatal o ciudad */}
-                  {selectedPais && (nivel === 'estatal' || nivel === 'ciudad') && (
-                    <div className="space-y-1">
-                      <Label className="text-xs">Estado/Provincia *</Label>
-                      <Select value={selectedEstado} onValueChange={(v) => {
-                        setSelectedEstado(v);
-                        setSelectedCiudad('');
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {estados.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>{e.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Localidad - visible si hay estado seleccionado y nivel es ciudad */}
-                  {selectedEstado && nivel === 'ciudad' && (
-                    <div className="space-y-1">
-                      <Label className="text-xs">Localidad (Municipio/Ciudad) *</Label>
-                      <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un municipio/ciudad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ciudades.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Resumen de alcance */}
-                  <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
-                    {nivel === 'nacional' && selectedPais && (
-                      <span>🗳️ Votarán usuarios con número de <strong>{paises.find(p => p.id === selectedPais)?.nombre || 'país seleccionado'}</strong></span>
-                    )}
-                    {nivel === 'estatal' && selectedPais && (
-                      !selectedEstado ? (
-                        <span className="text-amber-500">⚠️ Selecciona un estado específico</span>
-                      ) : (
-                        <span>🗳️ Votarán usuarios del estado <strong>{estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
-                      )
-                    )}
-                    {nivel === 'ciudad' && selectedPais && (
-                      !selectedEstado ? (
-                        <span className="text-amber-500">⚠️ Selecciona un estado para ver las localidades</span>
-                      ) : !selectedCiudad ? (
-                        <span className="text-amber-500">⚠️ Selecciona una localidad específica</span>
-                      ) : (
-                        <span>🗳️ Votarán usuarios de <strong>{ciudades.find(c => c.id === selectedCiudad)?.nombre}, {estados.find(e => e.id === selectedEstado)?.nombre}</strong></span>
-                      )
-                    )}
-                    {!selectedPais && <span>Selecciona un país para continuar</span>}
-                  </div>
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium mb-3">📍 Seleccionar ubicación</p>
+                  <VotingGeographySelector
+                    nivel={nivel as 'nacional' | 'estatal' | 'ciudad'}
+                    onSelectionChange={handleGeoChange}
+                    initialPaisCodigo={geoSelection.paisCodigo}
+                    initialEstado={geoSelection.estadoNombre}
+                    initialLocalidad={geoSelection.localidadNombre}
+                  />
                 </div>
               )}
             </CardContent>

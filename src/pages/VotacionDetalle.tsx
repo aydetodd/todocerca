@@ -29,6 +29,8 @@ interface Votacion {
   pais_id: string | null;
   estado_id: string | null;
   ciudad_id: string | null;
+  barrio: string | null;
+  escuela: string | null;
 }
 
 interface Opcion {
@@ -243,77 +245,115 @@ export default function VotacionDetalle() {
     // Normalizar teléfono (quitar espacios, guiones, etc.)
     const cleanPhone = userPhone.replace(/[\s\-\(\)]/g, '');
     
-    // Si no hay pais_id definido, permitir (votación sin restricción geográfica)
-    if (!vot.pais_id) {
-      return { allowed: true, message: '' };
+    // Intentar obtener la geografía del campo barrio (nuevo formato: paisCodigo|estadoNombre|localidadNombre)
+    let paisCodigo = '';
+    let estadoNombre = '';
+    let localidadNombre = '';
+    
+    if (vot.barrio && vot.barrio.includes('|')) {
+      const parts = vot.barrio.split('|');
+      paisCodigo = parts[0] || '';
+      estadoNombre = parts[1] || '';
+      localidadNombre = parts[2] || '';
     }
-
-    // Obtener código del país para verificar prefijo base
-    const { data: pais } = await supabase
-      .from('paises')
-      .select('codigo_telefono, nombre')
-      .eq('id', vot.pais_id)
-      .single();
-
-    if (pais?.codigo_telefono) {
-      // Verificar que el teléfono tenga el prefijo del país
-      const paisPrefix = pais.codigo_telefono.replace('+', '');
-      if (!cleanPhone.includes(paisPrefix)) {
-        return { 
-          allowed: false, 
-          message: `Esta votación es solo para usuarios de ${pais.nombre}. Tu número no coincide.`
-        };
-      }
-    }
-
-    // Si es nivel nacional (solo país seleccionado), ya está verificado
-    if (vot.nivel === 'nacional' || !vot.estado_id) {
-      return { allowed: true, message: '' };
-    }
-
-    // Si tiene estado específico, verificar prefijos del estado
-    if (vot.estado_id) {
-      const { data: estado } = await supabase
-        .from('subdivisiones_nivel1')
-        .select('nombre')
-        .eq('id', vot.estado_id)
+    
+    // Si no hay código de país en el nuevo formato, intentar con pais_id (legacy)
+    if (!paisCodigo && vot.pais_id) {
+      const { data: pais } = await supabase
+        .from('paises')
+        .select('codigo_iso, codigo_telefono, nombre')
+        .eq('id', vot.pais_id)
         .single();
       
-      if (estado) {
-        const prefijos = getStatePhonePrefixes(estado.nombre);
+      if (pais) {
+        paisCodigo = pais.codigo_iso;
+        // Verificar prefijo de país
+        if (pais.codigo_telefono) {
+          const paisPrefix = pais.codigo_telefono.replace('+', '');
+          if (!cleanPhone.includes(paisPrefix)) {
+            return { 
+              allowed: false, 
+              message: `Esta votación es solo para usuarios de ${pais.nombre}. Tu número no coincide.`
+            };
+          }
+        }
+      }
+    }
+    
+    // Si tenemos código de país del nuevo formato, verificar prefijo
+    if (paisCodigo) {
+      const paisPrefixes = getCountryPhonePrefixes(paisCodigo);
+      if (paisPrefixes.length > 0) {
+        const hasValidPrefix = paisPrefixes.some(prefix => cleanPhone.includes(prefix));
+        if (!hasValidPrefix) {
+          return { 
+            allowed: false, 
+            message: `Esta votación es solo para usuarios de este país. Tu número no coincide.`
+          };
+        }
+      }
+    }
+    
+    // Si es nivel nacional, ya está verificado
+    if (vot.nivel === 'nacional') {
+      return { allowed: true, message: '' };
+    }
+
+    // Si tiene estado específico (nuevo formato o legacy)
+    if (estadoNombre || vot.estado_id) {
+      let stateToCheck = estadoNombre;
+      
+      // Si usamos legacy, obtener nombre del estado
+      if (!stateToCheck && vot.estado_id) {
+        const { data: estado } = await supabase
+          .from('subdivisiones_nivel1')
+          .select('nombre')
+          .eq('id', vot.estado_id)
+          .single();
+        stateToCheck = estado?.nombre || '';
+      }
+      
+      if (stateToCheck) {
+        const prefijos = getStatePhonePrefixes(stateToCheck);
         if (prefijos.length > 0) {
           const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
           if (!hasValidPrefix) {
             return { 
               allowed: false, 
-              message: `Esta votación es solo para residentes de ${estado.nombre}. Tu número no coincide con el área.`
+              message: `Esta votación es solo para residentes de ${stateToCheck}. Tu número no coincide con el área.`
             };
           }
         }
       }
       
       // Si es nivel estatal, ya verificamos
-      if (vot.nivel === 'estatal' || !vot.ciudad_id) {
+      if (vot.nivel === 'estatal') {
         return { allowed: true, message: '' };
       }
     }
 
-    // Si tiene ciudad específica, verificar prefijos de la ciudad
-    if (vot.ciudad_id) {
-      const { data: ciudad } = await supabase
-        .from('subdivisiones_nivel2')
-        .select('nombre')
-        .eq('id', vot.ciudad_id)
-        .single();
+    // Si tiene localidad específica (nuevo formato o legacy)
+    if (localidadNombre || vot.ciudad_id) {
+      let cityToCheck = localidadNombre;
       
-      if (ciudad) {
-        const prefijos = getCityPhonePrefixes(ciudad.nombre);
+      // Si usamos legacy, obtener nombre de la ciudad
+      if (!cityToCheck && vot.ciudad_id) {
+        const { data: ciudad } = await supabase
+          .from('subdivisiones_nivel2')
+          .select('nombre')
+          .eq('id', vot.ciudad_id)
+          .single();
+        cityToCheck = ciudad?.nombre || '';
+      }
+      
+      if (cityToCheck) {
+        const prefijos = getCityPhonePrefixes(cityToCheck);
         if (prefijos.length > 0) {
           const hasValidPrefix = prefijos.some(prefix => cleanPhone.includes(prefix));
           if (!hasValidPrefix) {
             return { 
               allowed: false, 
-              message: `Esta votación es solo para residentes de ${ciudad.nombre}. Tu número no coincide con el área.`
+              message: `Esta votación es solo para residentes de ${cityToCheck}. Tu número no coincide con el área.`
             };
           }
         }
@@ -321,6 +361,31 @@ export default function VotacionDetalle() {
     }
 
     return { allowed: true, message: '' };
+  };
+
+  // Mapeo de códigos de país a prefijos telefónicos
+  const getCountryPhonePrefixes = (countryCode: string): string[] => {
+    const prefixes: Record<string, string[]> = {
+      'MX': ['+52', '52'],
+      'GT': ['+502', '502'],
+      'HN': ['+504', '504'],
+      'SV': ['+503', '503'],
+      'NI': ['+505', '505'],
+      'CR': ['+506', '506'],
+      'PA': ['+507', '507'],
+      'CO': ['+57', '57'],
+      'VE': ['+58', '58'],
+      'EC': ['+593', '593'],
+      'PE': ['+51', '51'],
+      'BO': ['+591', '591'],
+      'CL': ['+56', '56'],
+      'AR': ['+54', '54'],
+      'UY': ['+598', '598'],
+      'PY': ['+595', '595'],
+      'CU': ['+53', '53'],
+      'DO': ['+1', '1809', '1829', '1849'],
+    };
+    return prefixes[countryCode] || [];
   };
 
   // Mapeo de ciudades mexicanas a prefijos telefónicos (ladas)
