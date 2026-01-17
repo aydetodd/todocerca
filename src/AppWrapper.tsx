@@ -38,6 +38,7 @@ import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
 import GpsLocationPage from "./pages/GpsLocationPage";
+import SOSView from "./pages/SOSView";
 
 // Component to activate registration notifications
 const RegistrationNotifier = () => {
@@ -117,6 +118,7 @@ export default function AppWrapper() {
           <Route path="/votaciones" element={<Votaciones />} />
           <Route path="/votaciones/crear" element={<CrearVotacion />} />
           <Route path="/votaciones/:id" element={<VotacionDetalle />} />
+          <Route path="/sos/:token" element={<SOSView />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />

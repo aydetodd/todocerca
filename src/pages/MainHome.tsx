@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Search, Gift, Bus, Car, HelpCircle, Vote } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
+import { SOSButton } from '@/components/SOSButton';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -112,6 +113,9 @@ export default function MainHome() {
         </Card>
 
       </main>
+
+      {/* Botón SOS flotante */}
+      <SOSButton />
 
       <NavigationBar />
     </div>

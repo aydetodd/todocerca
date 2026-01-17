@@ -1579,6 +1579,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sos_alerts: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          resolved_at: string | null
+          share_token: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          resolved_at?: string | null
+          share_token?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          resolved_at?: string | null
+          share_token?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subdivisiones_nivel1: {
         Row: {
           codigo: string | null
