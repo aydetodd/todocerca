@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AlertTriangle, X, Phone, Share2, Loader2, Users } from 'lucide-react';
+import { AlertTriangle, X, Phone, Share2, Loader2, Users, Trash2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -9,9 +9,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { useSOS } from '@/hooks/useSOS';
+import { useContacts } from '@/hooks/useContacts';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SOSButtonProps {
   className?: string;
@@ -21,14 +32,40 @@ const HOLD_DURATION = 3000; // 3 segundos para activar
 
 export const SOSButton = ({ className }: SOSButtonProps) => {
   const [showActive, setShowActive] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const holdStartRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const hasActivatedRef = useRef(false);
-  const navigate = useNavigate();
   
   const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, contactCount } = useSOS();
+  const { contacts, loading: loadingContacts, refresh: refreshContacts } = useContacts();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Generar enlace para compartir
+  useEffect(() => {
+    const generateShareLink = async () => {
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('contact_token')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile?.contact_token) {
+        setShareLink(`${window.location.origin}/agregar-contacto?token=${profile.contact_token}`);
+      }
+    };
+    
+    if (showConfig) {
+      generateShareLink();
+    }
+  }, [showConfig, user]);
 
   // Limpiar animación al desmontar
   useEffect(() => {
@@ -91,17 +128,30 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
       cancelAnimationFrame(animationFrameRef.current);
     }
     
+    const wasHolding = isHolding;
+    const holdDuration = holdStartRef.current ? Date.now() - holdStartRef.current : 0;
+    
     setIsHolding(false);
     
-    // Si no llegó al 100%, resetear
+    // Si no llegó al 100% y fue un click corto (menos de 300ms), abrir configuración
     if (!hasActivatedRef.current) {
+      if (holdDuration < 300 && wasHolding && !activeAlert) {
+        setShowConfig(true);
+      }
       setHoldProgress(0);
       holdStartRef.current = null;
     }
   };
 
   const handlePointerLeave = () => {
-    handlePointerUp();
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setIsHolding(false);
+    if (!hasActivatedRef.current) {
+      setHoldProgress(0);
+      holdStartRef.current = null;
+    }
   };
 
   const handleCancelSOS = async () => {
@@ -122,8 +172,38 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     window.location.href = 'tel:911';
   };
 
-  const handleGoToContacts = () => {
-    navigate('/mi-perfil');
+  const handleCopyLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      toast({ title: 'Enlace copiado', description: 'Comparte el enlace para que te agreguen como contacto' });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({ title: 'Error', description: 'No se pudo copiar el enlace', variant: 'destructive' });
+    }
+  };
+
+  const handleShareInvite = () => {
+    if (!shareLink) return;
+    const message = encodeURIComponent(
+      `¡Hola! Te invito a ser parte de mi círculo de auxilio en TodoCerca. Si activo una alerta SOS, recibirás mi ubicación en tiempo real.\n\nÚnete aquí: ${shareLink}`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const handleRemoveContact = async (contactId: string) => {
+    const { error } = await supabase
+      .from('user_contacts')
+      .delete()
+      .eq('id', contactId);
+    
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar el contacto', variant: 'destructive' });
+    } else {
+      toast({ title: 'Contacto eliminado', description: 'Ya no recibirá tus alertas SOS' });
+      refreshContacts();
+    }
   };
 
   // Calcular el ángulo para el borde circular de progreso
@@ -190,7 +270,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                 ? "bg-destructive scale-110"
                 : "bg-destructive hover:bg-destructive/90 active:scale-95"
           )}
-          aria-label="Mantén presionado 3 segundos para activar SOS"
+          aria-label="Click para configurar, mantén 3 segundos para activar SOS"
         >
           {loading ? (
             <Loader2 className="h-8 w-8 text-destructive-foreground animate-spin" />
@@ -201,7 +281,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
               </span>
               {!activeAlert && !isHolding && (
                 <span className="text-destructive-foreground/70 text-[9px] leading-tight">
-                  Mantén 3s
+                  {contactCount > 0 ? `${contactCount} contacto${contactCount > 1 ? 's' : ''}` : 'Configurar'}
                 </span>
               )}
               {isHolding && (
@@ -213,6 +293,114 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
           )}
         </button>
       </div>
+
+      {/* Drawer de Configuración de Contactos de Auxilio */}
+      <Drawer open={showConfig} onOpenChange={setShowConfig}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-destructive" />
+              Círculo de Auxilio
+            </DrawerTitle>
+            <DrawerDescription>
+              Estas personas recibirán tu ubicación cuando actives el SOS
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          <div className="px-4 pb-6 space-y-4">
+            {/* Lista de contactos actuales */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Contactos de auxilio ({contacts.length})
+              </h4>
+              
+              {loadingContacts ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : contacts.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No tienes contactos de auxilio</p>
+                  <p className="text-xs">Invita a familiares o amigos</p>
+                </div>
+              ) : (
+                <ScrollArea className="max-h-48">
+                  <div className="space-y-2">
+                    {contacts.map((contact) => (
+                      <div 
+                        key={contact.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-primary font-medium">
+                              {(contact.nickname || contact.apodo || contact.nombre || 'C')[0].toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="font-medium">
+                            {contact.nickname || contact.apodo || contact.nombre || 'Contacto'}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveContact(contact.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+
+            {/* Invitar nuevos contactos */}
+            <div className="space-y-3 pt-4 border-t">
+              <h4 className="text-sm font-medium">Invitar contactos</h4>
+              
+              <Button
+                variant="default"
+                className="w-full justify-start bg-green-600 hover:bg-green-700"
+                onClick={handleShareInvite}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Invitar por WhatsApp
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2 text-green-600" />
+                    ¡Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar enlace de invitación
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Instrucciones */}
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <p className="font-medium mb-1">¿Cómo funciona?</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Mantén presionado el botón SOS por 3 segundos para activar</li>
+                <li>Tus contactos recibirán tu ubicación en tiempo real</li>
+                <li>La alerta dura máximo 30 minutos</li>
+              </ul>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {/* Diálogo de Alerta Activa */}
       <AlertDialog open={showActive} onOpenChange={setShowActive}>
@@ -253,7 +441,10 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                   <Button
                     variant="outline"
                     className="w-full justify-start text-primary"
-                    onClick={handleGoToContacts}
+                    onClick={() => {
+                      setShowActive(false);
+                      setShowConfig(true);
+                    }}
                   >
                     <Users className="h-4 w-4 mr-2" />
                     Agregar contactos de auxilio
