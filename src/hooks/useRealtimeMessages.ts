@@ -117,25 +117,62 @@ export const useRealtimeMessages = (receiverId?: string) => {
           const { data: { user } } = await supabase.auth.getUser();
           const isFromOther = newMessage.sender_id !== user?.id;
 
-          // Handle panic alerts
-          if (newMessage.is_panic) {
-            // Play siren sound for panic
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(e => console.log('Audio play failed:', e));
+          // Handle panic alerts - SOLO para receptores, NO para quien envía
+          if (newMessage.is_panic && isFromOther) {
+            // Sirena de emergencia fuerte y larga (alarma de incendio/sismo)
+            const playEmergencyAlarm = () => {
+              // Usar sirena de emergencia fuerte - sonido de alarma
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3');
+              audio.volume = 1.0; // Volumen máximo
+              audio.loop = true; // Repetir continuamente
+              
+              audio.play().catch(e => console.log('Audio play failed:', e));
+              
+              // Guardar referencia para poder detenerla
+              (window as any).__sosAlarmAudio = audio;
+              
+              // Detener después de 30 segundos si no se detiene manualmente
+              setTimeout(() => {
+                if ((window as any).__sosAlarmAudio) {
+                  (window as any).__sosAlarmAudio.pause();
+                  (window as any).__sosAlarmAudio.currentTime = 0;
+                  (window as any).__sosAlarmAudio.loop = false;
+                  (window as any).__sosAlarmAudio = null;
+                }
+              }, 30000);
+            };
+
+            playEmergencyAlarm();
             
-            setTimeout(() => {
-              audio.pause();
-              audio.currentTime = 0;
-            }, 10000);
+            // Vibrar el dispositivo si está disponible (patrón SOS)
+            if ('vibrate' in navigator) {
+              // Patrón de vibración SOS: ... --- ...
+              navigator.vibrate([300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300]);
+            }
 
             toast({
-              title: "¡ALERTA DE PÁNICO!",
+              title: "🆘 ¡ALERTA DE EMERGENCIA!",
               description: newMessage.message,
               variant: "destructive",
             });
+
+            // Notificación del sistema para emergencia
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('🆘 ¡ALERTA DE EMERGENCIA!', {
+                body: newMessage.message,
+                icon: '/icon-192.png',
+                tag: 'sos-emergency',
+                requireInteraction: true
+              });
+            }
+          } else if (newMessage.is_panic && !isFromOther) {
+            // Para quien envía, solo mostrar confirmación sin sonido (seguridad)
+            toast({
+              title: "✓ Alerta enviada",
+              description: `Tu alerta SOS fue enviada a tus contactos`,
+            });
           } else if (isFromOther) {
-            // Sonido ding-dong fuerte para mensajes recibidos
+            // Sonido ding-dong fuerte para mensajes recibidos normales
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
             audio.volume = 1.0;
             audio.play().catch(e => console.log('Audio play failed:', e));
@@ -212,5 +249,18 @@ export const useRealtimeMessages = (receiverId?: string) => {
     }
   };
 
-  return { messages, loading, sendMessage };
+  // Función para detener la alarma manualmente
+  const stopAlarm = () => {
+    if ((window as any).__sosAlarmAudio) {
+      (window as any).__sosAlarmAudio.pause();
+      (window as any).__sosAlarmAudio.currentTime = 0;
+      (window as any).__sosAlarmAudio.loop = false;
+      (window as any).__sosAlarmAudio = null;
+    }
+    if ('vibrate' in navigator) {
+      navigator.vibrate(0); // Detener vibración
+    }
+  };
+
+  return { messages, loading, sendMessage, stopAlarm };
 };

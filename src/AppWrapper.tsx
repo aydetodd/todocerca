@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
 import { GlobalGroupTracking } from "@/components/GlobalGroupTracking";
+import { GlobalSOSListener } from "@/components/GlobalSOSListener";
 import { useRegistrationNotifications } from "@/hooks/useRegistrationNotifications";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +86,8 @@ export default function AppWrapper() {
         <GlobalProviderTracking />
         {/* Tracking global para grupos (tracking_member_locations) */}
         <GlobalGroupTracking />
+        {/* Escucha global de alertas SOS */}
+        <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
         <Routes>
