@@ -19,7 +19,7 @@ export const useSOS = () => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
-  const { contacts } = useContacts();
+  const { sosContacts } = useContacts(); // Solo contactos de confianza para SOS
 
   // Verificar si hay una alerta activa al cargar
   useEffect(() => {
@@ -130,30 +130,30 @@ export const useSOS = () => {
       const userPhone = profile?.telefono || '';
       const shareLink = getShareLink(alert.share_token);
 
-      // Enviar mensajes de pánico a contactos
+      // Enviar mensajes de pánico SOLO a contactos de confianza (SOS trusted)
       setSending(true);
       
-      for (const contact of contacts) {
-        // Enviar mensaje de pánico en la app
-        await supabase.from('messages').insert({
-          sender_id: user.id,
-          receiver_id: contact.contact_user_id,
-          message: `🆘 ¡EMERGENCIA! ${userName} necesita ayuda. Ver ubicación: ${shareLink}`,
-          is_panic: true,
-        });
-      }
-
-      toast({
-        title: "🆘 SOS Activado",
-        description: `Alerta enviada a ${contacts.length} contactos`,
-        variant: "destructive",
-      });
-
-      // Si hay teléfono, ofrecer compartir por WhatsApp
-      if (contacts.length === 0) {
+      if (sosContacts.length === 0) {
         toast({
-          title: "Sin contactos",
-          description: "Agrega contactos de confianza para que reciban tus alertas SOS",
+          title: "Sin contactos de auxilio",
+          description: "Activa 'Recibe SOS' en tus contactos para que reciban alertas",
+          variant: "destructive",
+        });
+      } else {
+        for (const contact of sosContacts) {
+          // Enviar mensaje de pánico en la app
+          await supabase.from('messages').insert({
+            sender_id: user.id,
+            receiver_id: contact.contact_user_id,
+            message: `🆘 ¡EMERGENCIA! ${userName} necesita ayuda. Ver ubicación: ${shareLink}`,
+            is_panic: true,
+          });
+        }
+
+        toast({
+          title: "🆘 SOS Activado",
+          description: `Alerta enviada a ${sosContacts.length} contacto(s) de auxilio`,
+          variant: "destructive",
         });
       }
 
@@ -170,7 +170,7 @@ export const useSOS = () => {
       setLoading(false);
       setSending(false);
     }
-  }, [contacts, toast]);
+  }, [sosContacts, toast]);
 
   // Cancelar SOS
   const cancelSOS = useCallback(async () => {
@@ -187,10 +187,10 @@ export const useSOS = () => {
 
       if (error) throw error;
 
-      // Notificar a contactos que la alerta fue cancelada
+      // Notificar a contactos de confianza que la alerta fue cancelada
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        for (const contact of contacts) {
+      if (user && sosContacts.length > 0) {
+        for (const contact of sosContacts) {
           await supabase.from('messages').insert({
             sender_id: user.id,
             receiver_id: contact.contact_user_id,
@@ -213,7 +213,7 @@ export const useSOS = () => {
         variant: "destructive",
       });
     }
-  }, [activeAlert, contacts, toast]);
+  }, [activeAlert, sosContacts, toast]);
 
   // Actualizar ubicación de alerta activa
   const updateLocation = useCallback(async () => {
@@ -246,6 +246,6 @@ export const useSOS = () => {
     activateSOS,
     cancelSOS,
     getShareLink: activeAlert ? () => getShareLink(activeAlert.share_token) : null,
-    contactCount: contacts.length,
+    sosContactCount: sosContacts.length,
   };
 };

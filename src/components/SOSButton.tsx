@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AlertTriangle, X, Phone, Share2, Loader2, Users, Trash2, Copy, Check } from 'lucide-react';
+import { AlertTriangle, X, Phone, Share2, Loader2, Users, Trash2, Copy, Check, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { Switch } from '@/components/ui/switch';
 import { useSOS } from '@/hooks/useSOS';
 import { useContacts } from '@/hooks/useContacts';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,8 +42,8 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
   const animationFrameRef = useRef<number | null>(null);
   const hasActivatedRef = useRef(false);
   
-  const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, contactCount } = useSOS();
-  const { contacts, loading: loadingContacts, refresh: refreshContacts } = useContacts();
+  const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, sosContactCount } = useSOS();
+  const { contacts, loading: loadingContacts, refresh: refreshContacts, toggleSOSTrusted, sosContacts } = useContacts();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -281,7 +282,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
               </span>
               {!activeAlert && !isHolding && (
                 <span className="text-destructive-foreground/70 text-[9px] leading-tight">
-                  {contactCount > 0 ? `${contactCount} contacto${contactCount > 1 ? 's' : ''}` : 'Configurar'}
+                  {sosContactCount > 0 ? `${sosContactCount} auxilio${sosContactCount > 1 ? 's' : ''}` : 'Configurar'}
                 </span>
               )}
               {isHolding && (
@@ -311,7 +312,8 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
             {/* Lista de contactos actuales */}
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">
-                Contactos de auxilio ({contacts.length})
+                Contactos ({contacts.length}) · 
+                <span className="text-destructive font-semibold"> {sosContacts.length} reciben SOS</span>
               </h4>
               
               {loadingContacts ? (
@@ -330,26 +332,66 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                     {contacts.map((contact) => (
                       <div 
                         key={contact.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg transition-colors",
+                          contact.is_sos_trusted 
+                            ? "bg-destructive/10 border border-destructive/30" 
+                            : "bg-muted/50"
+                        )}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-primary font-medium">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={cn(
+                            "h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0",
+                            contact.is_sos_trusted ? "bg-destructive/20" : "bg-primary/10"
+                          )}>
+                            <span className={cn(
+                              "font-medium",
+                              contact.is_sos_trusted ? "text-destructive" : "text-primary"
+                            )}>
                               {(contact.nickname || contact.apodo || contact.nombre || 'C')[0].toUpperCase()}
                             </span>
                           </div>
-                          <span className="font-medium">
-                            {contact.nickname || contact.apodo || contact.nombre || 'Contacto'}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium block truncate">
+                              {contact.nickname || contact.apodo || contact.nombre || 'Contacto'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {contact.is_sos_trusted ? '🔔 Recibe alertas' : '🔕 No recibe alertas'}
+                            </span>
+                          </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveContact(contact.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        
+                        <div className="flex items-center gap-2">
+                          {/* Switch para activar/desactivar SOS */}
+                          <div className="flex items-center gap-1.5">
+                            {contact.is_sos_trusted ? (
+                              <Bell className="h-4 w-4 text-destructive" />
+                            ) : (
+                              <BellOff className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <Switch
+                              checked={contact.is_sos_trusted}
+                              onCheckedChange={(checked) => {
+                                toggleSOSTrusted(contact.id, checked);
+                                toast({
+                                  title: checked ? "Contacto de auxilio activado" : "Contacto de auxilio desactivado",
+                                  description: checked 
+                                    ? `${contact.nickname || contact.apodo || contact.nombre} recibirá tus alertas SOS`
+                                    : `${contact.nickname || contact.apodo || contact.nombre} ya no recibirá alertas SOS`,
+                                });
+                              }}
+                            />
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveContact(contact.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -415,7 +457,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                Tu alerta de emergencia está activa. Tus <strong>{contactCount} contacto(s)</strong> de auxilio pueden ver tu ubicación.
+                Tu alerta de emergencia está activa. Tus <strong>{sosContactCount} contacto(s)</strong> de auxilio pueden ver tu ubicación.
               </p>
               
               <div className="flex flex-col gap-2 pt-2">
@@ -437,7 +479,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                   Compartir por WhatsApp
                 </Button>
 
-                {contactCount === 0 && (
+                {sosContactCount === 0 && (
                   <Button
                     variant="outline"
                     className="w-full justify-start text-primary"
