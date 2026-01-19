@@ -2031,6 +2031,7 @@ export type Database = {
           contact_user_id: string
           created_at: string
           id: string
+          is_sos_trusted: boolean | null
           nickname: string | null
           user_id: string
         }
@@ -2038,6 +2039,7 @@ export type Database = {
           contact_user_id: string
           created_at?: string
           id?: string
+          is_sos_trusted?: boolean | null
           nickname?: string | null
           user_id: string
         }
@@ -2045,6 +2047,7 @@ export type Database = {
           contact_user_id?: string
           created_at?: string
           id?: string
+          is_sos_trusted?: boolean | null
           nickname?: string | null
           user_id?: string
         }

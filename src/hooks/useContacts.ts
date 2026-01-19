@@ -7,6 +7,8 @@ export interface Contact {
   nickname: string | null;
   apodo: string | null;
   nombre: string | null;
+  telefono: string | null;
+  is_sos_trusted: boolean;
 }
 
 export const useContacts = () => {
@@ -23,7 +25,7 @@ export const useContacts = () => {
     // Obtener contactos con información del perfil
     const { data, error } = await supabase
       .from('user_contacts')
-      .select('id, contact_user_id, nickname')
+      .select('id, contact_user_id, nickname, is_sos_trusted')
       .eq('user_id', user.id);
 
     if (error) {
@@ -42,20 +44,37 @@ export const useContacts = () => {
     const contactUserIds = data.map(c => c.contact_user_id);
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, apodo, nombre')
+      .select('user_id, apodo, nombre, telefono')
       .in('user_id', contactUserIds);
 
     const contactsWithProfiles = data.map(contact => {
       const profile = profiles?.find(p => p.user_id === contact.contact_user_id);
       return {
         ...contact,
+        is_sos_trusted: contact.is_sos_trusted ?? false,
         apodo: profile?.apodo || null,
-        nombre: profile?.nombre || null
+        nombre: profile?.nombre || null,
+        telefono: profile?.telefono || null
       };
     });
 
     setContacts(contactsWithProfiles);
     setLoading(false);
+  };
+
+  // Actualizar si un contacto recibe SOS
+  const toggleSOSTrusted = async (contactId: string, isTrusted: boolean) => {
+    const { error } = await supabase
+      .from('user_contacts')
+      .update({ is_sos_trusted: isTrusted })
+      .eq('id', contactId);
+
+    if (!error) {
+      setContacts(prev => 
+        prev.map(c => c.id === contactId ? { ...c, is_sos_trusted: isTrusted } : c)
+      );
+    }
+    return { error };
   };
 
   useEffect(() => {
@@ -82,5 +101,14 @@ export const useContacts = () => {
     };
   }, []);
 
-  return { contacts, loading, refresh: fetchContacts };
+  // Contactos que recibirán SOS
+  const sosContacts = contacts.filter(c => c.is_sos_trusted);
+
+  return { 
+    contacts, 
+    sosContacts,
+    loading, 
+    refresh: fetchContacts,
+    toggleSOSTrusted 
+  };
 };

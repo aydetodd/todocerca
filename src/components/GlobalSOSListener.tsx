@@ -72,19 +72,21 @@ export const GlobalSOSListener = () => {
               return;
             }
 
-            // Verificar si somos contacto del emisor
-            const { data: isContact } = await supabase
+            // Verificar si somos contacto de CONFIANZA del emisor (is_sos_trusted = true)
+            const { data: isSOSTrusted } = await supabase
               .from('user_contacts')
-              .select('id')
+              .select('id, is_sos_trusted')
               .eq('user_id', newMessage.sender_id)
               .eq('contact_user_id', user.id)
+              .eq('is_sos_trusted', true)
               .maybeSingle();
 
             // También verificar si el mensaje nos fue enviado directamente
             const isDirectMessage = newMessage.receiver_id === user.id;
 
-            if (!isContact && !isDirectMessage) {
-              return; // No somos contacto ni destinatario
+            if (!isSOSTrusted && !isDirectMessage) {
+              console.log('SOS alert ignored - not a trusted contact or direct message');
+              return; // No somos contacto de confianza ni destinatario directo
             }
 
             // Obtener info del emisor
