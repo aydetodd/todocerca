@@ -42,8 +42,8 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
   const animationFrameRef = useRef<number | null>(null);
   const hasActivatedRef = useRef(false);
   
-  const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, sosContactCount } = useSOS();
   const { contacts, loading: loadingContacts, refresh: refreshContacts, toggleSOSTrusted, sosContacts } = useContacts();
+  const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, sosContactCount } = useSOS(sosContacts);
   const { user } = useAuth();
   const { toast } = useToast();
 

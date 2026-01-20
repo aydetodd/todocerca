@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useContacts } from './useContacts';
+import { Contact } from './useContacts';
 
 interface SOSAlert {
   id: string;
@@ -14,12 +14,12 @@ interface SOSAlert {
   share_token: string;
 }
 
-export const useSOS = () => {
+// Recibe sosContacts como parámetro para evitar instancias duplicadas de estado
+export const useSOS = (sosContacts: Contact[] = []) => {
   const [activeAlert, setActiveAlert] = useState<SOSAlert | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
-  const { sosContacts } = useContacts(); // Solo contactos de confianza para SOS
 
   // Verificar si hay una alerta activa al cargar
   useEffect(() => {
