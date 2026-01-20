@@ -77,6 +77,17 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     };
   }, []);
 
+  // Activar SOS (memoizado para que el "hold" siempre use la versión más reciente)
+  const handleActivateSOS = useCallback(async () => {
+    const success = await activateSOS();
+    if (success) {
+      setShowActive(true);
+    }
+    setHoldProgress(0);
+    holdStartRef.current = null;
+    hasActivatedRef.current = false;
+  }, [activateSOS]);
+
   // Actualizar progreso mientras se mantiene presionado
   const updateProgress = useCallback(() => {
     if (!holdStartRef.current || hasActivatedRef.current) return;
@@ -95,17 +106,8 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     if (holdStartRef.current && !hasActivatedRef.current) {
       animationFrameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, []);
+  }, [handleActivateSOS]);
 
-  const handleActivateSOS = async () => {
-    const success = await activateSOS();
-    if (success) {
-      setShowActive(true);
-    }
-    setHoldProgress(0);
-    holdStartRef.current = null;
-    hasActivatedRef.current = false;
-  };
 
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();

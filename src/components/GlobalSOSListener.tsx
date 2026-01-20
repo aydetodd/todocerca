@@ -1,7 +1,6 @@
 // GlobalSOSListener - Escucha alertas SOS en tiempo real para todos los usuarios autenticados
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -11,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Phone, MapPin, VolumeX, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 // Request notification permission on load
 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
@@ -25,7 +25,7 @@ interface SOSAlertData {
 }
 
 export const GlobalSOSListener = () => {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const [activeSOSAlert, setActiveSOSAlert] = useState<SOSAlertData | null>(null);
   const [alarmAudio, setAlarmAudio] = useState<HTMLAudioElement | null>(null);
 
@@ -47,139 +47,109 @@ export const GlobalSOSListener = () => {
   };
 
   useEffect(() => {
+    // Importante: este componente se monta incluso en /auth.
+    // Si el usuario inicia sesión después, necesitamos (re)crear la suscripción.
+    if (!user) return;
+
     let currentAudio: HTMLAudioElement | null = null;
 
-    const setupListener = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const channel = supabase
+      .channel(`global_sos_alerts_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `is_panic=eq.true`,
+        },
+        async (payload: any) => {
+          const newMessage = payload.new;
 
-      const channel = supabase
-        .channel('global_sos_alerts')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `is_panic=eq.true`
-          },
-          async (payload: any) => {
-            const newMessage = payload.new;
-            
-            // Solo procesar si somos el receptor (no el emisor)
-            if (newMessage.sender_id === user.id) {
-              // El emisor NO recibe alarma (seguridad ante delincuentes)
-              return;
-            }
+          // El emisor NO recibe alarma (seguridad ante delincuentes)
+          if (newMessage.sender_id === user.id) return;
 
-            // Verificar si somos contacto de CONFIANZA del emisor (is_sos_trusted = true)
-            const { data: isSOSTrusted } = await supabase
-              .from('user_contacts')
-              .select('id, is_sos_trusted')
-              .eq('user_id', newMessage.sender_id)
-              .eq('contact_user_id', user.id)
-              .eq('is_sos_trusted', true)
-              .maybeSingle();
+          // Solo procesar si somos el receptor directo
+          const isDirectMessage = newMessage.receiver_id === user.id;
+          if (!isDirectMessage) return;
 
-            // También verificar si el mensaje nos fue enviado directamente
-            const isDirectMessage = newMessage.receiver_id === user.id;
+          // Obtener info del emisor
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('apodo, nombre, telefono')
+            .eq('user_id', newMessage.sender_id)
+            .single();
 
-            if (!isSOSTrusted && !isDirectMessage) {
-              console.log('SOS alert ignored - not a trusted contact or direct message');
-              return; // No somos contacto de confianza ni destinatario directo
-            }
+          const senderName = senderProfile?.apodo || senderProfile?.nombre || 'Un contacto';
 
-            // Obtener info del emisor
-            const { data: senderProfile } = await supabase
-              .from('profiles')
-              .select('apodo, nombre, telefono')
-              .eq('user_id', newMessage.sender_id)
-              .single();
+          // Extraer link del mensaje si existe
+          const linkMatch = newMessage.message.match(/https?:\/\/[^\s]+/);
+          const shareLink = linkMatch ? linkMatch[0] : '';
 
-            const senderName = senderProfile?.apodo || senderProfile?.nombre || 'Un contacto';
-            
-            // Extraer link del mensaje si existe
-            const linkMatch = newMessage.message.match(/https?:\/\/[^\s]+/);
-            const shareLink = linkMatch ? linkMatch[0] : '';
+          // ====== ALARMA FUERTE ======
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3');
+          audio.volume = 1.0;
+          audio.loop = true;
 
-            // ====== ALARMA FUERTE ======
-            // Crear y reproducir sirena de emergencia a volumen máximo
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3');
-            audio.volume = 1.0;
-            audio.loop = true;
-            
-            try {
-              await audio.play();
-              currentAudio = audio;
-              setAlarmAudio(audio);
-            } catch (e) {
-              console.log('Audio play failed (user interaction required):', e);
-            }
-
-            // Parar automáticamente después de 60 segundos
-            setTimeout(() => {
-              if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio.loop = false;
-                currentAudio = null;
-                setAlarmAudio(null);
-              }
-            }, 60000);
-
-            // Vibración patrón SOS
-            if ('vibrate' in navigator) {
-              const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
-              navigator.vibrate(sosPattern);
-              // Repetir vibración
-              const vibrateInterval = setInterval(() => {
-                if (currentAudio) {
-                  navigator.vibrate(sosPattern);
-                } else {
-                  clearInterval(vibrateInterval);
-                }
-              }, 3000);
-            }
-
-            // Mostrar alerta modal
-            setActiveSOSAlert({
-              senderName,
-              senderPhone: senderProfile?.telefono || null,
-              message: newMessage.message,
-              shareLink
-            });
-
-            // Notificación del sistema
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(`🆘 ¡EMERGENCIA! ${senderName}`, {
-                body: 'Necesita ayuda urgente. Toca para ver ubicación.',
-                icon: '/icon-192.png',
-                tag: 'sos-emergency',
-                requireInteraction: true
-              });
-            }
+          try {
+            await audio.play();
+            currentAudio = audio;
+            setAlarmAudio(audio);
+          } catch (e) {
+            console.log('Audio play failed (user interaction required):', e);
           }
-        )
-        .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-        if (currentAudio) {
-          currentAudio.pause();
-          currentAudio = null;
+          // Parar automáticamente después de 60 segundos
+          setTimeout(() => {
+            if (currentAudio) {
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              currentAudio.loop = false;
+              currentAudio = null;
+              setAlarmAudio(null);
+            }
+          }, 60000);
+
+          // Vibración patrón SOS
+          if ('vibrate' in navigator) {
+            const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
+            navigator.vibrate(sosPattern);
+            const vibrateInterval = setInterval(() => {
+              if (currentAudio) {
+                navigator.vibrate(sosPattern);
+              } else {
+                clearInterval(vibrateInterval);
+              }
+            }, 3000);
+          }
+
+          setActiveSOSAlert({
+            senderName,
+            senderPhone: senderProfile?.telefono || null,
+            message: newMessage.message,
+            shareLink,
+          });
+
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`🆘 ¡EMERGENCIA! ${senderName}`, {
+              body: 'Necesita ayuda urgente. Toca para ver ubicación.',
+              icon: '/icon-192.png',
+              tag: 'sos-emergency',
+              requireInteraction: true,
+            });
+          }
         }
-      };
-    };
-
-    setupListener();
+      )
+      .subscribe();
 
     return () => {
+      supabase.removeChannel(channel);
       if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
       }
     };
-  }, []);
+  }, [user]);
 
   const handleCall = (phone: string) => {
     window.location.href = `tel:${phone}`;
@@ -199,19 +169,15 @@ export const GlobalSOSListener = () => {
             🆘 ¡EMERGENCIA!
           </AlertDialogTitle>
           <AlertDialogDescription className="text-lg text-foreground">
-            <span className="font-bold text-xl block mb-2">
-              {activeSOSAlert?.senderName} necesita ayuda
-            </span>
-            <span className="text-muted-foreground">
-              {activeSOSAlert?.message}
-            </span>
+            <span className="font-bold text-xl block mb-2">{activeSOSAlert?.senderName} necesita ayuda</span>
+            <span className="text-muted-foreground">{activeSOSAlert?.message}</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="space-y-3 mt-4">
-          <Button 
-            onClick={stopAlarm} 
-            variant="outline" 
+          <Button
+            onClick={stopAlarm}
+            variant="outline"
             className="w-full border-orange-500 text-orange-600 hover:bg-orange-100"
           >
             <VolumeX className="h-5 w-5 mr-2" />
@@ -219,17 +185,14 @@ export const GlobalSOSListener = () => {
           </Button>
 
           {activeSOSAlert?.shareLink && (
-            <Button 
-              onClick={() => handleViewLocation(activeSOSAlert.shareLink)}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={() => handleViewLocation(activeSOSAlert.shareLink)} className="w-full bg-blue-600 hover:bg-blue-700">
               <MapPin className="h-5 w-5 mr-2" />
               Ver Ubicación
             </Button>
           )}
 
           {activeSOSAlert?.senderPhone && (
-            <Button 
+            <Button
               onClick={() => handleCall(activeSOSAlert.senderPhone!)}
               className="w-full bg-green-600 hover:bg-green-700"
             >
@@ -238,20 +201,12 @@ export const GlobalSOSListener = () => {
             </Button>
           )}
 
-          <Button 
-            onClick={() => handleCall('911')}
-            variant="destructive"
-            className="w-full"
-          >
+          <Button onClick={() => handleCall('911')} variant="destructive" className="w-full">
             <Phone className="h-5 w-5 mr-2" />
             Llamar al 911
           </Button>
 
-          <Button 
-            onClick={closeAlert}
-            variant="ghost"
-            className="w-full"
-          >
+          <Button onClick={closeAlert} variant="ghost" className="w-full">
             Cerrar
           </Button>
         </div>
@@ -259,3 +214,4 @@ export const GlobalSOSListener = () => {
     </AlertDialog>
   );
 };
+
