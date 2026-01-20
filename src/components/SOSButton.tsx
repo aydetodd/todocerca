@@ -42,7 +42,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
   const animationFrameRef = useRef<number | null>(null);
   const hasActivatedRef = useRef(false);
   
-  const { contacts, loading: loadingContacts, refresh: refreshContacts, toggleSOSTrusted, sosContacts } = useContacts();
+  const { contacts, loading: loadingContacts, refreshContacts, toggleSOSTrusted, sosContacts } = useContacts();
   const { activeAlert, loading, activateSOS, cancelSOS, getShareLink, sosContactCount } = useSOS(sosContacts);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -350,12 +350,12 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                               "font-medium",
                               contact.is_sos_trusted ? "text-destructive" : "text-primary"
                             )}>
-                              {(contact.nickname || contact.apodo || contact.nombre || 'C')[0].toUpperCase()}
+                              {(contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'C')[0].toUpperCase()}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="font-medium block truncate">
-                              {contact.nickname || contact.apodo || contact.nombre || 'Contacto'}
+                              {contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Contacto'}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {contact.is_sos_trusted ? '🔔 Recibe alertas' : '🔕 No recibe alertas'}
@@ -378,8 +378,8 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                                 toast({
                                   title: checked ? "Contacto de auxilio activado" : "Contacto de auxilio desactivado",
                                   description: checked 
-                                    ? `${contact.nickname || contact.apodo || contact.nombre} recibirá tus alertas SOS`
-                                    : `${contact.nickname || contact.apodo || contact.nombre} ya no recibirá alertas SOS`,
+                                    ? `${contact.nickname || contact.profile?.apodo || contact.profile?.nombre} recibirá tus alertas SOS`
+                                    : `${contact.nickname || contact.profile?.apodo || contact.profile?.nombre} ya no recibirá alertas SOS`,
                                 });
                               }}
                             />

@@ -1,80 +1,119 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface Contact {
   id: string;
+  user_id: string;
   contact_user_id: string;
   nickname: string | null;
-  apodo: string | null;
-  nombre: string | null;
-  telefono: string | null;
+  created_at: string;
   is_sos_trusted: boolean;
+  profile?: {
+    apodo: string | null;
+    nombre: string;
+    telefono: string | null;
+  };
 }
 
 export const useContacts = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchContacts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-    // Obtener contactos con información del perfil
-    const { data, error } = await supabase
-      .from('user_contacts')
-      .select('id, contact_user_id, nickname, is_sos_trusted')
-      .eq('user_id', user.id);
+      const { data: contactsData, error } = await supabase
+        .from('user_contacts')
+        .select('*')
+        .eq('user_id', user.id);
 
-    if (error) {
+      if (error) throw error;
+
+      // Fetch profiles for each contact
+      const contactsWithProfiles = await Promise.all(
+        (contactsData || []).map(async (contact) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('apodo, nombre, telefono')
+            .eq('user_id', contact.contact_user_id)
+            .single();
+
+          return {
+            ...contact,
+            is_sos_trusted: contact.is_sos_trusted || false,
+            profile: profile || undefined,
+          };
+        })
+      );
+
+      setContacts(contactsWithProfiles);
+    } catch (error) {
       console.error('Error fetching contacts:', error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (!data || data.length === 0) {
-      setContacts([]);
-      setLoading(false);
-      return;
-    }
-
-    // Obtener perfiles de los contactos
-    const contactUserIds = data.map(c => c.contact_user_id);
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, apodo, nombre, telefono')
-      .in('user_id', contactUserIds);
-
-    const contactsWithProfiles = data.map(contact => {
-      const profile = profiles?.find(p => p.user_id === contact.contact_user_id);
-      return {
-        ...contact,
-        is_sos_trusted: contact.is_sos_trusted ?? false,
-        apodo: profile?.apodo || null,
-        nombre: profile?.nombre || null,
-        telefono: profile?.telefono || null
-      };
-    });
-
-    setContacts(contactsWithProfiles);
-    setLoading(false);
   };
 
-  // Actualizar si un contacto recibe SOS
+  // Toggle SOS trusted status BIDIRECCIONALMENTE
   const toggleSOSTrusted = async (contactId: string, isTrusted: boolean) => {
-    const { error } = await supabase
-      .from('user_contacts')
-      .update({ is_sos_trusted: isTrusted })
-      .eq('id', contactId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (!error) {
+      // Encontrar el contacto para obtener contact_user_id
+      const contact = contacts.find(c => c.id === contactId);
+      if (!contact) return;
+
+      // 1. Actualizar en MI lista de contactos
+      const { error: error1 } = await supabase
+        .from('user_contacts')
+        .update({ is_sos_trusted: isTrusted })
+        .eq('id', contactId);
+
+      if (error1) throw error1;
+
+      // 2. BIDIRECCIONAL: También actualizar en la lista del otro usuario
+      // para que ambos puedan enviar/recibir SOS entre sí
+      const { error: error2 } = await supabase
+        .from('user_contacts')
+        .update({ is_sos_trusted: isTrusted })
+        .eq('user_id', contact.contact_user_id)
+        .eq('contact_user_id', user.id);
+
+      if (error2) {
+        console.log('No se pudo actualizar contacto bidireccional (puede que no exista aún):', error2);
+      }
+
+      // Actualizar estado local
       setContacts(prev => 
-        prev.map(c => c.id === contactId ? { ...c, is_sos_trusted: isTrusted } : c)
+        prev.map(c => 
+          c.id === contactId 
+            ? { ...c, is_sos_trusted: isTrusted }
+            : c
+        )
       );
+
+      toast({
+        title: isTrusted ? "Contacto de auxilio activado" : "Contacto de auxilio desactivado",
+        description: isTrusted 
+          ? "Ahora ambos pueden enviarse alertas SOS mutuamente" 
+          : "Ya no recibirán alertas SOS entre ustedes",
+      });
+    } catch (error) {
+      console.error('Error toggling SOS trusted:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del contacto",
+        variant: "destructive",
+      });
     }
-    return { error };
   };
 
   useEffect(() => {
@@ -82,17 +121,11 @@ export const useContacts = () => {
 
     // Suscribirse a cambios en contactos
     const channel = supabase
-      .channel('contacts_changes')
+      .channel('user_contacts_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_contacts'
-        },
-        () => {
-          fetchContacts();
-        }
+        { event: '*', schema: 'public', table: 'user_contacts' },
+        () => fetchContacts()
       )
       .subscribe();
 
@@ -101,14 +134,14 @@ export const useContacts = () => {
     };
   }, []);
 
-  // Contactos que recibirán SOS
+  // Filtrar contactos de confianza SOS
   const sosContacts = contacts.filter(c => c.is_sos_trusted);
 
-  return { 
-    contacts, 
+  return {
+    contacts,
     sosContacts,
-    loading, 
-    refresh: fetchContacts,
-    toggleSOSTrusted 
+    loading,
+    refreshContacts: fetchContacts,
+    toggleSOSTrusted,
   };
 };
