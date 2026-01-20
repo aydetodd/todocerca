@@ -9,19 +9,47 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Phone, MapPin, VolumeX, AlertTriangle } from 'lucide-react';
+import { Phone, MapPin, VolumeX, AlertTriangle, X, Navigation } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // Request notification permission on load
 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
 
+// Icono de emergencia para el mapa
+const emergencyIcon = new L.DivIcon({
+  className: 'sos-marker',
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      background: #dc2626;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+      animation: pulse 1s infinite;
+    ">
+      <span style="color: white; font-weight: bold; font-size: 10px;">SOS</span>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 interface SOSAlertData {
   senderName: string;
   senderPhone: string | null;
   message: string;
   shareLink: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const GlobalSOSListener = () => {
@@ -82,12 +110,33 @@ export const GlobalSOSListener = () => {
 
           const senderName = senderProfile?.apodo || senderProfile?.nombre || 'Un contacto';
 
-          // Extraer link del mensaje si existe
+          // Extraer link del mensaje y obtener token para buscar coordenadas
           const linkMatch = newMessage.message.match(/https?:\/\/[^\s]+/);
           const shareLink = linkMatch ? linkMatch[0] : '';
+          
+          // Obtener coordenadas de la alerta SOS
+          let latitude: number | null = null;
+          let longitude: number | null = null;
+          
+          if (shareLink) {
+            const tokenMatch = shareLink.match(/\/sos\/([a-zA-Z0-9-]+)/);
+            if (tokenMatch) {
+              const { data: alertData } = await supabase
+                .from('sos_alerts')
+                .select('latitude, longitude')
+                .eq('share_token', tokenMatch[1])
+                .single();
+              
+              if (alertData) {
+                latitude = alertData.latitude;
+                longitude = alertData.longitude;
+              }
+            }
+          }
 
-          // ====== ALARMA FUERTE ======
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3');
+          // ====== ALARMA DE SIRENA DE EMERGENCIA ======
+          // Sonido de sirena de ambulancia/policía real
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
           audio.volume = 1.0;
           audio.loop = true;
 
@@ -128,6 +177,8 @@ export const GlobalSOSListener = () => {
             senderPhone: senderProfile?.telefono || null,
             message: newMessage.message,
             shareLink,
+            latitude,
+            longitude,
           });
 
           if ('Notification' in window && Notification.permission === 'granted') {
@@ -162,19 +213,56 @@ export const GlobalSOSListener = () => {
 
   return (
     <AlertDialog open={!!activeSOSAlert} onOpenChange={(open) => !open && closeAlert()}>
-      <AlertDialogContent className="border-red-500 border-2 bg-red-50 dark:bg-red-950">
+      <AlertDialogContent className="border-red-500 border-2 bg-red-50 dark:bg-red-950 max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Botón X para cerrar */}
+        <button
+          onClick={closeAlert}
+          className="absolute top-3 right-3 p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 transition-colors z-10"
+          aria-label="Cerrar"
+        >
+          <X className="h-6 w-6 text-red-600" />
+        </button>
+
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-2xl text-red-600 flex items-center gap-2 animate-pulse">
+          <AlertDialogTitle className="text-2xl text-red-600 flex items-center gap-2 animate-pulse pr-8">
             <AlertTriangle className="h-8 w-8" />
             🆘 ¡EMERGENCIA!
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-lg text-foreground">
-            <span className="font-bold text-xl block mb-2">{activeSOSAlert?.senderName} necesita ayuda</span>
-            <span className="text-muted-foreground">{activeSOSAlert?.message}</span>
+          <AlertDialogDescription asChild>
+            <div className="text-lg text-foreground">
+              <span className="font-bold text-xl block mb-2">{activeSOSAlert?.senderName} necesita ayuda</span>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-3 mt-4">
+        {/* Mapa integrado si hay ubicación */}
+        {activeSOSAlert?.latitude && activeSOSAlert?.longitude && (
+          <div className="h-48 rounded-lg overflow-hidden border-2 border-red-300 my-2">
+            <MapContainer
+              center={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
+              zoom={15}
+              className="h-full w-full"
+              scrollWheelZoom={false}
+              dragging={false}
+              zoomControl={false}
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker
+                position={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
+                icon={emergencyIcon}
+              >
+                <Popup>
+                  <strong>🆘 {activeSOSAlert.senderName}</strong>
+                </Popup>
+              </Marker>
+            </MapContainer>
+          </div>
+        )}
+
+        <div className="space-y-3 mt-2">
           <Button
             onClick={stopAlarm}
             variant="outline"
@@ -184,10 +272,18 @@ export const GlobalSOSListener = () => {
             Silenciar Alarma
           </Button>
 
-          {activeSOSAlert?.shareLink && (
-            <Button onClick={() => handleViewLocation(activeSOSAlert.shareLink)} className="w-full bg-blue-600 hover:bg-blue-700">
-              <MapPin className="h-5 w-5 mr-2" />
-              Ver Ubicación
+          {activeSOSAlert?.latitude && activeSOSAlert?.longitude && (
+            <Button 
+              onClick={() => {
+                window.open(
+                  `https://www.google.com/maps/dir/?api=1&destination=${activeSOSAlert.latitude},${activeSOSAlert.longitude}`,
+                  '_blank'
+                );
+              }} 
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              <Navigation className="h-5 w-5 mr-2" />
+              Navegar con Google Maps
             </Button>
           )}
 
@@ -204,10 +300,6 @@ export const GlobalSOSListener = () => {
           <Button onClick={() => handleCall('911')} variant="destructive" className="w-full">
             <Phone className="h-5 w-5 mr-2" />
             Llamar al 911
-          </Button>
-
-          <Button onClick={closeAlert} variant="ghost" className="w-full">
-            Cerrar
           </Button>
         </div>
       </AlertDialogContent>

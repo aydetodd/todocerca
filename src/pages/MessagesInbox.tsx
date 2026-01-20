@@ -153,7 +153,7 @@ const MessagesInbox = () => {
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => setSelectedChat({
                         id: contact.contact_user_id,
-                        name: contact.nickname || contact.apodo || contact.nombre || 'Usuario'
+                        name: contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Usuario'
                       })}
                     >
                       <CardContent className="p-4">
@@ -163,11 +163,11 @@ const MessagesInbox = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-foreground truncate">
-                              {contact.nickname || contact.apodo || contact.nombre || 'Usuario'}
+                              {contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Usuario'}
                             </h3>
-                            {contact.nickname && contact.apodo && contact.nickname !== contact.apodo && (
+                            {contact.nickname && contact.profile?.apodo && contact.nickname !== contact.profile?.apodo && (
                               <p className="text-sm text-muted-foreground">
-                                @{contact.apodo}
+                                @{contact.profile?.apodo}
                               </p>
                             )}
                           </div>
