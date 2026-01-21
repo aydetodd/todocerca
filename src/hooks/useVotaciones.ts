@@ -15,11 +15,12 @@ export function useVotaciones({ onlyActive = true }: Params = {}) {
       let query = supabase
         .from('votaciones')
         .select('*')
-        .order('fecha_fin', { ascending: true });
+        .eq('is_active', true)
+        .order('fecha_fin', { ascending: false });
 
-      if (onlyActive) {
-        query = query.eq('is_active', true).gte('fecha_fin', new Date().toISOString());
-      }
+      // Si onlyActive es false, traer todas incluyendo finalizadas
+      // Si es true, igual traemos todas pero ordenamos las activas primero
+      // Las votaciones finalizadas se muestran hasta que el creador las elimine
 
       const { data, error } = await query;
 
