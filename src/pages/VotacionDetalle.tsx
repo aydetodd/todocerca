@@ -681,8 +681,8 @@ export default function VotacionDetalle() {
           </CardContent>
         </Card>
 
-        {/* Resultados (si ya votó o es creador o cerrada) */}
-        {(userVote || isCreator || votacionCerrada) && (
+        {/* Resultados - visibles para TODOS (ya votó o no, creador o no) */}
+        {(user || votacionCerrada) && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
