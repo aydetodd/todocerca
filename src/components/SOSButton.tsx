@@ -300,7 +300,16 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
       {/* Drawer de Configuración de Contactos de Auxilio */}
       <Drawer open={showConfig} onOpenChange={setShowConfig}>
         <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader className="text-left">
+          {/* Botón X para cerrar el drawer */}
+          <button
+            onClick={() => setShowConfig(false)}
+            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted transition-colors z-10"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+          
+          <DrawerHeader className="text-left pr-12">
             <DrawerTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-destructive" />
               Círculo de Auxilio
