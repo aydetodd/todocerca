@@ -135,18 +135,29 @@ export const GlobalSOSListener = () => {
           }
 
           // ====== ALARMA DE SIRENA DE EMERGENCIA ======
-          // Sonido de sirena de ambulancia/policía real
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          // Sonido de sirena real largo (civil defense siren)
+          const audio = new Audio('https://www.soundjay.com/transportation/sounds/siren-alarm-1.mp3');
           audio.volume = 1.0;
           audio.loop = true;
+          audio.preload = 'auto';
 
-          try {
-            await audio.play();
-            currentAudio = audio;
-            setAlarmAudio(audio);
-          } catch (e) {
-            console.log('Audio play failed (user interaction required):', e);
-          }
+          const playAudio = async () => {
+            try {
+              await audio.play();
+              currentAudio = audio;
+              setAlarmAudio(audio);
+            } catch (e) {
+              console.log('Audio play failed, retrying with user gesture...', e);
+              // Intento con evento de click
+              const playOnClick = () => {
+                audio.play().catch(() => {});
+                document.removeEventListener('click', playOnClick);
+              };
+              document.addEventListener('click', playOnClick, { once: true });
+            }
+          };
+          
+          playAudio();
 
           // Parar automáticamente después de 60 segundos
           setTimeout(() => {
