@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, User, Store, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { MapPin, User, RefreshCw, Eye, EyeOff } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -23,7 +23,8 @@ const Auth = () => {
   const [apodo, setApodo] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const [userType, setUserType] = useState<'cliente' | 'proveedor'>('cliente');
+  // Todos se registran como cliente, upgrade a proveedor desde perfil
+  const userType = 'cliente';
   const [showProviderRegistration, setShowProviderRegistration] = useState(false);
   const [skipAutoRedirect, setSkipAutoRedirect] = useState(false);
   const [userIdConsecutivo, setUserIdConsecutivo] = useState<number | null>(null);
@@ -107,29 +108,9 @@ const Auth = () => {
       if (isLogin) {
         console.log('🔑 Attempting login with phone:', telefono);
         
-        // Buscar perfil usando función flexible que normaliza teléfonos
-        const { data: profileData, error: searchError } = await supabase
-          .rpc('find_user_by_phone', { phone_param: telefono });
-        
-        console.log('🔍 Search result:', { profileData, searchError });
-
-        if (!profileData || profileData.length === 0) {
-          console.error('❌ Phone not found in database');
-          throw new Error('Número de teléfono no encontrado. Verifica que esté registrado.');
-        }
-
-        const userProfile = profileData[0];
-        console.log('📱 Profile found:', userProfile);
-
-        // Obtener el email del usuario usando una función segura
-        const { data: userData } = await supabase.rpc('get_user_email_by_id', {
-          p_user_id: userProfile.user_id
-        });
-        
-        // Usar el email real del usuario o generar uno
-        const emailToUse = userData || `${telefono.replace(/\+/g, '')}@todocerca.app`;
-        
-        console.log('📧 Using email for login:', emailToUse);
+        // Primero intentar login directo con el email generado
+        const emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
+        console.log('📧 Trying direct login with:', emailToUse);
         
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailToUse,
@@ -137,27 +118,91 @@ const Auth = () => {
         });
 
         if (error) {
+          // Si falla, intentar buscar el perfil por teléfono
           if (error.message.includes('Invalid login credentials')) {
-            throw new Error('Teléfono o contraseña incorrectos');
+            // Buscar perfil usando función flexible que normaliza teléfonos
+            const { data: profileData, error: searchError } = await supabase
+              .rpc('find_user_by_phone', { phone_param: telefono });
+            
+            console.log('🔍 Search result:', { profileData, searchError });
+
+            if (!profileData || profileData.length === 0) {
+              console.error('❌ Phone not found in database');
+              throw new Error('Número de teléfono no encontrado. Verifica que esté registrado.');
+            }
+
+            const userProfile = profileData[0];
+            
+            // Obtener el email del usuario usando una función segura
+            const { data: userData } = await supabase.rpc('get_user_email_by_id', {
+              p_user_id: userProfile.user_id
+            });
+            
+            if (userData && userData !== emailToUse) {
+              // Reintentar con el email correcto
+              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+                email: userData,
+                password,
+              });
+              
+              if (retryError) {
+                throw new Error('Teléfono o contraseña incorrectos');
+              }
+            } else {
+              throw new Error('Teléfono o contraseña incorrectos');
+            }
+          } else {
+            throw error;
           }
-          throw error;
         }
 
-        // Obtener el consecutive_number del perfil completo
-        const { data: fullProfile } = await supabase
-          .from('profiles')
-          .select('consecutive_number')
-          .eq('user_id', userProfile.user_id)
-          .single();
+        // Si llegamos aquí, el login fue exitoso
+        // Verificar si existe el perfil, si no, crearlo (fix para usuarios fantasma)
+        const currentUser = data?.user || (await supabase.auth.getUser()).data.user;
+        
+        if (currentUser) {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id, consecutive_number')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
 
-        if (fullProfile?.consecutive_number) {
-          setUserIdConsecutivo(fullProfile.consecutive_number);
-          setShowIdConsecutivo(true);
+          if (!existingProfile) {
+            // Usuario fantasma detectado - recrear perfil
+            console.log('👻 Ghost user detected, recreating profile...');
+            const metadata = currentUser.user_metadata || {};
+            
+            const { data: newProfile, error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                user_id: currentUser.id,
+                nombre: metadata.nombre || metadata.apodo || 'Usuario',
+                apodo: metadata.apodo || 'Usuario',
+                telefono: metadata.telefono || telefono,
+                email: currentUser.email,
+                role: 'cliente',
+              })
+              .select('consecutive_number')
+              .single();
 
-          toast({
-            title: "¡Bienvenido!",
-            description: `Tu número de usuario: ${fullProfile.consecutive_number}`,
-          });
+            if (profileError) {
+              console.error('Error recreating profile:', profileError);
+            } else if (newProfile) {
+              setUserIdConsecutivo(newProfile.consecutive_number);
+              setShowIdConsecutivo(true);
+              toast({
+                title: "¡Bienvenido!",
+                description: `Perfil recuperado. Tu número: ${newProfile.consecutive_number}`,
+              });
+            }
+          } else {
+            setUserIdConsecutivo(existingProfile.consecutive_number);
+            setShowIdConsecutivo(true);
+            toast({
+              title: "¡Bienvenido!",
+              description: `Tu número de usuario: ${existingProfile.consecutive_number}`,
+            });
+          }
         }
 
         // Check provider registration
@@ -563,26 +608,13 @@ const Auth = () => {
             <form onSubmit={handleAuth} className="space-y-4">
               {!isLogin && (
                 <>
-                  <Tabs value={userType} onValueChange={(value) => setUserType(value as 'cliente' | 'proveedor')} className="mb-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger 
-                        value="cliente" 
-                        className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                      >
-                        {userType === 'cliente' && <span className="mr-1">✓</span>}
-                        <User className="h-4 w-4" />
-                        <span>Usuario</span>
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="proveedor" 
-                        className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                      >
-                        {userType === 'proveedor' && <span className="mr-1">✓</span>}
-                        <Store className="h-4 w-4" />
-                        <span>Proveedor</span>
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  {/* Registro solo como usuario - upgrade a proveedor desde perfil */}
+                  <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      <span>Te registrarás como <strong>Usuario</strong>. Podrás convertirte en proveedor desde tu perfil.</span>
+                    </div>
+                  </div>
 
                   <div>
                     <Label htmlFor="apodo">Apodo *</Label>
