@@ -77,41 +77,80 @@ export default function PassengerActiveTrip() {
   };
 
   useEffect(() => {
-    fetchTrip();
+    let passengerId: string | null = null;
+    let channel: any = null;
 
-    // Suscripción en tiempo real
-    const channel = supabase
-      .channel('passenger-trip')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'taxi_requests'
-        },
-        (payload) => {
-          // Si el viaje se completó o canceló, mostrar notificación
-          if (payload.eventType === 'UPDATE' && payload.new) {
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      passengerId = user.id;
+      
+      // Cargar datos iniciales
+      await fetchTrip();
+
+      // Suscripción en tiempo real FILTRADA por passenger_id
+      channel = supabase
+        .channel(`passenger-trip-${passengerId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'taxi_requests',
+            filter: `passenger_id=eq.${passengerId}`
+          },
+          (payload) => {
+            console.log('📝 Actualización de viaje para pasajero:', payload);
             const newData = payload.new as any;
+            
             if (newData.status === 'completed') {
               toast({
                 title: "🎉 ¡Viaje completado!",
                 description: "Gracias por usar nuestro servicio.",
               });
-            } else if (newData.status === 'accepted' && trip?.status === 'pending') {
+              setTrip(null);
+            } else if (newData.status === 'cancelled') {
+              toast({
+                title: "❌ Viaje cancelado",
+                description: "El conductor ha cancelado la solicitud.",
+              });
+              setTrip(null);
+            } else if (newData.status === 'accepted') {
               toast({
                 title: "🚕 ¡Conductor en camino!",
                 description: "El taxi va hacia tu ubicación.",
               });
+              fetchTrip();
+            } else {
+              fetchTrip();
             }
           }
-          fetchTrip();
-        }
-      )
-      .subscribe();
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'taxi_requests',
+            filter: `passenger_id=eq.${passengerId}`
+          },
+          () => {
+            console.log('🗑️ Viaje eliminado');
+            setTrip(null);
+          }
+        )
+        .subscribe((status) => {
+          console.log('🔌 Suscripción pasajero status:', status);
+        });
+    };
+
+    setupSubscription();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
