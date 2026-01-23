@@ -126,16 +126,6 @@ export default function TaxiDriverRequests() {
     }
 
     const currentIds = new Set((data || []).map(r => r.id));
-    
-    // Detectar nuevas solicitudes para reproducir sonido
-    const newRequests = (data || []).filter(r => !previousRequestIdsRef.current.has(r.id));
-    if (newRequests.length > 0 && previousRequestIdsRef.current.size > 0) {
-      playAlertSound();
-      toast({
-        title: "🚕 ¡Nueva solicitud de taxi!",
-        description: `${newRequests.length} solicitud(es) nueva(s)`,
-      });
-    }
     previousRequestIdsRef.current = currentIds;
 
     // Obtener nombres de pasajeros
@@ -160,30 +150,76 @@ export default function TaxiDriverRequests() {
   };
 
   useEffect(() => {
-    fetchRequests();
+    let driverId: string | null = null;
+    let channel: any = null;
 
-    // Suscripción en tiempo real
-    const channel = supabase
-      .channel('taxi-requests-driver')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'taxi_requests'
-        },
-        (payload) => {
-          // Si es INSERT, reproducir sonido inmediatamente
-          if (payload.eventType === 'INSERT') {
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      driverId = user.id;
+      
+      // Cargar datos iniciales
+      await fetchRequests();
+
+      // Suscripción en tiempo real FILTRADA por driver_id
+      channel = supabase
+        .channel(`taxi-requests-driver-${driverId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'taxi_requests',
+            filter: `driver_id=eq.${driverId}`
+          },
+          (payload) => {
+            console.log('🔔 Nueva solicitud de taxi recibida:', payload);
+            // Reproducir sonido INMEDIATAMENTE en INSERT
             playAlertSound();
+            toast({
+              title: '🚕 ¡Nueva solicitud de taxi!',
+              description: 'Tienes una nueva solicitud pendiente',
+            });
+            fetchRequests();
           }
-          fetchRequests();
-        }
-      )
-      .subscribe();
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'taxi_requests',
+            filter: `driver_id=eq.${driverId}`
+          },
+          (payload) => {
+            console.log('📝 Actualización de solicitud de taxi:', payload);
+            fetchRequests();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'taxi_requests',
+            filter: `driver_id=eq.${driverId}`
+          },
+          () => {
+            fetchRequests();
+          }
+        )
+        .subscribe((status) => {
+          console.log('🔌 Suscripción taxi driver status:', status);
+        });
+    };
+
+    setupSubscription();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       Object.values(mapRefs.current).forEach(map => map.remove());
     };
   }, []);
