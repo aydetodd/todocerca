@@ -116,6 +116,10 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
   const [loadingCenterAddress, setLoadingCenterAddress] = useState(false);
   const [tarifaKm, setTarifaKm] = useState<number>(driver.tarifa_km || 15);
   
+  // Estado de espera después de enviar solicitud
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'pending' | 'accepted' | 'cancelled'>('idle');
+  
   // Búsqueda de dirección
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AddressSuggestion[]>([]);
@@ -342,8 +346,12 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       
       if (error) throw error;
       
-      // Enviar WhatsApp al conductor
+      // Guardar ID de la solicitud para monitorear
       if (insertedRequest) {
+        setPendingRequestId(insertedRequest.id);
+        setRequestStatus('pending');
+        
+        // Enviar WhatsApp al conductor
         try {
           await supabase.functions.invoke('send-taxi-request-whatsapp', {
             body: { requestId: insertedRequest.id }
@@ -351,16 +359,15 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
           console.log('WhatsApp enviado al conductor');
         } catch (whatsappError) {
           console.error('Error enviando WhatsApp al conductor:', whatsappError);
-          // No fallar la solicitud por esto
         }
       }
       
       toast({
         title: "¡Solicitud enviada!",
-        description: `Se ha notificado a ${driver.business_name} por WhatsApp. Kilometraje: ${routeInfo.totalKm.toFixed(2)} km`,
+        description: `Esperando respuesta de ${driver.business_name}...`,
       });
       
-      onClose();
+      // NO cerrar el modal - mantenerlo abierto hasta confirmación
     } catch (error: any) {
       console.error('Error enviando solicitud:', error);
       toast({
@@ -370,6 +377,74 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+  
+  // Suscripción en tiempo real para monitorear el estado de la solicitud
+  useEffect(() => {
+    if (!pendingRequestId) return;
+    
+    const channel = supabase
+      .channel(`taxi-request-${pendingRequestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'taxi_requests',
+          filter: `id=eq.${pendingRequestId}`
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          console.log('📍 Estado de solicitud actualizado:', newStatus);
+          
+          if (newStatus === 'accepted') {
+            setRequestStatus('accepted');
+            toast({
+              title: "🚕 ¡Taxi en camino!",
+              description: `${driver.business_name} aceptó tu solicitud. Va en camino a recogerte.`,
+            });
+            // Cerrar después de un momento para que el usuario vea el mensaje
+            setTimeout(() => {
+              onClose();
+            }, 2000);
+          } else if (newStatus === 'cancelled') {
+            setRequestStatus('cancelled');
+            toast({
+              title: "❌ Solicitud rechazada",
+              description: "El taxista no puede atenderte en este momento. Intenta con otro.",
+              variant: "destructive"
+            });
+            setTimeout(() => {
+              onClose();
+            }, 2000);
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pendingRequestId, driver.business_name, onClose, toast]);
+  
+  // Cancelar solicitud pendiente
+  const handleCancelPendingRequest = async () => {
+    if (!pendingRequestId) return;
+    
+    try {
+      await supabase
+        .from('taxi_requests')
+        .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+        .eq('id', pendingRequestId);
+      
+      toast({
+        title: "Solicitud cancelada",
+        description: "Has cancelado la solicitud de taxi.",
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error cancelando solicitud:', error);
     }
   };
 
@@ -384,6 +459,8 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       setCenterAddress('');
       setSearchQuery('');
       setSearchResults([]);
+      setPendingRequestId(null);
+      setRequestStatus('idle');
       if (routeLayerRef.current) {
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
@@ -531,134 +608,235 @@ export default function TaxiRequestModal({ isOpen, onClose, driver }: TaxiReques
       {fullscreenMap}
       
       {/* Dialog principal */}
-      <Dialog open={isOpen && selectionMode === 'none'} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={isOpen && selectionMode === 'none'} onOpenChange={(open) => {
+        // Solo permitir cerrar si no hay solicitud pendiente
+        if (!open && requestStatus === 'idle') {
+          onClose();
+        }
+      }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="flex items-center gap-2">
               <Car className="h-5 w-5" />
-              Solicitar Taxi
+              {requestStatus === 'pending' ? 'Esperando confirmación...' : 
+               requestStatus === 'accepted' ? '¡Taxi en camino!' :
+               requestStatus === 'cancelled' ? 'Solicitud rechazada' :
+               'Solicitar Taxi'}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 px-4">
-            {/* Info del taxista */}
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="font-semibold">{driver.business_name}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                Tarifa: ${tarifaKm.toFixed(2)} MXN/km
-              </p>
-            </div>
-            
-            
-            {/* Punto de recogida */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-primary" />
-                Punto de recogida
-              </Label>
-              {loading && !pickupCoords ? (
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Obteniendo tu ubicación...
-                </p>
-              ) : pickupCoords ? (
-                <div 
-                  onClick={startPickupSelection}
-                  className="bg-muted/50 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="line-clamp-2 flex-1 text-sm">{pickupAddress || 'Ubicación seleccionada'}</span>
+          {/* Vista de espera cuando hay solicitud pendiente */}
+          {requestStatus === 'pending' && (
+            <div className="p-6 space-y-6">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                    <Car className="h-10 w-10 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Toca para cambiar (por si el taxi es para otra persona)</p>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={startPickupSelection}
-                  className="w-full"
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Seleccionar punto de recogida
-                </Button>
-              )}
-            </div>
-            
-            {/* Destino */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <Navigation className="h-4 w-4 text-green-600" />
-                Destino
-              </Label>
-              {destinationCoords ? (
-                <div 
-                  onClick={startDestinationSelection}
-                  className="bg-green-500/10 p-3 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="line-clamp-2 flex-1 text-sm">{destinationCoords.display_name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={startDestinationSelection}
-                  className="w-full"
-                >
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Seleccionar destino en el mapa
-                </Button>
-              )}
-            </div>
-            
-            {/* Resumen de ruta */}
-            {routeInfo && (
-              <div className="bg-primary/10 p-4 rounded-lg space-y-2 border border-primary/20">
-                <h4 className="font-semibold text-primary">Resumen del viaje</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Taxi → Recogida</p>
-                    <p className="font-medium">{routeInfo.driverToPickup?.distance_km.toFixed(2)} km</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Recogida → Destino</p>
-                    <p className="font-medium">{routeInfo.pickupToDestination?.distance_km.toFixed(2)} km</p>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center animate-bounce">
+                    <Loader2 className="h-4 w-4 text-white animate-spin" />
                   </div>
                 </div>
-                <div className="pt-2 border-t border-primary/20">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Distancia total:</span>
-                    <span className="font-bold text-lg">{routeInfo.totalKm.toFixed(2)} km</span>
-                  </div>
-                  <div className="flex justify-between items-center text-primary">
-                    <span className="font-semibold">Tarifa estimada:</span>
-                    <span className="font-bold text-xl">${routeInfo.totalFare.toFixed(2)} MXN</span>
-                  </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg">Esperando respuesta...</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {driver.business_name} está siendo notificado de tu solicitud
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Recogida</p>
+                    <p className="text-sm">{pickupAddress}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Navigation className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Destino</p>
+                    <p className="text-sm">{destinationCoords?.display_name}</p>
+                  </div>
+                </div>
+                {routeInfo && (
+                  <div className="pt-2 border-t mt-2">
+                    <p className="text-sm font-medium text-primary">
+                      Tarifa estimada: ${routeInfo.totalFare.toFixed(2)} MXN
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                variant="destructive" 
+                onClick={handleCancelPendingRequest}
+                className="w-full"
+              >
+                Cancelar solicitud
+              </Button>
+            </div>
+          )}
           
-          <DialogFooter className="gap-2 p-4 pt-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSubmitRequest}
-              disabled={!routeInfo || submitting || !pickupCoords}
-            >
-              {submitting ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
-              ) : (
-                <>Solicitar Taxi</>
-              )}
-            </Button>
-          </DialogFooter>
+          {/* Vista de aceptado */}
+          {requestStatus === 'accepted' && (
+            <div className="p-6 space-y-4">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Check className="h-10 w-10 text-green-500" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg text-green-600">¡Tu taxi está en camino!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {driver.business_name} aceptó tu solicitud
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Vista de rechazado */}
+          {requestStatus === 'cancelled' && (
+            <div className="p-6 space-y-4">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <X className="h-10 w-10 text-destructive" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg text-destructive">Solicitud rechazada</h3>
+                  <p className="text-sm text-muted-foreground">
+                    El taxista no puede atenderte. Intenta con otro.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Vista normal de formulario */}
+          {requestStatus === 'idle' && (
+            <>
+              <div className="space-y-4 px-4">
+                {/* Info del taxista */}
+                <div className="bg-muted p-3 rounded-lg">
+                  <p className="font-semibold">{driver.business_name}</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-4 w-4" />
+                    Tarifa: ${tarifaKm.toFixed(2)} MXN/km
+                  </p>
+                </div>
+                
+                
+                {/* Punto de recogida */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Punto de recogida
+                  </Label>
+                  {loading && !pickupCoords ? (
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Obteniendo tu ubicación...
+                    </p>
+                  ) : pickupCoords ? (
+                    <div 
+                      onClick={startPickupSelection}
+                      className="bg-muted/50 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="line-clamp-2 flex-1 text-sm">{pickupAddress || 'Ubicación seleccionada'}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Toca para cambiar (por si el taxi es para otra persona)</p>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={startPickupSelection}
+                      className="w-full"
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Seleccionar punto de recogida
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Destino */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <Navigation className="h-4 w-4 text-green-600" />
+                    Destino
+                  </Label>
+                  {destinationCoords ? (
+                    <div 
+                      onClick={startDestinationSelection}
+                      className="bg-green-500/10 p-3 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="line-clamp-2 flex-1 text-sm">{destinationCoords.display_name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Toca para cambiar</p>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={startDestinationSelection}
+                      className="w-full"
+                    >
+                      <Navigation className="h-4 w-4 mr-2" />
+                      Seleccionar destino en el mapa
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Resumen de ruta */}
+                {routeInfo && (
+                  <div className="bg-primary/10 p-4 rounded-lg space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-primary">Resumen del viaje</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Taxi → Recogida</p>
+                        <p className="font-medium">{routeInfo.driverToPickup?.distance_km.toFixed(2)} km</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Recogida → Destino</p>
+                        <p className="font-medium">{routeInfo.pickupToDestination?.distance_km.toFixed(2)} km</p>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-primary/20">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Distancia total:</span>
+                        <span className="font-bold text-lg">{routeInfo.totalKm.toFixed(2)} km</span>
+                      </div>
+                      <div className="flex justify-between items-center text-primary">
+                        <span className="font-semibold">Tarifa estimada:</span>
+                        <span className="font-bold text-xl">${routeInfo.totalFare.toFixed(2)} MXN</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter className="gap-2 p-4 pt-2">
+                <Button variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSubmitRequest}
+                  disabled={!routeInfo || submitting || !pickupCoords}
+                >
+                  {submitting ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
+                  ) : (
+                    <>Solicitar Taxi</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
