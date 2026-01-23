@@ -29,11 +29,21 @@ interface TaxiRequest {
 }
 
 // Sonido de alerta fuerte
-const playAlertSound = () => {
+// Sistema de alerta con loop continuo hasta que el taxista responda
+let alertIntervalRef: NodeJS.Timeout | null = null;
+let audioContextRef: AudioContext | null = null;
+
+const playAlertSoundOnce = () => {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (!audioContextRef || audioContextRef.state === 'closed') {
+      audioContextRef = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
     
-    // Crear múltiples osciladores para un sonido más fuerte
+    const audioContext = audioContextRef;
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
     const playTone = (frequency: number, startTime: number, duration: number) => {
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -44,28 +54,49 @@ const playAlertSound = () => {
       oscillator.frequency.value = frequency;
       oscillator.type = 'square';
       
-      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime + startTime);
+      gainNode.gain.setValueAtTime(0.6, audioContext.currentTime + startTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
       
       oscillator.start(audioContext.currentTime + startTime);
       oscillator.stop(audioContext.currentTime + startTime + duration);
     };
     
-    // Secuencia de tonos de alerta (repetir 3 veces)
-    for (let i = 0; i < 3; i++) {
-      const offset = i * 0.6;
-      playTone(800, offset, 0.15);
-      playTone(1000, offset + 0.15, 0.15);
-      playTone(800, offset + 0.3, 0.15);
-      playTone(1000, offset + 0.45, 0.15);
-    }
+    // Secuencia de tonos de alerta tipo sirena
+    playTone(800, 0, 0.15);
+    playTone(1000, 0.15, 0.15);
+    playTone(800, 0.3, 0.15);
+    playTone(1000, 0.45, 0.15);
+    playTone(800, 0.6, 0.15);
+    playTone(1000, 0.75, 0.15);
     
     // Vibrar si está disponible
     if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
+      navigator.vibrate([200, 100, 200, 100, 200]);
     }
   } catch (error) {
     console.error('Error reproduciendo sonido:', error);
+  }
+};
+
+// Iniciar loop de alerta continua
+const startAlertLoop = () => {
+  // Si ya hay un loop activo, no iniciar otro
+  if (alertIntervalRef) return;
+  
+  // Reproducir inmediatamente
+  playAlertSoundOnce();
+  
+  // Repetir cada 1.5 segundos
+  alertIntervalRef = setInterval(() => {
+    playAlertSoundOnce();
+  }, 1500);
+};
+
+// Detener loop de alerta
+const stopAlertLoop = () => {
+  if (alertIntervalRef) {
+    clearInterval(alertIntervalRef);
+    alertIntervalRef = null;
   }
 };
 
@@ -128,6 +159,11 @@ export default function TaxiDriverRequests() {
     const currentIds = new Set((data || []).map(r => r.id));
     previousRequestIdsRef.current = currentIds;
 
+    // Si no hay solicitudes pendientes, detener el sonido de alerta
+    if (!data || data.length === 0) {
+      stopAlertLoop();
+    }
+
     // Obtener nombres de pasajeros
     const requestsWithNames = await Promise.all(
       (data || []).map(async (req) => {
@@ -175,8 +211,8 @@ export default function TaxiDriverRequests() {
           },
           (payload) => {
             console.log('🔔 Nueva solicitud de taxi recibida:', payload);
-            // Reproducir sonido INMEDIATAMENTE en INSERT
-            playAlertSound();
+            // Iniciar loop de sonido continuo en INSERT
+            startAlertLoop();
             toast({
               title: '🚕 ¡Nueva solicitud de taxi!',
               description: 'Tienes una nueva solicitud pendiente',
@@ -217,9 +253,13 @@ export default function TaxiDriverRequests() {
     setupSubscription();
 
     return () => {
+      // Limpiar suscripción
       if (channel) {
         supabase.removeChannel(channel);
       }
+      // Detener sonido de alerta si está activo
+      stopAlertLoop();
+      // Limpiar mapas
       Object.values(mapRefs.current).forEach(map => map.remove());
     };
   }, []);
@@ -271,6 +311,8 @@ export default function TaxiDriverRequests() {
 
   // Aceptar solicitud
   const handleAccept = async (requestId: string) => {
+    // Detener sonido al aceptar
+    stopAlertLoop();
     setProcessingId(requestId);
     
     try {
@@ -329,6 +371,8 @@ export default function TaxiDriverRequests() {
 
   // Rechazar solicitud
   const handleReject = async (requestId: string) => {
+    // Detener sonido al rechazar
+    stopAlertLoop();
     setProcessingId(requestId);
     
     try {
@@ -418,7 +462,7 @@ export default function TaxiDriverRequests() {
 
   // Test sound button
   const testSound = () => {
-    playAlertSound();
+    playAlertSoundOnce();
   };
 
   if (loading) {
