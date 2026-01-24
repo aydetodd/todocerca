@@ -1,15 +1,9 @@
 // GlobalSOSListener - Escucha alertas SOS en tiempo real para todos los usuarios autenticados
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Phone, MapPin, VolumeX, AlertTriangle, X, Navigation } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Phone, VolumeX, AlertTriangle, X, Navigation } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -52,34 +46,116 @@ interface SOSAlertData {
   longitude: number | null;
 }
 
+// Sistema de alarma tipo sirena/incendio con Web Audio API
+let sosAudioContext: AudioContext | null = null;
+let sosAlertInterval: NodeJS.Timeout | null = null;
+let sosVibrateInterval: NodeJS.Timeout | null = null;
+
+const playSirenTone = () => {
+  try {
+    if (!sosAudioContext || sosAudioContext.state === 'closed') {
+      sosAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    
+    const ctx = sosAudioContext;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    const currentTime = ctx.currentTime;
+    
+    // Crear sonido de sirena tipo alarma de incendio/sismo
+    // Alternando entre frecuencias altas y bajas rápidamente
+    const createSirenOscillator = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.type = 'sawtooth'; // Sonido más áspero/fuerte
+      oscillator.frequency.setValueAtTime(startFreq, currentTime + startTime);
+      oscillator.frequency.linearRampToValueAtTime(endFreq, currentTime + startTime + duration);
+      
+      gainNode.gain.setValueAtTime(0.8, currentTime + startTime);
+      gainNode.gain.setValueAtTime(0.8, currentTime + startTime + duration - 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + startTime + duration);
+      
+      oscillator.start(currentTime + startTime);
+      oscillator.stop(currentTime + startTime + duration);
+    };
+    
+    // Patrón de sirena: subida y bajada rápida tipo alarma de incendio
+    createSirenOscillator(400, 1200, 0, 0.3);
+    createSirenOscillator(1200, 400, 0.3, 0.3);
+    createSirenOscillator(400, 1200, 0.6, 0.3);
+    createSirenOscillator(1200, 400, 0.9, 0.3);
+    
+  } catch (error) {
+    console.error('Error reproduciendo sirena SOS:', error);
+  }
+};
+
+const startSOSAlarmLoop = () => {
+  if (sosAlertInterval) return; // Ya está sonando
+  
+  // Reproducir inmediatamente
+  playSirenTone();
+  
+  // Vibración inicial SOS
+  if ('vibrate' in navigator) {
+    const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
+    navigator.vibrate(sosPattern);
+  }
+  
+  // Loop cada 1.2 segundos
+  sosAlertInterval = setInterval(() => {
+    playSirenTone();
+  }, 1200);
+  
+  // Loop de vibración cada 3 segundos
+  sosVibrateInterval = setInterval(() => {
+    if ('vibrate' in navigator) {
+      const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
+      navigator.vibrate(sosPattern);
+    }
+  }, 3000);
+};
+
+const stopSOSAlarmLoop = () => {
+  if (sosAlertInterval) {
+    clearInterval(sosAlertInterval);
+    sosAlertInterval = null;
+  }
+  if (sosVibrateInterval) {
+    clearInterval(sosVibrateInterval);
+    sosVibrateInterval = null;
+  }
+  if ('vibrate' in navigator) {
+    navigator.vibrate(0);
+  }
+};
+
 export const GlobalSOSListener = () => {
   const { user } = useAuth();
   const [activeSOSAlert, setActiveSOSAlert] = useState<SOSAlertData | null>(null);
-  const [alarmAudio, setAlarmAudio] = useState<HTMLAudioElement | null>(null);
+  const [isAlarmMuted, setIsAlarmMuted] = useState(false);
+  const alertRef = useRef<SOSAlertData | null>(null);
 
   const stopAlarm = () => {
-    if (alarmAudio) {
-      alarmAudio.pause();
-      alarmAudio.currentTime = 0;
-      alarmAudio.loop = false;
-      setAlarmAudio(null);
-    }
-    if ('vibrate' in navigator) {
-      navigator.vibrate(0);
-    }
+    stopSOSAlarmLoop();
+    setIsAlarmMuted(true);
   };
 
   const closeAlert = () => {
-    stopAlarm();
+    stopSOSAlarmLoop();
     setActiveSOSAlert(null);
+    alertRef.current = null;
+    setIsAlarmMuted(false);
   };
 
   useEffect(() => {
-    // Importante: este componente se monta incluso en /auth.
-    // Si el usuario inicia sesión después, necesitamos (re)crear la suscripción.
     if (!user) return;
-
-    let currentAudio: HTMLAudioElement | null = null;
 
     const channel = supabase
       .channel(`global_sos_alerts_${user.id}`)
@@ -134,63 +210,26 @@ export const GlobalSOSListener = () => {
             }
           }
 
-          // ====== ALARMA DE SIRENA DE EMERGENCIA ======
-          // Sonido de sirena real largo (civil defense siren)
-          const audio = new Audio('https://www.soundjay.com/transportation/sounds/siren-alarm-1.mp3');
-          audio.volume = 1.0;
-          audio.loop = true;
-          audio.preload = 'auto';
+          // ====== INICIAR ALARMA TIPO SIRENA/INCENDIO ======
+          setIsAlarmMuted(false);
+          startSOSAlarmLoop();
 
-          const playAudio = async () => {
-            try {
-              await audio.play();
-              currentAudio = audio;
-              setAlarmAudio(audio);
-            } catch (e) {
-              console.log('Audio play failed, retrying with user gesture...', e);
-              // Intento con evento de click
-              const playOnClick = () => {
-                audio.play().catch(() => {});
-                document.removeEventListener('click', playOnClick);
-              };
-              document.addEventListener('click', playOnClick, { once: true });
-            }
-          };
-          
-          playAudio();
-
-          // Parar automáticamente después de 60 segundos
-          setTimeout(() => {
-            if (currentAudio) {
-              currentAudio.pause();
-              currentAudio.currentTime = 0;
-              currentAudio.loop = false;
-              currentAudio = null;
-              setAlarmAudio(null);
-            }
-          }, 60000);
-
-          // Vibración patrón SOS
-          if ('vibrate' in navigator) {
-            const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
-            navigator.vibrate(sosPattern);
-            const vibrateInterval = setInterval(() => {
-              if (currentAudio) {
-                navigator.vibrate(sosPattern);
-              } else {
-                clearInterval(vibrateInterval);
-              }
-            }, 3000);
-          }
-
-          setActiveSOSAlert({
+          const alertData: SOSAlertData = {
             senderName,
             senderPhone: senderProfile?.telefono || null,
             message: newMessage.message,
             shareLink,
             latitude,
             longitude,
-          });
+          };
+          
+          setActiveSOSAlert(alertData);
+          alertRef.current = alertData;
+
+          // Parar automáticamente después de 2 minutos
+          setTimeout(() => {
+            stopSOSAlarmLoop();
+          }, 120000);
 
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`🆘 ¡EMERGENCIA! ${senderName}`, {
@@ -206,10 +245,7 @@ export const GlobalSOSListener = () => {
 
     return () => {
       supabase.removeChannel(channel);
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
+      stopSOSAlarmLoop();
     };
   }, [user]);
 
@@ -217,104 +253,125 @@ export const GlobalSOSListener = () => {
     window.location.href = `tel:${phone}`;
   };
 
-  const handleViewLocation = (link: string) => {
-    stopAlarm();
-    window.open(link, '_blank');
-  };
+  // Si no hay alerta activa, no renderizar nada
+  if (!activeSOSAlert) return null;
 
+  // Usar un Card fijo en lugar de AlertDialog para NO bloquear la navegación
   return (
-    <AlertDialog open={!!activeSOSAlert} onOpenChange={(open) => !open && closeAlert()}>
-      <AlertDialogContent className="border-red-500 border-2 bg-red-50 dark:bg-red-950 max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      {/* Overlay semi-transparente que NO bloquea clicks */}
+      <div 
+        className="absolute inset-0 bg-black/50 pointer-events-auto"
+        onClick={closeAlert}
+      />
+      
+      {/* Card de emergencia */}
+      <Card className="relative z-10 w-full max-w-md border-4 border-red-500 bg-red-50 dark:bg-red-950 shadow-2xl pointer-events-auto animate-pulse max-h-[85vh] overflow-y-auto">
         {/* Botón X para cerrar */}
         <button
           onClick={closeAlert}
-          className="absolute top-3 right-3 p-1 rounded-full hover:bg-red-200 dark:hover:bg-red-800 transition-colors z-10"
+          className="absolute top-3 right-3 p-2 rounded-full bg-red-200 hover:bg-red-300 dark:bg-red-800 dark:hover:bg-red-700 transition-colors z-10"
           aria-label="Cerrar"
         >
-          <X className="h-6 w-6 text-red-600" />
+          <X className="h-6 w-6 text-red-600 dark:text-red-300" />
         </button>
 
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-2xl text-red-600 flex items-center gap-2 animate-pulse pr-8">
-            <AlertTriangle className="h-8 w-8" />
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl text-red-600 flex items-center gap-2 pr-10">
+            <AlertTriangle className="h-8 w-8 animate-bounce" />
             🆘 ¡EMERGENCIA!
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="text-lg text-foreground">
-              <span className="font-bold text-xl block mb-2">{activeSOSAlert?.senderName} necesita ayuda</span>
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </CardTitle>
+          <p className="text-xl font-bold text-foreground mt-2">
+            {activeSOSAlert.senderName} necesita ayuda
+          </p>
+        </CardHeader>
 
-        {/* Mapa integrado si hay ubicación */}
-        {activeSOSAlert?.latitude && activeSOSAlert?.longitude && (
-          <div className="h-48 rounded-lg overflow-hidden border-2 border-red-300 my-2">
-            <MapContainer
-              center={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
-              zoom={15}
-              className="h-full w-full"
-              scrollWheelZoom={false}
-              dragging={false}
-              zoomControl={false}
-            >
-              <TileLayer
-                attribution='&copy; OpenStreetMap'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker
-                position={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
-                icon={emergencyIcon}
+        <CardContent className="space-y-4">
+          {/* Mapa integrado si hay ubicación */}
+          {activeSOSAlert.latitude && activeSOSAlert.longitude && (
+            <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300">
+              <MapContainer
+                center={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
+                zoom={15}
+                className="h-full w-full"
+                scrollWheelZoom={false}
+                dragging={true}
+                zoomControl={false}
               >
-                <Popup>
-                  <strong>🆘 {activeSOSAlert.senderName}</strong>
-                </Popup>
-              </Marker>
-            </MapContainer>
-          </div>
-        )}
-
-        <div className="space-y-3 mt-2">
-          <Button
-            onClick={stopAlarm}
-            variant="outline"
-            className="w-full border-orange-500 text-orange-600 hover:bg-orange-100"
-          >
-            <VolumeX className="h-5 w-5 mr-2" />
-            Silenciar Alarma
-          </Button>
-
-          {activeSOSAlert?.latitude && activeSOSAlert?.longitude && (
-            <Button 
-              onClick={() => {
-                window.open(
-                  `https://www.google.com/maps/dir/?api=1&destination=${activeSOSAlert.latitude},${activeSOSAlert.longitude}`,
-                  '_blank'
-                );
-              }} 
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              <Navigation className="h-5 w-5 mr-2" />
-              Navegar con Google Maps
-            </Button>
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker
+                  position={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
+                  icon={emergencyIcon}
+                >
+                  <Popup>
+                    <strong>🆘 {activeSOSAlert.senderName}</strong>
+                  </Popup>
+                </Marker>
+              </MapContainer>
+            </div>
           )}
 
-          {activeSOSAlert?.senderPhone && (
-            <Button
-              onClick={() => handleCall(activeSOSAlert.senderPhone!)}
-              className="w-full bg-green-600 hover:bg-green-700"
+          <div className="space-y-3">
+            {/* Botón silenciar - más prominente si alarma activa */}
+            {!isAlarmMuted && (
+              <Button
+                onClick={stopAlarm}
+                variant="destructive"
+                className="w-full text-lg py-6 animate-pulse bg-orange-500 hover:bg-orange-600"
+              >
+                <VolumeX className="h-6 w-6 mr-2" />
+                🔇 Silenciar Alarma
+              </Button>
+            )}
+
+            {activeSOSAlert.latitude && activeSOSAlert.longitude && (
+              <Button 
+                onClick={() => {
+                  window.open(
+                    `https://www.google.com/maps/dir/?api=1&destination=${activeSOSAlert.latitude},${activeSOSAlert.longitude}`,
+                    '_blank'
+                  );
+                }} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-5"
+              >
+                <Navigation className="h-5 w-5 mr-2" />
+                Navegar con Google Maps
+              </Button>
+            )}
+
+            {activeSOSAlert.senderPhone && (
+              <Button
+                onClick={() => handleCall(activeSOSAlert.senderPhone!)}
+                className="w-full bg-green-600 hover:bg-green-700 text-lg py-5"
+              >
+                <Phone className="h-5 w-5 mr-2" />
+                Llamar a {activeSOSAlert.senderName}
+              </Button>
+            )}
+
+            <Button 
+              onClick={() => handleCall('911')} 
+              variant="destructive" 
+              className="w-full text-lg py-5"
             >
               <Phone className="h-5 w-5 mr-2" />
-              Llamar a {activeSOSAlert.senderName}
+              Llamar al 911
             </Button>
-          )}
 
-          <Button onClick={() => handleCall('911')} variant="destructive" className="w-full">
-            <Phone className="h-5 w-5 mr-2" />
-            Llamar al 911
-          </Button>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
+            {/* Botón cerrar secundario */}
+            <Button 
+              onClick={closeAlert} 
+              variant="outline" 
+              className="w-full"
+            >
+              Cerrar alerta
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
-
