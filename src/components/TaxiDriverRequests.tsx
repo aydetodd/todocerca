@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCircle2, Volume2, Maximize2 } from 'lucide-react';
+import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCircle2, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import TaxiLiveMap from './TaxiLiveMap';
@@ -108,9 +108,9 @@ export default function TaxiDriverRequests() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [completingTrip, setCompletingTrip] = useState(false);
   const [showFullscreenMap, setShowFullscreenMap] = useState(false);
+  const [alertMuted, setAlertMuted] = useState(false);
   const mapRefs = useRef<{ [key: string]: L.Map }>({});
   const previousRequestIdsRef = useRef<Set<string>>(new Set());
-
   // Cargar solicitudes pendientes y viaje activo
   const fetchRequests = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -211,6 +211,8 @@ export default function TaxiDriverRequests() {
           },
           (payload) => {
             console.log('🔔 Nueva solicitud de taxi recibida:', payload);
+            // Resetear estado de silenciado para nuevas solicitudes
+            setAlertMuted(false);
             // Iniciar loop de sonido continuo en INSERT
             startAlertLoop();
             toast({
@@ -465,6 +467,16 @@ export default function TaxiDriverRequests() {
     playAlertSoundOnce();
   };
 
+  // Silenciar alarma manualmente sin aceptar/rechazar
+  const handleMuteAlert = () => {
+    stopAlertLoop();
+    setAlertMuted(true);
+    toast({
+      title: "🔇 Alarma silenciada",
+      description: "Puedes decidir si aceptar o rechazar la solicitud.",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -475,8 +487,26 @@ export default function TaxiDriverRequests() {
 
   return (
     <div className="space-y-6">
-      {/* Botón de prueba de sonido */}
-      <div className="flex justify-end">
+      {/* Botones de control de sonido */}
+      <div className="flex justify-end gap-2">
+        {/* Botón para silenciar alarma activa */}
+        {pendingRequests.length > 0 && !alertMuted && (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleMuteAlert}
+            className="animate-pulse"
+          >
+            <VolumeX className="h-4 w-4 mr-2" />
+            Silenciar alarma
+          </Button>
+        )}
+        {alertMuted && pendingRequests.length > 0 && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <VolumeX className="h-3 w-3" />
+            Silenciada
+          </Badge>
+        )}
         <Button variant="outline" size="sm" onClick={testSound}>
           <Volume2 className="h-4 w-4 mr-2" />
           Probar sonido
