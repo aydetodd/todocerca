@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, VolumeX, AlertTriangle, X, Navigation, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load del mapa para evitar bloqueos
 const SOSMapView = lazy(() => import('./SOSMapView'));
@@ -54,8 +55,9 @@ const playSirenTone = () => {
       oscillator.frequency.setValueAtTime(startFreq, currentTime + startTime);
       oscillator.frequency.linearRampToValueAtTime(endFreq, currentTime + startTime + duration);
       
-      gainNode.gain.setValueAtTime(0.8, currentTime + startTime);
-      gainNode.gain.setValueAtTime(0.8, currentTime + startTime + duration - 0.05);
+      // Un poco más alto; en móvil el volumen final depende del volumen multimedia del dispositivo
+      gainNode.gain.setValueAtTime(1.0, currentTime + startTime);
+      gainNode.gain.setValueAtTime(1.0, currentTime + startTime + duration - 0.05);
       gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + startTime + duration);
       
       oscillator.start(currentTime + startTime);
@@ -117,6 +119,7 @@ export const GlobalSOSListener = () => {
   const { user } = useAuth();
   const [activeSOSAlert, setActiveSOSAlert] = useState<SOSAlertData | null>(null);
   const [isAlarmMuted, setIsAlarmMuted] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const alertRef = useRef<SOSAlertData | null>(null);
 
   const stopAlarm = () => {
@@ -129,6 +132,7 @@ export const GlobalSOSListener = () => {
     setActiveSOSAlert(null);
     alertRef.current = null;
     setIsAlarmMuted(false);
+    setShowMap(false);
   };
 
   useEffect(() => {
@@ -190,6 +194,7 @@ export const GlobalSOSListener = () => {
           // ====== INICIAR ALARMA TIPO SIRENA/INCENDIO ======
           setIsAlarmMuted(false);
           startSOSAlarmLoop();
+          setShowMap(false);
 
           const alertData: SOSAlertData = {
             senderName,
@@ -202,11 +207,6 @@ export const GlobalSOSListener = () => {
           
           setActiveSOSAlert(alertData);
           alertRef.current = alertData;
-
-          // Parar automáticamente después de 2 minutos
-          setTimeout(() => {
-            stopSOSAlarmLoop();
-          }, 120000);
 
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`🆘 ¡EMERGENCIA! ${senderName}`, {
@@ -232,6 +232,8 @@ export const GlobalSOSListener = () => {
 
   // Si no hay alerta activa, no renderizar nada
   if (!activeSOSAlert) return null;
+
+  const hasCoords = activeSOSAlert.latitude != null && activeSOSAlert.longitude != null;
 
   // Usar un Card fijo en lugar de AlertDialog para NO bloquear la navegación
   return (
@@ -264,22 +266,55 @@ export const GlobalSOSListener = () => {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Mapa integrado si hay ubicación - carga diferida con fallback */}
-          {activeSOSAlert.latitude && activeSOSAlert.longitude && (
-            <Suspense fallback={
-              <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300 bg-muted flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="h-8 w-8 text-red-500 mx-auto animate-bounce" />
-                  <p className="text-sm text-muted-foreground mt-2">Cargando mapa...</p>
-                </div>
-              </div>
-            }>
-              <SOSMapView 
-                latitude={activeSOSAlert.latitude} 
-                longitude={activeSOSAlert.longitude} 
-                senderName={activeSOSAlert.senderName}
-              />
-            </Suspense>
+          <p className="text-sm text-muted-foreground">
+            Si no escuchas la sirena, sube el volumen multimedia del teléfono.
+          </p>
+
+          {/* Mapa: NO auto-cargar para evitar bloqueos/pantalla negra en web móvil */}
+          {hasCoords && (
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowMap((v) => !v)}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                {showMap ? 'Ocultar mapa' : 'Ver mapa'}
+              </Button>
+
+              {showMap && (
+                <ErrorBoundary
+                  name="SOSMapView"
+                  fallback={
+                    <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300 bg-muted flex items-center justify-center">
+                      <div className="text-center">
+                        <MapPin className="h-8 w-8 text-muted-foreground mx-auto" />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          No se pudo cargar el mapa (pero puedes navegar con Google Maps).
+                        </p>
+                      </div>
+                    </div>
+                  }
+                >
+                  <Suspense
+                    fallback={
+                      <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300 bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                          <MapPin className="h-8 w-8 text-muted-foreground mx-auto animate-bounce" />
+                          <p className="text-sm text-muted-foreground mt-2">Cargando mapa...</p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <SOSMapView
+                      latitude={activeSOSAlert.latitude!}
+                      longitude={activeSOSAlert.longitude!}
+                      senderName={activeSOSAlert.senderName}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              )}
+            </div>
           )}
 
           <div className="space-y-3">
