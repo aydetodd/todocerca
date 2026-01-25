@@ -1,41 +1,18 @@
 // GlobalSOSListener - Escucha alertas SOS en tiempo real para todos los usuarios autenticados
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, VolumeX, AlertTriangle, X, Navigation } from 'lucide-react';
+import { Phone, VolumeX, AlertTriangle, X, Navigation, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+
+// Lazy load del mapa para evitar bloqueos
+const SOSMapView = lazy(() => import('./SOSMapView'));
 
 // Request notification permission on load
 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
-
-// Icono de emergencia para el mapa
-const emergencyIcon = new L.DivIcon({
-  className: 'sos-marker',
-  html: `
-    <div style="
-      width: 32px;
-      height: 32px;
-      background: #dc2626;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid white;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
-      animation: pulse 1s infinite;
-    ">
-      <span style="color: white; font-weight: bold; font-size: 10px;">SOS</span>
-    </div>
-  `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-});
 
 interface SOSAlertData {
   senderName: string;
@@ -287,31 +264,22 @@ export const GlobalSOSListener = () => {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Mapa integrado si hay ubicación */}
+          {/* Mapa integrado si hay ubicación - carga diferida con fallback */}
           {activeSOSAlert.latitude && activeSOSAlert.longitude && (
-            <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300">
-              <MapContainer
-                center={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
-                zoom={15}
-                className="h-full w-full"
-                scrollWheelZoom={false}
-                dragging={true}
-                zoomControl={false}
-              >
-                <TileLayer
-                  attribution='&copy; OpenStreetMap'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker
-                  position={[activeSOSAlert.latitude, activeSOSAlert.longitude]}
-                  icon={emergencyIcon}
-                >
-                  <Popup>
-                    <strong>🆘 {activeSOSAlert.senderName}</strong>
-                  </Popup>
-                </Marker>
-              </MapContainer>
-            </div>
+            <Suspense fallback={
+              <div className="h-40 rounded-lg overflow-hidden border-2 border-red-300 bg-muted flex items-center justify-center">
+                <div className="text-center">
+                  <MapPin className="h-8 w-8 text-red-500 mx-auto animate-bounce" />
+                  <p className="text-sm text-muted-foreground mt-2">Cargando mapa...</p>
+                </div>
+              </div>
+            }>
+              <SOSMapView 
+                latitude={activeSOSAlert.latitude} 
+                longitude={activeSOSAlert.longitude} 
+                senderName={activeSOSAlert.senderName}
+              />
+            </Suspense>
           )}
 
           <div className="space-y-3">
