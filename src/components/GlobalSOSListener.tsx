@@ -191,10 +191,18 @@ export const GlobalSOSListener = () => {
             }
           }
 
-          // ====== INICIAR ALARMA TIPO SIRENA/INCENDIO ======
+          // ====== Mostrar UI primero; luego activar la alarma =====
           setIsAlarmMuted(false);
-          startSOSAlarmLoop();
           setShowMap(false);
+          // Esperar 300 ms para que el Card se monte antes de crear AudioContext
+          // (evita bloqueo del hilo de render en Chrome móvil)
+          setTimeout(() => {
+            try {
+              startSOSAlarmLoop();
+            } catch (err) {
+              console.error('Error iniciando sirena SOS:', err);
+            }
+          }, 300);
 
           const alertData: SOSAlertData = {
             senderName,
