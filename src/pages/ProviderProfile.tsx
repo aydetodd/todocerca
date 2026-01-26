@@ -325,12 +325,39 @@ const ProviderProfile = () => {
 
       // Enviar por WhatsApp al proveedor
       const phoneNumber = provider.business_phone || provider.telefono;
+      
+      // DEBUG: Log para diagnosticar problema de WhatsApp
+      console.log('📱 WhatsApp Debug:', {
+        business_phone: provider.business_phone,
+        telefono: provider.telefono,
+        phoneNumber_selected: phoneNumber,
+      });
+      
+      if (!phoneNumber) {
+        console.error('❌ No hay número de teléfono del proveedor');
+        toast({
+          title: 'Error',
+          description: 'El proveedor no tiene número de teléfono configurado',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       // Extraer solo los dígitos y agregar código de país de México si no lo tiene
       const cleanPhone = phoneNumber.replace(/\D/g, '');
       const fullPhone = cleanPhone.startsWith('52') ? cleanPhone : `52${cleanPhone}`;
       const whatsappMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${fullPhone}?text=${whatsappMessage}`;
-      window.open(whatsappUrl, '_blank');
+      
+      console.log('📱 WhatsApp URL:', {
+        cleanPhone,
+        fullPhone,
+        whatsappUrl: whatsappUrl.substring(0, 100) + '...',
+      });
+      
+      // Intentar abrir WhatsApp
+      const whatsappWindow = window.open(whatsappUrl, '_blank');
+      console.log('📱 window.open result:', whatsappWindow ? 'opened' : 'blocked/failed');
 
       // Guardar número de orden y mantener diálogo abierto
       setOrderNumber(pedido.numero_orden);
