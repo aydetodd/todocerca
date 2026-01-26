@@ -221,7 +221,22 @@ const ProviderProfile = () => {
         throw new Error('Proveedor no encontrado');
       }
       
-      setProvider(providerData);
+      // Si el proveedor no tiene teléfono, buscar en profiles como fallback
+      let finalProviderData = { ...providerData };
+      if (!providerData.telefono && !providerData.business_phone && providerData.user_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('telefono')
+          .eq('user_id', providerData.user_id)
+          .single();
+        
+        if (profileData?.telefono) {
+          console.log('📱 Teléfono encontrado en profiles:', profileData.telefono);
+          finalProviderData.telefono = profileData.telefono;
+        }
+      }
+      
+      setProvider(finalProviderData);
 
       // Cargar productos del proveedor
       const { data: productsData, error: productsError } = await supabase
@@ -343,15 +358,24 @@ const ProviderProfile = () => {
         return;
       }
       
-      // Extraer solo los dígitos y agregar código de país de México si no lo tiene
-      const cleanPhone = phoneNumber.replace(/\D/g, '');
-      const fullPhone = cleanPhone.startsWith('52') ? cleanPhone : `52${cleanPhone}`;
+      // Limpiar número y asegurar prefijo 52 para México (misma lógica que citas)
+      let cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length === 10) {
+        cleanPhone = '52' + cleanPhone;
+      } else if (cleanPhone.startsWith('1') && cleanPhone.length === 11) {
+        // Algunos números vienen como 1XXXXXXXXXX
+        cleanPhone = '52' + cleanPhone.slice(1);
+      } else if (!cleanPhone.startsWith('52') && cleanPhone.length === 12) {
+        // Si tiene 12 dígitos pero no empieza con 52, asumimos que falta
+        cleanPhone = '52' + cleanPhone.slice(2);
+      }
+      
       const whatsappMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/${fullPhone}?text=${whatsappMessage}`;
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${whatsappMessage}`;
       
       console.log('📱 WhatsApp URL:', {
+        originalPhone: phoneNumber,
         cleanPhone,
-        fullPhone,
         whatsappUrl: whatsappUrl.substring(0, 100) + '...',
       });
       

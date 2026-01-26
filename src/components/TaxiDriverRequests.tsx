@@ -8,6 +8,7 @@ import { MapPin, Navigation, DollarSign, Loader2, Check, X, Clock, User, CheckCi
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import TaxiLiveMap from './TaxiLiveMap';
+import { playTaxiAlertSound, startTaxiAlertLoop, stopAlertLoop } from '@/lib/sounds';
 
 interface TaxiRequest {
   id: string;
@@ -27,78 +28,6 @@ interface TaxiRequest {
   passengerName?: string;
   passengerPhone?: string;
 }
-
-// Sonido de alerta fuerte
-// Sistema de alerta con loop continuo hasta que el taxista responda
-let alertIntervalRef: NodeJS.Timeout | null = null;
-let audioContextRef: AudioContext | null = null;
-
-const playAlertSoundOnce = () => {
-  try {
-    if (!audioContextRef || audioContextRef.state === 'closed') {
-      audioContextRef = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    
-    const audioContext = audioContextRef;
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
-    
-    const playTone = (frequency: number, startTime: number, duration: number) => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'square';
-      
-      gainNode.gain.setValueAtTime(0.6, audioContext.currentTime + startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
-      
-      oscillator.start(audioContext.currentTime + startTime);
-      oscillator.stop(audioContext.currentTime + startTime + duration);
-    };
-    
-    // Secuencia de tonos de alerta tipo sirena
-    playTone(800, 0, 0.15);
-    playTone(1000, 0.15, 0.15);
-    playTone(800, 0.3, 0.15);
-    playTone(1000, 0.45, 0.15);
-    playTone(800, 0.6, 0.15);
-    playTone(1000, 0.75, 0.15);
-    
-    // Vibrar si está disponible
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200]);
-    }
-  } catch (error) {
-    console.error('Error reproduciendo sonido:', error);
-  }
-};
-
-// Iniciar loop de alerta continua
-const startAlertLoop = () => {
-  // Si ya hay un loop activo, no iniciar otro
-  if (alertIntervalRef) return;
-  
-  // Reproducir inmediatamente
-  playAlertSoundOnce();
-  
-  // Repetir cada 1.5 segundos
-  alertIntervalRef = setInterval(() => {
-    playAlertSoundOnce();
-  }, 1500);
-};
-
-// Detener loop de alerta
-const stopAlertLoop = () => {
-  if (alertIntervalRef) {
-    clearInterval(alertIntervalRef);
-    alertIntervalRef = null;
-  }
-};
 
 export default function TaxiDriverRequests() {
   const { toast } = useToast();
@@ -214,7 +143,7 @@ export default function TaxiDriverRequests() {
             // Resetear estado de silenciado para nuevas solicitudes
             setAlertMuted(false);
             // Iniciar loop de sonido continuo en INSERT
-            startAlertLoop();
+            startTaxiAlertLoop();
             toast({
               title: '🚕 ¡Nueva solicitud de taxi!',
               description: 'Tienes una nueva solicitud pendiente',
@@ -464,7 +393,7 @@ export default function TaxiDriverRequests() {
 
   // Test sound button
   const testSound = () => {
-    playAlertSoundOnce();
+    playTaxiAlertSound();
   };
 
   // Silenciar alarma manualmente sin aceptar/rechazar
