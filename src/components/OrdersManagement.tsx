@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { playOrderSound } from '@/lib/sounds';
 import { 
   ClipboardList, 
   User, 
@@ -81,46 +82,6 @@ const estadoLabels = {
   cancelado: 'Cancelado',
 };
 
-// Función para reproducir alerta de sonido fuerte para nuevos pedidos
-const playOrderAlertSound = () => {
-  try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    const playTone = (frequency: number, startTime: number, duration: number) => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'square';
-      
-      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime + startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
-      
-      oscillator.start(audioContext.currentTime + startTime);
-      oscillator.stop(audioContext.currentTime + startTime + duration);
-    };
-    
-    // Secuencia de tonos de alerta (repetir 3 veces)
-    for (let i = 0; i < 3; i++) {
-      const offset = i * 0.6;
-      playTone(600, offset, 0.15);
-      playTone(900, offset + 0.15, 0.15);
-      playTone(600, offset + 0.3, 0.15);
-      playTone(900, offset + 0.45, 0.15);
-    }
-    
-    // Vibrar si está disponible
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
-    }
-  } catch (error) {
-    console.error('Error reproduciendo sonido de alerta:', error);
-  }
-};
-
 export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagementProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +105,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
         (payload) => {
           // Nuevo pedido recibido - reproducir alerta
           console.log('🔔 Nuevo pedido recibido:', payload);
-          playOrderAlertSound();
+          playOrderSound();
           toast({
             title: '🛒 ¡Nuevo Pedido!',
             description: 'Tienes un nuevo pedido pendiente',

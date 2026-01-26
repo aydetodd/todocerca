@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { playMessageSound, playSirenSound } from '@/lib/sounds';
 
 // Request notification permission on load
 if ('Notification' in window && Notification.permission === 'default') {
@@ -173,9 +174,7 @@ export const useRealtimeMessages = (receiverId?: string) => {
             });
           } else if (isFromOther) {
             // Sonido ding-dong fuerte para mensajes recibidos normales
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
-            audio.volume = 1.0;
-            audio.play().catch(e => console.log('Audio play failed:', e));
+            playMessageSound();
             
             // Notificación del sistema (funciona en segundo plano si el tab está abierto)
             if ('Notification' in window && Notification.permission === 'granted') {

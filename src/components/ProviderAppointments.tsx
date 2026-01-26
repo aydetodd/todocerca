@@ -8,6 +8,7 @@ import { Calendar, Clock, User, Phone, CheckCircle, XCircle, MessageCircle } fro
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { playAppointmentSound } from '@/lib/sounds';
 
 interface Appointment {
   id: string;
@@ -30,34 +31,6 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
   const [loading, setLoading] = useState(true);
   const lastNotifiedIdRef = useRef<string | null>(null);
 
-  const playNewAppointmentSound = () => {
-    try {
-      // Nota: en algunos navegadores requiere una interacción previa del usuario
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-
-      const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-
-      o.type = 'sine';
-      o.frequency.value = 880;
-      g.gain.value = 0.06;
-
-      o.connect(g);
-      g.connect(ctx.destination);
-
-      o.start();
-      o.stop(ctx.currentTime + 0.16);
-
-      setTimeout(() => {
-        ctx.close().catch(() => undefined);
-      }, 350);
-    } catch (e) {
-      console.log('No se pudo reproducir sonido de notificación', e);
-    }
-  };
-
   useEffect(() => {
     loadAppointments();
 
@@ -79,7 +52,7 @@ export function ProviderAppointments({ proveedorId }: ProviderAppointmentsProps)
             const newId = (payload as any).new?.id as string | undefined;
             if (newId && lastNotifiedIdRef.current !== newId) {
               lastNotifiedIdRef.current = newId;
-              playNewAppointmentSound();
+              playAppointmentSound();
               toast({
                 title: 'Nueva cita',
                 description: 'Te acaban de agendar una nueva cita.',
