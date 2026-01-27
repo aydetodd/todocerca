@@ -1,4 +1,4 @@
-// AppWrapper v2025-01-06 - Redesigned navigation flow with splash screen
+// AppWrapper v2025-01-27 - Global notifications for all pages
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
@@ -8,6 +8,7 @@ import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
 import { GlobalGroupTracking } from "@/components/GlobalGroupTracking";
 import { GlobalSOSListener } from "@/components/GlobalSOSListener";
 import { useRegistrationNotifications } from "@/hooks/useRegistrationNotifications";
+import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "./pages/Home";
@@ -41,9 +42,10 @@ import NotFound from "./pages/NotFound";
 import GpsLocationPage from "./pages/GpsLocationPage";
 import SOSView from "./pages/SOSView";
 
-// Component to activate registration notifications
-const RegistrationNotifier = () => {
+// Component to activate global notifications
+const GlobalNotificationsProvider = () => {
   useRegistrationNotifications();
+  useGlobalNotifications();
   return null;
 };
 
@@ -80,8 +82,8 @@ export default function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        {/* Notificaciones de nuevos registros */}
-        <RegistrationNotifier />
+        {/* Notificaciones globales (pedidos, citas, taxi, registros) */}
+        <GlobalNotificationsProvider />
         {/* Tracking global de ubicación para proveedores */}
         <GlobalProviderTracking />
         {/* Tracking global para grupos (tracking_member_locations) */}
