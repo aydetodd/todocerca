@@ -1,5 +1,5 @@
 // Sistema unificado de sonidos para notificaciones
-// Todos los sonidos usan Web Audio API para funcionar con pantalla apagada
+// Usa Web Speech API para voz y Web Audio API para alertas
 
 let audioContext: AudioContext | null = null;
 
@@ -38,16 +38,73 @@ const playTone = (
   oscillator.stop(ctx.currentTime + startTime + duration);
 };
 
+// ============= SISTEMA DE VOZ =============
+
+/**
+ * Reproduce un mensaje con voz de mujer en español
+ */
+const speakMessage = (message: string) => {
+  if (!('speechSynthesis' in window)) {
+    console.warn('Speech synthesis no soportado');
+    return;
+  }
+
+  // Cancelar cualquier mensaje anterior
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(message);
+  utterance.lang = 'es-MX';
+  utterance.rate = 1.0;
+  utterance.pitch = 1.1;
+  utterance.volume = 1.0;
+
+  // Buscar voz femenina en español
+  const setVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const spanishFemaleVoice = voices.find(
+      v => (v.lang.startsWith('es') && v.name.toLowerCase().includes('female')) ||
+           (v.lang.startsWith('es') && v.name.toLowerCase().includes('mujer')) ||
+           (v.lang.startsWith('es') && v.name.includes('Paulina')) ||
+           (v.lang.startsWith('es') && v.name.includes('Monica')) ||
+           (v.lang.startsWith('es') && v.name.includes('Francisca')) ||
+           (v.lang === 'es-MX')
+    ) || voices.find(v => v.lang.startsWith('es'));
+    
+    if (spanishFemaleVoice) {
+      utterance.voice = spanishFemaleVoice;
+    }
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Las voces pueden tardar en cargar
+  if (window.speechSynthesis.getVoices().length > 0) {
+    setVoice();
+  } else {
+    window.speechSynthesis.onvoiceschanged = setVoice;
+  }
+};
+
+// Pequeño beep de atención antes del mensaje
+const playAttentionBeep = () => {
+  try {
+    const ctx = getAudioContext();
+    playTone(ctx, 880, 0, 0.1, 'sine', 0.4);
+    playTone(ctx, 1100, 0.12, 0.1, 'sine', 0.4);
+  } catch (error) {
+    console.error('Error en beep:', error);
+  }
+};
+
 /**
  * 🔔 Sonido para MENSAJES recibidos
- * Ding-dong fuerte y claro
  */
 export const playMessageSound = () => {
   try {
-    const ctx = getAudioContext();
-    // Ding-dong clásico
-    playTone(ctx, 830, 0, 0.15, 'sine', 0.8);      // Ding
-    playTone(ctx, 660, 0.18, 0.25, 'sine', 0.7);   // Dong
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Tienes un nuevo mensaje en todocerca punto mx');
+    }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de mensaje:', error);
   }
@@ -55,16 +112,13 @@ export const playMessageSound = () => {
 
 /**
  * 🛒 Sonido para PEDIDOS/APARTADOS nuevos
- * Secuencia alegre tipo "caja registradora"
  */
 export const playOrderSound = () => {
   try {
-    const ctx = getAudioContext();
-    // Secuencia alegre de 4 tonos
-    playTone(ctx, 523, 0, 0.1, 'square', 0.5);     // C5
-    playTone(ctx, 659, 0.12, 0.1, 'square', 0.5);  // E5
-    playTone(ctx, 784, 0.24, 0.1, 'square', 0.5);  // G5
-    playTone(ctx, 1047, 0.36, 0.2, 'square', 0.6); // C6
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Tienes un nuevo pedido en todocerca punto mx');
+    }, 300);
 
     // Vibración corta
     if ('vibrate' in navigator) {
@@ -77,15 +131,13 @@ export const playOrderSound = () => {
 
 /**
  * 📅 Sonido para CITAS nuevas
- * Campanita clara y elegante
  */
 export const playAppointmentSound = () => {
   try {
-    const ctx = getAudioContext();
-    // Campanita elegante - más fuerte que antes
-    playTone(ctx, 880, 0, 0.12, 'sine', 0.7);      // A5
-    playTone(ctx, 1109, 0.15, 0.12, 'sine', 0.6);  // C#6
-    playTone(ctx, 1319, 0.30, 0.15, 'sine', 0.7);  // E6
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Tienes una nueva cita en todocerca punto mx');
+    }, 300);
 
     // Vibración corta
     if ('vibrate' in navigator) {
@@ -98,20 +150,15 @@ export const playAppointmentSound = () => {
 
 /**
  * 🚕 Sonido para solicitudes de TAXI
- * Alerta urgente tipo sirena - más agresiva
  */
 export const playTaxiAlertSound = () => {
   try {
-    const ctx = getAudioContext();
-    // Sirena urgente alternando frecuencias
-    playTone(ctx, 800, 0, 0.15, 'square', 0.6);
-    playTone(ctx, 1000, 0.15, 0.15, 'square', 0.6);
-    playTone(ctx, 800, 0.30, 0.15, 'square', 0.6);
-    playTone(ctx, 1000, 0.45, 0.15, 'square', 0.6);
-    playTone(ctx, 800, 0.60, 0.15, 'square', 0.6);
-    playTone(ctx, 1000, 0.75, 0.15, 'square', 0.6);
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Tienes una nueva solicitud de taxi en todocerca punto mx');
+    }, 300);
 
-    // Vibración SOS-like
+    // Vibración
     if ('vibrate' in navigator) {
       navigator.vibrate([200, 100, 200, 100, 200]);
     }
@@ -122,14 +169,14 @@ export const playTaxiAlertSound = () => {
 
 /**
  * 🆘 Sonido para emergencias SOS
- * Sirena tipo alarma de incendio/sismo - MUY FUERTE
+ * Sirena tipo alarma + voz
  */
 export const playSirenSound = () => {
   try {
     const ctx = getAudioContext();
     const currentTime = ctx.currentTime;
 
-    // Crear sonido de sirena tipo alarma de incendio
+    // Crear sonido de sirena tipo alarma de emergencia
     const createSirenOscillator = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
@@ -141,8 +188,8 @@ export const playSirenSound = () => {
       oscillator.frequency.setValueAtTime(startFreq, currentTime + startTime);
       oscillator.frequency.linearRampToValueAtTime(endFreq, currentTime + startTime + duration);
 
-      gainNode.gain.setValueAtTime(1.0, currentTime + startTime);
-      gainNode.gain.setValueAtTime(1.0, currentTime + startTime + duration - 0.05);
+      gainNode.gain.setValueAtTime(0.8, currentTime + startTime);
+      gainNode.gain.setValueAtTime(0.8, currentTime + startTime + duration - 0.05);
       gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + startTime + duration);
 
       oscillator.start(currentTime + startTime);
@@ -152,8 +199,11 @@ export const playSirenSound = () => {
     // Patrón de sirena: subida y bajada rápida
     createSirenOscillator(400, 1200, 0, 0.3);
     createSirenOscillator(1200, 400, 0.3, 0.3);
-    createSirenOscillator(400, 1200, 0.6, 0.3);
-    createSirenOscillator(1200, 400, 0.9, 0.3);
+    
+    // Mensaje de voz después de la sirena
+    setTimeout(() => {
+      speakMessage('¡Alerta! Tienes un llamado de auxilio en todocerca punto mx');
+    }, 700);
 
     // Vibración SOS Morse
     if ('vibrate' in navigator) {
@@ -167,12 +217,13 @@ export const playSirenSound = () => {
 
 /**
  * 👤 Sonido para registro de CLIENTE
- * Un beep corto alto
  */
 export const playClientRegistrationSound = () => {
   try {
-    const ctx = getAudioContext();
-    playTone(ctx, 800, 0, 0.2, 'sine', 0.5);
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Nuevo cliente registrado en todocerca punto mx');
+    }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de registro cliente:', error);
   }
@@ -180,13 +231,13 @@ export const playClientRegistrationSound = () => {
 
 /**
  * 🚕 Sonido para registro de PROVEEDOR
- * Dos beeps más largos y bajos
  */
 export const playProviderRegistrationSound = () => {
   try {
-    const ctx = getAudioContext();
-    playTone(ctx, 500, 0, 0.3, 'sine', 0.5);
-    playTone(ctx, 500, 0.4, 0.3, 'sine', 0.5);
+    playAttentionBeep();
+    setTimeout(() => {
+      speakMessage('Nuevo proveedor registrado en todocerca punto mx');
+    }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de registro proveedor:', error);
   }
@@ -198,7 +249,7 @@ let alertLoopInterval: NodeJS.Timeout | null = null;
 let alertLoopVibrate: NodeJS.Timeout | null = null;
 
 /**
- * Iniciar loop de alerta para taxi (suena cada 1.5s)
+ * Iniciar loop de alerta para taxi (suena cada 3s para dar tiempo a la voz)
  */
 export const startTaxiAlertLoop = () => {
   if (alertLoopInterval) return; // Ya está activo
@@ -206,11 +257,11 @@ export const startTaxiAlertLoop = () => {
   playTaxiAlertSound();
   alertLoopInterval = setInterval(() => {
     playTaxiAlertSound();
-  }, 1500);
+  }, 4000);
 };
 
 /**
- * Iniciar loop de sirena SOS (suena cada 1.2s)
+ * Iniciar loop de sirena SOS (suena cada 4s para dar tiempo a la voz)
  */
 export const startSOSAlertLoop = () => {
   if (alertLoopInterval) return;
@@ -218,7 +269,7 @@ export const startSOSAlertLoop = () => {
   playSirenSound();
   alertLoopInterval = setInterval(() => {
     playSirenSound();
-  }, 1200);
+  }, 5000);
 
   // Vibración continua
   alertLoopVibrate = setInterval(() => {
@@ -226,7 +277,7 @@ export const startSOSAlertLoop = () => {
       const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
       navigator.vibrate(sosPattern);
     }
-  }, 3000);
+  }, 4000);
 };
 
 /**
@@ -243,5 +294,9 @@ export const stopAlertLoop = () => {
   }
   if ('vibrate' in navigator) {
     navigator.vibrate(0);
+  }
+  // Detener cualquier voz en curso
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
   }
 };
