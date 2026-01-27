@@ -338,7 +338,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                   <p className="text-xs">Invita a familiares o amigos</p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-48">
+                <ScrollArea className="max-h-64">
                   <div className="space-y-2">
                     {contacts.map((contact) => (
                       <div 
