@@ -452,7 +452,6 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
           </div>
           <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 8px;">🛒 Ver productos y hacer pedido</button>
           <button onclick='window.bookAppointment(${JSON.stringify(provider.id)}, ${JSON.stringify(provider.business_name)}, ${JSON.stringify(provider.business_phone || "")})' style="width: 100%; background-color: #ec4899; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">📅 Agendar Cita</button>
-          ${provider.productos.length > 0 ? `<div style="margin-top: 12px;"><p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 8px;">Productos:</p><div style="max-height: 200px; overflow-y: auto;">${productsList}</div></div>` : ''}
         </div>
       `;
       
