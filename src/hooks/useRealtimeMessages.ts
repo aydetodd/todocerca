@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { playMessageSound, playSirenSound } from '@/lib/sounds';
+import { playMessageSound, startSOSAlertLoop, stopAlertLoop } from '@/lib/sounds';
 
 // Request notification permission on load
 if ('Notification' in window && Notification.permission === 'default') {
@@ -120,36 +120,8 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
           // Handle panic alerts - SOLO para receptores, NO para quien envía
           if (newMessage.is_panic && isFromOther) {
-            // Sirena de emergencia fuerte y larga (alarma de incendio/sismo)
-            const playEmergencyAlarm = () => {
-              // Usar sirena de emergencia fuerte - sonido de alarma
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3');
-              audio.volume = 1.0; // Volumen máximo
-              audio.loop = true; // Repetir continuamente
-              
-              audio.play().catch(e => console.log('Audio play failed:', e));
-              
-              // Guardar referencia para poder detenerla
-              (window as any).__sosAlarmAudio = audio;
-              
-              // Detener después de 30 segundos si no se detiene manualmente
-              setTimeout(() => {
-                if ((window as any).__sosAlarmAudio) {
-                  (window as any).__sosAlarmAudio.pause();
-                  (window as any).__sosAlarmAudio.currentTime = 0;
-                  (window as any).__sosAlarmAudio.loop = false;
-                  (window as any).__sosAlarmAudio = null;
-                }
-              }, 30000);
-            };
-
-            playEmergencyAlarm();
-            
-            // Vibrar el dispositivo si está disponible (patrón SOS)
-            if ('vibrate' in navigator) {
-              // Patrón de vibración SOS: ... --- ...
-              navigator.vibrate([300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300]);
-            }
+            // Usar sistema de voz TTS unificado con loop (sin sirena de sismo)
+            startSOSAlertLoop();
 
             toast({
               title: "🆘 ¡ALERTA DE EMERGENCIA!",
@@ -173,7 +145,7 @@ export const useRealtimeMessages = (receiverId?: string) => {
               description: `Tu alerta SOS fue enviada a tus contactos`,
             });
           } else if (isFromOther) {
-            // Sonido ding-dong fuerte para mensajes recibidos normales
+            // Sonido con voz TTS para mensajes recibidos normales
             playMessageSound();
             
             // Notificación del sistema (funciona en segundo plano si el tab está abierto)
@@ -250,15 +222,7 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
   // Función para detener la alarma manualmente
   const stopAlarm = () => {
-    if ((window as any).__sosAlarmAudio) {
-      (window as any).__sosAlarmAudio.pause();
-      (window as any).__sosAlarmAudio.currentTime = 0;
-      (window as any).__sosAlarmAudio.loop = false;
-      (window as any).__sosAlarmAudio = null;
-    }
-    if ('vibrate' in navigator) {
-      navigator.vibrate(0); // Detener vibración
-    }
+    stopAlertLoop();
   };
 
   return { messages, loading, sendMessage, stopAlarm };
