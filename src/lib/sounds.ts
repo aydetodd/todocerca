@@ -169,41 +169,20 @@ export const playTaxiAlertSound = () => {
 
 /**
  * 🆘 Sonido para emergencias SOS
- * Sirena tipo alarma + voz
+ * Solo voz TTS de alerta (sin sirena de sismo)
  */
 export const playSirenSound = () => {
   try {
+    // Beeps de alerta urgentes (3 beeps rápidos)
     const ctx = getAudioContext();
-    const currentTime = ctx.currentTime;
-
-    // Crear sonido de sirena tipo alarma de emergencia
-    const createSirenOscillator = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(startFreq, currentTime + startTime);
-      oscillator.frequency.linearRampToValueAtTime(endFreq, currentTime + startTime + duration);
-
-      gainNode.gain.setValueAtTime(0.8, currentTime + startTime);
-      gainNode.gain.setValueAtTime(0.8, currentTime + startTime + duration - 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + startTime + duration);
-
-      oscillator.start(currentTime + startTime);
-      oscillator.stop(currentTime + startTime + duration);
-    };
-
-    // Patrón de sirena: subida y bajada rápida
-    createSirenOscillator(400, 1200, 0, 0.3);
-    createSirenOscillator(1200, 400, 0.3, 0.3);
+    playTone(ctx, 1000, 0, 0.15, 'sine', 0.6);
+    playTone(ctx, 1000, 0.2, 0.15, 'sine', 0.6);
+    playTone(ctx, 1000, 0.4, 0.15, 'sine', 0.6);
     
-    // Mensaje de voz después de la sirena
+    // Mensaje de voz después de los beeps
     setTimeout(() => {
       speakMessage('¡Alerta! Tienes un llamado de auxilio en todocerca punto mx');
-    }, 700);
+    }, 600);
 
     // Vibración SOS Morse
     if ('vibrate' in navigator) {
@@ -211,7 +190,7 @@ export const playSirenSound = () => {
       navigator.vibrate(sosPattern);
     }
   } catch (error) {
-    console.error('Error reproduciendo sirena SOS:', error);
+    console.error('Error reproduciendo alerta SOS:', error);
   }
 };
 
@@ -243,13 +222,15 @@ export const playProviderRegistrationSound = () => {
   }
 };
 
-// ============= LOOP DE ALARMAS =============
+// ============= LOOP DE ALARMAS (3 segundos de intervalo) =============
 
 let alertLoopInterval: NodeJS.Timeout | null = null;
 let alertLoopVibrate: NodeJS.Timeout | null = null;
 
+const LOOP_INTERVAL_MS = 6000; // 3 segundos de sonido/voz + 3 segundos de silencio
+
 /**
- * Iniciar loop de alerta para taxi (suena cada 3s para dar tiempo a la voz)
+ * Iniciar loop de alerta para taxi (loop cada 6s = 3s sonido + 3s silencio)
  */
 export const startTaxiAlertLoop = () => {
   if (alertLoopInterval) return; // Ya está activo
@@ -257,11 +238,11 @@ export const startTaxiAlertLoop = () => {
   playTaxiAlertSound();
   alertLoopInterval = setInterval(() => {
     playTaxiAlertSound();
-  }, 4000);
+  }, LOOP_INTERVAL_MS);
 };
 
 /**
- * Iniciar loop de sirena SOS (suena cada 4s para dar tiempo a la voz)
+ * Iniciar loop de alerta SOS (loop cada 6s = 3s sonido + 3s silencio)
  */
 export const startSOSAlertLoop = () => {
   if (alertLoopInterval) return;
@@ -269,15 +250,15 @@ export const startSOSAlertLoop = () => {
   playSirenSound();
   alertLoopInterval = setInterval(() => {
     playSirenSound();
-  }, 5000);
+  }, LOOP_INTERVAL_MS);
 
-  // Vibración continua
+  // Vibración continua cada 6 segundos
   alertLoopVibrate = setInterval(() => {
     if ('vibrate' in navigator) {
       const sosPattern = [300, 100, 300, 100, 300, 300, 600, 100, 600, 100, 600, 300, 300, 100, 300, 100, 300];
       navigator.vibrate(sosPattern);
     }
-  }, 4000);
+  }, LOOP_INTERVAL_MS);
 };
 
 /**
