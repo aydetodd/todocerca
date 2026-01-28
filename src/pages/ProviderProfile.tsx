@@ -3,16 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, ArrowLeft, ShoppingCart, Plus, Users } from 'lucide-react';
+import { Package, ArrowLeft, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart';
 import { formatCurrency } from '@/lib/utils';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
+import { ProductCard } from '@/components/ProductCard';
 import { NavigationBar } from '@/components/NavigationBar';
 import {
   Dialog,
@@ -563,52 +563,12 @@ const ProviderProfile = () => {
                 ) : (
                   <div className="grid gap-6">
                     {products.map((product) => (
-                      <Card key={product.id}>
-                        <CardContent className="p-6">
-                          <div className="space-y-4">
-                            <div>
-                              <h3 className="text-xl font-semibold">{product.nombre}</h3>
-                              <p className="text-2xl font-bold text-primary mt-1">
-                                {formatCurrency(product.precio)} / {product.unit}
-                              </p>
-                            </div>
-
-                            {product.descripcion && (
-                              <details className="group">
-                                <summary className="cursor-pointer text-sm text-primary hover:underline list-none flex items-center gap-2">
-                                  Ver más
-                                  <span className="transition-transform group-open:rotate-180">▼</span>
-                                </summary>
-                                <p className="text-muted-foreground mt-2 text-sm">
-                                  {product.descripcion}
-                                </p>
-                              </details>
-                            )}
-
-                            <div className="flex items-center gap-3">
-                              <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
-                                Stock: {product.stock}
-                              </Badge>
-                              {product.stock > 0 && (
-                                <Button
-                                  onClick={() => addToCart({
-                                    id: product.id,
-                                    nombre: product.nombre,
-                                    precio: product.precio,
-                                    unit: product.unit,
-                                    personIndex: selectedPersonIndex,
-                                  })}
-                                  size="lg"
-                                  className="flex-1"
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Agregar para Orden {selectedPersonIndex + 1}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        selectedPersonIndex={selectedPersonIndex}
+                        onAddToCart={addToCart}
+                      />
                     ))}
                   </div>
                 )}
