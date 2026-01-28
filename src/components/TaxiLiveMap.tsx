@@ -102,11 +102,7 @@ export default function TaxiLiveMap({
       })
     }).addTo(map).bindPopup(`<b>Destino</b><br/>${destinationAddress || 'Destino final'}`);
 
-    // Línea de ruta
-    L.polyline(
-      [[pickupLat, pickupLng], [destinationLat, destinationLng]],
-      { color: '#22C55E', weight: 4, opacity: 0.7, dashArray: '10, 10' }
-    ).addTo(map);
+    // No dibujamos línea de ruta - el taxista elige libremente la ruta
 
     // Ajustar vista a los bounds
     const bounds = L.latLngBounds(
