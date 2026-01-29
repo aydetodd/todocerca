@@ -1,12 +1,14 @@
 import React from "react";
-import { Home, Heart, Share2, LayoutGrid } from "lucide-react";
+import { Home, Heart, Share2, LayoutGrid, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 export const NavigationBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { unreadCount } = useUnreadMessages();
 
   const handleShare = async () => {
     const shareData = {
@@ -36,17 +38,34 @@ export const NavigationBar = () => {
           variant={isActive('/home') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => navigate('/home')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
         >
           <Home className="h-5 w-5" />
           <span className="text-[10px]">Inicio</span>
         </Button>
         
         <Button
+          variant={isActive('/mensajes') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/mensajes')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
+        >
+          <div className="relative">
+            <MessageCircle className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px]">Mensajes</span>
+        </Button>
+        
+        <Button
           variant={isActive('/favoritos') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => navigate('/favoritos')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
         >
           <Heart className="h-5 w-5" />
           <span className="text-[10px]">Favoritos</span>
@@ -56,7 +75,7 @@ export const NavigationBar = () => {
           variant="ghost"
           size="sm"
           onClick={handleShare}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
         >
           <Share2 className="h-5 w-5" />
           <span className="text-[10px]">Compartir</span>
@@ -66,7 +85,7 @@ export const NavigationBar = () => {
           variant={isActive('/dashboard') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => navigate('/dashboard')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-4"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
         >
           <LayoutGrid className="h-5 w-5" />
           <span className="text-[10px]">Panel</span>
