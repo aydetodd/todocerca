@@ -154,14 +154,15 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
             <MapPin className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold text-foreground">{title}</h1>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Message indicator */}
+          
+          {/* Message indicator - positioned right after title */}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/mensajes')}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/mensajes');
+            }}
             className="relative"
             title="Mensajes"
           >
@@ -172,7 +173,9 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
               </span>
             )}
           </Button>
-          
+        </div>
+
+        <div className="flex items-center gap-3">
           {children}
           {/* Semáforo compacto horizontal para proveedores */}
           {isProvider && (
