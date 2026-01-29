@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, LogOut, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -9,23 +8,16 @@ type UserStatus = 'available' | 'busy' | 'offline';
 
 interface GlobalHeaderProps {
   title?: string;
-  showLogout?: boolean;
-  showBack?: boolean;
   children?: React.ReactNode;
 }
 
-export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack = true, children }: GlobalHeaderProps) => {
+export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const [isProvider, setIsProvider] = useState(false);
   const [status, setStatus] = useState<UserStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  
-
-  // Don't show back button on main pages
-  const isMainPage = ['/dashboard', '/', '/auth'].includes(location.pathname);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -112,47 +104,12 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
-  const handleBack = () => {
-    // En /mis-productos siempre regresar al Dashboard (Gestión de productos)
-    if (location.pathname === '/mis-productos') {
-      navigate('/dashboard');
-      return;
-    }
-
-    const idx = (window.history.state && (window.history.state as any).idx) ?? 0;
-    if (typeof idx === "number" && idx > 0) navigate(-1);
-    else navigate('/dashboard');
-  };
-
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          {showBack && !isMainPage && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleBack();
-              }}
-              className="shrink-0"
-              aria-label="Regresar"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <MapPin className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold text-foreground">{title}</h1>
-          </div>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/home')}>
+          <MapPin className="h-6 w-6 text-primary" />
+          <h1 className="text-xl font-bold text-foreground">{title}</h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -200,12 +157,6 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
                 title="Desconectado"
               />
             </div>
-          )}
-
-          {showLogout && (
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Cerrar sesión">
-              <LogOut className="h-5 w-5" />
-            </Button>
           )}
         </div>
       </div>

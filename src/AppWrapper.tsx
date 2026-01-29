@@ -49,7 +49,7 @@ const GlobalNotificationsProvider = () => {
   return null;
 };
 
-// Direct navigation handler - no splash screen
+// Direct navigation handler - after auth, go straight to main home
 const NavigationHandler = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -58,6 +58,7 @@ const NavigationHandler = () => {
   useEffect(() => {
     if (!loading && location.pathname === '/') {
       if (user) {
+        // Ir directamente al home principal (búsqueda, taxi, transporte, etc.)
         navigate('/home', { replace: true });
       } else {
         navigate('/auth', { replace: true });
