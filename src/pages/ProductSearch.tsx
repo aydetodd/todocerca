@@ -774,17 +774,7 @@ const ProductSearch = () => {
 
             {viewMode === "map" && !isCosasGratis && !isCosasExtraviadas ? (
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
-                <div className="absolute top-4 left-4 z-[1000]">
-                  <Button
-                    variant="default"
-                    size="lg"
-                    onClick={() => setViewMode("list")}
-                    className="shadow-2xl bg-primary hover:bg-primary/90"
-                  >
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Volver
-                  </Button>
-                </div>
+                {/* Status control for providers - top right */}
                 <div className="absolute top-4 right-4 z-[1000]">
                   <StatusControl />
                 </div>
