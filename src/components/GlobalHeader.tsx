@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, LogOut, MessageCircle, ArrowLeft } from 'lucide-react';
+import { MapPin, LogOut, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 type UserStatus = 'available' | 'busy' | 'offline';
 
@@ -23,7 +22,7 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
   const [status, setStatus] = useState<UserStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const { unreadCount } = useUnreadMessages();
+  
 
   // Don't show back button on main pages
   const isMainPage = ['/dashboard', '/', '/auth'].includes(location.pathname);
@@ -133,7 +132,7 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           {showBack && !isMainPage && (
             <Button
               type="button"
@@ -150,29 +149,10 @@ export const GlobalHeader = ({ title = "TodoCerca", showLogout = true, showBack 
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <MapPin className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold text-foreground">{title}</h1>
           </div>
-          
-          {/* Message indicator - positioned right after title */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate('/mensajes');
-            }}
-            className="relative"
-            title="Mensajes"
-          >
-            <MessageCircle className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Button>
         </div>
 
         <div className="flex items-center gap-3">
