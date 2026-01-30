@@ -27,6 +27,7 @@ import { ProviderAppointments } from '@/components/ProviderAppointments';
 import { ScheduleConfiguration } from '@/components/ScheduleConfiguration';
 import TaxiDriverRequests from '@/components/TaxiDriverRequests';
 import { Link } from 'react-router-dom';
+import UserRegistryReport from '@/components/UserRegistryReport';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
@@ -38,6 +39,8 @@ export default function Panel() {
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('perfil');
+  const [clickSequence, setClickSequence] = useState<string[]>([]);
+  const [showReport, setShowReport] = useState(false);
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
@@ -189,13 +192,32 @@ export default function Panel() {
     return true;
   });
 
+  // Easter egg handler para "MPMP"
+  const handleSecretClick = (letter: string) => {
+    const newSequence = [...clickSequence, letter];
+    
+    if (newSequence.join('') === 'MPMP') {
+      setShowReport(true);
+      setClickSequence([]);
+    } else if ('MPMP'.startsWith(newSequence.join(''))) {
+      setClickSequence(newSequence);
+    } else {
+      setClickSequence([]);
+    }
+  };
+
   // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
       case 'perfil':
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Mi Perfil</h2>
+            <h2 className="text-xl font-bold">
+              <span onClick={() => handleSecretClick('M')} className="cursor-default">M</span>
+              <span>i </span>
+              <span onClick={() => handleSecretClick('P')} className="cursor-default">P</span>
+              <span>erfil</span>
+            </h2>
             <p className="text-sm text-muted-foreground">Información de tu cuenta y estado</p>
             
             <div className="space-y-3">
@@ -384,6 +406,9 @@ export default function Panel() {
           {renderContent()}
         </main>
       </div>
+      
+      {/* Reporte de usuarios registrados (easter egg) */}
+      <UserRegistryReport open={showReport} onOpenChange={setShowReport} />
     </div>
   );
 }
