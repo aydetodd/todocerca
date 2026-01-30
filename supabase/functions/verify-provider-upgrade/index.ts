@@ -134,6 +134,19 @@ serve(async (req) => {
       });
     }
 
+    // Obtener profile_id para la suscripción
+    const { data: profileData, error: profileIdError } = await supabaseClient
+      .from('profiles')
+      .select('id, nombre, apodo')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileIdError || !profileData) {
+      throw new Error('No se pudo obtener el perfil');
+    }
+
+    const profileId = profileData.id;
+
     // Actualizar rol a proveedor
     const { error: updateError } = await supabaseClient
       .from('profiles')
@@ -143,8 +156,48 @@ serve(async (req) => {
     if (updateError) throw new Error(`Error updating role: ${updateError.message}`);
     logStep("Role updated to proveedor");
 
+    // Crear o actualizar registro de suscripción
+    if (upgradeSubscription) {
+      const rawEnd = (upgradeSubscription as any)?.current_period_end;
+      const endTs = typeof rawEnd === 'number' ? rawEnd : null;
+      const subscriptionEnd = endTs ? new Date(endTs * 1000).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      const subscriptionStart = new Date().toISOString();
+      const amount = (upgradeSubscription.items.data[0]?.price?.unit_amount || 20000) / 100;
+
+      // Check if subscription record already exists
+      const { data: existingSub } = await supabaseClient
+        .from('subscriptions')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('stripe_subscription_id', upgradeSubscription.id)
+        .maybeSingle();
+
+      if (!existingSub) {
+        const { error: subInsertError } = await supabaseClient
+          .from('subscriptions')
+          .insert({
+            profile_id: profileId,
+            stripe_subscription_id: upgradeSubscription.id,
+            status: 'activa',
+            start_date: subscriptionStart,
+            end_date: subscriptionEnd,
+            amount: amount,
+            currency: 'MXN',
+            payment_method: 'stripe'
+          });
+
+        if (subInsertError) {
+          logStep("Error creating subscription record", { error: subInsertError.message });
+        } else {
+          logStep("Subscription record created", { subscriptionId: upgradeSubscription.id });
+        }
+      } else {
+        logStep("Subscription record already exists");
+      }
+    }
+
     // Asegurar que exista registro en tabla proveedores
-    const { data: proveedorData, error: proveedorError } = await supabaseClient
+    const { data: proveedorData } = await supabaseClient
       .from('proveedores')
       .select('id')
       .eq('user_id', user.id)
@@ -152,13 +205,6 @@ serve(async (req) => {
 
     if (!proveedorData) {
       logStep("Creating proveedor record");
-      
-      // Obtener datos adicionales del perfil
-      const { data: profileData } = await supabaseClient
-        .from('profiles')
-        .select('nombre, apodo')
-        .eq('user_id', user.id)
-        .single();
       
       const proveedorName = profileData?.nombre || profileData?.apodo || user.email?.split('@')[0] || 'Proveedor';
       

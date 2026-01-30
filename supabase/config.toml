@@ -1,22 +1,22 @@
 project_id = "kijwxiumskwztbjahuhv"
 
 [functions.create-checkout]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-subscription]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-tracking-subscription]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-tracking-checkout]
-verify_jwt = true
+verify_jwt = false
 
 [functions.add-tracking-devices]
-verify_jwt = true
+verify_jwt = false
 
 [functions.sync-tracking-devices]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-recovery-code]
 verify_jwt = false
@@ -25,16 +25,19 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.upgrade-to-provider]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-provider-upgrade]
-verify_jwt = true
+verify_jwt = false
+
+[functions.upgrade-subscription]
+verify_jwt = false
 
 [functions.send-tracking-invite]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-whatsapp-welcome]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-whatsapp-appointment-update]
 verify_jwt = false
@@ -46,7 +49,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.delete-account]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-taxi-request-whatsapp]
 verify_jwt = false
@@ -55,13 +58,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.accept-tracking-invitation]
-verify_jwt = true
+verify_jwt = false
 
 [functions.accept-link-invitation]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-verification-sms]
 verify_jwt = false
 
 [functions.verify-phone-code]
+verify_jwt = false
+
+[functions.cleanup-ghost-user]
 verify_jwt = false
