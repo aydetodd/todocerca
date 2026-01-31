@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { MessageCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { StatusControl } from '@/components/StatusControl';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -17,8 +14,6 @@ export default function MapView() {
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isProvider, setIsProvider] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   // GPS tracking ahora es global via GlobalProviderTracking
 
@@ -105,6 +100,14 @@ export default function MapView() {
           </div>
         )}
       </div>
+
+      {/* Messaging Panel (se abre desde el popup del mapa) */}
+      <MessagingPanel 
+        isOpen={isMessagingOpen}
+        onClose={() => setIsMessagingOpen(false)}
+        receiverId={selectedReceiverId}
+        receiverName={selectedReceiverName}
+      />
 
     </div>
   );

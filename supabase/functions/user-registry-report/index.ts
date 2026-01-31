@@ -14,9 +14,67 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No autorizado' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
+
+    // Verify user
+    const supabaseAuth = createClient(supabaseUrl, anonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+      auth: {
+        persistSession: false,
+      },
+    });
+
+    const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'No autorizado' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
     
     // Create admin client to bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+
+    // Admin-only access
+    const { data: isAdmin, error: roleErr } = await supabaseAdmin.rpc('has_role', {
+      _user_id: userData.user.id,
+      _role: 'admin',
+    });
+
+    if (roleErr) {
+      console.error('Error checking admin role:', roleErr);
+      throw roleErr;
+    }
+
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Sin permisos de administrador' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        }
+      );
+    }
 
     // Fetch all profiles
     const { data: profiles, error } = await supabaseAdmin

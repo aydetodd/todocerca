@@ -2053,6 +2053,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       votacion_miembros: {
         Row: {
           agregado_por: string | null
@@ -2358,6 +2379,13 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: string[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_valid_tracking_invitation: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
@@ -2386,6 +2414,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       availability_status: "disponible" | "ocupado" | "no_disponible"
       provider_type: "taxi" | "ruta"
       subscription_status: "activa" | "vencida" | "pendiente"
@@ -2519,6 +2548,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       availability_status: ["disponible", "ocupado", "no_disponible"],
       provider_type: ["taxi", "ruta"],
       subscription_status: ["activa", "vencida", "pendiente"],

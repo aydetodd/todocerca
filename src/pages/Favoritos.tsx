@@ -12,7 +12,6 @@ import {
   Heart, 
   Package, 
   Store, 
-  Gift, 
   Trash2, 
   MapPin, 
   Phone, 
