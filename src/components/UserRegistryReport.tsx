@@ -45,8 +45,17 @@ export default function UserRegistryReport({ open, onOpenChange }: UserRegistryR
   const loadUsers = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No autorizado');
+      }
+
       // Call edge function that bypasses RLS
-      const { data, error } = await supabase.functions.invoke('user-registry-report');
+      const { data, error } = await supabase.functions.invoke('user-registry-report', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
       if (error) {
         console.error('Error loading users:', error);
