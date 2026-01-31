@@ -10,12 +10,15 @@ import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import UserRegistryReport from '@/components/UserRegistryReport';
 
 export default function MiPerfil() {
   const [profile, setProfile] = useState<any>(null);
   const [userSpecificData, setUserSpecificData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [clickSequence, setClickSequence] = useState<string[]>([]);
+  const [showReport, setShowReport] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -202,6 +205,20 @@ export default function MiPerfil() {
 
   const isProvider = profile?.role === 'proveedor';
 
+  // Easter egg handler para "MPMP"
+  const handleSecretClick = (letter: string) => {
+    const newSequence = [...clickSequence, letter];
+    
+    if (newSequence.join('') === 'MPMP') {
+      setShowReport(true);
+      setClickSequence([]);
+    } else if ('MPMP'.startsWith(newSequence.join(''))) {
+      setClickSequence(newSequence);
+    } else {
+      setClickSequence([]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <GlobalHeader />
@@ -209,7 +226,12 @@ export default function MiPerfil() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Mi Perfil</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            <span onClick={() => handleSecretClick('M')} className="cursor-default select-none">M</span>
+            <span>i </span>
+            <span onClick={() => handleSecretClick('P')} className="cursor-default select-none">P</span>
+            <span>erfil</span>
+          </h2>
           <p className="text-muted-foreground">
             Información de tu cuenta y estado
           </p>
@@ -314,6 +336,9 @@ export default function MiPerfil() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Reporte de usuarios registrados (easter egg) */}
+      <UserRegistryReport open={showReport} onOpenChange={setShowReport} />
     </div>
   );
 }

@@ -106,26 +106,6 @@ export default function MapView() {
         )}
       </div>
 
-      {/* Floating Message Button */}
-      <Button
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 z-40"
-        size="icon"
-        onClick={() => {
-          setSelectedReceiverId(undefined);
-          setSelectedReceiverName(undefined);
-          setIsMessagingOpen(!isMessagingOpen);
-        }}
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
-
-      {/* Messaging Panel */}
-      <MessagingPanel 
-        isOpen={isMessagingOpen}
-        onClose={() => setIsMessagingOpen(false)}
-        receiverId={selectedReceiverId}
-        receiverName={selectedReceiverName}
-      />
     </div>
   );
 }
