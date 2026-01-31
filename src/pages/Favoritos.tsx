@@ -181,7 +181,7 @@ export default function Favoritos() {
               </Card>
             ) : (
               <Tabs defaultValue="productos" className="w-full">
-                <TabsList className="w-full grid grid-cols-3 mb-4">
+                <TabsList className="w-full grid grid-cols-2 mb-4">
                   <TabsTrigger value="productos" className="flex items-center gap-1">
                     <Package className="h-4 w-4" />
                     <span className="hidden sm:inline">Productos</span>
@@ -194,13 +194,6 @@ export default function Favoritos() {
                     <span className="hidden sm:inline">Proveedores</span>
                     {proveedores.length > 0 && (
                       <Badge variant="secondary" className="ml-1">{proveedores.length}</Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="gratis" className="flex items-center gap-1">
-                    <Gift className="h-4 w-4" />
-                    <span className="hidden sm:inline">Gratis</span>
-                    {listings.length > 0 && (
-                      <Badge variant="secondary" className="ml-1">{listings.length}</Badge>
                     )}
                   </TabsTrigger>
                 </TabsList>
@@ -237,21 +230,6 @@ export default function Favoritos() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="gratis" className="space-y-3">
-                  {listings.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No tienes cosas gratis favoritas
-                    </p>
-                  ) : (
-                    listings.map((fav) => (
-                      <FavoritoListingCard 
-                        key={fav.id} 
-                        favorito={fav} 
-                        onDelete={() => handleDelete(fav.id)} 
-                      />
-                    ))
-                  )}
-                </TabsContent>
               </Tabs>
             )}
           </div>
