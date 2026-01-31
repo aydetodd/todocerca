@@ -14,7 +14,8 @@ import {
   LogOut,
   ArrowLeft,
   Briefcase,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -283,6 +284,18 @@ export default function Panel() {
               
               {/* Account Actions */}
               <div className="pt-4 border-t space-y-3">
+                {/* Botón admin para ver reporte de usuarios (solo ID 000001p) */}
+                {profile?.consecutive_number === 1 && (
+                  <Button
+                    onClick={() => setShowReport(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver Reporte de Usuarios
+                  </Button>
+                )}
+                
                 <Button
                   onClick={handleSignOut}
                   variant="outline"
