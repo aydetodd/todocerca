@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Plus, ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Plus, ImageIcon, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { FavoritoButton } from '@/components/FavoritoButton';
+import { useToast } from '@/hooks/use-toast';
 
 interface Product {
   id: string;
@@ -39,6 +41,11 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
   const [photo, setPhoto] = useState<ProductPhoto | null>(null);
   const [loadingPhoto, setLoadingPhoto] = useState(true);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const { toast } = useToast();
+
+  const MAX_DESCRIPTION_LENGTH = 60;
+  const hasLongDescription = product.descripcion && product.descripcion.length > MAX_DESCRIPTION_LENGTH;
 
   useEffect(() => {
     loadPhoto();
@@ -62,6 +69,32 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
       setLoadingPhoto(false);
     }
   };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: product.nombre,
+      text: `${product.nombre} - ${formatCurrency(product.precio)} / ${product.unit}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace del producto fue copiado al portapapeles",
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const truncatedDescription = hasLongDescription && !showFullDescription
+    ? product.descripcion.substring(0, MAX_DESCRIPTION_LENGTH) + '...'
+    : product.descripcion;
 
   return (
     <>
@@ -91,15 +124,57 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
 
             {/* Información del producto */}
             <div className="flex-1 min-w-0 space-y-2">
-              <h3 className="text-lg font-semibold truncate">{product.nombre}</h3>
-              <p className="text-xl font-bold text-primary">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-lg font-semibold truncate">{product.nombre}</h3>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <FavoritoButton 
+                    tipo="producto" 
+                    itemId={product.id}
+                    precioActual={product.precio}
+                    stockActual={product.stock}
+                    size="sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShare}
+                    className="hover:bg-transparent"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <p className="text-xl font-bold text-foreground">
                 {formatCurrency(product.precio)} / {product.unit}
               </p>
               
               {product.descripcion && (
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {product.descripcion}
-                </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {truncatedDescription}
+                  </p>
+                  {hasLongDescription && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="p-0 h-auto text-primary"
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                    >
+                      {showFullDescription ? (
+                        <>
+                          <ChevronUp className="h-3 w-3 mr-1" />
+                          Ver menos
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3 w-3 mr-1" />
+                          Ver más
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               )}
 
               <div className="flex items-center gap-3 pt-1">

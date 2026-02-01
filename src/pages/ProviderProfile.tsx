@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, ArrowLeft, Plus, Users } from 'lucide-react';
+import { Package, ArrowLeft, Plus, Users, ShoppingCart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
@@ -14,6 +14,8 @@ import { formatCurrency } from '@/lib/utils';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ProductCard } from '@/components/ProductCard';
 import { NavigationBar } from '@/components/NavigationBar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -62,6 +64,7 @@ const ProviderProfile = () => {
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(0);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [invalidRoute, setInvalidRoute] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Lista de rutas reservadas que no deben ser tratadas como slugs de proveedor
   const reservedRoutes = [
@@ -476,15 +479,57 @@ const ProviderProfile = () => {
     );
   }
 
+  const itemCount = getItemCount();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
+          
+          {/* Floating Cart Button for Mobile */}
+          <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+            <SheetTrigger asChild>
+              <Button variant="default" className="lg:hidden relative">
+                <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {itemCount}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md p-0">
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Mi Carrito
+                </SheetTitle>
+              </SheetHeader>
+              <div className="p-4 overflow-y-auto max-h-[calc(100vh-100px)]">
+                <ShoppingCartComponent
+                  cart={cart}
+                  numPeople={numPeople}
+                  onUpdateQuantity={updateQuantity}
+                  onRemoveItem={removeFromCart}
+                  onClearCart={clearCart}
+                  onCheckout={() => {
+                    setIsCartOpen(false);
+                    handleCheckout();
+                  }}
+                  total={getTotal()}
+                  itemCount={itemCount}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
@@ -576,9 +621,9 @@ const ProviderProfile = () => {
             </Card>
           </div>
 
-          {/* Sidebar - Carrito */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="space-y-4">
+          {/* Sidebar - Carrito (Desktop only) */}
+          <div className="hidden lg:block lg:col-span-1 space-y-4">
+            <div className="space-y-4 sticky top-4">
               <ShoppingCartComponent
                 cart={cart}
                 numPeople={numPeople}
@@ -587,11 +632,11 @@ const ProviderProfile = () => {
                 onClearCart={clearCart}
                 onCheckout={handleCheckout}
                 total={getTotal()}
-                itemCount={getItemCount()}
+                itemCount={itemCount}
               />
               
               {/* Botón para hacer otro pedido - sticky en la parte superior */}
-              <Card className="sticky top-28 z-10 shadow-lg border-2 border-primary mt-4">
+              <Card className="shadow-lg border-2 border-primary">
                 <CardContent className="p-4">
                   <Button
                     onClick={async () => {

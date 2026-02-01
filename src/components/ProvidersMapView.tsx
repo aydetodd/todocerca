@@ -443,15 +443,15 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         </div>
       `
         : `
-        <div style="padding: 12px; min-width: 250px;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px;">${provider.business_name}</h3>
+        <div style="padding: 12px; min-width: 250px; background: hsl(215, 30%, 22%); border-radius: 8px;">
+          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px; color: #f8fafc;">${provider.business_name}</h3>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
+            <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: hsl(215, 70%, 48%); color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
             <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
-            <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
+            <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: hsl(215, 65%, 50%); color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
           </div>
-          <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: #8b5cf6; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 8px;">🛒 Ver productos y hacer pedido</button>
-          <button onclick='window.bookAppointment(${JSON.stringify(provider.id)}, ${JSON.stringify(provider.business_name)}, ${JSON.stringify(provider.business_phone || "")})' style="width: 100%; background-color: #ec4899; color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">📅 Agendar Cita</button>
+          <button onclick='window.goToProviderProfile(${JSON.stringify(provider.id)})' style="width: 100%; background-color: hsl(215, 70%, 48%); color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-bottom: 8px;">🛒 Ver productos y hacer pedido</button>
+          <button onclick='window.bookAppointment(${JSON.stringify(provider.id)}, ${JSON.stringify(provider.business_name)}, ${JSON.stringify(provider.business_phone || "")})' style="width: 100%; background-color: hsl(215, 65%, 55%); color: white; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">📅 Agendar Cita</button>
         </div>
       `;
       
