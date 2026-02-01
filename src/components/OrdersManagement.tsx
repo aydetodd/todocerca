@@ -13,6 +13,7 @@ import {
   Phone, 
   Clock, 
   Package,
+  CheckCircle2,
   Printer,
   CreditCard,
   ChefHat,
@@ -54,6 +55,7 @@ interface Order {
   notas: string | null;
   created_at: string;
   items_pedido: OrderItem[];
+  recibido?: boolean;
   impreso?: boolean;
   pagado?: boolean;
   preparado?: boolean;
@@ -191,7 +193,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     }
   };
 
-  const updateOrderStep = async (orderId: string, step: 'impreso' | 'pagado' | 'preparado' | 'entregado', value: boolean) => {
+  const updateOrderStep = async (orderId: string, step: 'recibido' | 'impreso' | 'pagado' | 'preparado' | 'entregado', value: boolean) => {
     try {
       // Obtener el pedido actual
       const order = orders.find(o => o.id === orderId);
@@ -224,6 +226,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
       );
 
       const stepLabels = {
+        recibido: 'recibido',
         impreso: 'impreso',
         pagado: 'pagado',
         preparado: 'preparado',
@@ -254,6 +257,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     );
   }
 
+  const recibidosCount = orders.filter(o => o.recibido).length;
   const impresosCount = orders.filter(o => o.impreso).length;
   const pagadosCount = orders.filter(o => o.pagado).length;
   const preparadosCount = orders.filter(o => o.preparado).length;
@@ -454,6 +458,9 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
             <Badge className="bg-orange-500 text-white hover:bg-orange-600">
               {newOrdersCount} Nuevo{newOrdersCount !== 1 && 's'}
             </Badge>
+            <Badge className="bg-teal-500 text-white hover:bg-teal-600">
+              {recibidosCount} Recibido{recibidosCount !== 1 && 's'}
+            </Badge>
             <Badge className="bg-amber-500 text-white hover:bg-amber-600">
               {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>
@@ -482,7 +489,23 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                 <Card key={order.id} className="border-l-4" style={{ borderLeftColor: estadoColors[order.estado as keyof typeof estadoColors] }}>
                   <CardHeader className="pb-3">
                     {/* Estados en fila horizontal */}
-                    <div className="grid grid-cols-4 gap-2 mb-4">
+                    <div className="grid grid-cols-5 gap-2 mb-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={order.recibido}
+                        className={`flex items-center justify-center gap-2 h-auto py-2 ${
+                          order.recibido 
+                            ? 'bg-emerald-500 border-emerald-600 text-white cursor-not-allowed' 
+                            : 'bg-teal-500 border-teal-600 text-white hover:bg-teal-600'
+                        }`}
+                        onClick={() => updateOrderStep(order.id, 'recibido', !order.recibido)}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="text-xs font-medium">
+                          Recibido
+                        </span>
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

@@ -774,6 +774,18 @@ const ProductSearch = () => {
 
             {viewMode === "map" && !isCosasGratis && !isCosasExtraviadas ? (
               <section aria-label="Mapa" className="fixed inset-0 z-50 bg-background">
+                {/* Close button to go back to list - top left */}
+                <div className="absolute top-4 left-4 z-[1000]">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="shadow-lg bg-background/90 backdrop-blur-sm"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Ver Listado
+                  </Button>
+                </div>
                 {/* Status control for providers - top right */}
                 <div className="absolute top-4 right-4 z-[1000]">
                   <StatusControl />

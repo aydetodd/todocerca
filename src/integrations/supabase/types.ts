@@ -1254,6 +1254,7 @@ export type Database = {
           pagado: boolean | null
           preparado: boolean | null
           proveedor_id: string
+          recibido: boolean | null
           total: number
           updated_at: string
         }
@@ -1272,6 +1273,7 @@ export type Database = {
           pagado?: boolean | null
           preparado?: boolean | null
           proveedor_id: string
+          recibido?: boolean | null
           total?: number
           updated_at?: string
         }
@@ -1290,6 +1292,7 @@ export type Database = {
           pagado?: boolean | null
           preparado?: boolean | null
           proveedor_id?: string
+          recibido?: boolean | null
           total?: number
           updated_at?: string
         }
