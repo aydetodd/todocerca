@@ -124,21 +124,22 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
 
             {/* Información del producto */}
             <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-lg font-semibold truncate">{product.nombre}</h3>
-                <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-start justify-between gap-1">
+                <h3 className="text-base font-semibold line-clamp-2 flex-1 min-w-0">{product.nombre}</h3>
+                <div className="flex items-center flex-shrink-0">
                   <FavoritoButton 
                     tipo="producto" 
                     itemId={product.id}
                     precioActual={product.precio}
                     stockActual={product.stock}
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8"
                   />
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={handleShare}
-                    className="hover:bg-transparent"
+                    className="hover:bg-transparent h-8 w-8"
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>

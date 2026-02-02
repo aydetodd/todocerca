@@ -485,11 +485,8 @@ const ProviderProfile = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
+        <div className="container mx-auto px-4 py-4 flex justify-end items-center">
+          {/* Navigation handled by phone back keys */}
           
           {/* Floating Cart Button for Mobile */}
           <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
