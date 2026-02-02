@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
@@ -43,6 +44,7 @@ interface Product {
   keywords: string;
   is_available: boolean;
   is_mobile: boolean;
+  is_price_from: boolean;
   stock: number;
   foto_url?: string;
   pais?: string;
@@ -147,6 +149,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     keywords: '',
     is_available: true,
     is_mobile: false,
+    is_price_from: false,
     stock: 1,
     pais: 'MX',
     estado: '',
@@ -282,6 +285,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         keywords: product.keywords || '',
         is_available: product.is_available,
         is_mobile: product.is_mobile,
+        is_price_from: product.is_price_from || false,
         stock: product.stock,
         pais: product.pais || 'MX',
         estado: product.estado || '',
@@ -298,6 +302,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         keywords: '',
         is_available: true,
         is_mobile: false,
+        is_price_from: false,
         stock: 1,
         pais: 'MX',
         estado: '',
@@ -807,49 +812,79 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="precio">Precio *</Label>
-                  <Input
-                    id="precio"
-                    type="number"
-                    value={formData.precio}
-                    onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value) || 0})}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="precio">Precio *</Label>
+                    <Input
+                      id="precio"
+                      type="number"
+                      value={formData.precio}
+                      onChange={(e) => setFormData({...formData, precio: parseFloat(e.target.value) || 0})}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="unit">Unidad *</Label>
+                    <Select
+                      value={formData.unit}
+                      onValueChange={(value) => setFormData({...formData, unit: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">Kilos</SelectItem>
+                        <SelectItem value="l">Litros</SelectItem>
+                        <SelectItem value="pz">Piezas</SelectItem>
+                        <SelectItem value="m">Metros</SelectItem>
+                        <SelectItem value="paquete">Paquetes</SelectItem>
+                        <SelectItem value="caja">Cajas</SelectItem>
+                        <SelectItem value="bulto">Bultos</SelectItem>
+                        <SelectItem value="ton">Toneladas</SelectItem>
+                        <SelectItem value="g">Gramos</SelectItem>
+                        <SelectItem value="km">Kilómetros</SelectItem>
+                        <SelectItem value="cita">Citas</SelectItem>
+                        <SelectItem value="proceso">Procesos</SelectItem>
+                        <SelectItem value="evento">Eventos</SelectItem>
+                        <SelectItem value="viaje">Viajes</SelectItem>
+                        <SelectItem value="servicio">Servicios</SelectItem>
+                        <SelectItem value="hora">Hora</SelectItem>
+                        <SelectItem value="visita">Visitas</SelectItem>
+                        <SelectItem value="otros">Otros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
+                {/* Tipo de precio: Fijo o Desde */}
                 <div>
-                  <Label htmlFor="unit">Unidad *</Label>
-                  <Select
-                    value={formData.unit}
-                    onValueChange={(value) => setFormData({...formData, unit: value})}
+                  <Label className="mb-2 block">Tipo de precio</Label>
+                  <RadioGroup
+                    value={formData.is_price_from ? "desde" : "fijo"}
+                    onValueChange={(value) => setFormData({...formData, is_price_from: value === "desde"})}
+                    className="flex gap-4"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">Kilos</SelectItem>
-                      <SelectItem value="l">Litros</SelectItem>
-                      <SelectItem value="pz">Piezas</SelectItem>
-                      <SelectItem value="m">Metros</SelectItem>
-                      <SelectItem value="paquete">Paquetes</SelectItem>
-                      <SelectItem value="caja">Cajas</SelectItem>
-                      <SelectItem value="bulto">Bultos</SelectItem>
-                      <SelectItem value="ton">Toneladas</SelectItem>
-                      <SelectItem value="g">Gramos</SelectItem>
-                      <SelectItem value="km">Kilómetros</SelectItem>
-                      <SelectItem value="cita">Citas</SelectItem>
-                      <SelectItem value="proceso">Procesos</SelectItem>
-                      <SelectItem value="evento">Eventos</SelectItem>
-                      <SelectItem value="viaje">Viajes</SelectItem>
-                      <SelectItem value="servicio">Servicios</SelectItem>
-                      <SelectItem value="hora">Hora</SelectItem>
-                      <SelectItem value="visita">Visitas</SelectItem>
-                      <SelectItem value="otros">Otros</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="fijo" id="precio-fijo" />
+                      <Label htmlFor="precio-fijo" className="font-normal cursor-pointer">
+                        Precio fijo
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="desde" id="precio-desde" />
+                      <Label htmlFor="precio-desde" className="font-normal cursor-pointer">
+                        Desde... (precio inicial)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.is_price_from 
+                      ? "El precio puede variar según complejidad, modelo, etc." 
+                      : "Este es el precio exacto del producto/servicio."}
+                  </p>
                 </div>
               </div>
               
