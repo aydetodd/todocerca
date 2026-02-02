@@ -193,6 +193,39 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     }
   };
 
+  const sendWhatsAppConfirmation = (order: Order) => {
+    if (!order.cliente_telefono) {
+      toast({
+        title: 'Sin teléfono',
+        description: 'El cliente no tiene número de teléfono registrado',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Limpiar número y asegurar prefijo 52 para México
+    let cleanPhone = order.cliente_telefono.replace(/\D/g, '');
+    if (cleanPhone.length === 10) {
+      cleanPhone = '52' + cleanPhone;
+    } else if (cleanPhone.startsWith('1') && cleanPhone.length === 11) {
+      cleanPhone = '52' + cleanPhone.slice(1);
+    } else if (!cleanPhone.startsWith('52') && cleanPhone.length === 12) {
+      cleanPhone = '52' + cleanPhone.slice(2);
+    }
+
+    // Crear mensaje de confirmación
+    const message = `✅ *CONFIRMACIÓN DE PEDIDO #${order.numero_orden}*\n\n` +
+      `Hola ${order.cliente_nombre}! 👋\n\n` +
+      `Tu apartado ha sido *recibido* correctamente.\n\n` +
+      `📦 Total: ${formatCurrency(order.total)}\n\n` +
+      `Te avisaremos cuando esté listo.\n\n` +
+      `¡Gracias por tu preferencia! 🙏\n\n` +
+      `- ${proveedorNombre}`;
+
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const updateOrderStep = async (orderId: string, step: 'recibido' | 'impreso' | 'pagado' | 'preparado' | 'entregado', value: boolean) => {
     try {
       // Obtener el pedido actual
@@ -218,10 +251,10 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
 
       // Actualizar el estado local inmediatamente
       setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
-            ? { ...order, [step]: value }
-            : order
+        prevOrders.map(o => 
+          o.id === orderId 
+            ? { ...o, [step]: value }
+            : o
         )
       );
 
@@ -237,6 +270,11 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
         title: 'Estado actualizado',
         description: `El apartado ha sido marcado como ${stepLabels[step]}`,
       });
+
+      // Si es "recibido", enviar confirmación por WhatsApp
+      if (step === 'recibido' && value) {
+        sendWhatsAppConfirmation(order);
+      }
     } catch (error: any) {
       console.error('Error actualizando paso:', error);
       toast({
