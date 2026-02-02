@@ -1367,6 +1367,7 @@ export type Database = {
           id: string
           is_available: boolean | null
           is_mobile: boolean
+          is_price_from: boolean
           keywords: string | null
           nombre: string
           pais: string | null
@@ -1385,6 +1386,7 @@ export type Database = {
           id?: string
           is_available?: boolean | null
           is_mobile?: boolean
+          is_price_from?: boolean
           keywords?: string | null
           nombre: string
           pais?: string | null
@@ -1403,6 +1405,7 @@ export type Database = {
           id?: string
           is_available?: boolean | null
           is_mobile?: boolean
+          is_price_from?: boolean
           keywords?: string | null
           nombre?: string
           pais?: string | null

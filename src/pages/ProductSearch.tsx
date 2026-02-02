@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map as MapIcon, List, ArrowLeft, X, Clock } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List, X, Clock, Heart, Share2, ShoppingCart, CalendarCheck } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { useMunicipios } from "@/hooks/useMunicipios";
 import { useHispanoamerica } from "@/hooks/useHispanoamerica";
+import { FavoritoButton } from "@/components/FavoritoButton";
+import { useToast } from "@/hooks/use-toast";
 
 interface Category {
   id: string;
@@ -59,6 +61,8 @@ const ALL_MUNICIPIOS_VALUE = "__ALL__";
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const initialCategory = searchParams.get("category");
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(false);
@@ -96,6 +100,32 @@ const ProductSearch = () => {
     setIsMessagingOpen(true);
   };
 
+  const handleShare = async (item: any) => {
+    const providerName = item.proveedores?.nombre || item.profiles?.nombre || "";
+    const shareData = {
+      title: item.nombre,
+      text: `${item.nombre} - $${item.precio} / ${item.unit}${providerName ? ` - ${providerName}` : ""}`,
+      url: item.proveedores?.id ? `${window.location.origin}/provider/${item.proveedores.id}` : window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace del producto fue copiado al portapapeles",
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const handleGoToProvider = (providerId: string) => {
+    navigate(`/provider/${providerId}`);
+  };
   const { getEstados, getMunicipios } = useMunicipios();
   const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
 
@@ -442,7 +472,7 @@ const ProductSearch = () => {
         let query = supabase
           .from("productos")
           .select(`
-            id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id, estado, ciudad,
+            id, nombre, descripcion, precio, stock, unit, proveedor_id, category_id, estado, ciudad, is_price_from,
             proveedores (
               id, nombre, user_id, telefono, business_address, business_phone, latitude, longitude
             ),
@@ -811,6 +841,8 @@ const ProductSearch = () => {
                     const foto = item.fotos?.find((f: any) => f.es_principal) || item.fotos?.[0];
                     const isRoute = vehicleFilter === "ruta";
                     const isExtraviado = item.is_extraviado;
+                    const hasProvider = item.proveedores?.id;
+                    const isPriceFrom = item.is_price_from;
                     
                     return (
                       <Card key={item.id} className={isExtraviado ? "border-orange-500/30" : ""}>
@@ -831,8 +863,29 @@ const ProductSearch = () => {
                           )}
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <h2 className="font-semibold text-lg truncate">{item.nombre}</h2>
+                              <div className="flex items-start justify-between gap-1">
+                                <h2 className="font-semibold text-base line-clamp-2 flex-1">{item.nombre}</h2>
+                                {/* Action icons - only for products with providers */}
+                                {!isExtraviado && !item.is_listing && hasProvider && (
+                                  <div className="flex items-center flex-shrink-0">
+                                    <FavoritoButton 
+                                      tipo="producto" 
+                                      itemId={item.id}
+                                      precioActual={item.precio}
+                                      stockActual={item.stock}
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleShare(item)}
+                                      className="hover:bg-transparent h-8 w-8"
+                                    >
+                                      <Share2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
                                 {/* Badge for extraviados */}
                                 {isExtraviado && (
                                   <Badge className={`flex-shrink-0 ${item.is_free ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
@@ -862,7 +915,9 @@ const ProductSearch = () => {
 
                               <div className="flex flex-wrap items-center gap-2 mt-2">
                                 {!isExtraviado && !item.is_free && (
-                                  <Badge variant="secondary">${item.precio}</Badge>
+                                  <Badge variant="secondary">
+                                    {isPriceFrom ? 'Desde ' : ''}${item.precio}
+                                  </Badge>
                                 )}
                                 {/* Hide stock for routes and extraviados */}
                                 {!item.is_listing && !isRoute && !isExtraviado && (
@@ -903,6 +958,30 @@ const ProductSearch = () => {
                                       Expira: {format(new Date(item.expires_at), "dd/MM/yyyy HH:mm", { locale: es })} ({formatDistanceToNow(new Date(item.expires_at), { locale: es, addSuffix: true })})
                                     </span>
                                   )}
+                                </div>
+                              )}
+
+                              {/* Action buttons for products with providers - Pedido and Cita */}
+                              {!isExtraviado && !item.is_listing && hasProvider && (
+                                <div className="flex items-center gap-2 mt-3">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleGoToProvider(item.proveedores.id)}
+                                    className="flex-1"
+                                  >
+                                    <ShoppingCart className="h-4 w-4 mr-1" />
+                                    Pedido
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleGoToProvider(item.proveedores.id)}
+                                    className="flex-1"
+                                  >
+                                    <CalendarCheck className="h-4 w-4 mr-1" />
+                                    Cita
+                                  </Button>
                                 </div>
                               )}
                             </div>
