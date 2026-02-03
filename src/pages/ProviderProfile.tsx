@@ -553,91 +553,79 @@ const ProviderProfile = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="pedido" className="mt-6">
+            <TabsContent value="pedido" className="mt-4">
+              {/* Selector de órdenes - Sticky */}
+              {products.length > 0 && (
+                <div className="sticky top-0 z-10 bg-background pb-3">
+                  <Card className="bg-card border border-border shadow-md">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                          {Array.from({ length: numPeople }, (_, i) => (
+                            <Button
+                              key={i}
+                              variant={selectedPersonIndex === i ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setSelectedPersonIndex(i)}
+                              className={`${selectedPersonIndex === i ? 'shadow-sm' : ''}`}
+                            >
+                              <Users className="h-3 w-3 mr-1" />
+                              Orden {i + 1}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleAddPerson}
+                            className="border-dashed border"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Agregar
+                          </Button>
+                        </div>
+                        <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                          📝 Orden {selectedPersonIndex + 1}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* Columna principal - Productos */}
-                <div className="lg:col-span-2 space-y-6">
-            {/* Selector de persona */}
-            {products.length > 0 && (
-              <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/20 rounded-full">
-                          <Users className="h-6 w-6 text-primary" />
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Products Section */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Package className="h-5 w-5" />
+                        Productos Disponibles
+                      </CardTitle>
+                      <CardDescription>
+                        {products.length} {products.length === 1 ? 'producto disponible' : 'productos disponibles'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {products.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8">
+                          No hay productos disponibles en este momento
+                        </p>
+                      ) : (
+                        <div className="grid gap-4">
+                          {products.map((product) => (
+                            <ProductCard
+                              key={product.id}
+                              product={product}
+                              selectedPersonIndex={selectedPersonIndex}
+                              onAddToCart={addToCart}
+                            />
+                          ))}
                         </div>
-                        <div>
-                          <h3 className="font-bold text-lg">Selecciona la orden</h3>
-                          <p className="text-sm text-muted-foreground">Los productos se agregarán a la orden seleccionada</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {Array.from({ length: numPeople }, (_, i) => (
-                        <Button
-                          key={i}
-                          variant={selectedPersonIndex === i ? 'default' : 'outline'}
-                          size="lg"
-                          onClick={() => setSelectedPersonIndex(i)}
-                          className={selectedPersonIndex === i ? 'shadow-md scale-105' : ''}
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Orden {i + 1}
-                        </Button>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={handleAddPerson}
-                        className="border-dashed border-2"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar orden
-                      </Button>
-                    </div>
-                    <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
-                      <p className="text-sm font-medium text-center">
-                        📝 Actualmente agregando para: <span className="text-primary font-bold">Orden {selectedPersonIndex + 1}</span>
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-
-          {/* Products Section */}
-          <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-6 w-6" />
-                  Productos Disponibles
-                </CardTitle>
-                <CardDescription>
-                  {products.length} {products.length === 1 ? 'producto disponible' : 'productos disponibles'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {products.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay productos disponibles en este momento
-                  </p>
-                ) : (
-                  <div className="grid gap-6">
-                    {products.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        selectedPersonIndex={selectedPersonIndex}
-                        onAddToCart={addToCart}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
 
           {/* Sidebar - Carrito (Desktop only) */}
           <div className="hidden lg:block lg:col-span-1 space-y-4">
