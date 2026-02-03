@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, ArrowLeft, Plus, Users, ShoppingCart, X } from 'lucide-react';
+import { Package, ArrowLeft, Plus, Users, ShoppingCart, X, CalendarCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
@@ -16,6 +16,8 @@ import { ProductCard } from '@/components/ProductCard';
 import { NavigationBar } from '@/components/NavigationBar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { AppointmentBooking } from '@/components/AppointmentBooking';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +52,7 @@ interface ProviderData {
 
 const ProviderProfile = () => {
   const { proveedorId, consecutiveNumber } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -65,6 +68,10 @@ const ProviderProfile = () => {
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [invalidRoute, setInvalidRoute] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  // Get action from URL params (pedido or cita)
+  const actionParam = searchParams.get('action');
+  const [activeTab, setActiveTab] = useState<string>(actionParam === 'cita' ? 'cita' : 'pedido');
 
   // Lista de rutas reservadas que no deben ser tratadas como slugs de proveedor
   const reservedRoutes = [
@@ -533,9 +540,23 @@ const ProviderProfile = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-6">
-          {/* Columna principal - Productos */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Tabs for switching between Pedido and Cita */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="pedido" className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Hacer Pedido
+              </TabsTrigger>
+              <TabsTrigger value="cita" className="flex items-center gap-2">
+                <CalendarCheck className="h-4 w-4" />
+                Agendar Cita
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="pedido" className="mt-6">
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Columna principal - Productos */}
+                <div className="lg:col-span-2 space-y-6">
             {/* Selector de persona */}
             {products.length > 0 && (
               <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
@@ -678,7 +699,19 @@ const ProviderProfile = () => {
               </Card>
             </div>
           </div>
-        </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="cita" className="mt-6">
+              {provider && (
+                <AppointmentBooking
+                  proveedorId={provider.id}
+                  proveedorNombre={provider.nombre}
+                  proveedorTelefono={provider.telefono || provider.business_phone}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
 
         {/* Checkout Dialog */}
         <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>

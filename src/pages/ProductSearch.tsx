@@ -123,8 +123,12 @@ const ProductSearch = () => {
     }
   };
 
-  const handleGoToProvider = (providerId: string) => {
-    navigate(`/provider/${providerId}`);
+  const handleGoToOrder = (providerId: string) => {
+    navigate(`/proveedor/${providerId}?action=pedido`);
+  };
+
+  const handleGoToAppointment = (providerId: string) => {
+    navigate(`/proveedor/${providerId}?action=cita`);
   };
   const { getEstados, getMunicipios } = useMunicipios();
   const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
@@ -967,7 +971,7 @@ const ProductSearch = () => {
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    onClick={() => handleGoToProvider(item.proveedores.id)}
+                                    onClick={() => handleGoToOrder(item.proveedores.id)}
                                     className="flex-1"
                                   >
                                     <ShoppingCart className="h-4 w-4 mr-1" />
@@ -976,7 +980,7 @@ const ProductSearch = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleGoToProvider(item.proveedores.id)}
+                                    onClick={() => handleGoToAppointment(item.proveedores.id)}
                                     className="flex-1"
                                   >
                                     <CalendarCheck className="h-4 w-4 mr-1" />
