@@ -1368,11 +1368,13 @@ export type Database = {
           is_available: boolean | null
           is_mobile: boolean
           is_price_from: boolean
+          is_private: boolean | null
           keywords: string | null
           nombre: string
           pais: string | null
           precio: number
           proveedor_id: string
+          route_type: string | null
           stock: number
           unit: string | null
           updated_at: string
@@ -1387,11 +1389,13 @@ export type Database = {
           is_available?: boolean | null
           is_mobile?: boolean
           is_price_from?: boolean
+          is_private?: boolean | null
           keywords?: string | null
           nombre: string
           pais?: string | null
           precio: number
           proveedor_id: string
+          route_type?: string | null
           stock?: number
           unit?: string | null
           updated_at?: string
@@ -1406,11 +1410,13 @@ export type Database = {
           is_available?: boolean | null
           is_mobile?: boolean
           is_price_from?: boolean
+          is_private?: boolean | null
           keywords?: string | null
           nombre?: string
           pais?: string | null
           precio?: number
           proveedor_id?: string
+          route_type?: string | null
           stock?: number
           unit?: string | null
           updated_at?: string
@@ -1584,6 +1590,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ruta_invitaciones: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          id: string
+          is_accepted: boolean | null
+          producto_id: string
+          telefono_invitado: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_accepted?: boolean | null
+          producto_id: string
+          telefono_invitado: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_accepted?: boolean | null
+          producto_id?: string
+          telefono_invitado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ruta_invitaciones_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sos_alerts: {
         Row: {
