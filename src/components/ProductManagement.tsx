@@ -45,6 +45,8 @@ interface Product {
   is_available: boolean;
   is_mobile: boolean;
   is_price_from: boolean;
+  is_private?: boolean;
+  route_type?: string;
   stock: number;
   foto_url?: string;
   pais?: string;
@@ -65,6 +67,13 @@ interface Category {
 interface ProductManagementProps {
   proveedorId: string;
 }
+
+// Tipos de ruta
+const ROUTE_TYPES = [
+  { value: 'urbana', label: 'Urbanas (1-30)', description: 'Rutas urbanas numeradas' },
+  { value: 'foranea', label: 'Foráneas', description: 'Rutas foráneas con nombre libre' },
+  { value: 'privada', label: 'Privadas', description: 'Solo visible para invitados' },
+];
 
 // Generar lista de rutas disponibles (1-30)
 const AVAILABLE_ROUTES = Array.from({ length: 30 }, (_, i) => `Ruta ${i + 1}`);
@@ -134,9 +143,12 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [routeVariant, setRouteVariant] = useState<string>('');
+  const [selectedRouteType, setSelectedRouteType] = useState<string>('urbana');
   const [selectedProfesion, setSelectedProfesion] = useState<string>('');
   const [customProfesion, setCustomProfesion] = useState<string>('');
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
+  const [invitedPhones, setInvitedPhones] = useState<string[]>([]);
+  const [newInvitePhone, setNewInvitePhone] = useState('');
   const { toast } = useToast();
   const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
 
@@ -150,6 +162,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
     is_available: true,
     is_mobile: false,
     is_price_from: false,
+    is_private: false,
+    route_type: 'urbana',
     stock: 1,
     pais: 'MX',
     estado: '',
@@ -286,11 +300,14 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: product.is_available,
         is_mobile: product.is_mobile,
         is_price_from: product.is_price_from || false,
+        is_private: (product as any).is_private || false,
+        route_type: (product as any).route_type || 'urbana',
         stock: product.stock,
         pais: product.pais || 'MX',
         estado: product.estado || '',
         ciudad: product.ciudad || '',
       });
+      setSelectedRouteType((product as any).route_type || 'urbana');
     } else {
       setEditingProduct(null);
       setFormData({
@@ -303,6 +320,8 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         is_available: true,
         is_mobile: false,
         is_price_from: false,
+        is_private: false,
+        route_type: 'urbana',
         stock: 1,
         pais: 'MX',
         estado: '',
@@ -310,8 +329,11 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
       });
       setSelectedRoute('');
       setRouteVariant('');
+      setSelectedRouteType('urbana');
       setSelectedProfesion('');
       setCustomProfesion('');
+      setInvitedPhones([]);
+      setNewInvitePhone('');
     }
     setSelectedFiles([]);
     setIsDialogOpen(true);
@@ -447,9 +469,27 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
           await uploadProductPhotos(selectedFiles, productId, true);
         }
 
+        // Si es ruta privada, guardar invitaciones
+        if (formData.is_private && invitedPhones.length > 0 && productId) {
+          const invitations = invitedPhones.map(phone => ({
+            producto_id: productId,
+            telefono_invitado: phone,
+          }));
+          
+          const { error: invError } = await supabase
+            .from('ruta_invitaciones')
+            .insert(invitations);
+          
+          if (invError) {
+            console.error('Error saving invitations:', invError);
+          }
+        }
+
         toast({
           title: "Éxito",
-          description: "Producto creado correctamente",
+          description: formData.is_private 
+            ? `Ruta privada creada. ${invitedPhones.length} invitación(es) enviada(s).`
+            : "Producto creado correctamente",
         });
       }
 
@@ -589,75 +629,199 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               {/* Selector especial para Rutas de Transporte */}
               {isRutasCategory && !editingProduct && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="route">Número de Ruta *</Label>
-                      <Select
-                        value={selectedRoute}
-                        onValueChange={(value) => {
-                          setSelectedRoute(value);
-                          const fullName = routeVariant ? `${value} - ${routeVariant}` : value;
-                          setFormData({
-                            ...formData, 
-                            nombre: fullName,
-                            unit: 'viaje',
-                            keywords: ''
-                          });
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona ruta" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60 bg-background">
-                          {availableRoutes.length > 0 ? (
-                            availableRoutes.map((route) => (
-                              <SelectItem key={route} value={route}>
-                                {route}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-4 text-center text-muted-foreground text-sm">
-                              Todas las rutas tienen 3 variantes registradas
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="routeVariant">Variante (opcional)</Label>
-                      <Input
-                        id="routeVariant"
-                        value={routeVariant}
-                        onChange={(e) => {
-                          const variant = e.target.value;
-                          setRouteVariant(variant);
-                          if (selectedRoute) {
-                            const fullName = variant ? `${selectedRoute} - ${variant}` : selectedRoute;
+                  {/* Tipo de ruta */}
+                  <div>
+                    <Label>Tipo de Ruta *</Label>
+                    <Select
+                      value={selectedRouteType}
+                      onValueChange={(value) => {
+                        setSelectedRouteType(value);
+                        setSelectedRoute('');
+                        setRouteVariant('');
+                        setFormData({
+                          ...formData,
+                          nombre: '',
+                          route_type: value,
+                          is_private: value === 'privada',
+                          unit: 'viaje',
+                        });
+                        setInvitedPhones([]);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona tipo de ruta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROUTE_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedRouteType === 'urbana' && 'Rutas urbanas numeradas del 1 al 30'}
+                      {selectedRouteType === 'foranea' && 'Rutas foráneas con nombre personalizado'}
+                      {selectedRouteType === 'privada' && 'Solo visible para personal invitado por WhatsApp'}
+                    </p>
+                  </div>
+
+                  {/* Selector para rutas urbanas (1-30) */}
+                  {selectedRouteType === 'urbana' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="route">Número de Ruta *</Label>
+                        <Select
+                          value={selectedRoute}
+                          onValueChange={(value) => {
+                            setSelectedRoute(value);
+                            const fullName = routeVariant ? `${value} - ${routeVariant}` : value;
                             setFormData({
-                              ...formData,
-                              nombre: fullName
+                              ...formData, 
+                              nombre: fullName,
+                              unit: 'viaje',
+                              keywords: ''
                             });
-                          }
-                        }}
-                        placeholder="Ej: Centro, Periférico, Manga"
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona ruta" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 bg-background">
+                            {availableRoutes.length > 0 ? (
+                              availableRoutes.map((route) => (
+                                <SelectItem key={route} value={route}>
+                                  {route}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+                                Todas las rutas tienen 3 variantes registradas
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="routeVariant">Variante (opcional)</Label>
+                        <Input
+                          id="routeVariant"
+                          value={routeVariant}
+                          onChange={(e) => {
+                            const variant = e.target.value;
+                            setRouteVariant(variant);
+                            if (selectedRoute) {
+                              const fullName = variant ? `${selectedRoute} - ${variant}` : selectedRoute;
+                              setFormData({
+                                ...formData,
+                                nombre: fullName
+                              });
+                            }
+                          }}
+                          placeholder="Ej: Centro, Periférico, Manga"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Campo libre para rutas foráneas */}
+                  {selectedRouteType === 'foranea' && (
+                    <div>
+                      <Label htmlFor="nombreForanea">Nombre de la Ruta Foránea *</Label>
+                      <Input
+                        id="nombreForanea"
+                        value={formData.nombre}
+                        onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                        placeholder="Ej: Hermosillo - Guaymas, Ciudad Obregón - Los Mochis..."
                       />
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Si hay varias rutas con el mismo número pero diferente recorrido, agrega una variante para identificarla. 
-                    Ejemplo: "Ruta 1 - Centro" o "Ruta 1 - Periférico"
-                  </p>
+                  )}
+
+                  {/* Campo libre para rutas privadas + invitaciones */}
+                  {selectedRouteType === 'privada' && (
+                    <>
+                      <div>
+                        <Label htmlFor="nombrePrivada">Nombre de la Ruta Privada *</Label>
+                        <Input
+                          id="nombrePrivada"
+                          value={formData.nombre}
+                          onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                          placeholder="Ej: Ruta Empresa ABC, Transporte Escolar XYZ..."
+                        />
+                      </div>
+                      
+                      {/* Lista de invitados por WhatsApp */}
+                      <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                        <Label className="flex items-center gap-2">
+                          🔒 Invitados (solo ellos verán esta ruta)
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Agrega los números de WhatsApp de las personas que podrán ver esta ruta privada.
+                        </p>
+                        
+                        <div className="flex gap-2">
+                          <Input
+                            value={newInvitePhone}
+                            onChange={(e) => setNewInvitePhone(e.target.value)}
+                            placeholder="+52 662 123 4567"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (newInvitePhone.trim()) {
+                                setInvitedPhones([...invitedPhones, newInvitePhone.trim()]);
+                                setNewInvitePhone('');
+                              }
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {invitedPhones.length > 0 && (
+                          <div className="space-y-1">
+                            {invitedPhones.map((phone, idx) => (
+                              <div key={idx} className="flex items-center justify-between bg-background p-2 rounded text-sm">
+                                <span>{phone}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setInvitedPhones(invitedPhones.filter((_, i) => i !== idx))}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {selectedRouteType === 'urbana' && (
+                    <p className="text-xs text-muted-foreground">
+                      Si hay varias rutas con el mismo número pero diferente recorrido, agrega una variante para identificarla. 
+                      Ejemplo: "Ruta 1 - Centro" o "Ruta 1 - Periférico"
+                    </p>
+                  )}
                   
                   {/* Mostrar nombre final */}
-                  {selectedRoute && (
+                  {formData.nombre && (
                     <div className="bg-muted/50 p-3 rounded-md">
                       <Label className="text-xs text-muted-foreground">Nombre de tu ruta:</Label>
-                      <p className="font-semibold text-lg">{formData.nombre || selectedRoute}</p>
+                      <p className="font-semibold text-lg">{formData.nombre}</p>
+                      {selectedRouteType === 'privada' && (
+                        <span className="text-xs text-orange-500">🔒 Ruta privada</span>
+                      )}
                     </div>
                   )}
                   
                   {/* Campo de recorrido para rutas */}
-                  {selectedRoute && (
+                  {formData.nombre && (
                     <div>
                       <Label htmlFor="recorrido">Recorrido / Puntos Importantes *</Label>
                       <Textarea
@@ -674,7 +838,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   )}
                   
                   {/* Campo de concepto/detalle para rutas */}
-                  {selectedRoute && (
+                  {formData.nombre && (
                     <div>
                       <Label htmlFor="concepto">Concepto / Detalle Adicional</Label>
                       <Input
