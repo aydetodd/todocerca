@@ -14,6 +14,7 @@ import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react'
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA, getPaisPorCodigo } from '@/data/paises-hispanoamerica';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import {
   Dialog,
@@ -756,23 +757,38 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                           🔒 Invitados (solo ellos verán esta ruta)
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Agrega los números de WhatsApp de las personas que podrán ver esta ruta privada.
+                          Agrega los números de WhatsApp. Al agregar, se abrirá WhatsApp para invitarlos.
                         </p>
                         
-                        <div className="flex gap-2">
-                          <Input
-                            value={newInvitePhone}
-                            onChange={(e) => setNewInvitePhone(e.target.value)}
-                            placeholder="+52 662 123 4567"
-                            className="flex-1"
-                          />
+                        <div className="flex gap-2 items-end">
+                          <div className="flex-1">
+                            <PhoneInput
+                              value={newInvitePhone}
+                              onChange={(value) => setNewInvitePhone(value || '')}
+                              placeholder="Número de WhatsApp"
+                              label=""
+                            />
+                          </div>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="sm"
+                            variant="default"
+                            size="icon"
+                            className="shrink-0"
                             onClick={() => {
-                              if (newInvitePhone.trim()) {
-                                setInvitedPhones([...invitedPhones, newInvitePhone.trim()]);
+                              if (newInvitePhone && newInvitePhone.length >= 10) {
+                                // Agregar a la lista
+                                setInvitedPhones([...invitedPhones, newInvitePhone]);
+                                
+                                // Abrir WhatsApp con mensaje de invitación
+                                const cleanPhone = newInvitePhone.replace(/[^0-9]/g, '');
+                                const rutaNombre = formData.nombre || 'una ruta privada';
+                                const mensaje = encodeURIComponent(
+                                  `¡Hola! 👋 Te invito a ver mi ruta de transporte "${rutaNombre}" en TodoCerca. ` +
+                                  `Descarga la app y regístrate con este número para verla: https://todocerca.lovable.app`
+                                );
+                                const waUrl = `https://wa.me/${cleanPhone}?text=${mensaje}`;
+                                window.open(waUrl, '_blank');
+                                
                                 setNewInvitePhone('');
                               }
                             }}
