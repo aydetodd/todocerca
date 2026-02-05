@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image, Link, Copy } from 'lucide-react';
 import { ProductPhotoGallery } from '@/components/ProductPhotoGallery';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA, getPaisPorCodigo } from '@/data/paises-hispanoamerica';
@@ -48,6 +48,7 @@ interface Product {
   is_price_from: boolean;
   is_private?: boolean;
   route_type?: string;
+  invite_token?: string;
   stock: number;
   foto_url?: string;
   pais?: string;
@@ -779,12 +780,13 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                                 // Agregar a la lista
                                 setInvitedPhones([...invitedPhones, newInvitePhone]);
                                 
-                                // Abrir WhatsApp con mensaje de invitación
+                               // Abrir WhatsApp con mensaje de invitación (link se agregará al guardar)
                                 const cleanPhone = newInvitePhone.replace(/[^0-9]/g, '');
                                 const rutaNombre = formData.nombre || 'una ruta privada';
                                 const mensaje = encodeURIComponent(
                                   `¡Hola! 👋 Te invito a ver mi ruta de transporte "${rutaNombre}" en TodoCerca. ` +
-                                  `Descarga la app y regístrate con este número para verla: https://todocerca.lovable.app`
+                                 `Cuando guardes la ruta, copia el enlace de invitación y compártelo aquí. ` +
+                                 `Descarga la app: https://todocerca.lovable.app`
                                 );
                                 const waUrl = `https://wa.me/${cleanPhone}?text=${mensaje}`;
                                 window.open(waUrl, '_blank');
@@ -1308,13 +1310,53 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                   {product.descripcion}
                 </p>
+                {/* Show copy link button for private routes */}
+                {(product as any).is_private && (product as any).invite_token && (
+                  <div className="mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={async () => {
+                        const inviteLink = `${window.location.origin}/mapa?type=ruta&token=${(product as any).invite_token}`;
+                        try {
+                          await navigator.clipboard.writeText(inviteLink);
+                          toast({
+                            title: "Enlace copiado",
+                            description: "Compártelo por WhatsApp para invitar pasajeros",
+                          });
+                        } catch (err) {
+                          // Fallback for older browsers
+                          const input = document.createElement('input');
+                          input.value = inviteLink;
+                          document.body.appendChild(input);
+                          input.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(input);
+                          toast({
+                            title: "Enlace copiado",
+                            description: "Compártelo por WhatsApp para invitar pasajeros",
+                          });
+                        }
+                      }}
+                    >
+                      <Link className="h-3 w-3 mr-1" />
+                      Copiar enlace de invitación
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-xs">
                   <span className={product.is_available ? 'text-green-600' : 'text-red-600'}>
                     {product.is_available ? '● Disponible' : '● No disponible'}
                   </span>
+                  {(product as any).is_private && (
+                    <span className="text-orange-500">🔒 Privada</span>
+                  )}
+                  {!(product as any).is_private && (
                   <span className="text-muted-foreground">
                     Stock: {product.stock}
                   </span>
+                  )}
                 </div>
               </CardContent>
             </Card>

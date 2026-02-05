@@ -59,6 +59,8 @@ interface AvailableRoute {
 
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
 
+type RouteTypeFilter = "publico" | "foraneo" | "privado" | null;
+
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -78,6 +80,8 @@ const ProductSearch = () => {
   const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
+  const [selectedRouteType, setSelectedRouteType] = useState<RouteTypeFilter>(null);
+  const [privateRouteLink, setPrivateRouteLink] = useState<string>('');
 
   // State for "Profesiones y oficios" subcategories
   const [availableProfesiones, setAvailableProfesiones] = useState<AvailableRoute[]>([]);
@@ -161,9 +165,17 @@ const ProductSearch = () => {
   const isRutasCategory = selectedCategoryName === "Rutas de Transporte";
   const isProfesionesCategory = selectedCategoryName === "Profesiones y oficios";
 
-  // Fetch available routes when "Rutas de Transporte" is selected
+  // Reset route type when category changes
   useEffect(() => {
     if (!isRutasCategory) {
+      setSelectedRouteType(null);
+      setPrivateRouteLink('');
+    }
+  }, [isRutasCategory]);
+
+  // Fetch available routes when "Rutas de Transporte" is selected
+  useEffect(() => {
+    if (!isRutasCategory || selectedRouteType === 'privado') {
       setAvailableRoutes([]);
       setSelectedRoute(null);
       return;
@@ -184,7 +196,15 @@ const ProductSearch = () => {
           .select("nombre")
           .eq("category_id", rutasCategory.id)
           .eq("is_available", true)
-          .gte("stock", 1);
+          .gte("stock", 1)
+          .eq("is_private", false);
+
+        // Filter by route type
+        if (selectedRouteType === 'publico') {
+          query = query.or('route_type.eq.urbana,route_type.is.null');
+        } else if (selectedRouteType === 'foraneo') {
+          query = query.eq('route_type', 'foranea');
+        }
 
         // Location filters
         if (searchEstado) query = query.eq("estado", searchEstado);
@@ -227,7 +247,7 @@ const ProductSearch = () => {
     };
 
     fetchAvailableRoutes();
-  }, [isRutasCategory, searchEstado, searchCiudad, categories]);
+  }, [isRutasCategory, selectedRouteType, searchEstado, searchCiudad, categories]);
 
   // Fetch available professions when "Profesiones y oficios" is selected
   useEffect(() => {
@@ -487,6 +507,11 @@ const ProductSearch = () => {
           .eq("is_available", true)
           .gte("stock", 1);
 
+        // Exclude private routes by default (they need invite link)
+        if (isRutasCategory) {
+          query = query.eq("is_private", false);
+        }
+
         // Location filters
         if (searchEstado) query = query.eq("estado", searchEstado);
         if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
@@ -582,6 +607,8 @@ const ProductSearch = () => {
     setSelectedCategoryId(newSelected);
     setSelectedRoute(null); // Reset route selection when changing category
     setSelectedProfesion(null); // Reset profession selection when changing category
+    setSelectedRouteType(null); // Reset route type when changing category
+    setPrivateRouteLink(''); // Clear private route link
   };
 
   return (
@@ -697,38 +724,116 @@ const ProductSearch = () => {
         {/* Route selector when "Rutas de Transporte" is selected */}
         {isRutasCategory && (
           <section aria-label="Rutas disponibles" className="mb-6">
-            <p className="text-sm text-muted-foreground mb-3">
-              Rutas disponibles en {searchCiudad === ALL_MUNICIPIOS_VALUE ? searchEstado : `${searchCiudad}, ${searchEstado}`}:
-            </p>
-            {loadingRoutes ? (
-              <p className="text-sm text-muted-foreground">Cargando rutas...</p>
-            ) : availableRoutes.length === 0 ? (
-              <p className="text-sm text-orange-500">
-                No hay rutas registradas en esta ubicación.
-              </p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableRoutes.map((route) => (
-                    <Badge
-                      key={route.nombre}
-                      variant={selectedRoute === route.nombre ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                      onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
-                    >
-                      {route.nombre}
-                    </Badge>
-                  ))}
+            {/* Route type selector: Público, Foráneo, Privado */}
+            <p className="text-sm text-muted-foreground mb-3">Tipo de ruta:</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Badge
+                variant={selectedRouteType === 'publico' ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+                onClick={() => {
+                  setSelectedRouteType(selectedRouteType === 'publico' ? null : 'publico');
+                  setPrivateRouteLink('');
+                }}
+              >
+                🚌 Público
+              </Badge>
+              <Badge
+                variant={selectedRouteType === 'foraneo' ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+                onClick={() => {
+                  setSelectedRouteType(selectedRouteType === 'foraneo' ? null : 'foraneo');
+                  setPrivateRouteLink('');
+                }}
+              >
+                🚐 Foráneo
+              </Badge>
+              <Badge
+                variant={selectedRouteType === 'privado' ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+                onClick={() => {
+                  setSelectedRouteType(selectedRouteType === 'privado' ? null : 'privado');
+                  setSelectedRoute(null);
+                }}
+              >
+                🔒 Privado
+              </Badge>
+            </div>
+
+            {/* Private route - show input for invite link */}
+            {selectedRouteType === 'privado' && (
+              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Ingresa el enlace de invitación que te compartieron para ver una ruta privada:
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={privateRouteLink}
+                    onChange={(e) => setPrivateRouteLink(e.target.value)}
+                    placeholder="Pega aquí el enlace de la ruta privada..."
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={async () => {
+                      if (!privateRouteLink) return;
+                      // Extract invite token from link
+                      const tokenMatch = privateRouteLink.match(/[?&]token=([a-f0-9-]+)/i);
+                      if (tokenMatch) {
+                        // Navigate to map with private route
+                        navigate(`/mapa?type=ruta&token=${tokenMatch[1]}`);
+                      } else {
+                        toast({
+                          title: "Enlace inválido",
+                          description: "El enlace no contiene un token de invitación válido",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!privateRouteLink}
+                  >
+                    Ver Ruta
+                  </Button>
                 </div>
-                <Button 
-                  type="button" 
-                  onClick={handleSearch} 
-                  disabled={loading}
-                  className="mt-4 w-full sm:w-auto"
-                >
-                  <SearchIcon className="w-4 h-4 mr-2" />
-                  {loading ? "Buscando…" : "Buscar"}
-                </Button>
+              </div>
+            )}
+
+            {/* Public/Foráneo routes - show available routes */}
+            {selectedRouteType && selectedRouteType !== 'privado' && (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} en {searchCiudad === ALL_MUNICIPIOS_VALUE ? searchEstado : `${searchCiudad}, ${searchEstado}`}:
+                </p>
+                {loadingRoutes ? (
+                  <p className="text-sm text-muted-foreground">Cargando rutas...</p>
+                ) : availableRoutes.length === 0 ? (
+                  <p className="text-sm text-destructive">
+                    No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} registradas en esta ubicación.
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableRoutes.map((route) => (
+                        <Badge
+                          key={route.nombre}
+                          variant={selectedRoute === route.nombre ? "default" : "outline"}
+                          className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
+                          onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
+                        >
+                          {route.nombre}
+                        </Badge>
+                      ))}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={handleSearch} 
+                      disabled={loading}
+                      className="mt-4 w-full sm:w-auto"
+                    >
+                      <SearchIcon className="w-4 h-4 mr-2" />
+                      {loading ? "Buscando…" : "Buscar"}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </section>
