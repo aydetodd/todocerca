@@ -1365,6 +1365,7 @@ export type Database = {
           descripcion: string | null
           estado: string | null
           id: string
+          invite_token: string | null
           is_available: boolean | null
           is_mobile: boolean
           is_price_from: boolean
@@ -1386,6 +1387,7 @@ export type Database = {
           descripcion?: string | null
           estado?: string | null
           id?: string
+          invite_token?: string | null
           is_available?: boolean | null
           is_mobile?: boolean
           is_price_from?: boolean
@@ -1407,6 +1409,7 @@ export type Database = {
           descripcion?: string | null
           estado?: string | null
           id?: string
+          invite_token?: string | null
           is_available?: boolean | null
           is_mobile?: boolean
           is_price_from?: boolean

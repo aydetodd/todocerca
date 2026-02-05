@@ -26,9 +26,10 @@ interface TaxiDriver {
 interface RealtimeMapProps {
   onOpenChat: (userId: string, apodo: string) => void;
   filterType?: 'taxi' | 'ruta' | null;
+  privateRouteUserId?: string | null;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track estado for each marker
@@ -129,7 +130,12 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
 
     // Filter locations based on filterType
     let filteredLocations = locations;
-    if (filterType === 'taxi') {
+    
+    // If viewing a private route, only show that specific provider
+    if (privateRouteUserId) {
+      filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
+      console.log('🔒 [Map] Filtering to show only private route provider:', filteredLocations.length);
+    } else if (filterType === 'taxi') {
       filteredLocations = locations.filter(loc => loc.is_taxi === true);
       console.log('🚕 [Map] Filtering to show only taxis:', filteredLocations.length);
     } else if (filterType === 'ruta') {
@@ -316,7 +322,7 @@ export const RealtimeMap = ({ onOpenChat, filterType }: RealtimeMapProps) => {
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId]);
 
   // Add global functions for popup buttons
   useEffect(() => {
