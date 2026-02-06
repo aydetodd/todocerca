@@ -83,6 +83,9 @@ export const useRealtimeLocations = () => {
     const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
     const proveedorNameMap = new Map(proveedoresData?.map(p => [p.user_id, p.nombre]) || []);
     const proveedorIds = proveedoresData?.map(p => p.id) || [];
+
+    // Build a map of driver user_id → employer company name (via choferes_empresa)
+    const driverEmployerMap = new Map<string, string>();
     
     const { data: taxiCategory } = await supabase
       .from('categories')
@@ -137,16 +140,23 @@ export const useRealtimeLocations = () => {
       }
     });
 
-    // Buscar choferes privados activos (linked drivers)
+    // Buscar choferes privados activos (linked drivers) WITH employer info
     const { data: activeDrivers } = await supabase
       .from('choferes_empresa')
-      .select('id, user_id, nombre')
+      .select('id, user_id, nombre, proveedor_id, proveedores(nombre)')
       .eq('is_active', true)
       .not('user_id', 'is', null);
     
     const privateDriverUserIds = new Set(
       activeDrivers?.map(d => d.user_id).filter(Boolean) || []
     );
+
+    // Map driver user_id → employer company name
+    activeDrivers?.forEach(d => {
+      if (d.user_id && (d as any).proveedores?.nombre) {
+        driverEmployerMap.set(d.user_id, (d as any).proveedores.nombre);
+      }
+    });
 
     // Fetch today's driver assignments to get the REAL route name
     const today = new Date().toISOString().split('T')[0];
@@ -247,8 +257,14 @@ export const useRealtimeLocations = () => {
         route_producto_id: isPrivateDriver
           ? (assignmentData?.productoId || rutaInfo?.productoId || null)
           : (isBus && rutaInfo ? rutaInfo.productoId : null),
-        proveedor_id: proveedorId || null,
-        empresa_name: proveedorNameMap.get(loc.user_id) || null,
+        // For private drivers, use employer's proveedor_id for favorites/linking
+        proveedor_id: isPrivateDriver
+          ? (activeDrivers?.find(d => d.user_id === loc.user_id)?.proveedor_id || proveedorId || null)
+          : (proveedorId || null),
+        // For private drivers, use employer company name instead of their own provider entry
+        empresa_name: isPrivateDriver 
+          ? (driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
+          : (proveedorNameMap.get(loc.user_id) || null),
         unit_name: assignmentData?.unitName || null,
         unit_placas: assignmentData?.unitPlacas || null,
         unit_descripcion: assignmentData?.unitDescripcion || null,

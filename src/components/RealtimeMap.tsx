@@ -144,6 +144,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
     }
 
     console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
+
+    // Detect overlapping locations and apply offset so all markers are visible
+    const locationGroups = new Map<string, number>();
+    const locationOffsets = new Map<string, { latOff: number; lngOff: number }>();
+    
+    filteredLocations.forEach(loc => {
+      // Round to ~11m grid to detect overlaps
+      const gridKey = `${Math.round(loc.latitude * 10000)}_${Math.round(loc.longitude * 10000)}`;
+      const count = locationGroups.get(gridKey) || 0;
+      locationGroups.set(gridKey, count + 1);
+      
+      if (count > 0) {
+        // Offset in a circle around the center point (~30m radius)
+        const angle = (count * 2 * Math.PI) / Math.max(count + 1, 3);
+        const offsetDeg = 0.0003; // ~30m
+        locationOffsets.set(loc.user_id, {
+          latOff: Math.cos(angle) * offsetDeg,
+          lngOff: Math.sin(angle) * offsetDeg,
+        });
+      }
+    });
     
     // Primero: remover TODOS los markers que ya no están en filteredLocations
     const currentLocationUserIds = new Set(filteredLocations.map(loc => loc.user_id));
@@ -183,7 +204,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       const isPrivateDriver = location.is_private_driver;
       const color = statusColors[estado];
       
-      const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
+      const offset = locationOffsets.get(location.user_id);
+      const newLatLng = L.latLng(
+        Number(location.latitude) + (offset?.latOff || 0), 
+        Number(location.longitude) + (offset?.lngOff || 0)
+      );
       const existingMarker = markersRef.current[location.user_id];
       
       // Build composite state key — recreate marker when any popup-visible data changes
@@ -349,12 +374,46 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       let popupContent: string;
 
       if (isCurrentUser) {
-        popupContent = `
-          <div style="background:${cardBg};color:${cardFg};padding:12px;min-width:200px;border-radius:8px;">
-            <h3 style="font-weight:bold;font-size:16px;margin-bottom:8px;">${apodo || 'Tu ubicación'}</h3>
-            <p style="font-size:13px;color:${visibilityColor};font-weight:600;">${visibilityText}</p>
-          </div>
-        `;
+        // If current user is a bus/route driver, show their assignment data too
+        if (isBus) {
+          const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;">
+              <div style="margin-bottom:8px;">
+                <h3 style="font-weight:bold;font-size:16px;margin:0 0 2px 0;">${apodo || 'Tu ubicación'}</h3>
+                ${empresaLabel ? `<p style="font-size:12px;color:${mutedFg};margin:0;">${empresaLabel}</p>` : ''}
+              </div>
+              ${routeLabel ? `
+                <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
+                  <span style="font-size:11px;color:${mutedFg};">Ruta: </span>
+                  <span style="font-size:13px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                </div>
+              ` : ''}
+              ${hasUnitInfo ? `
+                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
+                  <span style="font-size:11px;color:${mutedFg};">Unidad: </span>
+                  ${unitDescripcion ? `<span style="font-size:12px;font-weight:600;color:${amberColor};">${unitDescripcion}</span>` : ''}
+                  ${unitLabel ? `<span style="font-size:11px;color:${cardFg};"> · ${unitLabel}</span>` : ''}
+                  ${unitPlacas ? `<span style="font-size:11px;color:${mutedFg};"> · ${unitPlacas}</span>` : ''}
+                </div>
+              ` : ''}
+              ${driverLabel ? `
+                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
+                  <span style="font-size:11px;color:${mutedFg};">Chofer: </span>
+                  <span style="font-size:12px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                </div>
+              ` : ''}
+              <p style="font-size:13px;color:${visibilityColor};font-weight:600;margin-top:6px;">${visibilityText}</p>
+            </div>
+          `;
+        } else {
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:12px;min-width:200px;border-radius:8px;">
+              <h3 style="font-weight:bold;font-size:16px;margin-bottom:8px;">${apodo || 'Tu ubicación'}</h3>
+              <p style="font-size:13px;color:${visibilityColor};font-weight:600;">${visibilityText}</p>
+            </div>
+          `;
+        }
       } else if (isBus) {
         // Bus/route popup — themed with app colors, NO communication buttons
         const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
