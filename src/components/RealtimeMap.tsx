@@ -27,9 +27,10 @@ interface RealtimeMapProps {
   onOpenChat: (userId: string, apodo: string) => void;
   filterType?: 'taxi' | 'ruta' | null;
   privateRouteUserId?: string | null;
+  privateRouteProductoId?: string | null;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
@@ -131,8 +132,16 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
     // Filter locations based on filterType
     let filteredLocations = locations;
     
-    // If viewing a private route, only show that specific provider
-    if (privateRouteUserId) {
+    // If viewing a private route, show ALL units assigned to that route product
+    if (privateRouteProductoId) {
+      filteredLocations = locations.filter(loc => loc.route_producto_id === privateRouteProductoId);
+      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
+      // Fallback: if no matches by producto_id, try single user_id
+      if (filteredLocations.length === 0 && privateRouteUserId) {
+        filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
+        console.log('🔒 [Map] Fallback to user_id filter:', filteredLocations.length);
+      }
+    } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only private route provider:', filteredLocations.length);
     } else if (filterType === 'taxi') {
@@ -519,7 +528,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId]);
 
   // Add global functions for popup buttons
   useEffect(() => {

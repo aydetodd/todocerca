@@ -151,10 +151,14 @@ export const useRealtimeLocations = () => {
       activeDrivers?.map(d => d.user_id).filter(Boolean) || []
     );
 
-    // Map driver user_id → employer company name
+    // Map driver user_id → employer company name AND driver name fallback
+    const driverNameFallbackMap = new Map<string, string>();
     activeDrivers?.forEach(d => {
       if (d.user_id && (d as any).proveedores?.nombre) {
         driverEmployerMap.set(d.user_id, (d as any).proveedores.nombre);
+      }
+      if (d.user_id && d.nombre) {
+        driverNameFallbackMap.set(d.user_id, d.nombre);
       }
     });
 
@@ -268,7 +272,7 @@ export const useRealtimeLocations = () => {
         unit_name: assignmentData?.unitName || null,
         unit_placas: assignmentData?.unitPlacas || null,
         unit_descripcion: assignmentData?.unitDescripcion || null,
-        driver_name: assignmentData?.driverName || null,
+        driver_name: assignmentData?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
       };
       
       newLocationsMap.set(loc.user_id, location);
