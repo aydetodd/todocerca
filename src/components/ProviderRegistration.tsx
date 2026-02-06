@@ -410,7 +410,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         
         toast({
           title: "¡Registro exitoso!",
-          description: `Se registraron ${products.length} productos. Redirigiendo al pago...`,
+          description: `Se registraron ${products.length} productos. Redirigiendo a tu prueba gratis...`,
         });
         
         // Open Stripe checkout in new tab
@@ -488,8 +488,9 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
               >
                 <div className="text-center space-y-2">
                   <h4 className="font-semibold">{plan.name}</h4>
+                  <Badge variant="default" className="bg-green-600">🎉 7 días gratis</Badge>
                   <div className="text-2xl font-bold text-primary">${plan.price} MXN</div>
-                  <p className="text-xs text-muted-foreground">/año</p>
+                  <p className="text-xs text-muted-foreground">/año (después del periodo de prueba)</p>
                   <Badge variant="secondary">{plan.maxProducts} productos</Badge>
                   <p className="text-xs text-muted-foreground">{plan.description}</p>
                 </div>
@@ -504,8 +505,9 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <div className="text-center space-y-2">
             <h4 className="font-semibold">Plan Taxi / Transporte</h4>
+            <Badge variant="default" className="bg-green-600">🎉 7 días gratis</Badge>
             <div className="text-2xl font-bold text-primary">$200 MXN</div>
-            <p className="text-xs text-muted-foreground">/año</p>
+            <p className="text-xs text-muted-foreground">/año (después del periodo de prueba)</p>
             <Badge variant="secondary">Máximo 2 servicios</Badge>
             <p className="text-xs text-muted-foreground">Ideal para taxistas y rutas de transporte</p>
           </div>
@@ -712,7 +714,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         <CardHeader>
           <CardTitle>Registro de Proveedor</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Completa tu información y registra al menos un producto. Luego procederás al pago para activar tu cuenta.
+            Completa tu información y registra al menos un producto. <strong>¡Prueba 7 días gratis sin tarjeta!</strong>
           </p>
         </CardHeader>
 
@@ -747,7 +749,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
               disabled={loading || !validateForm()}
               size="lg"
             >
-              {loading ? 'Procesando...' : `Continuar al Pago ($${currentPrice} MXN/año)`}
+              {loading ? 'Procesando...' : `Comenzar Prueba Gratis (7 días)`}
             </Button>
           </div>
         </CardContent>
