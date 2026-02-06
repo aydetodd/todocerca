@@ -2441,6 +2441,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_invited_to_product: {
+        Args: { p_producto_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_product_owner: {
+        Args: { p_producto_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_proveedor_owner: {
+        Args: { p_proveedor_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_tracking_group_member: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
