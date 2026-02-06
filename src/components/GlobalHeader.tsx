@@ -1,10 +1,6 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-type UserStatus = 'available' | 'busy' | 'offline';
+import { useProviderStatus } from '@/hooks/useProviderStatus';
 
 interface GlobalHeaderProps {
   title?: string;
@@ -13,96 +9,7 @@ interface GlobalHeaderProps {
 
 export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isProvider, setIsProvider] = useState(false);
-  const [status, setStatus] = useState<UserStatus | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const checkUserRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      setUserId(user.id);
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('role, estado')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data?.role === 'proveedor') {
-        setIsProvider(true);
-        setStatus((data.estado as UserStatus) || 'available');
-      }
-    };
-
-    checkUserRole();
-  }, []);
-
-  useEffect(() => {
-    if (!userId || !isProvider) return;
-
-    const channel = supabase
-      .channel(`header_status_${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          if (payload.new && 'estado' in payload.new) {
-            setStatus(payload.new.estado as UserStatus);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, isProvider]);
-
-  const updateStatus = async (newStatus: UserStatus) => {
-    if (loading || !userId) return;
-
-    setLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ estado: newStatus })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      setStatus(newStatus);
-
-      const statusText = newStatus === 'offline'
-        ? '🔴 Fuera de servicio'
-        : newStatus === 'busy'
-        ? '🟡 Ocupado'
-        : '🟢 Disponible';
-
-      toast({
-        title: "Estado actualizado",
-        description: statusText,
-        duration: 3000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { isProvider, status, loading, updateStatus } = useProviderStatus();
 
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
@@ -114,7 +21,6 @@ export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProp
 
         <div className="flex items-center gap-3">
           {children}
-          {/* Semáforo compacto horizontal para proveedores */}
           {isProvider && (
             <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-2 border border-border">
               <button
