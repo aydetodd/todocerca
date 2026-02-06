@@ -83,9 +83,11 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/mi-perfil?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/mi-perfil?upgrade=cancelled`,
-      // Si el total es $0 (por cupón/promo), Stripe permite completar sin tarjeta.
-      // Si el total es > $0, Stripe seguirá pidiendo método de pago.
+      // 7 días de prueba gratis sin tarjeta
       payment_method_collection: "if_required",
+      subscription_data: {
+        trial_period_days: 7,
+      },
     };
 
     // Apply coupon if provided, otherwise allow user to enter promo codes in Stripe UI

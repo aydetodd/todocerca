@@ -72,14 +72,23 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const subscriptions = await stripe.subscriptions.list({
+    // Check for active AND trialing subscriptions (free trial support)
+    const activeSubscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 1,
     });
     
-    if (subscriptions.data.length === 0) {
-      logStep("No active subscriptions found");
+    const trialingSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "trialing",
+      limit: 1,
+    });
+
+    const allSubs = [...activeSubscriptions.data, ...trialingSubscriptions.data];
+    
+    if (allSubs.length === 0) {
+      logStep("No active or trialing subscriptions found");
       return new Response(JSON.stringify({ 
         subscribed: false,
         message: 'No se encontró suscripción activa en Stripe'
@@ -89,7 +98,9 @@ serve(async (req) => {
       });
     }
 
-    const subscription = subscriptions.data[0];
+    const subscription = allSubs[0];
+    const isTrial = subscription.status === 'trialing';
+    logStep("Subscription found", { status: subscription.status, isTrial });
     
     // Get product and price info
     const priceId = subscription.items.data[0]?.price?.id;
@@ -189,13 +200,16 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       subscribed: true,
+      is_trial: isTrial,
       subscription_end: subscriptionEnd.toISOString(),
       plan_type: planInfo.type,
       max_products: planInfo.maxProducts,
       product_id: productId,
       price_id: priceId,
       amount: amount,
-      message: 'Suscripción sincronizada correctamente'
+      message: isTrial 
+        ? 'Periodo de prueba activo (7 días gratis)' 
+        : 'Suscripción sincronizada correctamente'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

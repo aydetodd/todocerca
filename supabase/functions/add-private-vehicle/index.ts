@@ -60,7 +60,11 @@ serve(async (req) => {
         mode: "subscription",
         success_url: `${req.headers.get("origin")}/dashboard?private_route=success`,
         cancel_url: `${req.headers.get("origin")}/dashboard?private_route=cancelled`,
+        // 7 días de prueba gratis sin tarjeta
         payment_method_collection: "if_required",
+        subscription_data: {
+          trial_period_days: 7,
+        },
         metadata: { plan_type: 'ruta_privada', user_id: user.id },
         allow_promotion_codes: true,
       };
@@ -100,11 +104,18 @@ serve(async (req) => {
       const customerId = customers.data[0].id;
       logStep("Checking status for customer", { customerId });
 
-      const subscriptions = await stripe.subscriptions.list({
+      // Check both active and trialing (free trial) subscriptions
+      const activeSubs = await stripe.subscriptions.list({
         customer: customerId,
         status: "active",
         limit: 100,
       });
+      const trialingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "trialing",
+        limit: 100,
+      });
+      const subscriptions = { data: [...activeSubs.data, ...trialingSubs.data] };
 
       // Count total quantity across all private route subscriptions
       let totalQuantity = 0;
