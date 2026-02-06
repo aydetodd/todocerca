@@ -205,8 +205,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           }));
           window.open(data.url, '_blank');
           toast({
-            title: "Redirigiendo a pago",
-            description: "Completa el pago para registrar la unidad ($400 MXN/año)",
+            title: "Redirigiendo",
+            description: "Completa el registro para tu prueba gratis de 7 días",
           });
           setIsUnitDialogOpen(false);
           setNewUnit({ nombre: '', placas: '', descripcion: '' });
@@ -443,7 +443,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               1. Unidades / Autobuses
             </CardTitle>
             <CardDescription>
-              Cada unidad (autobús) requiere una suscripción de $400 MXN/año. Registra tus unidades con placas o No. económico.
+              Cada unidad (autobús) requiere una suscripción de $400 MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -471,7 +471,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               <Alert>
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  Necesitas una suscripción por cada unidad (autobús). $400 MXN/año por unidad.
+                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. $400 MXN/año por unidad después del periodo de prueba.
                 </AlertDescription>
               </Alert>
             )}
@@ -562,7 +562,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               ) : hasAvailableSlot ? (
                 <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad (slot disponible)</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad ($400 MXN/año)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad (7 días gratis)</>
               )}
             </Button>
           </CardContent>
