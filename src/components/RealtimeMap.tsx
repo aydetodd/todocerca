@@ -4,7 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
-import { Phone, MessageCircle } from 'lucide-react';
 import TaxiRequestModal from './TaxiRequestModal';
 import { toast } from 'sonner';
 
@@ -316,76 +315,116 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
 
       const routeLabel = location.profiles.route_name || '';
       const busTypeLabel = isPrivateDriver ? 'Transporte Privado' : 'Ruta de Transporte';
+      const unitLabel = location.unit_name || '';
+      const driverLabel = location.driver_name || '';
       
-      // Build favorite button HTML
+      // Build favorite button HTML — use escaped double quotes for onclick
       const favoritoTarget = location.route_producto_id 
-        ? `'producto', '${location.route_producto_id}'`
-        : (location.proveedor_id ? `'proveedor', '${location.proveedor_id}'` : null);
+        ? `&quot;producto&quot;, &quot;${location.route_producto_id}&quot;`
+        : (location.proveedor_id ? `&quot;proveedor&quot;, &quot;${location.proveedor_id}&quot;` : null);
       const favoritoButtonHtml = favoritoTarget && !isCurrentUser ? `
         <button 
-          onclick='window.addToFavoritos(${favoritoTarget})'
-          class="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          onclick="window.addToFavoritos(${favoritoTarget})"
+          style="position:absolute;top:8px;right:8px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;"
           title="Agregar a favoritos"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
         </button>
       ` : '';
 
-      const popupContent = `
-        <div class="p-3 min-w-[200px] relative">
-          ${favoritoButtonHtml}
-          <h3 class="font-bold text-lg mb-2 pr-8">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : (isBus ? ' 🚌' : '')}</h3>
-          ${isBus ? `<p class="text-xs mb-2 font-semibold" style="color: ${isPrivateDriver ? '#D4960A' : '#2563EB'}">${busTypeLabel}${routeLabel ? ` — ${routeLabel}` : ''}</p>` : ''}
-          ${isTaxi ? '<p class="text-xs mb-2 text-blue-600 font-semibold">Servicio de Taxi</p>' : ''}
-          <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${color}">${estado}</span></p>
-          ${isCurrentUser ? `
-            <p class="text-xs mb-2" style="color: ${visibilityColor}">
-              <strong>${visibilityText}</strong>
-            </p>
-          ` : ''}
-          ${!isCurrentUser ? `
-          <div class="flex flex-col gap-2">
-            ${isTaxi && estado === 'available' ? `
+      // App theme colors
+      const cardBg = '#273547';
+      const cardFg = '#fafafa';
+      const primaryColor = '#3b82f6';
+      const mutedFg = '#bfbfbf';
+      const amberColor = '#FDB813';
+
+      let popupContent: string;
+
+      if (isCurrentUser) {
+        popupContent = `
+          <div style="background:${cardBg};color:${cardFg};padding:12px;min-width:200px;border-radius:8px;">
+            <h3 style="font-weight:bold;font-size:16px;margin-bottom:8px;">${apodo || 'Tu ubicación'}</h3>
+            <p style="font-size:13px;color:${visibilityColor};font-weight:600;">${visibilityText}</p>
+          </div>
+        `;
+      } else if (isBus) {
+        // Bus/route popup — themed with app colors, NO communication buttons
+        popupContent = `
+          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
+            ${favoritoButtonHtml}
+            <div style="margin-bottom:10px;">
+              <h3 style="font-weight:bold;font-size:16px;margin:0 0 4px 0;padding-right:30px;">${apodo || 'Chofer'} 🚌</h3>
+              <p style="font-size:12px;color:${isPrivateDriver ? amberColor : primaryColor};font-weight:600;margin:0;">${busTypeLabel}</p>
+            </div>
+            ${routeLabel ? `
+              <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:16px;">🛣️</span>
+                  <span style="font-size:14px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                </div>
+              </div>
+            ` : ''}
+            ${unitLabel ? `
+              <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:16px;">🚌</span>
+                  <span style="font-size:13px;font-weight:600;color:${amberColor};">${unitLabel}</span>
+                </div>
+              </div>
+            ` : ''}
+            ${driverLabel ? `
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <span style="font-size:14px;">👤</span>
+                <span style="font-size:13px;color:${mutedFg};">Chofer: <strong style="color:${cardFg};">${driverLabel}</strong></span>
+              </div>
+            ` : ''}
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+              <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea'}</span>
+            </div>
+          </div>
+        `;
+      } else if (isTaxi) {
+        // Taxi popup — keep taxi request button and communication
+        popupContent = `
+          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
+            ${favoritoButtonHtml}
+            <h3 style="font-weight:bold;font-size:16px;margin:0 0 4px 0;padding-right:30px;">${apodo || 'Taxi'} 🚕</h3>
+            <p style="font-size:12px;color:#eab308;font-weight:600;margin:0 0 8px 0;">Servicio de Taxi</p>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+              <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'Ocupado' : 'Fuera de línea'}</span>
+            </div>
+            ${estado === 'available' ? `
             <button 
               onclick='window.requestTaxi(${JSON.stringify(location.user_id)}, ${JSON.stringify(apodo || "Taxi")}, ${location.latitude}, ${location.longitude}, ${location.profiles?.tarifa_km || 15})'
-              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1 font-semibold"
+              style="width:100%;background:#eab308;color:#1a1a1a;border:none;padding:10px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;"
             >
               🚕 Solicitar Taxi
             </button>
             ` : ''}
-            <div class="flex gap-2">
-              <button 
-                onclick='window.makeCall(${JSON.stringify(telefono || "")})'
-                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                Llamar
-              </button>
-              <button 
-                onclick='window.openWhatsApp(${JSON.stringify(telefono || "")})'
-                class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                WhatsApp
-              </button>
-              <button 
-                onclick='window.openInternalChat(${JSON.stringify(location.user_id)}, ${JSON.stringify(apodo || "Usuario")})'
-                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Mensaje
-              </button>
+          </div>
+        `;
+      } else {
+        // Generic user popup
+        popupContent = `
+          <div style="background:${cardBg};color:${cardFg};padding:12px;min-width:180px;border-radius:8px;">
+            <h3 style="font-weight:bold;font-size:15px;margin:0 0 6px 0;">${apodo || 'Usuario'}</h3>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+              <span style="font-size:12px;color:${mutedFg};">${estado}</span>
             </div>
           </div>
-          ` : `<p class="text-sm text-gray-500">Tu ubicación actual</p>`}
-        </div>
-      `;
+        `;
+      }
 
       marker.bindPopup(popupContent, {
         closeButton: true,
         autoClose: false,
         closeOnClick: false,
-        maxWidth: 300
+        maxWidth: 300,
+        className: 'custom-popup-dark'
       });
 
       marker.on('click', () => {
