@@ -114,7 +114,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     };
 
     updateUserLocation();
-    const interval = setInterval(updateUserLocation, 5000);
+    const interval = setInterval(updateUserLocation, 1000);
 
     return () => clearInterval(interval);
   }, [currentUserId, updateLocation]);
@@ -154,32 +154,6 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
     console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
 
-    // Detect overlapping locations and apply offset so all markers are visible
-    // Use ~55m grid (×2000) to catch nearby units that would visually overlap
-    const locationGroups = new Map<string, string[]>();
-    const locationOffsets = new Map<string, { latOff: number; lngOff: number }>();
-    
-    filteredLocations.forEach(loc => {
-      const gridKey = `${Math.round(loc.latitude * 2000)}_${Math.round(loc.longitude * 2000)}`;
-      const group = locationGroups.get(gridKey) || [];
-      group.push(loc.user_id);
-      locationGroups.set(gridKey, group);
-    });
-    
-    // Apply circular offset for groups with 2+ markers
-    locationGroups.forEach((userIds) => {
-      if (userIds.length < 2) return;
-      userIds.forEach((uid, idx) => {
-        // Spread evenly in a circle (~40m radius)
-        const angle = (idx * 2 * Math.PI) / userIds.length;
-        const offsetDeg = 0.00035; // ~40m
-        locationOffsets.set(uid, {
-          latOff: Math.cos(angle) * offsetDeg,
-          lngOff: Math.sin(angle) * offsetDeg,
-        });
-      });
-    });
-    
     // Primero: remover TODOS los markers que ya no están en filteredLocations
     const currentLocationUserIds = new Set(filteredLocations.map(loc => loc.user_id));
     Object.keys(markersRef.current).forEach(userId => {
@@ -218,16 +192,14 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const isPrivateDriver = location.is_private_driver;
       const color = statusColors[estado];
       
-      const offset = locationOffsets.get(location.user_id);
-      const newLatLng = L.latLng(
-        Number(location.latitude) + (offset?.latOff || 0), 
-        Number(location.longitude) + (offset?.lngOff || 0)
-      );
+      const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
       const existingMarker = markersRef.current[location.user_id];
       
       // Build composite state key — recreate marker when any popup-visible data changes
       const routeLabel = location.profiles.route_name || '';
-      const unitLabel = location.unit_name || '';
+      const rawUnitName = location.unit_name || '';
+      // Strip "No. Eco." / "No. Eco:" prefix if the DB value already contains it
+      const unitLabel = rawUnitName.replace(/^No\.\s*Eco\.?\s*/i, '');
       const unitPlacas = location.unit_placas || '';
       const unitDescripcion = location.unit_descripcion || '';
       const driverLabel = location.driver_name || '';
@@ -368,7 +340,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const favoritoTarget = location.route_producto_id 
         ? `&quot;producto&quot;, &quot;${location.route_producto_id}&quot;`
         : (location.proveedor_id ? `&quot;proveedor&quot;, &quot;${location.proveedor_id}&quot;` : null);
-      const favoritoButtonHtml = favoritoTarget && !isCurrentUser ? `
+      const favoritoButtonHtml = favoritoTarget ? `
         <button 
           onclick="window.addToFavoritos(${favoritoTarget})"
           style="position:absolute;top:8px;right:8px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;"
@@ -395,7 +367,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         if (isBus) {
           const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
           popupContent = `
-            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;">
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
+              ${favoritoButtonHtml}
               <div style="margin-bottom:10px;">
                 <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte'}</p>
                 <h3 style="font-weight:bold;font-size:16px;margin:0 0 2px 0;">${showEmpresa ? empresaLabel : (apodo || 'Tu ubicación')}</h3>
