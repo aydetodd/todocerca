@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Send, Loader2, User } from 'lucide-react';
+import { Plus, Trash2, Send, Loader2, User, Pencil, AlertTriangle } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface Driver {
@@ -47,6 +47,9 @@ export default function PrivateRouteDrivers({
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
   const [deleteDriverId, setDeleteDriverId] = useState<string | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -139,6 +142,10 @@ export default function PrivateRouteDrivers({
 
   const handleDeleteDriver = async () => {
     if (!deleteDriverId) return;
+    if (deleteStep === 1) {
+      setDeleteStep(2);
+      return;
+    }
     try {
       const { error } = await supabase
         .from('choferes_empresa')
@@ -148,6 +155,29 @@ export default function PrivateRouteDrivers({
       if (error) throw error;
       toast({ title: "Chofer eliminado" });
       setDeleteDriverId(null);
+      setDeleteStep(1);
+      fetchDrivers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditName = async (driverId: string) => {
+    if (!editName.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('choferes_empresa')
+        .update({ nombre: editName.trim() })
+        .eq('id', driverId);
+
+      if (error) throw error;
+      toast({ title: "Nombre actualizado" });
+      setEditingDriverId(null);
+      setEditName('');
       fetchDrivers();
     } catch (error: any) {
       toast({
@@ -188,7 +218,7 @@ export default function PrivateRouteDrivers({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <User className="h-5 w-5" />
-            Choferes - {vehicleName}
+            Choferes
           </CardTitle>
           <CardDescription>
             Agrega choferes y envía invitaciones por WhatsApp
@@ -242,26 +272,57 @@ export default function PrivateRouteDrivers({
               {drivers.map((driver) => (
                 <div 
                   key={driver.id} 
-                  className="flex items-center justify-between bg-background p-3 rounded-lg border"
+                  className="bg-background p-3 rounded-lg border space-y-2"
                 >
-                  <div>
-                    <p className="font-medium text-sm">
-                      {driver.nombre || 'Sin nombre'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{driver.telefono}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={driver.user_id ? 'default' : 'secondary'} className="text-xs">
-                      {driver.user_id ? 'Vinculado' : 'Pendiente'}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => setDeleteDriverId(driver.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      {editingDriverId === driver.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Nuevo nombre"
+                            className="h-7 text-sm w-36"
+                            onKeyDown={(e) => e.key === 'Enter' && handleEditName(driver.id)}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleEditName(driver.id)}>
+                            OK
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingDriverId(null)}>
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="font-medium text-sm">
+                          {driver.nombre || 'Sin nombre'}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{driver.telefono}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={driver.user_id ? 'default' : 'secondary'} className="text-xs">
+                        {driver.user_id ? 'Vinculado' : 'Pendiente'}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setEditingDriverId(driver.id);
+                          setEditName(driver.nombre || '');
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => { setDeleteDriverId(driver.id); setDeleteStep(1); }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -274,18 +335,41 @@ export default function PrivateRouteDrivers({
         </CardContent>
       </Card>
 
-      {/* Delete confirmation */}
-      <AlertDialog open={!!deleteDriverId} onOpenChange={() => setDeleteDriverId(null)}>
+      {/* Delete confirmation - double step */}
+      <AlertDialog open={!!deleteDriverId} onOpenChange={() => { setDeleteDriverId(null); setDeleteStep(1); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar chofer?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se eliminará este chofer de tu empresa. Podrás agregarlo de nuevo después.
-            </AlertDialogDescription>
+            {deleteStep === 1 ? (
+              <>
+                <AlertDialogTitle>¿Eliminar chofer?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <span className="block">Se eliminará este chofer de tu empresa.</span>
+                  <span className="block text-sm">💡 <strong>Sugerencia:</strong> Si solo necesitas corregir el nombre, usa el botón de editar <Pencil className="inline h-3 w-3" /> en su lugar.</span>
+                </AlertDialogDescription>
+              </>
+            ) : (
+              <>
+                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  ¿Estás completamente seguro?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <span className="block font-semibold text-destructive">⚠️ Esta acción eliminará la suscripción del chofer y no es reembolsable.</span>
+                  <span className="block">El chofer perderá acceso a la app y deberás volver a agregarlo y pagar una nueva suscripción.</span>
+                </AlertDialogDescription>
+              </>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteDriver}>Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => { setDeleteDriverId(null); setDeleteStep(1); }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteDriver}
+              className={deleteStep === 2 ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              {deleteStep === 1 ? 'Continuar' : 'Sí, eliminar definitivamente'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

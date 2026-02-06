@@ -98,14 +98,14 @@ export function PhoneInput({
           {label} {required && "*"}
         </Label>
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-1.5">
         <Select value={selectedCountryKey} onValueChange={handleCountryChange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[90px] px-2 shrink-0">
             <SelectValue>
               {selectedCountryData && (
-                <span className="flex items-center gap-1">
-                  <span className="text-xl">{selectedCountryData.flag}</span>
-                  <span>{selectedCountryData.code}</span>
+                <span className="flex items-center gap-0.5">
+                  <span className="text-base">{selectedCountryData.flag}</span>
+                  <span className="text-xs">{selectedCountryData.code}</span>
                 </span>
               )}
             </SelectValue>
