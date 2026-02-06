@@ -199,6 +199,23 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   // Rutas disponibles (con menos de 3 variantes)
   const availableRoutes = AVAILABLE_ROUTES.filter(r => routeVariantCount[r] < 3);
 
+  // Exclusividad mutua: detectar tipos de ruta existentes del proveedor
+  const hasPublicOrForanea = products.some(p => p.route_type === 'urbana' || p.route_type === 'foranea');
+  const hasPrivada = products.some(p => p.route_type === 'privada' || p.is_private);
+  
+  // Determinar qué tipos están disponibles
+  const getRouteTypeDisabled = (routeType: string): boolean => {
+    if (routeType === 'privada' && hasPublicOrForanea) return true;
+    if ((routeType === 'urbana' || routeType === 'foranea') && hasPrivada) return true;
+    return false;
+  };
+  
+  const getRouteTypeHint = (): string | null => {
+    if (hasPublicOrForanea) return 'Ya tienes rutas públicas/foráneas. Las rutas privadas requieren un registro separado.';
+    if (hasPrivada) return 'Ya tienes rutas privadas. Las rutas públicas/foráneas requieren un registro separado.';
+    return null;
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
@@ -654,18 +671,33 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                         <SelectValue placeholder="Selecciona tipo de ruta" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROUTE_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
+                        {ROUTE_TYPES.map((type) => {
+                          const isDisabled = getRouteTypeDisabled(type.value);
+                          return (
+                            <SelectItem 
+                              key={type.value} 
+                              value={type.value}
+                              disabled={isDisabled}
+                            >
+                              {type.label} {isDisabled ? '🔒' : ''}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
                       {selectedRouteType === 'urbana' && 'Rutas urbanas numeradas del 1 al 30'}
-                      {selectedRouteType === 'foranea' && 'Rutas foráneas con nombre personalizado'}
+                      {selectedRouteType === 'foranea' && 'Rutas foráneas con nombre libre'}
                       {selectedRouteType === 'privada' && 'Solo visible para personal invitado por WhatsApp'}
                     </p>
+                    {getRouteTypeHint() && (
+                      <Alert className="mt-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          {getRouteTypeHint()}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
 
                   {/* Selector para rutas urbanas (1-30) */}

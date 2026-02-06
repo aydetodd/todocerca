@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      asignaciones_chofer: {
+        Row: {
+          asignado_por: string | null
+          chofer_id: string
+          created_at: string
+          fecha: string
+          id: string
+          producto_id: string
+        }
+        Insert: {
+          asignado_por?: string | null
+          chofer_id: string
+          created_at?: string
+          fecha?: string
+          id?: string
+          producto_id: string
+        }
+        Update: {
+          asignado_por?: string | null
+          chofer_id?: string
+          created_at?: string
+          fecha?: string
+          id?: string
+          producto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignaciones_chofer_chofer_id_fkey"
+            columns: ["chofer_id"]
+            isOneToOne: false
+            referencedRelation: "choferes_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_chofer_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -87,6 +129,50 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      choferes_empresa: {
+        Row: {
+          created_at: string
+          id: string
+          invite_token: string
+          is_active: boolean | null
+          nombre: string | null
+          proveedor_id: string
+          telefono: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_token?: string
+          is_active?: boolean | null
+          nombre?: string | null
+          proveedor_id: string
+          telefono: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_token?: string
+          is_active?: boolean | null
+          nombre?: string | null
+          proveedor_id?: string
+          telefono?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "choferes_empresa_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
             referencedColumns: ["id"]
           },
         ]
@@ -2441,6 +2527,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_chofer_empresa_owner: {
+        Args: { p_chofer_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_chofer_self: {
+        Args: { p_chofer_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_invited_to_product: {
         Args: { p_producto_id: string; p_user_id: string }
         Returns: boolean
