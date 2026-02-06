@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +27,7 @@ interface Unit {
   id: string;
   nombre: string;
   placas: string | null;
+  descripcion: string | null;
 }
 
 interface DriverInfo {
@@ -152,7 +154,7 @@ export default function DriverRouteSelector() {
           .order('nombre'),
         supabase
           .from('unidades_empresa')
-          .select('id, nombre, placas')
+          .select('id, nombre, placas, descripcion')
           .eq('proveedor_id', driverData.proveedor_id)
           .eq('is_active', true)
           .order('nombre'),
@@ -234,7 +236,8 @@ export default function DriverRouteSelector() {
       }
 
       const routeName = routes.find(r => r.id === selectedRoute)?.nombre || 'Ruta';
-      const unitName = units.find(u => u.id === selectedUnit)?.nombre;
+      const selectedUnitObj = units.find(u => u.id === selectedUnit);
+      const unitName = selectedUnitObj ? formatUnitLabel(selectedUnitObj) : undefined;
 
       // Sync profile.route_name so the map shows the correct route immediately
       // IMPORTANT: Use the exact route name from the assignment, not the profile's old value
@@ -332,8 +335,7 @@ export default function DriverRouteSelector() {
                   <SelectContent>
                     {units.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        🚌 {unit.nombre}
-                        {unit.placas ? ` · Placas: ${unit.placas}` : ''}
+                        🚌 {formatUnitOption(unit)}
                       </SelectItem>
                     ))}
                   </SelectContent>

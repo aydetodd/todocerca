@@ -319,6 +319,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       const busTypeLabel = isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte';
       const unitLabel = location.unit_name || '';
       const unitPlacas = location.unit_placas || '';
+      const unitDescripcion = location.unit_descripcion || '';
       const driverLabel = location.driver_name || '';
       
       // Build favorite button HTML — use escaped double quotes for onclick
@@ -353,11 +354,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         `;
       } else if (isBus) {
         // Bus/route popup — themed with app colors, NO communication buttons
-        // Build unit info line with nombre + placas
-        const unitInfoParts: string[] = [];
-        if (unitLabel) unitInfoParts.push(unitLabel);
-        if (unitPlacas) unitInfoParts.push(`Placas: ${unitPlacas}`);
-        const unitInfoLine = unitInfoParts.join(' · ');
+        // Build unit info section with No. Eco + Placas + Descripción
+        const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
         
         popupContent = `
           <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:240px;border-radius:10px;position:relative;">
@@ -373,13 +371,14 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
                 </div>
               </div>
             ` : ''}
-            ${unitInfoLine ? `
+            ${hasUnitInfo ? `
               <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:16px;">🚌</span>
                   <div>
-                    <span style="font-size:13px;font-weight:600;color:${amberColor};">${unitLabel}</span>
+                    ${unitLabel ? `<span style="font-size:13px;font-weight:600;color:${amberColor};">No. Eco: ${unitLabel}</span>` : ''}
                     ${unitPlacas ? `<span style="font-size:11px;color:${mutedFg};display:block;margin-top:2px;">Placas: ${unitPlacas}</span>` : ''}
+                    ${unitDescripcion ? `<span style="font-size:11px;color:${mutedFg};display:block;margin-top:2px;">${unitDescripcion}</span>` : ''}
                   </div>
                 </div>
               </div>

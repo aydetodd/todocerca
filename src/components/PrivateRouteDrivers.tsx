@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,7 @@ interface Unit {
   id: string;
   nombre: string;
   placas: string | null;
+  descripcion: string | null;
 }
 
 interface TodayAssignment {
@@ -104,7 +106,7 @@ export default function PrivateRouteDrivers({
           .order('nombre'),
         supabase
           .from('unidades_empresa')
-          .select('id, nombre, placas')
+          .select('id, nombre, placas, descripcion')
           .eq('proveedor_id', proveedorId)
           .eq('is_active', true)
           .order('nombre'),
@@ -518,7 +520,7 @@ export default function PrivateRouteDrivers({
                               <SelectContent>
                                 {units.map((unit) => (
                                   <SelectItem key={unit.id} value={unit.id} className="text-xs">
-                                    🚌 {unit.nombre}{unit.placas ? ` · ${unit.placas}` : ''}
+                                    🚌 {formatUnitOption(unit)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -534,8 +536,7 @@ export default function PrivateRouteDrivers({
                               <>
                                 <ArrowRight className="h-3 w-3 shrink-0" />
                                 <span className="font-medium text-foreground">
-                                  🚌 {assignedUnit.nombre}
-                                  {assignedUnit.placas ? ` · ${assignedUnit.placas}` : ''}
+                                  🚌 {formatUnitLabel(assignedUnit)}
                                 </span>
                               </>
                             )}

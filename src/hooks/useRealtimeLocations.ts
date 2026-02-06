@@ -28,6 +28,7 @@ export interface ProveedorLocation {
   proveedor_id?: string | null;
   unit_name?: string | null;
   unit_placas?: string | null;
+  unit_descripcion?: string | null;
   driver_name?: string | null;
 }
 
@@ -149,7 +150,7 @@ export const useRealtimeLocations = () => {
     const today = new Date().toISOString().split('T')[0];
     const driverIds = activeDrivers?.map(d => d.id) || [];
     
-    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string; unitName: string | null; unitPlacas: string | null; driverName: string | null }>();
+    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string; unitName: string | null; unitPlacas: string | null; unitDescripcion: string | null; driverName: string | null }>();
     
     if (driverIds.length > 0) {
       const { data: assignments } = await supabase
@@ -160,13 +161,13 @@ export const useRealtimeLocations = () => {
       
       // Fetch unit details (nombre + placas) if any assignment has unidad_id
       const unitIds = assignments?.map(a => a.unidad_id).filter(Boolean) || [];
-      let unitDataMap = new Map<string, { nombre: string; placas: string | null }>();
+      let unitDataMap = new Map<string, { nombre: string; placas: string | null; descripcion: string | null }>();
       if (unitIds.length > 0) {
         const { data: unitsData } = await supabase
           .from('unidades_empresa')
-          .select('id, nombre, placas')
+          .select('id, nombre, placas, descripcion')
           .in('id', unitIds);
-        unitsData?.forEach(u => unitDataMap.set(u.id, { nombre: u.nombre, placas: u.placas }));
+        unitsData?.forEach(u => unitDataMap.set(u.id, { nombre: u.nombre, placas: u.placas, descripcion: u.descripcion }));
       }
       
       if (assignments) {
@@ -188,6 +189,7 @@ export const useRealtimeLocations = () => {
               productoId: a.producto_id,
               unitName: unitData?.nombre || null,
               unitPlacas: unitData?.placas || null,
+              unitDescripcion: unitData?.descripcion || null,
               driverName: choferNameMap.get(a.chofer_id) || null,
             });
           }
@@ -246,6 +248,7 @@ export const useRealtimeLocations = () => {
         proveedor_id: proveedorId || null,
         unit_name: assignmentData?.unitName || null,
         unit_placas: assignmentData?.unitPlacas || null,
+        unit_descripcion: assignmentData?.unitDescripcion || null,
         driver_name: assignmentData?.driverName || null,
       };
       
