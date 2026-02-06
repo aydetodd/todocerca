@@ -355,9 +355,35 @@ function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: {
   onNavigate: (path: string) => void;
 }) {
   const proveedor = favorito.proveedor!;
+  const [isRouteProvider, setIsRouteProvider] = useState(false);
+  const [routeToken, setRouteToken] = useState<string | null>(null);
+
+  // Check if this proveedor has route products (transport)
+  useEffect(() => {
+    const checkRouteProducts = async () => {
+      const { data } = await supabase
+        .from('productos')
+        .select('id, invite_token, is_private')
+        .eq('proveedor_id', proveedor.id)
+        .eq('route_type', 'privada')
+        .eq('is_private', true)
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setIsRouteProvider(true);
+        setRouteToken(data.invite_token);
+      }
+    };
+    checkRouteProducts();
+  }, [proveedor.id]);
 
   const handleNavigate = () => {
-    onNavigate(`/proveedor/${proveedor.id}`);
+    if (isRouteProvider && routeToken) {
+      // Route provider → go to map to see bus position
+      onNavigate(`/mapa?type=ruta&token=${routeToken}`);
+    } else {
+      onNavigate(`/proveedor/${proveedor.id}`);
+    }
   };
 
   return (
@@ -366,21 +392,18 @@ function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold">{proveedor.nombre}</h3>
-            {proveedor.telefono && (
+            {isRouteProvider && (
+              <Badge variant="outline" className="text-xs mt-1">🚌 Transporte</Badge>
+            )}
+            {!isRouteProvider && proveedor.telefono && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                 <Phone className="h-3 w-3" />
                 {proveedor.telefono}
               </div>
             )}
-            {proveedor.latitude && proveedor.longitude && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                <MapPin className="h-3 w-3" />
-                Con ubicación
-              </div>
-            )}
             <div className="flex items-center gap-1 mt-1 text-xs text-primary">
               <ExternalLink className="h-3 w-3" />
-              Ver perfil
+              {isRouteProvider ? 'Ver en mapa' : 'Ver perfil'}
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
