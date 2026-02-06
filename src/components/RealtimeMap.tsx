@@ -235,9 +235,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         iconSize = [32, 48];
         iconAnchor = [16, 24];
       } else if (isBus) {
-        // Bus icon — yellow for private drivers, white for public routes
-        const busBodyColor = isPrivateDriver ? '#FDB813' : '#FFFFFF';
-        const busStrokeColor = isPrivateDriver ? '#D4960A' : '#999999';
+        // Bus icon — yellow for ALL private routes (drivers AND owners), white for public
+        const isPrivateRoute = location.is_private_route;
+        const busBodyColor = isPrivateRoute ? '#FDB813' : '#FFFFFF';
+        const busStrokeColor = isPrivateRoute ? '#D4960A' : '#999999';
         const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
         iconHtml = `
@@ -314,8 +315,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
       const routeLabel = location.profiles.route_name || '';
-      const busTypeLabel = isPrivateDriver ? 'Transporte Privado' : 'Ruta de Transporte';
+      const isPrivateRoute = location.is_private_route;
+      const busTypeLabel = isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte';
       const unitLabel = location.unit_name || '';
+      const unitPlacas = location.unit_placas || '';
       const driverLabel = location.driver_name || '';
       
       // Build favorite button HTML — use escaped double quotes for onclick
@@ -350,33 +353,46 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         `;
       } else if (isBus) {
         // Bus/route popup — themed with app colors, NO communication buttons
+        // Build unit info line with nombre + placas
+        const unitInfoParts: string[] = [];
+        if (unitLabel) unitInfoParts.push(unitLabel);
+        if (unitPlacas) unitInfoParts.push(`Placas: ${unitPlacas}`);
+        const unitInfoLine = unitInfoParts.join(' · ');
+        
         popupContent = `
-          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
+          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:240px;border-radius:10px;position:relative;">
             ${favoritoButtonHtml}
             <div style="margin-bottom:10px;">
-              <h3 style="font-weight:bold;font-size:16px;margin:0 0 4px 0;padding-right:30px;">${apodo || 'Chofer'} 🚌</h3>
-              <p style="font-size:12px;color:${isPrivateDriver ? amberColor : primaryColor};font-weight:600;margin:0;">${busTypeLabel}</p>
+              <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${busTypeLabel}</p>
             </div>
             ${routeLabel ? `
               <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:16px;">🛣️</span>
-                  <span style="font-size:14px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                  <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
                 </div>
               </div>
             ` : ''}
-            ${unitLabel ? `
+            ${unitInfoLine ? `
               <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:16px;">🚌</span>
-                  <span style="font-size:13px;font-weight:600;color:${amberColor};">${unitLabel}</span>
+                  <div>
+                    <span style="font-size:13px;font-weight:600;color:${amberColor};">${unitLabel}</span>
+                    ${unitPlacas ? `<span style="font-size:11px;color:${mutedFg};display:block;margin-top:2px;">Placas: ${unitPlacas}</span>` : ''}
+                  </div>
                 </div>
               </div>
             ` : ''}
             ${driverLabel ? `
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                <span style="font-size:14px;">👤</span>
-                <span style="font-size:13px;color:${mutedFg};">Chofer: <strong style="color:${cardFg};">${driverLabel}</strong></span>
+              <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:14px;">👤</span>
+                  <div>
+                    <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
+                    <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                  </div>
+                </div>
               </div>
             ` : ''}
             <div style="display:flex;align-items:center;gap:6px;">

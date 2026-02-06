@@ -23,9 +23,11 @@ export interface ProveedorLocation {
   is_taxi?: boolean;
   is_bus?: boolean;
   is_private_driver?: boolean;
+  is_private_route?: boolean;
   route_producto_id?: string | null;
   proveedor_id?: string | null;
   unit_name?: string | null;
+  unit_placas?: string | null;
   driver_name?: string | null;
 }
 
@@ -109,7 +111,7 @@ export const useRealtimeLocations = () => {
     // Buscar proveedores con productos de rutas (Ruta 1, Ruta 2, etc.)
     let rutaQuery = supabase
       .from('productos')
-      .select('id, proveedor_id, nombre')
+      .select('id, proveedor_id, nombre, is_private')
       .in('proveedor_id', proveedorIds);
     
     if (rutaCategory?.id) {
@@ -119,10 +121,16 @@ export const useRealtimeLocations = () => {
     }
     
     const { data: rutaProducts } = await rutaQuery;
-    const rutaProviderMap = new Map<string, { nombre: string; productoId: string }>(); // proveedor_id -> route info
+    const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean }>(); 
+    // Track providers with ANY private route
+    const privateRouteOwnerIds = new Set<string>();
+    
     rutaProducts?.forEach(p => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
-        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id });
+        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id, isPrivate: p.is_private || false });
+      }
+      if (p.is_private) {
+        privateRouteOwnerIds.add(p.proveedor_id);
       }
     });
 
@@ -141,7 +149,7 @@ export const useRealtimeLocations = () => {
     const today = new Date().toISOString().split('T')[0];
     const driverIds = activeDrivers?.map(d => d.id) || [];
     
-    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string; unitName: string | null; driverName: string | null }>();
+    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string; unitName: string | null; unitPlacas: string | null; driverName: string | null }>();
     
     if (driverIds.length > 0) {
       const { data: assignments } = await supabase
@@ -150,15 +158,15 @@ export const useRealtimeLocations = () => {
         .in('chofer_id', driverIds)
         .eq('fecha', today);
       
-      // Fetch unit names if any assignment has unidad_id
+      // Fetch unit details (nombre + placas) if any assignment has unidad_id
       const unitIds = assignments?.map(a => a.unidad_id).filter(Boolean) || [];
-      let unitNameMap = new Map<string, string>();
+      let unitDataMap = new Map<string, { nombre: string; placas: string | null }>();
       if (unitIds.length > 0) {
         const { data: unitsData } = await supabase
           .from('unidades_empresa')
-          .select('id, nombre')
+          .select('id, nombre, placas')
           .in('id', unitIds);
-        unitsData?.forEach(u => unitNameMap.set(u.id, u.nombre));
+        unitsData?.forEach(u => unitDataMap.set(u.id, { nombre: u.nombre, placas: u.placas }));
       }
       
       if (assignments) {
@@ -174,10 +182,12 @@ export const useRealtimeLocations = () => {
         for (const a of assignments) {
           const userId = choferToUser.get(a.chofer_id);
           if (userId) {
+            const unitData = a.unidad_id ? unitDataMap.get(a.unidad_id) : null;
             driverAssignmentMap.set(userId, {
               routeName: (a.productos as any)?.nombre || 'Ruta',
               productoId: a.producto_id,
-              unitName: a.unidad_id ? (unitNameMap.get(a.unidad_id) || null) : null,
+              unitName: unitData?.nombre || null,
+              unitPlacas: unitData?.placas || null,
               driverName: choferNameMap.get(a.chofer_id) || null,
             });
           }
@@ -195,17 +205,20 @@ export const useRealtimeLocations = () => {
       
       const proveedorId = proveedorMap.get(loc.user_id);
       const isPrivateDriver = privateDriverUserIds.has(loc.user_id);
+      const isPrivateRouteOwner = proveedorId ? privateRouteOwnerIds.has(proveedorId) : false;
       
-      // Determine vehicle type: provider can be BOTH taxi AND bus if they have products in both categories
+      // Determine vehicle type
       const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
       const rutaInfo = proveedorId ? rutaProviderMap.get(proveedorId) : null;
       const routeNameFromProduct = rutaInfo?.nombre || null;
       const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
-      // A provider can have BOTH flags true if they have products in both categories
-      // BUT private drivers should NOT show as taxis
+      // Private route = chofer assigned to private route OR owner with private routes
+      const isPrivateRoute = isPrivateDriver || isPrivateRouteOwner;
+      
       const isBus = profile.provider_type === 'ruta' || hasRutaProduct || isPrivateDriver;
-      const isTaxi = isPrivateDriver ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
+      // Private drivers/owners should NOT show as taxis
+      const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
       
       const assignmentData = driverAssignmentMap.get(loc.user_id);
       
@@ -225,12 +238,14 @@ export const useRealtimeLocations = () => {
         is_taxi: isTaxi,
         is_bus: isBus,
         is_private_driver: isPrivateDriver,
-        // Set route_producto_id for ALL bus providers (private drivers AND owners with route products)
+        is_private_route: isPrivateRoute,
+        // Set route_producto_id for ALL bus providers
         route_producto_id: isPrivateDriver
           ? (assignmentData?.productoId || rutaInfo?.productoId || null)
           : (isBus && rutaInfo ? rutaInfo.productoId : null),
         proveedor_id: proveedorId || null,
         unit_name: assignmentData?.unitName || null,
+        unit_placas: assignmentData?.unitPlacas || null,
         driver_name: assignmentData?.driverName || null,
       };
       
@@ -251,9 +266,8 @@ export const useRealtimeLocations = () => {
   // Actualización rápida SOLO de coordenadas (para movimiento fluido)
   const updateLocationOnly = useCallback((userId: string, lat: number, lng: number) => {
     const existing = locationsMapRef.current.get(userId);
-    if (!existing) return; // No existe, esperar a fetchFullData
+    if (!existing) return;
     
-    // Actualizar solo coordenadas
     existing.latitude = lat;
     existing.longitude = lng;
     existing.updated_at = new Date().toISOString();
@@ -280,14 +294,12 @@ export const useRealtimeLocations = () => {
     for (const loc of locationsData) {
       const existing = locationsMapRef.current.get(loc.user_id);
       if (existing) {
-        // Check if position actually changed
         if (Math.abs(existing.latitude - loc.latitude) > 0.000001 || 
             Math.abs(existing.longitude - loc.longitude) > 0.000001) {
           existing.latitude = loc.latitude;
           existing.longitude = loc.longitude;
           existing.updated_at = loc.updated_at;
           hasChanges = true;
-          console.log(`🚀 [Poll] ${existing.profiles?.apodo}: ${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`);
         }
       }
     }
@@ -300,34 +312,25 @@ export const useRealtimeLocations = () => {
   useEffect(() => {
     isMounted.current = true;
     
-    // Carga inicial completa
     fetchFullData();
 
-    // Suscripción a cambios de profiles (estado) - refetch completo
     const profilesChannel = supabase
       .channel('realtime-profiles-status')
       .on(
         'postgres_changes',
-        { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'profiles'
-        },
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
         (payload: any) => {
           const newData = payload.new;
           const oldData = payload.old;
-          
           if (newData?.role !== 'proveedor') return;
-          
           if (oldData?.estado !== newData?.estado) {
             console.log(`🔄 [Estado] ${newData.apodo}: ${oldData?.estado} → ${newData.estado}`);
-            fetchFullData(); // Refetch completo cuando cambia estado
+            fetchFullData();
           }
         }
       )
       .subscribe();
 
-    // Suscripción a cambios de ubicaciones - ACTUALIZACIÓN RÁPIDA
     const locationsChannel = supabase
       .channel('realtime-locations-fast')
       .on(
@@ -342,13 +345,9 @@ export const useRealtimeLocations = () => {
       )
       .subscribe();
 
-    // Polling RÁPIDO cada 1.5 segundos para ubicaciones
     const fastPollInterval = setInterval(fetchLocationsOnly, 1500);
-    
-    // Polling lento cada 30 segundos para refetch completo (nuevos proveedores, etc.)
     const slowPollInterval = setInterval(fetchFullData, 30000);
 
-    // Auto-track para proveedores
     const startProviderTracking = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;

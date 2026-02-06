@@ -329,13 +329,13 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
 
               {units.length > 0 && (
                 <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar unidad (opcional)" />
+                  <SelectTrigger className={!selectedUnit ? 'border-amber-500/50' : ''}>
+                    <SelectValue placeholder="⚠️ Seleccionar unidad" />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        {unit.nombre}{unit.placas ? ` (${unit.placas})` : ''}
+                        🚌 {unit.nombre}{unit.placas ? ` · Placas: ${unit.placas}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
