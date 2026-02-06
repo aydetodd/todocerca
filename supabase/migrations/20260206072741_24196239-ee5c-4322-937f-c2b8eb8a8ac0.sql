@@ -1,0 +1,2 @@
+-- Drop the UNIQUE constraint that prevents assigning the same route to multiple drivers on the same day
+ALTER TABLE public.asignaciones_chofer DROP CONSTRAINT IF EXISTS asignaciones_chofer_producto_id_fecha_key;
