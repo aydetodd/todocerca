@@ -24,8 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, AlertCircle } from 'lucide-react';
-import { PhoneInput } from '@/components/ui/phone-input';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import DailyAssignments from './DailyAssignments';
 
@@ -53,10 +52,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
   } | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [addingVehicle, setAddingVehicle] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRouteDialogOpen, setIsRouteDialogOpen] = useState(false);
   const [deleteVehicleId, setDeleteVehicleId] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
+  const [activeTab, setActiveTab] = useState<'routes' | 'drivers'>('routes');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -122,15 +122,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         window.open(data.url, '_blank');
         toast({
           title: "Redirigiendo a pago",
-          description: "Completa el pago para suscribirte a rutas privadas",
+          description: "Completa el pago para suscribirte a chofer privado",
         });
       } else if (data?.action === 'added') {
         toast({
-          title: "¡Vehículo agregado!",
+          title: "¡Suscripción de chofer agregada!",
           description: data.message,
         });
         await checkSubscription();
-        setIsDialogOpen(true); // Open dialog to register the new vehicle
       }
     } catch (error: any) {
       toast({
@@ -143,18 +142,17 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     }
   };
 
-  const handleCreateVehicle = async () => {
+  const handleCreateRoute = async () => {
     if (!newVehicle.nombre.trim()) {
       toast({
         title: "Error",
-        description: "El nombre del vehículo es obligatorio",
+        description: "El nombre de la ruta es obligatorio",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Get the rutas category id
       const { data: category } = await supabase
         .from('product_categories')
         .select('id')
@@ -183,23 +181,23 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
       if (error) throw error;
 
       toast({
-        title: "¡Vehículo registrado!",
-        description: `"${newVehicle.nombre}" agregado. Puedes compartir el enlace con los pasajeros.`,
+        title: "¡Ruta registrada!",
+        description: `"${newVehicle.nombre}" agregada. Puedes compartir el enlace con los pasajeros.`,
       });
 
-      setIsDialogOpen(false);
+      setIsRouteDialogOpen(false);
       setNewVehicle({ nombre: '', descripcion: '' });
       fetchVehicles();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || 'No se pudo registrar el vehículo',
+        description: error.message || 'No se pudo registrar la ruta',
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteVehicle = async () => {
+  const handleDeleteRoute = async () => {
     if (!deleteVehicleId) return;
     try {
       const { error } = await supabase
@@ -209,7 +207,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
 
       if (error) throw error;
 
-      toast({ title: "Vehículo eliminado" });
+      toast({ title: "Ruta eliminada" });
       setDeleteVehicleId(null);
       fetchVehicles();
     } catch (error: any) {
@@ -235,218 +233,251 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
       <Card>
         <CardContent className="p-6 text-center">
           <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-          <p className="text-muted-foreground">Cargando rutas privadas...</p>
+          <p className="text-muted-foreground">Cargando...</p>
         </CardContent>
       </Card>
     );
   }
 
-  // If the driver is viewing this section (selectedVehicleId)
+  // If viewing drivers for a specific vehicle
   if (selectedVehicleId) {
-    const vehicle = vehicles.find(v => v.id === selectedVehicleId);
-    if (vehicle) {
-      return (
-        <div className="space-y-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedVehicleId(null)}>
-            ← Volver a vehículos
-          </Button>
-          <PrivateRouteDrivers
-            proveedorId={proveedorId}
-            productoId={selectedVehicleId}
-            vehicleName={vehicle.nombre}
-            businessName={businessName}
-          />
-        </div>
-      );
-    }
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => setSelectedVehicleId(null)}>
+          ← Volver
+        </Button>
+        <PrivateRouteDrivers
+          proveedorId={proveedorId}
+          productoId={selectedVehicleId}
+          vehicleName={vehicles.find(v => v.id === selectedVehicleId)?.nombre || ''}
+          businessName={businessName}
+        />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      {/* Daily assignments panel - only show when there are vehicles */}
+      {/* Daily assignments panel */}
       {vehicles.length > 0 && (
         <DailyAssignments proveedorId={proveedorId} />
       )}
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bus className="h-5 w-5" />
-            Rutas Privadas - {businessName}
-          </CardTitle>
-          <CardDescription>
-            Gestiona tus vehículos de transporte privado. $400 MXN por unidad al año.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Subscription status */}
-          {subscriptionStatus?.subscribed ? (
-            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg mb-4">
-              <div>
-                <p className="text-sm font-medium">
-                  Suscripción activa: {subscriptionStatus.quantity} unidad(es)
-                </p>
-                {subscriptionStatus.subscription_end && (
-                  <p className="text-xs text-muted-foreground">
-                    Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
-                  </p>
-                )}
-              </div>
-              <Badge variant="default">Activa</Badge>
-            </div>
-          ) : (
-            <Alert className="mb-4">
-              <CreditCard className="h-4 w-4" />
-              <AlertDescription>
-                Necesitas una suscripción de rutas privadas para registrar vehículos.
-                Cada unidad cuesta $400 MXN al año.
-              </AlertDescription>
-            </Alert>
-          )}
 
-          {/* Vehicles list */}
-          {vehicles.length > 0 && (
-            <div className="space-y-3 mb-4">
-              {vehicles.map((vehicle) => (
-                <Card key={vehicle.id} className="border">
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Bus className="h-4 w-4 text-primary shrink-0" />
-                        <h4 className="font-semibold">{vehicle.nombre}</h4>
+      {/* Tab switcher */}
+      <div className="flex gap-2">
+        <Button
+          variant={activeTab === 'routes' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('routes')}
+          className="flex-1"
+        >
+          <Route className="h-4 w-4 mr-1" />
+          Rutas
+        </Button>
+        <Button
+          variant={activeTab === 'drivers' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('drivers')}
+          className="flex-1"
+        >
+          <Users className="h-4 w-4 mr-1" />
+          Choferes ({subscriptionStatus?.quantity || 0})
+        </Button>
+      </div>
+
+      {/* === ROUTES TAB === */}
+      {activeTab === 'routes' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Route className="h-5 w-5" />
+              Rutas / Nomenclaturas
+            </CardTitle>
+            <CardDescription>
+              Registra todas las rutas que cubres. Son ilimitadas y sin costo adicional.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {vehicles.length > 0 && (
+              <div className="space-y-2">
+                {vehicles.map((vehicle) => (
+                  <Card key={vehicle.id} className="border">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary shrink-0" />
+                            <h4 className="font-semibold text-sm">{vehicle.nombre}</h4>
+                          </div>
+                          {vehicle.descripcion && (
+                            <p className="text-xs text-muted-foreground mt-1 ml-6">
+                              {vehicle.descripcion}
+                            </p>
+                          )}
                         </div>
-                        {vehicle.descripcion && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {vehicle.descripcion}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => sendWhatsAppInviteLink(vehicle)}
+                            title="Enviar enlace de pasajero por WhatsApp"
+                          >
+                            <Link className="h-3 w-3 mr-1" />
+                            Pasajeros
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => setDeleteVehicleId(vehicle.id)}
+                            title="Eliminar ruta"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedVehicleId(vehicle.id)}
-                          title="Gestionar choferes"
-                        >
-                          <Users className="h-3 w-3 mr-1" />
-                          Choferes
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => sendWhatsAppInviteLink(vehicle)}
-                          title="Enviar enlace de pasajero por WhatsApp"
-                        >
-                          <Link className="h-3 w-3 mr-1" />
-                          Pasajeros
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => setDeleteVehicleId(vehicle.id)}
-                          title="Eliminar vehículo"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
-          {/* Add vehicle button */}
-          {subscriptionStatus?.subscribed && vehicles.length < (subscriptionStatus?.quantity || 0) && (
-            <Button onClick={() => setIsDialogOpen(true)} className="w-full">
+            <Button onClick={() => setIsRouteDialogOpen(true)} className="w-full" variant="outline">
               <Plus className="h-4 w-4 mr-2" />
-              Registrar Vehículo ({vehicles.length}/{subscriptionStatus.quantity})
+              Agregar Ruta
             </Button>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {subscriptionStatus?.subscribed && vehicles.length >= (subscriptionStatus?.quantity || 0) && (
-            <Button 
-              onClick={handleSubscribe} 
+      {/* === DRIVERS TAB === */}
+      {activeTab === 'drivers' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Choferes - {businessName}
+            </CardTitle>
+            <CardDescription>
+              Cada chofer requiere una suscripción de $400 MXN/año. Los choferes eligen su ruta al abrir la app.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Subscription status */}
+            {subscriptionStatus?.subscribed ? (
+              <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">
+                    Suscripciones activas: {subscriptionStatus.quantity} chofer(es)
+                  </p>
+                  {subscriptionStatus.subscription_end && (
+                    <p className="text-xs text-muted-foreground">
+                      Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
+                    </p>
+                  )}
+                </div>
+                <Badge variant="default">Activa</Badge>
+              </div>
+            ) : (
+              <Alert>
+                <CreditCard className="h-4 w-4" />
+                <AlertDescription>
+                  Necesitas una suscripción para registrar choferes.
+                  Cada chofer cuesta $400 MXN al año.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Manage drivers button */}
+            {subscriptionStatus?.subscribed && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  // Show drivers management — use the first vehicle as context
+                  if (vehicles.length > 0) {
+                    setSelectedVehicleId(vehicles[0].id);
+                  } else {
+                    toast({
+                      title: "Primero registra una ruta",
+                      description: "Necesitas al menos una ruta para gestionar choferes",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Gestionar Choferes
+              </Button>
+            )}
+
+            {/* Add driver subscription button */}
+            <Button
+              onClick={handleSubscribe}
               disabled={addingVehicle}
               className="w-full"
             >
               {addingVehicle ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer (+$400 MXN/año)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer ($400 MXN/año)</>
               )}
             </Button>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {!subscriptionStatus?.subscribed && (
-            <Button 
-              onClick={handleSubscribe} 
-              disabled={addingVehicle}
-              className="w-full"
-            >
-              {addingVehicle ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
-              ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer ($400 MXN/unidad/año)</>
-              )}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Dialog for registering a new vehicle */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Dialog for registering a new route */}
+      <Dialog open={isRouteDialogOpen} onOpenChange={setIsRouteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar Vehículo</DialogTitle>
+            <DialogTitle>Agregar Ruta</DialogTitle>
             <DialogDescription>
-              Asigna un nombre o nomenclatura a este vehículo
+              Registra una nomenclatura o nombre de ruta. Las rutas son ilimitadas.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="vehicleName">Nombre / Nomenclatura *</Label>
+              <Label htmlFor="routeName">Nombre / Nomenclatura *</Label>
               <Input
-                id="vehicleName"
+                id="routeName"
                 value={newVehicle.nombre}
                 onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
                 placeholder="Ej: Ruta 2, Ruta Sur, Express Norte..."
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Define el nombre como quieras identificar este vehículo
+                Define el nombre como quieras identificar esta ruta
               </p>
             </div>
             <div>
-              <Label htmlFor="vehicleDesc">Recorrido / Descripción</Label>
+              <Label htmlFor="routeDesc">Recorrido / Descripción</Label>
               <Input
-                id="vehicleDesc"
+                id="routeDesc"
                 value={newVehicle.descripcion}
                 onChange={(e) => setNewVehicle({ ...newVehicle, descripcion: e.target.value })}
                 placeholder="Ej: Colonia Centro - Zona Industrial"
               />
             </div>
-            <Button onClick={handleCreateVehicle} className="w-full">
-              <Bus className="h-4 w-4 mr-2" />
-              Registrar Vehículo
+            <Button onClick={handleCreateRoute} className="w-full">
+              <Route className="h-4 w-4 mr-2" />
+              Registrar Ruta
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
+      {/* Delete route confirmation */}
       <AlertDialog open={!!deleteVehicleId} onOpenChange={() => setDeleteVehicleId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar vehículo?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar ruta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará el vehículo y todas sus invitaciones. Esta acción no se puede deshacer.
+              Se eliminará la ruta y sus invitaciones de pasajeros. Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteVehicle}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={handleDeleteRoute}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

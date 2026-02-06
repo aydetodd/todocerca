@@ -22,6 +22,7 @@ export interface ProveedorLocation {
   };
   is_taxi?: boolean;
   is_bus?: boolean;
+  is_private_driver?: boolean;
 }
 
 export const useRealtimeLocations = () => {
@@ -121,6 +122,17 @@ export const useRealtimeLocations = () => {
       }
     });
 
+    // Buscar choferes privados activos (linked drivers)
+    const { data: activeDrivers } = await supabase
+      .from('choferes_empresa')
+      .select('user_id')
+      .eq('is_active', true)
+      .not('user_id', 'is', null);
+    
+    const privateDriverUserIds = new Set(
+      activeDrivers?.map(d => d.user_id).filter(Boolean) || []
+    );
+
     const newLocationsMap = new Map<string, ProveedorLocation>();
     
     for (const loc of locationsData) {
@@ -128,6 +140,7 @@ export const useRealtimeLocations = () => {
       if (!profile) continue;
       
       const proveedorId = proveedorMap.get(loc.user_id);
+      const isPrivateDriver = privateDriverUserIds.has(loc.user_id);
       
       // Determine vehicle type: provider can be BOTH taxi AND bus if they have products in both categories
       const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
@@ -135,7 +148,8 @@ export const useRealtimeLocations = () => {
       const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
       // A provider can have BOTH flags true if they have products in both categories
-      const isBus = profile.provider_type === 'ruta' || hasRutaProduct;
+      // Private drivers are always treated as buses
+      const isBus = profile.provider_type === 'ruta' || hasRutaProduct || isPrivateDriver;
       const isTaxi = profile.provider_type === 'taxi' || hasTaxiProduct;
       
       const location: ProveedorLocation = {
@@ -149,7 +163,8 @@ export const useRealtimeLocations = () => {
           tarifa_km: (profile as any).tarifa_km || 15
         },
         is_taxi: isTaxi,
-        is_bus: isBus
+        is_bus: isBus,
+        is_private_driver: isPrivateDriver
       };
       
       newLocationsMap.set(loc.user_id, location);

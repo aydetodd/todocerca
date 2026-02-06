@@ -179,6 +179,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       const { apodo, estado, telefono } = location.profiles;
       const isCurrentUser = location.user_id === currentUserId;
       const isTaxi = location.is_taxi;
+      const isBus = location.is_bus;
+      const isPrivateDriver = location.is_private_driver;
       const color = statusColors[estado];
       
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
@@ -191,7 +193,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         return;
       }
       
-      console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}, recreating=${!!existingMarker}`);
+      console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}, isBus=${isBus}, recreating=${!!existingMarker}`);
       
       // Remover marker existente solo si el estado cambió
       if (existingMarker) {
@@ -203,6 +205,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       markerStatesRef.current[location.user_id] = estado;
 
       let iconHtml: string;
+      let iconSize: [number, number];
+      let iconAnchor: [number, number];
       
       if (isTaxi) {
         const taxiColor = taxiColors[estado];
@@ -228,6 +232,50 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
             </svg>
           </div>
         `;
+        iconSize = [32, 48];
+        iconAnchor = [16, 24];
+      } else if (isBus) {
+        // Bus icon — yellow for private drivers, white for public routes
+        const busBodyColor = isPrivateDriver ? '#FDB813' : '#FFFFFF';
+        const busStrokeColor = isPrivateDriver ? '#D4960A' : '#999999';
+        const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
+        const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
+        iconHtml = `
+          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+            <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+              <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+              <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+              <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+              <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
+              <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+              <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+              <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">${labelTruncated}</text>
+            </svg>
+          </div>
+        `;
+        iconSize = [32, 52];
+        iconAnchor = [16, 40];
       } else if (isCurrentUser) {
         iconHtml = `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -235,6 +283,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
                   fill="${color}" stroke="white" stroke-width="2"/>
           </svg>
         `;
+        iconSize = [30, 30];
+        iconAnchor = [15, 15];
       } else {
         iconHtml = `
           <div style="
@@ -246,13 +296,15 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           "></div>
         `;
+        iconSize = [20, 20];
+        iconAnchor = [10, 10];
       }
 
       const icon = L.divIcon({
         html: iconHtml,
         className: 'custom-marker',
-        iconSize: [isTaxi ? 32 : (isCurrentUser ? 30 : 20), isTaxi ? 48 : (isCurrentUser ? 30 : 20)],
-        iconAnchor: [isTaxi ? 16 : (isCurrentUser ? 15 : 10), isTaxi ? 24 : (isCurrentUser ? 15 : 10)]
+        iconSize: iconSize,
+        iconAnchor: iconAnchor
       });
 
       const marker = L.marker(newLatLng, { icon }).addTo(mapRef.current!);
@@ -261,9 +313,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         : isCurrentUser ? 'Visible para otros' : '';
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
+      const routeLabel = location.profiles.route_name || '';
+      const busTypeLabel = isPrivateDriver ? 'Transporte Privado' : 'Ruta de Transporte';
       const popupContent = `
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : ''}</h3>
+          <h3 class="font-bold text-lg mb-2">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : (isBus ? ' 🚌' : '')}</h3>
+          ${isBus ? `<p class="text-xs mb-2 font-semibold" style="color: ${isPrivateDriver ? '#D4960A' : '#2563EB'}">${busTypeLabel}${routeLabel ? ` — ${routeLabel}` : ''}</p>` : ''}
           ${isTaxi ? '<p class="text-xs mb-2 text-blue-600 font-semibold">Servicio de Taxi</p>' : ''}
           <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${color}">${estado}</span></p>
           ${isCurrentUser ? `
