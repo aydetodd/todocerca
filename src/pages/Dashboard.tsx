@@ -197,8 +197,8 @@ const Dashboard = () => {
       if (data?.url) {
         window.open(data.url, "_blank");
         toast({
-          title: "Redirigiendo a pago",
-          description: "Completa el pago para convertirte en proveedor",
+          title: "Redirigiendo",
+          description: "Completa el registro para tu prueba gratis de 7 días",
         });
       }
     } catch (error: any) {
@@ -423,10 +423,10 @@ const Dashboard = () => {
                             <Briefcase className="h-4 w-4 mr-2" />
                             {upgrading
                               ? "Procesando..."
-                              : "Convertirme en Proveedor ($200 MXN/año)"}
+                              : "Convertirme en Proveedor (7 días gratis)"}
                           </Button>
                           <p className="text-xs text-muted-foreground text-center mt-1">
-                            Publica hasta 500 productos y servicios
+                            🎉 ¡Prueba 7 días gratis sin tarjeta! Después $200 MXN/año
                           </p>
                         </div>
                       )}
