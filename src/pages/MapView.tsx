@@ -150,6 +150,7 @@ export default function MapView() {
           onOpenChat={handleOpenChat} 
           filterType={filterType}
           privateRouteUserId={privateRouteProviderId}
+          privateRouteProductoId={privateRouteProductoId}
         />
         
         {/* Private route indicator with favorite button */}
