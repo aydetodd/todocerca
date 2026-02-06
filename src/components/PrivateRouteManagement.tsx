@@ -154,33 +154,62 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     }
   };
 
+  // Check if there are available subscription slots (paid but not yet registered)
+  const availableSlots = (subscriptionStatus?.quantity || 0) - units.length;
+  const hasAvailableSlot = availableSlots > 0;
+
   const handleAddUnit = async () => {
-    // Always redirect to Stripe checkout for payment
+    if (!newUnit.nombre.trim()) {
+      toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" });
+      return;
+    }
+
     try {
       setAddingUnit(true);
-      const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add' }
-      });
 
-      if (error) throw error;
+      if (hasAvailableSlot) {
+        // Register directly — subscription slot available
+        const { error } = await supabase
+          .from('unidades_empresa')
+          .insert({
+            proveedor_id: proveedorId,
+            nombre: newUnit.nombre.trim(),
+            placas: newUnit.placas.trim() || null,
+            descripcion: newUnit.descripcion.trim() || null,
+          });
 
-      if (data?.action === 'checkout' && data?.url) {
-        // Save pending unit info in localStorage to register after payment
-        if (newUnit.nombre.trim()) {
+        if (error) throw error;
+
+        toast({
+          title: "✅ Unidad registrada",
+          description: `"${newUnit.nombre.trim()}" agregada a tu flota.`,
+        });
+        setIsUnitDialogOpen(false);
+        setNewUnit({ nombre: '', placas: '', descripcion: '' });
+        fetchUnits();
+      } else {
+        // No available slots — redirect to Stripe checkout
+        const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
+          body: { action: 'add' }
+        });
+
+        if (error) throw error;
+
+        if (data?.action === 'checkout' && data?.url) {
           localStorage.setItem('pending_unit', JSON.stringify({
             nombre: newUnit.nombre.trim(),
             placas: newUnit.placas.trim() || null,
             descripcion: newUnit.descripcion.trim() || null,
             proveedor_id: proveedorId,
           }));
+          window.open(data.url, '_blank');
+          toast({
+            title: "Redirigiendo a pago",
+            description: "Completa el pago para registrar la unidad ($400 MXN/año)",
+          });
+          setIsUnitDialogOpen(false);
+          setNewUnit({ nombre: '', placas: '', descripcion: '' });
         }
-        window.open(data.url, '_blank');
-        toast({
-          title: "Redirigiendo a pago",
-          description: "Completa el pago para registrar la unidad ($400 MXN/año)",
-        });
-        setIsUnitDialogOpen(false);
-        setNewUnit({ nombre: '', placas: '', descripcion: '' });
       }
     } catch (error: any) {
       toast({
@@ -418,18 +447,23 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           <CardContent className="space-y-3">
             {/* Subscription status */}
             {subscriptionStatus?.subscribed ? (
-              <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
-                <div>
+              <div className="bg-muted/30 p-3 rounded-lg space-y-1">
+                <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    Suscripciones activas: {subscriptionStatus.quantity} unidad(es)
+                    Suscripciones: {subscriptionStatus.quantity} · Registradas: {units.length}
                   </p>
-                  {subscriptionStatus.subscription_end && (
-                    <p className="text-xs text-muted-foreground">
-                      Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
-                    </p>
-                  )}
+                  <Badge variant="default">Activa</Badge>
                 </div>
-                <Badge variant="default">Activa</Badge>
+                {availableSlots > 0 && (
+                  <p className="text-xs text-primary font-medium">
+                    ⚡ {availableSlots} unidad(es) pagadas sin registrar
+                  </p>
+                )}
+                {subscriptionStatus.subscription_end && (
+                  <p className="text-xs text-muted-foreground">
+                    Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
+                  </p>
+                )}
               </div>
             ) : (
               <Alert>
@@ -514,14 +548,17 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               </div>
             )}
 
-            {/* Add unit button - always goes to checkout */}
+            {/* Add unit button */}
             <Button
               onClick={() => setIsUnitDialogOpen(true)}
               disabled={addingUnit}
               className="w-full"
+              variant={hasAvailableSlot ? 'default' : 'outline'}
             >
               {addingUnit ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
+              ) : hasAvailableSlot ? (
+                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad (slot disponible)</>
               ) : (
                 <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad ($400 MXN/año)</>
               )}
@@ -615,7 +652,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               Agregar Unidad
             </DialogTitle>
             <DialogDescription>
-              Registra tu autobús con su No. económico o placas. Se te redirigirá a la pasarela de pago ($400 MXN/año).
+              {hasAvailableSlot 
+                ? `Tienes ${availableSlots} slot(s) disponible(s). Se registrará sin costo adicional.`
+                : 'Registra tu autobús. Se te redirigirá a la pasarela de pago ($400 MXN/año).'
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -653,6 +693,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
             >
               {addingUnit ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
+              ) : hasAvailableSlot ? (
+                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad</>
               ) : (
                 <><CreditCard className="h-4 w-4 mr-2" /> Pagar y Registrar Unidad</>
               )}
