@@ -27,6 +27,7 @@ import {
 import { Plus, Bus, Loader2, Users, Link, Copy, Trash2, CreditCard, AlertCircle } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
+import DailyAssignments from './DailyAssignments';
 
 interface PrivateVehicle {
   id: string;
@@ -268,6 +269,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
 
   return (
     <div className="space-y-4">
+      {/* Daily assignments panel - only show when there are vehicles */}
+      {vehicles.length > 0 && (
+        <DailyAssignments proveedorId={proveedorId} />
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
