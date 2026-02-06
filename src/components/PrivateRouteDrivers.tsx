@@ -33,6 +33,7 @@ interface PrivateRouteDriversProps {
   productoId: string;
   vehicleName: string;
   businessName: string;
+  onDriversChanged?: () => void;
 }
 
 export default function PrivateRouteDrivers({
@@ -40,6 +41,7 @@ export default function PrivateRouteDrivers({
   productoId,
   vehicleName,
   businessName,
+  onDriversChanged,
 }: PrivateRouteDriversProps) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +131,7 @@ export default function PrivateRouteDrivers({
       setNewPhone('');
       setNewName('');
       fetchDrivers();
+      onDriversChanged?.();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -157,6 +160,7 @@ export default function PrivateRouteDrivers({
       setDeleteDriverId(null);
       setDeleteStep(1);
       fetchDrivers();
+      onDriversChanged?.();
     } catch (error: any) {
       toast({
         title: "Error",
