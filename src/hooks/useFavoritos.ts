@@ -21,6 +21,9 @@ export interface Favorito {
     stock: number;
     unit: string | null;
     proveedor_id: string;
+    invite_token: string | null;
+    is_private: boolean | null;
+    category_id: string | null;
   };
   proveedor?: {
     id: string;
@@ -71,7 +74,7 @@ export function useFavoritos() {
         .from('favoritos')
         .select(`
           *,
-          producto:productos(id, nombre, descripcion, precio, stock, unit, proveedor_id),
+          producto:productos(id, nombre, descripcion, precio, stock, unit, proveedor_id, invite_token, is_private, category_id),
           proveedor:proveedores(id, nombre, telefono, latitude, longitude, user_id),
           listing:listings(id, title, description, latitude, longitude, is_active, expires_at)
         `)

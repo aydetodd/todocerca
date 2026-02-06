@@ -4,6 +4,7 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { StatusControl } from '@/components/StatusControl';
+import { FavoritoButton } from '@/components/FavoritoButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +19,7 @@ export default function MapView() {
   const [isProvider, setIsProvider] = useState(false);
   const [privateRouteProviderId, setPrivateRouteProviderId] = useState<string | null>(null);
   const [privateRouteName, setPrivateRouteName] = useState<string | null>(null);
+  const [privateRouteProductoId, setPrivateRouteProductoId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // GPS tracking ahora es global via GlobalProviderTracking
@@ -45,6 +47,7 @@ export default function MapView() {
         
         setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
         setPrivateRouteName(producto.nombre);
+        setPrivateRouteProductoId(producto.id);
         
         toast({
           title: `Ruta: ${producto.nombre}`,
@@ -134,12 +137,20 @@ export default function MapView() {
           privateRouteUserId={privateRouteProviderId}
         />
         
-        {/* Private route indicator */}
+        {/* Private route indicator with favorite button */}
         {privateRouteName && (
-          <div className="absolute top-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md">
+          <div className="absolute top-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
             <span className="text-sm font-medium">
               🔒 {privateRouteName}
             </span>
+            {privateRouteProductoId && (
+              <FavoritoButton 
+                tipo="producto" 
+                itemId={privateRouteProductoId}
+                size="sm"
+                className="h-8 w-8"
+              />
+            )}
           </div>
         )}
         
