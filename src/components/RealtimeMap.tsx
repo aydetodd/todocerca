@@ -28,7 +28,7 @@ interface RealtimeMapProps {
   filterType?: 'taxi' | 'ruta' | null;
   privateRouteUserId?: string | null;
   privateRouteProductoId?: string | null;
-  fleetProveedorId?: string | null;
+  fleetUserIds?: string[];
 }
 
 // Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
@@ -42,7 +42,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetProveedorId }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
@@ -146,10 +146,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     // Filter locations based on filterType
     let filteredLocations = locations;
     
-    // Fleet mode: show ALL units belonging to this proveedor (owner + their drivers)
-    if (fleetProveedorId) {
-      filteredLocations = locations.filter(loc => loc.proveedor_id === fleetProveedorId);
-      console.log('🏢 [Map] Fleet mode — proveedor_id:', fleetProveedorId, '→', filteredLocations.length, 'units');
+    // Fleet mode: show ALL units belonging to this fleet (owner + their drivers by user_id)
+    if (fleetUserIds && fleetUserIds.length > 0) {
+      const fleetSet = new Set(fleetUserIds);
+      filteredLocations = locations.filter(loc => fleetSet.has(loc.user_id));
+      console.log('🏢 [Map] Fleet mode — user_ids:', fleetUserIds.length, '→', filteredLocations.length, 'units visible');
     }
     // If viewing a private route, show ALL units assigned to that route product
     else if (privateRouteProductoId) {
@@ -569,7 +570,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, fleetProveedorId]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds]);
 
   // Add global functions for popup buttons
   useEffect(() => {
