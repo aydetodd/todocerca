@@ -237,11 +237,13 @@ export default function DriverRouteSelector() {
       const unitName = units.find(u => u.id === selectedUnit)?.nombre;
 
       // Sync profile.route_name so the map shows the correct route immediately
+      // IMPORTANT: Use the exact route name from the assignment, not the profile's old value
       if (user) {
         await supabase
           .from('profiles')
           .update({ route_name: routeName })
           .eq('user_id', user.id);
+        console.log(`[DriverRouteSelector] Synced profile route_name to "${routeName}"`);
       }
 
       toast({
@@ -321,17 +323,17 @@ export default function DriverRouteSelector() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-1.5">
                   <Bus className="h-4 w-4 text-amber-500" />
-                  Unidad
+                  Unidad / Autobús
                 </Label>
                 <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar unidad..." />
+                  <SelectTrigger className={!selectedUnit ? 'border-amber-500/50' : ''}>
+                    <SelectValue placeholder="⚠️ Seleccionar unidad" />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        {unit.nombre}
-                        {unit.placas ? ` (${unit.placas})` : ''}
+                        🚌 {unit.nombre}
+                        {unit.placas ? ` · Placas: ${unit.placas}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
