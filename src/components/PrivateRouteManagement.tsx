@@ -334,12 +334,12 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                         </Button>
                         <Button
                           variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
+                          size="sm"
                           onClick={() => sendWhatsAppInviteLink(vehicle)}
-                          title="Enviar enlace por WhatsApp"
+                          title="Enviar enlace de pasajero por WhatsApp"
                         >
-                          <Link className="h-3 w-3" />
+                          <Link className="h-3 w-3 mr-1" />
+                          Pasajeros
                         </Button>
                         <Button
                           variant="ghost"
