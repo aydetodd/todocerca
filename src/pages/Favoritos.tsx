@@ -299,16 +299,17 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
     <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleNavigate}>
       <CardContent className="p-4">
         <div className="flex gap-4">
-          <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-            <ProductPhotoCarousel productoId={producto.id} />
-          </div>
+          {!isRoute && (
+            <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
+              <ProductPhotoCarousel productoId={producto.id} />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
+              {isRoute && <span className="text-lg">{producto.is_private ? '🔒' : '🚌'}</span>}
               <h3 className="font-semibold truncate">{producto.nombre}</h3>
               {isRoute && (
-                <Badge variant="outline" className="text-xs shrink-0">
-                  {producto.is_private ? '🔒 Ruta' : '🚌 Ruta'}
-                </Badge>
+                <Badge variant="outline" className="text-xs shrink-0">Ruta</Badge>
               )}
             </div>
             {producto.descripcion && (
@@ -335,10 +336,17 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
                 </div>
               </>
             )}
-            <div className="flex items-center gap-1 mt-1 text-xs text-primary">
-              <ExternalLink className="h-3 w-3" />
-              {isRoute ? 'Ver en mapa' : 'Ver proveedor'}
-            </div>
+            {isRoute ? (
+              <div className="flex items-center gap-1 mt-2 text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
+                <MapPin className="h-3 w-3" />
+                Ver ubicación en mapa
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 mt-1 text-xs text-primary">
+                <ExternalLink className="h-3 w-3" />
+                Ver proveedor
+              </div>
+            )}
           </div>
           <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
             <Trash2 className="h-4 w-4 text-destructive" />

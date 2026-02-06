@@ -26,6 +26,7 @@ export interface ProveedorLocation {
   is_private_route?: boolean;
   route_producto_id?: string | null;
   proveedor_id?: string | null;
+  empresa_name?: string | null;
   unit_name?: string | null;
   unit_placas?: string | null;
   unit_descripcion?: string | null;
@@ -76,10 +77,11 @@ export const useRealtimeLocations = () => {
 
     const { data: proveedoresData } = await supabase
       .from('proveedores')
-      .select('id, user_id')
+      .select('id, user_id, nombre')
       .in('user_id', activeUserIds);
 
     const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
+    const proveedorNameMap = new Map(proveedoresData?.map(p => [p.user_id, p.nombre]) || []);
     const proveedorIds = proveedoresData?.map(p => p.id) || [];
     
     const { data: taxiCategory } = await supabase
@@ -246,6 +248,7 @@ export const useRealtimeLocations = () => {
           ? (assignmentData?.productoId || rutaInfo?.productoId || null)
           : (isBus && rutaInfo ? rutaInfo.productoId : null),
         proveedor_id: proveedorId || null,
+        empresa_name: proveedorNameMap.get(loc.user_id) || null,
         unit_name: assignmentData?.unitName || null,
         unit_placas: assignmentData?.unitPlacas || null,
         unit_descripcion: assignmentData?.unitDescripcion || null,
