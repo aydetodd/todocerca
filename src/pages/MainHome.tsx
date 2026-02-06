@@ -5,6 +5,7 @@ import { NavigationBar } from '@/components/NavigationBar';
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 import { SOSButton } from '@/components/SOSButton';
 import DriverRouteSelector from '@/components/DriverRouteSelector';
+import DriverProfilePanel from '@/components/DriverProfilePanel';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -21,6 +22,9 @@ export default function MainHome() {
       <main className="container mx-auto px-4 py-6 space-y-4">
         {/* Popup de selección de ruta para choferes */}
         <DriverRouteSelector />
+
+        {/* Panel de perfil de chofer (visible siempre para choferes autorizados) */}
+        <DriverProfilePanel />
         
         {/* Viaje activo del pasajero */}
         <PassengerActiveTrip />
