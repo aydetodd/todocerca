@@ -130,6 +130,14 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
     }
   };
 
+  const getUnitTakenBy = (unitId: string, excludeDriverId?: string): string | null => {
+    const otherAssignment = assignments.find(
+      a => a.unidad_id === unitId && a.chofer_id !== excludeDriverId
+    );
+    if (!otherAssignment) return null;
+    return otherAssignment.chofer_nombre || otherAssignment.chofer_telefono || 'otro chofer';
+  };
+
   const handleAssign = async () => {
     if (!selectedDriver || !selectedRoute || !user) return;
 
@@ -137,11 +145,24 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
       setAssigning(true);
       const unitId = selectedUnit || null;
 
+      // Validate: unit not already assigned to another driver today
+      if (unitId) {
+        const takenBy = getUnitTakenBy(unitId, selectedDriver);
+        if (takenBy) {
+          toast({
+            title: "⚠️ Unidad no disponible",
+            description: `Esta unidad ya está asignada a ${takenBy} hoy. Cada unidad solo puede asignarse a un chofer por día.`,
+            variant: "destructive",
+          });
+          setAssigning(false);
+          return;
+        }
+      }
+
       // Check if this driver already has an assignment for today
       const existing = assignments.find(a => a.chofer_id === selectedDriver);
 
       if (existing) {
-        // Update existing
         const { error } = await supabase
           .from('asignaciones_chofer')
           .update({
@@ -153,7 +174,6 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
 
         if (error) throw error;
       } else {
-        // Create new — multiple drivers CAN have the same route
         const { error } = await supabase
           .from('asignaciones_chofer')
           .insert({
@@ -337,11 +357,19 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
                     <SelectValue placeholder="⚠️ Seleccionar unidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    {units.map((unit) => (
-                      <SelectItem key={unit.id} value={unit.id}>
-                        🚌 {formatUnitOption(unit)}
-                      </SelectItem>
-                    ))}
+                    {units.map((unit) => {
+                      const takenBy = getUnitTakenBy(unit.id, selectedDriver);
+                      return (
+                        <SelectItem 
+                          key={unit.id} 
+                          value={unit.id}
+                          className={takenBy ? 'opacity-50' : ''}
+                          disabled={!!takenBy}
+                        >
+                          🚌 {formatUnitOption(unit)}{takenBy ? ` (asignada a ${takenBy})` : ''}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               )}

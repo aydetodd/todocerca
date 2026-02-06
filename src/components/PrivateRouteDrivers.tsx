@@ -180,20 +180,22 @@ export default function PrivateRouteDrivers({
     }
   };
 
+  const getUnitAssignedToOther = (unitId: string, currentDriverId: string): string | null => {
+    const otherAssignment = assignments.find(
+      a => a.unidad_id === unitId && a.chofer_id !== currentDriverId
+    );
+    if (!otherAssignment) return null;
+    const otherDriver = drivers.find(d => d.id === otherAssignment.chofer_id);
+    return otherDriver?.nombre || otherDriver?.telefono || 'otro chofer';
+  };
+
   const handleAssignUnit = async (driverId: string, unitId: string) => {
     if (!user) return;
     try {
       setSavingAssignment(driverId);
       const existing = assignments.find(a => a.chofer_id === driverId);
 
-      if (existing) {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .update({ unidad_id: unitId || null, asignado_por: user.id })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        // Need a route first
+      if (!existing) {
         toast({
           title: "Selecciona ruta primero",
           description: "Asigna una ruta al chofer antes de asignarle unidad",
@@ -202,6 +204,25 @@ export default function PrivateRouteDrivers({
         setSavingAssignment(null);
         return;
       }
+
+      // Validate: unit not already assigned to another driver today
+      const takenBy = getUnitAssignedToOther(unitId, driverId);
+      if (takenBy) {
+        const unitObj = units.find(u => u.id === unitId);
+        toast({
+          title: "⚠️ Unidad no disponible",
+          description: `Esta unidad ya está asignada a ${takenBy} hoy. Cada unidad solo puede asignarse a un chofer por día.`,
+          variant: "destructive",
+        });
+        setSavingAssignment(null);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .update({ unidad_id: unitId || null, asignado_por: user.id })
+        .eq('id', existing.id);
+      if (error) throw error;
 
       toast({ title: "✅ Unidad asignada" });
       fetchAll();
@@ -518,11 +539,19 @@ export default function PrivateRouteDrivers({
                                 </div>
                               </SelectTrigger>
                               <SelectContent>
-                                {units.map((unit) => (
-                                  <SelectItem key={unit.id} value={unit.id} className="text-xs">
-                                    🚌 {formatUnitOption(unit)}
-                                  </SelectItem>
-                                ))}
+                                {units.map((unit) => {
+                                  const takenBy = getUnitAssignedToOther(unit.id, driver.id);
+                                  return (
+                                    <SelectItem 
+                                      key={unit.id} 
+                                      value={unit.id} 
+                                      className={`text-xs ${takenBy ? 'opacity-50' : ''}`}
+                                      disabled={!!takenBy}
+                                    >
+                                      🚌 {formatUnitOption(unit)}{takenBy ? ` (asignada a ${takenBy})` : ''}
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectContent>
                             </Select>
                           )}
