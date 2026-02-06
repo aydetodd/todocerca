@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Send, Loader2, User, Pencil } from 'lucide-react';
+import { Plus, Trash2, Send, Loader2, User, Pencil, Bus, MapPin, ArrowRight } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface Driver {
@@ -26,6 +28,24 @@ interface Driver {
   user_id: string | null;
   is_active: boolean;
   invite_token: string;
+}
+
+interface Route {
+  id: string;
+  nombre: string;
+}
+
+interface Unit {
+  id: string;
+  nombre: string;
+  placas: string | null;
+}
+
+interface TodayAssignment {
+  id: string;
+  chofer_id: string;
+  producto_id: string;
+  unidad_id: string | null;
 }
 
 interface PrivateRouteDriversProps {
@@ -43,7 +63,11 @@ export default function PrivateRouteDrivers({
   businessName,
   onDriversChanged,
 }: PrivateRouteDriversProps) {
+  const { user } = useAuth();
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [assignments, setAssignments] = useState<TodayAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPhone, setNewPhone] = useState('');
   const [newName, setNewName] = useState('');
@@ -51,26 +75,138 @@ export default function PrivateRouteDrivers({
   const [deleteDriverId, setDeleteDriverId] = useState<string | null>(null);
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [savingAssignment, setSavingAssignment] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const today = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
-    fetchDrivers();
+    fetchAll();
   }, [proveedorId]);
 
-  const fetchDrivers = async () => {
+  const fetchAll = async () => {
     try {
-      const { data, error } = await supabase
-        .from('choferes_empresa')
-        .select('*')
-        .eq('proveedor_id', proveedorId)
-        .order('created_at', { ascending: true });
+      setLoading(true);
 
-      if (error) throw error;
-      setDrivers((data || []) as Driver[]);
+      const [driversRes, routesRes, unitsRes] = await Promise.all([
+        supabase
+          .from('choferes_empresa')
+          .select('*')
+          .eq('proveedor_id', proveedorId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('productos')
+          .select('id, nombre')
+          .eq('proveedor_id', proveedorId)
+          .eq('is_private', true)
+          .eq('route_type', 'privada')
+          .eq('is_available', true)
+          .order('nombre'),
+        supabase
+          .from('unidades_empresa')
+          .select('id, nombre, placas')
+          .eq('proveedor_id', proveedorId)
+          .eq('is_active', true)
+          .order('nombre'),
+      ]);
+
+      const driversList = (driversRes.data || []) as Driver[];
+      setDrivers(driversList);
+      setRoutes((routesRes.data || []) as Route[]);
+      setUnits((unitsRes.data || []) as Unit[]);
+
+      // Fetch today's assignments for these drivers
+      if (driversList.length > 0) {
+        const driverIds = driversList.map(d => d.id);
+        const { data: assignData } = await supabase
+          .from('asignaciones_chofer')
+          .select('id, chofer_id, producto_id, unidad_id')
+          .eq('fecha', today)
+          .in('chofer_id', driverIds);
+
+        setAssignments((assignData || []) as TodayAssignment[]);
+      } else {
+        setAssignments([]);
+      }
     } catch (error) {
-      console.error('Error fetching drivers:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignRoute = async (driverId: string, routeId: string) => {
+    if (!user) return;
+    try {
+      setSavingAssignment(driverId);
+      const existing = assignments.find(a => a.chofer_id === driverId);
+
+      if (existing) {
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .update({ producto_id: routeId, asignado_por: user.id })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .insert({
+            chofer_id: driverId,
+            producto_id: routeId,
+            fecha: today,
+            asignado_por: user.id,
+          });
+        if (error) throw error;
+      }
+
+      // Also sync the driver's profile route_name
+      const driver = drivers.find(d => d.id === driverId);
+      const routeName = routes.find(r => r.id === routeId)?.nombre;
+      if (driver?.user_id && routeName) {
+        await supabase
+          .from('profiles')
+          .update({ route_name: routeName })
+          .eq('user_id', driver.user_id);
+      }
+
+      toast({ title: "✅ Ruta asignada" });
+      fetchAll();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingAssignment(null);
+    }
+  };
+
+  const handleAssignUnit = async (driverId: string, unitId: string) => {
+    if (!user) return;
+    try {
+      setSavingAssignment(driverId);
+      const existing = assignments.find(a => a.chofer_id === driverId);
+
+      if (existing) {
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .update({ unidad_id: unitId || null, asignado_por: user.id })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        // Need a route first
+        toast({
+          title: "Selecciona ruta primero",
+          description: "Asigna una ruta al chofer antes de asignarle unidad",
+          variant: "destructive",
+        });
+        setSavingAssignment(null);
+        return;
+      }
+
+      toast({ title: "✅ Unidad asignada" });
+      fetchAll();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingAssignment(null);
     }
   };
 
@@ -109,7 +245,6 @@ export default function PrivateRouteDrivers({
         throw error;
       }
 
-      // Send WhatsApp invitation with unique acceptance link
       const cleanPhone = newPhone.replace(/[^0-9]/g, '');
       const driverName = newName || 'Chofer';
       const inviteToken = (data as any)?.invite_token;
@@ -129,7 +264,7 @@ export default function PrivateRouteDrivers({
 
       setNewPhone('');
       setNewName('');
-      fetchDrivers();
+      fetchAll();
       onDriversChanged?.();
     } catch (error: any) {
       toast({
@@ -145,6 +280,12 @@ export default function PrivateRouteDrivers({
   const handleDeleteDriver = async () => {
     if (!deleteDriverId) return;
     try {
+      // Also delete any assignments for this driver
+      await supabase
+        .from('asignaciones_chofer')
+        .delete()
+        .eq('chofer_id', deleteDriverId);
+
       const { error } = await supabase
         .from('choferes_empresa')
         .delete()
@@ -153,7 +294,7 @@ export default function PrivateRouteDrivers({
       if (error) throw error;
       toast({ title: "Chofer eliminado" });
       setDeleteDriverId(null);
-      fetchDrivers();
+      fetchAll();
       onDriversChanged?.();
     } catch (error: any) {
       toast({
@@ -176,7 +317,7 @@ export default function PrivateRouteDrivers({
       toast({ title: "Nombre actualizado" });
       setEditingDriverId(null);
       setEditName('');
-      fetchDrivers();
+      fetchAll();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -188,15 +329,12 @@ export default function PrivateRouteDrivers({
 
   const sendGroupWhatsApp = () => {
     if (drivers.length === 0) return;
-    
     const mensaje = encodeURIComponent(
       `¡Equipo de ${businessName}! 👋\n\n` +
       `Recuerden abrir la app TodoCerca al iniciar su ruta para compartir ubicación en tiempo real.\n\n` +
       `📱 App: https://todocerca.lovable.app\n\n` +
       `¡Gracias por su trabajo! 🚌`
     );
-    
-    // Open WhatsApp with the message (user will need to select the group)
     window.open(`https://wa.me/?text=${mensaje}`, '_blank');
   };
 
@@ -210,6 +348,9 @@ export default function PrivateRouteDrivers({
     );
   }
 
+  const hasRoutes = routes.length > 0;
+  const hasUnits = units.length > 0;
+
   return (
     <div className="space-y-4">
       <Card>
@@ -219,7 +360,7 @@ export default function PrivateRouteDrivers({
             Choferes
           </CardTitle>
           <CardDescription>
-            Agrega choferes y envía invitaciones por WhatsApp
+            Agrega choferes, asígnales ruta y unidad para hoy
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -253,7 +394,7 @@ export default function PrivateRouteDrivers({
             </Button>
           </div>
 
-          {/* Drivers list */}
+          {/* Drivers list with inline assignment */}
           {drivers.length > 0 ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -267,63 +408,151 @@ export default function PrivateRouteDrivers({
                   Mensaje grupal
                 </Button>
               </div>
-              {drivers.map((driver) => (
-                <div 
-                  key={driver.id} 
-                  className="bg-background p-3 rounded-lg border space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      {editingDriverId === driver.id ? (
-                        <div className="flex items-center gap-1.5">
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder="Nuevo nombre"
-                            className="h-7 text-sm w-36"
-                            onKeyDown={(e) => e.key === 'Enter' && handleEditName(driver.id)}
-                          />
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleEditName(driver.id)}>
-                            OK
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingDriverId(null)}>
-                            ✕
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="font-medium text-sm">
-                          {driver.nombre || 'Sin nombre'}
+              {drivers.map((driver) => {
+                const assignment = assignments.find(a => a.chofer_id === driver.id);
+                const assignedRoute = assignment ? routes.find(r => r.id === assignment.producto_id) : null;
+                const assignedUnit = assignment?.unidad_id ? units.find(u => u.id === assignment.unidad_id) : null;
+                const isSaving = savingAssignment === driver.id;
+
+                return (
+                  <div 
+                    key={driver.id} 
+                    className="bg-background p-3 rounded-lg border space-y-2"
+                  >
+                    {/* Driver header */}
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        {editingDriverId === driver.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="Nuevo nombre"
+                              className="h-7 text-sm w-36"
+                              onKeyDown={(e) => e.key === 'Enter' && handleEditName(driver.id)}
+                            />
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleEditName(driver.id)}>
+                              OK
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingDriverId(null)}>
+                              ✕
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="font-medium text-sm">
+                            {driver.nombre || 'Sin nombre'}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">{driver.telefono}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={driver.user_id ? 'default' : 'secondary'} className="text-xs">
+                          {driver.user_id ? 'Vinculado' : 'Pendiente'}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setEditingDriverId(driver.id);
+                            setEditName(driver.nombre || '');
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => setDeleteDriverId(driver.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Inline assignment: Route + Unit */}
+                    {(hasRoutes || hasUnits) && (
+                      <div className="bg-muted/20 rounded-md p-2 space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          📋 Asignación de hoy
+                          {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
                         </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">{driver.telefono}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={driver.user_id ? 'default' : 'secondary'} className="text-xs">
-                        {driver.user_id ? 'Vinculado' : 'Pendiente'}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => {
-                          setEditingDriverId(driver.id);
-                          setEditName(driver.nombre || '');
-                        }}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => setDeleteDriverId(driver.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {/* Route selector */}
+                          {hasRoutes && (
+                            <Select
+                              value={assignment?.producto_id || ''}
+                              onValueChange={(val) => handleAssignRoute(driver.id, val)}
+                              disabled={isSaving}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <div className="flex items-center gap-1 truncate">
+                                  <MapPin className="h-3 w-3 text-primary shrink-0" />
+                                  <SelectValue placeholder="Ruta..." />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {routes.map((route) => (
+                                  <SelectItem key={route.id} value={route.id} className="text-xs">
+                                    {route.nombre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+
+                          {/* Unit selector */}
+                          {hasUnits && (
+                            <Select
+                              value={assignment?.unidad_id || ''}
+                              onValueChange={(val) => handleAssignUnit(driver.id, val)}
+                              disabled={isSaving || !assignment?.producto_id}
+                            >
+                              <SelectTrigger className={`h-8 text-xs ${!assignment?.unidad_id && assignment?.producto_id ? 'border-amber-500/50' : ''}`}>
+                                <div className="flex items-center gap-1 truncate">
+                                  <Bus className="h-3 w-3 text-amber-500 shrink-0" />
+                                  <SelectValue placeholder={assignment?.producto_id ? '⚠️ Unidad...' : 'Primero asigna ruta'} />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {units.map((unit) => (
+                                  <SelectItem key={unit.id} value={unit.id} className="text-xs">
+                                    🚌 {unit.nombre}{unit.placas ? ` · ${unit.placas}` : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {/* Current assignment summary */}
+                        {assignedRoute && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground pt-0.5 flex-wrap">
+                            <span className="font-medium text-foreground">{assignedRoute.nombre}</span>
+                            {assignedUnit && (
+                              <>
+                                <ArrowRight className="h-3 w-3 shrink-0" />
+                                <span className="font-medium text-foreground">
+                                  🚌 {assignedUnit.nombre}
+                                  {assignedUnit.placas ? ` · ${assignedUnit.placas}` : ''}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Warning if no routes or units exist */}
+                    {!hasRoutes && !hasUnits && (
+                      <p className="text-xs text-amber-600">
+                        ⚠️ Registra rutas y unidades primero para poder asignar
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -333,13 +562,13 @@ export default function PrivateRouteDrivers({
         </CardContent>
       </Card>
 
-      {/* Delete confirmation - single step */}
+      {/* Delete confirmation */}
       <AlertDialog open={!!deleteDriverId} onOpenChange={() => setDeleteDriverId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar chofer?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará este chofer de tu empresa. El chofer perderá acceso y deberás volver a agregarlo e invitarlo.
+              Se eliminará este chofer y sus asignaciones. Deberás volver a agregarlo e invitarlo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
