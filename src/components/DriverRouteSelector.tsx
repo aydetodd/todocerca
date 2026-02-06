@@ -200,9 +200,19 @@ export default function DriverRouteSelector() {
       }
 
       const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+      const routeName = selectedVehicle?.nombre || 'Ruta';
+
+      // Sync profile.route_name so the map shows the correct route immediately
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ route_name: routeName })
+          .eq('user_id', user.id);
+      }
+
       toast({
         title: "✅ Ruta asignada",
-        description: `Hoy cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
+        description: `Hoy cubrirás: ${routeName}`,
       });
 
       setIsOpen(false);

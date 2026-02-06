@@ -23,6 +23,8 @@ export interface ProveedorLocation {
   is_taxi?: boolean;
   is_bus?: boolean;
   is_private_driver?: boolean;
+  route_producto_id?: string | null;
+  proveedor_id?: string | null;
 }
 
 export const useRealtimeLocations = () => {
@@ -125,13 +127,46 @@ export const useRealtimeLocations = () => {
     // Buscar choferes privados activos (linked drivers)
     const { data: activeDrivers } = await supabase
       .from('choferes_empresa')
-      .select('user_id')
+      .select('id, user_id')
       .eq('is_active', true)
       .not('user_id', 'is', null);
     
     const privateDriverUserIds = new Set(
       activeDrivers?.map(d => d.user_id).filter(Boolean) || []
     );
+
+    // Fetch today's driver assignments to get the REAL route name
+    const today = new Date().toISOString().split('T')[0];
+    const driverIds = activeDrivers?.map(d => d.id) || [];
+    
+    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string }>();
+    
+    if (driverIds.length > 0) {
+      const { data: assignments } = await supabase
+        .from('asignaciones_chofer')
+        .select('chofer_id, producto_id, productos(nombre)')
+        .in('chofer_id', driverIds)
+        .eq('fecha', today);
+      
+      if (assignments) {
+        // Map chofer_id → user_id
+        const choferToUser = new Map(
+          activeDrivers?.map(d => [d.id, d.user_id]) || []
+        );
+        
+        for (const a of assignments) {
+          const userId = choferToUser.get(a.chofer_id);
+          if (userId) {
+            driverAssignmentMap.set(userId, {
+              routeName: (a.productos as any)?.nombre || 'Ruta',
+              productoId: a.producto_id
+            });
+          }
+        }
+      }
+    }
+    
+    console.log('[fetchFullData] Driver assignments today:', driverAssignmentMap.size);
 
     const newLocationsMap = new Map<string, ProveedorLocation>();
     
@@ -159,12 +194,19 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          route_name: profile.route_name || routeNameFromProduct || null,
+          // For private drivers, use TODAY's assignment; otherwise fall back to profile/product
+          route_name: isPrivateDriver 
+            ? (driverAssignmentMap.get(loc.user_id)?.routeName || profile.route_name || null)
+            : (profile.route_name || routeNameFromProduct || null),
           tarifa_km: (profile as any).tarifa_km || 15
         },
         is_taxi: isTaxi,
         is_bus: isBus,
-        is_private_driver: isPrivateDriver
+        is_private_driver: isPrivateDriver,
+        route_producto_id: isPrivateDriver
+          ? (driverAssignmentMap.get(loc.user_id)?.productoId || null)
+          : null,
+        proveedor_id: proveedorId || null
       };
       
       newLocationsMap.set(loc.user_id, location);

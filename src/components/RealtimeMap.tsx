@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Phone, MessageCircle } from 'lucide-react';
 import TaxiRequestModal from './TaxiRequestModal';
+import { toast } from 'sonner';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -315,9 +316,25 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
 
       const routeLabel = location.profiles.route_name || '';
       const busTypeLabel = isPrivateDriver ? 'Transporte Privado' : 'Ruta de Transporte';
+      
+      // Build favorite button HTML
+      const favoritoTarget = location.route_producto_id 
+        ? `'producto', '${location.route_producto_id}'`
+        : (location.proveedor_id ? `'proveedor', '${location.proveedor_id}'` : null);
+      const favoritoButtonHtml = favoritoTarget && !isCurrentUser ? `
+        <button 
+          onclick='window.addToFavoritos(${favoritoTarget})'
+          class="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          title="Agregar a favoritos"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </button>
+      ` : '';
+
       const popupContent = `
-        <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : (isBus ? ' 🚌' : '')}</h3>
+        <div class="p-3 min-w-[200px] relative">
+          ${favoritoButtonHtml}
+          <h3 class="font-bold text-lg mb-2 pr-8">${apodo || 'Usuario'}${isTaxi ? ' 🚕' : (isBus ? ' 🚌' : '')}</h3>
           ${isBus ? `<p class="text-xs mb-2 font-semibold" style="color: ${isPrivateDriver ? '#D4960A' : '#2563EB'}">${busTypeLabel}${routeLabel ? ` — ${routeLabel}` : ''}</p>` : ''}
           ${isTaxi ? '<p class="text-xs mb-2 text-blue-600 font-semibold">Servicio de Taxi</p>' : ''}
           <p class="text-sm mb-2">Estado: <span class="font-semibold" style="color: ${color}">${estado}</span></p>
@@ -402,6 +419,35 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         tarifa_km: tarifaKm
       });
       setShowTaxiModal(true);
+    };
+
+    (window as any).addToFavoritos = async (tipo: string, itemId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Debes iniciar sesión para guardar favoritos');
+        return;
+      }
+
+      const insertData: any = {
+        user_id: user.id,
+        tipo,
+      };
+      if (tipo === 'producto') insertData.producto_id = itemId;
+      if (tipo === 'proveedor') insertData.proveedor_id = itemId;
+
+      const { error } = await supabase
+        .from('favoritos')
+        .insert(insertData);
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('Ya está en tus favoritos');
+        } else {
+          toast.error('Error al agregar a favoritos');
+        }
+        return;
+      }
+      toast.success('❤️ Agregado a favoritos');
     };
   }, [onOpenChat]);
 
