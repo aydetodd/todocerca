@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Check, Loader2, RefreshCw, Navigation } from 'lucide-react';
+import { MapPin, Check, Loader2, RefreshCw, Navigation, Share2 } from 'lucide-react';
 
 // Yellow bus SVG for driver panel — same shape as public transport bus but yellow
 const YELLOW_BUS_SVG = `<svg width="24" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
@@ -165,14 +165,45 @@ export default function DriverProfilePanel() {
     }
   };
 
+  const handleInviteWhatsApp = async () => {
+    if (!todayAssignment) return;
+    const vehicle = vehicles.find(v => v.id === todayAssignment.producto_id);
+    let token = vehicle?.invite_token;
+
+    // If no invite_token exists, generate one
+    if (!token) {
+      const newToken = crypto.randomUUID();
+      const { error } = await supabase
+        .from('productos')
+        .update({ invite_token: newToken })
+        .eq('id', todayAssignment.producto_id);
+
+      if (error) {
+        toast({ title: 'Error', description: 'No se pudo generar el enlace', variant: 'destructive' });
+        return;
+      }
+      token = newToken;
+      // Update local state
+      setVehicles(prev => prev.map(v => 
+        v.id === todayAssignment.producto_id ? { ...v, invite_token: token! } : v
+      ));
+    }
+
+    const inviteLink = `${window.location.origin}/mapa?type=ruta&token=${token}`;
+    const mensaje = encodeURIComponent(
+      `🚌 ¡Sigue mi ruta "${todayAssignment.vehicleName}" en tiempo real!\n\n` +
+      `📍 Haz clic aquí para ver dónde voy:\n${inviteLink}\n\n` +
+      `Descarga TodoCerca para más servicios.`
+    );
+    window.open(`https://wa.me/?text=${mensaje}`, '_blank');
+  };
+
   const handleSelectRoute = async (vehicleId: string) => {
     if (!driverData) return;
     try {
       setAssigning(true);
       const today = new Date().toISOString().split('T')[0];
 
-      // Use upsert to avoid duplicate key constraint violation
-      // The unique constraint is on (chofer_id, fecha)
       const { error } = await supabase
         .from('asignaciones_chofer')
         .upsert(
@@ -186,7 +217,6 @@ export default function DriverProfilePanel() {
 
       if (error) throw error;
 
-      // Sync profile.route_name so the map shows the correct route
       const selectedVehicle = vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
         await supabase
@@ -235,6 +265,18 @@ export default function DriverProfilePanel() {
               Empresa: <strong>{driverData.businessName}</strong>
             </p>
           </div>
+          {/* Invite button in header area */}
+          {todayAssignment && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleInviteWhatsApp}
+              className="shrink-0"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1" />
+              Invitar
+            </Button>
+          )}
         </div>
 
         {/* Today's assignment */}
@@ -254,12 +296,10 @@ export default function DriverProfilePanel() {
                 variant="default"
                 size="sm"
                 onClick={() => {
-                  // Navigate to map with the assigned route's invite_token
                   const assignedVehicle = vehicles.find(v => v.id === todayAssignment.producto_id);
                   if (assignedVehicle?.invite_token) {
                     navigate(`/mapa?token=${assignedVehicle.invite_token}`);
                   } else {
-                    // Fallback: go to map filtered by ruta
                     navigate('/mapa?type=ruta');
                   }
                 }}
