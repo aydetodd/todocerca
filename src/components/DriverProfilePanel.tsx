@@ -74,8 +74,8 @@ export default function DriverProfilePanel() {
         businessName: proveedor?.nombre || 'Empresa',
       });
 
-      // Get vehicles
-      const { data: vehicleList } = await supabase
+      // Get all private vehicles for this company
+      const { data: vehicleList, error: vehicleError } = await supabase
         .from('productos')
         .select('id, nombre, descripcion')
         .eq('proveedor_id', driver.proveedor_id)
@@ -83,6 +83,8 @@ export default function DriverProfilePanel() {
         .eq('route_type', 'privada')
         .eq('is_available', true)
         .order('nombre');
+
+      console.log('[DriverProfilePanel] Vehicles found:', vehicleList?.length, vehicleError?.message);
 
       setVehicles((vehicleList || []) as Vehicle[]);
 
