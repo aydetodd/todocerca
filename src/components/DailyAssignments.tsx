@@ -62,6 +62,23 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to realtime changes on assignments
+    const channel = supabase
+      .channel(`realtime-assignments-daily-${proveedorId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asignaciones_chofer' },
+        () => {
+          console.log('🔄 [DailyAssignments] Assignment changed — refreshing');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [proveedorId]);
 
   const fetchData = async () => {

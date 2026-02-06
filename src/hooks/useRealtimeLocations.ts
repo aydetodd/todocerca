@@ -326,8 +326,9 @@ export const useRealtimeLocations = () => {
           const newData = payload.new;
           const oldData = payload.old;
           if (newData?.role !== 'proveedor') return;
-          if (oldData?.estado !== newData?.estado) {
-            console.log(`🔄 [Estado] ${newData.apodo}: ${oldData?.estado} → ${newData.estado}`);
+          // Refresh on estado change OR route_name change
+          if (oldData?.estado !== newData?.estado || oldData?.route_name !== newData?.route_name) {
+            console.log(`🔄 [Profile] ${newData.apodo}: estado=${newData.estado}, route=${newData.route_name}`);
             fetchFullData();
           }
         }
@@ -344,6 +345,19 @@ export const useRealtimeLocations = () => {
           if (data?.user_id && data?.latitude && data?.longitude) {
             updateLocationOnly(data.user_id, data.latitude, data.longitude);
           }
+        }
+      )
+      .subscribe();
+
+    // Listen for assignment changes to update route names, units, etc. in real-time
+    const assignmentsChannel = supabase
+      .channel('realtime-assignments-map')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asignaciones_chofer' },
+        () => {
+          console.log('🔄 [Map] Assignment changed — refreshing full data');
+          fetchFullData();
         }
       )
       .subscribe();
@@ -379,6 +393,7 @@ export const useRealtimeLocations = () => {
       isMounted.current = false;
       supabase.removeChannel(profilesChannel);
       supabase.removeChannel(locationsChannel);
+      supabase.removeChannel(assignmentsChannel);
       clearInterval(fastPollInterval);
       clearInterval(slowPollInterval);
       if (watchId) {
