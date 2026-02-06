@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import DailyAssignments from './DailyAssignments';
@@ -53,6 +54,7 @@ interface PrivateRouteManagementProps {
 }
 
 export default function PrivateRouteManagement({ proveedorId, businessName }: PrivateRouteManagementProps) {
+  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<PrivateVehicle[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [driversCount, setDriversCount] = useState(0);
@@ -401,6 +403,35 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
 
   return (
     <div className="space-y-4">
+      {/* Fleet view button for admin */}
+      {(vehicles.length > 0 || units.length > 0) && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Bus className="h-5 w-5 text-amber-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-foreground">Mi Flota</p>
+                  <p className="text-xs text-muted-foreground">
+                    {units.length} unidad(es) · {driversCount} chofer(es) · {vehicles.length} ruta(s)
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => navigate('/mapa?fleet=true')}
+                className="shrink-0 bg-amber-500 hover:bg-amber-600 text-black font-bold"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Ver en Mapa
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Daily assignments panel */}
       {vehicles.length > 0 && (
         <DailyAssignments proveedorId={proveedorId} />
