@@ -359,10 +359,10 @@ export default function PrivateRouteDrivers({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <User className="h-5 w-5" />
-            Choferes
+            2. Choferes
           </CardTitle>
           <CardDescription>
-            Agrega choferes, asígnales ruta y unidad para hoy
+            Registra choferes y asígnales unidad y ruta para el día. Los choferes pueden variar, pero normalmente son fijos por unidad.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
