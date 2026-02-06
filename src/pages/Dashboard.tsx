@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  Bus,
   Calendar,
   Car,
   Clock,
@@ -27,6 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
+import PrivateRouteManagement from "@/components/PrivateRouteManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import { OrdersManagement } from "@/components/OrdersManagement";
@@ -40,6 +42,7 @@ type DashboardSection =
   | "suscripcion"
   | "tracking"
   | "productos"
+  | "rutas_privadas"
   | "apartados"
   | "citas"
   | "horarios"
@@ -232,6 +235,12 @@ const Dashboard = () => {
           key: "productos" as const,
           label: "Productos",
           icon: Package,
+          visible: isProvider,
+        },
+        {
+          key: "rutas_privadas" as const,
+          label: "Rutas Privadas",
+          icon: Bus,
           visible: isProvider,
         },
         {
@@ -481,6 +490,27 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>Productos</CardTitle>
+                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeSection === "rutas_privadas" && (
+              <div>
+                {isProvider && userSpecificData?.id ? (
+                  <PrivateRouteManagement 
+                    proveedorId={userSpecificData.id} 
+                    businessName={userSpecificData.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
+                  />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Rutas Privadas</CardTitle>
                       <CardDescription>No se encontraron datos de proveedor.</CardDescription>
                     </CardHeader>
                     <CardContent>
