@@ -54,6 +54,7 @@ interface PrivateRouteManagementProps {
 export default function PrivateRouteManagement({ proveedorId, businessName }: PrivateRouteManagementProps) {
   const [vehicles, setVehicles] = useState<PrivateVehicle[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [driversCount, setDriversCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     subscribed: boolean;
@@ -78,7 +79,20 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     checkSubscription();
     fetchVehicles();
     fetchUnits();
+    fetchDriversCount();
   }, [proveedorId]);
+
+  const fetchDriversCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('choferes_empresa')
+        .select('id', { count: 'exact', head: true })
+        .eq('proveedor_id', proveedorId);
+      if (!error && count !== null) setDriversCount(count);
+    } catch (error) {
+      console.error('Error fetching drivers count:', error);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
@@ -352,22 +366,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     );
   }
 
-  // If viewing drivers
-  if (showDrivers) {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => setShowDrivers(false)}>
-          ← Volver
-        </Button>
-        <PrivateRouteDrivers
-          proveedorId={proveedorId}
-          productoId={vehicles[0]?.id || ''}
-          vehicleName="Empresa"
-          businessName={businessName}
-        />
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-4">
@@ -382,28 +381,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           variant={activeTab === 'units' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('units')}
-          className="flex-1"
+          className="flex-1 text-xs px-2"
         >
-          <Bus className="h-4 w-4 mr-1" />
           Unidades ({units.length})
         </Button>
         <Button
           variant={activeTab === 'routes' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('routes')}
-          className="flex-1"
+          className="flex-1 text-xs px-2"
         >
-          <Route className="h-4 w-4 mr-1" />
           Rutas ({vehicles.length})
         </Button>
         <Button
           variant={activeTab === 'drivers' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('drivers')}
-          className="flex-1"
+          className="flex-1 text-xs px-2"
         >
-          <Users className="h-4 w-4 mr-1" />
-          Choferes
+          Choferes ({driversCount})
         </Button>
       </div>
 
@@ -601,27 +597,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
 
       {/* === DRIVERS TAB === */}
       {activeTab === 'drivers' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Choferes - {businessName}
-            </CardTitle>
-            <CardDescription>
-              Los choferes son ilimitados y sin costo adicional. Agrega los choferes que necesites.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowDrivers(true)}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Gestionar Choferes
-            </Button>
-          </CardContent>
-        </Card>
+        <PrivateRouteDrivers
+          proveedorId={proveedorId}
+          productoId={vehicles[0]?.id || ''}
+          vehicleName="Empresa"
+          businessName={businessName}
+          onDriversChanged={fetchDriversCount}
+        />
       )}
 
       {/* Dialog for adding a new unit */}

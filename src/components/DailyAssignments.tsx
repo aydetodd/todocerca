@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Calendar, Bus, User, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
+import { Calendar, Bus, User, Loader2, ArrowRight, RefreshCw, MapPin } from 'lucide-react';
 
 interface Driver {
   id: string;
@@ -15,20 +15,28 @@ interface Driver {
   telefono: string;
 }
 
-interface Vehicle {
+interface Route {
   id: string;
   nombre: string;
+}
+
+interface Unit {
+  id: string;
+  nombre: string;
+  placas: string | null;
 }
 
 interface Assignment {
   id: string;
   chofer_id: string;
   producto_id: string;
+  unidad_id: string | null;
   fecha: string;
   asignado_por: string | null;
   chofer_nombre: string | null;
   chofer_telefono: string;
-  vehiculo_nombre: string;
+  route_nombre: string;
+  unit_nombre: string | null;
 }
 
 interface DailyAssignmentsProps {
@@ -39,12 +47,14 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
   const { user } = useAuth();
   const { toast } = useToast();
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState('');
-  const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [selectedRoute, setSelectedRoute] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -56,8 +66,8 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
     try {
       setLoading(true);
 
-      // Fetch drivers, vehicles, and today's assignments in parallel
-      const [driversRes, vehiclesRes, assignmentsRes] = await Promise.all([
+      // Fetch drivers, routes, units, and today's assignments in parallel
+      const [driversRes, routesRes, unitsRes, assignmentsRes] = await Promise.all([
         supabase
           .from('choferes_empresa')
           .select('id, nombre, telefono')
@@ -73,14 +83,21 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
           .eq('is_available', true)
           .order('nombre'),
         supabase
+          .from('unidades_empresa')
+          .select('id, nombre, placas')
+          .eq('proveedor_id', proveedorId)
+          .eq('is_active', true)
+          .order('nombre'),
+        supabase
           .from('asignaciones_chofer')
-          .select('id, chofer_id, producto_id, fecha, asignado_por')
+          .select('id, chofer_id, producto_id, unidad_id, fecha, asignado_por')
           .eq('fecha', today)
           .order('created_at', { ascending: true }),
       ]);
 
       const driversList = (driversRes.data || []) as Driver[];
-      const vehiclesList = (vehiclesRes.data || []) as Vehicle[];
+      const routesList = (routesRes.data || []) as Route[];
+      const unitsList = (unitsRes.data || []) as Unit[];
       
       // Filter assignments to only those belonging to this provider's drivers
       const driverIds = driversList.map(d => d.id);
@@ -88,17 +105,20 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
         .filter(a => driverIds.includes(a.chofer_id))
         .map(a => {
           const driver = driversList.find(d => d.id === a.chofer_id);
-          const vehicle = vehiclesList.find(v => v.id === a.producto_id);
+          const route = routesList.find(v => v.id === a.producto_id);
+          const unit = a.unidad_id ? unitsList.find(u => u.id === a.unidad_id) : null;
           return {
             ...a,
             chofer_nombre: driver?.nombre || null,
             chofer_telefono: driver?.telefono || '',
-            vehiculo_nombre: vehicle?.nombre || 'Ruta desconocida',
+            route_nombre: route?.nombre || 'Ruta desconocida',
+            unit_nombre: unit?.nombre || null,
           };
         }) as Assignment[];
 
       setDrivers(driversList);
-      setVehicles(vehiclesList);
+      setRoutes(routesList);
+      setUnits(unitsList);
       setAssignments(filteredAssignments);
     } catch (error) {
       console.error('[DailyAssignments] Error:', error);
@@ -108,10 +128,11 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
   };
 
   const handleAssign = async () => {
-    if (!selectedDriver || !selectedVehicle || !user) return;
+    if (!selectedDriver || !selectedRoute || !user) return;
 
     try {
       setAssigning(true);
+      const unitId = selectedUnit || null;
 
       // Check if this driver already has an assignment for today
       const existing = assignments.find(a => a.chofer_id === selectedDriver);
@@ -121,19 +142,21 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
         const { error } = await supabase
           .from('asignaciones_chofer')
           .update({
-            producto_id: selectedVehicle,
+            producto_id: selectedRoute,
+            unidad_id: unitId,
             asignado_por: user.id,
           })
           .eq('id', existing.id);
 
         if (error) throw error;
       } else {
-        // Create new
+        // Create new — multiple drivers CAN have the same route
         const { error } = await supabase
           .from('asignaciones_chofer')
           .insert({
             chofer_id: selectedDriver,
-            producto_id: selectedVehicle,
+            producto_id: selectedRoute,
+            unidad_id: unitId,
             fecha: today,
             asignado_por: user.id,
           });
@@ -142,15 +165,17 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
       }
 
       const driverName = drivers.find(d => d.id === selectedDriver)?.nombre || 'Chofer';
-      const vehicleName = vehicles.find(v => v.id === selectedVehicle)?.nombre || 'Ruta';
+      const routeName = routes.find(v => v.id === selectedRoute)?.nombre || 'Ruta';
+      const unitName = units.find(u => u.id === selectedUnit)?.nombre;
 
       toast({
         title: "✅ Asignación realizada",
-        description: `${driverName} → ${vehicleName}`,
+        description: `${driverName} → ${routeName}${unitName ? ` (${unitName})` : ''}`,
       });
 
       setSelectedDriver('');
-      setSelectedVehicle('');
+      setSelectedRoute('');
+      setSelectedUnit('');
       fetchData();
     } catch (error: any) {
       toast({
@@ -192,9 +217,9 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
     );
   }
 
-  if (drivers.length === 0 || vehicles.length === 0) return null;
+  if (drivers.length === 0 || routes.length === 0) return null;
 
-  // Drivers not yet assigned today
+  // Drivers not yet assigned today (but still show all routes — multiple drivers can share a route)
   const unassignedDrivers = drivers.filter(
     d => !assignments.some(a => a.chofer_id === d.id)
   );
@@ -209,7 +234,7 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
               Asignaciones de Hoy
             </CardTitle>
             <CardDescription>
-              Pre-asigna choferes a rutas para el día de hoy ({new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })})
+              {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
             </CardDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={fetchData} title="Actualizar">
@@ -236,11 +261,22 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
                   </span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
                   <div className="flex items-center gap-1 min-w-0">
-                    <Bus className="h-4 w-4 text-primary shrink-0" />
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
                     <span className="text-sm font-medium">
-                      {assignment.vehiculo_nombre}
+                      {assignment.route_nombre}
                     </span>
                   </div>
+                  {assignment.unit_nombre && (
+                    <>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <div className="flex items-center gap-1">
+                        <Bus className="h-3 w-3 text-amber-500 shrink-0" />
+                        <span className="text-xs text-muted-foreground">
+                          {assignment.unit_nombre}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant={assignment.asignado_por ? 'secondary' : 'outline'} className="text-xs">
@@ -260,11 +296,11 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
           </div>
         )}
 
-        {/* Assign form */}
+        {/* Assign form — all drivers shown, not just unassigned, to allow reassignment */}
         {unassignedDrivers.length > 0 && (
           <div className="bg-primary/5 p-4 rounded-lg space-y-3 border border-primary/10">
             <Label className="text-sm font-medium">Asignar chofer a ruta</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <Select value={selectedDriver} onValueChange={setSelectedDriver}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar chofer" />
@@ -278,22 +314,37 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
                 </SelectContent>
               </Select>
 
-              <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+              <Select value={selectedRoute} onValueChange={setSelectedRoute}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar ruta" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.nombre}
+                  {routes.map((route) => (
+                    <SelectItem key={route.id} value={route.id}>
+                      {route.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
+              {units.length > 0 && (
+                <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar unidad (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.nombre}{unit.placas ? ` (${unit.placas})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <Button
               onClick={handleAssign}
-              disabled={!selectedDriver || !selectedVehicle || assigning}
+              disabled={!selectedDriver || !selectedRoute || assigning}
               size="sm"
               className="w-full"
             >

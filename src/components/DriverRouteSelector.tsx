@@ -12,12 +12,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bus, Check, Loader2, MapPin } from 'lucide-react';
 
-interface Vehicle {
+interface Route {
   id: string;
   nombre: string;
   descripcion: string | null;
+}
+
+interface Unit {
+  id: string;
+  nombre: string;
+  placas: string | null;
 }
 
 interface DriverInfo {
@@ -30,7 +38,9 @@ interface DriverInfo {
 interface TodayAssignment {
   id: string;
   producto_id: string;
-  vehicleName: string;
+  unidad_id: string | null;
+  routeName: string;
+  unitName: string | null;
 }
 
 export default function DriverRouteSelector() {
@@ -38,11 +48,14 @@ export default function DriverRouteSelector() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [driverInfo, setDriverInfo] = useState<DriverInfo | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [todayAssignment, setTodayAssignment] = useState<TodayAssignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
 
   useEffect(() => {
     if (user && !checked) {
@@ -81,17 +94,14 @@ export default function DriverRouteSelector() {
 
         const phone = profile?.telefono || profile?.phone;
         if (phone) {
-          // Normalize phone for matching (remove non-digits)
           const normalizedPhone = phone.replace(/[^0-9]/g, '');
           
-          // Try to find driver by phone (check multiple formats)
           const { data: allDrivers } = await supabase
             .from('choferes_empresa')
             .select('id, proveedor_id, nombre, telefono')
             .eq('is_active', true)
             .is('user_id', null);
 
-          // Match by normalized phone number
           const driverByPhone = allDrivers?.find(d => {
             const driverPhone = d.telefono.replace(/[^0-9]/g, '');
             return driverPhone === normalizedPhone || 
@@ -100,7 +110,6 @@ export default function DriverRouteSelector() {
           }) || null;
 
           if (driverByPhone) {
-            // Link user_id to the driver record
             await supabase
               .from('choferes_empresa')
               .update({ user_id: user.id })
@@ -131,33 +140,53 @@ export default function DriverRouteSelector() {
       };
       setDriverInfo(info);
 
-      // Fetch available private vehicles for this company
-      const { data: vehicleList } = await supabase
-        .from('productos')
-        .select('id, nombre, descripcion')
-        .eq('proveedor_id', driverData.proveedor_id)
-        .eq('is_private', true)
-        .eq('route_type', 'privada')
-        .eq('is_available', true)
-        .order('nombre');
+      // Fetch routes and units in parallel
+      const [routesRes, unitsRes] = await Promise.all([
+        supabase
+          .from('productos')
+          .select('id, nombre, descripcion')
+          .eq('proveedor_id', driverData.proveedor_id)
+          .eq('is_private', true)
+          .eq('route_type', 'privada')
+          .eq('is_available', true)
+          .order('nombre'),
+        supabase
+          .from('unidades_empresa')
+          .select('id, nombre, placas')
+          .eq('proveedor_id', driverData.proveedor_id)
+          .eq('is_active', true)
+          .order('nombre'),
+      ]);
 
-      setVehicles((vehicleList || []) as Vehicle[]);
+      setRoutes((routesRes.data || []) as Route[]);
+      setUnits((unitsRes.data || []) as Unit[]);
 
       // Check if there's already an assignment for today
       const today = new Date().toISOString().split('T')[0];
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
-        .select('id, producto_id, productos(nombre)')
+        .select('id, producto_id, unidad_id, productos(nombre)')
         .eq('chofer_id', driverData.id)
         .eq('fecha', today)
         .maybeSingle();
 
       if (assignment) {
+        // Get unit name if assigned
+        let unitName: string | null = null;
+        if (assignment.unidad_id) {
+          const matchedUnit = (unitsRes.data || []).find((u: any) => u.id === assignment.unidad_id);
+          unitName = matchedUnit?.nombre || null;
+        }
+
         setTodayAssignment({
           id: assignment.id,
           producto_id: assignment.producto_id,
-          vehicleName: (assignment.productos as any)?.nombre || 'Ruta',
+          unidad_id: assignment.unidad_id,
+          routeName: (assignment.productos as any)?.nombre || 'Ruta',
+          unitName,
         });
+        setSelectedRoute(assignment.producto_id);
+        setSelectedUnit(assignment.unidad_id || '');
       }
 
       // Show popup if no assignment for today or to confirm
@@ -171,18 +200,22 @@ export default function DriverRouteSelector() {
     }
   };
 
-  const handleSelectRoute = async (vehicleId: string) => {
-    if (!driverInfo) return;
+  const handleAssign = async () => {
+    if (!driverInfo || !selectedRoute) return;
 
     try {
       setAssigning(true);
       const today = new Date().toISOString().split('T')[0];
+      const unitId = selectedUnit || null;
 
       if (todayAssignment) {
         // Update existing assignment
         const { error } = await supabase
           .from('asignaciones_chofer')
-          .update({ producto_id: vehicleId })
+          .update({ 
+            producto_id: selectedRoute,
+            unidad_id: unitId,
+          })
           .eq('id', todayAssignment.id);
 
         if (error) throw error;
@@ -192,15 +225,16 @@ export default function DriverRouteSelector() {
           .from('asignaciones_chofer')
           .insert({
             chofer_id: driverInfo.id,
-            producto_id: vehicleId,
+            producto_id: selectedRoute,
+            unidad_id: unitId,
             fecha: today,
           });
 
         if (error) throw error;
       }
 
-      const selectedVehicle = vehicles.find(v => v.id === vehicleId);
-      const routeName = selectedVehicle?.nombre || 'Ruta';
+      const routeName = routes.find(r => r.id === selectedRoute)?.nombre || 'Ruta';
+      const unitName = units.find(u => u.id === selectedUnit)?.nombre;
 
       // Sync profile.route_name so the map shows the correct route immediately
       if (user) {
@@ -212,7 +246,7 @@ export default function DriverRouteSelector() {
 
       toast({
         title: "✅ Ruta asignada",
-        description: `Hoy cubrirás: ${routeName}`,
+        description: `Hoy cubrirás: ${routeName}${unitName ? ` en ${unitName}` : ''}`,
       });
 
       setIsOpen(false);
@@ -231,12 +265,16 @@ export default function DriverRouteSelector() {
   const handleConfirmCurrent = () => {
     toast({
       title: "✅ Ruta confirmada",
-      description: `Hoy cubrirás: ${todayAssignment?.vehicleName}`,
+      description: `Hoy cubrirás: ${todayAssignment?.routeName}${todayAssignment?.unitName ? ` en ${todayAssignment.unitName}` : ''}`,
     });
     setIsOpen(false);
   };
 
-  if (!driverInfo || vehicles.length === 0) return null;
+  if (!driverInfo || routes.length === 0) return null;
+
+  const hasChanges = todayAssignment 
+    ? (selectedRoute !== todayAssignment.producto_id || selectedUnit !== (todayAssignment.unidad_id || ''))
+    : !!selectedRoute;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -247,7 +285,7 @@ export default function DriverRouteSelector() {
             Selecciona tu ruta
           </DialogTitle>
           <DialogDescription>
-            ¡Hola {driverInfo.nombre || 'Chofer'}! ¿Qué ruta cubrirás hoy en {driverInfo.business_name}?
+            ¡Hola {driverInfo.nombre || 'Chofer'}! ¿Qué ruta y unidad cubrirás hoy en {driverInfo.business_name}?
           </DialogDescription>
         </DialogHeader>
 
@@ -256,65 +294,86 @@ export default function DriverRouteSelector() {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
-            {vehicles.map((vehicle) => {
-              const isCurrentAssignment = todayAssignment?.producto_id === vehicle.id;
-              return (
-                <Card
-                  key={vehicle.id}
-                  className={`cursor-pointer transition-all hover:border-primary ${
-                    isCurrentAssignment ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''
-                  }`}
-                  onClick={() => {
-                    if (isCurrentAssignment) {
-                      handleConfirmCurrent();
-                    } else {
-                      handleSelectRoute(vehicle.id);
-                    }
-                  }}
-                >
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <MapPin className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{vehicle.nombre}</p>
-                      {vehicle.descripcion && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {vehicle.descripcion}
-                        </p>
-                      )}
-                    </div>
-                    {isCurrentAssignment && (
-                      <Badge variant="default" className="shrink-0 gap-1">
-                        <Check className="h-3 w-3" />
-                        Asignada
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="space-y-4 py-2">
+            {/* Route selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-primary" />
+                Ruta
+              </Label>
+              <Select value={selectedRoute} onValueChange={setSelectedRoute}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar ruta..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {routes.map((route) => (
+                    <SelectItem key={route.id} value={route.id}>
+                      {route.nombre}
+                      {route.descripcion ? ` — ${route.descripcion}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {assigning && (
-              <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Asignando ruta...
+            {/* Unit selection */}
+            {units.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Bus className="h-4 w-4 text-amber-500" />
+                  Unidad
+                </Label>
+                <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar unidad..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.nombre}
+                        {unit.placas ? ` (${unit.placas})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
-          </div>
-        )}
 
-        {todayAssignment && (
-          <div className="pt-2 border-t">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleConfirmCurrent}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Confirmar ruta actual: {todayAssignment.vehicleName}
-            </Button>
+            {/* Current assignment indicator */}
+            {todayAssignment && !hasChanges && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0" />
+                <div className="text-sm">
+                  <span className="font-medium">Asignación actual:</span>{' '}
+                  {todayAssignment.routeName}
+                  {todayAssignment.unitName && ` en ${todayAssignment.unitName}`}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              {todayAssignment && !hasChanges ? (
+                <Button onClick={handleConfirmCurrent} className="flex-1">
+                  <Check className="h-4 w-4 mr-2" />
+                  Confirmar
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleAssign} 
+                  disabled={!selectedRoute || assigning}
+                  className="flex-1"
+                >
+                  {assigning ? (
+                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Asignando...</>
+                  ) : todayAssignment ? (
+                    'Cambiar asignación'
+                  ) : (
+                    'Asignar ruta'
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>

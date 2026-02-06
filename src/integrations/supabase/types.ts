@@ -22,6 +22,7 @@ export type Database = {
           fecha: string
           id: string
           producto_id: string
+          unidad_id: string | null
         }
         Insert: {
           asignado_por?: string | null
@@ -30,6 +31,7 @@ export type Database = {
           fecha?: string
           id?: string
           producto_id: string
+          unidad_id?: string | null
         }
         Update: {
           asignado_por?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           fecha?: string
           id?: string
           producto_id?: string
+          unidad_id?: string | null
         }
         Relationships: [
           {
@@ -52,6 +55,13 @@ export type Database = {
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_chofer_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
             referencedColumns: ["id"]
           },
         ]
