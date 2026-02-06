@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
+import { formatUnitLabel } from '@/lib/unitDisplay';
 import DailyAssignments from './DailyAssignments';
 
 interface PrivateVehicle {
@@ -71,7 +72,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
-  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '' });
+  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '' });
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
   const { toast } = useToast();
 
@@ -274,6 +275,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         .update({
           nombre: editUnit.nombre.trim(),
           placas: editUnit.placas.trim() || null,
+          descripcion: editUnit.descripcion.trim() || null,
         })
         .eq('id', unitId);
 
@@ -482,17 +484,23 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                     <CardContent className="p-3">
                       {editingUnitId === unit.id ? (
                         <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <Input
                               value={editUnit.nombre}
                               onChange={(e) => setEditUnit({ ...editUnit, nombre: e.target.value })}
-                              placeholder="No. económico"
+                              placeholder="No. Económico"
                               className="h-8 text-sm"
                             />
                             <Input
                               value={editUnit.placas}
                               onChange={(e) => setEditUnit({ ...editUnit, placas: e.target.value })}
                               placeholder="Placas"
+                              className="h-8 text-sm"
+                            />
+                            <Input
+                              value={editUnit.descripcion}
+                              onChange={(e) => setEditUnit({ ...editUnit, descripcion: e.target.value })}
+                              placeholder="Descripción"
                               className="h-8 text-sm"
                             />
                           </div>
@@ -508,16 +516,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                       ) : (
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                               <Bus className="h-4 w-4 text-amber-500 shrink-0" />
-                              <h4 className="font-semibold text-sm">{unit.nombre}</h4>
-                              {unit.placas && (
-                                <Badge variant="outline" className="text-xs">{unit.placas}</Badge>
-                              )}
+                              <h4 className="font-semibold text-sm">{formatUnitLabel(unit)}</h4>
                             </div>
-                            {unit.descripcion && (
-                              <p className="text-xs text-muted-foreground mt-1 ml-6">{unit.descripcion}</p>
-                            )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
@@ -526,7 +528,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                               className="h-8 w-8"
                               onClick={() => {
                                 setEditingUnitId(unit.id);
-                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '' });
+                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '', descripcion: unit.descripcion || '' });
                               }}
                             >
                               <Pencil className="h-3 w-3" />

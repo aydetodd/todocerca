@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +25,7 @@ interface Unit {
   id: string;
   nombre: string;
   placas: string | null;
+  descripcion: string | null;
 }
 
 interface Assignment {
@@ -84,7 +86,7 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
           .order('nombre'),
         supabase
           .from('unidades_empresa')
-          .select('id, nombre, placas')
+          .select('id, nombre, placas, descripcion')
           .eq('proveedor_id', proveedorId)
           .eq('is_active', true)
           .order('nombre'),
@@ -107,12 +109,13 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
           const driver = driversList.find(d => d.id === a.chofer_id);
           const route = routesList.find(v => v.id === a.producto_id);
           const unit = a.unidad_id ? unitsList.find(u => u.id === a.unidad_id) : null;
+          const unitLabel = unit ? formatUnitLabel(unit) : null;
           return {
             ...a,
             chofer_nombre: driver?.nombre || null,
             chofer_telefono: driver?.telefono || '',
             route_nombre: route?.nombre || 'Ruta desconocida',
-            unit_nombre: unit?.nombre || null,
+            unit_nombre: unitLabel || null,
           };
         }) as Assignment[];
 
@@ -166,7 +169,8 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
 
       const driverName = drivers.find(d => d.id === selectedDriver)?.nombre || 'Chofer';
       const routeName = routes.find(v => v.id === selectedRoute)?.nombre || 'Ruta';
-      const unitName = units.find(u => u.id === selectedUnit)?.nombre;
+      const selectedUnitObj = units.find(u => u.id === selectedUnit);
+      const unitName = selectedUnitObj ? formatUnitLabel(selectedUnitObj) : undefined;
 
       toast({
         title: "✅ Asignación realizada",
@@ -335,7 +339,7 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
                   <SelectContent>
                     {units.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        🚌 {unit.nombre}{unit.placas ? ` · Placas: ${unit.placas}` : ''}
+                        🚌 {formatUnitOption(unit)}
                       </SelectItem>
                     ))}
                   </SelectContent>
