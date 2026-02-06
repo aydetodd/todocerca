@@ -46,6 +46,12 @@
   transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
 }
 
+/* Bus heading rotation container — smooth turn towards direction of travel */
+.bus-rotate-container {
+  transition: transform 0.8s ease !important;
+  transform-origin: center center;
+}
+
 /* Alive pulse animation for bus markers on map — more visible bamboleo */
 .bus-marker-alive {
   animation: bus-alive 2s ease-in-out infinite !important;

@@ -30,10 +30,23 @@ interface RealtimeMapProps {
   privateRouteProductoId?: string | null;
 }
 
+// Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
+function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x =
+    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
+  const prevPositionsRef = useRef<{ [key: string]: { lat: number; lng: number } }>({});
+  const headingsRef = useRef<{ [key: string]: number }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
   
@@ -207,9 +220,30 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
       const previousState = markerStatesRef.current[location.user_id];
       
+      // Calculate heading for bus markers
+      const prevPos = prevPositionsRef.current[location.user_id];
+      let heading = headingsRef.current[location.user_id] ?? 0;
+      if (prevPos) {
+        const dist = Math.abs(prevPos.lat - Number(location.latitude)) + Math.abs(prevPos.lng - Number(location.longitude));
+        // Only update heading if moved enough (avoid jitter from GPS noise)
+        if (dist > 0.00005) {
+          heading = calculateBearing(prevPos.lat, prevPos.lng, Number(location.latitude), Number(location.longitude));
+          headingsRef.current[location.user_id] = heading;
+        }
+      }
+      prevPositionsRef.current[location.user_id] = { lat: Number(location.latitude), lng: Number(location.longitude) };
+      
       // If marker exists and NO popup-relevant data changed, just update position smoothly
       if (existingMarker && previousState === compositeState) {
         existingMarker.setLatLng(newLatLng);
+        // Update heading rotation on bus markers via DOM
+        if (isBus || isPrivateDriver) {
+          const el = existingMarker.getElement();
+          const rotateEl = el?.querySelector('.bus-rotate-container') as HTMLElement | null;
+          if (rotateEl) {
+            rotateEl.style.transform = `rotate(${heading}deg)`;
+          }
+        }
         return;
       }
       
@@ -262,41 +296,43 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
         iconHtml = `
-          <div class="bus-marker-alive" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-            <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-              <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
-              <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
-              <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
-              <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
-              <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
-              <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
-              <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
-              <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
-              <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
-              <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
-              <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-              <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-              <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">${labelTruncated}</text>
-            </svg>
+          <div class="bus-rotate-container" style="transform: rotate(${heading}deg); transition: transform 0.8s ease;">
+            <div class="bus-marker-alive" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+              <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+                <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+                <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+                <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+                <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+                <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+                <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
+                <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+                <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+                <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">${labelTruncated}</text>
+              </svg>
+            </div>
           </div>
         `;
         iconSize = [32, 52];
-        iconAnchor = [16, 40];
+        iconAnchor = [16, 26];
       } else if (isCurrentUser) {
         iconHtml = `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
