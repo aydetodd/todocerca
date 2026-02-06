@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Send, Loader2, User, Pencil, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Send, Loader2, User, Pencil } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface Driver {
@@ -49,7 +49,6 @@ export default function PrivateRouteDrivers({
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
   const [deleteDriverId, setDeleteDriverId] = useState<string | null>(null);
-  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const { toast } = useToast();
@@ -145,10 +144,6 @@ export default function PrivateRouteDrivers({
 
   const handleDeleteDriver = async () => {
     if (!deleteDriverId) return;
-    if (deleteStep === 1) {
-      setDeleteStep(2);
-      return;
-    }
     try {
       const { error } = await supabase
         .from('choferes_empresa')
@@ -158,7 +153,6 @@ export default function PrivateRouteDrivers({
       if (error) throw error;
       toast({ title: "Chofer eliminado" });
       setDeleteDriverId(null);
-      setDeleteStep(1);
       fetchDrivers();
       onDriversChanged?.();
     } catch (error: any) {
@@ -322,7 +316,7 @@ export default function PrivateRouteDrivers({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-destructive"
-                        onClick={() => { setDeleteDriverId(driver.id); setDeleteStep(1); }}
+                        onClick={() => setDeleteDriverId(driver.id)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -339,40 +333,22 @@ export default function PrivateRouteDrivers({
         </CardContent>
       </Card>
 
-      {/* Delete confirmation - double step */}
-      <AlertDialog open={!!deleteDriverId} onOpenChange={() => { setDeleteDriverId(null); setDeleteStep(1); }}>
+      {/* Delete confirmation - single step */}
+      <AlertDialog open={!!deleteDriverId} onOpenChange={() => setDeleteDriverId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            {deleteStep === 1 ? (
-              <>
-                <AlertDialogTitle>¿Eliminar chofer?</AlertDialogTitle>
-                <AlertDialogDescription className="space-y-2">
-                  <span className="block">Se eliminará este chofer de tu empresa.</span>
-                  <span className="block text-sm">💡 <strong>Sugerencia:</strong> Si solo necesitas corregir el nombre, usa el botón de editar <Pencil className="inline h-3 w-3" /> en su lugar.</span>
-                </AlertDialogDescription>
-              </>
-            ) : (
-              <>
-                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  ¿Estás completamente seguro?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="space-y-2">
-                  <span className="block font-semibold text-destructive">⚠️ Esta acción eliminará al chofer de tu empresa.</span>
-                  <span className="block">El chofer perderá acceso a la app y deberás volver a agregarlo e invitarlo.</span>
-                </AlertDialogDescription>
-              </>
-            )}
+            <AlertDialogTitle>¿Eliminar chofer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará este chofer de tu empresa. El chofer perderá acceso y deberás volver a agregarlo e invitarlo.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setDeleteDriverId(null); setDeleteStep(1); }}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteDriver}
-              className={deleteStep === 2 ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteStep === 1 ? 'Continuar' : 'Sí, eliminar definitivamente'}
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
