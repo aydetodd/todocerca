@@ -105,14 +105,16 @@ export default function PrivateRouteDrivers({
         throw error;
       }
 
-      // Send WhatsApp invitation
+      // Send WhatsApp invitation with unique acceptance link
       const cleanPhone = newPhone.replace(/[^0-9]/g, '');
       const driverName = newName || 'Chofer';
+      const inviteToken = (data as any)?.invite_token;
+      const acceptLink = `https://todocerca.lovable.app/chofer-invitacion?token=${inviteToken}`;
       const mensaje = encodeURIComponent(
-        `¡Hola ${driverName}! 👋 Has sido registrado como chofer de "${businessName}" en TodoCerca.\n\n` +
-        `Descarga la app para reportar tu ubicación en tiempo real:\n` +
-        `https://todocerca.lovable.app\n\n` +
-        `Cuando abras la app, selecciona la ruta que vas a cubrir ese día.`
+        `¡Hola ${driverName}! 👋 Has sido registrado como chofer de *"${businessName}"* en TodoCerca.\n\n` +
+        `📋 Acepta tu invitación aquí:\n${acceptLink}\n\n` +
+        `⚠️ Este enlace es personal e intransferible.\n\n` +
+        `Al aceptar, podrás seleccionar la ruta que cubrirás cada día y compartir tu ubicación en tiempo real.`
       );
       window.open(`https://wa.me/${cleanPhone}?text=${mensaje}`, '_blank');
 

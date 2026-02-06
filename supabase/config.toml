@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.cleanup-ghost-user]
 verify_jwt = false
+
+[functions.accept-driver-invitation]
+verify_jwt = false
+
+[functions.add-private-vehicle]
+verify_jwt = false
