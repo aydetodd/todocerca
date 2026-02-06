@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFavoritos, Favorito } from '@/hooks/useFavoritos';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -18,19 +19,36 @@ import {
   TrendingDown, 
   TrendingUp,
   AlertCircle,
-  Map
+  Map,
+  ExternalLink
 } from 'lucide-react';
 import { ProductPhotoCarousel } from '@/components/ProductPhotoCarousel';
 import { ListingPhotoCarousel } from '@/components/ListingPhotoCarousel';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import ProvidersMap from '@/components/ProvidersMapView';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Favoritos() {
+  const navigate = useNavigate();
   const { favoritos, loading, userId, removeFavorito, getChangedFavoritos } = useFavoritos();
   const [showMap, setShowMap] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
+  const [routeCategoryId, setRouteCategoryId] = useState<string | null>(null);
+
+  // Fetch route category ID to identify route products
+  useEffect(() => {
+    const fetchRouteCategory = async () => {
+      const { data } = await supabase
+        .from('product_categories')
+        .select('id')
+        .eq('name', 'Rutas de Transporte')
+        .maybeSingle();
+      if (data) setRouteCategoryId(data.id);
+    };
+    fetchRouteCategory();
+  }, []);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
@@ -207,7 +225,9 @@ export default function Favoritos() {
                       <FavoritoProductoCard 
                         key={fav.id} 
                         favorito={fav} 
-                        onDelete={() => handleDelete(fav.id)} 
+                        onDelete={() => handleDelete(fav.id)}
+                        routeCategoryId={routeCategoryId}
+                        onNavigate={(path) => navigate(path)}
                       />
                     ))
                   )}
@@ -223,7 +243,8 @@ export default function Favoritos() {
                       <FavoritoProveedorCard 
                         key={fav.id} 
                         favorito={fav} 
-                        onDelete={() => handleDelete(fav.id)} 
+                        onDelete={() => handleDelete(fav.id)}
+                        onNavigate={(path) => navigate(path)}
                       />
                     ))
                   )}
@@ -248,44 +269,78 @@ export default function Favoritos() {
 }
 
 // Card components
-function FavoritoProductoCard({ favorito, onDelete }: { favorito: Favorito; onDelete: () => void }) {
+function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate }: { 
+  favorito: Favorito; 
+  onDelete: () => void;
+  routeCategoryId: string | null;
+  onNavigate: (path: string) => void;
+}) {
   const producto = favorito.producto!;
   const precioChanged = favorito.precio_guardado !== null && producto.precio !== favorito.precio_guardado;
   const stockChanged = favorito.stock_guardado !== null && producto.stock !== favorito.stock_guardado;
   const precioBajo = precioChanged && producto.precio < (favorito.precio_guardado || 0);
   const precioAlto = precioChanged && producto.precio > (favorito.precio_guardado || 0);
+  const isRoute = producto.category_id === routeCategoryId;
+
+  const handleNavigate = () => {
+    if (isRoute && producto.is_private && producto.invite_token) {
+      // Private route → go to map with token
+      onNavigate(`/mapa?token=${producto.invite_token}`);
+    } else if (isRoute) {
+      // Public route → go to transport map
+      onNavigate(`/mapa?type=ruta`);
+    } else {
+      // Regular product → go to provider profile for orders
+      onNavigate(`/proveedor/${producto.proveedor_id}?action=pedido`);
+    }
+  };
 
   return (
-    <Card>
+    <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleNavigate}>
       <CardContent className="p-4">
         <div className="flex gap-4">
           <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
             <ProductPhotoCarousel productoId={producto.id} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{producto.nombre}</h3>
+            <div className="flex items-center gap-1">
+              <h3 className="font-semibold truncate">{producto.nombre}</h3>
+              {isRoute && (
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {producto.is_private ? '🔒 Ruta' : '🚌 Ruta'}
+                </Badge>
+              )}
+            </div>
             {producto.descripcion && (
               <p className="text-sm text-muted-foreground line-clamp-1">{producto.descripcion}</p>
             )}
-            <div className="flex items-center gap-2 mt-2">
-              <span className="font-bold text-primary">${producto.precio}</span>
-              {precioChanged && (
-                <Badge variant={precioBajo ? "default" : "destructive"} className="text-xs">
-                  {precioBajo ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
-                  era ${favorito.precio_guardado}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-muted-foreground">Stock: {producto.stock}</span>
-              {stockChanged && (
-                <Badge variant="outline" className="text-xs">
-                  era {favorito.stock_guardado}
-                </Badge>
-              )}
+            {!isRoute && (
+              <>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="font-bold text-primary">${producto.precio}</span>
+                  {precioChanged && (
+                    <Badge variant={precioBajo ? "default" : "destructive"} className="text-xs">
+                      {precioBajo ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
+                      era ${favorito.precio_guardado}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-muted-foreground">Stock: {producto.stock}</span>
+                  {stockChanged && (
+                    <Badge variant="outline" className="text-xs">
+                      era {favorito.stock_guardado}
+                    </Badge>
+                  )}
+                </div>
+              </>
+            )}
+            <div className="flex items-center gap-1 mt-1 text-xs text-primary">
+              <ExternalLink className="h-3 w-3" />
+              {isRoute ? 'Ver en mapa' : 'Ver proveedor'}
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onDelete}>
+          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -294,11 +349,19 @@ function FavoritoProductoCard({ favorito, onDelete }: { favorito: Favorito; onDe
   );
 }
 
-function FavoritoProveedorCard({ favorito, onDelete }: { favorito: Favorito; onDelete: () => void }) {
+function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: { 
+  favorito: Favorito; 
+  onDelete: () => void;
+  onNavigate: (path: string) => void;
+}) {
   const proveedor = favorito.proveedor!;
 
+  const handleNavigate = () => {
+    onNavigate(`/proveedor/${proveedor.id}`);
+  };
+
   return (
-    <Card>
+    <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleNavigate}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -315,8 +378,12 @@ function FavoritoProveedorCard({ favorito, onDelete }: { favorito: Favorito; onD
                 Con ubicación
               </div>
             )}
+            <div className="flex items-center gap-1 mt-1 text-xs text-primary">
+              <ExternalLink className="h-3 w-3" />
+              Ver perfil
+            </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onDelete}>
+          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
