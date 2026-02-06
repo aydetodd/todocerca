@@ -229,15 +229,15 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
                 key={assignment.id}
                 className="flex items-center justify-between bg-muted/30 p-3 rounded-lg"
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                   <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-medium">
                     {assignment.chofer_nombre || assignment.chofer_telefono}
                   </span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
                   <div className="flex items-center gap-1 min-w-0">
                     <Bus className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-sm font-medium">
                       {assignment.vehiculo_nombre}
                     </span>
                   </div>

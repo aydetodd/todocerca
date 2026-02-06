@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Bus, Loader2, Users, Link, Copy, Trash2, CreditCard, AlertCircle } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, AlertCircle } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import DailyAssignments from './DailyAssignments';
@@ -221,19 +221,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     }
   };
 
-  const copyInviteLink = (vehicle: PrivateVehicle) => {
+  const sendWhatsAppInviteLink = (vehicle: PrivateVehicle) => {
     const link = `${window.location.origin}/mapa?type=ruta&token=${vehicle.invite_token}`;
-    navigator.clipboard.writeText(link);
-    toast({ title: "Enlace copiado", description: "Comparte este enlace con los pasajeros" });
-  };
-
-  const sendWhatsAppInvite = (vehicle: PrivateVehicle, phone: string) => {
-    const link = `${window.location.origin}/mapa?type=ruta&token=${vehicle.invite_token}`;
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
     const mensaje = encodeURIComponent(
-      `¡Hola! 👋 Te comparto el enlace para ver en tiempo real la ruta "${vehicle.nombre}" de ${businessName}:\n\n${link}\n\nDescarga la app: https://todocerca.lovable.app`
+      `🚌 *${businessName}*\n\nSigue en tiempo real la ruta *"${vehicle.nombre}"*:\n\n${link}\n\n⚠️ Este enlace es personal e intransferible.\n\n📱 Descarga la app: https://todocerca.lovable.app`
     );
-    window.open(`https://wa.me/${cleanPhone}?text=${mensaje}`, '_blank');
+    window.open(`https://wa.me/?text=${mensaje}`, '_blank');
+    toast({ title: "Compartir por WhatsApp", description: "Envía el enlace personalizado al pasajero" });
   };
 
   if (loading || checkingSubscription) {
@@ -320,10 +314,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <Bus className="h-4 w-4 text-primary shrink-0" />
-                          <h4 className="font-semibold truncate">{vehicle.nombre}</h4>
+                        <h4 className="font-semibold">{vehicle.nombre}</h4>
                         </div>
                         {vehicle.descripcion && (
-                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {vehicle.descripcion}
                           </p>
                         )}
@@ -342,10 +336,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => copyInviteLink(vehicle)}
-                          title="Copiar enlace de invitación"
+                          onClick={() => sendWhatsAppInviteLink(vehicle)}
+                          title="Enviar enlace por WhatsApp"
                         >
-                          <Copy className="h-3 w-3" />
+                          <Link className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -381,7 +375,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               {addingVehicle ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Agregar otra unidad (+$400 MXN/año)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer (+$400 MXN/año)</>
               )}
             </Button>
           )}
@@ -395,7 +389,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               {addingVehicle ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
               ) : (
-                <><CreditCard className="h-4 w-4 mr-2" /> Suscribirme ($400 MXN/unidad/año)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer ($400 MXN/unidad/año)</>
               )}
             </Button>
           )}
