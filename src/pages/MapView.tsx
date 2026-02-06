@@ -14,6 +14,7 @@ export default function MapView() {
   const [searchParams] = useSearchParams();
   const filterType = searchParams.get('type') as 'taxi' | 'ruta' | null;
   const privateRouteToken = searchParams.get('token');
+  const fleetParam = searchParams.get('fleet') === 'true';
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
@@ -24,7 +25,7 @@ export default function MapView() {
   const [privateRouteProductoId, setPrivateRouteProductoId] = useState<string | null>(null);
   const [fleetProveedorId, setFleetProveedorId] = useState<string | null>(null);
   const [isFleetOwner, setIsFleetOwner] = useState(false);
-  const [fleetMode, setFleetMode] = useState(false);
+  const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
   const { toast } = useToast();
 
