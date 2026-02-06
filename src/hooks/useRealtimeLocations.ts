@@ -385,7 +385,7 @@ export const useRealtimeLocations = () => {
       )
       .subscribe();
 
-    const fastPollInterval = setInterval(fetchLocationsOnly, 1500);
+    const fastPollInterval = setInterval(fetchLocationsOnly, 1000);
     const slowPollInterval = setInterval(fetchFullData, 30000);
 
     const startProviderTracking = async () => {

@@ -41,19 +41,20 @@
   color: #888;
 }
 
-/* Smooth marker movement on map */
+/* Smooth marker movement on map — only on the Leaflet wrapper, not inner elements */
 .custom-marker {
   transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
 }
 
-/* Alive pulse animation for bus markers on map */
+/* Alive pulse animation for bus markers on map — more visible bamboleo */
 .bus-marker-alive {
-  animation: bus-alive 2.5s ease-in-out infinite;
+  animation: bus-alive 2s ease-in-out infinite !important;
+  will-change: transform;
 }
 
 @keyframes bus-alive {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-5px) scale(1.05); }
 }
 
 /* Leaflet popup dark theme override */
