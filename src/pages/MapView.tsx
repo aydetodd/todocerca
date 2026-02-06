@@ -23,7 +23,7 @@ export default function MapView() {
   const [privateRouteProviderId, setPrivateRouteProviderId] = useState<string | null>(null);
   const [privateRouteName, setPrivateRouteName] = useState<string | null>(null);
   const [privateRouteProductoId, setPrivateRouteProductoId] = useState<string | null>(null);
-  const [fleetProveedorId, setFleetProveedorId] = useState<string | null>(null);
+  const [fleetUserIds, setFleetUserIds] = useState<string[]>([]);
   const [isFleetOwner, setIsFleetOwner] = useState(false);
   const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
@@ -110,16 +110,19 @@ export default function MapView() {
 
           if (count && count > 0) {
             setIsFleetOwner(true);
-            setFleetProveedorId(proveedor.id);
             
-            // Count active drivers for this fleet
+            // Build fleet user IDs: owner + all active drivers
             const { data: drivers } = await supabase
               .from('choferes_empresa')
-              .select('id')
+              .select('user_id')
               .eq('proveedor_id', proveedor.id)
-              .eq('is_active', true);
+              .eq('is_active', true)
+              .not('user_id', 'is', null);
             
-            setFleetUnitCount((drivers?.length || 0) + 1); // +1 for the owner
+            const driverUserIds = drivers?.map(d => d.user_id).filter(Boolean) as string[] || [];
+            const allFleetUserIds = [user.id, ...driverUserIds.filter(id => id !== user.id)];
+            setFleetUserIds(allFleetUserIds);
+            setFleetUnitCount(allFleetUserIds.length);
           }
         }
 
@@ -192,7 +195,7 @@ export default function MapView() {
           filterType={fleetMode ? null : filterType}
           privateRouteUserId={fleetMode ? null : privateRouteProviderId}
           privateRouteProductoId={fleetMode ? null : privateRouteProductoId}
-          fleetProveedorId={fleetMode ? fleetProveedorId : null}
+          fleetUserIds={fleetMode ? fleetUserIds : undefined}
         />
         
         {/* Fleet mode toggle for private route owners */}
