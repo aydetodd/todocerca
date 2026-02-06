@@ -70,6 +70,23 @@ export default function DriverProfilePanel() {
 
   useEffect(() => {
     if (user) loadDriverData();
+
+    // Subscribe to realtime changes on assignments
+    const channel = supabase
+      .channel('realtime-assignments-driver-panel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asignaciones_chofer' },
+        () => {
+          console.log('🔄 [DriverProfilePanel] Assignment changed — refreshing');
+          if (user) loadDriverData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const loadDriverData = async () => {

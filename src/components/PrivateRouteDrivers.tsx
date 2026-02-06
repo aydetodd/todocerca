@@ -84,6 +84,23 @@ export default function PrivateRouteDrivers({
 
   useEffect(() => {
     fetchAll();
+
+    // Subscribe to realtime changes on assignments
+    const channel = supabase
+      .channel(`realtime-assignments-drivers-${proveedorId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asignaciones_chofer' },
+        () => {
+          console.log('🔄 [PrivateRouteDrivers] Assignment changed — refreshing');
+          fetchAll();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [proveedorId]);
 
   const fetchAll = async () => {
