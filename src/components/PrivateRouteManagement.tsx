@@ -406,7 +406,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         <DailyAssignments proveedorId={proveedorId} />
       )}
 
-      {/* Tab switcher - 3 tabs */}
+      {/* Tab switcher - Orden: Unidades → Choferes → Rutas (+ Link pasajeros) */}
       <div className="flex gap-1">
         <Button
           variant={activeTab === 'units' ? 'default' : 'outline'}
@@ -414,15 +414,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           onClick={() => setActiveTab('units')}
           className="flex-1 text-xs px-2"
         >
-          Unidades ({units.length})
-        </Button>
-        <Button
-          variant={activeTab === 'routes' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('routes')}
-          className="flex-1 text-xs px-2"
-        >
-          Rutas ({vehicles.length})
+          1. Unidades ({units.length})
         </Button>
         <Button
           variant={activeTab === 'drivers' ? 'default' : 'outline'}
@@ -430,7 +422,15 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           onClick={() => setActiveTab('drivers')}
           className="flex-1 text-xs px-2"
         >
-          Choferes ({driversCount})
+          2. Choferes ({driversCount})
+        </Button>
+        <Button
+          variant={activeTab === 'routes' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('routes')}
+          className="flex-1 text-xs px-2"
+        >
+          3. Rutas ({vehicles.length})
         </Button>
       </div>
 
@@ -440,7 +440,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bus className="h-5 w-5" />
-              Unidades / Autobuses
+              1. Unidades / Autobuses
             </CardTitle>
             <CardDescription>
               Cada unidad (autobús) requiere una suscripción de $400 MXN/año. Registra tus unidades con placas o No. económico.
@@ -569,16 +569,27 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         </Card>
       )}
 
-      {/* === ROUTES TAB === */}
+      {/* === DRIVERS TAB (second step - assign drivers to units) === */}
+      {activeTab === 'drivers' && (
+        <PrivateRouteDrivers
+          proveedorId={proveedorId}
+          productoId={vehicles[0]?.id || ''}
+          vehicleName="Empresa"
+          businessName={businessName}
+          onDriversChanged={fetchDriversCount}
+        />
+      )}
+
+      {/* === ROUTES TAB (third step - routes are what passengers follow) === */}
       {activeTab === 'routes' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Route className="h-5 w-5" />
-              Rutas / Nomenclaturas
+              3. Rutas / Nomenclaturas
             </CardTitle>
             <CardDescription>
-              Registra todas las rutas que cubres. Son ilimitadas y sin costo adicional.
+              Las rutas son lo más importante para los pasajeros. Registra todas las rutas que cubres (ilimitadas y sin costo).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -601,13 +612,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button
-                            variant="outline"
+                            variant="default"
                             size="sm"
                             onClick={() => sendWhatsAppInviteLink(vehicle)}
                             title="Enviar enlace de pasajero por WhatsApp"
                           >
                             <Link className="h-3 w-3 mr-1" />
-                            Pasajeros
+                            4. Link Pasajeros
                           </Button>
                           <Button
                             variant="ghost"
@@ -632,17 +643,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* === DRIVERS TAB === */}
-      {activeTab === 'drivers' && (
-        <PrivateRouteDrivers
-          proveedorId={proveedorId}
-          productoId={vehicles[0]?.id || ''}
-          vehicleName="Empresa"
-          businessName={businessName}
-          onDriversChanged={fetchDriversCount}
-        />
       )}
 
       {/* Dialog for adding a new unit */}
