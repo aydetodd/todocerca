@@ -32,7 +32,7 @@ interface RealtimeMapProps {
 export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
-  const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track estado for each marker
+  const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
   
@@ -185,25 +185,35 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
       
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
       const existingMarker = markersRef.current[location.user_id];
-      const previousEstado = markerStatesRef.current[location.user_id];
       
-      // If marker exists and estado hasn't changed, just update position (keeps popup open)
-      if (existingMarker && previousEstado === estado) {
+      // Build composite state key — recreate marker when any popup-visible data changes
+      const routeLabel = location.profiles.route_name || '';
+      const unitLabel = location.unit_name || '';
+      const unitPlacas = location.unit_placas || '';
+      const unitDescripcion = location.unit_descripcion || '';
+      const driverLabel = location.driver_name || '';
+      const empresaLabel = location.empresa_name || '';
+      const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
+      const previousState = markerStatesRef.current[location.user_id];
+      
+      // If marker exists and NO popup-relevant data changed, just update position smoothly
+      if (existingMarker && previousState === compositeState) {
         existingMarker.setLatLng(newLatLng);
         return;
       }
       
       console.log(`🚕 [Map] ${apodo}: estado=${estado}, color=${color}, isTaxi=${isTaxi}, isBus=${isBus}, recreating=${!!existingMarker}`);
       
-      // Remover marker existente solo si el estado cambió
+      // Remove existing marker when data changed
       if (existingMarker) {
         existingMarker.remove();
         delete markersRef.current[location.user_id];
       }
       
-      // Track the new estado
-      markerStatesRef.current[location.user_id] = estado;
+      // Track the new composite state
+      markerStatesRef.current[location.user_id] = compositeState;
 
+      const isPrivateRoute = location.is_private_route;
       let iconHtml: string;
       let iconSize: [number, number];
       let iconAnchor: [number, number];
@@ -236,7 +246,6 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         iconAnchor = [16, 24];
       } else if (isBus) {
         // Bus icon — yellow for ALL private routes (drivers AND owners), white for public
-        const isPrivateRoute = location.is_private_route;
         const busBodyColor = isPrivateRoute ? '#FDB813' : '#FFFFFF';
         const busStrokeColor = isPrivateRoute ? '#D4960A' : '#999999';
         const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
@@ -314,13 +323,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         : isCurrentUser ? 'Visible para otros' : '';
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
-      const routeLabel = location.profiles.route_name || '';
-      const isPrivateRoute = location.is_private_route;
       const busTypeLabel = isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte';
-      const unitLabel = location.unit_name || '';
-      const unitPlacas = location.unit_placas || '';
-      const unitDescripcion = location.unit_descripcion || '';
-      const driverLabel = location.driver_name || '';
       
       // Build favorite button HTML — use escaped double quotes for onclick
       const favoritoTarget = location.route_producto_id 
@@ -354,20 +357,23 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         `;
       } else if (isBus) {
         // Bus/route popup — themed with app colors, NO communication buttons
-        // Build unit info section with No. Eco + Placas + Descripción
         const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
         
         popupContent = `
-          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:240px;border-radius:10px;position:relative;">
+          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
             ${favoritoButtonHtml}
             <div style="margin-bottom:10px;">
               <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${busTypeLabel}</p>
+              ${empresaLabel ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : ''}
             </div>
             ${routeLabel ? `
               <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:16px;">🛣️</span>
-                  <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                  <div>
+                    <span style="font-size:11px;color:${mutedFg};display:block;">Ruta</span>
+                    <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                  </div>
                 </div>
               </div>
             ` : ''}
@@ -376,9 +382,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:16px;">🚌</span>
                   <div>
-                    ${unitLabel ? `<span style="font-size:13px;font-weight:600;color:${amberColor};">No. Eco: ${unitLabel}</span>` : ''}
-                    ${unitPlacas ? `<span style="font-size:11px;color:${mutedFg};display:block;margin-top:2px;">Placas: ${unitPlacas}</span>` : ''}
-                    ${unitDescripcion ? `<span style="font-size:11px;color:${mutedFg};display:block;margin-top:2px;">${unitDescripcion}</span>` : ''}
+                    <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
+                    ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
+                    ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
+                    ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -398,6 +405,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
               <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
               <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea'}</span>
             </div>
+            ${isPrivateRoute && !isCurrentUser ? `
+              <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);text-align:center;">
+                <span style="font-size:11px;color:${mutedFg};">❤️ Guarda en favoritos para acceso rápido</span>
+              </div>
+            ` : ''}
           </div>
         `;
       } else if (isTaxi) {
@@ -482,6 +494,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         return;
       }
 
+      // Check if already favorited — toggle behavior
+      const filterCol = tipo === 'producto' ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
+      const { data: existing } = await supabase
+        .from('favoritos')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq(filterCol, itemId)
+        .maybeSingle();
+
+      if (existing) {
+        // Remove from favorites
+        const { error } = await supabase.from('favoritos').delete().eq('id', existing.id);
+        if (error) {
+          toast.error('Error al quitar de favoritos');
+        } else {
+          toast.success('Eliminado de favoritos');
+        }
+        return;
+      }
+
+      // Add to favorites
       const insertData: any = {
         user_id: user.id,
         tipo,
@@ -494,14 +527,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId }: Real
         .insert(insertData);
 
       if (error) {
-        if (error.code === '23505') {
-          toast.info('Ya está en tus favoritos');
-        } else {
-          toast.error('Error al agregar a favoritos');
-        }
+        toast.error('Error al agregar a favoritos');
         return;
       }
-      toast.success('❤️ Agregado a favoritos');
+      toast.success('❤️ Guardado en favoritos — accede desde tu lista de favoritos');
     };
   }, [onOpenChat]);
 
