@@ -151,24 +151,30 @@ export default function DriverProfilePanel() {
       setAssigning(true);
       const today = new Date().toISOString().split('T')[0];
 
-      if (todayAssignment) {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .update({ producto_id: vehicleId })
-          .eq('id', todayAssignment.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .insert({
+      // Use upsert to avoid duplicate key constraint violation
+      // The unique constraint is on (chofer_id, fecha)
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .upsert(
+          {
             chofer_id: driverData.id,
             producto_id: vehicleId,
             fecha: today,
-          });
-        if (error) throw error;
+          },
+          { onConflict: 'chofer_id,fecha' }
+        );
+
+      if (error) throw error;
+
+      // Sync profile.route_name so the map shows the correct route
+      const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+      if (user && selectedVehicle) {
+        await supabase
+          .from('profiles')
+          .update({ route_name: selectedVehicle.nombre })
+          .eq('user_id', user.id);
       }
 
-      const selectedVehicle = vehicles.find(v => v.id === vehicleId);
       toast({
         title: '✅ Ruta asignada',
         description: `Hoy cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
