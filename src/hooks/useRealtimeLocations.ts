@@ -109,7 +109,7 @@ export const useRealtimeLocations = () => {
     // Buscar proveedores con productos de rutas (Ruta 1, Ruta 2, etc.)
     let rutaQuery = supabase
       .from('productos')
-      .select('proveedor_id, nombre')
+      .select('id, proveedor_id, nombre')
       .in('proveedor_id', proveedorIds);
     
     if (rutaCategory?.id) {
@@ -119,10 +119,10 @@ export const useRealtimeLocations = () => {
     }
     
     const { data: rutaProducts } = await rutaQuery;
-    const rutaProviderMap = new Map<string, string>(); // proveedor_id -> route name
+    const rutaProviderMap = new Map<string, { nombre: string; productoId: string }>(); // proveedor_id -> route info
     rutaProducts?.forEach(p => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
-        rutaProviderMap.set(p.proveedor_id, p.nombre);
+        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id });
       }
     });
 
@@ -198,7 +198,8 @@ export const useRealtimeLocations = () => {
       
       // Determine vehicle type: provider can be BOTH taxi AND bus if they have products in both categories
       const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
-      const routeNameFromProduct = proveedorId ? rutaProviderMap.get(proveedorId) : null;
+      const rutaInfo = proveedorId ? rutaProviderMap.get(proveedorId) : null;
+      const routeNameFromProduct = rutaInfo?.nombre || null;
       const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
       // A provider can have BOTH flags true if they have products in both categories
@@ -224,12 +225,13 @@ export const useRealtimeLocations = () => {
         is_taxi: isTaxi,
         is_bus: isBus,
         is_private_driver: isPrivateDriver,
+        // Set route_producto_id for ALL bus providers (private drivers AND owners with route products)
         route_producto_id: isPrivateDriver
-          ? (assignmentData?.productoId || null)
-          : null,
+          ? (assignmentData?.productoId || rutaInfo?.productoId || null)
+          : (isBus && rutaInfo ? rutaInfo.productoId : null),
         proveedor_id: proveedorId || null,
-        unit_name: isPrivateDriver ? (assignmentData?.unitName || null) : null,
-        driver_name: isPrivateDriver ? (assignmentData?.driverName || null) : null,
+        unit_name: assignmentData?.unitName || null,
+        driver_name: assignmentData?.driverName || null,
       };
       
       newLocationsMap.set(loc.user_id, location);

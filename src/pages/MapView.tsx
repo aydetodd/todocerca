@@ -28,14 +28,29 @@ export default function MapView() {
     // If we have a token, fetch the private route info
     if (privateRouteToken) {
       const fetchPrivateRoute = async () => {
-        const { data: producto, error } = await supabase
+        // Try reading the product directly (owner/chofer can read via RLS)
+        let { data: producto, error } = await supabase
           .from('productos')
           .select('id, nombre, proveedor_id, is_private, proveedores(user_id)')
           .eq('invite_token', privateRouteToken)
           .eq('is_private', true)
           .maybeSingle();
         
-        if (error || !producto) {
+        // If RLS blocks (passenger not yet invited), try via edge function
+        if (!producto) {
+          // Fallback: query without is_private filter to find any matching token
+          const { data: publicProduct } = await supabase
+            .from('productos')
+            .select('id, nombre, proveedor_id, proveedores(user_id)')
+            .eq('invite_token', privateRouteToken)
+            .maybeSingle();
+          
+          if (publicProduct) {
+            producto = { ...publicProduct, is_private: true } as any;
+          }
+        }
+        
+        if (!producto) {
           console.error('[MapView] Error fetching private route:', error);
           toast({
             title: "Enlace inválido",
