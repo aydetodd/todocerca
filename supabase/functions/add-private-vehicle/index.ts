@@ -48,11 +48,13 @@ serve(async (req) => {
 
     // Find customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      // No customer yet - create checkout for first vehicle
-      logStep("No customer found, creating checkout session");
-      
-      const session = await stripe.checkout.sessions.create({
+    
+    if (action === 'add') {
+      // ALWAYS create a checkout session for each new unit
+      // This ensures every addition goes through the payment gateway
+      logStep("Creating checkout session for new unit");
+
+      const sessionConfig: any = {
         customer_email: user.email,
         line_items: [{ price: PRIVATE_ROUTE_PRICE_ID, quantity: 1 }],
         mode: "subscription",
@@ -61,7 +63,17 @@ serve(async (req) => {
         payment_method_collection: "if_required",
         metadata: { plan_type: 'ruta_privada', user_id: user.id },
         allow_promotion_codes: true,
-      });
+      };
+
+      // If customer exists, use their ID instead of email
+      if (customers.data.length > 0) {
+        sessionConfig.customer = customers.data[0].id;
+        delete sessionConfig.customer_email;
+        logStep("Using existing customer", { customerId: customers.data[0].id });
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionConfig);
+      logStep("Checkout session created", { sessionId: session.id });
 
       return new Response(JSON.stringify({ 
         action: 'checkout', 
@@ -72,108 +84,51 @@ serve(async (req) => {
       });
     }
 
-    const customerId = customers.data[0].id;
-    logStep("Found customer", { customerId });
+    if (action === 'status') {
+      // Return current subscription status - count all active private route subscriptions
+      if (customers.data.length === 0) {
+        return new Response(JSON.stringify({
+          action: 'status',
+          subscribed: false,
+          quantity: 0,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
 
-    // Find active private route subscription
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 10,
-    });
+      const customerId = customers.data[0].id;
+      logStep("Checking status for customer", { customerId });
 
-    const privateRouteSub = subscriptions.data.find(sub => 
-      sub.items.data.some(item => item.price.id === PRIVATE_ROUTE_PRICE_ID)
-    );
-
-    if (!privateRouteSub) {
-      // No private route subscription - create checkout
-      logStep("No private route subscription found, creating checkout");
-
-      const session = await stripe.checkout.sessions.create({
+      const subscriptions = await stripe.subscriptions.list({
         customer: customerId,
-        line_items: [{ price: PRIVATE_ROUTE_PRICE_ID, quantity: 1 }],
-        mode: "subscription",
-        success_url: `${req.headers.get("origin")}/dashboard?private_route=success`,
-        cancel_url: `${req.headers.get("origin")}/dashboard?private_route=cancelled`,
-        payment_method_collection: "if_required",
-        metadata: { plan_type: 'ruta_privada', user_id: user.id },
-        allow_promotion_codes: true,
+        status: "active",
+        limit: 100,
       });
 
-      return new Response(JSON.stringify({ 
-        action: 'checkout', 
-        url: session.url 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
+      // Count total quantity across all private route subscriptions
+      let totalQuantity = 0;
+      let earliestEnd: number | null = null;
 
-    // Has active private route subscription
-    const subItem = privateRouteSub.items.data.find(item => item.price.id === PRIVATE_ROUTE_PRICE_ID);
-    if (!subItem) throw new Error("Subscription item not found");
-    
-    const currentQuantity = subItem.quantity || 1;
-    logStep("Current subscription", { 
-      subscriptionId: privateRouteSub.id, 
-      currentQuantity,
-      itemId: subItem.id 
-    });
+      for (const sub of subscriptions.data) {
+        for (const item of sub.items.data) {
+          if (item.price.id === PRIVATE_ROUTE_PRICE_ID) {
+            totalQuantity += item.quantity || 1;
+            const endTime = sub.current_period_end;
+            if (!earliestEnd || endTime < earliestEnd) {
+              earliestEnd = endTime;
+            }
+          }
+        }
+      }
 
-    if (action === 'add') {
-      // Increment quantity
-      const newQuantity = currentQuantity + 1;
-      
-      const updatedSub = await stripe.subscriptions.update(privateRouteSub.id, {
-        items: [{
-          id: subItem.id,
-          quantity: newQuantity,
-        }],
-        proration_behavior: 'always_invoice',
-      });
+      logStep("Subscription status", { totalQuantity, earliestEnd });
 
-      logStep("Vehicle added", { newQuantity });
-
-      return new Response(JSON.stringify({
-        action: 'added',
-        message: `¡Vehículo agregado! Ahora tienes ${newQuantity} unidades suscritas.`,
-        quantity: newQuantity,
-        subscription_id: updatedSub.id,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    } else if (action === 'remove' && currentQuantity > 1) {
-      // Decrement quantity (can't go below 1)
-      const newQuantity = currentQuantity - 1;
-      
-      await stripe.subscriptions.update(privateRouteSub.id, {
-        items: [{
-          id: subItem.id,
-          quantity: newQuantity,
-        }],
-        proration_behavior: 'none',
-      });
-
-      logStep("Vehicle removed", { newQuantity });
-
-      return new Response(JSON.stringify({
-        action: 'removed',
-        message: `Vehículo eliminado. Ahora tienes ${newQuantity} unidades.`,
-        quantity: newQuantity,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    } else if (action === 'status') {
-      // Just return current status
       return new Response(JSON.stringify({
         action: 'status',
-        subscribed: true,
-        quantity: currentQuantity,
-        subscription_end: new Date(privateRouteSub.current_period_end * 1000).toISOString(),
-        subscription_id: privateRouteSub.id,
+        subscribed: totalQuantity > 0,
+        quantity: totalQuantity,
+        subscription_end: earliestEnd ? new Date(earliestEnd * 1000).toISOString() : null,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

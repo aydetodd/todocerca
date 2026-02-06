@@ -354,8 +354,8 @@ export default function PrivateRouteDrivers({
                   ¿Estás completamente seguro?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="space-y-2">
-                  <span className="block font-semibold text-destructive">⚠️ Esta acción eliminará la suscripción del chofer y no es reembolsable.</span>
-                  <span className="block">El chofer perderá acceso a la app y deberás volver a agregarlo y pagar una nueva suscripción.</span>
+                  <span className="block font-semibold text-destructive">⚠️ Esta acción eliminará al chofer de tu empresa.</span>
+                  <span className="block">El chofer perderá acceso a la app y deberás volver a agregarlo e invitarlo.</span>
                 </AlertDialogDescription>
               </>
             )}

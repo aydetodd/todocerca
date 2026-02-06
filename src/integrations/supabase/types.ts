@@ -2162,6 +2162,47 @@ export type Database = {
           },
         ]
       }
+      unidades_empresa: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          is_active: boolean | null
+          nombre: string
+          placas: string | null
+          proveedor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre: string
+          placas?: string | null
+          proveedor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre?: string
+          placas?: string | null
+          proveedor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_empresa_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_contacts: {
         Row: {
           contact_user_id: string

@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import DailyAssignments from './DailyAssignments';
 
@@ -37,6 +37,15 @@ interface PrivateVehicle {
   created_at: string;
 }
 
+interface Unit {
+  id: string;
+  nombre: string;
+  placas: string | null;
+  descripcion: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 interface PrivateRouteManagementProps {
   proveedorId: string;
   businessName: string;
@@ -44,6 +53,7 @@ interface PrivateRouteManagementProps {
 
 export default function PrivateRouteManagement({ proveedorId, businessName }: PrivateRouteManagementProps) {
   const [vehicles, setVehicles] = useState<PrivateVehicle[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     subscribed: boolean;
@@ -51,17 +61,23 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     subscription_end?: string;
   } | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
-  const [addingVehicle, setAddingVehicle] = useState(false);
+  const [addingUnit, setAddingUnit] = useState(false);
   const [isRouteDialogOpen, setIsRouteDialogOpen] = useState(false);
+  const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false);
   const [deleteVehicleId, setDeleteVehicleId] = useState<string | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
+  const [showDrivers, setShowDrivers] = useState(false);
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
-  const [activeTab, setActiveTab] = useState<'routes' | 'drivers'>('routes');
+  const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '' });
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '' });
+  const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
   const { toast } = useToast();
 
   useEffect(() => {
     checkSubscription();
     fetchVehicles();
+    fetchUnits();
   }, [proveedorId]);
 
   const checkSubscription = async () => {
@@ -109,9 +125,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     }
   };
 
-  const handleSubscribe = async () => {
+  const fetchUnits = async () => {
     try {
-      setAddingVehicle(true);
+      const { data, error } = await supabase
+        .from('unidades_empresa')
+        .select('*')
+        .eq('proveedor_id', proveedorId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setUnits((data || []) as Unit[]);
+    } catch (error) {
+      console.error('Error fetching units:', error);
+    }
+  };
+
+  const handleAddUnit = async () => {
+    // Always redirect to Stripe checkout for payment
+    try {
+      setAddingUnit(true);
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
         body: { action: 'add' }
       });
@@ -119,17 +151,22 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
       if (error) throw error;
 
       if (data?.action === 'checkout' && data?.url) {
+        // Save pending unit info in localStorage to register after payment
+        if (newUnit.nombre.trim()) {
+          localStorage.setItem('pending_unit', JSON.stringify({
+            nombre: newUnit.nombre.trim(),
+            placas: newUnit.placas.trim() || null,
+            descripcion: newUnit.descripcion.trim() || null,
+            proveedor_id: proveedorId,
+          }));
+        }
         window.open(data.url, '_blank');
         toast({
           title: "Redirigiendo a pago",
-          description: "Completa el pago para suscribirte a chofer privado",
+          description: "Completa el pago para registrar la unidad ($400 MXN/año)",
         });
-      } else if (data?.action === 'added') {
-        toast({
-          title: "¡Suscripción de chofer agregada!",
-          description: data.message,
-        });
-        await checkSubscription();
+        setIsUnitDialogOpen(false);
+        setNewUnit({ nombre: '', placas: '', descripcion: '' });
       }
     } catch (error: any) {
       toast({
@@ -138,7 +175,88 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         variant: "destructive",
       });
     } finally {
-      setAddingVehicle(false);
+      setAddingUnit(false);
+    }
+  };
+
+  // Check for pending unit registration after successful payment
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('private_route') === 'success') {
+      const pendingUnit = localStorage.getItem('pending_unit');
+      if (pendingUnit) {
+        try {
+          const unitData = JSON.parse(pendingUnit);
+          if (unitData.proveedor_id === proveedorId) {
+            registerPendingUnit(unitData);
+          }
+        } catch (e) {
+          console.error('Error parsing pending unit:', e);
+        }
+        localStorage.removeItem('pending_unit');
+      }
+      // Refresh subscription status
+      checkSubscription();
+    }
+  }, [proveedorId]);
+
+  const registerPendingUnit = async (unitData: any) => {
+    try {
+      const { error } = await supabase
+        .from('unidades_empresa')
+        .insert({
+          proveedor_id: unitData.proveedor_id,
+          nombre: unitData.nombre,
+          placas: unitData.placas,
+          descripcion: unitData.descripcion,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Unidad registrada!",
+        description: `"${unitData.nombre}" ha sido agregada a tu flota.`,
+      });
+      fetchUnits();
+    } catch (error: any) {
+      console.error('Error registering pending unit:', error);
+    }
+  };
+
+  const handleSaveUnit = async (unitId: string) => {
+    if (!editUnit.nombre.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('unidades_empresa')
+        .update({
+          nombre: editUnit.nombre.trim(),
+          placas: editUnit.placas.trim() || null,
+        })
+        .eq('id', unitId);
+
+      if (error) throw error;
+      toast({ title: "Unidad actualizada" });
+      setEditingUnitId(null);
+      fetchUnits();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteUnit = async () => {
+    if (!deleteUnitId) return;
+    try {
+      const { error } = await supabase
+        .from('unidades_empresa')
+        .delete()
+        .eq('id', deleteUnitId);
+
+      if (error) throw error;
+      toast({ title: "Unidad eliminada" });
+      setDeleteUnitId(null);
+      fetchUnits();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -206,16 +324,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         .eq('id', deleteVehicleId);
 
       if (error) throw error;
-
       toast({ title: "Ruta eliminada" });
       setDeleteVehicleId(null);
       fetchVehicles();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -239,17 +352,17 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
     );
   }
 
-  // If viewing drivers for a specific vehicle
-  if (selectedVehicleId) {
+  // If viewing drivers
+  if (showDrivers) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => setSelectedVehicleId(null)}>
+        <Button variant="ghost" size="sm" onClick={() => setShowDrivers(false)}>
           ← Volver
         </Button>
         <PrivateRouteDrivers
           proveedorId={proveedorId}
-          productoId={selectedVehicleId}
-          vehicleName={vehicles.find(v => v.id === selectedVehicleId)?.nombre || ''}
+          productoId={vehicles[0]?.id || ''}
+          vehicleName="Empresa"
           businessName={businessName}
         />
       </div>
@@ -263,8 +376,17 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         <DailyAssignments proveedorId={proveedorId} />
       )}
 
-      {/* Tab switcher */}
-      <div className="flex gap-2">
+      {/* Tab switcher - 3 tabs */}
+      <div className="flex gap-1">
+        <Button
+          variant={activeTab === 'units' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('units')}
+          className="flex-1"
+        >
+          <Bus className="h-4 w-4 mr-1" />
+          Unidades ({units.length})
+        </Button>
         <Button
           variant={activeTab === 'routes' ? 'default' : 'outline'}
           size="sm"
@@ -272,7 +394,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           className="flex-1"
         >
           <Route className="h-4 w-4 mr-1" />
-          Rutas
+          Rutas ({vehicles.length})
         </Button>
         <Button
           variant={activeTab === 'drivers' ? 'default' : 'outline'}
@@ -281,9 +403,136 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           className="flex-1"
         >
           <Users className="h-4 w-4 mr-1" />
-          Choferes ({subscriptionStatus?.quantity || 0})
+          Choferes
         </Button>
       </div>
+
+      {/* === UNITS TAB (subscription billing unit) === */}
+      {activeTab === 'units' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bus className="h-5 w-5" />
+              Unidades / Autobuses
+            </CardTitle>
+            <CardDescription>
+              Cada unidad (autobús) requiere una suscripción de $400 MXN/año. Registra tus unidades con placas o No. económico.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Subscription status */}
+            {subscriptionStatus?.subscribed ? (
+              <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">
+                    Suscripciones activas: {subscriptionStatus.quantity} unidad(es)
+                  </p>
+                  {subscriptionStatus.subscription_end && (
+                    <p className="text-xs text-muted-foreground">
+                      Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
+                    </p>
+                  )}
+                </div>
+                <Badge variant="default">Activa</Badge>
+              </div>
+            ) : (
+              <Alert>
+                <CreditCard className="h-4 w-4" />
+                <AlertDescription>
+                  Necesitas una suscripción por cada unidad (autobús). $400 MXN/año por unidad.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Existing units list */}
+            {units.length > 0 && (
+              <div className="space-y-2">
+                {units.map((unit) => (
+                  <Card key={unit.id} className="border">
+                    <CardContent className="p-3">
+                      {editingUnitId === unit.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              value={editUnit.nombre}
+                              onChange={(e) => setEditUnit({ ...editUnit, nombre: e.target.value })}
+                              placeholder="No. económico"
+                              className="h-8 text-sm"
+                            />
+                            <Input
+                              value={editUnit.placas}
+                              onChange={(e) => setEditUnit({ ...editUnit, placas: e.target.value })}
+                              placeholder="Placas"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleSaveUnit(unit.id)}>
+                              Guardar
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingUnitId(null)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Bus className="h-4 w-4 text-amber-500 shrink-0" />
+                              <h4 className="font-semibold text-sm">{unit.nombre}</h4>
+                              {unit.placas && (
+                                <Badge variant="outline" className="text-xs">{unit.placas}</Badge>
+                              )}
+                            </div>
+                            {unit.descripcion && (
+                              <p className="text-xs text-muted-foreground mt-1 ml-6">{unit.descripcion}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setEditingUnitId(unit.id);
+                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '' });
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => setDeleteUnitId(unit.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Add unit button - always goes to checkout */}
+            <Button
+              onClick={() => setIsUnitDialogOpen(true)}
+              disabled={addingUnit}
+              className="w-full"
+            >
+              {addingUnit ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
+              ) : (
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad ($400 MXN/año)</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* === ROUTES TAB === */}
       {activeTab === 'routes' && (
@@ -359,73 +608,76 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
               Choferes - {businessName}
             </CardTitle>
             <CardDescription>
-              Cada chofer requiere una suscripción de $400 MXN/año. Los choferes eligen su ruta al abrir la app.
+              Los choferes son ilimitados y sin costo adicional. Agrega los choferes que necesites.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Subscription status */}
-            {subscriptionStatus?.subscribed ? (
-              <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">
-                    Suscripciones activas: {subscriptionStatus.quantity} chofer(es)
-                  </p>
-                  {subscriptionStatus.subscription_end && (
-                    <p className="text-xs text-muted-foreground">
-                      Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
-                    </p>
-                  )}
-                </div>
-                <Badge variant="default">Activa</Badge>
-              </div>
-            ) : (
-              <Alert>
-                <CreditCard className="h-4 w-4" />
-                <AlertDescription>
-                  Necesitas una suscripción para registrar choferes.
-                  Cada chofer cuesta $400 MXN al año.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Manage drivers button */}
-            {subscriptionStatus?.subscribed && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  // Show drivers management — use the first vehicle as context
-                  if (vehicles.length > 0) {
-                    setSelectedVehicleId(vehicles[0].id);
-                  } else {
-                    toast({
-                      title: "Primero registra una ruta",
-                      description: "Necesitas al menos una ruta para gestionar choferes",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Gestionar Choferes
-              </Button>
-            )}
-
-            {/* Add driver subscription button */}
+          <CardContent>
             <Button
-              onClick={handleSubscribe}
-              disabled={addingVehicle}
+              variant="outline"
               className="w-full"
+              onClick={() => setShowDrivers(true)}
             >
-              {addingVehicle ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
-              ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Chofer ($400 MXN/año)</>
-              )}
+              <Users className="h-4 w-4 mr-2" />
+              Gestionar Choferes
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog for adding a new unit */}
+      <Dialog open={isUnitDialogOpen} onOpenChange={setIsUnitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bus className="h-5 w-5" />
+              Agregar Unidad
+            </DialogTitle>
+            <DialogDescription>
+              Registra tu autobús con su No. económico o placas. Se te redirigirá a la pasarela de pago ($400 MXN/año).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="unitName">No. Económico o Nombre *</Label>
+              <Input
+                id="unitName"
+                value={newUnit.nombre}
+                onChange={(e) => setNewUnit({ ...newUnit, nombre: e.target.value })}
+                placeholder="Ej: Unidad 15, ECO-042..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="unitPlates">Placas (opcional)</Label>
+              <Input
+                id="unitPlates"
+                value={newUnit.placas}
+                onChange={(e) => setNewUnit({ ...newUnit, placas: e.target.value })}
+                placeholder="Ej: ABC-1234"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unitDesc">Descripción (opcional)</Label>
+              <Input
+                id="unitDesc"
+                value={newUnit.descripcion}
+                onChange={(e) => setNewUnit({ ...newUnit, descripcion: e.target.value })}
+                placeholder="Ej: Mercedes-Benz Sprinter, 30 pasajeros"
+              />
+            </div>
+            <Button
+              onClick={handleAddUnit}
+              disabled={addingUnit || !newUnit.nombre.trim()}
+              className="w-full"
+            >
+              {addingUnit ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" /> Pagar y Registrar Unidad</>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog for registering a new route */}
       <Dialog open={isRouteDialogOpen} onOpenChange={setIsRouteDialogOpen}>
@@ -445,9 +697,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
                 onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
                 placeholder="Ej: Ruta 2, Ruta Sur, Express Norte..."
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Define el nombre como quieras identificar esta ruta
-              </p>
             </div>
             <div>
               <Label htmlFor="routeDesc">Recorrido / Descripción</Label>
@@ -478,6 +727,24 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteRoute}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete unit confirmation */}
+      <AlertDialog open={!!deleteUnitId} onOpenChange={() => setDeleteUnitId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar unidad?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará el registro de esta unidad. La suscripción en Stripe permanecerá activa hasta que la canceles desde tu cuenta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUnit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
