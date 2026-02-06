@@ -81,13 +81,23 @@ export default function DriverRouteSelector() {
 
         const phone = profile?.telefono || profile?.phone;
         if (phone) {
-          // Try to find driver by phone and link user_id
-          const { data: driverByPhone } = await supabase
+          // Normalize phone for matching (remove non-digits)
+          const normalizedPhone = phone.replace(/[^0-9]/g, '');
+          
+          // Try to find driver by phone (check multiple formats)
+          const { data: allDrivers } = await supabase
             .from('choferes_empresa')
-            .select('id, proveedor_id, nombre')
-            .eq('telefono', phone)
+            .select('id, proveedor_id, nombre, telefono')
             .eq('is_active', true)
-            .maybeSingle();
+            .is('user_id', null);
+
+          // Match by normalized phone number
+          const driverByPhone = allDrivers?.find(d => {
+            const driverPhone = d.telefono.replace(/[^0-9]/g, '');
+            return driverPhone === normalizedPhone || 
+                   driverPhone.endsWith(normalizedPhone) || 
+                   normalizedPhone.endsWith(driverPhone);
+          }) || null;
 
           if (driverByPhone) {
             // Link user_id to the driver record
