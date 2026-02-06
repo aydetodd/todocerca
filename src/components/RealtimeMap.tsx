@@ -28,6 +28,7 @@ interface RealtimeMapProps {
   filterType?: 'taxi' | 'ruta' | null;
   privateRouteUserId?: string | null;
   privateRouteProductoId?: string | null;
+  fleetProveedorId?: string | null;
 }
 
 // Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
@@ -41,7 +42,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetProveedorId }: RealtimeMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
@@ -145,8 +146,13 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     // Filter locations based on filterType
     let filteredLocations = locations;
     
+    // Fleet mode: show ALL units belonging to this proveedor (owner + their drivers)
+    if (fleetProveedorId) {
+      filteredLocations = locations.filter(loc => loc.proveedor_id === fleetProveedorId);
+      console.log('🏢 [Map] Fleet mode — proveedor_id:', fleetProveedorId, '→', filteredLocations.length, 'units');
+    }
     // If viewing a private route, show ALL units assigned to that route product
-    if (privateRouteProductoId) {
+    else if (privateRouteProductoId) {
       filteredLocations = locations.filter(loc => loc.route_producto_id === privateRouteProductoId);
       console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
       // Fallback: if no matches by producto_id, try single user_id
@@ -563,7 +569,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, fleetProveedorId]);
 
   // Add global functions for popup buttons
   useEffect(() => {
