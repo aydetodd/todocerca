@@ -46,6 +46,16 @@
   transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
 }
 
+/* Alive pulse animation for bus markers on map */
+.bus-marker-alive {
+  animation: bus-alive 2.5s ease-in-out infinite;
+}
+
+@keyframes bus-alive {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
 /* Leaflet popup dark theme override */
 .custom-popup-dark .leaflet-popup-content-wrapper {
   background: transparent !important;

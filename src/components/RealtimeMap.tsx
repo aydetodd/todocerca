@@ -155,24 +155,29 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
 
     // Detect overlapping locations and apply offset so all markers are visible
-    const locationGroups = new Map<string, number>();
+    // Use ~55m grid (×2000) to catch nearby units that would visually overlap
+    const locationGroups = new Map<string, string[]>();
     const locationOffsets = new Map<string, { latOff: number; lngOff: number }>();
     
     filteredLocations.forEach(loc => {
-      // Round to ~11m grid to detect overlaps
-      const gridKey = `${Math.round(loc.latitude * 10000)}_${Math.round(loc.longitude * 10000)}`;
-      const count = locationGroups.get(gridKey) || 0;
-      locationGroups.set(gridKey, count + 1);
-      
-      if (count > 0) {
-        // Offset in a circle around the center point (~30m radius)
-        const angle = (count * 2 * Math.PI) / Math.max(count + 1, 3);
-        const offsetDeg = 0.0003; // ~30m
-        locationOffsets.set(loc.user_id, {
+      const gridKey = `${Math.round(loc.latitude * 2000)}_${Math.round(loc.longitude * 2000)}`;
+      const group = locationGroups.get(gridKey) || [];
+      group.push(loc.user_id);
+      locationGroups.set(gridKey, group);
+    });
+    
+    // Apply circular offset for groups with 2+ markers
+    locationGroups.forEach((userIds) => {
+      if (userIds.length < 2) return;
+      userIds.forEach((uid, idx) => {
+        // Spread evenly in a circle (~40m radius)
+        const angle = (idx * 2 * Math.PI) / userIds.length;
+        const offsetDeg = 0.00035; // ~40m
+        locationOffsets.set(uid, {
           latOff: Math.cos(angle) * offsetDeg,
           lngOff: Math.sin(angle) * offsetDeg,
         });
-      }
+      });
     });
     
     // Primero: remover TODOS los markers que ya no están en filteredLocations
@@ -285,7 +290,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
         iconHtml = `
-          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+          <div class="bus-marker-alive" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
             <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
               <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
               <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
@@ -382,37 +387,58 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       let popupContent: string;
 
+      // Avoid showing empresa_name when it matches the user's apodo (owner duplication)
+      const showEmpresa = empresaLabel && empresaLabel !== apodo;
+
       if (isCurrentUser) {
-        // If current user is a bus/route driver, show their assignment data too
+        // If current user is a bus/route driver, show their full assignment data (same rich format)
         if (isBus) {
           const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
           popupContent = `
             <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;">
-              <div style="margin-bottom:8px;">
-                <h3 style="font-weight:bold;font-size:16px;margin:0 0 2px 0;">${apodo || 'Tu ubicación'}</h3>
-                ${empresaLabel ? `<p style="font-size:12px;color:${mutedFg};margin:0;">${empresaLabel}</p>` : ''}
+              <div style="margin-bottom:10px;">
+                <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte'}</p>
+                <h3 style="font-weight:bold;font-size:16px;margin:0 0 2px 0;">${showEmpresa ? empresaLabel : (apodo || 'Tu ubicación')}</h3>
               </div>
               ${routeLabel ? `
-                <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
-                  <span style="font-size:11px;color:${mutedFg};">Ruta: </span>
-                  <span style="font-size:13px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🛣️</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Ruta</span>
+                      <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                    </div>
+                  </div>
                 </div>
               ` : ''}
               ${hasUnitInfo ? `
-                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
-                  <span style="font-size:11px;color:${mutedFg};">Unidad: </span>
-                  ${unitDescripcion ? `<span style="font-size:12px;font-weight:600;color:${amberColor};">${unitDescripcion}</span>` : ''}
-                  ${unitLabel ? `<span style="font-size:11px;color:${cardFg};"> · ${unitLabel}</span>` : ''}
-                  ${unitPlacas ? `<span style="font-size:11px;color:${mutedFg};"> · ${unitPlacas}</span>` : ''}
+                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🚌</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
+                      ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
+                      ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
+                      ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
+                    </div>
+                  </div>
                 </div>
               ` : ''}
               ${driverLabel ? `
-                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:6px 8px;margin-bottom:6px;">
-                  <span style="font-size:11px;color:${mutedFg};">Chofer: </span>
-                  <span style="font-size:12px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:14px;">👤</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
+                      <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                    </div>
+                  </div>
                 </div>
               ` : ''}
-              <p style="font-size:13px;color:${visibilityColor};font-weight:600;margin-top:6px;">${visibilityText}</p>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${visibilityColor};font-weight:600;">${visibilityText}</span>
+              </div>
             </div>
           `;
         } else {
@@ -432,7 +458,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
             ${favoritoButtonHtml}
             <div style="margin-bottom:10px;">
               <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${busTypeLabel}</p>
-              ${empresaLabel ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : ''}
+              ${showEmpresa ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : (apodo ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${apodo}</p>` : '')}
             </div>
             ${routeLabel ? `
               <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
