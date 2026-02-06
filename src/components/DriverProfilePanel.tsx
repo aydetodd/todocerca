@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Check, Loader2, RefreshCw } from 'lucide-react';
+import { MapPin, Check, Loader2, RefreshCw, Navigation } from 'lucide-react';
 
 // Yellow bus SVG for driver panel — same shape as public transport bus but yellow
 const YELLOW_BUS_SVG = `<svg width="24" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
@@ -49,6 +50,7 @@ interface Vehicle {
   id: string;
   nombre: string;
   descripcion: string | null;
+  invite_token: string | null;
 }
 
 interface TodayAssignment {
@@ -61,6 +63,7 @@ interface TodayAssignment {
 export default function DriverProfilePanel() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [driverData, setDriverData] = useState<DriverData | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [todayAssignment, setTodayAssignment] = useState<TodayAssignment | null>(null);
@@ -125,7 +128,7 @@ export default function DriverProfilePanel() {
       // Get all private vehicles for this company
       const { data: vehicleList, error: vehicleError } = await supabase
         .from('productos')
-        .select('id, nombre, descripcion')
+        .select('id, nombre, descripcion, invite_token')
         .eq('proveedor_id', driver.proveedor_id)
         .eq('is_private', true)
         .eq('route_type', 'privada')
@@ -246,14 +249,33 @@ export default function DriverProfilePanel() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowRouteSelect(!showRouteSelect)}
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Cambiar
-            </Button>
+            <div className="flex gap-1.5">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  // Navigate to map with the assigned route's invite_token
+                  const assignedVehicle = vehicles.find(v => v.id === todayAssignment.producto_id);
+                  if (assignedVehicle?.invite_token) {
+                    navigate(`/mapa?token=${assignedVehicle.invite_token}`);
+                  } else {
+                    // Fallback: go to map filtered by ruta
+                    navigate('/mapa?type=ruta');
+                  }
+                }}
+              >
+                <Navigation className="h-3 w-3 mr-1" />
+                Ubicación
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRouteSelect(!showRouteSelect)}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Cambiar
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="bg-background/80 rounded-lg p-3 text-center">
