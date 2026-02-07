@@ -58,13 +58,24 @@ export const useRealtimeLocations = () => {
     
     console.log('🔄 [fetchFullData] Carga completa iniciando...');
     
-    const { data: activeProfiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
-      .eq('role', 'proveedor')
-      .in('estado', ['available', 'busy']);
+    // Phase 1: Fetch profiles + categories in parallel (no dependencies)
+    const [profilesResult, taxiCatResult, rutaCatResult] = await Promise.all([
+      supabase.from('profiles')
+        .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
+        .eq('role', 'proveedor')
+        .in('estado', ['available', 'busy']),
+      supabase.from('categories')
+        .select('id')
+        .ilike('name', 'taxi')
+        .maybeSingle(),
+      supabase.from('product_categories')
+        .select('id')
+        .ilike('name', '%rutas de transporte%')
+        .maybeSingle(),
+    ]);
 
-    if (profilesError || !activeProfiles?.length) {
+    const activeProfiles = profilesResult.data;
+    if (profilesResult.error || !activeProfiles?.length) {
       console.log('⚠️ No hay proveedores activos');
       setLocations([]);
       setLoading(false);
@@ -73,44 +84,37 @@ export const useRealtimeLocations = () => {
     }
 
     const activeUserIds = activeProfiles.map(p => p.user_id);
+    const taxiCategory = taxiCatResult.data;
+    const rutaCategory = rutaCatResult.data;
 
-    const { data: locationsData, error: locError } = await supabase
-      .from('proveedor_locations')
-      .select('*')
-      .in('user_id', activeUserIds);
+    // Phase 2: Fetch locations, proveedores, drivers, products in parallel
+    const [locResult, provResult, driversResult] = await Promise.all([
+      supabase.from('proveedor_locations').select('*').in('user_id', activeUserIds),
+      supabase.from('proveedores').select('id, user_id, nombre').in('user_id', activeUserIds),
+      supabase.from('choferes_empresa')
+        .select('id, user_id, nombre, proveedor_id, proveedores(nombre)')
+        .eq('is_active', true)
+        .not('user_id', 'is', null),
+    ]);
 
-    if (locError || !locationsData?.length) {
+    const locationsData = locResult.data;
+    if (locResult.error || !locationsData?.length) {
       setLocations([]);
       setLoading(false);
       setInitialLoadDone(true);
       return;
     }
 
-    const { data: proveedoresData } = await supabase
-      .from('proveedores')
-      .select('id, user_id, nombre')
-      .in('user_id', activeUserIds);
-
+    const proveedoresData = provResult.data;
     const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
     const proveedorNameMap = new Map(proveedoresData?.map(p => [p.user_id, p.nombre]) || []);
     const proveedorIds = proveedoresData?.map(p => p.id) || [];
 
     // Build a map of driver user_id → employer company name (via choferes_empresa)
     const driverEmployerMap = new Map<string, string>();
+    const activeDrivers = driversResult.data;
     
-    const { data: taxiCategory } = await supabase
-      .from('categories')
-      .select('id')
-      .ilike('name', 'taxi')
-      .maybeSingle();
-    
-    const { data: rutaCategory } = await supabase
-      .from('product_categories')
-      .select('id')
-      .ilike('name', '%rutas de transporte%')
-      .maybeSingle();
-    
-    // Buscar proveedores con productos de taxi
+    // Buscar productos de taxi y ruta en paralelo
     let taxiQuery = supabase
       .from('productos')
       .select('proveedor_id')
@@ -121,11 +125,7 @@ export const useRealtimeLocations = () => {
     } else {
       taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
     }
-    
-    const { data: taxiProducts } = await taxiQuery;
-    const taxiProviderIds = new Set(taxiProducts?.map(p => p.proveedor_id) || []);
 
-    // Buscar proveedores con productos de rutas (Ruta 1, Ruta 2, etc.)
     let rutaQuery = supabase
       .from('productos')
       .select('id, proveedor_id, nombre, is_private')
@@ -137,7 +137,10 @@ export const useRealtimeLocations = () => {
       rutaQuery = rutaQuery.ilike('nombre', 'Ruta %');
     }
     
-    const { data: rutaProducts } = await rutaQuery;
+    const [taxiResult, rutaResult] = await Promise.all([taxiQuery, rutaQuery]);
+    
+    const taxiProviderIds = new Set(taxiResult.data?.map(p => p.proveedor_id) || []);
+    const rutaProducts = rutaResult.data;
     const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean }>(); 
     // Track providers with ANY private route
     const privateRouteOwnerIds = new Set<string>();
@@ -150,13 +153,6 @@ export const useRealtimeLocations = () => {
         privateRouteOwnerIds.add(p.proveedor_id);
       }
     });
-
-    // Buscar choferes privados activos (linked drivers) WITH employer info
-    const { data: activeDrivers } = await supabase
-      .from('choferes_empresa')
-      .select('id, user_id, nombre, proveedor_id, proveedores(nombre)')
-      .eq('is_active', true)
-      .not('user_id', 'is', null);
     
     const privateDriverUserIds = new Set(
       activeDrivers?.map(d => d.user_id).filter(Boolean) || []
@@ -197,19 +193,24 @@ export const useRealtimeLocations = () => {
         unitsData?.forEach(u => unitDataMap.set(u.id, { nombre: u.nombre, placas: u.placas, descripcion: u.descripcion }));
       }
 
-      // Fallback: for assignments without unit, get last known unit per chofer
+      // Fallback: for assignments without unit, get last known unit per chofer (parallel)
       const choferesSinUnidad = assignments?.filter(a => !a.unidad_id).map(a => a.chofer_id) || [];
       let fallbackUnitMap = new Map<string, { nombre: string; placas: string | null; descripcion: string | null }>();
       if (choferesSinUnidad.length > 0) {
-        for (const choferId of choferesSinUnidad) {
-          const { data: lastUnit } = await supabase
-            .from('asignaciones_chofer')
-            .select('unidades_empresa(nombre, placas, descripcion)')
-            .eq('chofer_id', choferId)
-            .not('unidad_id', 'is', null)
-            .order('fecha', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        const fallbackResults = await Promise.all(
+          choferesSinUnidad.map(choferId =>
+            supabase
+              .from('asignaciones_chofer')
+              .select('unidades_empresa(nombre, placas, descripcion)')
+              .eq('chofer_id', choferId)
+              .not('unidad_id', 'is', null)
+              .order('fecha', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+              .then(res => ({ choferId, data: res.data }))
+          )
+        );
+        for (const { choferId, data: lastUnit } of fallbackResults) {
           if (lastUnit?.unidades_empresa) {
             const u = lastUnit.unidades_empresa as any;
             fallbackUnitMap.set(choferId, { nombre: u.nombre, placas: u.placas, descripcion: u.descripcion });
@@ -428,7 +429,8 @@ export const useRealtimeLocations = () => {
       )
       .subscribe();
 
-    const fastPollInterval = setInterval(fetchLocationsOnly, 1000);
+    // Realtime channels handle most updates; polling is a safety net
+    const fastPollInterval = setInterval(fetchLocationsOnly, 3000);
     const slowPollInterval = setInterval(fetchFullData, 30000);
 
     const startProviderTracking = async () => {
