@@ -228,6 +228,7 @@ export default function Favoritos() {
                         onDelete={() => handleDelete(fav.id)}
                         routeCategoryId={routeCategoryId}
                         onNavigate={(path) => navigate(path)}
+                        currentUserId={userId}
                       />
                     ))
                   )}
@@ -269,11 +270,12 @@ export default function Favoritos() {
 }
 
 // Card components
-function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate }: { 
+function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate, currentUserId }: { 
   favorito: Favorito; 
   onDelete: () => void;
   routeCategoryId: string | null;
   onNavigate: (path: string) => void;
+  currentUserId: string | null;
 }) {
   const producto = favorito.producto!;
   const precioChanged = favorito.precio_guardado !== null && producto.precio !== favorito.precio_guardado;
@@ -283,10 +285,37 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
   const [routeActive, setRouteActive] = useState<boolean | null>(null);
 
   // For routes, check if there's an active assignment today
+  // For drivers: check THEIR specific assignment (not any driver's)
+  // For passengers: check if ANY driver is active on the route
   useEffect(() => {
     if (!isRoute) return;
     const checkActiveAssignment = async () => {
       const today = new Date().toISOString().split('T')[0];
+
+      // Check if current user is a driver
+      if (currentUserId) {
+        const { data: choferRecords } = await supabase
+          .from('choferes_empresa')
+          .select('id')
+          .eq('user_id', currentUserId);
+
+        if (choferRecords && choferRecords.length > 0) {
+          // User IS a driver → check their own assignment only
+          const choferIds = choferRecords.map(c => c.id);
+          const { data } = await supabase
+            .from('asignaciones_chofer')
+            .select('id')
+            .eq('producto_id', producto.id)
+            .eq('fecha', today)
+            .in('chofer_id', choferIds)
+            .limit(1)
+            .maybeSingle();
+          setRouteActive(!!data);
+          return;
+        }
+      }
+
+      // User is NOT a driver (passenger) → check any assignment
       const { data } = await supabase
         .from('asignaciones_chofer')
         .select('id')
@@ -297,7 +326,7 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
       setRouteActive(!!data);
     };
     checkActiveAssignment();
-  }, [isRoute, producto.id]);
+  }, [isRoute, producto.id, currentUserId]);
 
   const handleNavigate = () => {
     if (isRoute) {
