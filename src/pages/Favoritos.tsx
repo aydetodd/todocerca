@@ -279,24 +279,44 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
   const precioChanged = favorito.precio_guardado !== null && producto.precio !== favorito.precio_guardado;
   const stockChanged = favorito.stock_guardado !== null && producto.stock !== favorito.stock_guardado;
   const precioBajo = precioChanged && producto.precio < (favorito.precio_guardado || 0);
-  const precioAlto = precioChanged && producto.precio > (favorito.precio_guardado || 0);
   const isRoute = producto.category_id === routeCategoryId;
+  const [routeActive, setRouteActive] = useState<boolean | null>(null);
+
+  // For routes, check if there's an active assignment today
+  useEffect(() => {
+    if (!isRoute) return;
+    const checkActiveAssignment = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('asignaciones_chofer')
+        .select('id')
+        .eq('producto_id', producto.id)
+        .eq('fecha', today)
+        .limit(1)
+        .maybeSingle();
+      setRouteActive(!!data);
+    };
+    checkActiveAssignment();
+  }, [isRoute, producto.id]);
 
   const handleNavigate = () => {
-    if (isRoute && producto.is_private && producto.invite_token) {
-      // Private route → go to map with token
-      onNavigate(`/mapa?token=${producto.invite_token}`);
-    } else if (isRoute) {
-      // Public route → go to transport map
-      onNavigate(`/mapa?type=ruta`);
+    if (isRoute) {
+      if (!routeActive) return; // Don't navigate if route is inactive
+      if (producto.is_private && producto.invite_token) {
+        onNavigate(`/mapa?token=${producto.invite_token}`);
+      } else {
+        onNavigate(`/mapa?type=ruta`);
+      }
     } else {
-      // Regular product → go to provider profile for orders
       onNavigate(`/proveedor/${producto.proveedor_id}?action=pedido`);
     }
   };
 
   return (
-    <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleNavigate}>
+    <Card 
+      className={`transition-colors ${isRoute && routeActive === false ? 'opacity-50' : 'cursor-pointer hover:bg-accent/50'}`} 
+      onClick={handleNavigate}
+    >
       <CardContent className="p-4">
         <div className="flex gap-4">
           {!isRoute && (
@@ -337,10 +357,17 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate 
               </>
             )}
             {isRoute ? (
-              <div className="flex items-center gap-1 mt-2 text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
-                <MapPin className="h-3 w-3" />
-                Ver ubicación en mapa
-              </div>
+              routeActive === false ? (
+                <div className="flex items-center gap-1 mt-2 text-xs font-medium text-muted-foreground bg-muted rounded-md px-2 py-1 w-fit">
+                  <AlertCircle className="h-3 w-3" />
+                  Sin servicio activo
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 mt-2 text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
+                  <MapPin className="h-3 w-3" />
+                  Ver ubicación en mapa
+                </div>
+              )
             ) : (
               <div className="flex items-center gap-1 mt-1 text-xs text-primary">
                 <ExternalLink className="h-3 w-3" />

@@ -258,9 +258,9 @@ function SingleDriverPanel({
               checked={isActive}
               onCheckedChange={handleToggleActive}
               disabled={toggling}
-              className="data-[state=checked]:bg-green-500"
+              className="data-[state=checked]:bg-primary"
             />
-            <span className={`text-[10px] font-medium ${isActive ? 'text-green-500' : 'text-muted-foreground'}`}>
+            <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
               {toggling ? '...' : isActive ? 'Activa' : 'Apagada'}
             </span>
           </div>
