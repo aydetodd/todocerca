@@ -128,7 +128,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     };
 
     updateUserLocation();
-    const interval = setInterval(updateUserLocation, 1000);
+    const interval = setInterval(updateUserLocation, 3000);
 
     return () => clearInterval(interval);
   }, [currentUserId, updateLocation]);
@@ -408,7 +408,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const favoritoButtonHtml = favoritoTarget ? `
         <button 
           onclick="window.addToFavoritos(${favoritoTarget})"
-          style="position:absolute;top:8px;right:8px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;"
+          style="position:absolute;top:8px;right:36px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;"
           title="Agregar a favoritos"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
