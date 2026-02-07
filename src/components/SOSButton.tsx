@@ -77,7 +77,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     };
   }, []);
 
-  // Activar SOS (memoizado para que el "hold" siempre use la versión más reciente)
+  // Activar SOS (click rápido)
   const handleActivateSOS = useCallback(async () => {
     const success = await activateSOS();
     if (success) {
@@ -87,6 +87,15 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     holdStartRef.current = null;
     hasActivatedRef.current = false;
   }, [activateSOS]);
+
+  // Abrir configuración (mantener 3 segundos)
+  const handleOpenConfig = useCallback(() => {
+    setShowConfig(true);
+    setHoldProgress(0);
+    holdStartRef.current = null;
+    hasActivatedRef.current = false;
+    setIsHolding(false);
+  }, []);
 
   // Actualizar progreso mientras se mantiene presionado
   const updateProgress = useCallback(() => {
@@ -98,15 +107,14 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
 
     if (progress >= 100 && !hasActivatedRef.current) {
       hasActivatedRef.current = true;
-      setIsHolding(false);
-      handleActivateSOS();
+      handleOpenConfig();
       return;
     }
 
     if (holdStartRef.current && !hasActivatedRef.current) {
       animationFrameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [handleActivateSOS]);
+  }, [handleOpenConfig]);
 
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -136,10 +144,10 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
     
     setIsHolding(false);
     
-    // Si no llegó al 100% y fue un click corto (menos de 300ms), abrir configuración
+    // Click corto (menos de 300ms) = activar SOS directamente
     if (!hasActivatedRef.current) {
       if (holdDuration < 300 && wasHolding && !activeAlert) {
-        setShowConfig(true);
+        handleActivateSOS();
       }
       setHoldProgress(0);
       holdStartRef.current = null;
@@ -273,7 +281,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
                 ? "bg-destructive scale-110"
                 : "bg-destructive hover:bg-destructive/90 active:scale-95"
           )}
-          aria-label="Click para configurar, mantén 3 segundos para activar SOS"
+          aria-label="Click para activar SOS, mantén 3 segundos para configurar"
         >
           {loading ? (
             <Loader2 className="h-8 w-8 text-destructive-foreground animate-spin" />
@@ -446,7 +454,7 @@ export const SOSButton = ({ className }: SOSButtonProps) => {
             <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
               <p className="font-medium mb-1">¿Cómo funciona?</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Mantén presionado el botón SOS por 3 segundos para activar</li>
+                <li>Toca el botón SOS para activar la alarma inmediatamente</li>
                 <li>Tus contactos recibirán tu ubicación en tiempo real</li>
                 <li>La alerta dura máximo 30 minutos</li>
               </ul>

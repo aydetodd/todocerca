@@ -317,7 +317,20 @@ export default function DriverProfilePanel() {
             .eq('fecha', today)
             .maybeSingle();
 
-          const unitData = assignment?.unidades_empresa as any;
+          let unitData = assignment?.unidades_empresa as any;
+
+          // Fallback: if today's assignment has no unit, get last known unit for this driver
+          if (!unitData && assignment) {
+            const { data: lastWithUnit } = await supabase
+              .from('asignaciones_chofer')
+              .select('unidades_empresa(nombre, descripcion, placas)')
+              .eq('chofer_id', driver.id)
+              .not('unidad_id', 'is', null)
+              .order('fecha', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            unitData = lastWithUnit?.unidades_empresa as any;
+          }
 
           companiesData.push({
             driver: {
