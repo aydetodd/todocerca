@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { playMessageSound, startSOSAlertLoop, stopAlertLoop } from '@/lib/sounds';
+import { playMessageSound, playTaxiAlertSound, startSOSAlertLoop, stopAlertLoop } from '@/lib/sounds';
 
 // Request notification permission on load
 if ('Notification' in window && Notification.permission === 'default') {
@@ -118,6 +118,9 @@ export const useRealtimeMessages = (receiverId?: string) => {
           const { data: { user } } = await supabase.auth.getUser();
           const isFromOther = newMessage.sender_id !== user?.id;
 
+          // Detect hail/parada messages - these alert the RECEIVER (driver)
+          const isHailMessage = newMessage.message?.includes('¡PARADA DE TAXI!');
+
           // Handle panic alerts - SOLO para receptores, NO para quien envía
           if (newMessage.is_panic && isFromOther) {
             // Usar sistema de voz TTS unificado con loop (sin sirena de sismo)
@@ -144,6 +147,28 @@ export const useRealtimeMessages = (receiverId?: string) => {
               title: "✓ Alerta enviada",
               description: `Tu alerta SOS fue enviada a tus contactos`,
             });
+          } else if (isHailMessage && newMessage.receiver_id) {
+            // Parada de taxi - alerta especial para el conductor receptor
+            // Se reproduce siempre que el mensaje sea para este usuario (incluso en pruebas con la misma cuenta)
+            const { data: { user } } = await supabase.auth.getUser();
+            if (newMessage.receiver_id === user?.id) {
+              playTaxiAlertSound();
+
+              toast({
+                title: "🖐️ ¡Te están haciendo la parada!",
+                description: newMessage.message,
+                variant: "destructive",
+              });
+
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🖐️ ¡PARADA DE TAXI!', {
+                  body: newMessage.message,
+                  icon: '/icon-192.png',
+                  tag: 'taxi-hail',
+                  requireInteraction: true
+                });
+              }
+            }
           } else if (isFromOther) {
             // Sonido con voz TTS para mensajes recibidos normales
             playMessageSound();
