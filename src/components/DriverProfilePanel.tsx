@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation, Share2, Bus, Loader2 } from 'lucide-react';
 
@@ -83,6 +84,70 @@ function SingleDriverPanel({
   const { toast } = useToast();
   const navigate = useNavigate();
   const [assigning, setAssigning] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const isActive = !!data.todayAssignment;
+
+  const handleToggleActive = async (turnOn: boolean) => {
+    try {
+      setToggling(true);
+
+      if (!turnOn && data.todayAssignment) {
+        // Apagar: eliminar asignación de hoy
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .delete()
+          .eq('id', data.todayAssignment.id);
+
+        if (error) throw error;
+
+        toast({
+          title: '🔴 Ruta desactivada',
+          description: `Ya no apareces en "${data.todayAssignment.vehicleName}"`,
+        });
+      } else if (turnOn && data.vehicles.length > 0) {
+        // Encender: asignar la primera ruta disponible (el usuario puede cambiarla después)
+        const today = new Date().toISOString().split('T')[0];
+        const firstVehicle = data.vehicles[0];
+
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .upsert(
+            {
+              chofer_id: data.driver.id,
+              producto_id: firstVehicle.id,
+              fecha: today,
+            },
+            { onConflict: 'chofer_id,fecha' }
+          );
+
+        if (error) throw error;
+
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ route_name: firstVehicle.nombre })
+            .eq('user_id', user.id);
+        }
+
+        toast({
+          title: '🟢 Ruta activada',
+          description: `Ahora apareces en "${firstVehicle.nombre}"`,
+        });
+      }
+
+      onRefresh();
+    } catch (error: any) {
+      console.error('[DriverProfilePanel] Toggle error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo cambiar el estado',
+        variant: 'destructive',
+      });
+    } finally {
+      setToggling(false);
+    }
+  };
 
   const handleInviteWhatsApp = async () => {
     if (!data.todayAssignment) return;
@@ -165,12 +230,12 @@ function SingleDriverPanel({
   if (unitInfo?.placas) vehicleParts.push(unitInfo.placas);
 
   return (
-    <Card className="border-primary/30 bg-primary/5">
+    <Card className={`border-primary/30 transition-all duration-300 ${isActive ? 'bg-primary/5' : 'bg-muted/30 opacity-60'}`}>
       <CardContent className="p-3 space-y-2">
-        {/* Row 1: Icon + Empresa + Chofer + Unit info + Invitar */}
+        {/* Row 1: Icon + Empresa + Chofer + Unit info + Switch + Invitar */}
         <div className="flex items-center gap-2.5">
           <div
-            className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0"
+            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? 'bg-amber-100' : 'bg-muted grayscale'}`}
             dangerouslySetInnerHTML={{ __html: YELLOW_BUS_SVG }}
           />
           <div className="flex-1 min-w-0">
@@ -186,7 +251,21 @@ function SingleDriverPanel({
               </p>
             )}
           </div>
-          {data.todayAssignment && (
+
+          {/* Toggle de encendido/apagado */}
+          <div className="flex flex-col items-center shrink-0 gap-0.5">
+            <Switch
+              checked={isActive}
+              onCheckedChange={handleToggleActive}
+              disabled={toggling}
+              className="data-[state=checked]:bg-green-500"
+            />
+            <span className={`text-[10px] font-medium ${isActive ? 'text-green-500' : 'text-muted-foreground'}`}>
+              {toggling ? '...' : isActive ? 'Activa' : 'Apagada'}
+            </span>
+          </div>
+
+          {isActive && data.todayAssignment && (
             <Button
               variant="outline"
               size="sm"
@@ -199,50 +278,52 @@ function SingleDriverPanel({
           )}
         </div>
 
-        {/* Row 2: Route selector + Ubicación */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={currentRouteId}
-            onValueChange={handleSelectRoute}
-            disabled={assigning}
-          >
-            <SelectTrigger className="flex-1 h-8 text-xs">
-              <SelectValue placeholder="Seleccionar ruta..." />
-            </SelectTrigger>
-            <SelectContent>
-              {data.vehicles.map(v => (
-                <SelectItem key={v.id} value={v.id} className="text-xs">
-                  {v.nombre}
-                  {v.descripcion ? ` — ${v.descripcion}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {data.todayAssignment && (
-            <Button
-              size="sm"
-              className="shrink-0 h-8 px-2.5 text-xs"
-              onClick={() => {
-                const vehicle = data.vehicles.find(
-                  v => v.id === data.todayAssignment!.producto_id
-                );
-                if (vehicle?.invite_token) {
-                  navigate(`/mapa?token=${vehicle.invite_token}`);
-                } else {
-                  navigate('/mapa?type=ruta');
-                }
-              }}
+        {/* Row 2: Route selector + Ubicación (solo si está activa) */}
+        {isActive && (
+          <div className="flex items-center gap-2">
+            <Select
+              value={currentRouteId}
+              onValueChange={handleSelectRoute}
+              disabled={assigning}
             >
-              <Navigation className="h-3 w-3 mr-1" />
-              Ubicación
-            </Button>
-          )}
+              <SelectTrigger className="flex-1 h-8 text-xs">
+                <SelectValue placeholder="Seleccionar ruta..." />
+              </SelectTrigger>
+              <SelectContent>
+                {data.vehicles.map(v => (
+                  <SelectItem key={v.id} value={v.id} className="text-xs">
+                    {v.nombre}
+                    {v.descripcion ? ` — ${v.descripcion}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {assigning && (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
-          )}
-        </div>
+            {data.todayAssignment && (
+              <Button
+                size="sm"
+                className="shrink-0 h-8 px-2.5 text-xs"
+                onClick={() => {
+                  const vehicle = data.vehicles.find(
+                    v => v.id === data.todayAssignment!.producto_id
+                  );
+                  if (vehicle?.invite_token) {
+                    navigate(`/mapa?token=${vehicle.invite_token}`);
+                  } else {
+                    navigate('/mapa?type=ruta');
+                  }
+                }}
+              >
+                <Navigation className="h-3 w-3 mr-1" />
+                Ubicación
+              </Button>
+            )}
+
+            {assigning && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
