@@ -29,6 +29,7 @@ interface RealtimeMapProps {
   privateRouteUserId?: string | null;
   privateRouteProductoId?: string | null;
   fleetUserIds?: string[];
+  mapRef?: React.MutableRefObject<L.Map | null>;
 }
 
 // Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
@@ -42,8 +43,9 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds }: RealtimeMapProps) => {
-  const mapRef = useRef<L.Map | null>(null);
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
+  const internalMapRef = useRef<L.Map | null>(null);
+  const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
   const prevPositionsRef = useRef<{ [key: string]: { lat: number; lng: number } }>({});
