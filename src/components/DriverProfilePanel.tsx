@@ -5,11 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { MapPin, Check, Loader2, RefreshCw, Navigation, Share2, ChevronDown, ChevronUp, Briefcase, Bus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Navigation, Share2, Bus, Loader2 } from 'lucide-react';
 
-// Yellow bus SVG for driver panel
-const YELLOW_BUS_SVG = `<svg width="24" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+const YELLOW_BUS_SVG = `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
   <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
   <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
@@ -53,11 +52,18 @@ interface Vehicle {
   invite_token: string | null;
 }
 
+interface UnitInfo {
+  nombre: string;
+  descripcion: string | null;
+  placas: string | null;
+}
+
 interface TodayAssignment {
   id: string;
   producto_id: string;
   vehicleName: string;
   asignado_por: string | null;
+  unit: UnitInfo | null;
 }
 
 interface DriverCompanyData {
@@ -69,17 +75,14 @@ interface DriverCompanyData {
 function SingleDriverPanel({
   data,
   onRefresh,
-  compact = false,
 }: {
   data: DriverCompanyData;
   onRefresh: () => void;
-  compact?: boolean;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [assigning, setAssigning] = useState(false);
-  const [showRouteSelect, setShowRouteSelect] = useState(false);
 
   const handleInviteWhatsApp = async () => {
     if (!data.todayAssignment) return;
@@ -140,7 +143,6 @@ function SingleDriverPanel({
         description: `Hoy cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
       });
 
-      setShowRouteSelect(false);
       onRefresh();
     } catch (error: any) {
       console.error('[DriverProfilePanel] Error assigning:', error);
@@ -154,56 +156,75 @@ function SingleDriverPanel({
     }
   };
 
-  return (
-    <div className="space-y-3">
-      {/* Driver header */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0"
-             dangerouslySetInnerHTML={{ __html: YELLOW_BUS_SVG }} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-foreground">
-              Chofer: {data.driver.nombre || 'Sin nombre'}
-            </h3>
-            <Badge variant="default" className="text-xs">Autorizado</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Empresa: <strong>{data.driver.businessName}</strong>
-          </p>
-        </div>
-        {data.todayAssignment && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleInviteWhatsApp}
-            className="shrink-0"
-          >
-            <Share2 className="h-3.5 w-3.5 mr-1" />
-            Invitar
-          </Button>
-        )}
-      </div>
+  const currentRouteId = data.todayAssignment?.producto_id || '';
+  const unitInfo = data.todayAssignment?.unit;
 
-      {/* Today's assignment */}
-      {data.todayAssignment ? (
-        <div className="bg-background/80 rounded-lg p-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <MapPin className="h-4 w-4 text-primary shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Ruta de hoy:</p>
-              <p className="font-semibold text-sm text-foreground">
-                {data.todayAssignment.vehicleName}
-              </p>
-            </div>
+  // Build subtitle: Chofer · Descripción · Placas
+  const subtitleParts: string[] = [];
+  subtitleParts.push(`Chofer: ${data.driver.nombre || 'Sin nombre'}`);
+  if (unitInfo?.descripcion) subtitleParts.push(unitInfo.descripcion);
+  if (unitInfo?.placas) subtitleParts.push(`Placas: ${unitInfo.placas}`);
+
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="p-3 space-y-2">
+        {/* Row 1: Icon + Empresa + Chofer/Unit info + Invitar */}
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0"
+            dangerouslySetInnerHTML={{ __html: YELLOW_BUS_SVG }}
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-foreground leading-tight">
+              {data.driver.businessName}
+            </p>
+            <p className="text-xs text-muted-foreground leading-tight truncate">
+              {subtitleParts.join(' · ')}
+            </p>
           </div>
-          <div className="flex gap-1.5">
+          {data.todayAssignment && (
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
+              onClick={handleInviteWhatsApp}
+              className="shrink-0 h-8 px-2.5 text-xs"
+            >
+              <Share2 className="h-3 w-3 mr-1" />
+              Invitar
+            </Button>
+          )}
+        </div>
+
+        {/* Row 2: Route selector + Ubicación */}
+        <div className="flex items-center gap-2">
+          <Select
+            value={currentRouteId}
+            onValueChange={handleSelectRoute}
+            disabled={assigning}
+          >
+            <SelectTrigger className="flex-1 h-8 text-xs">
+              <SelectValue placeholder="Seleccionar ruta..." />
+            </SelectTrigger>
+            <SelectContent>
+              {data.vehicles.map(v => (
+                <SelectItem key={v.id} value={v.id} className="text-xs">
+                  {v.nombre}
+                  {v.descripcion ? ` — ${v.descripcion}` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {data.todayAssignment && (
+            <Button
+              size="sm"
+              className="shrink-0 h-8 px-2.5 text-xs"
               onClick={() => {
-                const assignedVehicle = data.vehicles.find(v => v.id === data.todayAssignment!.producto_id);
-                if (assignedVehicle?.invite_token) {
-                  navigate(`/mapa?token=${assignedVehicle.invite_token}`);
+                const vehicle = data.vehicles.find(
+                  v => v.id === data.todayAssignment!.producto_id
+                );
+                if (vehicle?.invite_token) {
+                  navigate(`/mapa?token=${vehicle.invite_token}`);
                 } else {
                   navigate('/mapa?type=ruta');
                 }
@@ -212,70 +233,14 @@ function SingleDriverPanel({
               <Navigation className="h-3 w-3 mr-1" />
               Ubicación
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowRouteSelect(!showRouteSelect)}
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Cambiar
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-background/80 rounded-lg p-3 text-center">
-          <p className="text-sm text-muted-foreground mb-2">
-            No tienes ruta asignada para hoy
-          </p>
-          <Button size="sm" onClick={() => setShowRouteSelect(true)}>
-            <MapPin className="h-4 w-4 mr-1" />
-            Seleccionar ruta
-          </Button>
-        </div>
-      )}
+          )}
 
-      {/* Route selector */}
-      {showRouteSelect && data.vehicles.length > 0 && (
-        <div className="space-y-2 pt-1">
-          <p className="text-xs font-medium text-muted-foreground">Selecciona tu ruta:</p>
-          {data.vehicles.map((vehicle) => {
-            const isCurrent = data.todayAssignment?.producto_id === vehicle.id;
-            return (
-              <button
-                key={vehicle.id}
-                disabled={assigning}
-                onClick={() => handleSelectRoute(vehicle.id)}
-                className={`w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 ${
-                  isCurrent
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-border hover:border-primary bg-background'
-                }`}
-              >
-                <MapPin className="h-4 w-4 text-primary shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{vehicle.nombre}</p>
-                  {vehicle.descripcion && (
-                    <p className="text-xs text-muted-foreground">{vehicle.descripcion}</p>
-                  )}
-                </div>
-                {isCurrent && (
-                  <Badge variant="default" className="shrink-0 gap-1 text-xs">
-                    <Check className="h-3 w-3" />
-                    Actual
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
           {assigning && (
-            <div className="flex items-center justify-center gap-2 py-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Asignando...
-            </div>
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
           )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -283,7 +248,6 @@ export default function DriverProfilePanel() {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<DriverCompanyData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) loadAllDriverData();
@@ -310,7 +274,6 @@ export default function DriverProfilePanel() {
     try {
       setLoading(true);
 
-      // Fetch ALL active driver records for this user
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
         .select('id, nombre, proveedor_id')
@@ -326,17 +289,14 @@ export default function DriverProfilePanel() {
       const today = new Date().toISOString().split('T')[0];
       const companiesData: DriverCompanyData[] = [];
 
-      // Load data for each company in parallel
       await Promise.all(
         drivers.map(async (driver) => {
-          // Get business name
           const { data: proveedor } = await supabase
             .from('proveedores')
             .select('nombre')
             .eq('id', driver.proveedor_id)
             .single();
 
-          // Get vehicles for this company
           const { data: vehicleList } = await supabase
             .from('productos')
             .select('id, nombre, descripcion, invite_token')
@@ -346,13 +306,14 @@ export default function DriverProfilePanel() {
             .eq('is_available', true)
             .order('nombre');
 
-          // Check today's assignment
           const { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, productos(nombre)')
+            .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
             .eq('chofer_id', driver.id)
             .eq('fecha', today)
             .maybeSingle();
+
+          const unitData = assignment?.unidades_empresa as any;
 
           companiesData.push({
             driver: {
@@ -368,6 +329,13 @@ export default function DriverProfilePanel() {
                   producto_id: assignment.producto_id,
                   vehicleName: (assignment.productos as any)?.nombre || 'Ruta',
                   asignado_por: assignment.asignado_por,
+                  unit: unitData
+                    ? {
+                        nombre: unitData.nombre,
+                        descripcion: unitData.descripcion,
+                        placas: unitData.placas,
+                      }
+                    : null,
                 }
               : null,
           });
@@ -375,16 +343,6 @@ export default function DriverProfilePanel() {
       );
 
       setCompanies(companiesData);
-
-      // Auto-expand if only one company, or expand the one with an assignment
-      if (companiesData.length === 1) {
-        setExpandedCompany(companiesData[0].driver.id);
-      } else if (!expandedCompany) {
-        const withAssignment = companiesData.find(c => c.todayAssignment);
-        if (withAssignment) {
-          setExpandedCompany(withAssignment.driver.id);
-        }
-      }
     } catch (error) {
       console.error('[DriverProfilePanel] Error:', error);
     } finally {
@@ -392,85 +350,26 @@ export default function DriverProfilePanel() {
     }
   };
 
-  if (loading) return null;
-  if (companies.length === 0) return null;
+  if (loading || companies.length === 0) return null;
 
-  // Single company — show as before (no accordion needed)
-  if (companies.length === 1) {
-    return (
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="p-4">
-          <SingleDriverPanel data={companies[0]} onRefresh={loadAllDriverData} />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Multiple companies — show each in a collapsible card
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 px-1">
-        <Bus className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold text-foreground">
-          Mis Perfiles de Chofer ({companies.length} empresas)
-        </p>
-      </div>
+      {companies.length > 1 && (
+        <div className="flex items-center gap-2 px-1">
+          <Bus className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-foreground">
+            Mis Perfiles de Chofer ({companies.length} empresas)
+          </p>
+        </div>
+      )}
 
-      {companies.map((companyData) => {
-        const isExpanded = expandedCompany === companyData.driver.id;
-        const hasAssignment = !!companyData.todayAssignment;
-
-        return (
-          <Card
-            key={companyData.driver.id}
-            className={`border-primary/30 bg-primary/5 transition-all ${
-              hasAssignment ? 'ring-1 ring-primary/40' : ''
-            }`}
-          >
-            <CardContent className="p-4">
-              {/* Collapsed header — always visible */}
-              <button
-                className="w-full flex items-center justify-between gap-3"
-                onClick={() => setExpandedCompany(isExpanded ? null : companyData.driver.id)}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0"
-                    dangerouslySetInnerHTML={{ __html: YELLOW_BUS_SVG }}
-                  />
-                  <div className="text-left min-w-0">
-                    <p className="font-semibold text-sm text-foreground">
-                      {companyData.driver.businessName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {hasAssignment
-                        ? `📍 Ruta: ${companyData.todayAssignment!.vehicleName}`
-                        : 'Sin ruta asignada hoy'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {hasAssignment && (
-                    <Badge variant="default" className="text-xs">Activo</Badge>
-                  )}
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </button>
-
-              {/* Expanded content */}
-              {isExpanded && (
-                <div className="mt-4 pt-3 border-t border-border/50">
-                  <SingleDriverPanel data={companyData} onRefresh={loadAllDriverData} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {companies.map((companyData) => (
+        <SingleDriverPanel
+          key={companyData.driver.id}
+          data={companyData}
+          onRefresh={loadAllDriverData}
+        />
+      ))}
     </div>
   );
 }
