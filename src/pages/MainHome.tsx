@@ -43,7 +43,7 @@ export default function MainHome() {
 
         <Card 
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/mapa?type=taxi')}
+          onClick={() => navigate('/search?category=taxi')}
         >
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
