@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { playOrderSound, playAppointmentSound, playTaxiAlertSound, startTaxiAlertLoop, stopAlertLoop } from '@/lib/sounds';
+import { playOrderSound, playAppointmentSound, playTaxiAlertSound, playHailSound, startTaxiAlertLoop, stopAlertLoop } from '@/lib/sounds';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -24,6 +24,7 @@ export const useGlobalNotifications = () => {
     let ordersChannel: ReturnType<typeof supabase.channel> | null = null;
     let appointmentsChannel: ReturnType<typeof supabase.channel> | null = null;
     let taxiChannel: ReturnType<typeof supabase.channel> | null = null;
+    let messagesChannel: ReturnType<typeof supabase.channel> | null = null;
 
     const setupNotifications = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,7 +105,6 @@ export const useGlobalNotifications = () => {
       // =====================
       // 🚕 TAXI (para conductores)
       // =====================
-      // Verificar si el usuario es conductor de taxi
       const { data: profile } = await supabase
         .from('profiles')
         .select('provider_type')
@@ -126,7 +126,6 @@ export const useGlobalNotifications = () => {
             },
             (payload) => {
               console.log('🚕 [GlobalNotifications] Nueva solicitud de taxi:', payload);
-              // Iniciar loop de alarma urgente
               startTaxiAlertLoop();
               toast({
                 title: "🚕 ¡Solicitud de Viaje!",
@@ -144,7 +143,6 @@ export const useGlobalNotifications = () => {
               filter: `driver_id=eq.${user.id}`,
             },
             (payload) => {
-              // Si el viaje fue aceptado/cancelado, detener alarma
               if (payload.new.status !== 'pending') {
                 console.log('🚕 [GlobalNotifications] Taxi request actualizado, deteniendo alarma');
                 stopAlertLoop();
@@ -155,11 +153,57 @@ export const useGlobalNotifications = () => {
             console.log('📡 [GlobalNotifications] Taxi channel:', status);
           });
       }
+
+      // =====================
+      // 🖐️ PARADA VIRTUAL (mensajes globales)
+      // =====================
+      messagesChannel = supabase
+        .channel('global-hail-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `receiver_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const msg = payload.new as any;
+            const isHailMessage = msg.message?.includes('¡PARADA DE TAXI!');
+            
+            console.log('🔔 [GlobalNotifications] Mensaje recibido:', {
+              isHail: isHailMessage,
+              messagePreview: msg.message?.substring(0, 50)
+            });
+
+            if (isHailMessage) {
+              console.log('🔊 [GlobalNotifications] ¡PARADA VIRTUAL detectada! Reproduciendo audio...');
+              playHailSound();
+              toast({
+                title: "🖐️ ¡Parada virtual!",
+                description: "Un usuario te está haciendo la parada. Detente para atender la solicitud.",
+                variant: "destructive",
+                duration: 15000,
+              });
+
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🖐️ ¡PARADA VIRTUAL!', {
+                  body: 'Un usuario te está haciendo la parada. Detente para atender la solicitud.',
+                  icon: '/icon-192.png',
+                  tag: 'taxi-hail',
+                  requireInteraction: true
+                });
+              }
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 [GlobalNotifications] Messages/Hail channel:', status);
+        });
     };
 
     setupNotifications();
 
-    // Cleanup
     return () => {
       console.log('🔔 [GlobalNotifications] Limpiando listeners...');
       if (ordersChannel) supabase.removeChannel(ordersChannel);
@@ -168,6 +212,7 @@ export const useGlobalNotifications = () => {
         supabase.removeChannel(taxiChannel);
         stopAlertLoop();
       }
+      if (messagesChannel) supabase.removeChannel(messagesChannel);
     };
   }, [toast]);
 };
