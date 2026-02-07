@@ -141,17 +141,17 @@ const ProductSearch = () => {
     navigate(`/proveedor/${providerId}?action=cita`);
   };
   const { getEstados, getMunicipios } = useMunicipios();
-  const { getNivel1, getNivel2, allPaises } = useHispanoamerica();
+  const { getNivel1, getNivel2, allPaises, loading: geoDataLoading } = useHispanoamerica();
 
   const municipiosDisponibles = useMemo(
     () => getMunicipios(searchEstado),
     [searchEstado, getMunicipios]
   );
 
-  // Auto-apply GPS-detected city when available
+  // Auto-apply GPS-detected city when available (wait for both GPS and geo data)
+
   useEffect(() => {
-    if (gpsAppliedRef.current || !gpsLocation || gpsLoading) return;
-    gpsAppliedRef.current = true;
+    if (gpsAppliedRef.current || !gpsLocation || gpsLoading || geoDataLoading) return;
 
     const { pais, estado, ciudad } = gpsLocation;
 
@@ -163,6 +163,11 @@ const ProductSearch = () => {
 
     // Match state - try exact match first, then fuzzy
     const availableEstados = getNivel1(pais);
+    if (availableEstados.length === 0) {
+      console.log('[ProductSearch] GPS: No states available yet for', pais);
+      return; // Data not loaded yet, will retry on next render
+    }
+
     const matchedEstado = availableEstados.find(e => e === estado)
       || availableEstados.find(e => e.toLowerCase() === estado.toLowerCase())
       || availableEstados.find(e => estado.toLowerCase().includes(e.toLowerCase()) || e.toLowerCase().includes(estado.toLowerCase()));
@@ -185,14 +190,18 @@ const ProductSearch = () => {
     } else {
       console.log('[ProductSearch] GPS state not matched:', estado);
     }
-  }, [gpsLocation, gpsLoading, allPaises, getNivel1, getNivel2]);
+
+    // Only mark as applied after successful matching attempt with data available
+    gpsAppliedRef.current = true;
+  }, [gpsLocation, gpsLoading, geoDataLoading, allPaises, getNivel1, getNivel2]);
 
   // Auto-trigger search when coming from taxi shortcut and GPS is ready
   useEffect(() => {
     if (autoSearchTriggeredRef.current) return;
     if (initialCategory !== 'taxi') return;
     if (!categoryParamProcessed) return;
-    if (gpsLoading) return;
+    if (gpsLoading || geoDataLoading) return;
+    if (!gpsAppliedRef.current && gpsLocation) return; // Wait for GPS to be applied first
     
     // Wait a tick for state to settle after GPS application
     const timer = setTimeout(() => {
@@ -202,7 +211,7 @@ const ProductSearch = () => {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [initialCategory, categoryParamProcessed, gpsLoading]);
+  }, [initialCategory, categoryParamProcessed, gpsLoading, geoDataLoading, gpsLocation]);
 
   const categoryNameById = useMemo(() => {
     const m = new Map<string, string>();
