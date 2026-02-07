@@ -439,6 +439,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
             <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
             <button onclick='window.openInternalChat(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)})' style="flex: 1; background-color: #f59e0b; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">✉️</button>
           </div>
+          <button id="hail-btn-${provider.user_id}" onclick='window.hailTaxi(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)}, this)' style="width: 100%; background-color: #f59e0b; color: white; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">🖐️ ¡Parada! — Hacerle la parada al taxi</button>
           <button onclick='window.requestTaxi(${JSON.stringify(provider.user_id)}, ${JSON.stringify(provider.business_name)}, ${provider.latitude}, ${provider.longitude}, ${tarifaKm})' style="width: 100%; background-color: #22c55e; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 1rem;">🚕 Solicitar Taxi</button>
         </div>
       `
@@ -494,6 +495,58 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         longitude: lng,
         tarifa_km: tarifaKm
       });
+    };
+    (window as any).hailTaxi = async (driverUserId: string, driverName: string, btnElement: HTMLButtonElement) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          alert('Inicia sesión para hacerle la parada al taxi');
+          return;
+        }
+
+        // Disable button immediately to prevent double-tap
+        btnElement.disabled = true;
+        btnElement.style.opacity = '0.6';
+        btnElement.textContent = '⏳ Enviando...';
+
+        // Get user name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nombre, apodo')
+          .eq('user_id', user.id)
+          .single();
+        
+        const userName = profile?.apodo || profile?.nombre || 'Un usuario';
+
+        // Send message to driver via messages table (triggers realtime TTS alert)
+        const { error } = await supabase
+          .from('messages')
+          .insert({
+            sender_id: user.id,
+            receiver_id: driverUserId,
+            message: `🖐️ ¡PARADA DE TAXI! ${userName} te está haciendo la parada. Detente para atender la solicitud.`,
+            is_panic: false
+          });
+
+        if (error) throw error;
+
+        btnElement.textContent = '✅ ¡Parada enviada!';
+        btnElement.style.backgroundColor = '#16a34a';
+        
+        // Re-enable after 10 seconds
+        setTimeout(() => {
+          btnElement.disabled = false;
+          btnElement.style.opacity = '1';
+          btnElement.style.backgroundColor = '#f59e0b';
+          btnElement.textContent = '🖐️ ¡Parada! — Hacerle la parada al taxi';
+        }, 10000);
+      } catch (error) {
+        console.error('Error enviando parada de taxi:', error);
+        btnElement.disabled = false;
+        btnElement.style.opacity = '1';
+        btnElement.textContent = '🖐️ ¡Parada! — Hacerle la parada al taxi';
+        alert('No se pudo enviar la parada. Inténtalo de nuevo.');
+      }
     };
     (window as any).bookAppointment = (providerId: string, providerName: string, providerPhone: string) => {
       setAppointmentProvider({
