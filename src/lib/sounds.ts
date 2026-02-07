@@ -89,8 +89,8 @@ const speakMessage = (message: string) => {
 const playAttentionBeep = () => {
   try {
     const ctx = getAudioContext();
-    playTone(ctx, 880, 0, 0.1, 'sine', 0.4);
-    playTone(ctx, 1100, 0.12, 0.1, 'sine', 0.4);
+    playTone(ctx, 880, 0, 0.15, 'square', 1.0);
+    playTone(ctx, 1100, 0.17, 0.15, 'square', 1.0);
   } catch (error) {
     console.error('Error en beep:', error);
   }
@@ -215,9 +215,9 @@ export const playSirenSound = () => {
   try {
     // Beeps de alerta urgentes (3 beeps rápidos)
     const ctx = getAudioContext();
-    playTone(ctx, 1000, 0, 0.15, 'sine', 0.6);
-    playTone(ctx, 1000, 0.2, 0.15, 'sine', 0.6);
-    playTone(ctx, 1000, 0.4, 0.15, 'sine', 0.6);
+    playTone(ctx, 1000, 0, 0.15, 'square', 1.0);
+    playTone(ctx, 1000, 0.2, 0.15, 'square', 1.0);
+    playTone(ctx, 1000, 0.4, 0.15, 'square', 1.0);
     
     // Mensaje de voz después de los beeps
     setTimeout(() => {
