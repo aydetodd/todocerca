@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import { useMunicipios } from "@/hooks/useMunicipios";
 import { useHispanoamerica } from "@/hooks/useHispanoamerica";
 import { FavoritoButton } from "@/components/FavoritoButton";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentCity } from "@/hooks/useCurrentCity";
 
 interface Category {
   id: string;
@@ -76,6 +77,10 @@ const ProductSearch = () => {
   const [searchPais, setSearchPais] = useState<string>("MX");
   const [searchEstado, setSearchEstado] = useState<string>("Sonora");
   const [searchCiudad, setSearchCiudad] = useState<string>("Cajeme");
+
+  // Auto-detect current city via GPS
+  const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
+  const gpsAppliedRef = useRef(false);
 
   const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
@@ -141,6 +146,45 @@ const ProductSearch = () => {
     () => getMunicipios(searchEstado),
     [searchEstado, getMunicipios]
   );
+
+  // Auto-apply GPS-detected city when available
+  useEffect(() => {
+    if (gpsAppliedRef.current || !gpsLocation || gpsLoading) return;
+    gpsAppliedRef.current = true;
+
+    const { pais, estado, ciudad } = gpsLocation;
+
+    // Match country
+    const matchedPais = allPaises.find(p => p.codigo === pais);
+    if (matchedPais) {
+      setSearchPais(matchedPais.codigo);
+    }
+
+    // Match state - try exact match first, then fuzzy
+    const availableEstados = getNivel1(pais);
+    const matchedEstado = availableEstados.find(e => e === estado)
+      || availableEstados.find(e => e.toLowerCase() === estado.toLowerCase())
+      || availableEstados.find(e => estado.toLowerCase().includes(e.toLowerCase()) || e.toLowerCase().includes(estado.toLowerCase()));
+
+    if (matchedEstado) {
+      setSearchEstado(matchedEstado);
+
+      // Match city/municipality
+      const availableCiudades = getNivel2(pais, matchedEstado);
+      const matchedCiudad = availableCiudades.find(c => c === ciudad)
+        || availableCiudades.find(c => c.toLowerCase() === ciudad.toLowerCase())
+        || availableCiudades.find(c => ciudad.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(ciudad.toLowerCase()));
+
+      if (matchedCiudad) {
+        setSearchCiudad(matchedCiudad);
+        console.log('[ProductSearch] GPS auto-detected location:', matchedPais?.codigo, matchedEstado, matchedCiudad);
+      } else {
+        console.log('[ProductSearch] GPS city not matched in dropdown:', ciudad, '→ available:', availableCiudades.slice(0, 5));
+      }
+    } else {
+      console.log('[ProductSearch] GPS state not matched:', estado);
+    }
+  }, [gpsLocation, gpsLoading, allPaises, getNivel1, getNivel2]);
 
   const categoryNameById = useMemo(() => {
     const m = new Map<string, string>();
