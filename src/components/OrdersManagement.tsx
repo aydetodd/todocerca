@@ -20,6 +20,7 @@ import {
   PackageCheck,
   Download,
   RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -301,6 +302,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
   const preparadosCount = orders.filter(o => o.preparado).length;
   const entregadosCount = orders.filter(o => o.entregado).length;
   const newOrdersCount = orders.filter(o => !o.exported_at).length;
+  const exportedCount = orders.filter(o => o.exported_at).length;
 
   const handleExportToCSV = async () => {
     // Solo exportar registros que no han sido exportados
@@ -378,6 +380,43 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
     }
   };
 
+  const handleDeleteExported = async () => {
+    try {
+      const exportedOrders = orders.filter(o => o.exported_at);
+      if (exportedOrders.length === 0) {
+        toast({
+          title: 'Sin exportados',
+          description: 'No hay apartados exportados para eliminar',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const exportedIds = exportedOrders.map(o => o.id);
+
+      const { error } = await supabase
+        .from('pedidos')
+        .delete()
+        .in('id', exportedIds);
+
+      if (error) throw error;
+
+      setOrders(prev => prev.filter(o => !o.exported_at));
+
+      toast({
+        title: 'Exportados eliminados',
+        description: `${exportedOrders.length} apartado(s) exportados eliminados de la base de datos`,
+      });
+    } catch (error: any) {
+      console.error('Error eliminando exportados:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron eliminar los apartados exportados',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleResetOrders = async () => {
     try {
       // Eliminar todos los pedidos del proveedor
@@ -427,7 +466,7 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                 {orders.length} {orders.length === 1 ? 'apartado total' : 'apartados totales'} • {newOrdersCount} nuevo{newOrdersCount !== 1 && 's'}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
@@ -490,6 +529,39 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              {exportedCount > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Eliminar Exportados ({exportedCount})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Eliminar apartados exportados?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Se eliminarán permanentemente {exportedCount} apartado(s) que ya fueron exportados a CSV.
+                        Asegúrate de tener el archivo CSV guardado en tu computadora antes de continuar.
+                        Esta acción NO se puede deshacer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteExported}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Eliminar ({exportedCount})
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
