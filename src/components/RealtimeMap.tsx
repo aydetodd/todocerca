@@ -161,12 +161,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         loc.route_producto_id === privateRouteProductoId ||
         loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)
       );
-      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
-      // Fallback: if no matches by producto_id, try single user_id
-      if (filteredLocations.length === 0 && privateRouteUserId) {
-        filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
-        console.log('🔒 [Map] Fallback to user_id filter:', filteredLocations.length);
-      }
+      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units (no fallback)');
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only private route provider:', filteredLocations.length);
