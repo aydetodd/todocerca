@@ -6,6 +6,16 @@ import {
   clearWatch 
 } from '@/utils/capacitorLocation';
 
+export interface DriverAssignment {
+  routeName: string;
+  productoId: string;
+  unitName: string | null;
+  unitPlacas: string | null;
+  unitDescripcion: string | null;
+  driverName: string | null;
+  empresaName: string | null;
+}
+
 export interface ProveedorLocation {
   id: string;
   user_id: string;
@@ -31,6 +41,7 @@ export interface ProveedorLocation {
   unit_placas?: string | null;
   unit_descripcion?: string | null;
   driver_name?: string | null;
+  all_assignments?: DriverAssignment[];
 }
 
 export const useRealtimeLocations = () => {
@@ -166,7 +177,7 @@ export const useRealtimeLocations = () => {
     const today = new Date().toISOString().split('T')[0];
     const driverIds = activeDrivers?.map(d => d.id) || [];
     
-    let driverAssignmentMap = new Map<string, { routeName: string; productoId: string; unitName: string | null; unitPlacas: string | null; unitDescripcion: string | null; driverName: string | null }>();
+    let driverAssignmentMap = new Map<string, DriverAssignment[]>();
     
     if (driverIds.length > 0) {
       const { data: assignments } = await supabase
@@ -185,6 +196,26 @@ export const useRealtimeLocations = () => {
           .in('id', unitIds);
         unitsData?.forEach(u => unitDataMap.set(u.id, { nombre: u.nombre, placas: u.placas, descripcion: u.descripcion }));
       }
+
+      // Fallback: for assignments without unit, get last known unit per chofer
+      const choferesSinUnidad = assignments?.filter(a => !a.unidad_id).map(a => a.chofer_id) || [];
+      let fallbackUnitMap = new Map<string, { nombre: string; placas: string | null; descripcion: string | null }>();
+      if (choferesSinUnidad.length > 0) {
+        for (const choferId of choferesSinUnidad) {
+          const { data: lastUnit } = await supabase
+            .from('asignaciones_chofer')
+            .select('unidades_empresa(nombre, placas, descripcion)')
+            .eq('chofer_id', choferId)
+            .not('unidad_id', 'is', null)
+            .order('fecha', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (lastUnit?.unidades_empresa) {
+            const u = lastUnit.unidades_empresa as any;
+            fallbackUnitMap.set(choferId, { nombre: u.nombre, placas: u.placas, descripcion: u.descripcion });
+          }
+        }
+      }
       
       if (assignments) {
         // Map chofer_id → user_id
@@ -199,15 +230,25 @@ export const useRealtimeLocations = () => {
         for (const a of assignments) {
           const userId = choferToUser.get(a.chofer_id);
           if (userId) {
-            const unitData = a.unidad_id ? unitDataMap.get(a.unidad_id) : null;
-            driverAssignmentMap.set(userId, {
+            const unitData = a.unidad_id 
+              ? unitDataMap.get(a.unidad_id) 
+              : fallbackUnitMap.get(a.chofer_id) || null;
+            const driverRec = activeDrivers?.find(d => d.id === a.chofer_id);
+            const empresaName = driverRec ? (driverRec as any).proveedores?.nombre : null;
+            
+            const entry: DriverAssignment = {
               routeName: (a.productos as any)?.nombre || 'Ruta',
               productoId: a.producto_id,
               unitName: unitData?.nombre || null,
               unitPlacas: unitData?.placas || null,
               unitDescripcion: unitData?.descripcion || null,
               driverName: choferNameMap.get(a.chofer_id) || null,
-            });
+              empresaName: empresaName || null,
+            };
+            
+            const existing = driverAssignmentMap.get(userId) || [];
+            existing.push(entry);
+            driverAssignmentMap.set(userId, existing);
           }
         }
       }
@@ -238,7 +279,8 @@ export const useRealtimeLocations = () => {
       // Private drivers/owners should NOT show as taxis
       const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
       
-      const assignmentData = driverAssignmentMap.get(loc.user_id);
+      const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
+      const firstAssignment = allAssignments[0] || null;
       
       const location: ProveedorLocation = {
         ...loc,
@@ -247,9 +289,9 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          // For private drivers, use TODAY's assignment; otherwise fall back to profile/product
+          // For private drivers, use TODAY's first assignment; otherwise fall back to profile/product
           route_name: isPrivateDriver 
-            ? (assignmentData?.routeName || profile.route_name || null)
+            ? (firstAssignment?.routeName || profile.route_name || null)
             : (profile.route_name || routeNameFromProduct || null),
           tarifa_km: (profile as any).tarifa_km || 15
         },
@@ -259,7 +301,7 @@ export const useRealtimeLocations = () => {
         is_private_route: isPrivateRoute,
         // Set route_producto_id for ALL bus providers
         route_producto_id: isPrivateDriver
-          ? (assignmentData?.productoId || rutaInfo?.productoId || null)
+          ? (firstAssignment?.productoId || rutaInfo?.productoId || null)
           : (isBus && rutaInfo ? rutaInfo.productoId : null),
         // For private drivers, use employer's proveedor_id for favorites/linking
         proveedor_id: isPrivateDriver
@@ -267,12 +309,13 @@ export const useRealtimeLocations = () => {
           : (proveedorId || null),
         // For private drivers, use employer company name instead of their own provider entry
         empresa_name: isPrivateDriver 
-          ? (driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
+          ? (firstAssignment?.empresaName || driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
           : (proveedorNameMap.get(loc.user_id) || null),
-        unit_name: assignmentData?.unitName || null,
-        unit_placas: assignmentData?.unitPlacas || null,
-        unit_descripcion: assignmentData?.unitDescripcion || null,
-        driver_name: assignmentData?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
+        unit_name: firstAssignment?.unitName || null,
+        unit_placas: firstAssignment?.unitPlacas || null,
+        unit_descripcion: firstAssignment?.unitDescripcion || null,
+        driver_name: firstAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
+        all_assignments: allAssignments.length > 0 ? allAssignments : undefined,
       };
       
       newLocationsMap.set(loc.user_id, location);

@@ -216,14 +216,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const existingMarker = markersRef.current[location.user_id];
       
       // Build composite state key — recreate marker when any popup-visible data changes
-      const routeLabel = location.profiles.route_name || '';
+      let routeLabel = location.profiles.route_name || '';
       const rawUnitName = location.unit_name || '';
       // Strip "No. Eco." / "No. Eco:" prefix if the DB value already contains it
-      const unitLabel = rawUnitName.replace(/^No\.\s*Eco\.?\s*/i, '');
-      const unitPlacas = location.unit_placas || '';
-      const unitDescripcion = location.unit_descripcion || '';
-      const driverLabel = location.driver_name || '';
-      const empresaLabel = location.empresa_name || '';
+      let unitLabel = rawUnitName.replace(/^No\.\s*Eco\.?\s*/i, '');
+      let unitPlacas = location.unit_placas || '';
+      let unitDescripcion = location.unit_descripcion || '';
+      let driverLabel = location.driver_name || '';
+      let empresaLabel = location.empresa_name || '';
+
+      // Resolve correct assignment when viewing a specific route (multi-company driver)
+      if (privateRouteProductoId && location.all_assignments?.length) {
+        const match = location.all_assignments.find(a => a.productoId === privateRouteProductoId);
+        if (match) {
+          routeLabel = match.routeName;
+          unitLabel = (match.unitName || '').replace(/^No\.\s*Eco\.?\s*/i, '');
+          unitPlacas = match.unitPlacas || '';
+          unitDescripcion = match.unitDescripcion || '';
+          driverLabel = match.driverName || '';
+          empresaLabel = match.empresaName || '';
+        }
+      }
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
       const previousState = markerStatesRef.current[location.user_id];
       
