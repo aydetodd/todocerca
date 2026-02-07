@@ -187,54 +187,56 @@ export function ScheduleConfiguration({ proveedorId }: ScheduleConfigurationProp
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Configurar Horario de Trabajo
+    <Card className="overflow-hidden">
+      <CardHeader className="px-3 py-4 sm:p-6">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-2xl">
+          <Clock className="h-5 w-5 shrink-0" />
+          Configurar Horario
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Label>Duración de cada cita:</Label>
+      <CardContent className="space-y-4 px-3 pb-4 sm:px-6 sm:pb-6">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Label className="text-sm shrink-0">Duración cita:</Label>
           <Input
             type="number"
             value={duracionCita}
             onChange={(e) => setDuracionCita(parseInt(e.target.value) || 60)}
-            className="w-24"
+            className="w-20"
             min={15}
             step={15}
           />
-          <span className="text-sm text-muted-foreground">minutos</span>
+          <span className="text-sm text-muted-foreground">min</span>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {schedule.map((day, dayIndex) => (
-            <div key={dayIndex} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
+            <div key={dayIndex} className="border rounded-lg p-2.5 sm:p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
                   <Switch
                     checked={day.activo}
                     onCheckedChange={() => toggleDay(dayIndex)}
                   />
-                  <span className="font-medium">{DIAS_SEMANA[dayIndex]}</span>
+                  <span className="font-medium text-sm sm:text-base">{DIAS_SEMANA[dayIndex]}</span>
                 </div>
                 {day.activo && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-7 px-2 text-xs"
                       onClick={() => addSlot(dayIndex, false)}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="h-3.5 w-3.5 mr-0.5" />
                       Horario
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-7 px-2 text-xs"
                       onClick={() => addSlot(dayIndex, true)}
                     >
-                      <Coffee className="h-4 w-4 mr-1" />
+                      <Coffee className="h-3.5 w-3.5 mr-0.5" />
                       Descanso
                     </Button>
                   </div>
@@ -242,39 +244,40 @@ export function ScheduleConfiguration({ proveedorId }: ScheduleConfigurationProp
               </div>
 
               {day.activo && day.slots.length > 0 && (
-                <div className="space-y-2 ml-10">
+                <div className="space-y-1.5 mt-2">
                   {day.slots.map((slot, slotIndex) => (
                     <div
                       key={slotIndex}
-                      className={`flex items-center gap-2 p-2 rounded ${
+                      className={`flex items-center gap-1.5 p-1.5 rounded text-sm ${
                         slot.es_descanso ? 'bg-orange-500/10' : 'bg-primary/10'
                       }`}
                     >
                       {slot.es_descanso && (
-                        <Coffee className="h-4 w-4 text-orange-500" />
+                        <Coffee className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                       )}
                       <Input
                         type="time"
                         value={slot.hora_inicio}
                         onChange={(e) => updateSlot(dayIndex, slotIndex, 'hora_inicio', e.target.value)}
-                        className="w-32"
+                        className="h-8 text-xs px-1.5 min-w-0 flex-1 max-w-[5.5rem]"
                       />
-                      <span>a</span>
+                      <span className="text-xs text-muted-foreground shrink-0">a</span>
                       <Input
                         type="time"
                         value={slot.hora_fin}
                         onChange={(e) => updateSlot(dayIndex, slotIndex, 'hora_fin', e.target.value)}
-                        className="w-32"
+                        className="h-8 text-xs px-1.5 min-w-0 flex-1 max-w-[5.5rem]"
                       />
-                      <span className="text-sm text-muted-foreground">
-                        {slot.es_descanso ? '(Descanso)' : '(Trabajo)'}
+                      <span className="text-xs text-muted-foreground shrink-0 hidden xs:inline">
+                        {slot.es_descanso ? 'Desc.' : 'Trab.'}
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-7 w-7 p-0 shrink-0"
                         onClick={() => removeSlot(dayIndex, slotIndex)}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
                   ))}
