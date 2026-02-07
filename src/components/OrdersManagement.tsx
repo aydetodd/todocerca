@@ -564,23 +564,23 @@ export const OrdersManagement = ({ proveedorId, proveedorNombre }: OrdersManagem
               )}
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Badge className="bg-orange-500 text-white hover:bg-orange-600">
+          <div className="grid grid-cols-3 gap-2">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {newOrdersCount} Nuevo{newOrdersCount !== 1 && 's'}
             </Badge>
-            <Badge className="bg-teal-500 text-white hover:bg-teal-600">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {recibidosCount} Recibido{recibidosCount !== 1 && 's'}
             </Badge>
-            <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {impresosCount} Impreso{impresosCount !== 1 && 's'}
             </Badge>
-            <Badge className="bg-emerald-500 text-white hover:bg-emerald-600">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {pagadosCount} Pagado{pagadosCount !== 1 && 's'}
             </Badge>
-            <Badge className="bg-sky-500 text-white hover:bg-sky-600">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {preparadosCount} Preparado{preparadosCount !== 1 && 's'}
             </Badge>
-            <Badge className="bg-violet-500 text-white hover:bg-violet-600">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 justify-center">
               {entregadosCount} Entregado{entregadosCount !== 1 && 's'}
             </Badge>
           </div>
