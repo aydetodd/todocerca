@@ -159,16 +159,15 @@ function SingleDriverPanel({
   const currentRouteId = data.todayAssignment?.producto_id || '';
   const unitInfo = data.todayAssignment?.unit;
 
-  // Build subtitle: Chofer · Descripción · Placas
-  const subtitleParts: string[] = [];
-  subtitleParts.push(`Chofer: ${data.driver.nombre || 'Sin nombre'}`);
-  if (unitInfo?.descripcion) subtitleParts.push(unitInfo.descripcion);
-  if (unitInfo?.placas) subtitleParts.push(`Placas: ${unitInfo.placas}`);
+  const driverName = data.driver.nombre || 'Sin nombre';
+  const vehicleParts: string[] = [];
+  if (unitInfo?.descripcion) vehicleParts.push(unitInfo.descripcion);
+  if (unitInfo?.placas) vehicleParts.push(unitInfo.placas);
 
   return (
     <Card className="border-primary/30 bg-primary/5">
       <CardContent className="p-3 space-y-2">
-        {/* Row 1: Icon + Empresa + Chofer/Unit info + Invitar */}
+        {/* Row 1: Icon + Empresa + Chofer + Unit info + Invitar */}
         <div className="flex items-center gap-2.5">
           <div
             className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0"
@@ -179,8 +178,13 @@ function SingleDriverPanel({
               {data.driver.businessName}
             </p>
             <p className="text-xs text-muted-foreground leading-tight truncate">
-              {subtitleParts.join(' · ')}
+              Chofer: {driverName}
             </p>
+            {vehicleParts.length > 0 && (
+              <p className="text-xs text-muted-foreground leading-tight truncate">
+                {vehicleParts.join('    ')}
+              </p>
+            )}
           </div>
           {data.todayAssignment && (
             <Button
