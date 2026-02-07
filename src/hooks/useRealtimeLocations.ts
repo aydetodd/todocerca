@@ -117,7 +117,7 @@ export const useRealtimeLocations = () => {
     // Buscar productos de taxi y ruta en paralelo
     let taxiQuery = supabase
       .from('productos')
-      .select('proveedor_id')
+      .select('proveedor_id, precio')
       .in('proveedor_id', proveedorIds);
     
     if (taxiCategory?.id) {
@@ -140,6 +140,14 @@ export const useRealtimeLocations = () => {
     const [taxiResult, rutaResult] = await Promise.all([taxiQuery, rutaQuery]);
     
     const taxiProviderIds = new Set(taxiResult.data?.map(p => p.proveedor_id) || []);
+    // Build map of proveedor_id → taxi product price (use the product's precio, not profiles.tarifa_km)
+    const taxiPriceMap = new Map<string, number>();
+    taxiResult.data?.forEach(p => {
+      // Keep the first (or most relevant) taxi product price per provider
+      if (!taxiPriceMap.has(p.proveedor_id)) {
+        taxiPriceMap.set(p.proveedor_id, p.precio);
+      }
+    });
     const rutaProducts = rutaResult.data;
     const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean }>(); 
     // Track providers with ANY private route
@@ -294,7 +302,8 @@ export const useRealtimeLocations = () => {
           route_name: isPrivateDriver 
             ? (firstAssignment?.routeName || profile.route_name || null)
             : (profile.route_name || routeNameFromProduct || null),
-          tarifa_km: (profile as any).tarifa_km || 15
+          // Use taxi product price first, then profile tarifa_km, then default 15
+          tarifa_km: (proveedorId && taxiPriceMap.get(proveedorId)) || (profile as any).tarifa_km || 15
         },
         is_taxi: isTaxi,
         is_bus: isBus,

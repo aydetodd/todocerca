@@ -81,7 +81,7 @@ const ProductSearch = () => {
 
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
-  const gpsAppliedRef = useRef(false);
+  const [gpsApplied, setGpsApplied] = useState(false);
 
   const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
@@ -151,7 +151,7 @@ const ProductSearch = () => {
   // Auto-apply GPS-detected city when available (wait for both GPS and geo data)
 
   useEffect(() => {
-    if (gpsAppliedRef.current || !gpsLocation || gpsLoading || geoDataLoading) return;
+    if (gpsApplied || !gpsLocation || gpsLoading || geoDataLoading) return;
 
     const { pais, estado, ciudad } = gpsLocation;
 
@@ -192,7 +192,7 @@ const ProductSearch = () => {
     }
 
     // Only mark as applied after successful matching attempt with data available
-    gpsAppliedRef.current = true;
+    setGpsApplied(true);
   }, [gpsLocation, gpsLoading, geoDataLoading, allPaises, getNivel1, getNivel2]);
 
   // Auto-trigger search when coming from taxi shortcut and GPS is ready
@@ -201,17 +201,18 @@ const ProductSearch = () => {
     if (initialCategory !== 'taxi') return;
     if (!categoryParamProcessed) return;
     if (gpsLoading || geoDataLoading) return;
-    if (!gpsAppliedRef.current && gpsLocation) return; // Wait for GPS to be applied first
+    // Wait until GPS has been applied (or GPS failed/unavailable)
+    if (!gpsApplied && gpsLocation) return;
     
-    // Wait a tick for state to settle after GPS application
+    // Wait for React state to settle after GPS application
     const timer = setTimeout(() => {
       if (!autoSearchTriggeredRef.current) {
         autoSearchTriggeredRef.current = true;
         handleSearch();
       }
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
-  }, [initialCategory, categoryParamProcessed, gpsLoading, geoDataLoading, gpsLocation]);
+  }, [initialCategory, categoryParamProcessed, gpsLoading, geoDataLoading, gpsApplied, gpsLocation]);
 
   const categoryNameById = useMemo(() => {
     const m = new Map<string, string>();
