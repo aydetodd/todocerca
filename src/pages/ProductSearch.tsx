@@ -73,6 +73,7 @@ const ProductSearch = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
+  const autoSearchTriggeredRef = useRef(false);
 
   const [searchPais, setSearchPais] = useState<string>("MX");
   const [searchEstado, setSearchEstado] = useState<string>("Sonora");
@@ -185,6 +186,23 @@ const ProductSearch = () => {
       console.log('[ProductSearch] GPS state not matched:', estado);
     }
   }, [gpsLocation, gpsLoading, allPaises, getNivel1, getNivel2]);
+
+  // Auto-trigger search when coming from taxi shortcut and GPS is ready
+  useEffect(() => {
+    if (autoSearchTriggeredRef.current) return;
+    if (initialCategory !== 'taxi') return;
+    if (!categoryParamProcessed) return;
+    if (gpsLoading) return;
+    
+    // Wait a tick for state to settle after GPS application
+    const timer = setTimeout(() => {
+      if (!autoSearchTriggeredRef.current) {
+        autoSearchTriggeredRef.current = true;
+        handleSearch();
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [initialCategory, categoryParamProcessed, gpsLoading]);
 
   const categoryNameById = useMemo(() => {
     const m = new Map<string, string>();
