@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { StatusControl } from '@/components/StatusControl';
 import { FavoritoButton } from '@/components/FavoritoButton';
+import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Users } from 'lucide-react';
+import L from 'leaflet';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -27,6 +29,8 @@ export default function MapView() {
   const [isFleetOwner, setIsFleetOwner] = useState(false);
   const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
 
   // GPS tracking ahora es global via GlobalProviderTracking
@@ -179,6 +183,51 @@ export default function MapView() {
     setIsMessagingOpen(true);
   };
 
+  const handleSearchLocation = (lat: number, lng: number, label: string) => {
+    const map = leafletMapRef.current;
+    if (!map) return;
+
+    // Remove previous search marker
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.remove();
+      searchMarkerRef.current = null;
+    }
+
+    // Fly to location
+    map.flyTo([lat, lng], 17, { duration: 1.5 });
+
+    // Add a temporary marker
+    const marker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        html: '<div style="font-size:32px;filter:drop-shadow(2px 2px 2px rgba(0,0,0,0.3));">📍</div>',
+        className: 'search-result-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      }),
+    }).addTo(map);
+
+    marker.bindPopup(
+      `<div style="background:#273547;color:#fafafa;padding:10px;border-radius:8px;min-width:180px;">
+        <p style="font-weight:600;font-size:14px;margin:0 0 4px 0;">📍 ${label}</p>
+        <button onclick="this.closest('.leaflet-popup').querySelector('.leaflet-popup-close-button').click();window.__removeSearchMarker&&window.__removeSearchMarker()" 
+          style="background:#ef4444;color:white;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;margin-top:4px;">
+          Quitar marcador
+        </button>
+      </div>`,
+      { closeButton: true, className: 'custom-popup-dark' }
+    ).openPopup();
+
+    searchMarkerRef.current = marker;
+
+    // Global function to remove marker from popup button
+    (window as any).__removeSearchMarker = () => {
+      if (searchMarkerRef.current) {
+        searchMarkerRef.current.remove();
+        searchMarkerRef.current = null;
+      }
+    };
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalHeader title={
@@ -196,26 +245,30 @@ export default function MapView() {
           privateRouteUserId={fleetMode ? null : privateRouteProviderId}
           privateRouteProductoId={fleetMode ? null : privateRouteProductoId}
           fleetUserIds={fleetMode ? fleetUserIds : undefined}
+          mapRef={leafletMapRef}
         />
         
-        {/* Fleet mode toggle for private route owners */}
-        {isFleetOwner && !privateRouteToken && (
-          <div className="absolute top-4 left-4 z-30">
-            <Button
-              variant={fleetMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFleetMode(!fleetMode)}
-              className={`shadow-lg backdrop-blur-sm ${
-                fleetMode 
-                  ? 'bg-amber-500 hover:bg-amber-600 text-black font-bold' 
-                  : 'bg-background/90 hover:bg-background text-foreground'
-              }`}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
-            </Button>
+        {/* Top-left controls: fleet toggle + search */}
+        <div className="absolute top-4 left-4 z-30">
+          <div className="flex flex-col gap-2">
+            {isFleetOwner && !privateRouteToken && (
+              <Button
+                variant={fleetMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFleetMode(!fleetMode)}
+                className={`shadow-lg backdrop-blur-sm ${
+                  fleetMode 
+                    ? 'bg-amber-500 hover:bg-amber-600 text-black font-bold' 
+                    : 'bg-background/90 hover:bg-background text-foreground'
+                }`}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
+              </Button>
+            )}
+            <MapSearchBar onSelectLocation={handleSearchLocation} />
           </div>
-        )}
+        </div>
         
         {/* Private route indicator with favorite button */}
         {privateRouteName && !fleetMode && (
