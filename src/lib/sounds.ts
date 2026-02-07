@@ -168,6 +168,31 @@ export const playTaxiAlertSound = () => {
 };
 
 /**
+ * 🖐️ Sonido para PARADA VIRTUAL de taxi
+ */
+export const playHailSound = () => {
+  try {
+    // Beeps de atención más fuertes (doble beep)
+    const ctx = getAudioContext();
+    playTone(ctx, 900, 0, 0.15, 'sine', 0.6);
+    playTone(ctx, 1200, 0.18, 0.15, 'sine', 0.6);
+    playTone(ctx, 900, 0.36, 0.15, 'sine', 0.6);
+    playTone(ctx, 1200, 0.54, 0.15, 'sine', 0.6);
+
+    setTimeout(() => {
+      speakMessage('Tienes una parada virtual. Un usuario te está haciendo la parada. Detente para atender la solicitud.');
+    }, 800);
+
+    // Vibración
+    if ('vibrate' in navigator) {
+      navigator.vibrate([300, 100, 300, 100, 300]);
+    }
+  } catch (error) {
+    console.error('Error reproduciendo sonido de parada:', error);
+  }
+};
+
+/**
  * 🆘 Sonido para emergencias SOS
  * Solo voz TTS de alerta (sin sirena de sismo)
  */
