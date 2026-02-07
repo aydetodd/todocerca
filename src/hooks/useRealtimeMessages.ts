@@ -120,6 +120,15 @@ export const useRealtimeMessages = (receiverId?: string) => {
 
           // Detect hail/parada messages - these alert the RECEIVER (driver)
           const isHailMessage = newMessage.message?.includes('¡PARADA DE TAXI!');
+          
+          console.log('🔔 [RealtimeMsg] New message:', {
+            isHailMessage,
+            isFromOther,
+            isPanic: newMessage.is_panic,
+            receiverId: newMessage.receiver_id,
+            currentUserId: user?.id,
+            messagePreview: newMessage.message?.substring(0, 50)
+          });
 
           // Handle panic alerts - SOLO para receptores, NO para quien envía
           if (newMessage.is_panic && isFromOther) {
@@ -147,11 +156,15 @@ export const useRealtimeMessages = (receiverId?: string) => {
               title: "✓ Alerta enviada",
               description: `Tu alerta SOS fue enviada a tus contactos`,
             });
-          } else if (isHailMessage && newMessage.receiver_id) {
+          } else if (isHailMessage) {
             // Parada virtual - alerta especial para el conductor receptor
             // Se reproduce siempre que el mensaje sea para este usuario (incluso en pruebas con la misma cuenta)
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            if (newMessage.receiver_id === currentUser?.id) {
+            const isForMe = newMessage.receiver_id === user?.id;
+            console.log('🖐️ [RealtimeMsg] HAIL detected!', { isForMe, receiverId: newMessage.receiver_id, userId: user?.id });
+            
+            if (isForMe) {
+              console.log('🔊 [RealtimeMsg] Playing hail sound NOW');
+              // Reproducir sonido inmediatamente con volumen máximo
               playHailSound();
 
               toast({

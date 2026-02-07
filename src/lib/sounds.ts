@@ -169,26 +169,41 @@ export const playTaxiAlertSound = () => {
 
 /**
  * 🖐️ Sonido para PARADA VIRTUAL de taxi
+ * Volumen máximo, beeps fuertes + voz TTS
  */
 export const playHailSound = () => {
   try {
-    // Beeps de atención más fuertes (doble beep)
+    console.log('🔊 [playHailSound] Iniciando sonido de parada virtual...');
+    
     const ctx = getAudioContext();
-    playTone(ctx, 900, 0, 0.15, 'sine', 0.6);
-    playTone(ctx, 1200, 0.18, 0.15, 'sine', 0.6);
-    playTone(ctx, 900, 0.36, 0.15, 'sine', 0.6);
-    playTone(ctx, 1200, 0.54, 0.15, 'sine', 0.6);
+    console.log('🔊 [playHailSound] AudioContext state:', ctx.state);
+    
+    // Beeps de atención FUERTES al volumen máximo (4 beeps alternados)
+    playTone(ctx, 900, 0, 0.2, 'square', 1.0);
+    playTone(ctx, 1200, 0.22, 0.2, 'square', 1.0);
+    playTone(ctx, 900, 0.44, 0.2, 'square', 1.0);
+    playTone(ctx, 1200, 0.66, 0.2, 'square', 1.0);
 
+    // Voz TTS después de los beeps
     setTimeout(() => {
+      console.log('🔊 [playHailSound] Reproduciendo TTS...');
       speakMessage('Tienes una parada virtual. Un usuario te está haciendo la parada. Detente para atender la solicitud.');
-    }, 800);
+    }, 1000);
 
-    // Vibración
+    // Vibración fuerte
     if ('vibrate' in navigator) {
-      navigator.vibrate([300, 100, 300, 100, 300]);
+      navigator.vibrate([500, 100, 500, 100, 500]);
     }
+    
+    console.log('🔊 [playHailSound] Sonido iniciado correctamente');
   } catch (error) {
-    console.error('Error reproduciendo sonido de parada:', error);
+    console.error('🔊 [playHailSound] Error:', error);
+    // Fallback: intentar con TTS directamente
+    try {
+      speakMessage('Tienes una parada virtual. Detente para atender la solicitud.');
+    } catch (e) {
+      console.error('🔊 [playHailSound] Fallback TTS también falló:', e);
+    }
   }
 };
 
