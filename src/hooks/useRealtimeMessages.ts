@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { playMessageSound, playTaxiAlertSound, startSOSAlertLoop, stopAlertLoop } from '@/lib/sounds';
+import { playMessageSound, playHailSound, playTaxiAlertSound, startSOSAlertLoop, stopAlertLoop } from '@/lib/sounds';
 
 // Request notification permission on load
 if ('Notification' in window && Notification.permission === 'default') {
@@ -148,21 +148,21 @@ export const useRealtimeMessages = (receiverId?: string) => {
               description: `Tu alerta SOS fue enviada a tus contactos`,
             });
           } else if (isHailMessage && newMessage.receiver_id) {
-            // Parada de taxi - alerta especial para el conductor receptor
+            // Parada virtual - alerta especial para el conductor receptor
             // Se reproduce siempre que el mensaje sea para este usuario (incluso en pruebas con la misma cuenta)
-            const { data: { user } } = await supabase.auth.getUser();
-            if (newMessage.receiver_id === user?.id) {
-              playTaxiAlertSound();
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (newMessage.receiver_id === currentUser?.id) {
+              playHailSound();
 
               toast({
-                title: "🖐️ ¡Te están haciendo la parada!",
-                description: newMessage.message,
+                title: "🖐️ ¡Parada virtual!",
+                description: "Un usuario te está haciendo la parada. Detente para atender la solicitud.",
                 variant: "destructive",
               });
 
               if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('🖐️ ¡PARADA DE TAXI!', {
-                  body: newMessage.message,
+                new Notification('🖐️ ¡PARADA VIRTUAL!', {
+                  body: 'Un usuario te está haciendo la parada. Detente para atender la solicitud.',
                   icon: '/icon-192.png',
                   tag: 'taxi-hail',
                   requireInteraction: true
