@@ -154,7 +154,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a private route, show ALL units assigned to that route product
     else if (privateRouteProductoId) {
-      filteredLocations = locations.filter(loc => loc.route_producto_id === privateRouteProductoId);
+      // Check BOTH route_producto_id AND all_assignments for multi-company drivers
+      filteredLocations = locations.filter(loc => 
+        loc.route_producto_id === privateRouteProductoId ||
+        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)
+      );
       console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
       // Fallback: if no matches by producto_id, try single user_id
       if (filteredLocations.length === 0 && privateRouteUserId) {
@@ -313,7 +317,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         // Bus icon — yellow for ALL private routes (drivers AND owners), white for public
         const busBodyColor = isPrivateRoute ? '#FDB813' : '#FFFFFF';
         const busStrokeColor = isPrivateRoute ? '#D4960A' : '#999999';
-        const busLabel = location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
+        // Use the resolved routeLabel (which accounts for multi-company assignments)
+        const busLabel = routeLabel || location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
         iconHtml = `
           <div class="bus-rotate-container" style="transform: rotate(${heading}deg); transition: transform 0.8s ease;">
@@ -393,8 +398,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const busTypeLabel = isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte';
       
       // Build favorite button HTML — use escaped double quotes for onclick
-      const favoritoTarget = location.route_producto_id 
-        ? `&quot;producto&quot;, &quot;${location.route_producto_id}&quot;`
+      // Use the resolved route producto_id (from matching assignment when viewing a specific route)
+      const resolvedProductoId = privateRouteProductoId && location.all_assignments?.find(a => a.productoId === privateRouteProductoId)
+        ? privateRouteProductoId
+        : location.route_producto_id;
+      const favoritoTarget = resolvedProductoId 
+        ? `&quot;producto&quot;, &quot;${resolvedProductoId}&quot;`
         : (location.proveedor_id ? `&quot;proveedor&quot;, &quot;${location.proveedor_id}&quot;` : null);
       const favoritoButtonHtml = favoritoTarget ? `
         <button 
