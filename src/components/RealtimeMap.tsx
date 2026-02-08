@@ -28,6 +28,7 @@ interface RealtimeMapProps {
   filterType?: 'taxi' | 'ruta' | null;
   privateRouteUserId?: string | null;
   privateRouteProductoId?: string | null;
+  privateRouteName?: string | null;
   fleetUserIds?: string[];
   mapRef?: React.MutableRefObject<L.Map | null>;
 }
@@ -43,7 +44,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -179,12 +180,13 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a private route, show ALL units assigned to that route product
     else if (privateRouteProductoId) {
-      // Check BOTH route_producto_id AND all_assignments for multi-company drivers
+      // Check BOTH route_producto_id, all_assignments, AND all_route_producto_ids (for owners with multiple routes)
       filteredLocations = locations.filter(loc => 
         loc.route_producto_id === privateRouteProductoId ||
-        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)
+        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId) ||
+        loc.all_route_producto_ids?.includes(privateRouteProductoId)
       );
-      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units (no fallback)');
+      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only private route provider:', filteredLocations.length);
@@ -259,6 +261,15 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           unitDescripcion = match.unitDescripcion || '';
           driverLabel = match.driverName || '';
           empresaLabel = match.empresaName || '';
+        }
+      }
+      // Fallback: if viewing a specific route and the current routeLabel is from a DIFFERENT product,
+      // use the route name passed from MapView (which was fetched from the product record)
+      if (privateRouteProductoId) {
+        const hasMatchingAssignment = location.all_assignments?.some(a => a.productoId === privateRouteProductoId);
+        if (!hasMatchingAssignment && location.route_producto_id !== privateRouteProductoId) {
+          // Route label is from the wrong product — use the known route name from MapView
+          routeLabel = privateRouteNameProp || '';
         }
       }
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
@@ -617,7 +628,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, fleetUserIds]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, fleetUserIds]);
 
   // Add global functions for popup buttons
   useEffect(() => {
