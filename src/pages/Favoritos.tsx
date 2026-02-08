@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+
 import { 
   Heart, 
   Package, 
@@ -36,19 +36,42 @@ export default function Favoritos() {
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
   const [routeCategoryId, setRouteCategoryId] = useState<string | null>(null);
+  const [routeActiveMap, setRouteActiveMap] = useState<Record<string, boolean>>({});
 
-  // Fetch route category ID to identify route products
+  // Fetch route category ID + batch check active assignments for all route products
   useEffect(() => {
-    const fetchRouteCategory = async () => {
-      const { data } = await supabase
+    const fetchRouteCategoryAndStatus = async () => {
+      const { data: cat } = await supabase
         .from('product_categories')
         .select('id')
         .eq('name', 'Rutas de Transporte')
         .maybeSingle();
-      if (data) setRouteCategoryId(data.id);
+      if (cat) {
+        setRouteCategoryId(cat.id);
+        
+        // Get all route product IDs from favoritos
+        const routeProductIds = favoritos
+          .filter(f => f.tipo === 'producto' && f.producto?.category_id === cat.id)
+          .map(f => f.producto!.id);
+        
+        if (routeProductIds.length > 0) {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: assignments } = await supabase
+            .from('asignaciones_chofer')
+            .select('producto_id')
+            .in('producto_id', routeProductIds)
+            .eq('fecha', today);
+          
+          const activeMap: Record<string, boolean> = {};
+          routeProductIds.forEach(id => {
+            activeMap[id] = !!assignments?.some(a => a.producto_id === id);
+          });
+          setRouteActiveMap(activeMap);
+        }
+      }
     };
-    fetchRouteCategory();
-  }, []);
+    fetchRouteCategoryAndStatus();
+  }, [favoritos]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
@@ -229,7 +252,7 @@ export default function Favoritos() {
                         onDelete={() => handleDelete(fav.id)}
                         routeCategoryId={routeCategoryId}
                         onNavigate={(path) => navigate(path)}
-                        currentUserId={userId}
+                        routeActive={routeActiveMap[fav.producto?.id || ''] ?? null}
                       />
                     ))
                   )}
@@ -271,67 +294,21 @@ export default function Favoritos() {
 }
 
 // Card components
-function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate, currentUserId }: { 
+function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate, routeActive }: { 
   favorito: Favorito; 
   onDelete: () => void;
   routeCategoryId: string | null;
   onNavigate: (path: string) => void;
-  currentUserId: string | null;
+  routeActive: boolean | null;
 }) {
   const producto = favorito.producto!;
   const precioChanged = favorito.precio_guardado !== null && producto.precio !== favorito.precio_guardado;
   const stockChanged = favorito.stock_guardado !== null && producto.stock !== favorito.stock_guardado;
   const precioBajo = precioChanged && producto.precio < (favorito.precio_guardado || 0);
   const isRoute = producto.category_id === routeCategoryId;
-  const [routeActive, setRouteActive] = useState<boolean | null>(null);
-
-  // For routes, check if there's an active assignment today
-  // For drivers: check THEIR specific assignment (not any driver's)
-  // For passengers: check if ANY driver is active on the route
-  useEffect(() => {
-    if (!isRoute) return;
-    const checkActiveAssignment = async () => {
-      const today = new Date().toISOString().split('T')[0];
-
-      // Check if current user is a driver
-      if (currentUserId) {
-        const { data: choferRecords } = await supabase
-          .from('choferes_empresa')
-          .select('id')
-          .eq('user_id', currentUserId);
-
-        if (choferRecords && choferRecords.length > 0) {
-          // User IS a driver → check their own assignment only
-          const choferIds = choferRecords.map(c => c.id);
-          const { data } = await supabase
-            .from('asignaciones_chofer')
-            .select('id')
-            .eq('producto_id', producto.id)
-            .eq('fecha', today)
-            .in('chofer_id', choferIds)
-            .limit(1)
-            .maybeSingle();
-          setRouteActive(!!data);
-          return;
-        }
-      }
-
-      // User is NOT a driver (passenger) → check any assignment
-      const { data } = await supabase
-        .from('asignaciones_chofer')
-        .select('id')
-        .eq('producto_id', producto.id)
-        .eq('fecha', today)
-        .limit(1)
-        .maybeSingle();
-      setRouteActive(!!data);
-    };
-    checkActiveAssignment();
-  }, [isRoute, producto.id, currentUserId]);
 
   const handleNavigate = () => {
     if (isRoute) {
-      if (!routeActive) return; // Don't navigate if route is inactive
       if (producto.is_private && producto.invite_token) {
         onNavigate(`/mapa?token=${producto.invite_token}`);
       } else {
@@ -344,7 +321,7 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate,
 
   return (
     <Card 
-      className={`transition-colors ${isRoute && routeActive === false ? 'opacity-50' : 'cursor-pointer hover:bg-accent/50'}`} 
+      className="cursor-pointer hover:bg-accent/50 transition-colors" 
       onClick={handleNavigate}
     >
       <CardContent className="p-4">
@@ -387,17 +364,18 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate,
               </>
             )}
             {isRoute ? (
-              routeActive === false ? (
-                <div className="flex items-center gap-1 mt-2 text-xs font-medium text-muted-foreground bg-muted rounded-md px-2 py-1 w-fit">
-                  <AlertCircle className="h-3 w-3" />
-                  Sin servicio activo
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 mt-2 text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
                   <MapPin className="h-3 w-3" />
                   Ver ubicación en mapa
                 </div>
-              )
+                {routeActive === false && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <AlertCircle className="h-3 w-3" />
+                    Sin servicio activo
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-1 mt-1 text-xs text-primary">
                 <ExternalLink className="h-3 w-3" />
