@@ -53,6 +53,29 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
   
+  // Preload user favorites for initial heart state in popups
+  const userFavoritosRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const loadFavs = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('favoritos')
+        .select('tipo, producto_id, proveedor_id, listing_id')
+        .eq('user_id', user.id);
+      if (data) {
+        const set = new Set<string>();
+        data.forEach((f: any) => {
+          if (f.producto_id) set.add(`producto:${f.producto_id}`);
+          if (f.proveedor_id) set.add(`proveedor:${f.proveedor_id}`);
+          if (f.listing_id) set.add(`listing:${f.listing_id}`);
+        });
+        userFavoritosRef.current = set;
+      }
+    };
+    loadFavs();
+  }, []);
+  
   // Taxi request modal state
   const [showTaxiModal, setShowTaxiModal] = useState(false);
   const [selectedTaxiDriver, setSelectedTaxiDriver] = useState<TaxiDriver | null>(null);
@@ -402,13 +425,18 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const favoritoTarget = resolvedProductoId 
         ? `&quot;producto&quot;, &quot;${resolvedProductoId}&quot;`
         : (location.proveedor_id ? `&quot;proveedor&quot;, &quot;${location.proveedor_id}&quot;` : null);
+      const favKey = resolvedProductoId 
+        ? `producto:${resolvedProductoId}`
+        : (location.proveedor_id ? `proveedor:${location.proveedor_id}` : null);
+      const isFav = favKey ? userFavoritosRef.current.has(favKey) : false;
+      const heartFill = isFav ? '#ef4444' : 'none';
       const favoritoButtonHtml = favoritoTarget ? `
         <button 
-          onclick="window.addToFavoritos(${favoritoTarget})"
+          onclick="window.addToFavoritos(${favoritoTarget}, this)"
           style="position:absolute;top:8px;right:36px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;"
           title="Agregar a favoritos"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${heartFill}" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
         </button>
       ` : '';
 
@@ -616,7 +644,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       setShowTaxiModal(true);
     };
 
-    (window as any).addToFavoritos = async (tipo: string, itemId: string) => {
+    (window as any).addToFavoritos = async (tipo: string, itemId: string, btn?: HTMLButtonElement) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Debes iniciar sesión para guardar favoritos');
@@ -635,10 +663,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       if (existing) {
         // Remove from favorites
         const { error } = await supabase.from('favoritos').delete().eq('id', existing.id);
-        if (error) {
-          toast.error('Error al quitar de favoritos');
-        } else {
+        if (!error) {
           toast.success('Eliminado de favoritos');
+          userFavoritosRef.current.delete(`${tipo}:${itemId}`);
+          if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', 'none'); }
+        } else {
+          toast.error('Error al quitar de favoritos');
         }
         return;
       }
@@ -650,16 +680,19 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       };
       if (tipo === 'producto') insertData.producto_id = itemId;
       if (tipo === 'proveedor') insertData.proveedor_id = itemId;
+      if (tipo === 'listing') insertData.listing_id = itemId;
 
       const { error } = await supabase
         .from('favoritos')
         .insert(insertData);
 
-      if (error) {
+      if (!error) {
+        toast.success('❤️ Guardado en favoritos');
+        userFavoritosRef.current.add(`${tipo}:${itemId}`);
+        if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', '#ef4444'); }
+      } else {
         toast.error('Error al agregar a favoritos');
-        return;
       }
-      toast.success('❤️ Guardado en favoritos — accede desde tu lista de favoritos');
     };
   }, [onOpenChat]);
 
