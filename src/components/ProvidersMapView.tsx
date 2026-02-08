@@ -596,7 +596,6 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     (window as any).addToFavoritos = async (tipo: string, itemId: string, btn?: HTMLButtonElement) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Debes iniciar sesión para guardar favoritos');
         return;
       }
       const filterCol = tipo === 'producto' ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
@@ -609,10 +608,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       if (existing) {
         const { error } = await supabase.from('favoritos').delete().eq('id', existing.id);
         if (!error) {
-          alert('Eliminado de favoritos');
           userFavoritosRef.current.delete(`${tipo}:${itemId}`);
           if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', 'none'); }
-        } else { alert('Error al quitar de favoritos'); }
+        }
         return;
       }
       const insertData: any = { user_id: user.id, tipo };
@@ -621,10 +619,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       if (tipo === 'listing') insertData.listing_id = itemId;
       const { error } = await supabase.from('favoritos').insert(insertData);
       if (!error) {
-        alert('Agregado a favoritos ❤️');
         userFavoritosRef.current.add(`${tipo}:${itemId}`);
         if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', '#ef4444'); }
-      } else { alert('Error al agregar a favoritos'); }
+      }
     };
   }, [onOpenChat, providers]);
 
