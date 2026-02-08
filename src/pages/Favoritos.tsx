@@ -37,40 +37,70 @@ export default function Favoritos() {
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
   const [routeCategoryId, setRouteCategoryId] = useState<string | null>(null);
   const [routeActiveMap, setRouteActiveMap] = useState<Record<string, boolean>>({});
+  const [providerRouteData, setProviderRouteData] = useState<Record<string, { isRoute: boolean; token: string | null; names: string[] }>>({});
 
-  // Fetch route category ID + batch check active assignments for all route products
+  // Batch fetch route category, active status, and provider route data
   useEffect(() => {
-    const fetchRouteCategoryAndStatus = async () => {
+    if (favoritos.length === 0) return;
+    
+    const fetchBatchData = async () => {
+      // 1. Fetch route category
       const { data: cat } = await supabase
         .from('product_categories')
         .select('id')
         .eq('name', 'Rutas de Transporte')
         .maybeSingle();
+      
       if (cat) {
         setRouteCategoryId(cat.id);
         
-        // Get all route product IDs from favoritos
-        const routeProductIds = favoritos
-          .filter(f => f.tipo === 'producto' && f.producto?.category_id === cat.id)
+        // 2. Batch check active assignments for private route products only
+        const privateRouteProductIds = favoritos
+          .filter(f => f.tipo === 'producto' && f.producto?.category_id === cat.id && f.producto?.is_private)
           .map(f => f.producto!.id);
         
-        if (routeProductIds.length > 0) {
+        if (privateRouteProductIds.length > 0) {
           const today = new Date().toISOString().split('T')[0];
           const { data: assignments } = await supabase
             .from('asignaciones_chofer')
             .select('producto_id')
-            .in('producto_id', routeProductIds)
+            .in('producto_id', privateRouteProductIds)
             .eq('fecha', today);
           
           const activeMap: Record<string, boolean> = {};
-          routeProductIds.forEach(id => {
+          privateRouteProductIds.forEach(id => {
             activeMap[id] = !!assignments?.some(a => a.producto_id === id);
           });
           setRouteActiveMap(activeMap);
         }
       }
+
+      // 3. Batch fetch route products for all favorited providers
+      const providerIds = favoritos
+        .filter(f => f.tipo === 'proveedor' && f.proveedor)
+        .map(f => f.proveedor!.id);
+
+      if (providerIds.length > 0) {
+        const { data: allProducts } = await supabase
+          .from('productos')
+          .select('id, nombre, invite_token, is_private, proveedor_id')
+          .in('proveedor_id', providerIds);
+        
+        const routeData: Record<string, { isRoute: boolean; token: string | null; names: string[] }> = {};
+        providerIds.forEach(pid => {
+          const products = allProducts?.filter(p => p.proveedor_id === pid) || [];
+          const privateRoutes = products.filter(p => p.is_private);
+          routeData[pid] = {
+            isRoute: privateRoutes.length > 0,
+            token: privateRoutes[0]?.invite_token || null,
+            names: privateRoutes.length > 0 ? privateRoutes.map(p => p.nombre) : products.map(p => p.nombre),
+          };
+        });
+        setProviderRouteData(routeData);
+      }
     };
-    fetchRouteCategoryAndStatus();
+    
+    fetchBatchData();
   }, [favoritos]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
@@ -270,6 +300,7 @@ export default function Favoritos() {
                         favorito={fav} 
                         onDelete={() => handleDelete(fav.id)}
                         onNavigate={(path) => navigate(path)}
+                        routeData={providerRouteData[fav.proveedor?.id || ''] || null}
                       />
                     ))
                   )}
@@ -312,7 +343,7 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate,
       if (producto.is_private && producto.invite_token) {
         onNavigate(`/mapa?token=${producto.invite_token}`);
       } else {
-        onNavigate(`/mapa?type=ruta`);
+        onNavigate(`/mapa?type=ruta&producto=${producto.id}`);
       }
     } else {
       onNavigate(`/proveedor/${producto.proveedor_id}?action=pedido`);
@@ -369,7 +400,7 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate,
                   <MapPin className="h-3 w-3" />
                   Ver ubicación en mapa
                 </div>
-                {routeActive === false && (
+                {producto.is_private && routeActive === false && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <AlertCircle className="h-3 w-3" />
                     Sin servicio activo
@@ -392,42 +423,19 @@ function FavoritoProductoCard({ favorito, onDelete, routeCategoryId, onNavigate,
   );
 }
 
-function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: { 
+function FavoritoProveedorCard({ favorito, onDelete, onNavigate, routeData }: { 
   favorito: Favorito; 
   onDelete: () => void;
   onNavigate: (path: string) => void;
+  routeData: { isRoute: boolean; token: string | null; names: string[] } | null;
 }) {
   const proveedor = favorito.proveedor!;
-  const [isRouteProvider, setIsRouteProvider] = useState(false);
-  const [routeToken, setRouteToken] = useState<string | null>(null);
-  const [routeProductNames, setRouteProductNames] = useState<string[]>([]);
-
-  // Check if this proveedor has route products (transport) and fetch names
-  useEffect(() => {
-    const checkRouteProducts = async () => {
-      const { data } = await supabase
-        .from('productos')
-        .select('id, nombre, invite_token, is_private')
-        .eq('proveedor_id', proveedor.id);
-      
-      if (data && data.length > 0) {
-        const privateRoutes = data.filter(p => p.is_private);
-        if (privateRoutes.length > 0) {
-          setIsRouteProvider(true);
-          setRouteToken(privateRoutes[0].invite_token);
-          setRouteProductNames(privateRoutes.map(p => p.nombre));
-        } else {
-          // Check if any product is a route (non-private)
-          setRouteProductNames(data.map(p => p.nombre));
-        }
-      }
-    };
-    checkRouteProducts();
-  }, [proveedor.id]);
+  const isRouteProvider = routeData?.isRoute ?? false;
+  const routeProductNames = routeData?.names ?? [];
 
   const handleNavigate = () => {
-    if (isRouteProvider && routeToken) {
-      onNavigate(`/mapa?type=ruta&token=${routeToken}`);
+    if (isRouteProvider && routeData?.token) {
+      onNavigate(`/mapa?type=ruta&token=${routeData.token}`);
     } else {
       onNavigate(`/proveedor/${proveedor.id}`);
     }
