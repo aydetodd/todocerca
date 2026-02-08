@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { PhoneInput } from "@/components/ui/phone-input";
 
 interface PasswordRecoveryProps {
@@ -14,56 +12,12 @@ interface PasswordRecoveryProps {
 }
 
 const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) => {
-  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'phone' | null>(null);
-  const [step, setStep] = useState<'method' | 'phone' | 'code' | 'email-form' | 'email-sent'>('method');
   const [phone, setPhone] = useState(initialPhone);
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
   const { toast } = useToast();
 
-  const handleSendEmailRecovery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email) {
-      toast({
-        title: "Error",
-        description: "Ingresa tu email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Email enviado",
-        description: "Revisa tu correo para restablecer tu contraseña",
-      });
-
-      setStep('email-sent');
-    } catch (error: any) {
-      console.error('Error sending email recovery:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el email de recuperación",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!phone) {
@@ -78,85 +32,36 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('send-recovery-code', {
-        body: { phone }
-      });
+      // Buscar usuario por teléfono
+      const { data: profileData, error: searchError } = await supabase
+        .rpc('find_user_by_phone', { phone_param: phone });
 
-      if (error) throw error;
+      if (searchError || !profileData || profileData.length === 0) {
+        throw new Error("No se encontró una cuenta con ese número de teléfono");
+      }
 
-      toast({
-        title: "Código enviado",
-        description: "Revisa tu SMS para obtener el código de recuperación",
-      });
+      const userId = profileData[0].user_id;
 
-      setStep('code');
-    } catch (error: any) {
-      console.error('Error sending recovery code:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el código de recuperación",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!code || !newPassword || !confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Completa todos los campos",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.functions.invoke('verify-recovery-code', {
+      // Resetear contraseña a 123456 usando edge function
+      const { error } = await supabase.functions.invoke('admin-reset-password', {
         body: {
-          phone,
-          code,
-          newPassword
+          user_id: userId,
+          newPassword: '123456'
         }
       });
 
       if (error) throw error;
 
+      setResetDone(true);
       toast({
-        title: "¡Contraseña actualizada!",
-        description: "Ahora puedes iniciar sesión con tu nueva contraseña",
+        title: "¡Contraseña restablecida!",
+        description: "Tu nueva contraseña es: 123456",
       });
-
-      // Volver al login
-      onBack();
     } catch (error: any) {
-      console.error('Error verifying code:', error);
+      console.error('Error resetting password:', error);
       toast({
         title: "Error",
-        description: error.message || "Código inválido o expirado",
+        description: error.message || "No se pudo restablecer la contraseña",
         variant: "destructive",
       });
     } finally {
@@ -180,110 +85,38 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
               <CardTitle>Recuperar Contraseña</CardTitle>
             </div>
             <CardDescription>
-              {step === 'method' && "Elige cómo deseas recuperar tu contraseña"}
-              {step === 'email-form' && "Ingresa tu correo electrónico registrado"}
-              {step === 'email-sent' && "Revisa tu email para continuar"}
-              {step === 'phone' && "Ingresa tu número de teléfono para recibir un código"}
-              {step === 'code' && "Ingresa el código que recibiste por SMS"}
+              {resetDone 
+                ? "Tu contraseña ha sido restablecida" 
+                : "Ingresa tu número de teléfono para restablecer tu contraseña"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'method' && (
-              <div className="space-y-4">
-                <Button
-                  onClick={() => {
-                    setRecoveryMethod('email');
-                    setStep('email-form');
-                  }}
-                  className="w-full"
-                  variant="outline"
-                  type="button"
-                >
-                  Recuperar por Email
-                </Button>
-                <Button
-                  onClick={() => {
-                    setRecoveryMethod('phone');
-                    setStep('phone');
-                  }}
-                  className="w-full"
-                  variant="outline"
-                  type="button"
-                >
-                  Recuperar por SMS
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  Si registraste un email, usa esa opción. Si solo usaste teléfono, usa SMS.
-                </p>
-              </div>
-            )}
-
-            {step === 'email-form' && (
-              <form onSubmit={handleSendEmailRecovery} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                >
-                  {loading ? "Enviando..." : "Enviar link de recuperación"}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setStep('method')}
-                  disabled={loading}
-                >
-                  Volver
-                </Button>
-              </form>
-            )}
-
-            {step === 'email-sent' && (
+            {resetDone ? (
               <div className="space-y-4 text-center">
+                <div className="flex justify-center">
+                  <ShieldCheck className="h-16 w-16 text-primary" />
+                </div>
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    📧 Hemos enviado un link de recuperación a <strong>{email}</strong>
+                    Tu nueva contraseña es:
                   </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Revisa tu bandeja de entrada y haz clic en el enlace para restablecer tu contraseña.
+                  <p className="text-2xl font-bold font-mono text-foreground mt-2">
+                    123456
                   </p>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Si no lo ves, revisa tu carpeta de spam.
+                    Te recomendamos cambiarla después de iniciar sesión desde tu perfil.
                   </p>
                 </div>
                 <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setStep('email-form')}
-                >
-                  Enviar nuevamente
-                </Button>
-                <Button
-                  variant="ghost"
                   className="w-full"
                   onClick={onBack}
                 >
-                  Volver al inicio
+                  Iniciar Sesión
                 </Button>
               </div>
-            )}
-
-            {step === 'phone' && (
-              <form onSubmit={handleSendCode} className="space-y-4">
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
                 <PhoneInput
                   id="phone"
                   value={phone}
@@ -298,90 +131,13 @@ const PasswordRecovery = ({ onBack, initialPhone = "" }: PasswordRecoveryProps) 
                   className="w-full" 
                   disabled={loading}
                 >
-                  {loading ? "Enviando..." : "Enviar código"}
+                  {loading ? "Restableciendo..." : "Restablecer Contraseña"}
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setStep('method')}
-                  disabled={loading}
-                >
-                  Volver
-                </Button>
-              </form>
-            )}
-
-            {step === 'code' && (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div>
-                  <Label htmlFor="code">Código de recuperación</Label>
-                  <Input
-                    id="code"
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="123456"
-                    maxLength={6}
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Código válido por 10 minutos
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="newPassword">Nueva contraseña</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={loading}
-                  >
-                    {loading ? "Verificando..." : "Cambiar contraseña"}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setStep('phone')}
-                    disabled={loading}
-                  >
-                    Reenviar código
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full"
-                    onClick={() => setStep('method')}
-                    disabled={loading}
-                  >
-                    Cambiar método
-                  </Button>
-                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Tu contraseña será restablecida a <strong>123456</strong>. 
+                  Podrás cambiarla después desde tu perfil.
+                </p>
               </form>
             )}
           </CardContent>
