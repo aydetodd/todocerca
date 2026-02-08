@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import UserRegistryReport from '@/components/UserRegistryReport';
+import ChangePassword from '@/components/ChangePassword';
 
 export default function MiPerfil() {
   const [profile, setProfile] = useState<any>(null);
@@ -335,6 +336,11 @@ export default function MiPerfil() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Cambiar contraseña */}
+        <div className="mt-6">
+          <ChangePassword />
+        </div>
       </main>
 
       {/* Reporte de usuarios registrados (easter egg) */}
