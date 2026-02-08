@@ -288,7 +288,7 @@ export default function PrivateRouteDrivers({
       const cleanPhone = newPhone.replace(/[^0-9]/g, '');
       const driverName = newName || 'Chofer';
       const inviteToken = (data as any)?.invite_token;
-      const acceptLink = `https://todocerca.lovable.app/chofer-invitacion?token=${inviteToken}`;
+      const acceptLink = `https://todocerca.mx/chofer-invitacion?token=${inviteToken}`;
       const mensaje = encodeURIComponent(
         `¡Hola ${driverName}! 👋 Has sido registrado como chofer de *"${businessName}"* en TodoCerca.\n\n` +
         `📋 Acepta tu invitación aquí:\n${acceptLink}\n\n` +
@@ -372,7 +372,7 @@ export default function PrivateRouteDrivers({
     const mensaje = encodeURIComponent(
       `¡Equipo de ${businessName}! 👋\n\n` +
       `Recuerden abrir la app TodoCerca al iniciar su ruta para compartir ubicación en tiempo real.\n\n` +
-      `📱 App: https://todocerca.lovable.app\n\n` +
+      `📱 App: https://todocerca.mx\n\n` +
       `¡Gracias por su trabajo! 🚌`
     );
     window.open(`https://wa.me/?text=${mensaje}`, '_blank');

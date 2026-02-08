@@ -382,7 +382,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
   const sendWhatsAppInviteLink = (vehicle: PrivateVehicle) => {
     const link = `${window.location.origin}/mapa?type=ruta&token=${vehicle.invite_token}`;
     const mensaje = encodeURIComponent(
-      `🚌 *${businessName}*\n\nSigue en tiempo real la ruta *"${vehicle.nombre}"*:\n\n${link}\n\n⚠️ Este enlace es personal e intransferible.\n\n📱 Descarga la app: https://todocerca.lovable.app`
+      `🚌 *${businessName}*\n\nSigue en tiempo real la ruta *"${vehicle.nombre}"*:\n\n${link}\n\n⚠️ Este enlace es personal e intransferible.\n\n📱 Descarga la app: https://todocerca.mx`
     );
     window.open(`https://wa.me/?text=${mensaje}`, '_blank');
     toast({ title: "Compartir por WhatsApp", description: "Envía el enlace personalizado al pasajero" });
