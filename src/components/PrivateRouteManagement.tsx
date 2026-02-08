@@ -28,7 +28,7 @@ import {
 import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { formatUnitLabel } from '@/lib/unitDisplay';
-import DailyAssignments from './DailyAssignments';
+
 
 interface PrivateVehicle {
   id: string;
@@ -432,10 +432,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         </Card>
       )}
 
-      {/* Daily assignments panel */}
-      {vehicles.length > 0 && (
-        <DailyAssignments proveedorId={proveedorId} />
-      )}
 
       {/* Tab switcher - Orden: Unidades → Choferes → Rutas (+ Link pasajeros) */}
       <div className="flex gap-1">
