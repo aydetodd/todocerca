@@ -471,8 +471,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const showEmpresa = empresaLabel && empresaLabel !== apodo;
 
       if (isCurrentUser) {
-        // If current user is a bus/route driver, show their full assignment data (same rich format)
-        if (isBus) {
+        // When viewing a specific route (from Favoritos/search), show simplified passenger popup
+        // even for the route owner — full details only in fleet mode or general map view
+        const isRouteViewMode = !!(privateRouteProductoId && !(fleetUserIds && fleetUserIds.length > 0));
+        
+        if (isBus && isRouteViewMode) {
+          // Simplified passenger-style popup for route viewing mode
+          const displayRouteName = routeLabel || privateRouteNameProp || apodo || 'Ruta';
+          const statusLabel = estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea';
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
+              ${favoritoButtonHtml}
+              <p style="font-size:12px;color:${primaryColor};font-weight:600;margin:0 0 4px 0;">Rutas de Transporte</p>
+              <h3 style="font-weight:bold;font-size:16px;margin:0 0 6px 0;padding-right:30px;">${displayRouteName}</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${mutedFg};">${statusLabel}</span>
+              </div>
+            </div>
+          `;
+        } else if (isBus) {
+          // Full details for fleet mode or general map view
           const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
           popupContent = `
             <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
