@@ -16,6 +16,7 @@ export default function MapView() {
   const [searchParams] = useSearchParams();
   const filterType = searchParams.get('type') as 'taxi' | 'ruta' | null;
   const privateRouteToken = searchParams.get('token');
+  const publicRouteProductoId = searchParams.get('producto');
   const fleetParam = searchParams.get('fleet') === 'true';
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
@@ -36,6 +37,24 @@ export default function MapView() {
   // GPS tracking ahora es global via GlobalProviderTracking
 
   useEffect(() => {
+    // If we have a public route product ID, fetch its provider info
+    if (publicRouteProductoId && !privateRouteToken) {
+      const fetchPublicRoute = async () => {
+        const { data: producto } = await supabase
+          .from('productos')
+          .select('id, nombre, proveedor_id, proveedores(user_id)')
+          .eq('id', publicRouteProductoId)
+          .maybeSingle();
+        
+        if (producto) {
+          setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
+          setPrivateRouteName(producto.nombre);
+          setPrivateRouteProductoId(producto.id);
+        }
+      };
+      fetchPublicRoute();
+    }
+
     // If we have a token, fetch the private route info
     if (privateRouteToken) {
       const fetchPrivateRoute = async () => {
@@ -175,7 +194,7 @@ export default function MapView() {
     };
 
     checkSubscription();
-  }, [privateRouteToken, toast]);
+  }, [privateRouteToken, publicRouteProductoId, toast]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
@@ -270,11 +289,11 @@ export default function MapView() {
           </div>
         </div>
         
-        {/* Private route indicator with favorite button */}
+        {/* Route indicator with favorite button */}
         {privateRouteName && !fleetMode && (
           <div className={`absolute z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 ${isFleetOwner ? 'top-14 left-4' : 'top-4 left-4'}`}>
             <span className="text-sm font-medium">
-              🔒 {privateRouteName}
+              {privateRouteToken ? '🔒' : '🚌'} {privateRouteName}
             </span>
             {privateRouteProductoId && (
               <FavoritoButton 
