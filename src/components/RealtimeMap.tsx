@@ -531,62 +531,77 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           `;
         }
       } else if (isBus) {
-        // Bus/route popup — themed with app colors, NO communication buttons
+        // Bus/route popup
+        // Determine if viewer is fleet owner (fleet mode active) — only then show internal details
+        const isFleetMode = !!(fleetUserIds && fleetUserIds.length > 0);
         const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
         
-        popupContent = `
-          <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
-            ${favoritoButtonHtml}
-            <div style="margin-bottom:10px;">
-              <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${busTypeLabel}</p>
-              ${showEmpresa ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : (apodo ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${apodo}</p>` : '')}
+        if (isFleetMode) {
+          // FLEET OWNER VIEW: show full details (company, unit, driver)
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
+              ${favoritoButtonHtml}
+              <div style="margin-bottom:10px;">
+                <p style="font-size:12px;color:${isPrivateRoute ? amberColor : primaryColor};font-weight:600;margin:0 0 2px 0;">${busTypeLabel}</p>
+                ${showEmpresa ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : (apodo ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${apodo}</p>` : '')}
+              </div>
+              ${routeLabel ? `
+                <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🛣️</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Ruta</span>
+                      <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${hasUnitInfo ? `
+                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🚌</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
+                      ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
+                      ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
+                      ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${driverLabel ? `
+                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:14px;">👤</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
+                      <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea'}</span>
+              </div>
             </div>
-            ${routeLabel ? `
-              <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:16px;">🛣️</span>
-                  <div>
-                    <span style="font-size:11px;color:${mutedFg};display:block;">Ruta</span>
-                    <span style="font-size:15px;font-weight:700;color:${primaryColor};">${routeLabel}</span>
-                  </div>
-                </div>
+          `;
+        } else {
+          // PASSENGER VIEW: simple popup — just route name and status, no internal details
+          const displayRouteName = routeLabel || privateRouteNameProp || apodo || 'Ruta';
+          const statusLabel = estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea';
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
+              ${favoritoButtonHtml}
+              <p style="font-size:12px;color:${primaryColor};font-weight:600;margin:0 0 4px 0;">Rutas de Transporte</p>
+              <h3 style="font-weight:bold;font-size:16px;margin:0 0 6px 0;padding-right:30px;">${displayRouteName}</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${mutedFg};">${statusLabel}</span>
               </div>
-            ` : ''}
-            ${hasUnitInfo ? `
-              <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:16px;">🚌</span>
-                  <div>
-                    <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
-                    ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
-                    ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
-                    ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
-                  </div>
-                </div>
-              </div>
-            ` : ''}
-            ${driverLabel ? `
-              <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:14px;">👤</span>
-                  <div>
-                    <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
-                    <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
-                  </div>
-                </div>
-              </div>
-            ` : ''}
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
-              <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea'}</span>
             </div>
-            ${isPrivateRoute && !isCurrentUser ? `
-              <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);text-align:center;">
-                <span style="font-size:11px;color:${mutedFg};">❤️ Guarda en favoritos para acceso rápido</span>
-              </div>
-            ` : ''}
-          </div>
-        `;
+          `;
+        }
       } else if (isTaxi) {
         // Taxi popup — keep taxi request button and communication
         popupContent = `
