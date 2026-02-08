@@ -29,6 +29,7 @@ interface Provider {
   longitude: number;
   user_id: string;
   productos: {
+    id?: string;
     nombre: string;
     precio: number;
     descripcion: string;
@@ -191,6 +192,29 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     nombre: string;
     telefono: string | null;
   } | null>(null);
+
+  // Preload user favorites for initial heart state
+  const userFavoritosRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const loadFavs = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('favoritos')
+        .select('tipo, producto_id, proveedor_id, listing_id')
+        .eq('user_id', user.id);
+      if (data) {
+        const set = new Set<string>();
+        data.forEach((f: any) => {
+          if (f.producto_id) set.add(`producto:${f.producto_id}`);
+          if (f.proveedor_id) set.add(`proveedor:${f.proveedor_id}`);
+          if (f.listing_id) set.add(`listing:${f.listing_id}`);
+        });
+        userFavoritosRef.current = set;
+      }
+    };
+    loadFavs();
+  }, []);
 
   const isRouteSearch = vehicleFilter === 'ruta';
 
@@ -419,9 +443,15 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       const tarifaKm = (provider as any)._tarifaKm || 15;
       
       // Heart/favorite button HTML for popups
-      const heartSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
       const favBtnStyle = `position:absolute;top:8px;right:28px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;z-index:10;`;
-      const providerFavBtn = `<button onclick="window.addToFavoritos(&quot;proveedor&quot;, &quot;${provider.id}&quot;)" style="${favBtnStyle}" title="Agregar a favoritos">${heartSvg}</button>`;
+      // For routes, save as producto; for others, save as proveedor
+      const firstProduct = provider.productos[0];
+      const favTipo = isRouteSearch && firstProduct?.id ? 'producto' : 'proveedor';
+      const favItemId = isRouteSearch && firstProduct?.id ? firstProduct.id : provider.id;
+      const isFav = userFavoritosRef.current.has(`${favTipo}:${favItemId}`);
+      const heartFill = isFav ? '#ef4444' : 'none';
+      const heartSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${heartFill}" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+      const providerFavBtn = `<button onclick="window.addToFavoritos(&quot;${favTipo}&quot;, &quot;${favItemId}&quot;, this)" style="${favBtnStyle}" title="Agregar a favoritos">${heartSvg}</button>`;
 
       const popupContent = isRouteSearch
         ? `
@@ -563,7 +593,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         telefono: providerPhone || null
       });
     };
-    (window as any).addToFavoritos = async (tipo: string, itemId: string) => {
+    (window as any).addToFavoritos = async (tipo: string, itemId: string, btn?: HTMLButtonElement) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert('Debes iniciar sesión para guardar favoritos');
@@ -578,7 +608,11 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         .maybeSingle();
       if (existing) {
         const { error } = await supabase.from('favoritos').delete().eq('id', existing.id);
-        if (error) { alert('Error al quitar de favoritos'); } else { alert('Eliminado de favoritos'); }
+        if (!error) {
+          alert('Eliminado de favoritos');
+          userFavoritosRef.current.delete(`${tipo}:${itemId}`);
+          if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', 'none'); }
+        } else { alert('Error al quitar de favoritos'); }
         return;
       }
       const insertData: any = { user_id: user.id, tipo };
@@ -586,7 +620,11 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       if (tipo === 'proveedor') insertData.proveedor_id = itemId;
       if (tipo === 'listing') insertData.listing_id = itemId;
       const { error } = await supabase.from('favoritos').insert(insertData);
-      if (error) { alert('Error al agregar a favoritos'); } else { alert('Agregado a favoritos ❤️'); }
+      if (!error) {
+        alert('Agregado a favoritos ❤️');
+        userFavoritosRef.current.add(`${tipo}:${itemId}`);
+        if (btn) { const p = btn.querySelector('path'); if (p) p.setAttribute('fill', '#ef4444'); }
+      } else { alert('Error al agregar a favoritos'); }
     };
   }, [onOpenChat, providers]);
 

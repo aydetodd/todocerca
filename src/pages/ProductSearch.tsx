@@ -44,6 +44,7 @@ type MapProvider = {
   longitude: number;
   user_id: string;
   productos: {
+    id?: string;
     nombre: string;
     precio: number;
     descripcion: string;
@@ -538,6 +539,7 @@ const ProductSearch = () => {
           const existing = providerMap.get(providerId);
 
           const productForMap = {
+            id: String(listing.id ?? ""),
             nombre: String(listing.title ?? ""),
             precio: Number(listing.price ?? 0),
             descripcion: String(listing.description ?? ""),
@@ -639,6 +641,7 @@ const ProductSearch = () => {
           const categoria = categoryNameById.get(String(producto.category_id)) || selectedCategoryName || "";
 
           const productForMap = {
+            id: String(producto.id),
             nombre: String(producto.nombre ?? ""),
             precio: Number(producto.precio ?? 0),
             descripcion: String(producto.descripcion ?? ""),

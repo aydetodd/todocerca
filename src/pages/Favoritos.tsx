@@ -76,6 +76,7 @@ export default function Favoritos() {
       longitude: 0,
       user_id: '',
       productos: [{
+        id: f.producto!.id,
         nombre: f.producto!.nombre,
         precio: f.producto!.precio,
         descripcion: f.producto!.descripcion || '',
@@ -421,21 +422,26 @@ function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: {
   const proveedor = favorito.proveedor!;
   const [isRouteProvider, setIsRouteProvider] = useState(false);
   const [routeToken, setRouteToken] = useState<string | null>(null);
+  const [routeProductNames, setRouteProductNames] = useState<string[]>([]);
 
-  // Check if this proveedor has route products (transport)
+  // Check if this proveedor has route products (transport) and fetch names
   useEffect(() => {
     const checkRouteProducts = async () => {
       const { data } = await supabase
         .from('productos')
-        .select('id, invite_token, is_private')
-        .eq('proveedor_id', proveedor.id)
-        .eq('route_type', 'privada')
-        .eq('is_private', true)
-        .limit(1)
-        .maybeSingle();
-      if (data) {
-        setIsRouteProvider(true);
-        setRouteToken(data.invite_token);
+        .select('id, nombre, invite_token, is_private')
+        .eq('proveedor_id', proveedor.id);
+      
+      if (data && data.length > 0) {
+        const privateRoutes = data.filter(p => p.is_private);
+        if (privateRoutes.length > 0) {
+          setIsRouteProvider(true);
+          setRouteToken(privateRoutes[0].invite_token);
+          setRouteProductNames(privateRoutes.map(p => p.nombre));
+        } else {
+          // Check if any product is a route (non-private)
+          setRouteProductNames(data.map(p => p.nombre));
+        }
       }
     };
     checkRouteProducts();
@@ -443,7 +449,6 @@ function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: {
 
   const handleNavigate = () => {
     if (isRouteProvider && routeToken) {
-      // Route provider → go to map to see bus position
       onNavigate(`/mapa?type=ruta&token=${routeToken}`);
     } else {
       onNavigate(`/proveedor/${proveedor.id}`);
@@ -454,10 +459,19 @@ function FavoritoProveedorCard({ favorito, onDelete, onNavigate }: {
     <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleNavigate}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold">{proveedor.nombre}</h3>
             {isRouteProvider && (
               <Badge variant="outline" className="text-xs mt-1">🚌 Transporte</Badge>
+            )}
+            {routeProductNames.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {routeProductNames.map((name, i) => (
+                  <p key={i} className="text-sm text-muted-foreground flex items-center gap-1">
+                    <span>🛣️</span> {name}
+                  </p>
+                ))}
+              </div>
             )}
             {!isRouteProvider && proveedor.telefono && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
