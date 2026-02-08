@@ -50,8 +50,8 @@ export default function MapView() {
       if (producto) {
           setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
           setPrivateRouteName(producto.nombre);
-          // PUBLIC routes don't use asignaciones_chofer, so do NOT set productoId
-          // Filter by provider userId instead so their units appear on the map
+          // Set productoId so the map can filter AND label the popup correctly
+          setPrivateRouteProductoId(producto.id);
         }
       };
       fetchPublicRoute();
