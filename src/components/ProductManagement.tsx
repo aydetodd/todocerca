@@ -882,7 +882,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                                 const mensaje = encodeURIComponent(
                                   `¡Hola! 👋 Te invito a ver mi ruta de transporte "${rutaNombre}" en TodoCerca. ` +
                                  `Cuando guardes la ruta, copia el enlace de invitación y compártelo aquí. ` +
-                                 `Descarga la app: https://todocerca.lovable.app`
+                                 `Descarga la app: https://todocerca.mx`
                                 );
                                 const waUrl = `https://wa.me/${cleanPhone}?text=${mensaje}`;
                                 window.open(waUrl, '_blank');
