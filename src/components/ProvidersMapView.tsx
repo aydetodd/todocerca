@@ -418,10 +418,16 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       const isTaxiView = vehicleFilter === 'taxi';
       const tarifaKm = (provider as any)._tarifaKm || 15;
       
+      // Heart/favorite button HTML for popups
+      const heartSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+      const favBtnStyle = `position:absolute;top:8px;right:28px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;z-index:10;`;
+      const providerFavBtn = `<button onclick="window.addToFavoritos(&quot;proveedor&quot;, &quot;${provider.id}&quot;)" style="${favBtnStyle}" title="Agregar a favoritos">${heartSvg}</button>`;
+
       const popupContent = isRouteSearch
         ? `
-        <div style="padding: 12px; min-width: 250px;">
-          <h3 style="font-weight: 700; font-size: 1.05rem; margin-bottom: 12px;">Rutas de Transporte</h3>
+        <div style="padding: 12px; min-width: 250px; position: relative;">
+          ${providerFavBtn}
+          <h3 style="font-weight: 700; font-size: 1.05rem; margin-bottom: 12px; padding-right: 30px;">Rutas de Transporte</h3>
           ${
             provider.productos.length > 0
               ? `<div style="max-height: 260px; overflow-y: auto;">${productsList}</div>`
@@ -431,8 +437,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
       `
         : isTaxiView
         ? `
-        <div style="padding: 12px; min-width: 250px;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">${provider.business_name}</h3>
+        <div style="padding: 12px; min-width: 250px; position: relative;">
+          ${providerFavBtn}
+          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px; padding-right: 30px;">${provider.business_name}</h3>
           <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 12px;">💰 Tarifa: $${tarifaKm.toFixed(2)} MXN/km</p>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
@@ -444,8 +451,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         </div>
       `
         : `
-        <div style="padding: 12px; min-width: 250px; background: hsl(215, 30%, 22%); border-radius: 8px;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px; color: #f8fafc;">${provider.business_name}</h3>
+        <div style="padding: 12px; min-width: 250px; background: hsl(215, 30%, 22%); border-radius: 8px; position: relative;">
+          ${providerFavBtn}
+          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px; color: #f8fafc; padding-right: 30px;">${provider.business_name}</h3>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: hsl(215, 70%, 48%); color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
             <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
@@ -554,6 +562,31 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         nombre: providerName,
         telefono: providerPhone || null
       });
+    };
+    (window as any).addToFavoritos = async (tipo: string, itemId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Debes iniciar sesión para guardar favoritos');
+        return;
+      }
+      const filterCol = tipo === 'producto' ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
+      const { data: existing } = await supabase
+        .from('favoritos')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq(filterCol, itemId)
+        .maybeSingle();
+      if (existing) {
+        const { error } = await supabase.from('favoritos').delete().eq('id', existing.id);
+        if (error) { alert('Error al quitar de favoritos'); } else { alert('Eliminado de favoritos'); }
+        return;
+      }
+      const insertData: any = { user_id: user.id, tipo };
+      if (tipo === 'producto') insertData.producto_id = itemId;
+      if (tipo === 'proveedor') insertData.proveedor_id = itemId;
+      if (tipo === 'listing') insertData.listing_id = itemId;
+      const { error } = await supabase.from('favoritos').insert(insertData);
+      if (error) { alert('Error al agregar a favoritos'); } else { alert('Agregado a favoritos ❤️'); }
     };
   }, [onOpenChat, providers]);
 
