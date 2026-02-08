@@ -42,6 +42,7 @@ export interface ProveedorLocation {
   unit_descripcion?: string | null;
   driver_name?: string | null;
   all_assignments?: DriverAssignment[];
+  all_route_producto_ids?: string[];
 }
 
 export const useRealtimeLocations = () => {
@@ -150,6 +151,8 @@ export const useRealtimeLocations = () => {
     });
     const rutaProducts = rutaResult.data;
     const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean }>(); 
+    // Track ALL route product IDs per provider (for multi-route filtering)
+    const providerAllRouteIds = new Map<string, string[]>();
     // Track providers with ANY private route
     const privateRouteOwnerIds = new Set<string>();
     
@@ -157,6 +160,11 @@ export const useRealtimeLocations = () => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
         rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id, isPrivate: p.is_private || false });
       }
+      // Store ALL route product IDs per provider
+      const existing = providerAllRouteIds.get(p.proveedor_id) || [];
+      existing.push(p.id);
+      providerAllRouteIds.set(p.proveedor_id, existing);
+      
       if (p.is_private) {
         privateRouteOwnerIds.add(p.proveedor_id);
       }
@@ -326,6 +334,7 @@ export const useRealtimeLocations = () => {
         unit_descripcion: firstAssignment?.unitDescripcion || null,
         driver_name: firstAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
         all_assignments: allAssignments.length > 0 ? allAssignments : undefined,
+        all_route_producto_ids: proveedorId ? providerAllRouteIds.get(proveedorId) || [] : [],
       };
       
       newLocationsMap.set(loc.user_id, location);

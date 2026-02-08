@@ -38,6 +38,7 @@ export default function MapView() {
 
   useEffect(() => {
     // If we have a public route product ID, fetch its provider info
+    // For PUBLIC routes: only set userId filter, NOT productoId (public routes don't use assignments)
     if (publicRouteProductoId && !privateRouteToken) {
       const fetchPublicRoute = async () => {
         const { data: producto } = await supabase
@@ -49,7 +50,7 @@ export default function MapView() {
         if (producto) {
           setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
           setPrivateRouteName(producto.nombre);
-          setPrivateRouteProductoId(producto.id);
+          // Don't set privateRouteProductoId for public routes — filter by userId instead
         }
       };
       fetchPublicRoute();
@@ -263,6 +264,7 @@ export default function MapView() {
           filterType={fleetMode ? null : filterType}
           privateRouteUserId={fleetMode ? null : privateRouteProviderId}
           privateRouteProductoId={fleetMode ? null : privateRouteProductoId}
+          privateRouteName={fleetMode ? null : privateRouteName}
           fleetUserIds={fleetMode ? fleetUserIds : undefined}
           mapRef={leafletMapRef}
         />
