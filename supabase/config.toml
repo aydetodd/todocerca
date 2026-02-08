@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.add-private-vehicle]
 verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false
