@@ -178,18 +178,25 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       filteredLocations = locations.filter(loc => fleetSet.has(loc.user_id));
       console.log('🏢 [Map] Fleet mode — user_ids:', fleetUserIds.length, '→', filteredLocations.length, 'units visible');
     }
-    // If viewing a private route, show ALL units assigned to that route product
+    // If viewing a specific route, show units matching that route product
     else if (privateRouteProductoId) {
-      // Check BOTH route_producto_id, all_assignments, AND all_route_producto_ids (for owners with multiple routes)
+      // Check route_producto_id, all_assignments, AND all_route_producto_ids
       filteredLocations = locations.filter(loc => 
         loc.route_producto_id === privateRouteProductoId ||
         loc.all_assignments?.some(a => a.productoId === privateRouteProductoId) ||
         loc.all_route_producto_ids?.includes(privateRouteProductoId)
       );
-      console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
+      // Fallback: if productoId filter yields 0 results (e.g. public route with no assignments),
+      // fall back to filtering by the provider's user_id so the unit still appears
+      if (filteredLocations.length === 0 && privateRouteUserId) {
+        filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
+        console.log('🚌 [Map] productoId filter empty, fallback to userId →', filteredLocations.length, 'units');
+      } else {
+        console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
+      }
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
-      console.log('🔒 [Map] Filtering to show only private route provider:', filteredLocations.length);
+      console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);
     } else if (filterType === 'taxi') {
       filteredLocations = locations.filter(loc => loc.is_taxi === true);
       console.log('🚕 [Map] Filtering to show only taxis:', filteredLocations.length);

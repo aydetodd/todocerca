@@ -334,7 +334,14 @@ export const useRealtimeLocations = () => {
         unit_descripcion: firstAssignment?.unitDescripcion || null,
         driver_name: firstAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
         all_assignments: allAssignments.length > 0 ? allAssignments : undefined,
-        all_route_producto_ids: proveedorId ? providerAllRouteIds.get(proveedorId) || [] : [],
+        // For private drivers, use the EMPLOYER's proveedor_id to look up all route product IDs
+        // (drivers don't have their own proveedores record, so proveedorId would be null)
+        all_route_producto_ids: (() => {
+          const effectiveProvId = isPrivateDriver
+            ? (activeDrivers?.find(d => d.user_id === loc.user_id)?.proveedor_id || proveedorId)
+            : proveedorId;
+          return effectiveProvId ? providerAllRouteIds.get(effectiveProvId) || [] : [];
+        })(),
       };
       
       newLocationsMap.set(loc.user_id, location);
