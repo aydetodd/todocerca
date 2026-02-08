@@ -47,10 +47,11 @@ export default function MapView() {
           .eq('id', publicRouteProductoId)
           .maybeSingle();
         
-        if (producto) {
+      if (producto) {
           setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
           setPrivateRouteName(producto.nombre);
-          // Don't set privateRouteProductoId for public routes — filter by userId instead
+          // Also set productoId so the map filters by this specific route
+          setPrivateRouteProductoId(producto.id);
         }
       };
       fetchPublicRoute();
