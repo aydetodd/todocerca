@@ -155,6 +155,8 @@ export const useRealtimeLocations = () => {
     const providerAllRouteIds = new Map<string, string[]>();
     // Track providers with ANY private route
     const privateRouteOwnerIds = new Set<string>();
+    // Track individual product privacy: productoId → isPrivate
+    const productoPrivacyMap = new Map<string, boolean>();
     
     rutaProducts?.forEach(p => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
@@ -164,6 +166,9 @@ export const useRealtimeLocations = () => {
       const existing = providerAllRouteIds.get(p.proveedor_id) || [];
       existing.push(p.id);
       providerAllRouteIds.set(p.proveedor_id, existing);
+      
+      // Track each product's privacy individually
+      productoPrivacyMap.set(p.id, p.is_private || false);
       
       if (p.is_private) {
         privateRouteOwnerIds.add(p.proveedor_id);
@@ -281,7 +286,6 @@ export const useRealtimeLocations = () => {
       
       const proveedorId = proveedorMap.get(loc.user_id);
       const isPrivateDriver = privateDriverUserIds.has(loc.user_id);
-      const isPrivateRouteOwner = proveedorId ? privateRouteOwnerIds.has(proveedorId) : false;
       
       // Determine vehicle type
       const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
@@ -289,15 +293,26 @@ export const useRealtimeLocations = () => {
       const routeNameFromProduct = rutaInfo?.nombre || null;
       const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
-      // Private route = chofer assigned to private route OR owner with private routes
-      const isPrivateRoute = isPrivateDriver || isPrivateRouteOwner;
+      const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
+      const firstAssignment = allAssignments[0] || null;
+      
+      // Determine the specific route_producto_id for this location
+      const specificProductoId = isPrivateDriver
+        ? (firstAssignment?.productoId || rutaInfo?.productoId || null)
+        : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
+      
+      // Private route is determined by the SPECIFIC route/product, not by whether the provider has ANY private route
+      // For private drivers: check if their assigned product is private
+      // For owners: check if their specific route product is private
+      const isPrivateRoute = isPrivateDriver 
+        ? (specificProductoId ? (productoPrivacyMap.get(specificProductoId) ?? false) : true)
+        : (specificProductoId ? (productoPrivacyMap.get(specificProductoId) ?? false) : false);
       
       const isBus = profile.provider_type === 'ruta' || hasRutaProduct || isPrivateDriver;
       // Private drivers/owners should NOT show as taxis
       const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
       
-      const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
-      const firstAssignment = allAssignments[0] || null;
+      // allAssignments and firstAssignment already declared above for isPrivateRoute determination
       
       const location: ProveedorLocation = {
         ...loc,
@@ -317,10 +332,8 @@ export const useRealtimeLocations = () => {
         is_bus: isBus,
         is_private_driver: isPrivateDriver,
         is_private_route: isPrivateRoute,
-        // Set route_producto_id for ALL bus providers
-        route_producto_id: isPrivateDriver
-          ? (firstAssignment?.productoId || rutaInfo?.productoId || null)
-          : (isBus && rutaInfo ? rutaInfo.productoId : null),
+        // Set route_producto_id for ALL bus providers (already computed above)
+        route_producto_id: specificProductoId,
         // For private drivers, use employer's proveedor_id for favorites/linking
         proveedor_id: isPrivateDriver
           ? (activeDrivers?.find(d => d.user_id === loc.user_id)?.proveedor_id || proveedorId || null)
