@@ -4,7 +4,7 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { RealtimeMap } from '@/components/RealtimeMap';
 import { MessagingPanel } from '@/components/MessagingPanel';
 import { StatusControl } from '@/components/StatusControl';
-import { FavoritoButton } from '@/components/FavoritoButton';
+
 import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -298,14 +298,6 @@ export default function MapView() {
             <span className="text-sm font-medium">
               {privateRouteToken ? '🔒' : '🚌'} {privateRouteName}
             </span>
-            {privateRouteProductoId && (
-              <FavoritoButton 
-                tipo="producto" 
-                itemId={privateRouteProductoId}
-                size="sm"
-                className="h-8 w-8"
-              />
-            )}
           </div>
         )}
         
