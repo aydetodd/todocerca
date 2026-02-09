@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Heart, Share2, LayoutGrid, MessageCircle } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -59,16 +59,6 @@ export const NavigationBar = () => {
             )}
           </div>
           <span className="text-[10px]">Mensajes</span>
-        </Button>
-        
-        <Button
-          variant={isActive('/favoritos') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => navigate('/favoritos')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-        >
-          <Heart className="h-5 w-5" />
-          <span className="text-[10px]">Favoritos</span>
         </Button>
         
         <Button

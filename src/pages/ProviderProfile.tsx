@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Package, ArrowLeft, Plus, Users, ShoppingCart, X, CalendarCheck } from 'lucide-react';
-import { FavoritoButton } from '@/components/FavoritoButton';
+
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
@@ -497,12 +497,6 @@ const ProviderProfile = () => {
           {/* Provider name + Favorite */}
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold truncate">{provider.nombre}</h1>
-            <FavoritoButton 
-              tipo="proveedor" 
-              itemId={provider.id}
-              size="icon"
-              className="h-8 w-8"
-            />
           </div>
           
           {/* Floating Cart Button for Mobile */}

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useMunicipios } from "@/hooks/useMunicipios";
 import { useHispanoamerica } from "@/hooks/useHispanoamerica";
-import { FavoritoButton } from "@/components/FavoritoButton";
+
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCity } from "@/hooks/useCurrentCity";
 
@@ -1052,14 +1052,6 @@ const ProductSearch = () => {
                                 {/* Action icons - only for products with providers */}
                                 {!isExtraviado && !item.is_listing && hasProvider && (
                                   <div className="flex items-center flex-shrink-0">
-                                    <FavoritoButton 
-                                      tipo="producto" 
-                                      itemId={item.id}
-                                      precioActual={item.precio}
-                                      stockActual={item.stock}
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    />
                                     <Button
                                       variant="ghost"
                                       size="icon"
