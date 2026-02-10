@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Printer, QrCode, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Download, Printer, QrCode, X, Share2, Copy, Check } from 'lucide-react';
 
 interface QRCodeGeneratorProps {
   proveedorId: string;
@@ -11,6 +13,8 @@ interface QRCodeGeneratorProps {
 
 const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   
   // Create a URL-friendly slug from the business name
   const createSlug = (name: string) => {
@@ -157,15 +161,46 @@ const QRCodeGenerator = ({ proveedorId, businessName }: QRCodeGeneratorProps) =>
                 />
               </CardContent>
             </Card>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Descargar
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input 
+                  value={profileUrl} 
+                  readOnly 
+                  className="text-xs"
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(profileUrl);
+                    setCopied(true);
+                    toast({ title: 'Enlace copiado' });
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  const text = encodeURIComponent(`¡Visita mi negocio "${businessName}" en TodoCerca! ${profileUrl}`);
+                  window.open(`https://wa.me/?text=${text}`, '_blank');
+                }}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartir por WhatsApp
               </Button>
-              <Button variant="default" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={handleDownload}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar
+                </Button>
+                <Button variant="default" onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
