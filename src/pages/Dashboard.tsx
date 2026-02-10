@@ -36,6 +36,7 @@ import { ScheduleConfiguration } from "@/components/ScheduleConfiguration";
 import { ProviderAppointments } from "@/components/ProviderAppointments";
 import TaxiDriverRequests from "@/components/TaxiDriverRequests";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
+import { useDashboardBadges } from "@/hooks/useDashboardBadges";
 
 type DashboardSection =
   | "perfil"
@@ -215,6 +216,18 @@ const Dashboard = () => {
   const isProvider = profile?.role === "proveedor";
   const showTaxi = isProvider && showTaxiTab;
 
+  const badges = useDashboardBadges(
+    userSpecificData?.id || null,
+    user?.id || null,
+    showTaxi
+  );
+
+  // Map section keys to badge counts
+  const badgeMap: Record<string, number> = {
+    apartados: badges.apartados,
+    citas: badges.citas,
+    taxi: badges.taxi,
+  };
   const navItems = useMemo(
     () =>
       [
@@ -335,18 +348,25 @@ const Dashboard = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeSection === item.key;
+                const badgeCount = badgeMap[item.key] || 0;
                 return (
-                  <Button
-                    key={item.key}
-                    size="icon"
-                    variant={isActive ? "default" : "ghost"}
-                    onClick={() => setActiveSection(item.key)}
-                    aria-label={item.label}
-                    title={item.label}
-                    className="h-11 w-11"
-                  >
-                    <Icon className="h-5 w-5" />
-                  </Button>
+                  <div key={item.key} className="relative">
+                    <Button
+                      size="icon"
+                      variant={isActive ? "default" : "ghost"}
+                      onClick={() => setActiveSection(item.key)}
+                      aria-label={item.label}
+                      title={item.label}
+                      className="h-11 w-11"
+                    >
+                      <Icon className="h-5 w-5" />
+                    </Button>
+                    {badgeCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                        {badgeCount > 99 ? '99+' : badgeCount}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </nav>
