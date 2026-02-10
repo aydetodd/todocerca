@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,9 +56,28 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
-  const [activeSection, setActiveSection] = useState<DashboardSection>("perfil");
+  const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get('section');
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+      return section as DashboardSection;
+    }
+    return 'perfil';
+  });
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // React to ?section= param changes from navigation bar
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const section = params.get('section');
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+      setActiveSection(section as DashboardSection);
+      // Clean URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [location.search]);
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
 
