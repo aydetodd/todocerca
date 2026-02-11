@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search as SearchIcon, MapPin, Map as MapIcon, List, X, Clock, Heart, Share2, ShoppingCart, CalendarCheck } from "lucide-react";
+import { Search as SearchIcon, MapPin, Map as MapIcon, List, X, Clock, Heart, Share2, ShoppingCart, CalendarCheck, ChevronDown, ChevronUp } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
@@ -100,6 +100,7 @@ const ProductSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
@@ -1075,11 +1076,42 @@ const ProductSearch = () => {
                               </div>
                               
                               {/* Description - more prominent for extraviados */}
-                              {item.descripcion && (
-                                <p className={`text-muted-foreground text-sm mt-1 ${isExtraviado ? 'line-clamp-4' : 'line-clamp-2'}`}>
-                                  {item.descripcion}
-                                </p>
-                              )}
+                              {item.descripcion && (() => {
+                                const MAX_LEN = 60;
+                                const isExpanded = expandedDescriptions.has(item.id);
+                                const isLong = item.descripcion.length > MAX_LEN;
+                                const displayText = isLong && !isExpanded 
+                                  ? item.descripcion.substring(0, MAX_LEN) + '...' 
+                                  : item.descripcion;
+                                return (
+                                  <div>
+                                    <p className={`text-muted-foreground text-sm mt-1`}>
+                                      {displayText}
+                                    </p>
+                                    {isLong && (
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="p-0 h-auto text-primary"
+                                        onClick={() => {
+                                          setExpandedDescriptions(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(item.id)) next.delete(item.id);
+                                            else next.add(item.id);
+                                            return next;
+                                          });
+                                        }}
+                                      >
+                                        {isExpanded ? (
+                                          <><ChevronUp className="h-3 w-3 mr-1" />Ver menos</>
+                                        ) : (
+                                          <><ChevronDown className="h-3 w-3 mr-1" />Ver más</>
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })()}
 
                               {/* Location info for extraviados */}
                               {isExtraviado && (item.estado || item.municipio) && (
