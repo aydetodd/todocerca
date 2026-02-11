@@ -36,6 +36,7 @@ interface Product {
   unit: string;
   stock: number;
   is_available: boolean;
+  is_price_from: boolean;
 }
 
 interface ProviderData {
