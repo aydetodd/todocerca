@@ -17,6 +17,7 @@ interface Product {
   unit: string;
   stock: number;
   is_available: boolean;
+  is_price_from: boolean;
 }
 
 interface ProductCardProps {
@@ -139,6 +140,9 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
               </div>
               
               <p className="text-xl font-bold text-foreground">
+                <span className="text-sm font-medium text-muted-foreground mr-1">
+                  {product.is_price_from ? 'Desde' : 'A:'}
+                </span>
                 {formatCurrency(product.precio)} / {product.unit}
               </p>
               
