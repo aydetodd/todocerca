@@ -22,7 +22,7 @@ export const useRegistrationNotifications = () => {
         },
         (payload) => {
           console.log('🆕 New registration detected:', payload);
-          const newProfile = payload.new as { role?: string; nombre?: string };
+          const newProfile = payload.new as { role?: string; nombre?: string; apodo?: string; telefono?: string };
           
           if (newProfile.role === 'proveedor') {
             console.log('🚕 New PROVEEDOR registered:', newProfile.nombre);
@@ -30,6 +30,21 @@ export const useRegistrationNotifications = () => {
           } else {
             console.log('👤 New CLIENTE registered:', newProfile.nombre);
             playClientRegistrationSound();
+          }
+
+          // Send WhatsApp welcome message to new user
+          if (newProfile.telefono) {
+            supabase.functions.invoke('send-whatsapp-welcome', {
+              body: {
+                phoneNumber: newProfile.telefono,
+                userName: newProfile.nombre || 'Usuario',
+                userType: newProfile.role || 'cliente',
+                apodo: newProfile.apodo || newProfile.nombre || 'Usuario',
+              }
+            }).then(({ error }) => {
+              if (error) console.error('❌ WhatsApp welcome error:', error);
+              else console.log('✅ WhatsApp welcome sent to', newProfile.telefono);
+            });
           }
         }
       )

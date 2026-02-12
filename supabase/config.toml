@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.admin-reset-password]
 verify_jwt = false
+
+[functions.send-whatsapp-bulk]
+verify_jwt = false

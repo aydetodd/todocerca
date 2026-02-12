@@ -9,16 +9,44 @@ interface WhatsAppRequest {
   phoneNumber: string;
   userName: string;
   userType: 'cliente' | 'proveedor';
+  apodo?: string;
 }
 
+const buildWelcomeMessage = (apodo: string): string => {
+  return `Estimado ${apodo},
+
+¡Bienvenido a Todocerca! 🙌
+
+Agradecemos profundamente que hayas confiado en nosotros para conectar con negocios y servicios cerca de ti. Cada vez que usas la app, ayudas a fortalecer el comercio local y a construir una comunidad más unida.
+
+Pero queremos invitarte a dar un paso más: *¿ya pensaste en ofrecer tus productos o servicios a través de Todocerca?*
+
+📍 *Como proveedor en Todocerca, tú:*
+✔️ Llegas a clientes en tu colonia que ya buscan lo que ofreces
+✔️ Recibes pedidos directos sin intermediarios
+✔️ *Pagas 0% de comisión en pagos en efectivo*
+✔️ *Actualizas tu catálogo al instante desde tu celular*: fotos, precios, descripción y stock se ven en tiempo real por tus clientes
+✔️ *Obtienes tu propio link y QR personalizados* para compartir por WhatsApp, redes o imprimir en tu establecimiento
+✔️ Apareces en búsquedas locales dentro de la app
+
+💡 _¿Vendes alimentos, ofreces servicios a domicilio, tienes un pequeño negocio o compartes habilidades?_ ¡Tu vecindario te está buscando!
+
+👉 *Activa tu catálogo digital en 2 minutos:*
+https://todocerca.mx/panel
+
+*No necesitas app aparte*: usa la misma cuenta de Todocerca que ya tienes. Solo completa tu perfil de negocio en el *panel* y obtén al instante tu *link + QR*. ¡Tu negocio visible, organizado y actualizable desde tu celular! 📲💚
+
+— El equipo de Todocerca
+_Digitalización Integral para tu comunidad_`;
+};
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { phoneNumber, userName, userType }: WhatsAppRequest = await req.json();
+    const { phoneNumber, userName, userType, apodo }: WhatsAppRequest = await req.json();
     
     console.log('Sending WhatsApp welcome message to:', phoneNumber);
 
@@ -30,20 +58,15 @@ serve(async (req) => {
       throw new Error('Twilio credentials not configured');
     }
 
-    // Format phone number for WhatsApp (must include country code)
-    // Phone number should already include country code from PhoneInput component
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     const whatsappTo = `whatsapp:${formattedPhone}`;
     const whatsappFrom = `whatsapp:${twilioPhoneNumber}`;
 
-    // Personalized message based on user type
-    const message = userType === 'proveedor' 
-      ? `¡Hola ${userName}! 🎉\n\n¡Bienvenido a TodoCerca!\n\nGracias por unirte como proveedor. Estamos emocionados de tenerte en nuestra comunidad.\n\nAhora podrás:\n✅ Ofrecer tus productos y servicios\n✅ Conectar con clientes cercanos\n✅ Hacer crecer tu negocio\n\n¡Éxito en tu nueva aventura con TodoCerca! 🚀`
-      : `¡Hola ${userName}! 👋\n\n¡Bienvenido a TodoCerca!\n\nGracias por registrarte. Ahora puedes:\n✅ Descubrir productos y servicios cerca de ti\n✅ Conectar con proveedores locales\n✅ Disfrutar de la mejor experiencia\n\n¡Estamos para ayudarte! 🌟`;
+    // Use apodo, fallback to userName
+    const displayName = apodo || userName || 'Usuario';
+    const message = buildWelcomeMessage(displayName);
 
-    // Send WhatsApp message via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    
     const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
     
     const body = new URLSearchParams({
