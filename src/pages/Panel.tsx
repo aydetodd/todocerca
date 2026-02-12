@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Briefcase,
   Trash2,
-  FileText
+  FileText,
+  Send
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,6 +43,7 @@ export default function Panel() {
   const [activeTab, setActiveTab] = useState<TabType>('perfil');
   const [clickSequence, setClickSequence] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
+  const [sendingBulk, setSendingBulk] = useState(false);
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
@@ -207,6 +209,30 @@ export default function Panel() {
     }
   };
 
+  const handleBulkWhatsApp = async () => {
+    if (!confirm('¿Enviar carta de agradecimiento por WhatsApp a TODOS los usuarios registrados?')) return;
+    try {
+      setSendingBulk(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No autenticado');
+
+      const { data, error } = await supabase.functions.invoke('send-whatsapp-bulk', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Envío completado",
+        description: `Enviados: ${data.sent} | Fallidos: ${data.failed} de ${data.total} usuarios`,
+      });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSendingBulk(false);
+    }
+  };
+
   // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -286,14 +312,25 @@ export default function Panel() {
               <div className="pt-4 border-t space-y-3">
                 {/* Botón admin para ver reporte de usuarios (solo ID 000001p) */}
                 {profile?.consecutive_number === 1 && (
-                  <Button
-                    onClick={() => setShowReport(true)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Reporte de Usuarios
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => setShowReport(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Ver Reporte de Usuarios
+                    </Button>
+                    <Button
+                      onClick={handleBulkWhatsApp}
+                      variant="outline"
+                      className="w-full"
+                      disabled={sendingBulk}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendingBulk ? 'Enviando...' : 'Enviar carta WhatsApp a todos'}
+                    </Button>
+                  </>
                 )}
                 
                 <Button
