@@ -94,10 +94,13 @@ serve(async (req) => {
 
       const formattedPhone = profile.telefono.startsWith('+') ? profile.telefono : `+${profile.telefono}`;
 
+      const contentSid = 'HX5ec5faa0760618741c89c57d99f84ecf';
+      
       const body = new URLSearchParams({
         From: `whatsapp:${twilioPhoneNumber}`,
         To: `whatsapp:${formattedPhone}`,
-        Body: message,
+        ContentSid: contentSid,
+        ContentVariables: JSON.stringify({ "1": displayName }),
       });
 
       try {
