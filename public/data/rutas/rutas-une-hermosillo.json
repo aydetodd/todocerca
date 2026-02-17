@@ -1,0 +1,338 @@
+{
+  "empresa": "UNE Hermosillo",
+  "ciudad": "Hermosillo",
+  "estado": "Sonora",
+  "pais": "MX",
+  "rutas": [
+    {
+      "id": "L1_MANGA",
+      "linea": 1,
+      "ramal": "Manga",
+      "nombre": "Línea 1 - Manga",
+      "unidades": 10,
+      "frecuencia_min": 15,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L1_SAHUARO",
+      "linea": 1,
+      "ramal": "Sahuaro",
+      "nombre": "Línea 1 - Sahuaro",
+      "unidades": 7,
+      "frecuencia_min": 17,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L2_CARDENAS",
+      "linea": 2,
+      "ramal": "Cárdenas",
+      "nombre": "Línea 2 - Cárdenas",
+      "unidades": 8,
+      "frecuencia_min": 22,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L2_PERIFERICO",
+      "linea": 2,
+      "ramal": "Periférico",
+      "nombre": "Línea 2 - Periférico",
+      "unidades": 10,
+      "frecuencia_min": 18,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L3_MONTEVERDE",
+      "linea": 3,
+      "ramal": "Monteverde",
+      "nombre": "Línea 3 - Monteverde",
+      "unidades": 12,
+      "frecuencia_min": 11,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L3_REYES",
+      "linea": 3,
+      "ramal": "Reyes",
+      "nombre": "Línea 3 - Reyes",
+      "unidades": 12,
+      "frecuencia_min": 13,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L4_CENTRO",
+      "linea": 4,
+      "ramal": "Centro",
+      "nombre": "Línea 4 - Centro",
+      "unidades": 22,
+      "frecuencia_min": 7,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L4_PERIFERICO",
+      "linea": 4,
+      "ramal": "Periférico",
+      "nombre": "Línea 4 - Periférico",
+      "unidades": 19,
+      "frecuencia_min": 8,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L5_12OCTUBRE",
+      "linea": 5,
+      "ramal": "12 de Octubre",
+      "nombre": "Línea 5 - 12 de Octubre",
+      "unidades": 5,
+      "frecuencia_min": 28,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L6_LOPEZ_CASTILLO",
+      "linea": 6,
+      "ramal": "López del Castillo",
+      "nombre": "Línea 6 - López del Castillo",
+      "unidades": 13,
+      "frecuencia_min": 14,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L7_DIF",
+      "linea": 7,
+      "ramal": "DIF",
+      "nombre": "Línea 7 - DIF (servicio especial)",
+      "unidades": 2,
+      "frecuencia_min": 70,
+      "horario": "07:00 - 15:00",
+      "coordenadas": []
+    },
+    {
+      "id": "L8_OLIVOS",
+      "linea": 8,
+      "ramal": "Olivos",
+      "nombre": "Línea 8 - Olivos",
+      "unidades": 7,
+      "frecuencia_min": 18,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L9_VILLAS_SUR",
+      "linea": 9,
+      "ramal": "Villas del Sur",
+      "nombre": "Línea 9 - Villas del Sur",
+      "unidades": 11,
+      "frecuencia_min": 12,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L9_HACIENDA_SUR",
+      "linea": 9,
+      "ramal": "Hacienda del Sur",
+      "nombre": "Línea 9 - Hacienda del Sur",
+      "unidades": 5,
+      "frecuencia_min": 12,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L10_VH",
+      "linea": 10,
+      "ramal": "VH",
+      "nombre": "Línea 10 - VH",
+      "unidades": 12,
+      "frecuencia_min": 11,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L10_CATUREGLI",
+      "linea": 10,
+      "ramal": "Caturegli",
+      "nombre": "Línea 10 - Caturegli",
+      "unidades": 11,
+      "frecuencia_min": 11,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L11_ALTARES",
+      "linea": 11,
+      "ramal": "Altares",
+      "nombre": "Línea 11 - Altares",
+      "unidades": 15,
+      "frecuencia_min": 16,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L12_ZAPATA",
+      "linea": 12,
+      "ramal": "Zapata",
+      "nombre": "Línea 12 - Zapata",
+      "unidades": 9,
+      "frecuencia_min": 18,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L13_SIMON_BLEY",
+      "linea": 13,
+      "ramal": "Simón Bley",
+      "nombre": "Línea 13 - Simón Bley",
+      "unidades": 6,
+      "frecuencia_min": 23,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L14_PALO_VERDE",
+      "linea": 14,
+      "ramal": "Palo Verde",
+      "nombre": "Línea 14 - Palo Verde",
+      "unidades": 12,
+      "frecuencia_min": 12,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L15_FUENTES_MODELO",
+      "linea": 15,
+      "ramal": "Fuentes Modelo",
+      "nombre": "Línea 15 - Fuentes Modelo",
+      "unidades": 12,
+      "frecuencia_min": 13,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L15_VILLA_BONITA",
+      "linea": 15,
+      "ramal": "Villa Bonita",
+      "nombre": "Línea 15 - Villa Bonita",
+      "unidades": 7,
+      "frecuencia_min": 14,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L16_MONTEVERDE",
+      "linea": 16,
+      "ramal": "Monteverde",
+      "nombre": "Línea 16 - Monteverde",
+      "unidades": 4,
+      "frecuencia_min": 21,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L16_REFORMA",
+      "linea": 16,
+      "ramal": "Reforma",
+      "nombre": "Línea 16 - Reforma",
+      "unidades": 4,
+      "frecuencia_min": 21,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L17_CHOYAL",
+      "linea": 17,
+      "ramal": "Choyal",
+      "nombre": "Línea 17 - Choyal",
+      "unidades": 15,
+      "frecuencia_min": 9,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L17_BACHOCO",
+      "linea": 17,
+      "ramal": "Bachoco",
+      "nombre": "Línea 17 - Bachoco",
+      "unidades": 13,
+      "frecuencia_min": 9,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L17_EXPRESS",
+      "linea": 17,
+      "ramal": "Express",
+      "nombre": "Línea 17 - Express",
+      "unidades": 25,
+      "frecuencia_min": 5,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L18_LADO_A",
+      "linea": 18,
+      "ramal": "Lado A (Soriana)",
+      "nombre": "Línea 18 - Lado A (Soriana)",
+      "unidades": 11,
+      "frecuencia_min": 13,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L18_LADO_B",
+      "linea": 18,
+      "ramal": "Lado B (Soriana)",
+      "nombre": "Línea 18 - Lado B (Soriana)",
+      "unidades": 10,
+      "frecuencia_min": 14,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L19_BACHOCO",
+      "linea": 19,
+      "ramal": "Bachoco",
+      "nombre": "Línea 19 - Bachoco",
+      "unidades": 13,
+      "frecuencia_min": 13,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L19_MENDOZA",
+      "linea": 19,
+      "ramal": "Mendoza",
+      "nombre": "Línea 19 - Mendoza",
+      "unidades": 9,
+      "frecuencia_min": 18,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "L20_MONTEALBAN",
+      "linea": 20,
+      "ramal": "Montealbán",
+      "nombre": "Línea 20 - Montealbán",
+      "unidades": 2,
+      "frecuencia_min": 40,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    },
+    {
+      "id": "LHG_HOSPITAL",
+      "linea": 0,
+      "ramal": "Hospital General",
+      "nombre": "Línea Hospital General",
+      "unidades": 2,
+      "frecuencia_min": 40,
+      "horario": "05:20 - 22:30",
+      "coordenadas": []
+    }
+  ]
+}
