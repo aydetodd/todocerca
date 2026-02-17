@@ -326,20 +326,20 @@ export default function MapView() {
                 {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
               </Button>
             )}
-            {/* Route overlay toggle — test with L1 Manga */}
+            {/* Route overlay toggle — always visible for testing */}
             {!privateRouteToken && !fleetMode && (
               <Button
                 variant={activeRouteOverlay ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveRouteOverlay(prev => prev ? null : 'L1_MANGA')}
-                className={`shadow-lg backdrop-blur-sm ${
+                className={`shadow-lg backdrop-blur-sm border-2 ${
                   activeRouteOverlay 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white font-bold' 
-                    : 'bg-background/90 hover:bg-background text-foreground'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white font-bold border-blue-400' 
+                    : 'bg-background/95 hover:bg-background text-foreground border-blue-300'
                 }`}
               >
                 <Route className="h-4 w-4 mr-2" />
-                {activeRouteOverlay ? '🛣️ Ocultar Ruta' : '🛣️ Ver Ruta'}
+                {activeRouteOverlay ? '🛣️ Ocultar Ruta L1' : '🛣️ Ver Ruta L1 Manga'}
               </Button>
             )}
             <MapSearchBar onSelectLocation={handleSearchLocation} />
