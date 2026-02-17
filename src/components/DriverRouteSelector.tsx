@@ -148,8 +148,6 @@ export default function DriverRouteSelector() {
           .from('productos')
           .select('id, nombre, descripcion')
           .eq('proveedor_id', driverData.proveedor_id)
-          .eq('is_private', true)
-          .eq('route_type', 'privada')
           .eq('is_available', true)
           .order('nombre'),
         supabase

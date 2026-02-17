@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Users, Route } from 'lucide-react';
 import L from 'leaflet';
-import { useRouteOverlay } from '@/hooks/useRouteOverlay';
+import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -200,7 +200,40 @@ export default function MapView() {
       }
     };
 
+    // Check if current user is a driver with today's assignment → auto-activate route overlay
+    const checkDriverRoute = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: driver } = await supabase
+        .from('choferes_empresa')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!driver) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data: assignment } = await supabase
+        .from('asignaciones_chofer')
+        .select('producto_id, productos(nombre)')
+        .eq('chofer_id', driver.id)
+        .eq('fecha', today)
+        .maybeSingle();
+
+      if (assignment) {
+        const routeName = (assignment.productos as any)?.nombre;
+        const overlayId = routeNameToId(routeName);
+        if (overlayId) {
+          console.log(`[MapView] Auto-activating route overlay: ${overlayId} (from "${routeName}")`);
+          setActiveRouteOverlay(overlayId);
+        }
+      }
+    };
+
     checkSubscription();
+    checkDriverRoute();
   }, [privateRouteToken, publicRouteProductoId, toast]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
