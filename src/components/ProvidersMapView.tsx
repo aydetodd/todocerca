@@ -300,12 +300,11 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   console.log('✅ Proveedores válidos:', validProviders.length, 'filtro:', vehicleFilter, 'realtime loaded:', !realtimeLoading);
   
-  // Initialize map once - stable effect that doesn't re-run when providers load
+  // Initialize map once - stable effect
   const hasInitialized = useRef(false);
+  const shouldInit = (validProviders.length > 0 || !!routeOverlayId);
   useEffect(() => {
-    if (!mapContainerRef.current || hasInitialized.current) return;
-    // Initialize if we have providers OR a route overlay to show
-    if (validProviders.length === 0 && !routeOverlayId) return;
+    if (!mapContainerRef.current || hasInitialized.current || !shouldInit) return;
 
     const center: [number, number] = validProviders.length > 0
       ? [validProviders[0].latitude, validProviders[0].longitude]
@@ -328,7 +327,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         setMapReady(false);
       }
     };
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldInit]);
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
