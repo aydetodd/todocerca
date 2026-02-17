@@ -71,40 +71,39 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   useEffect(() => {
     // Prevent double initialization
     if (mapRef.current) {
-      console.log('🗺️ Map already initialized, skipping');
-      return;
+      // Check if the map container is still in the DOM
+      try {
+        mapRef.current.getContainer();
+        console.log('🗺️ Map already initialized, skipping');
+        return;
+      } catch {
+        // Map container was removed, reset ref
+        mapRef.current = null;
+      }
+    }
+
+    // Also check if the DOM element already has a Leaflet instance
+    const container = document.getElementById('map');
+    if (container && (container as any)._leaflet_id) {
+      console.log('🗺️ Container already has Leaflet, clearing');
+      (container as any)._leaflet_id = undefined;
+      container.innerHTML = '';
     }
     
+    const initMap = (lat: number, lng: number) => {
+      const map = L.map('map', { attributionControl: false }).setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      mapRef.current = map;
+    };
+
     // Try to get user's current location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const map = L.map('map', { attributionControl: false }).setView(
-            [position.coords.latitude, position.coords.longitude], 
-            13
-          );
-
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-          mapRef.current = map;
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          // Fallback to Querétaro if location access denied
-          const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
-
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-          mapRef.current = map;
-        }
+        (position) => initMap(position.coords.latitude, position.coords.longitude),
+        () => initMap(20.5937, -100.3929) // Fallback
       );
     } else {
-      // Fallback if geolocation not supported
-      const map = L.map('map', { attributionControl: false }).setView([20.5937, -100.3929], 13);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-      mapRef.current = map;
+      initMap(20.5937, -100.3929);
     }
 
     return () => {
