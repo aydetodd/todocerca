@@ -300,9 +300,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   console.log('✅ Proveedores válidos:', validProviders.length, 'filtro:', vehicleFilter, 'realtime loaded:', !realtimeLoading);
   
-  // Initialize map once
+  // Initialize map once - stable effect that doesn't re-run when providers load
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current || hasInitialized.current) return;
     // Initialize if we have providers OR a route overlay to show
     if (validProviders.length === 0 && !routeOverlayId) return;
 
@@ -314,6 +315,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     mapRef.current = map;
+    hasInitialized.current = true;
     setMapReady(true);
     console.log('🗺️ Map initialized');
 
@@ -321,11 +323,12 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        hasInitialized.current = false;
         markersRef.current.clear();
         setMapReady(false);
       }
     };
-  }, [validProviders.length > 0, routeOverlayId]);
+  });
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {

@@ -54,10 +54,23 @@ export function useRouteOverlay(
 ) {
   const polylineRef = useRef<L.Polyline | null>(null);
   const stopsLayerRef = useRef<L.LayerGroup | null>(null);
+  const currentRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
+    // If same route is already drawn, don't redraw
+    if (routeId && routeId === currentRouteRef.current && polylineRef.current) {
+      // Just ensure it's still on the map
+      if (!map.hasLayer(polylineRef.current)) {
+        polylineRef.current.addTo(map);
+      }
+      if (stopsLayerRef.current && !map.hasLayer(stopsLayerRef.current)) {
+        stopsLayerRef.current.addTo(map);
+      }
+      return;
+    }
 
     // Clean previous overlay
     if (polylineRef.current) {
@@ -69,6 +82,7 @@ export function useRouteOverlay(
       stopsLayerRef.current.remove();
       stopsLayerRef.current = null;
     }
+    currentRouteRef.current = null;
 
     if (!routeId) return;
 
@@ -103,6 +117,7 @@ export function useRouteOverlay(
         }).addTo(mapRef.current!);
 
         polylineRef.current = polyline;
+        currentRouteRef.current = routeId;
 
         // Fit map to route bounds
         mapRef.current!.fitBounds(polyline.getBounds(), { padding: [40, 40] });
@@ -134,6 +149,8 @@ export function useRouteOverlay(
             { className: 'custom-popup-dark', closeButton: true }
           );
         });
+
+        console.log(`[useRouteOverlay] ✅ Route ${routeId} drawn with ${stopFeatures.length} stops`);
       })
       .catch(err => {
         console.error('[useRouteOverlay] Error loading GeoJSON:', err);
