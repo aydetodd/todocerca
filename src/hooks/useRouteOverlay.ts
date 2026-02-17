@@ -19,6 +19,27 @@ const ROUTE_FILES: Record<string, string> = {
 };
 
 /**
+ * Given a route/product name like "Línea 1 - Manga", try to match it
+ * to one of the known route IDs from the UNE catalog.
+ */
+const ROUTE_NAME_MAP: Record<string, string> = {
+  'Línea 1 - Manga': 'L1_MANGA',
+  'L1 Manga': 'L1_MANGA',
+  'Línea 1 Manga': 'L1_MANGA',
+  // Add more as GeoJSON files are created
+};
+
+export function routeNameToId(name: string | null | undefined): string | null {
+  if (!name) return null;
+  // Direct match
+  if (ROUTE_NAME_MAP[name]) return ROUTE_NAME_MAP[name];
+  // Fuzzy: check if the name contains "manga" (case insensitive)
+  const lower = name.toLowerCase();
+  if (lower.includes('manga') && (lower.includes('1') || lower.includes('l1'))) return 'L1_MANGA';
+  return null;
+}
+
+/**
  * Draws a route polyline + stop markers on a Leaflet map.
  * Pass routeId = null to clear.
  */
