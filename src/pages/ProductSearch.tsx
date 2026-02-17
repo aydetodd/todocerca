@@ -9,6 +9,7 @@ import { Search as SearchIcon, MapPin, Map as MapIcon, List, X, Clock, Heart, Sh
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { NavigationBar } from "@/components/NavigationBar";
 import ProvidersMapView from "@/components/ProvidersMapView";
+import { routeNameToId } from "@/hooks/useRouteOverlay";
 import { MessagingPanel } from "@/components/MessagingPanel";
 import { StatusControl } from "@/components/StatusControl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -1010,6 +1011,7 @@ const ProductSearch = () => {
                     providers={mapProviders as any}
                     vehicleFilter={vehicleFilter}
                     onOpenChat={handleOpenChat}
+                    routeOverlayId={isRutasCategory && selectedRoute ? routeNameToId(selectedRoute) : null}
                   />
                 </div>
               </section>

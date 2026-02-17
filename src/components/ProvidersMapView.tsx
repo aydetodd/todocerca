@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import TaxiRequestModal from '@/components/TaxiRequestModal';
 import { AppointmentBooking } from '@/components/AppointmentBooking';
+import { useRouteOverlay } from '@/hooks/useRouteOverlay';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -43,6 +44,7 @@ interface ProvidersMapProps {
   providers: Provider[];
   onOpenChat?: (providerId: string, providerName: string) => void;
   vehicleFilter?: 'all' | 'taxi' | 'ruta';
+  routeOverlayId?: string | null;
 }
 
 // Vehicle colors based on status
@@ -173,9 +175,10 @@ const createBusIcon = (routeName: string, rotation: number = 0) => {
   });
 };
 
-function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: ProvidersMapProps) {
+function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverlayId = null }: ProvidersMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [mapReady, setMapReady] = useState(false);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const prevPositionsRef = useRef<Map<string, { lat: number; lng: number; rotation: number }>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
@@ -217,6 +220,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
   }, []);
 
   const isRouteSearch = vehicleFilter === 'ruta';
+
+  // Draw route polyline overlay if routeOverlayId is provided
+  // We use mapReady state to trigger re-run after map initialization
+  useRouteOverlay(mapRef, mapReady ? (routeOverlayId ?? null) : null);
 
   // Get real-time locations - don't block on loading if we have static coordinates
   const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations();
@@ -295,14 +302,19 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
   
   // Initialize map once
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || validProviders.length === 0) return;
+    if (!mapContainerRef.current || mapRef.current) return;
+    // Initialize if we have providers OR a route overlay to show
+    if (validProviders.length === 0 && !routeOverlayId) return;
 
-    const center: [number, number] = [validProviders[0].latitude, validProviders[0].longitude];
+    const center: [number, number] = validProviders.length > 0
+      ? [validProviders[0].latitude, validProviders[0].longitude]
+      : [29.0950, -110.9850]; // Default to Hermosillo if only showing route
     
     const map = L.map(mapContainerRef.current, { attributionControl: false }).setView(center, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     mapRef.current = map;
+    setMapReady(true);
     console.log('🗺️ Map initialized');
 
     return () => {
@@ -310,9 +322,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
         mapRef.current.remove();
         mapRef.current = null;
         markersRef.current.clear();
+        setMapReady(false);
       }
     };
-  }, [validProviders.length > 0]);
+  }, [validProviders.length > 0, routeOverlayId]);
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
@@ -625,8 +638,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     };
   }, [onOpenChat, providers]);
 
-  // Show loading while realtime data loads
-  if (realtimeLoading && validProviders.length === 0) {
+  // Show loading while realtime data loads (but not if we have a route overlay to show)
+  if (realtimeLoading && validProviders.length === 0 && !routeOverlayId) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
         <p className="text-muted-foreground">Cargando ubicaciones...</p>
@@ -634,8 +647,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all' }: Provider
     );
   }
 
-  // No providers with valid coordinates
-  if (validProviders.length === 0) {
+  // No providers with valid coordinates AND no route overlay to show
+  if (validProviders.length === 0 && !routeOverlayId) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden border flex items-center justify-center bg-muted">
         <p className="text-muted-foreground">No hay proveedores con ubicación disponible</p>
