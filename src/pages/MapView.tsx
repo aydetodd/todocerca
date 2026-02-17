@@ -9,8 +9,9 @@ import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users, Route } from 'lucide-react';
 import L from 'leaflet';
+import { useRouteOverlay } from '@/hooks/useRouteOverlay';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -30,9 +31,13 @@ export default function MapView() {
   const [isFleetOwner, setIsFleetOwner] = useState(false);
   const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
+  const [activeRouteOverlay, setActiveRouteOverlay] = useState<string | null>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
+
+  // Route polyline overlay on the map
+  useRouteOverlay(leafletMapRef, activeRouteOverlay);
 
   // GPS tracking ahora es global via GlobalProviderTracking
 
@@ -286,6 +291,22 @@ export default function MapView() {
               >
                 <Users className="h-4 w-4 mr-2" />
                 {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
+              </Button>
+            )}
+            {/* Route overlay toggle — test with L1 Manga */}
+            {!privateRouteToken && !fleetMode && (
+              <Button
+                variant={activeRouteOverlay ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveRouteOverlay(prev => prev ? null : 'L1_MANGA')}
+                className={`shadow-lg backdrop-blur-sm ${
+                  activeRouteOverlay 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white font-bold' 
+                    : 'bg-background/90 hover:bg-background text-foreground'
+                }`}
+              >
+                <Route className="h-4 w-4 mr-2" />
+                {activeRouteOverlay ? '🛣️ Ocultar Ruta' : '🛣️ Ver Ruta'}
               </Button>
             )}
             <MapSearchBar onSelectLocation={handleSearchLocation} />
