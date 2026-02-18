@@ -46,7 +46,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email: user.email });
 
-    const { action, transportType } = await req.json().catch(() => ({ action: 'add', transportType: 'privada' }));
+    const { action, transportType, uiTransportType } = await req.json().catch(() => ({ action: 'add', transportType: 'privada', uiTransportType: 'privado' }));
     const routeType = transportType || 'privada';
     const priceId = ROUTE_PRICE_IDS[routeType] || ROUTE_PRICE_IDS.privada;
     logStep("Action requested", { action, routeType, priceId });
@@ -65,8 +65,8 @@ serve(async (req) => {
         customer_email: user.email,
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
-        success_url: `${req.headers.get("origin")}/dashboard?private_route=success`,
-        cancel_url: `${req.headers.get("origin")}/dashboard?private_route=cancelled`,
+        success_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=success`,
+        cancel_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=cancelled`,
         // 7 días de prueba gratis sin tarjeta
         payment_method_collection: "if_required",
         subscription_data: {
