@@ -47,15 +47,7 @@ interface ProvidersMapProps {
   routeOverlayId?: string | null;
 }
 
-// Vehicle colors based on status
-const VEHICLE_COLORS: Record<string, { body: string; roof: string }> = {
-  available: { body: '#22c55e', roof: '#16a34a' },
-  busy: { body: '#FDB813', roof: '#FFD700' },
-  offline: { body: '#ef4444', roof: '#dc2626' }
-};
-
-// Bus is always white
-const BUS_COLOR = { body: '#FFFFFF', roof: '#F0F0F0' };
+import { getTaxiSvg, getTaxiColorByStatus, TAXI_COLORS } from '@/lib/vehicleIcons';
 
 // Calculate bearing between two points
 const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -72,40 +64,14 @@ const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number
 };
 
 const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
-  const taxiColor = VEHICLE_COLORS[providerStatus] || VEHICLE_COLORS.available;
-
-  const taxiSvg = `
-    <svg width="27" height="39" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-      <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-      <ellipse cx="26" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="26" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-      <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" fill="${taxiColor.body}" stroke="#333" stroke-width="0.7"/>
-      <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="10" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-      <ellipse cx="26" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-      <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-      <rect x="12" y="23" width="12" height="12" rx="1.5" fill="${taxiColor.roof}" stroke="#333" stroke-width="0.6"/>
-      <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-      <rect x="22.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-      <path d="M 13 15 L 13 18 L 23 18 L 23 15 Q 18 13.5 13 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.5"/>
-      <path d="M 13 36 L 13 39 L 23 39 L 23 36 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.5"/>
-      <text x="18" y="30" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-      <circle cx="13" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-      <circle cx="23" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-      <circle cx="13" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-      <circle cx="23" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-      <line x1="13" y1="25" x2="13" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-      <line x1="23" y1="25" x2="23" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-    </svg>
-  `;
+  const taxiColor = getTaxiColorByStatus(providerStatus);
+  const taxiSvgHtml = getTaxiSvg(taxiColor);
 
   return L.divIcon({
-    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${taxiSvg}</div>`,
+    html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${taxiSvgHtml}</div>`,
     className: 'custom-taxi-marker',
-    iconSize: [27, 39],
-    iconAnchor: [14, 20]
+    iconSize: [18, 40],
+    iconAnchor: [9, 20]
   });
 };
 
