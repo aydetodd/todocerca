@@ -69,7 +69,7 @@ serve(async (req) => {
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
     
-    const contentSid = 'HX5ec5faa0760618741c89c57d99f84ecf';
+    const contentSid = 'HX5a99e3d4a349260abbcf0acf12dd8ef0';
     
     const body = new URLSearchParams({
       From: whatsappFrom,
