@@ -31,6 +31,7 @@ interface RealtimeMapProps {
   privateRouteName?: string | null;
   viewingRouteType?: string | null;
   fleetUserIds?: string[];
+  fleetTransportType?: string | null;
   mapRef?: React.MutableRefObject<L.Map | null>;
 }
 
@@ -45,7 +46,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType, mapRef: externalMapRef }: RealtimeMapProps) => {
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -219,9 +220,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       const { apodo, estado, telefono } = location.profiles;
       const isCurrentUser = location.user_id === currentUserId;
-      const isTaxi = location.is_taxi;
-      const isBus = location.is_bus;
-      const isPrivateDriver = location.is_private_driver;
+      const isFleetMode = !!(fleetUserIds && fleetUserIds.length > 0);
+      // In fleet mode, override icon type based on transport category
+      const isTaxi = isFleetMode && fleetTransportType ? fleetTransportType === 'taxi' : location.is_taxi;
+      const isBus = isFleetMode && fleetTransportType ? fleetTransportType !== 'taxi' : location.is_bus;
+      const isPrivateDriver = isFleetMode && fleetTransportType ? fleetTransportType === 'privado' : location.is_private_driver;
+      const isPrivateRoute = isFleetMode && fleetTransportType ? fleetTransportType === 'privado' : location.is_private_route;
       const color = statusColors[estado];
       
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
@@ -299,7 +303,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       // Track the new composite state
       markerStatesRef.current[location.user_id] = compositeState;
 
-      const isPrivateRoute = location.is_private_route;
+      // isPrivateRoute already determined above with fleet override
       
       // When viewing a specific route (privateRouteProductoId is set), force bus icon
       // regardless of the provider's own type (they might be a taxi provider too)
@@ -552,8 +556,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         : isCurrentUser ? 'Visible para otros' : '';
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
-      const effectiveRouteTypeForLabel = privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type;
-      const busTypeLabel = (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : 'Ruta de Transporte');
+      const effectiveRouteTypeForLabel = isFleetMode && fleetTransportType 
+        ? (fleetTransportType === 'publico' ? 'urbana' : fleetTransportType === 'foraneo' ? 'foranea' : fleetTransportType === 'privado' ? 'privada' : 'taxi')
+        : (privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type);
+      const busTypeLabel = isTaxi ? 'Taxi' : (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : 'Ruta de Transporte');
       
       // Build favorite button HTML — use escaped double quotes for onclick
       // Use the resolved route producto_id (from matching assignment when viewing a specific route)
@@ -616,6 +622,45 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
                 <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
                   <div style="display:flex;align-items:center;gap:6px;">
                     <span style="font-size:16px;">🚌</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
+                      ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
+                      ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
+                      ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${driverLabel ? `
+                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:14px;">👤</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
+                      <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${visibilityColor};font-weight:600;">${visibilityText}</span>
+              </div>
+            </div>
+          `;
+        } else if (isTaxi && isFleetMode) {
+          // Current user taxi fleet view
+          const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
+              <div style="margin-bottom:10px;">
+                <p style="font-size:12px;color:#eab308;font-weight:600;margin:0 0 2px 0;">Taxi</p>
+                <h3 style="font-weight:bold;font-size:16px;margin:0 0 2px 0;">${apodo || 'Tu ubicación'}</h3>
+              </div>
+              ${hasUnitInfo ? `
+                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🚕</span>
                     <div>
                       <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
                       ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
@@ -723,6 +768,46 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           `;
         }
       } else if (isTaxi) {
+        const hasUnitInfo = unitLabel || unitPlacas || unitDescripcion;
+        if (isFleetMode) {
+          // FLEET OWNER VIEW for taxi: show unit/driver details
+          popupContent = `
+            <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:260px;border-radius:10px;position:relative;">
+              <div style="margin-bottom:10px;">
+                <p style="font-size:12px;color:#eab308;font-weight:600;margin:0 0 2px 0;">Taxi</p>
+                ${showEmpresa ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${empresaLabel}</p>` : (apodo ? `<p style="font-size:14px;font-weight:700;color:${cardFg};margin:0;">${apodo}</p>` : '')}
+              </div>
+              ${hasUnitInfo ? `
+                <div style="background:rgba(253,184,19,0.15);border:1px solid rgba(253,184,19,0.3);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🚕</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Unidad</span>
+                      ${unitDescripcion ? `<span style="font-size:13px;font-weight:600;color:${amberColor};display:block;">${unitDescripcion}</span>` : ''}
+                      ${unitLabel ? `<span style="font-size:12px;color:${cardFg};display:block;margin-top:2px;">No. Eco: ${unitLabel}</span>` : ''}
+                      ${unitPlacas ? `<span style="font-size:12px;color:${mutedFg};display:block;margin-top:1px;">Placas: ${unitPlacas}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${driverLabel ? `
+                <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:8px;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:14px;">👤</span>
+                    <div>
+                      <span style="font-size:11px;color:${mutedFg};display:block;">Chofer</span>
+                      <span style="font-size:13px;font-weight:600;color:${cardFg};">${driverLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};"></span>
+                <span style="font-size:12px;color:${mutedFg};">${estado === 'available' ? 'Disponible' : estado === 'busy' ? 'Ocupado' : 'Fuera de línea'}</span>
+              </div>
+            </div>
+          `;
+        } else {
         // Taxi popup — keep taxi request button and communication
         popupContent = `
           <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
@@ -743,6 +828,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
             ` : ''}
           </div>
         `;
+        }
       } else {
         // Generic user popup
         popupContent = `
@@ -770,7 +856,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType]);
 
   // Add global functions for popup buttons
   useEffect(() => {

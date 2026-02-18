@@ -355,6 +355,7 @@ export default function MapView() {
           privateRouteName={fleetMode ? null : privateRouteName}
           viewingRouteType={fleetMode ? null : viewingRouteType}
           fleetUserIds={fleetMode ? fleetUserIds : undefined}
+          fleetTransportType={fleetMode ? fleetTypeParam : null}
           mapRef={leafletMapRef}
         />
         
