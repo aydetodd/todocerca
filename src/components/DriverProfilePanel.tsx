@@ -51,6 +51,7 @@ interface Vehicle {
   nombre: string;
   descripcion: string | null;
   invite_token: string | null;
+  is_private: boolean;
 }
 
 interface UnitInfo {
@@ -265,17 +266,20 @@ function SingleDriverPanel({
             </span>
           </div>
 
-          {isActive && data.todayAssignment && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleInviteWhatsApp}
-              className="shrink-0 h-8 px-2.5 text-xs"
-            >
-              <Share2 className="h-3 w-3 mr-1" />
-              Invitar
-            </Button>
-          )}
+          {isActive && data.todayAssignment && (() => {
+            const assignedVehicle = data.vehicles.find(v => v.id === data.todayAssignment!.producto_id);
+            return assignedVehicle?.is_private ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleInviteWhatsApp}
+                className="shrink-0 h-8 px-2.5 text-xs"
+              >
+                <Share2 className="h-3 w-3 mr-1" />
+                Invitar
+              </Button>
+            ) : null;
+          })()}
         </div>
 
         {/* Row 2: Route selector + Ubicación (solo si está activa) */}
@@ -384,10 +388,9 @@ export default function DriverProfilePanel() {
 
           const { data: vehicleList } = await supabase
             .from('productos')
-            .select('id, nombre, descripcion, invite_token')
+            .select('id, nombre, descripcion, invite_token, is_private')
             .eq('proveedor_id', driver.proveedor_id)
-            .eq('is_private', true)
-            .eq('route_type', 'privada')
+            .eq('is_mobile', true)
             .eq('is_available', true)
             .order('nombre');
 
