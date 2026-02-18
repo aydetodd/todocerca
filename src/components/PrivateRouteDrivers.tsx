@@ -55,6 +55,7 @@ interface PrivateRouteDriversProps {
   productoId: string;
   vehicleName: string;
   businessName: string;
+  transportType?: 'publico' | 'foraneo' | 'privado';
   onDriversChanged?: () => void;
 }
 
@@ -63,6 +64,7 @@ export default function PrivateRouteDrivers({
   productoId,
   vehicleName,
   businessName,
+  transportType = 'privado',
   onDriversChanged,
 }: PrivateRouteDriversProps) {
   const { user } = useAuth();
@@ -113,13 +115,26 @@ export default function PrivateRouteDrivers({
           .select('*')
           .eq('proveedor_id', proveedorId)
           .order('created_at', { ascending: true }),
-        supabase
-          .from('productos')
-          .select('id, nombre')
-          .eq('proveedor_id', proveedorId)
-          .eq('is_available', true)
-          .eq('is_mobile', true)
-          .order('nombre'),
+        (() => {
+          const routeTypeMap: Record<string, string> = {
+            publico: 'urbana',
+            foraneo: 'foranea',
+            privado: 'privada',
+          };
+          const routeType = routeTypeMap[transportType] || 'privada';
+          let q = supabase
+            .from('productos')
+            .select('id, nombre')
+            .eq('proveedor_id', proveedorId)
+            .eq('is_available', true)
+            .eq('is_mobile', true)
+            .eq('route_type', routeType)
+            .order('nombre');
+          if (transportType === 'privado') {
+            q = q.eq('is_private', true);
+          }
+          return q;
+        })(),
         supabase
           .from('unidades_empresa')
           .select('id, nombre, placas, descripcion')
