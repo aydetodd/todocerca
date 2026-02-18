@@ -476,10 +476,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     }
 
     try {
+      const categoryName = transportType === 'taxi' ? 'Taxi' : 'Rutas de Transporte';
       const { data: category } = await supabase
         .from('product_categories')
         .select('id')
-        .eq('name', 'Rutas de Transporte')
+        .eq('name', categoryName)
         .single();
 
       if (!category) throw new Error('Categoría no encontrada');
