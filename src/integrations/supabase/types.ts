@@ -1734,7 +1734,9 @@ export type Database = {
           geojson_file: string | null
           id: string
           is_active: boolean | null
+          linea_numero: number | null
           nombre: string
+          nombre_ruta: string | null
           pais: string | null
           tipo: string
           updated_at: string
@@ -1747,7 +1749,9 @@ export type Database = {
           geojson_file?: string | null
           id?: string
           is_active?: boolean | null
+          linea_numero?: number | null
           nombre: string
+          nombre_ruta?: string | null
           pais?: string | null
           tipo: string
           updated_at?: string
@@ -1760,7 +1764,9 @@ export type Database = {
           geojson_file?: string | null
           id?: string
           is_active?: boolean | null
+          linea_numero?: number | null
           nombre?: string
+          nombre_ruta?: string | null
           pais?: string | null
           tipo?: string
           updated_at?: string

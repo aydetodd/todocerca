@@ -164,6 +164,7 @@ export default function MisRutas() {
           <PrivateRouteManagement
             proveedorId={proveedorData.id}
             businessName={proveedorData.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
+            transportType={activeType}
           />
         </main>
       </div>
