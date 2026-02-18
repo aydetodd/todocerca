@@ -9,7 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation, Share2, Bus, Loader2 } from 'lucide-react';
 
-const YELLOW_BUS_SVG = `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
+  let fill = '#FFFFFF'; let stroke = '#cccccc'; // White = public
+  if (isPrivate || routeType === 'privada') { fill = '#FDB813'; stroke = '#D4960A'; } // Yellow
+  else if (routeType === 'foranea') { fill = '#3B82F6'; stroke = '#2563EB'; } // Blue
+  
+  return `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
   <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
   <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
@@ -20,7 +25,7 @@ const YELLOW_BUS_SVG = `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="h
   <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
   <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
   <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
-  <rect x="9" y="10" width="18" height="56" rx="2" fill="#FDB813" stroke="#D4960A" stroke-width="0.5"/>
+  <rect x="9" y="10" width="18" height="56" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/>
   <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
   <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
   <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
@@ -38,6 +43,13 @@ const YELLOW_BUS_SVG = `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="h
   <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
   <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
 </svg>`;
+};
+
+const getBusIconBgColor = (routeType?: string | null, isPrivate?: boolean) => {
+  if (isPrivate || routeType === 'privada') return 'bg-amber-100';
+  if (routeType === 'foranea') return 'bg-blue-100';
+  return 'bg-gray-100';
+};
 
 interface DriverRecord {
   id: string;
@@ -52,6 +64,7 @@ interface Vehicle {
   descripcion: string | null;
   invite_token: string | null;
   is_private: boolean;
+  route_type: string | null;
 }
 
 interface UnitInfo {
@@ -235,10 +248,17 @@ function SingleDriverPanel({
       <CardContent className="p-3 space-y-2">
         {/* Row 1: Icon + Empresa + Chofer + Unit info + Switch + Invitar */}
         <div className="flex items-center gap-2.5">
-          <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? 'bg-amber-100' : 'bg-muted grayscale'}`}
-            dangerouslySetInnerHTML={{ __html: YELLOW_BUS_SVG }}
-          />
+          {(() => {
+            const assignedVehicle = data.todayAssignment ? data.vehicles.find(v => v.id === data.todayAssignment!.producto_id) : null;
+            const rt = assignedVehicle?.route_type || null;
+            const ip = assignedVehicle?.is_private || false;
+            return (
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? getBusIconBgColor(rt, ip) : 'bg-muted grayscale'}`}
+                dangerouslySetInnerHTML={{ __html: getBusSvg(rt, ip) }}
+              />
+            );
+          })()}
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-foreground leading-tight">
               {data.driver.businessName}
@@ -388,7 +408,7 @@ export default function DriverProfilePanel() {
 
           const { data: vehicleList } = await supabase
             .from('productos')
-            .select('id, nombre, descripcion, invite_token, is_private')
+            .select('id, nombre, descripcion, invite_token, is_private, route_type')
             .eq('proveedor_id', driver.proveedor_id)
             .eq('is_mobile', true)
             .eq('is_available', true)

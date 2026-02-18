@@ -34,6 +34,7 @@ export interface ProveedorLocation {
   is_bus?: boolean;
   is_private_driver?: boolean;
   is_private_route?: boolean;
+  route_type?: string | null;
   route_producto_id?: string | null;
   proveedor_id?: string | null;
   empresa_name?: string | null;
@@ -129,7 +130,7 @@ export const useRealtimeLocations = () => {
 
     let rutaQuery = supabase
       .from('productos')
-      .select('id, proveedor_id, nombre, is_private')
+      .select('id, proveedor_id, nombre, is_private, route_type')
       .in('proveedor_id', proveedorIds);
     
     if (rutaCategory?.id) {
@@ -150,17 +151,18 @@ export const useRealtimeLocations = () => {
       }
     });
     const rutaProducts = rutaResult.data;
-    const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean }>(); 
+    const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean; routeType: string | null }>(); 
     // Track ALL route product IDs per provider (for multi-route filtering)
     const providerAllRouteIds = new Map<string, string[]>();
     // Track providers with ANY private route
     const privateRouteOwnerIds = new Set<string>();
     // Track individual product privacy: productoId → isPrivate
     const productoPrivacyMap = new Map<string, boolean>();
+    const productoRouteTypeMap = new Map<string, string | null>();
     
     rutaProducts?.forEach(p => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
-        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id, isPrivate: p.is_private || false });
+        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id, isPrivate: p.is_private || false, routeType: (p as any).route_type || null });
       }
       // Store ALL route product IDs per provider
       const existing = providerAllRouteIds.get(p.proveedor_id) || [];
@@ -169,6 +171,7 @@ export const useRealtimeLocations = () => {
       
       // Track each product's privacy individually
       productoPrivacyMap.set(p.id, p.is_private || false);
+      productoRouteTypeMap.set(p.id, (p as any).route_type || null);
       
       if (p.is_private) {
         privateRouteOwnerIds.add(p.proveedor_id);
@@ -332,6 +335,7 @@ export const useRealtimeLocations = () => {
         is_bus: isBus,
         is_private_driver: isPrivateDriver,
         is_private_route: isPrivateRoute,
+        route_type: specificProductoId ? productoRouteTypeMap.get(specificProductoId) || null : (rutaInfo?.routeType || null),
         // Set route_producto_id for ALL bus providers (already computed above)
         route_producto_id: specificProductoId,
         // For private drivers, use employer's proveedor_id for favorites/linking
