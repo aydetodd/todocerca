@@ -28,6 +28,7 @@ export default function MapView() {
   const [privateRouteName, setPrivateRouteName] = useState<string | null>(null);
   const [privateRouteProductoId, setPrivateRouteProductoId] = useState<string | null>(null);
   const [routeTypeLabel, setRouteTypeLabel] = useState<string>('privada');
+  const [viewingRouteType, setViewingRouteType] = useState<string | null>(null);
   const [fleetUserIds, setFleetUserIds] = useState<string[]>([]);
   const [isFleetOwner, setIsFleetOwner] = useState(false);
   const [fleetMode, setFleetMode] = useState(fleetParam);
@@ -58,6 +59,7 @@ export default function MapView() {
           setPrivateRouteName(producto.nombre);
           setPrivateRouteProductoId(producto.id);
           const rt = (producto as any).route_type;
+          setViewingRouteType(rt || 'urbana');
           setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
         }
       };
@@ -104,6 +106,7 @@ export default function MapView() {
         setPrivateRouteProductoId(producto.id);
         
         const rt = (producto as any).route_type;
+        setViewingRouteType(rt || 'privada');
         const label = rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública';
         setRouteTypeLabel(label);
         
@@ -310,6 +313,7 @@ export default function MapView() {
           privateRouteUserId={fleetMode ? null : privateRouteProviderId}
           privateRouteProductoId={fleetMode ? null : privateRouteProductoId}
           privateRouteName={fleetMode ? null : privateRouteName}
+          viewingRouteType={fleetMode ? null : viewingRouteType}
           fleetUserIds={fleetMode ? fleetUserIds : undefined}
           mapRef={leafletMapRef}
         />
