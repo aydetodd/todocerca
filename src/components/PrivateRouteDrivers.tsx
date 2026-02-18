@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Send, Loader2, User, Pencil, Bus, MapPin, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Send, Loader2, User, Pencil, Bus, MapPin, ArrowRight, MessageSquare } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface Driver {
@@ -250,14 +250,14 @@ export default function PrivateRouteDrivers({
     }
   };
 
-  const handleAddDriver = async () => {
+  const addDriverRecord = async (): Promise<Driver | null> => {
     if (!newPhone || newPhone.length < 10) {
       toast({
         title: "Error",
         description: "Ingresa un número de teléfono válido",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     try {
@@ -280,41 +280,103 @@ export default function PrivateRouteDrivers({
             description: "Este número ya está registrado en tu empresa",
             variant: "destructive",
           });
-          return;
+          return null;
         }
         throw error;
       }
 
-      const cleanPhone = newPhone.replace(/[^0-9]/g, '');
-      const driverName = newName || 'Chofer';
-      const inviteToken = (data as any)?.invite_token;
-      const acceptLink = `https://todocerca.mx/chofer-invitacion?token=${inviteToken}`;
-      const mensaje = encodeURIComponent(
-        `¡Hola ${driverName}! 👋 Has sido registrado como chofer de *"${businessName}"* en TodoCerca.\n\n` +
-        `📋 Acepta tu invitación aquí:\n${acceptLink}\n\n` +
-        `⚠️ Este enlace es personal e intransferible.\n\n` +
-        `Al aceptar, podrás seleccionar la ruta que cubrirás cada día y compartir tu ubicación en tiempo real.`
-      );
-      window.open(`https://wa.me/${cleanPhone}?text=${mensaje}`, '_blank');
+      return data as Driver;
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return null;
+    }
+  };
 
+  const handleAddDriverWhatsApp = async () => {
+    const driver = await addDriverRecord();
+    if (!driver) {
+      setAdding(false);
+      return;
+    }
+
+    const cleanPhone = newPhone.replace(/[^0-9]/g, '');
+    const driverName = newName || 'Chofer';
+    const acceptLink = `https://todocerca.mx/chofer-invitacion?token=${driver.invite_token}`;
+    const mensaje = encodeURIComponent(
+      `¡Hola ${driverName}! 👋 Has sido registrado como chofer de *"${businessName}"* en TodoCerca.\n\n` +
+      `📋 Acepta tu invitación aquí:\n${acceptLink}\n\n` +
+      `⚠️ Este enlace es personal e intransferible.\n\n` +
+      `Al aceptar, podrás seleccionar la ruta que cubrirás cada día y compartir tu ubicación en tiempo real.`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${mensaje}`, '_blank');
+
+    toast({
+      title: "Chofer agregado",
+      description: `${driverName} ha sido registrado e invitado por WhatsApp`,
+    });
+
+    setNewPhone('');
+    setNewName('');
+    setAdding(false);
+    fetchAll();
+    onDriversChanged?.();
+  };
+
+  const handleAddDriverInApp = async () => {
+    if (!user) return;
+    const driver = await addDriverRecord();
+    if (!driver) {
+      setAdding(false);
+      return;
+    }
+
+    const driverName = newName || 'Chofer';
+    const acceptLink = `${window.location.origin}/chofer-invitacion?token=${driver.invite_token}`;
+
+    try {
+      // Find the user by phone number to send internal message
+      const cleanPhone = newPhone.replace(/[^0-9]/g, '');
+      const { data: targetProfile } = await supabase
+        .rpc('find_user_by_phone', { phone_param: cleanPhone });
+
+      if (targetProfile && targetProfile.length > 0) {
+        const targetUserId = targetProfile[0].user_id;
+        
+        // Send internal message with the invitation link
+        const msgText = `🚌 ¡Hola ${driverName}! Has sido registrado como chofer de "${businessName}".\n\n📋 Acepta tu invitación aquí:\n${acceptLink}\n\n⚠️ Este enlace es personal e intransferible.`;
+        
+        await supabase.from('messages').insert({
+          sender_id: user.id,
+          receiver_id: targetUserId,
+          message: msgText,
+        });
+
+        toast({
+          title: "✅ Chofer agregado",
+          description: `Invitación enviada a ${driverName} por mensaje interno`,
+        });
+      } else {
+        // User not found in the app — still register but warn
+        toast({
+          title: "Chofer agregado",
+          description: `${driverName} registrado, pero no se encontró su cuenta en la app. Comparte el enlace manualmente: ${acceptLink}`,
+          duration: 8000,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error sending internal invite:', error);
       toast({
         title: "Chofer agregado",
-        description: `${driverName} ha sido registrado e invitado por WhatsApp`,
+        description: `Registrado pero no se pudo enviar el mensaje. Enlace: ${acceptLink}`,
+        duration: 8000,
       });
-
-      setNewPhone('');
-      setNewName('');
-      fetchAll();
-      onDriversChanged?.();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setAdding(false);
     }
+
+    setNewPhone('');
+    setNewName('');
+    setAdding(false);
+    fetchAll();
+    onDriversChanged?.();
   };
 
   const handleDeleteDriver = async () => {
@@ -420,18 +482,31 @@ export default function PrivateRouteDrivers({
                 label=""
               />
             </div>
-            <Button 
-              onClick={handleAddDriver} 
-              disabled={adding || !newPhone}
-              size="sm"
-              className="w-full"
-            >
-              {adding ? (
-                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Agregando...</>
-              ) : (
-                <><Plus className="h-4 w-4 mr-1" /> Agregar e invitar por WhatsApp</>
-              )}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={handleAddDriverWhatsApp} 
+                disabled={adding || !newPhone}
+                size="sm"
+                variant="outline"
+              >
+                {adding ? (
+                  <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Agregando...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-1" /> WhatsApp</>
+                )}
+              </Button>
+              <Button 
+                onClick={handleAddDriverInApp} 
+                disabled={adding || !newPhone}
+                size="sm"
+              >
+                {adding ? (
+                  <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Agregando...</>
+                ) : (
+                  <><MessageSquare className="h-4 w-4 mr-1" /> Invitar por App</>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Drivers list with inline assignment */}
