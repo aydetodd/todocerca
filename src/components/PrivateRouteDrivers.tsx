@@ -120,6 +120,7 @@ export default function PrivateRouteDrivers({
             publico: 'urbana',
             foraneo: 'foranea',
             privado: 'privada',
+            taxi: 'taxi',
           };
           const routeType = routeTypeMap[transportType] || 'privada';
           let q = supabase
@@ -140,6 +141,7 @@ export default function PrivateRouteDrivers({
           .select('id, nombre, placas, descripcion')
           .eq('proveedor_id', proveedorId)
           .eq('is_active', true)
+          .eq('transport_type', transportType)
           .order('nombre'),
       ]);
 
