@@ -56,8 +56,7 @@
           [-110.931147, 29.0888643],
           [-110.9310106, 29.0984373],
           [-110.9272332, 29.0983501],
-          [-110.9229835, 29.1002021],
-          [-110.9225075, 29.0984104],
+          [-110.9227010, 29.0993230],
           [-110.9273502, 29.0974945],
           [-110.9311643, 29.097404],
           [-110.9315112, 29.0888674],
@@ -101,7 +100,5 @@
         ]
       }
     },
-    {"type":"Feature","properties":{"parada_id":"P1","nombre":"Inicio - Point 1","orden":1,"tipo":"inicio_final"},"geometry":{"type":"Point","coordinates":[-111.0513303,29.0885892]}},
-    {"type":"Feature","properties":{"parada_id":"P84","nombre":"Cierre - Point 84","orden":84,"tipo":"inicio_final"},"geometry":{"type":"Point","coordinates":[-111.0514785,29.0875267]}}
   ]
 }
