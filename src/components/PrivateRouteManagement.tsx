@@ -276,6 +276,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         .from('unidades_empresa')
         .select('*')
         .eq('proveedor_id', proveedorId)
+        .eq('transport_type', transportType)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -341,6 +342,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           nombre: newUnit.nombre.trim(),
           placas: newUnit.placas.trim() || null,
           descripcion: newUnit.descripcion.trim() || null,
+          transport_type: transportType,
         });
 
       if (error) throw error;
