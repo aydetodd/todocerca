@@ -1725,6 +1725,48 @@ export type Database = {
           },
         ]
       }
+      rutas_catalogo: {
+        Row: {
+          ciudad: string | null
+          created_at: string
+          descripcion: string | null
+          estado: string | null
+          geojson_file: string | null
+          id: string
+          is_active: boolean | null
+          nombre: string
+          pais: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ciudad?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string | null
+          geojson_file?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre: string
+          pais?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ciudad?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string | null
+          geojson_file?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre?: string
+          pais?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sos_alerts: {
         Row: {
           cancelled_at: string | null
@@ -2178,9 +2220,13 @@ export type Database = {
           descripcion: string | null
           id: string
           is_active: boolean | null
+          marca: string | null
+          modelo: string | null
           nombre: string
+          numero_economico: string | null
           placas: string | null
           proveedor_id: string
+          transport_type: string | null
           updated_at: string
         }
         Insert: {
@@ -2188,9 +2234,13 @@ export type Database = {
           descripcion?: string | null
           id?: string
           is_active?: boolean | null
+          marca?: string | null
+          modelo?: string | null
           nombre: string
+          numero_economico?: string | null
           placas?: string | null
           proveedor_id: string
+          transport_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -2198,9 +2248,13 @@ export type Database = {
           descripcion?: string | null
           id?: string
           is_active?: boolean | null
+          marca?: string | null
+          modelo?: string | null
           nombre?: string
+          numero_economico?: string | null
           placas?: string | null
           proveedor_id?: string
+          transport_type?: string | null
           updated_at?: string
         }
         Relationships: [
