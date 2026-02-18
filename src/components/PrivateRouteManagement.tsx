@@ -176,6 +176,18 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     fetchDriversCount();
   }, [proveedorId]);
 
+  // Auto-refresh when user returns from Stripe tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSubscription();
+        fetchUnits();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [proveedorId]);
+
   const fetchDriversCount = async () => {
     try {
       const { count, error } = await supabase
