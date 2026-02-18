@@ -149,6 +149,7 @@ export default function DriverRouteSelector() {
           .select('id, nombre, descripcion')
           .eq('proveedor_id', driverData.proveedor_id)
           .eq('is_available', true)
+          .eq('is_mobile', true)
           .order('nombre'),
         supabase
           .from('unidades_empresa')

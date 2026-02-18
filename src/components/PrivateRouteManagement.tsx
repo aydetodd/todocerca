@@ -761,6 +761,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           productoId={vehicles[0]?.id || ''}
           vehicleName="Empresa"
           businessName={businessName}
+          transportType={transportType}
           onDriversChanged={fetchDriversCount}
         />
       )}
