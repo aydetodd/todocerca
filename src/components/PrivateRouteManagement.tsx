@@ -846,7 +846,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           setSelectedNombreRuta('');
         }
       }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()} onInteractOutside={(e) => {
+          // Prevent closing dialog when interacting with Select dropdown items (portaled outside dialog)
+          e.preventDefault();
+        }}>
           <DialogHeader>
             <DialogTitle>Agregar Ruta</DialogTitle>
             <DialogDescription>
