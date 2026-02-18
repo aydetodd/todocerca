@@ -132,7 +132,13 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                     ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}
                   `}
                   >
-                    <span className="text-sm break-words">{msg.message}</span>
+                    <span className="text-sm break-words whitespace-pre-wrap">
+                      {msg.message.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                        /^https?:\/\//.test(part) ? (
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-semibold break-all">{part}</a>
+                        ) : part
+                      )}
+                    </span>
                   </div>
                   <p className={`text-xs mt-1 ${
                     isOwn 
