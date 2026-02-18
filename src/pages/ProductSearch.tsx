@@ -692,9 +692,9 @@ const ProductSearch = () => {
     <div className="min-h-screen bg-background">
       <GlobalHeader />
 
-      <main className="container mx-auto px-4 py-8 pb-24">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold">Buscar Productos y Servicios</h1>
+      <main className="container mx-auto px-4 pt-4 pb-40">
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold">Buscar Productos y Servicios</h1>
         </header>
 
         <form onSubmit={handleSearch} className="mb-4">
