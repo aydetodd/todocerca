@@ -22,7 +22,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
 }> = {
   publico: {
     label: 'Transporte Público',
-    description: 'Rutas urbanas de transporte público (UNE, etc.)',
+    description: 'Rutas urbanas de transporte público',
     icon: Bus,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
