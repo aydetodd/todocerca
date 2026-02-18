@@ -302,7 +302,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       setAddingUnit(true);
       const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada' }
+        body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada', uiTransportType: transportType }
       });
 
       if (error) throw error;
