@@ -118,6 +118,7 @@ export default function PrivateRouteDrivers({
           .select('id, nombre')
           .eq('proveedor_id', proveedorId)
           .eq('is_available', true)
+          .eq('is_mobile', true)
           .order('nombre'),
         supabase
           .from('unidades_empresa')
