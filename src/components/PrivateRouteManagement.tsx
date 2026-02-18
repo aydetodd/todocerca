@@ -864,36 +864,42 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <>
                 <div>
                   <Label>País *</Label>
-                  <Select value={selectedPais} onValueChange={(v) => { setSelectedPais(v); setSelectedEstado(''); setSelectedCiudad(''); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecciona país" /></SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {PAISES_HISPANOAMERICA.map(p => (
-                        <SelectItem key={p.codigo} value={p.codigo}>{p.bandera} {p.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={selectedPais}
+                    onChange={(e) => { setSelectedPais(e.target.value); setSelectedEstado(''); setSelectedCiudad(''); }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Selecciona país</option>
+                    {PAISES_HISPANOAMERICA.map(p => (
+                      <option key={p.codigo} value={p.codigo}>{p.bandera} {p.nombre}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>{selectedPaisData?.nivel1Tipo ? selectedPaisData.nivel1Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel1Tipo.slice(1) : 'Estado'} *</Label>
-                  <Select value={selectedEstado} onValueChange={(v) => { setSelectedEstado(v); setSelectedCiudad(''); }}>
-                    <SelectTrigger><SelectValue placeholder={`Selecciona ${selectedPaisData?.nivel1Tipo || 'estado'}`} /></SelectTrigger>
-                    <SelectContent className="bg-background z-50 max-h-60">
-                      {nivel1Options.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={selectedEstado}
+                    onChange={(e) => { setSelectedEstado(e.target.value); setSelectedCiudad(''); }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">{`Selecciona ${selectedPaisData?.nivel1Tipo || 'estado'}`}</option>
+                    {nivel1Options.map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>{selectedPaisData?.nivel2Tipo ? selectedPaisData.nivel2Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel2Tipo.slice(1) : 'Municipio'} *</Label>
-                  <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
-                    <SelectTrigger><SelectValue placeholder={`Selecciona ${selectedPaisData?.nivel2Tipo || 'municipio'}`} /></SelectTrigger>
-                    <SelectContent className="bg-background z-50 max-h-60">
-                      {nivel2Options.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={selectedCiudad}
+                    onChange={(e) => setSelectedCiudad(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">{`Selecciona ${selectedPaisData?.nivel2Tipo || 'municipio'}`}</option>
+                    {nivel2Options.map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             )}
@@ -903,27 +909,31 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <>
                 <div>
                   <Label>Número de Línea *</Label>
-                  <Select value={selectedLinea} onValueChange={setSelectedLinea}>
-                    <SelectTrigger><SelectValue placeholder="Selecciona línea" /></SelectTrigger>
-                    <SelectContent className="bg-background z-50 max-h-60">
-                      {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
-                        <SelectItem key={n} value={String(n)}>Línea {n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={selectedLinea}
+                    onChange={(e) => setSelectedLinea(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Selecciona línea</option>
+                    {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={String(n)}>Línea {n}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>Nombre de la Ruta</Label>
                   {rutasCatalogo.length > 0 ? (
-                    <Select value={selectedNombreRuta} onValueChange={setSelectedNombreRuta}>
-                      <SelectTrigger><SelectValue placeholder="Selecciona nombre de ruta" /></SelectTrigger>
-                      <SelectContent className="bg-background z-50 max-h-60">
-                        {rutasCatalogo.map(r => (
-                          <SelectItem key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</SelectItem>
-                        ))}
-                        <SelectItem value="__custom__">✏️ Otro (escribir)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <select
+                      value={selectedNombreRuta}
+                      onChange={(e) => setSelectedNombreRuta(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="">Selecciona nombre de ruta</option>
+                      {rutasCatalogo.map(r => (
+                        <option key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</option>
+                      ))}
+                      <option value="__custom__">✏️ Otro (escribir)</option>
+                    </select>
                   ) : (
                     <Input
                       value={selectedNombreRuta}
