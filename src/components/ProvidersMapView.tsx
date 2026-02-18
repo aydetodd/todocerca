@@ -70,8 +70,8 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   return L.divIcon({
     html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${taxiSvgHtml}</div>`,
     className: 'custom-taxi-marker',
-    iconSize: [18, 40],
-    iconAnchor: [9, 20]
+    iconSize: [18, 30],
+    iconAnchor: [9, 15]
   });
 };
 

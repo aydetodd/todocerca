@@ -78,8 +78,8 @@ const ProductSearch = () => {
   const autoSearchTriggeredRef = useRef(false);
 
   const [searchPais, setSearchPais] = useState<string>("MX");
-  const [searchEstado, setSearchEstado] = useState<string>("Sonora");
-  const [searchCiudad, setSearchCiudad] = useState<string>("Cajeme");
+  const [searchEstado, setSearchEstado] = useState<string>("");
+  const [searchCiudad, setSearchCiudad] = useState<string>("");
 
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
