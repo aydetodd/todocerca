@@ -992,7 +992,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                         {routeNamesForLine.map((r: any) => (
                           <option key={r.id} value={r.ramal}>{r.ramal}</option>
                         ))}
-                        <option value="__custom__">✏️ Otro (escribir)</option>
                       </select>
                     ) : routeNamesForLine.length === 1 ? (
                       <Input
@@ -1010,7 +1009,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                         {rutasCatalogo.filter(r => String(r.linea_numero) === selectedLinea).map(r => (
                           <option key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</option>
                         ))}
-                        <option value="__custom__">✏️ Otro (escribir)</option>
+                        
                       </select>
                     ) : (
                       <Input
@@ -1019,19 +1018,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                         placeholder="Ej: La Manga, Sahuaro, Centro..."
                       />
                     )}
-                  </div>
-                )}
-                {selectedNombreRuta === '__custom__' && (
-                  <div>
-                    <Label>Nombre personalizado</Label>
-                    <Input
-                      value={newVehicle.nombre}
-                      onChange={(e) => {
-                        setNewVehicle({ ...newVehicle, nombre: e.target.value });
-                        setSelectedNombreRuta(e.target.value);
-                      }}
-                      placeholder="Escribe el nombre de la ruta..."
-                    />
                   </div>
                 )}
               </>
