@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Bus, CarFront, Truck, ArrowLeft, Loader2 } from 'lucide-react';
+import { Bus, CarFront, Truck, Car, ArrowLeft, Loader2 } from 'lucide-react';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 
-type TransportType = 'publico' | 'foraneo' | 'privado';
+type TransportType = 'publico' | 'foraneo' | 'privado' | 'taxi';
 
 const TRANSPORT_CONFIG: Record<TransportType, {
   label: string;
@@ -43,6 +43,14 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     color: 'text-amber-600',
     bgColor: 'bg-amber-100',
     price: '$400 MXN/unidad/año',
+  },
+  taxi: {
+    label: 'Taxi',
+    description: 'Unidades de taxi visibles en el mapa público',
+    icon: Car,
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-100',
+    price: '$200 MXN/unidad/año',
   },
 };
 
