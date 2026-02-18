@@ -577,7 +577,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               </div>
               <Button
                 size="sm"
-                onClick={() => navigate('/mapa?fleet=true')}
+                onClick={() => navigate(`/mapa?fleet=true&fleetType=${transportType}`)}
                 className="shrink-0 bg-amber-500 hover:bg-amber-600 text-black font-bold"
               >
                 <Eye className="h-4 w-4 mr-1" />
