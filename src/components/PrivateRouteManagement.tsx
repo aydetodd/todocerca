@@ -171,12 +171,24 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       };
       const routeType = routeTypeMap[transportType] || 'privada';
       
+      // First get the transport category to filter properly
+      const { data: category } = await supabase
+        .from('product_categories')
+        .select('id')
+        .eq('name', 'Rutas de Transporte')
+        .single();
+
       let query = supabase
         .from('productos')
         .select('id, nombre, descripcion, invite_token, is_available, created_at')
         .eq('proveedor_id', proveedorId)
         .eq('route_type', routeType)
+        .eq('is_mobile', true)
         .order('created_at', { ascending: true });
+
+      if (category) {
+        query = query.eq('category_id', category.id);
+      }
 
       if (transportType === 'privado') {
         query = query.eq('is_private', true);
