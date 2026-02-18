@@ -16,6 +16,7 @@ const ROUTE_PRICE_IDS: Record<string, string> = {
   privada: 'price_1Sxfm9GyH05pxWZzsipYs44S',   // $400 MXN/año
   urbana: 'price_1T2CnkGyH05pxWZzVkdCLsOv',     // $200 MXN/año
   foranea: 'price_1T2CoFGyH05pxWZzNBI6rGfp',     // $200 MXN/año
+  taxi: 'price_1T2DjpGyH05pxWZzIh42h31H',        // $200 MXN/año
 };
 
 serve(async (req) => {

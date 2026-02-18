@@ -60,7 +60,7 @@ interface Unit {
 interface PrivateRouteManagementProps {
   proveedorId: string;
   businessName: string;
-  transportType?: 'publico' | 'foraneo' | 'privado';
+  transportType?: 'publico' | 'foraneo' | 'privado' | 'taxi';
 }
 
 export default function PrivateRouteManagement({ proveedorId, businessName, transportType = 'privado' }: PrivateRouteManagementProps) {
@@ -203,7 +203,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const checkSubscription = async () => {
     try {
       setCheckingSubscription(true);
-      const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
+      const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
         body: { action: 'status', transportType: routeTypeMap[transportType] || 'privada' }
       });
@@ -233,6 +233,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         publico: 'urbana',
         foraneo: 'foranea',
         privado: 'privada',
+        taxi: 'taxi',
       };
       const routeType = routeTypeMap[transportType] || 'privada';
       
@@ -299,7 +300,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     // No slots — go to Stripe first
     try {
       setAddingUnit(true);
-      const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
+      const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
         body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada' }
       });
@@ -485,13 +486,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         .from('productos')
         .insert({
           nombre: newVehicle.nombre,
-          descripcion: newVehicle.descripcion || `Ruta ${transportType === 'foraneo' ? 'foránea' : 'privada'} - ${businessName}`,
+          descripcion: newVehicle.descripcion || `${transportType === 'taxi' ? 'Taxi' : transportType === 'foraneo' ? 'Ruta foránea' : 'Ruta privada'} - ${businessName}`,
           precio: 0,
           stock: 1,
           unit: 'viaje',
           proveedor_id: proveedorId,
           category_id: category.id,
-          route_type: transportType === 'foraneo' ? 'foranea' : 'privada',
+          route_type: transportType === 'foraneo' ? 'foranea' : transportType === 'taxi' ? 'taxi' : 'privada',
           is_private: transportType === 'privado',
           is_mobile: true,
           is_available: true,
@@ -620,10 +621,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bus className="h-5 w-5" />
-              1. Unidades / Autobuses
+              1. Unidades {transportType === 'taxi' ? '/ Taxis' : '/ Autobuses'}
             </CardTitle>
             <CardDescription>
-              Cada unidad (autobús) requiere una suscripción de {transportType === 'privado' ? '$400' : '$200'} MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
+              Cada unidad requiere una suscripción de {transportType === 'privado' ? '$400' : '$200'} MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
