@@ -12,7 +12,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[ADD-PRIVATE-VEHICLE] ${step}${detailsStr}`);
 };
 
-const PRIVATE_ROUTE_PRICE_ID = 'price_1Sxfm9GyH05pxWZzsipYs44S';
+const ROUTE_PRICE_IDS: Record<string, string> = {
+  privada: 'price_1Sxfm9GyH05pxWZzsipYs44S',   // $400 MXN/año
+  urbana: 'price_1T2CnkGyH05pxWZzVkdCLsOv',     // $200 MXN/año
+  foranea: 'price_1T2CoFGyH05pxWZzNBI6rGfp',     // $200 MXN/año
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,8 +45,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email: user.email });
 
-    const { action } = await req.json().catch(() => ({ action: 'add' }));
-    logStep("Action requested", { action });
+    const { action, transportType } = await req.json().catch(() => ({ action: 'add', transportType: 'privada' }));
+    const routeType = transportType || 'privada';
+    const priceId = ROUTE_PRICE_IDS[routeType] || ROUTE_PRICE_IDS.privada;
+    logStep("Action requested", { action, routeType, priceId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -56,7 +62,7 @@ serve(async (req) => {
 
       const sessionConfig: any = {
         customer_email: user.email,
-        line_items: [{ price: PRIVATE_ROUTE_PRICE_ID, quantity: 1 }],
+        line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
         success_url: `${req.headers.get("origin")}/dashboard?private_route=success`,
         cancel_url: `${req.headers.get("origin")}/dashboard?private_route=cancelled`,
@@ -65,7 +71,7 @@ serve(async (req) => {
         subscription_data: {
           trial_period_days: 7,
         },
-        metadata: { plan_type: 'ruta_privada', user_id: user.id },
+        metadata: { plan_type: `ruta_${routeType}`, user_id: user.id },
         allow_promotion_codes: true,
       };
 
@@ -117,13 +123,14 @@ serve(async (req) => {
       });
       const subscriptions = { data: [...activeSubs.data, ...trialingSubs.data] };
 
-      // Count total quantity across all private route subscriptions
+      // Count total quantity across all route subscriptions for this type
       let totalQuantity = 0;
       let earliestEnd: number | null = null;
+      const allRoutePriceIds = Object.values(ROUTE_PRICE_IDS);
 
       for (const sub of subscriptions.data) {
         for (const item of sub.items.data) {
-          if (item.price.id === PRIVATE_ROUTE_PRICE_ID) {
+          if (item.price.id === priceId) {
             totalQuantity += item.quantity || 1;
             const endTime = sub.current_period_end;
             if (!earliestEnd || endTime < earliestEnd) {
