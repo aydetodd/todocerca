@@ -123,9 +123,9 @@ export const useRealtimeLocations = () => {
       .in('proveedor_id', proveedorIds);
     
     if (taxiCategory?.id) {
-      taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%`);
+      taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%,route_type.eq.taxi`);
     } else {
-      taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%');
+      taxiQuery = taxiQuery.or('nombre.ilike.%taxi%,keywords.ilike.%taxi%,route_type.eq.taxi');
     }
 
     let rutaQuery = supabase
