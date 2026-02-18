@@ -1,0 +1,2 @@
+ALTER TABLE unidades_empresa DROP CONSTRAINT unidades_empresa_transport_type_check;
+ALTER TABLE unidades_empresa ADD CONSTRAINT unidades_empresa_transport_type_check CHECK (transport_type = ANY (ARRAY['publico'::text, 'foraneo'::text, 'privado'::text, 'taxi'::text]));
