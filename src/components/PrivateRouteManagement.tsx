@@ -25,9 +25,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { formatUnitLabel } from '@/lib/unitDisplay';
+import { useHispanoamerica } from '@/hooks/useHispanoamerica';
+import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
 
 
 interface PrivateVehicle {
@@ -51,9 +60,10 @@ interface Unit {
 interface PrivateRouteManagementProps {
   proveedorId: string;
   businessName: string;
+  transportType?: 'publico' | 'foraneo' | 'privado';
 }
 
-export default function PrivateRouteManagement({ proveedorId, businessName }: PrivateRouteManagementProps) {
+export default function PrivateRouteManagement({ proveedorId, businessName, transportType = 'privado' }: PrivateRouteManagementProps) {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<PrivateVehicle[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -76,6 +86,35 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '' });
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
+  
+  // Geography & route catalog state for public/foraneo routes
+  const [selectedPais, setSelectedPais] = useState('MX');
+  const [selectedEstado, setSelectedEstado] = useState('');
+  const [selectedCiudad, setSelectedCiudad] = useState('');
+  const [selectedLinea, setSelectedLinea] = useState('');
+  const [selectedNombreRuta, setSelectedNombreRuta] = useState('');
+  const [rutasCatalogo, setRutasCatalogo] = useState<any[]>([]);
+  
+  const { loading: geoLoading, getNivel1, getNivel2 } = useHispanoamerica();
+  
+  const selectedPaisData = PAISES_HISPANOAMERICA.find(p => p.codigo === selectedPais);
+  const nivel1Options = selectedPais ? getNivel1(selectedPais) : [];
+  const nivel2Options = selectedEstado ? getNivel2(selectedPais, selectedEstado) : [];
+  
+  // Fetch route catalog names for the selected city
+  useEffect(() => {
+    if (transportType === 'publico' && selectedCiudad && selectedEstado) {
+      supabase
+        .from('rutas_catalogo')
+        .select('*')
+        .eq('tipo', 'publico')
+        .eq('ciudad', selectedCiudad)
+        .eq('is_active', true)
+        .order('linea_numero')
+        .then(({ data }) => setRutasCatalogo(data || []));
+    }
+  }, [transportType, selectedCiudad, selectedEstado]);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -125,14 +164,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
 
   const fetchVehicles = async () => {
     try {
-      const { data, error } = await supabase
+      const routeTypeMap: Record<string, string> = {
+        publico: 'urbana',
+        foraneo: 'foranea',
+        privado: 'privada',
+      };
+      const routeType = routeTypeMap[transportType] || 'privada';
+      
+      let query = supabase
         .from('productos')
         .select('id, nombre, descripcion, invite_token, is_available, created_at')
         .eq('proveedor_id', proveedorId)
-        .eq('is_private', true)
-        .eq('route_type', 'privada')
+        .eq('route_type', routeType)
         .order('created_at', { ascending: true });
 
+      if (transportType === 'privado') {
+        query = query.eq('is_private', true);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setVehicles((data || []) as PrivateVehicle[]);
     } catch (error) {
@@ -308,12 +358,58 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
   };
 
   const handleCreateRoute = async () => {
+    // Validation based on transport type
+    if (transportType === 'publico') {
+      if (!selectedLinea || !selectedPais || !selectedEstado || !selectedCiudad) {
+        toast({ title: "Error", description: "Selecciona país, estado, ciudad y número de línea", variant: "destructive" });
+        return;
+      }
+      const routeName = selectedNombreRuta
+        ? `Línea ${selectedLinea} - ${selectedNombreRuta}`
+        : `Línea ${selectedLinea}`;
+      
+      try {
+        const { data: category } = await supabase
+          .from('product_categories')
+          .select('id')
+          .eq('name', 'Rutas de Transporte')
+          .single();
+        if (!category) throw new Error('Categoría no encontrada');
+
+        const { error } = await supabase
+          .from('productos')
+          .insert({
+            nombre: routeName,
+            descripcion: newVehicle.descripcion || `Transporte público - ${selectedCiudad}`,
+            precio: 0,
+            stock: 1,
+            unit: 'viaje',
+            proveedor_id: proveedorId,
+            category_id: category.id,
+            route_type: 'urbana',
+            is_private: false,
+            is_mobile: true,
+            is_available: true,
+            pais: selectedPais,
+            estado: selectedEstado,
+            ciudad: selectedCiudad,
+          });
+        if (error) throw error;
+
+        toast({ title: "¡Ruta registrada!", description: `"${routeName}" agregada.` });
+        setIsRouteDialogOpen(false);
+        setNewVehicle({ nombre: '', descripcion: '' });
+        setSelectedLinea('');
+        setSelectedNombreRuta('');
+        fetchVehicles();
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+      return;
+    }
+
     if (!newVehicle.nombre.trim()) {
-      toast({
-        title: "Error",
-        description: "El nombre de la ruta es obligatorio",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "El nombre de la ruta es obligatorio", variant: "destructive" });
       return;
     }
 
@@ -330,35 +426,33 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
         .from('productos')
         .insert({
           nombre: newVehicle.nombre,
-          descripcion: newVehicle.descripcion || `Ruta privada - ${businessName}`,
+          descripcion: newVehicle.descripcion || `Ruta ${transportType === 'foraneo' ? 'foránea' : 'privada'} - ${businessName}`,
           precio: 0,
           stock: 1,
           unit: 'viaje',
           proveedor_id: proveedorId,
           category_id: category.id,
-          route_type: 'privada',
-          is_private: true,
+          route_type: transportType === 'foraneo' ? 'foranea' : 'privada',
+          is_private: transportType === 'privado',
           is_mobile: true,
           is_available: true,
-          pais: 'MX',
+          pais: selectedPais || 'MX',
+          estado: selectedEstado || null,
+          ciudad: selectedCiudad || null,
         });
 
       if (error) throw error;
 
       toast({
         title: "¡Ruta registrada!",
-        description: `"${newVehicle.nombre}" agregada. Puedes compartir el enlace con los pasajeros.`,
+        description: `"${newVehicle.nombre}" agregada.`,
       });
 
       setIsRouteDialogOpen(false);
       setNewVehicle({ nombre: '', descripcion: '' });
       fetchVehicles();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || 'No se pudo registrar la ruta',
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -733,24 +827,125 @@ export default function PrivateRouteManagement({ proveedorId, businessName }: Pr
       </Dialog>
 
       {/* Dialog for registering a new route */}
-      <Dialog open={isRouteDialogOpen} onOpenChange={setIsRouteDialogOpen}>
-        <DialogContent>
+      <Dialog open={isRouteDialogOpen} onOpenChange={(open) => {
+        setIsRouteDialogOpen(open);
+        if (!open) {
+          setSelectedLinea('');
+          setSelectedNombreRuta('');
+        }
+      }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Agregar Ruta</DialogTitle>
             <DialogDescription>
-              Registra una nomenclatura o nombre de ruta. Las rutas son ilimitadas.
+              {transportType === 'publico'
+                ? 'Selecciona la ubicación y línea de transporte público.'
+                : 'Registra una nomenclatura o nombre de ruta. Las rutas son ilimitadas.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="routeName">Nombre / Nomenclatura *</Label>
-              <Input
-                id="routeName"
-                value={newVehicle.nombre}
-                onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
-                placeholder="Ej: Ruta 2, Ruta Sur, Express Norte..."
-              />
-            </div>
+            {/* Geography selectors for public and foraneo */}
+            {(transportType === 'publico' || transportType === 'foraneo') && (
+              <>
+                <div>
+                  <Label>País *</Label>
+                  <Select value={selectedPais} onValueChange={(v) => { setSelectedPais(v); setSelectedEstado(''); setSelectedCiudad(''); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecciona país" /></SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      {PAISES_HISPANOAMERICA.map(p => (
+                        <SelectItem key={p.codigo} value={p.codigo}>{p.bandera} {p.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{selectedPaisData?.nivel1Tipo ? selectedPaisData.nivel1Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel1Tipo.slice(1) : 'Estado'} *</Label>
+                  <Select value={selectedEstado} onValueChange={(v) => { setSelectedEstado(v); setSelectedCiudad(''); }}>
+                    <SelectTrigger><SelectValue placeholder={`Selecciona ${selectedPaisData?.nivel1Tipo || 'estado'}`} /></SelectTrigger>
+                    <SelectContent className="bg-background z-50 max-h-60">
+                      {nivel1Options.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{selectedPaisData?.nivel2Tipo ? selectedPaisData.nivel2Tipo.charAt(0).toUpperCase() + selectedPaisData.nivel2Tipo.slice(1) : 'Municipio'} *</Label>
+                  <Select value={selectedCiudad} onValueChange={setSelectedCiudad}>
+                    <SelectTrigger><SelectValue placeholder={`Selecciona ${selectedPaisData?.nivel2Tipo || 'municipio'}`} /></SelectTrigger>
+                    <SelectContent className="bg-background z-50 max-h-60">
+                      {nivel2Options.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {/* Public transport: Línea number + route name dropdowns */}
+            {transportType === 'publico' && (
+              <>
+                <div>
+                  <Label>Número de Línea *</Label>
+                  <Select value={selectedLinea} onValueChange={setSelectedLinea}>
+                    <SelectTrigger><SelectValue placeholder="Selecciona línea" /></SelectTrigger>
+                    <SelectContent className="bg-background z-50 max-h-60">
+                      {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                        <SelectItem key={n} value={String(n)}>Línea {n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Nombre de la Ruta</Label>
+                  {rutasCatalogo.length > 0 ? (
+                    <Select value={selectedNombreRuta} onValueChange={setSelectedNombreRuta}>
+                      <SelectTrigger><SelectValue placeholder="Selecciona nombre de ruta" /></SelectTrigger>
+                      <SelectContent className="bg-background z-50 max-h-60">
+                        {rutasCatalogo.map(r => (
+                          <SelectItem key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">✏️ Otro (escribir)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={selectedNombreRuta}
+                      onChange={(e) => setSelectedNombreRuta(e.target.value)}
+                      placeholder="Ej: La Manga, Sahuaro, Centro..."
+                    />
+                  )}
+                </div>
+                {selectedNombreRuta === '__custom__' && (
+                  <div>
+                    <Label>Nombre personalizado</Label>
+                    <Input
+                      value={newVehicle.nombre}
+                      onChange={(e) => {
+                        setNewVehicle({ ...newVehicle, nombre: e.target.value });
+                        setSelectedNombreRuta(e.target.value);
+                      }}
+                      placeholder="Escribe el nombre de la ruta..."
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Foráneo and Privado: free text name */}
+            {transportType !== 'publico' && (
+              <div>
+                <Label htmlFor="routeName">Nombre / Nomenclatura *</Label>
+                <Input
+                  id="routeName"
+                  value={newVehicle.nombre}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
+                  placeholder={transportType === 'foraneo' ? 'Ej: Hermosillo - Guaymas, Express Norte...' : 'Ej: Ruta 2, Ruta Sur, Express Norte...'}
+                />
+              </div>
+            )}
+
             <div>
               <Label htmlFor="routeDesc">Recorrido / Descripción</Label>
               <Input
