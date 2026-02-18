@@ -117,8 +117,6 @@ export default function PrivateRouteDrivers({
           .from('productos')
           .select('id, nombre')
           .eq('proveedor_id', proveedorId)
-          .eq('is_private', true)
-          .eq('route_type', 'privada')
           .eq('is_available', true)
           .order('nombre'),
         supabase
