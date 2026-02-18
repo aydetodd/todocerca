@@ -19,6 +19,7 @@ export default function MapView() {
   const privateRouteToken = searchParams.get('token');
   const publicRouteProductoId = searchParams.get('producto');
   const fleetParam = searchParams.get('fleet') === 'true';
+  const fleetTypeParam = searchParams.get('fleetType') as 'publico' | 'foraneo' | 'privado' | 'taxi' | null;
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
@@ -150,15 +151,52 @@ export default function MapView() {
           if (count && count > 0) {
             setIsFleetOwner(true);
             
-            // Build fleet user IDs: owner + all active drivers
-            const { data: drivers } = await supabase
-              .from('choferes_empresa')
-              .select('user_id')
-              .eq('proveedor_id', proveedor.id)
-              .eq('is_active', true)
-              .not('user_id', 'is', null);
+            // Build fleet user IDs filtered by transport type if specified
+            let driverUserIds: string[] = [];
             
-            const driverUserIds = drivers?.map(d => d.user_id).filter(Boolean) as string[] || [];
+            if (fleetTypeParam) {
+              // Get unit IDs for this transport type
+              const { data: units } = await supabase
+                .from('unidades_empresa')
+                .select('id')
+                .eq('proveedor_id', proveedor.id)
+                .eq('transport_type', fleetTypeParam)
+                .eq('is_active', true);
+              
+              const unitIds = units?.map(u => u.id) || [];
+              
+              if (unitIds.length > 0) {
+                // Get drivers assigned to these units
+                const { data: assignments } = await supabase
+                  .from('asignaciones_chofer')
+                  .select('chofer_id')
+                  .in('unidad_id', unitIds);
+                
+                const choferIds = [...new Set(assignments?.map(a => a.chofer_id) || [])];
+                
+                if (choferIds.length > 0) {
+                  const { data: drivers } = await supabase
+                    .from('choferes_empresa')
+                    .select('user_id')
+                    .in('id', choferIds)
+                    .eq('is_active', true)
+                    .not('user_id', 'is', null);
+                  
+                  driverUserIds = drivers?.map(d => d.user_id).filter(Boolean) as string[] || [];
+                }
+              }
+            } else {
+              // No filter: get all active drivers
+              const { data: drivers } = await supabase
+                .from('choferes_empresa')
+                .select('user_id')
+                .eq('proveedor_id', proveedor.id)
+                .eq('is_active', true)
+                .not('user_id', 'is', null);
+              
+              driverUserIds = drivers?.map(d => d.user_id).filter(Boolean) as string[] || [];
+            }
+            
             const allFleetUserIds = [user.id, ...driverUserIds.filter(id => id !== user.id)];
             setFleetUserIds(allFleetUserIds);
             setFleetUnitCount(allFleetUserIds.length);
@@ -299,7 +337,9 @@ export default function MapView() {
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalHeader title={
-        fleetMode ? 'Mi Flota' :
+        fleetMode 
+          ? `Mi Flota${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
+          :
         filterType === 'taxi' ? 'Taxis Disponibles' : 
         filterType === 'ruta' ? 'Rutas de Transporte' : 
         'Mapa en Tiempo Real'
