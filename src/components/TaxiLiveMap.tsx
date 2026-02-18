@@ -145,8 +145,8 @@ export default function TaxiLiveMap({
         icon: L.divIcon({
           html: iconHtml,
           className: 'my-location-marker',
-          iconSize: isDriver ? [18, 40] : [32, 32],
-          iconAnchor: isDriver ? [9, 20] : [16, 16]
+          iconSize: isDriver ? [18, 30] : [32, 32],
+          iconAnchor: isDriver ? [9, 15] : [16, 16]
         })
       }).addTo(mapRef.current);
       

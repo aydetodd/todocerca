@@ -360,37 +360,131 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         const taxiColor = taxiColors[estado];
         iconHtml = `
           <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-            <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
-              <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
-              <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
-              <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
-                    fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
-              <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
-              <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}"/>
-              <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
-              <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
-              <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" fill="#4A90E2" opacity="0.7"/>
-              <text x="16" y="26" font-family="Arial" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-              <circle cx="11" cy="12" r="1.2" fill="#FFF"/>
-              <circle cx="21" cy="12" r="1.2" fill="#FFF"/>
-              <circle cx="11" cy="36" r="1" fill="#FF4444"/>
-              <circle cx="21" cy="36" r="1" fill="#FF4444"/>
+            <svg width="24" height="36" viewBox="0 0 36 60" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="18" cy="57" rx="12" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+              <ellipse cx="7" cy="47" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="47" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="47" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="47" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+              <rect x="8" y="8" width="20" height="44" rx="5" fill="#1a1a1a" stroke="#333" stroke-width="0.8"/>
+              <ellipse cx="7" cy="17" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="17" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="17" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="17" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+              <rect x="11" y="10" width="14" height="40" rx="3.5" fill="${taxiColor.body}" stroke="${taxiColor.roof}" stroke-width="0.5"/>
+              <path d="M 13 12 Q 18 9 23 12 L 23 18 L 13 18 Z" fill="#87CEEB" opacity="0.85" stroke="#555" stroke-width="0.5"/>
+              <path d="M 13 48 L 23 48 L 23 43 Q 18 45 13 43 Z" fill="#87CEEB" opacity="0.75" stroke="#555" stroke-width="0.5"/>
+              <rect x="8" y="20" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <rect x="8" y="28" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <rect x="8" y="36" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <rect x="25" y="20" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <rect x="25" y="28" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <rect x="25" y="36" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+              <circle cx="13" cy="10" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <circle cx="23" cy="10" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <rect x="12" y="49" width="3" height="1.5" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <rect x="21" y="49" width="3" height="1.5" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <rect x="14" y="24" width="8" height="4" rx="1.2" fill="#FFFFFF" stroke="#888" stroke-width="0.4"/>
+              <text x="18" y="27.5" font-family="Arial" font-size="3.5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
             </svg>
           </div>
         `;
-        iconSize = [32, 48];
-        iconAnchor = [16, 24];
+        iconSize = [24, 36];
+        iconAnchor = [12, 18];
       } else if (isCurrentUser) {
-        iconHtml = `
-          <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-            <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
-                  fill="${color}" stroke="white" stroke-width="2"/>
-          </svg>
-        `;
-        iconSize = [30, 30];
-        iconAnchor = [15, 15];
+        // Show current user as their vehicle type icon
+        if (isTaxi) {
+          const taxiColor = taxiColors[estado];
+          iconHtml = `
+            <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+              <svg width="24" height="36" viewBox="0 0 36 60" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="18" cy="57" rx="12" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+                <ellipse cx="7" cy="47" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="7" cy="47" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+                <ellipse cx="29" cy="47" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="29" cy="47" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+                <rect x="8" y="8" width="20" height="44" rx="5" fill="#1a1a1a" stroke="#333" stroke-width="0.8"/>
+                <ellipse cx="7" cy="17" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="7" cy="17" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+                <ellipse cx="29" cy="17" rx="3.5" ry="4" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                <ellipse cx="29" cy="17" rx="1.8" ry="2.5" fill="#4a4a4a"/>
+                <rect x="11" y="10" width="14" height="40" rx="3.5" fill="${taxiColor.body}" stroke="${taxiColor.roof}" stroke-width="0.5"/>
+                <path d="M 13 12 Q 18 9 23 12 L 23 18 L 13 18 Z" fill="#87CEEB" opacity="0.85" stroke="#555" stroke-width="0.5"/>
+                <path d="M 13 48 L 23 48 L 23 43 Q 18 45 13 43 Z" fill="#87CEEB" opacity="0.75" stroke="#555" stroke-width="0.5"/>
+                <rect x="8" y="20" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <rect x="8" y="28" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <rect x="8" y="36" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <rect x="25" y="20" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <rect x="25" y="28" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <rect x="25" y="36" width="3" height="6" rx="1" fill="#87CEEB" stroke="#555" stroke-width="0.4"/>
+                <circle cx="13" cy="10" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                <circle cx="23" cy="10" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                <rect x="12" y="49" width="3" height="1.5" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                <rect x="21" y="49" width="3" height="1.5" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                <rect x="14" y="24" width="8" height="4" rx="1.2" fill="#FFFFFF" stroke="#888" stroke-width="0.4"/>
+                <text x="18" y="27.5" font-family="Arial" font-size="3.5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+              </svg>
+            </div>
+          `;
+          iconSize = [24, 36];
+          iconAnchor = [12, 18];
+        } else if (isBus || isPrivateDriver) {
+          // Show as bus with correct color based on route type
+          const effectiveRouteType = location.route_type;
+          const effectiveIsPrivate = isPrivateRoute || isPrivateDriver;
+          const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : '#FFFFFF');
+          const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : '#999999');
+          const busLabel = routeLabel || location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
+          const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
+          const textColor = busBodyColor === '#FFFFFF' ? '#111827' : '#FFFFFF';
+          iconHtml = `
+            <div class="bus-rotate-container" style="transform: rotate(${heading}deg); transition: transform 0.8s ease;">
+              <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+                  <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                  <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+                  <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                  <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+                  <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+                  <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                  <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+                  <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+                  <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+                  <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
+                  <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+                  <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+                  <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+                  <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                  <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+                  <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                  <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+                  <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">${labelTruncated}</text>
+                </svg>
+              </div>
+            </div>
+          `;
+          iconSize = [32, 52];
+          iconAnchor = [16, 26];
+        } else {
+          iconHtml = `
+            <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+              <path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" 
+                    fill="${color}" stroke="white" stroke-width="2"/>
+            </svg>
+          `;
+          iconSize = [30, 30];
+          iconAnchor = [15, 15];
+        }
       } else {
         iconHtml = `
           <div style="
