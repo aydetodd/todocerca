@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation, Share2, Bus, Loader2 } from 'lucide-react';
+import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc'; // White = public
@@ -45,7 +46,20 @@ const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
 </svg>`;
 };
 
-const getBusIconBgColor = (routeType?: string | null, isPrivate?: boolean) => {
+/** Get the right SVG icon for the driver panel based on route type */
+const getVehicleIconSvg = (routeType?: string | null, isPrivate?: boolean, status?: string) => {
+  if (routeType === 'taxi') {
+    const color = getTaxiColorByStatus(status || 'available');
+    return getTaxiSvg(color);
+  }
+  return getBusSvg(routeType, isPrivate);
+};
+
+const getVehicleIconBgColor = (routeType?: string | null, isPrivate?: boolean, status?: string) => {
+  if (routeType === 'taxi') {
+    if (status === 'busy') return 'bg-amber-100';
+    return 'bg-green-100';
+  }
   if (isPrivate || routeType === 'privada') return 'bg-amber-100';
   if (routeType === 'foranea') return 'bg-blue-100';
   return 'bg-gray-100';
@@ -254,8 +268,8 @@ function SingleDriverPanel({
             const ip = assignedVehicle?.is_private || false;
             return (
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? getBusIconBgColor(rt, ip) : 'bg-muted grayscale'}`}
-                dangerouslySetInnerHTML={{ __html: getBusSvg(rt, ip) }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? getVehicleIconBgColor(rt, ip) : 'bg-muted grayscale'}`}
+                dangerouslySetInnerHTML={{ __html: getVehicleIconSvg(rt, ip) }}
               />
             );
           })()}
