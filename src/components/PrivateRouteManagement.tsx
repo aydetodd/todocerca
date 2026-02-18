@@ -276,59 +276,30 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const availableSlots = (subscriptionStatus?.quantity || 0) - units.length;
   const hasAvailableSlot = availableSlots > 0;
 
-  const handleAddUnit = async () => {
-    if (!newUnit.nombre.trim()) {
-      toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" });
+  // Go directly to Stripe when no slots available
+  const handleAddUnitClick = async () => {
+    if (hasAvailableSlot) {
+      // Slot available — open form directly
+      setIsUnitDialogOpen(true);
       return;
     }
 
+    // No slots — go to Stripe first
     try {
       setAddingUnit(true);
+      const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
+      const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada' }
+      });
 
-      if (hasAvailableSlot) {
-        // Register directly — subscription slot available
-        const { error } = await supabase
-          .from('unidades_empresa')
-          .insert({
-            proveedor_id: proveedorId,
-            nombre: newUnit.nombre.trim(),
-            placas: newUnit.placas.trim() || null,
-            descripcion: newUnit.descripcion.trim() || null,
-          });
+      if (error) throw error;
 
-        if (error) throw error;
-
+      if (data?.action === 'checkout' && data?.url) {
+        window.open(data.url, '_blank');
         toast({
-          title: "✅ Unidad registrada",
-          description: `"${newUnit.nombre.trim()}" agregada a tu flota.`,
+          title: "Redirigiendo a Stripe",
+          description: "Completa el pago o prueba gratis. Al volver podrás registrar tu unidad.",
         });
-        setIsUnitDialogOpen(false);
-        setNewUnit({ nombre: '', placas: '', descripcion: '' });
-        fetchUnits();
-      } else {
-        // No available slots — redirect to Stripe checkout
-        const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
-        const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-          body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada' }
-        });
-
-        if (error) throw error;
-
-        if (data?.action === 'checkout' && data?.url) {
-          localStorage.setItem('pending_unit', JSON.stringify({
-            nombre: newUnit.nombre.trim(),
-            placas: newUnit.placas.trim() || null,
-            descripcion: newUnit.descripcion.trim() || null,
-            proveedor_id: proveedorId,
-          }));
-          window.open(data.url, '_blank');
-          toast({
-            title: "Redirigiendo",
-            description: "Completa el registro para tu prueba gratis de 7 días",
-          });
-          setIsUnitDialogOpen(false);
-          setNewUnit({ nombre: '', placas: '', descripcion: '' });
-        }
       }
     } catch (error: any) {
       toast({
@@ -341,49 +312,59 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     }
   };
 
-  // Check for pending unit registration after successful payment
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('private_route') === 'success') {
-      const pendingUnit = localStorage.getItem('pending_unit');
-      if (pendingUnit) {
-        try {
-          const unitData = JSON.parse(pendingUnit);
-          if (unitData.proveedor_id === proveedorId) {
-            registerPendingUnit(unitData);
-          }
-        } catch (e) {
-          console.error('Error parsing pending unit:', e);
-        }
-        localStorage.removeItem('pending_unit');
-      }
-      // Refresh subscription status
-      checkSubscription();
+  // Register unit from the dialog (only when slot is available)
+  const handleAddUnit = async () => {
+    if (!newUnit.nombre.trim()) {
+      toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" });
+      return;
     }
-  }, [proveedorId]);
 
-  const registerPendingUnit = async (unitData: any) => {
     try {
+      setAddingUnit(true);
       const { error } = await supabase
         .from('unidades_empresa')
         .insert({
-          proveedor_id: unitData.proveedor_id,
-          nombre: unitData.nombre,
-          placas: unitData.placas,
-          descripcion: unitData.descripcion,
+          proveedor_id: proveedorId,
+          nombre: newUnit.nombre.trim(),
+          placas: newUnit.placas.trim() || null,
+          descripcion: newUnit.descripcion.trim() || null,
         });
 
       if (error) throw error;
 
       toast({
-        title: "¡Unidad registrada!",
-        description: `"${unitData.nombre}" ha sido agregada a tu flota.`,
+        title: "✅ Unidad registrada",
+        description: `"${newUnit.nombre.trim()}" agregada a tu flota.`,
       });
+      setIsUnitDialogOpen(false);
+      setNewUnit({ nombre: '', placas: '', descripcion: '' });
       fetchUnits();
+      checkSubscription();
     } catch (error: any) {
-      console.error('Error registering pending unit:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'No se pudo procesar',
+        variant: "destructive",
+      });
+    } finally {
+      setAddingUnit(false);
     }
   };
+
+  // After successful Stripe payment, refresh subscription and open registration form
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('private_route') === 'success') {
+      // Refresh subscription, then open the unit dialog
+      checkSubscription().then(() => {
+        setIsUnitDialogOpen(true);
+        toast({
+          title: "✅ Suscripción activa",
+          description: "Ahora registra los datos de tu nueva unidad.",
+        });
+      });
+    }
+  }, [proveedorId]);
 
   const handleSaveUnit = async (unitId: string) => {
     if (!editUnit.nombre.trim()) return;
@@ -739,7 +720,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
             {/* Add unit button */}
             <Button
-              onClick={() => setIsUnitDialogOpen(true)}
+              onClick={handleAddUnitClick}
               disabled={addingUnit}
               className="w-full"
               variant={hasAvailableSlot ? 'default' : 'outline'}
@@ -844,10 +825,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               Agregar Unidad
             </DialogTitle>
             <DialogDescription>
-              {hasAvailableSlot 
-                ? `Tienes ${availableSlots} slot(s) disponible(s). Se registrará sin costo adicional.`
-                : 'Registra tu autobús. Se te redirigirá a la pasarela de pago ($400 MXN/año).'
-              }
+              Tienes {availableSlots} slot(s) disponible(s). Registra los datos de tu unidad.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -884,11 +862,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               className="w-full"
             >
               {addingUnit ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
-              ) : hasAvailableSlot ? (
-                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Registrando...</>
               ) : (
-                <><CreditCard className="h-4 w-4 mr-2" /> Pagar y Registrar Unidad</>
+                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad</>
               )}
             </Button>
           </div>
