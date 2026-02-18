@@ -94,6 +94,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [selectedLinea, setSelectedLinea] = useState('');
   const [selectedNombreRuta, setSelectedNombreRuta] = useState('');
   const [rutasCatalogo, setRutasCatalogo] = useState<any[]>([]);
+  const [rutasLocalData, setRutasLocalData] = useState<any[]>([]);
   
   const { loading: geoLoading, getNivel1, getNivel2 } = useHispanoamerica();
   
@@ -114,7 +115,58 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         .then(({ data }) => setRutasCatalogo(data || []));
     }
   }, [transportType, selectedCiudad, selectedEstado]);
-  
+
+  // Load local route data (UNE Hermosillo, etc.) for dynamic line/name filtering
+  useEffect(() => {
+    if (transportType === 'publico' && selectedCiudad) {
+      const citySlug = selectedCiudad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
+      fetch(`/data/rutas/rutas-une-${citySlug}.json`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.rutas) {
+            setRutasLocalData(data.rutas);
+          } else {
+            setRutasLocalData([]);
+          }
+        })
+        .catch(() => setRutasLocalData([]));
+    } else {
+      setRutasLocalData([]);
+    }
+  }, [transportType, selectedCiudad]);
+
+  // Derive available lines and route names from local data
+  const availableLines = React.useMemo(() => {
+    if (rutasLocalData.length === 0) return [];
+    const lineMap = new Map<string, string>();
+    rutasLocalData.forEach((r: any) => {
+      const key = r.linea === 0 ? 'Especial' : String(r.linea);
+      if (!lineMap.has(key)) {
+        lineMap.set(key, r.linea === 0 ? 'Especial' : `Línea ${r.linea}`);
+      }
+    });
+    return Array.from(lineMap.entries()).sort((a, b) => {
+      if (a[0] === 'Especial') return 1;
+      if (b[0] === 'Especial') return -1;
+      return Number(a[0]) - Number(b[0]);
+    });
+  }, [rutasLocalData]);
+
+  const routeNamesForLine = React.useMemo(() => {
+    if (!selectedLinea || rutasLocalData.length === 0) return [];
+    return rutasLocalData.filter((r: any) => {
+      const key = r.linea === 0 ? 'Especial' : String(r.linea);
+      return key === selectedLinea;
+    });
+  }, [selectedLinea, rutasLocalData]);
+
+  // Auto-select route name when only one option exists for the selected line
+  useEffect(() => {
+    if (routeNamesForLine.length === 1 && routeNamesForLine[0].ramal) {
+      setSelectedNombreRuta(routeNamesForLine[0].ramal);
+    }
+  }, [routeNamesForLine]);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -913,37 +965,62 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                   <Label>Número de Línea *</Label>
                   <select
                     value={selectedLinea}
-                    onChange={(e) => setSelectedLinea(e.target.value)}
+                    onChange={(e) => { setSelectedLinea(e.target.value); setSelectedNombreRuta(''); }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="">Selecciona línea</option>
-                    {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={String(n)}>Línea {n}</option>
-                    ))}
+                    {availableLines.length > 0
+                      ? availableLines.map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))
+                      : Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={String(n)}>Línea {n}</option>
+                        ))
+                    }
                   </select>
                 </div>
-                <div>
-                  <Label>Nombre de la Ruta</Label>
-                  {rutasCatalogo.length > 0 ? (
-                    <select
-                      value={selectedNombreRuta}
-                      onChange={(e) => setSelectedNombreRuta(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="">Selecciona nombre de ruta</option>
-                      {rutasCatalogo.map(r => (
-                        <option key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</option>
-                      ))}
-                      <option value="__custom__">✏️ Otro (escribir)</option>
-                    </select>
-                  ) : (
-                    <Input
-                      value={selectedNombreRuta}
-                      onChange={(e) => setSelectedNombreRuta(e.target.value)}
-                      placeholder="Ej: La Manga, Sahuaro, Centro..."
-                    />
-                  )}
-                </div>
+                {selectedLinea && (
+                  <div>
+                    <Label>Nombre de la Ruta</Label>
+                    {routeNamesForLine.length > 1 ? (
+                      <select
+                        value={selectedNombreRuta}
+                        onChange={(e) => setSelectedNombreRuta(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">Selecciona nombre de ruta</option>
+                        {routeNamesForLine.map((r: any) => (
+                          <option key={r.id} value={r.ramal}>{r.ramal}</option>
+                        ))}
+                        <option value="__custom__">✏️ Otro (escribir)</option>
+                      </select>
+                    ) : routeNamesForLine.length === 1 ? (
+                      <Input
+                        value={routeNamesForLine[0].ramal || `Línea ${selectedLinea}`}
+                        disabled
+                        className="bg-muted"
+                      />
+                    ) : rutasCatalogo.length > 0 ? (
+                      <select
+                        value={selectedNombreRuta}
+                        onChange={(e) => setSelectedNombreRuta(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">Selecciona nombre de ruta</option>
+                        {rutasCatalogo.filter(r => String(r.linea_numero) === selectedLinea).map(r => (
+                          <option key={r.id} value={r.nombre_ruta || r.nombre}>{r.nombre_ruta || r.nombre}</option>
+                        ))}
+                        <option value="__custom__">✏️ Otro (escribir)</option>
+                      </select>
+                    ) : (
+                      <Input
+                        value={selectedNombreRuta}
+                        onChange={(e) => setSelectedNombreRuta(e.target.value)}
+                        placeholder="Ej: La Manga, Sahuaro, Centro..."
+                      />
+                    )}
+                  </div>
+                )}
                 {selectedNombreRuta === '__custom__' && (
                   <div>
                     <Label>Nombre personalizado</Label>
