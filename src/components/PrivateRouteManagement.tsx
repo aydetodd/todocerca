@@ -191,8 +191,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const checkSubscription = async () => {
     try {
       setCheckingSubscription(true);
+      const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'status' }
+        body: { action: 'status', transportType: routeTypeMap[transportType] || 'privada' }
       });
 
       if (error) throw error;
@@ -306,8 +307,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         fetchUnits();
       } else {
         // No available slots — redirect to Stripe checkout
+        const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada' };
         const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-          body: { action: 'add' }
+          body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada' }
         });
 
         if (error) throw error;
@@ -628,7 +630,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               1. Unidades / Autobuses
             </CardTitle>
             <CardDescription>
-              Cada unidad (autobús) requiere una suscripción de $400 MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
+              Cada unidad (autobús) requiere una suscripción de {transportType === 'privado' ? '$400' : '$200'} MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -656,7 +658,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <Alert>
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. $400 MXN/año por unidad después del periodo de prueba.
+                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. {transportType === 'privado' ? '$400' : '$200'} MXN/año por unidad después del periodo de prueba.
                 </AlertDescription>
               </Alert>
             )}
