@@ -24,6 +24,7 @@ import ProductSearch from "./pages/ProductSearch";
 import ProviderProfile from "./pages/ProviderProfile";
 import MiPerfil from "./pages/MiPerfil";
 import MisProductos from "./pages/MisProductos";
+import MisRutas from "./pages/MisRutas";
 import GestionPedidos from "./pages/GestionPedidos";
 import TrackingGPS from "./pages/TrackingGPS";
 import JoinGroup from "./pages/JoinGroup";
@@ -104,6 +105,7 @@ export default function AppWrapper() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
           <Route path="/mis-productos" element={<MisProductos />} />
+          <Route path="/mis-rutas" element={<MisRutas />} />
           <Route path="/gestion-pedidos" element={<GestionPedidos />} />
           <Route path="/mapa" element={<MapView />} />
           <Route path="/tracking-gps" element={<TrackingGPS />} />

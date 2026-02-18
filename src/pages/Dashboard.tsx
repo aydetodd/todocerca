@@ -271,7 +271,7 @@ const Dashboard = () => {
         },
         {
           key: "rutas_privadas" as const,
-          label: "Rutas Privadas",
+          label: "Transporte",
           icon: Bus,
           visible: isProvider,
         },
@@ -540,24 +540,23 @@ const Dashboard = () => {
             )}
 
             {activeSection === "rutas_privadas" && (
-              <div>
-                {isProvider && userSpecificData?.id ? (
-                  <PrivateRouteManagement 
-                    proveedorId={userSpecificData.id} 
-                    businessName={userSpecificData.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
-                  />
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Rutas Privadas</CardTitle>
-                      <CardDescription>No se encontraron datos de proveedor.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Button onClick={() => getProfile()}>Recargar</Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bus className="h-5 w-5" />
+                    Transporte
+                  </CardTitle>
+                  <CardDescription>
+                    Gestiona tus rutas de transporte público, foráneo y privado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/mis-rutas')} className="w-full">
+                    <Bus className="h-4 w-4 mr-2" />
+                    Abrir Gestión de Transporte
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             {activeSection === "apartados" && (
