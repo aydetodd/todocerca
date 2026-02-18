@@ -744,15 +744,17 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => sendWhatsAppInviteLink(vehicle)}
-                            title="Enviar enlace de pasajero por WhatsApp"
-                          >
-                            <Link className="h-3 w-3 mr-1" />
-                            4. Link Pasajeros
-                          </Button>
+                          {transportType === 'privado' && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => sendWhatsAppInviteLink(vehicle)}
+                              title="Enviar enlace de pasajero por WhatsApp"
+                            >
+                              <Link className="h-3 w-3 mr-1" />
+                              4. Link Pasajeros
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
