@@ -27,6 +27,7 @@ export default function MapView() {
   const [privateRouteProviderId, setPrivateRouteProviderId] = useState<string | null>(null);
   const [privateRouteName, setPrivateRouteName] = useState<string | null>(null);
   const [privateRouteProductoId, setPrivateRouteProductoId] = useState<string | null>(null);
+  const [routeTypeLabel, setRouteTypeLabel] = useState<string>('privada');
   const [fleetUserIds, setFleetUserIds] = useState<string[]>([]);
   const [isFleetOwner, setIsFleetOwner] = useState(false);
   const [fleetMode, setFleetMode] = useState(fleetParam);
@@ -48,15 +49,16 @@ export default function MapView() {
       const fetchPublicRoute = async () => {
         const { data: producto } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, route_type, is_private, proveedores(user_id)')
           .eq('id', publicRouteProductoId)
           .maybeSingle();
         
       if (producto) {
           setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
           setPrivateRouteName(producto.nombre);
-          // Set productoId so the map can filter AND label the popup correctly
           setPrivateRouteProductoId(producto.id);
+          const rt = (producto as any).route_type;
+          setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
         }
       };
       fetchPublicRoute();
@@ -68,7 +70,7 @@ export default function MapView() {
         // Try reading the product directly (owner/chofer can read via RLS)
         let { data: producto, error } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, is_private, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, is_private, route_type, proveedores(user_id)')
           .eq('invite_token', privateRouteToken)
           .eq('is_private', true)
           .maybeSingle();
@@ -78,7 +80,7 @@ export default function MapView() {
           // Fallback: query without is_private filter to find any matching token
           const { data: publicProduct } = await supabase
             .from('productos')
-            .select('id, nombre, proveedor_id, proveedores(user_id)')
+            .select('id, nombre, proveedor_id, route_type, proveedores(user_id)')
             .eq('invite_token', privateRouteToken)
             .maybeSingle();
           
@@ -101,9 +103,13 @@ export default function MapView() {
         setPrivateRouteName(producto.nombre);
         setPrivateRouteProductoId(producto.id);
         
+        const rt = (producto as any).route_type;
+        const label = rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública';
+        setRouteTypeLabel(label);
+        
         toast({
           title: `Ruta: ${producto.nombre}`,
-          description: "Mostrando ubicación de la ruta privada",
+          description: `Mostrando ubicación de la ruta ${label}`,
         });
       };
       
@@ -348,9 +354,12 @@ export default function MapView() {
         
         {/* Route indicator with favorite button */}
         {privateRouteName && !fleetMode && (
-          <div className={`absolute z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 ${isFleetOwner ? 'top-14 left-4' : 'top-4 left-4'}`}>
-            <span className="text-sm font-medium">
-              {privateRouteToken ? '🔒' : '🚌'} {privateRouteName}
+          <div className={`absolute z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md flex flex-col ${isFleetOwner ? 'top-14 left-4' : 'top-4 left-4'}`}>
+            <span className="text-sm font-bold">
+              Ruta: {privateRouteName}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Mostrando ubicación de la ruta {routeTypeLabel}
             </span>
           </div>
         )}

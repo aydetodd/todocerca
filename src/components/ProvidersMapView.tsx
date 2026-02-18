@@ -109,8 +109,16 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
   });
 };
 
-// Create bus icon (white bus with route name) - longer design with side windows
-const createBusIcon = (routeName: string, rotation: number = 0) => {
+// Bus body color by route type: white=urbana/public, yellow=privada, blue=foranea
+const getBusColor = (routeType?: string | null, isPrivate?: boolean): { fill: string; stroke: string } => {
+  if (isPrivate || routeType === 'privada') return { fill: '#FDB813', stroke: '#D4960A' }; // Yellow
+  if (routeType === 'foranea') return { fill: '#3B82F6', stroke: '#2563EB' }; // Blue
+  return { fill: '#FFFFFF', stroke: '#cccccc' }; // White (default/urbana)
+};
+
+// Create bus icon (colored by route type) - longer design with side windows
+const createBusIcon = (routeName: string, rotation: number = 0, routeType?: string | null, isPrivate?: boolean) => {
+  const { fill, stroke } = getBusColor(routeType, isPrivate);
   const busSvg = `
     <svg width="18" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
       <!-- Shadow -->
@@ -131,8 +139,8 @@ const createBusIcon = (routeName: string, rotation: number = 0) => {
       <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
       <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
       
-      <!-- White roof (center) -->
-      <rect x="9" y="10" width="18" height="56" rx="2" fill="#FFFFFF" stroke="#ccc" stroke-width="0.5"/>
+      <!-- Colored roof (center) -->
+      <rect x="9" y="10" width="18" height="56" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/>
       
       <!-- Left side windows -->
       <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
@@ -162,8 +170,8 @@ const createBusIcon = (routeName: string, rotation: number = 0) => {
       <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
       <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
       
-      <!-- Route name on white roof -->
-      ${routeName ? `<text x="18" y="42" font-family="Arial, sans-serif" font-size="7" font-weight="700" fill="#111827" text-anchor="middle">${routeName}</text>` : ''}
+      <!-- Route name on roof -->
+      ${routeName ? `<text x="18" y="42" font-family="Arial, sans-serif" font-size="7" font-weight="700" fill="${fill === '#FFFFFF' ? '#111827' : '#FFFFFF'}" text-anchor="middle">${routeName}</text>` : ''}
     </svg>
   `;
 
@@ -261,7 +269,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             _routeName: routeName,
             _isBus: realtimeLocation.is_bus,
             _isTaxi: realtimeLocation.is_taxi,
-            _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15
+            _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15,
+            _routeType: realtimeLocation.route_type || null,
+            _isPrivateRoute: realtimeLocation.is_private_route || false,
           };
         }
         
@@ -356,6 +366,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       
       const routeName = (provider as any)._routeName || '';
       const providerStatus = (provider as any)._realtimeStatus || 'available';
+      const routeType = (provider as any)._routeType || null;
+      const isPrivateRoute = (provider as any)._isPrivateRoute || false;
 
       // If marker exists, update position AND update icon if status changed
       if (existingMarker) {
@@ -390,7 +402,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
           
           // Update icon with new rotation (only for taxi/bus)
           if (showAsBus) {
-            existingMarker.setIcon(createBusIcon(routeName, rotation));
+            existingMarker.setIcon(createBusIcon(routeName, rotation, routeType, isPrivateRoute));
           } else if (showAsTaxi) {
             existingMarker.setIcon(createTaxiIcon(providerStatus, rotation));
             (existingMarker as any)._taxiStatus = providerStatus;
@@ -414,7 +426,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       // Icon depends on search filter: taxi -> taxi icon, ruta -> bus icon, other -> default blue pin
       let marker: L.Marker;
       if (showAsBus) {
-        marker = L.marker(newPos, { icon: createBusIcon(routeName, 0) }).addTo(mapRef.current!);
+        marker = L.marker(newPos, { icon: createBusIcon(routeName, 0, routeType, isPrivateRoute) }).addTo(mapRef.current!);
         (marker as any)._isBus = true;
       } else if (showAsTaxi) {
         marker = L.marker(newPos, { icon: createTaxiIcon(providerStatus, 0) }).addTo(mapRef.current!);
