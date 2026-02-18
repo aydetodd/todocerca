@@ -29,6 +29,7 @@ interface RealtimeMapProps {
   privateRouteUserId?: string | null;
   privateRouteProductoId?: string | null;
   privateRouteName?: string | null;
+  viewingRouteType?: string | null;
   fleetUserIds?: string[];
   mapRef?: React.MutableRefObject<L.Map | null>;
 }
@@ -44,7 +45,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, mapRef: externalMapRef }: RealtimeMapProps) => {
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -299,43 +300,24 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       markerStatesRef.current[location.user_id] = compositeState;
 
       const isPrivateRoute = location.is_private_route;
+      
+      // When viewing a specific route (privateRouteProductoId is set), force bus icon
+      // regardless of the provider's own type (they might be a taxi provider too)
+      const isViewingRoute = !!privateRouteProductoId;
+      
       let iconHtml: string;
       let iconSize: [number, number];
       let iconAnchor: [number, number];
       
-      if (isTaxi) {
-        const taxiColor = taxiColors[estado];
-        iconHtml = `
-          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-            <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
-              <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
-              <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
-              <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
-                    fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
-              <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
-              <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}"/>
-              <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
-              <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
-              <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" fill="#4A90E2" opacity="0.7"/>
-              <text x="16" y="26" font-family="Arial" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-              <circle cx="11" cy="12" r="1.2" fill="#FFF"/>
-              <circle cx="21" cy="12" r="1.2" fill="#FFF"/>
-              <circle cx="11" cy="36" r="1" fill="#FF4444"/>
-              <circle cx="21" cy="36" r="1" fill="#FF4444"/>
-            </svg>
-          </div>
-        `;
-        iconSize = [32, 48];
-        iconAnchor = [16, 24];
-      } else if (isBus) {
-        // Bus icon — yellow for ALL private routes (drivers AND owners), white for public
-        const busBodyColor = isPrivateRoute ? '#FDB813' : '#FFFFFF';
-        const busStrokeColor = isPrivateRoute ? '#D4960A' : '#999999';
-        // Use the resolved routeLabel (which accounts for multi-company assignments)
+      if (isViewingRoute || isBus) {
+        // Force bus icon when viewing a route — use the VIEWED route's type for color
+        const effectiveRouteType = isViewingRoute ? (viewingRouteType || location.route_type) : location.route_type;
+        const effectiveIsPrivate = isViewingRoute ? (viewingRouteType === 'privada') : isPrivateRoute;
+        const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : '#FFFFFF');
+        const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : '#999999');
         const busLabel = routeLabel || location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
+        const textColor = busBodyColor === '#FFFFFF' ? '#111827' : '#FFFFFF';
         iconHtml = `
           <div class="bus-rotate-container" style="transform: rotate(${heading}deg); transition: transform 0.8s ease;">
             <div class="bus-marker-alive" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
@@ -367,13 +349,39 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
                 <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
                 <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
                 <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-                <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="#333" text-anchor="middle">${labelTruncated}</text>
+                <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">${labelTruncated}</text>
               </svg>
             </div>
           </div>
         `;
         iconSize = [32, 52];
         iconAnchor = [16, 26];
+      } else if (isTaxi) {
+        const taxiColor = taxiColors[estado];
+        iconHtml = `
+          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+            <svg width="32" height="48" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="16" cy="44" rx="12" ry="3" fill="rgba(0,0,0,0.25)"/>
+              <ellipse cx="8" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
+              <ellipse cx="24" cy="34" rx="3" ry="4" fill="#1a1a1a"/>
+              <path d="M 9 12 L 9 36 Q 9 38 11 38 L 21 38 Q 23 38 23 36 L 23 12 Q 23 10 21 10 L 11 10 Q 9 10 9 12 Z" 
+                    fill="${taxiColor.body}" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="8" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
+              <ellipse cx="24" cy="18" rx="3" ry="4" fill="#1a1a1a"/>
+              <rect x="10" y="20" width="12" height="10" rx="1.5" fill="${taxiColor.roof}"/>
+              <rect x="9.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
+              <rect x="20.5" y="21" width="2" height="8" rx="0.3" fill="#4A90E2" opacity="0.6"/>
+              <path d="M 11 13 L 11 16 L 21 16 L 21 13 Q 16 11.5 11 13 Z" fill="#4A90E2" opacity="0.7"/>
+              <text x="16" y="26" font-family="Arial" font-size="5" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
+              <circle cx="11" cy="12" r="1.2" fill="#FFF"/>
+              <circle cx="21" cy="12" r="1.2" fill="#FFF"/>
+              <circle cx="11" cy="36" r="1" fill="#FF4444"/>
+              <circle cx="21" cy="36" r="1" fill="#FF4444"/>
+            </svg>
+          </div>
+        `;
+        iconSize = [32, 48];
+        iconAnchor = [16, 24];
       } else if (isCurrentUser) {
         iconHtml = `
           <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -411,7 +419,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         : isCurrentUser ? 'Visible para otros' : '';
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
-      const busTypeLabel = isPrivateRoute ? 'Transporte Privado' : 'Ruta de Transporte';
+      const effectiveRouteTypeForLabel = privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type;
+      const busTypeLabel = (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : 'Ruta de Transporte');
       
       // Build favorite button HTML — use escaped double quotes for onclick
       // Use the resolved route producto_id (from matching assignment when viewing a specific route)
@@ -628,7 +637,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, fleetUserIds]);
+  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds]);
 
   // Add global functions for popup buttons
   useEffect(() => {
