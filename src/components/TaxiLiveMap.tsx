@@ -16,36 +16,10 @@ interface TaxiLiveMapProps {
   onClose: () => void;
 }
 
-// Colores del taxi basado en estado (amarillo = busy durante viaje)
-const getTaxiSvg = (color: { body: string; roof: string }) => `
-  <svg width="27" height="39" viewBox="0 0 36 52" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="18" cy="48" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-    <ellipse cx="10" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-    <ellipse cx="10" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-    <ellipse cx="26" cy="38" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-    <ellipse cx="26" cy="38" rx="2" ry="2.8" fill="#4a4a4a"/>
-    <path d="M 11 14 L 11 40 Q 11 42 13 42 L 23 42 Q 25 42 25 40 L 25 14 Q 25 12 23 12 L 13 12 Q 11 12 11 14 Z" fill="${color.body}" stroke="#333" stroke-width="0.7"/>
-    <ellipse cx="10" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-    <ellipse cx="10" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-    <ellipse cx="26" cy="20" rx="3.5" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-    <ellipse cx="26" cy="20" rx="2" ry="2.8" fill="#4a4a4a"/>
-    <rect x="12" y="23" width="12" height="12" rx="1.5" fill="${color.roof}" stroke="#333" stroke-width="0.6"/>
-    <rect x="11.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-    <rect x="22.5" y="24" width="2" height="10" rx="0.4" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.4"/>
-    <path d="M 13 15 L 13 18 L 23 18 L 23 15 Q 18 13.5 13 15 Z" fill="#4A90E2" opacity="0.7" stroke="#333" stroke-width="0.5"/>
-    <path d="M 13 36 L 13 39 L 23 39 L 23 36 Z" fill="#4A90E2" opacity="0.6" stroke="#333" stroke-width="0.5"/>
-    <text x="18" y="30" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#333" text-anchor="middle">TAXI</text>
-    <circle cx="13" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-    <circle cx="23" cy="14" r="1.4" fill="#FFF" stroke="#333" stroke-width="0.4"/>
-    <circle cx="13" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-    <circle cx="23" cy="40" r="1.2" fill="#FF4444" stroke="#333" stroke-width="0.4"/>
-    <line x1="13" y1="25" x2="13" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-    <line x1="23" y1="25" x2="23" y2="33" stroke="#333" stroke-width="0.5" opacity="0.3"/>
-  </svg>
-`;
+import { getTaxiSvg, TAXI_COLORS } from '@/lib/vehicleIcons';
 
 // Taxi amarillo (ocupado/en viaje)
-const TAXI_ICON_SVG = getTaxiSvg({ body: '#FDB813', roof: '#FFD700' });
+const TAXI_ICON_SVG = getTaxiSvg(TAXI_COLORS.busy);
 
 const USER_ICON_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
@@ -171,8 +145,8 @@ export default function TaxiLiveMap({
         icon: L.divIcon({
           html: iconHtml,
           className: 'my-location-marker',
-          iconSize: isDriver ? [27, 39] : [32, 32],
-          iconAnchor: isDriver ? [14, 20] : [16, 16]
+          iconSize: isDriver ? [18, 40] : [32, 32],
+          iconAnchor: isDriver ? [9, 20] : [16, 16]
         })
       }).addTo(mapRef.current);
       
