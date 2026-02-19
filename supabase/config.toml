@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.send-whatsapp-bulk]
 verify_jwt = false
+
+[functions.send-internal-bulk]
+verify_jwt = false
