@@ -66,7 +66,7 @@ export const useRealtimeLocations = () => {
         .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
         .eq('role', 'proveedor')
         .in('estado', ['available', 'busy']),
-      supabase.from('categories')
+      supabase.from('product_categories')
         .select('id')
         .ilike('name', 'taxi')
         .maybeSingle(),
@@ -142,6 +142,7 @@ export const useRealtimeLocations = () => {
     const [taxiResult, rutaResult] = await Promise.all([taxiQuery, rutaQuery]);
     
     const taxiProviderIds = new Set(taxiResult.data?.map(p => p.proveedor_id) || []);
+    console.log('[fetchFullData] Taxi detection:', { taxiCategoryId: taxiCategory?.id, taxiProducts: taxiResult.data?.length, taxiProviderCount: taxiProviderIds.size });
     // Build map of proveedor_id → taxi product price (use the product's precio, not profiles.tarifa_km)
     const taxiPriceMap = new Map<string, number>();
     taxiResult.data?.forEach(p => {
