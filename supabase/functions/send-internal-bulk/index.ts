@@ -37,14 +37,14 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is admin
+    // Check if user is admin (consecutive_number = 1)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, consecutive_number, telefono')
       .eq('user_id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    if (profile?.consecutive_number !== 1) {
       return new Response(
         JSON.stringify({ error: 'Solo administradores pueden enviar mensajes masivos' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
