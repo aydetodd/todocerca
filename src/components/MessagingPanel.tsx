@@ -153,7 +153,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                     ${isOwn 
                       ? 'bg-primary text-primary-foreground' 
                       : isSystemMsg 
-                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-900 dark:text-green-100' 
                         : 'bg-muted'
                     }
                   `}
