@@ -51,7 +51,7 @@ serve(async (req) => {
       );
     }
 
-    const { message, excludeUsersWithWelcome } = await req.json();
+    const { message, excludeUsersWithWelcome, testPhone } = await req.json();
 
     if (!message) {
       return new Response(
@@ -60,11 +60,18 @@ serve(async (req) => {
       );
     }
 
-    // Get all user IDs (exclude system user)
-    const { data: allProfiles, error: profilesError } = await supabase
+    // Get target user IDs (exclude system user)
+    let query = supabase
       .from('profiles')
-      .select('user_id, apodo, nombre')
+      .select('user_id, apodo, nombre, telefono')
       .neq('user_id', SYSTEM_USER_ID);
+
+    // If testPhone provided, only send to that phone number
+    if (testPhone) {
+      query = query.eq('telefono', testPhone);
+    }
+
+    const { data: allProfiles, error: profilesError } = await query;
 
     if (profilesError || !allProfiles?.length) {
       return new Response(

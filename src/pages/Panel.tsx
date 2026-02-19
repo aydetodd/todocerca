@@ -214,15 +214,25 @@ export default function Panel() {
 
   const handleBulkInternal = async () => {
     if (!bulkMessage.trim()) return;
-    if (!confirm(`¿Enviar este mensaje interno a TODOS los usuarios registrados?\n\nUsa {nombre} para personalizar.`)) return;
+    const testOnly = confirm('¿Enviar solo como PRUEBA a tu número?\n\nOK = Solo a mí\nCancelar = A TODOS los usuarios');
+    if (!testOnly && !confirm('⚠️ ¿Confirmas enviar a TODOS los usuarios registrados?')) return;
     try {
       setSendingBulk(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No autenticado');
 
+      const body: any = { message: bulkMessage, excludeUsersWithWelcome: false };
+      if (testOnly && profile?.telefono) {
+        body.testPhone = profile.telefono;
+      } else if (testOnly) {
+        toast({ title: "Error", description: "No tienes teléfono registrado en tu perfil", variant: "destructive" });
+        setSendingBulk(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('send-internal-bulk', {
         headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { message: bulkMessage, excludeUsersWithWelcome: false }
+        body
       });
 
       if (error) throw error;
