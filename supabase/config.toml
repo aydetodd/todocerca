@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.send-internal-bulk]
 verify_jwt = false
+
+[functions.reply-as-system]
+verify_jwt = false
