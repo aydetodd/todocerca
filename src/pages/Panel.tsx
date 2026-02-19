@@ -44,6 +44,8 @@ export default function Panel() {
   const [clickSequence, setClickSequence] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [sendingBulk, setSendingBulk] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [showBulkForm, setShowBulkForm] = useState(false);
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
@@ -209,23 +211,28 @@ export default function Panel() {
     }
   };
 
-  const handleBulkWhatsApp = async () => {
-    if (!confirm('¿Enviar carta de agradecimiento por WhatsApp a TODOS los usuarios registrados?')) return;
+
+  const handleBulkInternal = async () => {
+    if (!bulkMessage.trim()) return;
+    if (!confirm(`¿Enviar este mensaje interno a TODOS los usuarios registrados?\n\nUsa {nombre} para personalizar.`)) return;
     try {
       setSendingBulk(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No autenticado');
 
-      const { data, error } = await supabase.functions.invoke('send-whatsapp-bulk', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
+      const { data, error } = await supabase.functions.invoke('send-internal-bulk', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { message: bulkMessage, excludeUsersWithWelcome: false }
       });
 
       if (error) throw error;
 
       toast({
         title: "Envío completado",
-        description: `Enviados: ${data.sent} | Fallidos: ${data.failed} de ${data.total} usuarios`,
+        description: `Enviados: ${data.sent} | Errores: ${data.errors} de ${data.total} usuarios`,
       });
+      setBulkMessage('');
+      setShowBulkForm(false);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -322,14 +329,32 @@ export default function Panel() {
                       Ver Reporte de Usuarios
                     </Button>
                     <Button
-                      onClick={handleBulkWhatsApp}
+                      onClick={() => setShowBulkForm(!showBulkForm)}
                       variant="outline"
                       className="w-full"
-                      disabled={sendingBulk}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      {sendingBulk ? 'Enviando...' : 'Enviar carta WhatsApp a todos'}
+                      Enviar mensaje interno a todos
                     </Button>
+                    {showBulkForm && (
+                      <div className="space-y-2 p-3 border rounded-lg">
+                        <p className="text-xs text-muted-foreground">Usa <code>{'{nombre}'}</code> para personalizar con el nombre del usuario.</p>
+                        <textarea
+                          className="w-full min-h-[120px] p-2 text-sm rounded-md border border-input bg-background resize-y"
+                          placeholder="Escribe tu mensaje aquí..."
+                          value={bulkMessage}
+                          onChange={(e) => setBulkMessage(e.target.value)}
+                        />
+                        <Button
+                          onClick={handleBulkInternal}
+                          className="w-full"
+                          disabled={sendingBulk || !bulkMessage.trim()}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          {sendingBulk ? 'Enviando...' : 'Enviar ahora'}
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
                 
