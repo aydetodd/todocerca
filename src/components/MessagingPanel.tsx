@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { X, Send } from 'lucide-react';
+import { X, Send, ShieldCheck } from 'lucide-react';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { trackMessaging } from '@/lib/analytics';
+
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 interface MessagingPanelProps {
   isOpen: boolean;
@@ -87,15 +89,30 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
       }}
     >
       {/* Header */}
-      <div className="w-full max-w-[640px] flex items-center justify-between p-4 border-b bg-primary text-primary-foreground shrink-0">
-        <h3 className="font-bold truncate pr-2">
-          {receiverName ? `Chat con ${receiverName}` : 'Mensajes'}
-        </h3>
+      <div className={`w-full max-w-[640px] flex items-center justify-between p-4 border-b shrink-0 ${
+        receiverId === SYSTEM_USER_ID 
+          ? 'bg-green-600 text-white' 
+          : 'bg-primary text-primary-foreground'
+      }`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {receiverId === SYSTEM_USER_ID && (
+            <ShieldCheck className="h-5 w-5 shrink-0" />
+          )}
+          <h3 className="font-bold truncate">
+            {receiverId === SYSTEM_USER_ID 
+              ? 'TodoCerca — Canal Oficial' 
+              : receiverName ? `Chat con ${receiverName}` : 'Mensajes'}
+          </h3>
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="text-primary-foreground hover:bg-primary/90 shrink-0"
+          className={`shrink-0 ${
+            receiverId === SYSTEM_USER_ID 
+              ? 'text-white hover:bg-green-700' 
+              : 'text-primary-foreground hover:bg-primary/90'
+          }`}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -115,6 +132,7 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
           ) : (
             messages.map((msg) => {
               const isOwn = msg.sender_id === currentUserId;
+              const isSystemMsg = msg.sender_id === SYSTEM_USER_ID;
 
               return (
                 <div
@@ -122,14 +140,22 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                   className={`mb-4 ${isOwn ? 'text-right' : 'text-left'}`}
                 >
                   {!isOwn && (
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {msg.sender?.apodo || 'Usuario'}
+                    <p className={`text-xs mb-1 flex items-center gap-1 ${
+                      isSystemMsg ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'
+                    }`}>
+                      {isSystemMsg && <ShieldCheck className="h-3 w-3" />}
+                      {isSystemMsg ? 'TodoCerca' : (msg.sender?.apodo || 'Usuario')}
                     </p>
                   )}
                   <div
                     className={`
-                    inline-block p-3 rounded-lg max-w-[75%]
-                    ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}
+                    inline-block p-3 rounded-lg max-w-[85%]
+                    ${isOwn 
+                      ? 'bg-primary text-primary-foreground' 
+                      : isSystemMsg 
+                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                        : 'bg-muted'
+                    }
                   `}
                   >
                     <span className="text-sm break-words whitespace-pre-wrap">

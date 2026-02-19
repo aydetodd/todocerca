@@ -8,8 +8,10 @@ import ShareContactButton from '@/components/ShareContactButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, Clock, User, Users, UserPlus } from 'lucide-react';
+import { MessageCircle, Clock, User, Users, UserPlus, ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 const MessagesInbox = () => {
   const { conversations, loading: loadingConversations, markAsRead } = useUnreadMessages();
@@ -79,43 +81,61 @@ const MessagesInbox = () => {
             ) : (
               <ScrollArea className="h-[calc(100vh-240px)]">
                 <div className="space-y-2">
-                  {conversations.map((conversation) => (
-                    <Card
-                      key={conversation.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => handleOpenChat(
-                        conversation.sender_id,
-                        conversation.sender_apodo
-                      )}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <User className="h-6 w-6 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {conversation.sender_apodo}
-                              </h3>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {formatTime(conversation.last_message_time)}
+                  {conversations.map((conversation) => {
+                    const isSystem = conversation.sender_id === SYSTEM_USER_ID;
+                    return (
+                      <Card
+                        key={conversation.id}
+                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${isSystem ? 'border-green-500/30 bg-green-50/5' : ''}`}
+                        onClick={() => handleOpenChat(
+                          conversation.sender_id,
+                          isSystem ? 'TodoCerca' : conversation.sender_apodo
+                        )}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              isSystem ? 'bg-green-500/20' : 'bg-primary/10'
+                            }`}>
+                              {isSystem ? (
+                                <ShieldCheck className="h-6 w-6 text-green-600" />
+                              ) : (
+                                <User className="h-6 w-6 text-primary" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <h3 className={`font-semibold truncate ${isSystem ? 'text-green-700 dark:text-green-400' : 'text-foreground'}`}>
+                                    {isSystem ? 'TodoCerca' : conversation.sender_apodo}
+                                  </h3>
+                                  {isSystem && (
+                                    <span className="text-[10px] bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                                      Oficial
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-2">
+                                  <Clock className="h-3 w-3" />
+                                  {formatTime(conversation.last_message_time)}
+                                </div>
                               </div>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {conversation.last_message}
+                              </p>
                             </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {conversation.last_message}
-                            </p>
+                            {conversation.unread_count > 0 && (
+                              <div className={`text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shrink-0 ${
+                                isSystem ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+                              }`}>
+                                {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
+                              </div>
+                            )}
                           </div>
-                          {conversation.unread_count > 0 && (
-                            <div className="bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                              {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}
