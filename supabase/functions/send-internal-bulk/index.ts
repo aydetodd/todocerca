@@ -106,7 +106,7 @@ serve(async (req) => {
       const messagesToInsert = batch.map(u => {
         // Personalize message with user's name
         const displayName = u.apodo || u.nombre || 'Usuario';
-        const personalizedMessage = message.replace(/{nombre}/g, displayName);
+        const personalizedMessage = message.replace(/{nombre}/gi, displayName);
         
         return {
           sender_id: SYSTEM_USER_ID,
