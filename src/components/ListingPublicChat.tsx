@@ -7,6 +7,7 @@ import { MessageCircle, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { playMessageSound } from '@/lib/sounds';
 
 interface Comment {
   id: string;
@@ -30,11 +31,9 @@ interface ListingPublicChatProps {
   onUnreadChange?: (count: number) => void;
 }
 
-// Play notification sound
+// Play notification sound using TTS voice system
 const playNotificationSound = () => {
-  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/111/111-preview.mp3');
-  audio.volume = 1.0;
-  audio.play().catch((e) => console.log('Audio play failed:', e));
+  playMessageSound();
 };
 
 export function ListingPublicChat({
