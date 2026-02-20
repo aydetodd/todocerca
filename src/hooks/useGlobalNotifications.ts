@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { playOrderSound, playAppointmentSound, playTaxiAlertSound, playHailSound, startTaxiAlertLoop, stopAlertLoop } from '@/lib/sounds';
+import { playOrderSound, playAppointmentSound, playTaxiAlertSound, playHailSound, playMessageSound, startTaxiAlertLoop, stopAlertLoop } from '@/lib/sounds';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -170,9 +170,13 @@ export const useGlobalNotifications = () => {
           (payload) => {
             const msg = payload.new as any;
             const isHailMessage = msg.message?.includes('¡PARADA DE TAXI!');
+            const isPanic = msg.is_panic === true;
+            const isFromSystem = msg.sender_id === '00000000-0000-0000-0000-000000000001';
             
             console.log('🔔 [GlobalNotifications] Mensaje recibido:', {
               isHail: isHailMessage,
+              isPanic,
+              isFromSystem,
               messagePreview: msg.message?.substring(0, 50)
             });
 
@@ -193,6 +197,33 @@ export const useGlobalNotifications = () => {
                   tag: 'taxi-hail',
                   requireInteraction: true
                 });
+              }
+            } else if (!isPanic && !isFromSystem) {
+              // Mensaje normal de chat interno — alerta con voz TTS
+              console.log('💬 [GlobalNotifications] Mensaje normal recibido, reproduciendo alerta con voz');
+              playMessageSound();
+              toast({
+                title: "💬 Nuevo mensaje",
+                description: "Tienes un nuevo mensaje en TodoCerca",
+                duration: 8000,
+              });
+
+              if ('Notification' in window && Notification.permission === 'granted') {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.controller.postMessage({
+                    type: 'SHOW_NOTIFICATION',
+                    title: '💬 Nuevo mensaje en TodoCerca',
+                    body: msg.message?.substring(0, 100) || 'Tienes un nuevo mensaje',
+                    tag: 'new-message-global'
+                  });
+                } else {
+                  new Notification('💬 Nuevo mensaje en TodoCerca', {
+                    body: msg.message?.substring(0, 100) || 'Tienes un nuevo mensaje',
+                    icon: '/icon-192.png',
+                    tag: 'new-message-global',
+                    requireInteraction: true
+                  });
+                }
               }
             }
           }
