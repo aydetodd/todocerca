@@ -130,15 +130,26 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
               No hay mensajes aún.
             </p>
           ) : (
-            messages.map((msg) => {
+            messages.map((msg, index) => {
               const isOwn = msg.sender_id === currentUserId;
               const isSystemMsg = msg.sender_id === SYSTEM_USER_ID;
+              const msgDate = new Date(msg.created_at);
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
+              const showDateSeparator = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
 
               return (
-                <div
-                  key={msg.id}
-                  className={`mb-4 ${isOwn ? 'text-right' : 'text-left'}`}
-                >
+                <div key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="flex items-center gap-3 my-4">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground font-medium px-2">
+                        {msgDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                  )}
+                  <div className={`mb-4 ${isOwn ? 'text-right' : 'text-left'}`}>
                   {!isOwn && (
                     <p className={`text-xs mb-1 flex items-center gap-1 ${
                       isSystemMsg ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'
@@ -171,8 +182,9 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                       ? (msg.is_read ? 'text-green-500' : 'text-red-500')
                       : 'text-muted-foreground'
                   }`}>
-                    {new Date(msg.created_at).toLocaleTimeString()}
+                    {msgDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                   </p>
+                  </div>
                 </div>
               );
             })
