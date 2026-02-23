@@ -222,7 +222,6 @@ serve(async (req) => {
       .eq("id", ticket.id);
 
     // Reduce ticket count from user account
-    await supabaseAdmin.rpc("", {}).catch(() => {}); // fallback
     const { data: currentAccount } = await supabaseAdmin
       .from("cuentas_boletos")
       .select("ticket_count, total_usado")
