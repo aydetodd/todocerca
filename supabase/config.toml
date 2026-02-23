@@ -89,3 +89,24 @@ verify_jwt = false
 
 [functions.reply-as-system]
 verify_jwt = false
+
+[functions.purchase-tickets]
+verify_jwt = false
+
+[functions.generate-qr-ticket]
+verify_jwt = false
+
+[functions.validate-qr-ticket]
+verify_jwt = false
+
+[functions.transfer-ticket]
+verify_jwt = false
+
+[functions.expire-transferred-tickets]
+verify_jwt = false
+
+[functions.stripe-webhook-tickets]
+verify_jwt = false
+
+[functions.create-connect-account]
+verify_jwt = false
