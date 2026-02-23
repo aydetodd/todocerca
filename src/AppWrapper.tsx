@@ -48,6 +48,7 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 import GenerarQr from "./pages/GenerarQr";
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
+import PanelConcesionario from "./pages/PanelConcesionario";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
@@ -141,6 +142,7 @@ export default function AppWrapper() {
           <Route path="/wallet/qr-boletos/generar" element={<GenerarQr />} />
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
+          <Route path="/panel-concesionario" element={<PanelConcesionario />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
