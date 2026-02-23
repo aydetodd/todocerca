@@ -66,6 +66,57 @@ export type Database = {
           },
         ]
       }
+      audit_log_verificacion: {
+        Row: {
+          accion: string
+          admin_id: string | null
+          concesionario_id: string
+          created_at: string
+          detalles: Json | null
+          id: string
+          ip: string | null
+          user_agent: string | null
+          verificacion_id: string | null
+        }
+        Insert: {
+          accion: string
+          admin_id?: string | null
+          concesionario_id: string
+          created_at?: string
+          detalles?: Json | null
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          verificacion_id?: string | null
+        }
+        Update: {
+          accion?: string
+          admin_id?: string | null
+          concesionario_id?: string
+          created_at?: string
+          detalles?: Json | null
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          verificacion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_verificacion_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_verificacion_verificacion_id_fkey"
+            columns: ["verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "verificaciones_concesionario"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -316,6 +367,197 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      cuentas_boletos: {
+        Row: {
+          id: string
+          ticket_count: number
+          total_comprado: number
+          total_usado: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ticket_count?: number
+          total_comprado?: number
+          total_usado?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ticket_count?: number
+          total_comprado?: number
+          total_usado?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cuentas_conectadas: {
+        Row: {
+          concesionario_id: string
+          created_at: string
+          estado_stripe: string | null
+          id: string
+          info_bancaria: Json | null
+          pagos_habilitados: boolean | null
+          requisitos_pendientes: Json | null
+          stripe_account_id: string | null
+          transferencias_habilitadas: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          concesionario_id: string
+          created_at?: string
+          estado_stripe?: string | null
+          id?: string
+          info_bancaria?: Json | null
+          pagos_habilitados?: boolean | null
+          requisitos_pendientes?: Json | null
+          stripe_account_id?: string | null
+          transferencias_habilitadas?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          concesionario_id?: string
+          created_at?: string
+          estado_stripe?: string | null
+          id?: string
+          info_bancaria?: Json | null
+          pagos_habilitados?: boolean | null
+          requisitos_pendientes?: Json | null
+          stripe_account_id?: string | null
+          transferencias_habilitadas?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuentas_conectadas_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: true
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      detalles_verificacion_unidad: {
+        Row: {
+          created_at: string
+          estado_verificacion: string | null
+          id: string
+          linea: string | null
+          modelo: string | null
+          numero_economico: string
+          placas: string
+          unidad_id: string | null
+          updated_at: string
+          urls_fotos: Json | null
+          verificacion_id: string
+        }
+        Insert: {
+          created_at?: string
+          estado_verificacion?: string | null
+          id?: string
+          linea?: string | null
+          modelo?: string | null
+          numero_economico: string
+          placas: string
+          unidad_id?: string | null
+          updated_at?: string
+          urls_fotos?: Json | null
+          verificacion_id: string
+        }
+        Update: {
+          created_at?: string
+          estado_verificacion?: string | null
+          id?: string
+          linea?: string | null
+          modelo?: string | null
+          numero_economico?: string
+          placas?: string
+          unidad_id?: string | null
+          updated_at?: string
+          urls_fotos?: Json | null
+          verificacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detalles_verificacion_unidad_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detalles_verificacion_unidad_verificacion_id_fkey"
+            columns: ["verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "verificaciones_concesionario"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos_concesionario: {
+        Row: {
+          concesionario_id: string
+          created_at: string
+          estado_verificacion: string | null
+          hash_archivo: string | null
+          id: string
+          tamano_archivo: number | null
+          tipo_documento: string
+          tipo_mime: string | null
+          updated_at: string
+          url_archivo: string
+          verificacion_id: string
+          verificado_por: string | null
+        }
+        Insert: {
+          concesionario_id: string
+          created_at?: string
+          estado_verificacion?: string | null
+          hash_archivo?: string | null
+          id?: string
+          tamano_archivo?: number | null
+          tipo_documento: string
+          tipo_mime?: string | null
+          updated_at?: string
+          url_archivo: string
+          verificacion_id: string
+          verificado_por?: string | null
+        }
+        Update: {
+          concesionario_id?: string
+          created_at?: string
+          estado_verificacion?: string | null
+          hash_archivo?: string | null
+          id?: string
+          tamano_archivo?: number | null
+          tipo_documento?: string
+          tipo_mime?: string | null
+          updated_at?: string
+          url_archivo?: string
+          verificacion_id?: string
+          verificado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_concesionario_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_concesionario_verificacion_id_fkey"
+            columns: ["verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "verificaciones_concesionario"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favoritos: {
         Row: {
@@ -1042,6 +1284,104 @@ export type Database = {
           },
         ]
       }
+      intentos_fraude: {
+        Row: {
+          accion_tomada: string | null
+          chofer_detecto_id: string | null
+          created_at: string
+          distancia_km: number | null
+          evidencia: Json | null
+          fecha_intento: string
+          fecha_reporte: string | null
+          fecha_resolucion: string | null
+          fecha_uso_original: string | null
+          id: string
+          lat_detecto: number | null
+          lat_original: number | null
+          lng_detecto: number | null
+          lng_original: number | null
+          qr_ticket_id: string
+          reportado_admin: boolean | null
+          resuelto: boolean | null
+          ruta_detecto: string | null
+          ruta_uso_original: string | null
+          severidad: string | null
+          tiempo_transcurrido_minutos: number | null
+          tipo_fraude: string | null
+          total_intentos_qr: number | null
+          total_intentos_usuario: number | null
+          unidad_detecto_id: string | null
+          unidad_uso_original_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          accion_tomada?: string | null
+          chofer_detecto_id?: string | null
+          created_at?: string
+          distancia_km?: number | null
+          evidencia?: Json | null
+          fecha_intento?: string
+          fecha_reporte?: string | null
+          fecha_resolucion?: string | null
+          fecha_uso_original?: string | null
+          id?: string
+          lat_detecto?: number | null
+          lat_original?: number | null
+          lng_detecto?: number | null
+          lng_original?: number | null
+          qr_ticket_id: string
+          reportado_admin?: boolean | null
+          resuelto?: boolean | null
+          ruta_detecto?: string | null
+          ruta_uso_original?: string | null
+          severidad?: string | null
+          tiempo_transcurrido_minutos?: number | null
+          tipo_fraude?: string | null
+          total_intentos_qr?: number | null
+          total_intentos_usuario?: number | null
+          unidad_detecto_id?: string | null
+          unidad_uso_original_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          accion_tomada?: string | null
+          chofer_detecto_id?: string | null
+          created_at?: string
+          distancia_km?: number | null
+          evidencia?: Json | null
+          fecha_intento?: string
+          fecha_reporte?: string | null
+          fecha_resolucion?: string | null
+          fecha_uso_original?: string | null
+          id?: string
+          lat_detecto?: number | null
+          lat_original?: number | null
+          lng_detecto?: number | null
+          lng_original?: number | null
+          qr_ticket_id?: string
+          reportado_admin?: boolean | null
+          resuelto?: boolean | null
+          ruta_detecto?: string | null
+          ruta_uso_original?: string | null
+          severidad?: string | null
+          tiempo_transcurrido_minutos?: number | null
+          tipo_fraude?: string | null
+          total_intentos_qr?: number | null
+          total_intentos_usuario?: number | null
+          unidad_detecto_id?: string | null
+          unidad_uso_original_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intentos_fraude_qr_ticket_id_fkey"
+            columns: ["qr_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items_pedido: {
         Row: {
           cantidad: number
@@ -1143,6 +1483,62 @@ export type Database = {
           },
         ]
       }
+      liquidaciones_diarias: {
+        Row: {
+          created_at: string
+          cuenta_conectada_id: string
+          estado: string
+          fecha_liquidacion: string
+          fecha_procesamiento: string | null
+          id: string
+          monto_comision_todocerca: number
+          monto_fee_stripe_connect: number
+          monto_neto: number
+          monto_valor_facial: number
+          stripe_transfer_id: string | null
+          total_boletos: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuenta_conectada_id: string
+          estado?: string
+          fecha_liquidacion: string
+          fecha_procesamiento?: string | null
+          id?: string
+          monto_comision_todocerca?: number
+          monto_fee_stripe_connect?: number
+          monto_neto?: number
+          monto_valor_facial?: number
+          stripe_transfer_id?: string | null
+          total_boletos?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuenta_conectada_id?: string
+          estado?: string
+          fecha_liquidacion?: string
+          fecha_procesamiento?: string | null
+          id?: string
+          monto_comision_todocerca?: number
+          monto_fee_stripe_connect?: number
+          monto_neto?: number
+          monto_valor_facial?: number
+          stripe_transfer_id?: string | null
+          total_boletos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidaciones_diarias_cuenta_conectada_id_fkey"
+            columns: ["cuenta_conectada_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_conectadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_comments: {
         Row: {
           created_at: string
@@ -1240,6 +1636,56 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logs_validacion_qr: {
+        Row: {
+          chofer_id: string | null
+          created_at: string
+          dispositivo: string | null
+          id: string
+          ip: string | null
+          latitud: number | null
+          longitud: number | null
+          mensaje_error: string | null
+          qr_ticket_id: string | null
+          resultado: string
+          unidad_id: string | null
+        }
+        Insert: {
+          chofer_id?: string | null
+          created_at?: string
+          dispositivo?: string | null
+          id?: string
+          ip?: string | null
+          latitud?: number | null
+          longitud?: number | null
+          mensaje_error?: string | null
+          qr_ticket_id?: string | null
+          resultado: string
+          unidad_id?: string | null
+        }
+        Update: {
+          chofer_id?: string | null
+          created_at?: string
+          dispositivo?: string | null
+          id?: string
+          ip?: string | null
+          latitud?: number | null
+          longitud?: number | null
+          mensaje_error?: string | null
+          qr_ticket_id?: string | null
+          resultado?: string
+          unidad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logs_validacion_qr_qr_ticket_id_fkey"
+            columns: ["qr_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -1686,6 +2132,69 @@ export type Database = {
           nombre?: string
           telefono?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qr_tickets: {
+        Row: {
+          amount: number
+          chofer_id: string | null
+          created_at: string
+          dispositivo_uso: string | null
+          generated_at: string
+          id: string
+          is_transferred: boolean
+          latitud_validacion: number | null
+          longitud_validacion: number | null
+          metadata: Json | null
+          ruta_uso_id: string | null
+          status: string
+          token: string
+          transfer_expires_at: string | null
+          transferred_to: string | null
+          unidad_uso_id: string | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          chofer_id?: string | null
+          created_at?: string
+          dispositivo_uso?: string | null
+          generated_at?: string
+          id?: string
+          is_transferred?: boolean
+          latitud_validacion?: number | null
+          longitud_validacion?: number | null
+          metadata?: Json | null
+          ruta_uso_id?: string | null
+          status?: string
+          token?: string
+          transfer_expires_at?: string | null
+          transferred_to?: string | null
+          unidad_uso_id?: string | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          chofer_id?: string | null
+          created_at?: string
+          dispositivo_uso?: string | null
+          generated_at?: string
+          id?: string
+          is_transferred?: boolean
+          latitud_validacion?: number | null
+          longitud_validacion?: number | null
+          metadata?: Json | null
+          ruta_uso_id?: string | null
+          status?: string
+          token?: string
+          transfer_expires_at?: string | null
+          transferred_to?: string | null
+          unidad_uso_id?: string | null
+          used_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2220,12 +2729,65 @@ export type Database = {
           },
         ]
       }
+      transacciones_boletos: {
+        Row: {
+          cantidad_boletos: number
+          created_at: string
+          descripcion: string | null
+          estado: string
+          id: string
+          metadata: Json | null
+          monto_total: number
+          qr_ticket_id: string | null
+          stripe_payment_id: string | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          cantidad_boletos: number
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          id?: string
+          metadata?: Json | null
+          monto_total: number
+          qr_ticket_id?: string | null
+          stripe_payment_id?: string | null
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          cantidad_boletos?: number
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          id?: string
+          metadata?: Json | null
+          monto_total?: number
+          qr_ticket_id?: string | null
+          stripe_payment_id?: string | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transacciones_boletos_qr_ticket_id_fkey"
+            columns: ["qr_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_empresa: {
         Row: {
+          anio: number | null
           created_at: string
           descripcion: string | null
           id: string
           is_active: boolean | null
+          is_verified: boolean | null
+          linea: string | null
           marca: string | null
           modelo: string | null
           nombre: string
@@ -2236,10 +2798,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anio?: number | null
           created_at?: string
           descripcion?: string | null
           id?: string
           is_active?: boolean | null
+          is_verified?: boolean | null
+          linea?: string | null
           marca?: string | null
           modelo?: string | null
           nombre: string
@@ -2250,10 +2815,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anio?: number | null
           created_at?: string
           descripcion?: string | null
           id?: string
           is_active?: boolean | null
+          is_verified?: boolean | null
+          linea?: string | null
           marca?: string | null
           modelo?: string | null
           nombre?: string
@@ -2320,6 +2888,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      verificaciones_concesionario: {
+        Row: {
+          admin_notas: string | null
+          admin_revisado_por: string | null
+          concesionario_id: string
+          created_at: string
+          curp: string | null
+          estado: string
+          id: string
+          motivo_rechazo: string | null
+          razon_social: string | null
+          rfc: string | null
+          telefono_verificado: boolean | null
+          tipo_negocio: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notas?: string | null
+          admin_revisado_por?: string | null
+          concesionario_id: string
+          created_at?: string
+          curp?: string | null
+          estado?: string
+          id?: string
+          motivo_rechazo?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          telefono_verificado?: boolean | null
+          tipo_negocio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notas?: string | null
+          admin_revisado_por?: string | null
+          concesionario_id?: string
+          created_at?: string
+          curp?: string | null
+          estado?: string
+          id?: string
+          motivo_rechazo?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          telefono_verificado?: boolean | null
+          tipo_negocio?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verificaciones_concesionario_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       votacion_miembros: {
         Row: {
