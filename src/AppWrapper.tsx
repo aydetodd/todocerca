@@ -43,6 +43,10 @@ import NotFound from "./pages/NotFound";
 import GpsLocationPage from "./pages/GpsLocationPage";
 import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
+import QrBoletos from "./pages/QrBoletos";
+import ComprarBoletos from "./pages/ComprarBoletos";
+import GenerarQr from "./pages/GenerarQr";
+import HistorialBoletos from "./pages/HistorialBoletos";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
@@ -130,6 +134,11 @@ export default function AppWrapper() {
           <Route path="/sos/:token" element={<SOSView />} />
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+          {/* Wallet QR Boletos */}
+          <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
+          <Route path="/wallet/qr-boletos/comprar" element={<ComprarBoletos />} />
+          <Route path="/wallet/qr-boletos/generar" element={<GenerarQr />} />
+          <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
