@@ -59,6 +59,7 @@ export default function GenerarQr() {
       setTicket(data.ticket);
       setShortCode(data.short_code);
       toast.success("QR Boleto generado exitosamente");
+      fetchBalance();
       fetchActiveTickets();
     } catch (error: any) {
       toast.error(error.message || "Error al generar QR");

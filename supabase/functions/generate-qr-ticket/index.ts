@@ -32,7 +32,7 @@ serve(async (req) => {
     // Check ticket balance
     const { data: account, error: accError } = await supabaseAdmin
       .from("cuentas_boletos")
-      .select("ticket_count")
+      .select("ticket_count, total_usado")
       .eq("user_id", user.id)
       .single();
 
@@ -61,7 +61,7 @@ serve(async (req) => {
     // Generate unique token
     const token_qr = crypto.randomUUID();
 
-    // Create QR ticket (NOT reducing ticket_count yet - only on validation)
+    // Create QR ticket AND decrement ticket_count atomically
     const { data: ticket, error: insertError } = await supabaseAdmin
       .from("qr_tickets")
       .insert({
@@ -77,6 +77,19 @@ serve(async (req) => {
     if (insertError) {
       console.error("[GENERATE-QR] Insert error:", insertError);
       throw new Error("Error al generar QR boleto");
+    }
+
+    // Decrement ticket_count by 1
+    const { error: updateError } = await supabaseAdmin
+      .from("cuentas_boletos")
+      .update({ 
+        ticket_count: account.ticket_count - 1,
+        total_usado: (account as any).total_usado + 1,
+      })
+      .eq("user_id", user.id);
+
+    if (updateError) {
+      console.error("[GENERATE-QR] Update balance error:", updateError);
     }
 
     console.log(`[GENERATE-QR] QR generated: ${token_qr.slice(-6)} for user ${user.id}`);
