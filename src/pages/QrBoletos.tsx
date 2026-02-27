@@ -138,8 +138,8 @@ export default function QrBoletos() {
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{totalUsado}</p>
-              <p className="text-xs text-muted-foreground">Usados</p>
+              <p className="text-2xl font-bold text-foreground">{totalComprado - ticketCount}</p>
+              <p className="text-xs text-muted-foreground">QR Generados</p>
             </CardContent>
           </Card>
           <Card>
