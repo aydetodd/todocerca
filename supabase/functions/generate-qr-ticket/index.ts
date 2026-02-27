@@ -79,12 +79,11 @@ serve(async (req) => {
       throw new Error("Error al generar QR boleto");
     }
 
-    // Decrement ticket_count by 1
+    // Decrement ticket_count by 1 (total_usado only increments on validation, not generation)
     const { error: updateError } = await supabaseAdmin
       .from("cuentas_boletos")
       .update({ 
         ticket_count: account.ticket_count - 1,
-        total_usado: (account as any).total_usado + 1,
       })
       .eq("user_id", user.id);
 
