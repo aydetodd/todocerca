@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Ticket, ShoppingCart, QrCode, History, ArrowRight } from "lucide-react";
+import { Ticket, ShoppingCart, QrCode, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
 import { NavigationBar } from "@/components/NavigationBar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function QrBoletos() {
   const { user, loading: authLoading } = useAuth();
@@ -16,11 +17,11 @@ export default function QrBoletos() {
   const [searchParams] = useSearchParams();
   const [ticketCount, setTicketCount] = useState(0);
   const [totalComprado, setTotalComprado] = useState(0);
-  const [totalUsado, setTotalUsado] = useState(0);
+  const [activeQrCount, setActiveQrCount] = useState(0);
+  const [firstActiveTicket, setFirstActiveTicket] = useState<any>(null);
+  const [showQrDialog, setShowQrDialog] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [recentTickets, setRecentTickets] = useState<any[]>([]);
 
-  // Handle purchase success/cancel from Stripe redirect
   useEffect(() => {
     const purchase = searchParams.get("purchase");
     const qty = searchParams.get("qty");
@@ -34,7 +35,7 @@ export default function QrBoletos() {
   useEffect(() => {
     if (!user) return;
     fetchBalance();
-    fetchRecentTickets();
+    fetchActiveQrs();
   }, [user]);
 
   const fetchBalance = async () => {
@@ -47,20 +48,28 @@ export default function QrBoletos() {
     if (!error && data) {
       setTicketCount(data.ticket_count);
       setTotalComprado(data.total_comprado);
-      setTotalUsado(data.total_usado);
     }
     setLoading(false);
   };
 
-  const fetchRecentTickets = async () => {
-    const { data } = await supabase
+  const fetchActiveQrs = async () => {
+    const { data, count } = await supabase
       .from("qr_tickets")
-      .select("id, token, status, generated_at, used_at, is_transferred, transfer_expires_at")
+      .select("*", { count: "exact" })
       .eq("user_id", user!.id)
-      .order("generated_at", { ascending: false })
-      .limit(5);
+      .eq("status", "active")
+      .order("generated_at", { ascending: true });
 
-    if (data) setRecentTickets(data);
+    if (data) {
+      setActiveQrCount(data.length);
+      setFirstActiveTicket(data.length > 0 ? data[0] : null);
+    }
+  };
+
+  const handleShowQr = () => {
+    if (firstActiveTicket) {
+      setShowQrDialog(true);
+    }
   };
 
   if (authLoading || loading) {
@@ -76,13 +85,6 @@ export default function QrBoletos() {
     return null;
   }
 
-  const statusLabel = (t: any) => {
-    if (t.status === "used") return <Badge variant="secondary">Usado</Badge>;
-    if (t.status === "expired") return <Badge variant="outline">Expirado</Badge>;
-    if (t.is_transferred) return <Badge className="bg-amber-600">Transferido</Badge>;
-    return <Badge className="bg-green-600">Activo</Badge>;
-  };
-
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -97,15 +99,33 @@ export default function QrBoletos() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Balance Card */}
-        <Card className="bg-primary/10 border-primary/30">
-          <CardContent className="p-6 text-center">
-            <Ticket className="h-10 w-10 mx-auto mb-2 text-primary" />
-            <p className="text-sm text-muted-foreground mb-1">Boletos disponibles</p>
-            <p className="text-5xl font-bold text-foreground">{ticketCount}</p>
-            <p className="text-xs text-muted-foreground mt-2">Cada boleto vale $9.00 MXN</p>
-          </CardContent>
-        </Card>
+        {/* Balance Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Boletos disponibles */}
+          <Card className="border-primary/30">
+            <CardContent className="p-4 text-center">
+              <Ticket className="h-8 w-8 mx-auto mb-1 text-primary" />
+              <p className="text-xs text-muted-foreground mb-1">Boletos</p>
+              <p className="text-4xl font-bold text-foreground">{ticketCount}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">disponibles</p>
+            </CardContent>
+          </Card>
+
+          {/* QR Digitales activos */}
+          <Card
+            className={`border-green-500/30 ${activeQrCount > 0 ? "cursor-pointer hover:bg-secondary/50" : ""}`}
+            onClick={activeQrCount > 0 ? handleShowQr : undefined}
+          >
+            <CardContent className="p-4 text-center">
+              <QrCode className="h-8 w-8 mx-auto mb-1 text-green-500" />
+              <p className="text-xs text-muted-foreground mb-1">QR Digitales</p>
+              <p className="text-4xl font-bold text-green-500">{activeQrCount}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {activeQrCount > 0 ? "toca para ver QR" : "sin QR activos"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
@@ -122,84 +142,63 @@ export default function QrBoletos() {
             variant="secondary"
             className="h-auto py-4 flex flex-col gap-1"
             onClick={() => navigate("/wallet/qr-boletos/generar")}
+            disabled={ticketCount <= 0}
           >
             <QrCode className="h-5 w-5" />
             <span className="text-sm font-semibold">Generar QR</span>
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{totalComprado}</p>
-              <p className="text-xs text-muted-foreground">Comprados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{totalComprado - ticketCount}</p>
-              <p className="text-xs text-muted-foreground">QR Generados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{ticketCount}</p>
-              <p className="text-xs text-muted-foreground">Disponibles</p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Info */}
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
+            <p>• Compra boletos → aparecen en <strong className="text-foreground">Boletos</strong></p>
+            <p>• Genera QR → pasa de Boletos a <strong className="text-foreground">QR Digitales</strong></p>
             <p>• Los boletos <strong className="text-foreground">no expiran</strong></p>
             <p>• QR transferidos vencen en <strong className="text-foreground">24 horas</strong></p>
-            <p>• Si no se usa, el boleto <strong className="text-foreground">regresa a tu cuenta</strong></p>
+            <p>• Cada boleto vale <strong className="text-foreground">$9.00 MXN</strong></p>
           </CardContent>
         </Card>
 
-        {/* Recent Tickets */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Boletos recientes</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/wallet/qr-boletos/historial")}
-            className="text-primary"
-          >
-            Ver todo <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-
-        {recentTickets.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Aún no tienes boletos. ¡Compra tus primeros boletos QR!
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {recentTickets.map((t) => (
-              <Card key={t.id} className="cursor-pointer hover:bg-secondary/50">
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-mono text-sm font-semibold text-foreground">
-                      #{t.token.slice(-6).toUpperCase()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(t.generated_at).toLocaleDateString("es-MX", {
-                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
-                      })}
-                    </p>
-                  </div>
-                  {statusLabel(t)}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        {/* Historial link */}
+        <Button
+          variant="ghost"
+          className="w-full justify-between text-primary"
+          onClick={() => navigate("/wallet/qr-boletos/historial")}
+        >
+          <span>Ver historial de boletos QR</span>
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* QR Dialog */}
+      <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">Tu QR Boleto Digital</DialogTitle>
+          </DialogHeader>
+          {firstActiveTicket && (
+            <div className="text-center space-y-3">
+              <p className="text-xs text-muted-foreground">Muestra este código al chofer</p>
+              <div className="bg-white p-4 rounded-xl inline-block">
+                <QRCodeSVG
+                  value={firstActiveTicket.token}
+                  size={200}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+              <p className="text-xl font-mono font-bold text-foreground">
+                #{firstActiveTicket.token.slice(-6).toUpperCase()}
+              </p>
+              <p className="text-lg font-semibold text-primary">$9.00 MXN</p>
+              <p className="text-xs text-muted-foreground">
+                Transporte Urbano - Hermosillo, Sonora
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <NavigationBar />
     </div>
