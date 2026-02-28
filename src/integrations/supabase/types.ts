@@ -2152,6 +2152,7 @@ export type Database = {
           status: string
           token: string
           transfer_expires_at: string | null
+          transfer_returned_at: string | null
           transferred_to: string | null
           unidad_uso_id: string | null
           used_at: string | null
@@ -2172,6 +2173,7 @@ export type Database = {
           status?: string
           token?: string
           transfer_expires_at?: string | null
+          transfer_returned_at?: string | null
           transferred_to?: string | null
           unidad_uso_id?: string | null
           used_at?: string | null
@@ -2192,6 +2194,7 @@ export type Database = {
           status?: string
           token?: string
           transfer_expires_at?: string | null
+          transfer_returned_at?: string | null
           transferred_to?: string | null
           unidad_uso_id?: string | null
           used_at?: string | null

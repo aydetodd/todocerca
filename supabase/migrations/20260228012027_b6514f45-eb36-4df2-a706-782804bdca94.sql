@@ -1,0 +1,1 @@
+ALTER TABLE public.qr_tickets ADD COLUMN IF NOT EXISTS transfer_returned_at timestamp with time zone DEFAULT NULL;
