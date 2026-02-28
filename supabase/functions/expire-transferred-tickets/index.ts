@@ -48,19 +48,19 @@ serve(async (req) => {
       await supabaseAdmin
         .from("qr_tickets")
         .update({
-          status: "expired",
+          status: "active",
           is_transferred: false,
-          transfer_expires_at: null,
+          transfer_returned_at: now,
         })
         .eq("id", ticket.id);
 
       expiredCount++;
-      console.log(`[EXPIRE-TICKETS] Expired ticket ${ticket.token.slice(-6)} for user ${ticket.user_id}`);
+      console.log(`[EXPIRE-TICKETS] Returned ticket ${ticket.token.slice(-6)} to active for user ${ticket.user_id}`);
     }
 
     return new Response(JSON.stringify({ 
       expired: expiredCount,
-      message: `${expiredCount} QR transferidos expirados y boletos devueltos`,
+      message: `${expiredCount} QR transferidos vencidos y devueltos a activos`,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

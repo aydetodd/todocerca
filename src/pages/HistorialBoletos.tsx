@@ -29,22 +29,25 @@ export default function HistorialBoletos() {
 
   const fetchCounts = async () => {
     const [activeRes, usedRes, transferredRes] = await Promise.all([
+      // Activos: status=active AND is_transferred=false (available to use)
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "active")
         .eq("is_transferred", false),
+      // Usados: status=used
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
+      // Transferidos: is_transferred=true OR transfer_returned_at is not null
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .eq("is_transferred", true),
+        .or("is_transferred.eq.true,transfer_returned_at.not.is.null"),
     ]);
     setCounts({
       active: activeRes.count ?? 0,
@@ -67,7 +70,7 @@ export default function HistorialBoletos() {
     } else if (filter === "used") {
       query = query.eq("status", "used");
     } else if (filter === "transferred") {
-      query = query.eq("is_transferred", true);
+      query = query.or("is_transferred.eq.true,transfer_returned_at.not.is.null");
     }
 
     const { data } = await query;
@@ -91,6 +94,16 @@ export default function HistorialBoletos() {
     navigate("/auth");
     return null;
   }
+
+  const getTransferStatus = (t: any) => {
+    // Returned from expired transfer → Vencido (red)
+    if (t.transfer_returned_at) return "vencido";
+    // Used by recipient
+    if (t.status === "used") return "usado";
+    // Still pending
+    if (t.status === "active" && t.is_transferred) return "pendiente";
+    return "desconocido";
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -136,44 +149,60 @@ export default function HistorialBoletos() {
               <Card key={t.id}>
                 <CardContent className="p-4 space-y-1">
                   {filter === "transferred" ? (
-                    /* Transferidos: dos renglones */
                     <>
-                      <div className="flex items-center justify-between">
-                        <p className="font-mono text-sm font-bold text-foreground">
-                          #{t.token.slice(-6).toUpperCase()}
-                        </p>
-                        {t.status === "used" ? (
-                          <span className="text-xs font-semibold text-red-500">Usado</span>
-                        ) : t.status === "active" ? (
-                          <span className="text-xs font-semibold text-amber-500">Pendiente</span>
-                        ) : (
-                          <span className="text-xs font-semibold text-muted-foreground">Expirado</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-green-500">
-                        📤 Transferido: {formatDate(t.generated_at)}
-                      </p>
-                      {t.used_at ? (
-                        <p className="text-xs text-red-500">
-                          ✅ Usado: {formatDate(t.used_at)}
-                        </p>
-                      ) : t.transfer_expires_at ? (
-                        <p className="text-xs text-amber-500">
-                          ⏳ Vence: {formatDate(t.transfer_expires_at)}
-                        </p>
-                      ) : null}
+                      {(() => {
+                        const status = getTransferStatus(t);
+                        return (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <p className="font-mono text-sm font-bold text-foreground">
+                                #{t.token.slice(-6).toUpperCase()}
+                              </p>
+                              {status === "usado" && (
+                                <span className="text-xs font-semibold text-destructive">Usado</span>
+                              )}
+                              {status === "pendiente" && (
+                                <span className="text-xs font-semibold text-amber-500">Pendiente</span>
+                              )}
+                              {status === "vencido" && (
+                                <span className="text-xs font-semibold text-destructive">Vencido</span>
+                              )}
+                            </div>
+                            {/* Green line: transfer date */}
+                            <p className="text-xs text-green-500">
+                              📤 Transferido: {formatDate(t.generated_at)}
+                            </p>
+                            {/* Red line: used or expired */}
+                            {status === "usado" && t.used_at && (
+                              <p className="text-xs text-destructive">
+                                ✅ Usado: {formatDate(t.used_at)}
+                              </p>
+                            )}
+                            {status === "vencido" && t.transfer_returned_at && (
+                              <p className="text-xs text-destructive">
+                                🔄 Vencido y devuelto: {formatDate(t.transfer_returned_at)}
+                              </p>
+                            )}
+                            {status === "pendiente" && t.transfer_expires_at && (
+                              <p className="text-xs text-amber-500">
+                                ⏳ Vence: {formatDate(t.transfer_expires_at)}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </>
                   ) : (
                     /* Activos y Usados */
                     <>
                       <div className="flex items-center justify-between">
                         <p className={`font-mono text-sm font-bold ${
-                          filter === "active" ? "text-green-500" : "text-red-500"
+                          filter === "active" ? "text-green-500" : "text-destructive"
                         }`}>
                           #{t.token.slice(-6).toUpperCase()}
                         </p>
                         <span className={`text-xs font-semibold ${
-                          filter === "active" ? "text-green-500" : "text-red-500"
+                          filter === "active" ? "text-green-500" : "text-destructive"
                         }`}>
                           {filter === "active" ? "Activo" : "Usado"}
                         </span>
