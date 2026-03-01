@@ -42,12 +42,13 @@ export default function HistorialBoletos() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
-      // Transferidos: is_transferred=true OR transfer_returned_at is not null
+      // Transferidos (saldo): solo los que siguen pendientes (is_transferred=true AND status=active)
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .or("is_transferred.eq.true,transfer_returned_at.not.is.null"),
+        .eq("is_transferred", true)
+        .eq("status", "active"),
     ]);
     setCounts({
       active: activeRes.count ?? 0,
