@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { BackButton } from "@/components/BackButton";
 import { NavigationBar } from "@/components/NavigationBar";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +57,16 @@ type UnidadDetalle = {
   estado_verificacion: string | null;
 };
 
+type IngresoUnidad = {
+  unidad_id: string;
+  numero_economico: string;
+  placas: string | null;
+  descripcion: string | null;
+  chofer_nombre: string | null;
+  boletos_hoy: number;
+  ingresos_hoy: number;
+};
+
 export default function PanelConcesionario() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -67,6 +79,7 @@ export default function PanelConcesionario() {
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
   const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0 });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
+  const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -161,6 +174,60 @@ export default function PanelConcesionario() {
           mes: monthLiqs.reduce((s: number, l: any) => s + l.total_boletos, 0),
           totalMes: monthLiqs.reduce((s: number, l: any) => s + Number(l.monto_neto), 0),
         });
+      }
+      // Fetch per-unit revenue for today
+      const { data: misUnidades } = await supabase
+        .from("unidades_empresa")
+        .select("id, nombre, numero_economico, placas, descripcion")
+        .eq("proveedor_id", prov.id);
+
+      if (misUnidades && misUnidades.length > 0) {
+        const unidadIds = misUnidades.map((u: any) => u.id);
+        const todayStr = new Date().toISOString().split("T")[0];
+        const todayStart = `${todayStr}T00:00:00-07:00`;
+        const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+        const { data: logsHoy } = await supabase
+          .from("logs_validacion_qr")
+          .select("unidad_id, chofer_id")
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valido")
+          .gte("created_at", todayStart)
+          .lte("created_at", todayEnd);
+
+        // Get active driver assignments for today
+        const { data: asignaciones } = await supabase
+          .from("asignaciones_chofer")
+          .select("unidad_id, chofer_id, choferes_empresa(nombre)")
+          .in("unidad_id", unidadIds)
+          .eq("fecha", todayStr);
+
+        const choferMap: Record<string, string> = {};
+        (asignaciones || []).forEach((a: any) => {
+          if (a.unidad_id && a.choferes_empresa?.nombre) {
+            choferMap[a.unidad_id] = a.choferes_empresa.nombre;
+          }
+        });
+
+        // Group logs by unidad_id
+        const countMap: Record<string, number> = {};
+        (logsHoy || []).forEach((log: any) => {
+          if (log.unidad_id) {
+            countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
+          }
+        });
+
+        const ingresos: IngresoUnidad[] = misUnidades.map((u: any) => ({
+          unidad_id: u.id,
+          numero_economico: u.numero_economico || u.nombre,
+          placas: u.placas,
+          descripcion: u.descripcion,
+          chofer_nombre: choferMap[u.id] || null,
+          boletos_hoy: countMap[u.id] || 0,
+          ingresos_hoy: (countMap[u.id] || 0) * 9,
+        })).sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
+
+        setIngresosUnidad(ingresos);
       }
     } catch (err) {
       console.error("Error loading panel:", err);
@@ -277,8 +344,11 @@ export default function PanelConcesionario() {
           </Card>
         </div>
 
-        <Tabs defaultValue="verificacion" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="ingresos" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="ingresos" className="text-xs">
+              <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+            </TabsTrigger>
             <TabsTrigger value="verificacion" className="text-xs">
               <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
             </TabsTrigger>
@@ -292,6 +362,72 @@ export default function PanelConcesionario() {
               <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
             </TabsTrigger>
           </TabsList>
+
+          {/* INGRESOS POR UNIDAD */}
+          <TabsContent value="ingresos" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" /> Ingresos del día por unidad
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Boletos QR validados hoy · $9.00 MXN c/u
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {ingresosUnidad.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground">
+                    <Bus className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No hay unidades registradas</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Unidad</TableHead>
+                        <TableHead className="text-xs">Chofer</TableHead>
+                        <TableHead className="text-xs text-right">Boletos</TableHead>
+                        <TableHead className="text-xs text-right">Ingreso</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ingresosUnidad.map((u) => (
+                        <TableRow key={u.unidad_id}>
+                          <TableCell className="py-2">
+                            <p className="font-bold text-sm">#{u.numero_economico}</p>
+                            {u.placas && (
+                              <p className="text-xs text-muted-foreground">{u.placas}</p>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-sm">
+                            {u.chofer_nombre || <span className="text-muted-foreground text-xs">Sin asignar</span>}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-semibold text-sm">
+                            {u.boletos_hoy}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-bold text-sm text-green-600">
+                            ${u.ingresos_hoy.toFixed(0)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Totals row */}
+                      <TableRow className="border-t-2 border-border bg-muted/50">
+                        <TableCell colSpan={2} className="py-2 font-bold text-sm">
+                          Total ({ingresosUnidad.filter(u => u.boletos_hoy > 0).length} unidades activas)
+                        </TableCell>
+                        <TableCell className="py-2 text-right font-bold text-sm">
+                          {ingresosUnidad.reduce((s, u) => s + u.boletos_hoy, 0)}
+                        </TableCell>
+                        <TableCell className="py-2 text-right font-bold text-sm text-green-600">
+                          ${ingresosUnidad.reduce((s, u) => s + u.ingresos_hoy, 0).toFixed(0)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* VERIFICACIÓN */}
           <TabsContent value="verificacion" className="space-y-4 mt-4">
