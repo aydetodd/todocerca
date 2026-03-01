@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Ticket, ShoppingCart, QrCode, ArrowRight } from "lucide-react";
+import { Ticket, ShoppingCart, QrCode, ArrowRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
@@ -69,6 +69,33 @@ export default function QrBoletos() {
   const handleShowQr = () => {
     if (firstActiveTicket) {
       setShowQrDialog(true);
+    }
+  };
+
+  const handleTransfer = async () => {
+    if (!firstActiveTicket) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("transfer-ticket", {
+        body: { ticket_id: firstActiveTicket.id },
+      });
+      if (error) throw error;
+
+      toast.success("QR marcado para transferir. Válido por 24 horas.");
+      setShowQrDialog(false);
+
+      const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nVálido por 24 horas.\n\nMuestra este código al chofer para pagar tu pasaje.`;
+
+      if (navigator.share) {
+        await navigator.share({ title: "QR Boleto Digital", text: shareText });
+      } else {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+        window.open(whatsappUrl, "_blank");
+      }
+
+      fetchBalance();
+      fetchActiveQrs();
+    } catch (error: any) {
+      toast.error(error.message || "Error al transferir");
     }
   };
 
@@ -195,6 +222,13 @@ export default function QrBoletos() {
               <p className="text-xs text-muted-foreground">
                 Transporte Urbano - Hermosillo, Sonora
               </p>
+              <Button
+                variant="outline"
+                className="mt-2"
+                onClick={handleTransfer}
+              >
+                <Send className="h-4 w-4 mr-2" /> Transferir QR
+              </Button>
             </div>
           )}
         </DialogContent>
