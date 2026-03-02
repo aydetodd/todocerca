@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Navigation, Share2, Bus, Loader2 } from 'lucide-react';
+import { Navigation, Share2, Bus, Loader2, QrCode } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
@@ -338,23 +338,34 @@ function SingleDriverPanel({
             </Select>
 
             {data.todayAssignment && (
-              <Button
-                size="sm"
-                className="shrink-0 h-8 px-2.5 text-xs"
-                onClick={() => {
-                  const vehicle = data.vehicles.find(
-                    v => v.id === data.todayAssignment!.producto_id
-                  );
-                  if (vehicle?.invite_token) {
-                    navigate(`/mapa?token=${vehicle.invite_token}`);
-                  } else {
-                    navigate('/mapa?type=ruta');
-                  }
-                }}
-              >
-                <Navigation className="h-3 w-3 mr-1" />
-                Ubicación
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
+                  onClick={() => navigate('/wallet/qr-boletos/validar')}
+                >
+                  <QrCode className="h-3 w-3 mr-1" />
+                  Cobrar
+                </Button>
+                <Button
+                  size="sm"
+                  className="shrink-0 h-8 px-2.5 text-xs"
+                  onClick={() => {
+                    const vehicle = data.vehicles.find(
+                      v => v.id === data.todayAssignment!.producto_id
+                    );
+                    if (vehicle?.invite_token) {
+                      navigate(`/mapa?token=${vehicle.invite_token}`);
+                    } else {
+                      navigate('/mapa?type=ruta');
+                    }
+                  }}
+                >
+                  <Navigation className="h-3 w-3 mr-1" />
+                  Ubicación
+                </Button>
+              </>
             )}
 
             {assigning && (
