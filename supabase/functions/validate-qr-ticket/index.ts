@@ -33,12 +33,37 @@ serve(async (req) => {
 
     if (!qr_token) throw new Error("Token QR requerido");
 
-    // 1. Find the QR ticket
-    const { data: ticket, error: ticketError } = await supabaseAdmin
-      .from("qr_tickets")
-      .select("*")
-      .eq("token", qr_token)
-      .single();
+    const cleanToken = qr_token.trim();
+
+    // 1. Find the QR ticket - support both full UUID token and 6-char short code
+    let ticket = null;
+    let ticketError = null;
+
+    if (cleanToken.length <= 8) {
+      // Short code search: match last 6 chars of token (case-insensitive)
+      const shortCode = cleanToken.toLowerCase();
+      const { data: tickets, error } = await supabaseAdmin
+        .from("qr_tickets")
+        .select("*")
+        .ilike("token", `%${shortCode}`)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error || !tickets || tickets.length === 0) {
+        ticketError = error || { message: "No encontrado" };
+      } else if (tickets.length === 1) {
+        ticket = tickets[0];
+      }
+    } else {
+      // Full token search
+      const { data, error } = await supabaseAdmin
+        .from("qr_tickets")
+        .select("*")
+        .eq("token", cleanToken)
+        .single();
+      ticket = data;
+      ticketError = error;
+    }
 
     if (ticketError || !ticket) {
       // Log invalid attempt
