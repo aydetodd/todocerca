@@ -13,10 +13,10 @@ const logStep = (step: string, details?: any) => {
 };
 
 const ROUTE_PRICE_IDS: Record<string, string> = {
-  privada: 'price_1Sxfm9GyH05pxWZzsipYs44S',   // $400 MXN/año
-  urbana: 'price_1T2CnkGyH05pxWZzVkdCLsOv',     // $200 MXN/año
-  foranea: 'price_1T2CoFGyH05pxWZzNBI6rGfp',     // $200 MXN/año
-  taxi: 'price_1T2DjpGyH05pxWZzIh42h31H',        // $200 MXN/año
+  privada: 'price_1T6hoDGyH05pxWZz9L9u4VYu',   // $400 MXN/año (TEST)
+  urbana: 'price_1T6ho4GyH05pxWZzs1s8FH9P',     // $400 MXN/año (TEST)
+  foranea: 'price_1T6hoBGyH05pxWZzYLgaARpX',     // $400 MXN/año (TEST)
+  taxi: 'price_1T6hoCGyH05pxWZz0k0CgJfb',        // $400 MXN/año (TEST)
 };
 
 serve(async (req) => {
