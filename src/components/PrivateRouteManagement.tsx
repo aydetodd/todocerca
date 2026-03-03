@@ -627,7 +627,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               1. Unidades {transportType === 'taxi' ? '/ Taxis' : '/ Autobuses'}
             </CardTitle>
             <CardDescription>
-              Cada unidad requiere una suscripción de {transportType === 'privado' ? '$400' : '$200'} MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
+              Cada unidad requiere una suscripción de $400 MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -655,7 +655,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <Alert>
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. {transportType === 'privado' ? '$400' : '$200'} MXN/año por unidad después del periodo de prueba.
+                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. $400 MXN/año por unidad después del periodo de prueba.
                 </AlertDescription>
               </Alert>
             )}

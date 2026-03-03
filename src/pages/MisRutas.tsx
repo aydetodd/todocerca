@@ -26,7 +26,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: Bus,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
-    price: '$200 MXN/unidad/año',
+    price: '$400 MXN/unidad/año',
   },
   foraneo: {
     label: 'Transporte Foráneo',
@@ -34,7 +34,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: Truck,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-100',
-    price: '$200 MXN/unidad/año',
+    price: '$400 MXN/unidad/año',
   },
   privado: {
     label: 'Transporte Privado',
@@ -50,7 +50,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: Car,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
-    price: '$200 MXN/unidad/año',
+    price: '$400 MXN/unidad/año',
   },
 };
 
