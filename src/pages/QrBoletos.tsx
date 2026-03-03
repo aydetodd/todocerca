@@ -218,6 +218,15 @@ export default function QrBoletos() {
               <p className="text-xl font-mono font-bold text-foreground">
                 #{firstActiveTicket.token.slice(-6).toUpperCase()}
               </p>
+              <button
+                className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(firstActiveTicket.token);
+                  toast.success('UUID copiado al portapapeles');
+                }}
+              >
+                📋 {firstActiveTicket.token}
+              </button>
               <p className="text-lg font-semibold text-primary">$9.00 MXN</p>
               <p className="text-xs text-muted-foreground">
                 Transporte Urbano - Hermosillo, Sonora

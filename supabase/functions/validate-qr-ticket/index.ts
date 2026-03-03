@@ -40,22 +40,54 @@ serve(async (req) => {
     let ticketError = null;
 
     if (cleanToken.length <= 8) {
-      // Short code search: match last 6 chars of token (case-insensitive)
+      // Short code search: use RPC or raw text cast to match last 6 chars
       const shortCode = cleanToken.toLowerCase();
+      
+      // Use textual comparison by casting token to text
       const { data: tickets, error } = await supabaseAdmin
-        .from("qr_tickets")
-        .select("*")
-        .ilike("token", `%${shortCode}`)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .rpc('find_qr_ticket_by_short_code', { p_short_code: shortCode });
 
       if (error || !tickets || tickets.length === 0) {
-        ticketError = error || { message: "No encontrado" };
-      } else if (tickets.length === 1) {
+        // Fallback: try direct query with text cast filter
+        const { data: allActive, error: fallbackError } = await supabaseAdmin
+          .from("qr_tickets")
+          .select("*")
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        
+        if (!fallbackError && allActive) {
+          const match = allActive.find((t: any) => 
+            String(t.token).slice(-6).toLowerCase() === shortCode
+          );
+          if (match) {
+            ticket = match;
+          } else {
+            // Also check used tickets for fraud detection
+            const { data: allUsed } = await supabaseAdmin
+              .from("qr_tickets")
+              .select("*")
+              .eq("status", "used")
+              .order("used_at", { ascending: false })
+              .limit(200);
+            
+            if (allUsed) {
+              const usedMatch = allUsed.find((t: any) => 
+                String(t.token).slice(-6).toLowerCase() === shortCode
+              );
+              if (usedMatch) ticket = usedMatch;
+            }
+          }
+        }
+        
+        if (!ticket) {
+          ticketError = error || fallbackError || { message: "No encontrado" };
+        }
+      } else if (tickets.length >= 1) {
         ticket = tickets[0];
       }
     } else {
-      // Full token search
+      // Full token search (UUID)
       const { data, error } = await supabaseAdmin
         .from("qr_tickets")
         .select("*")
