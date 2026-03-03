@@ -3204,6 +3204,36 @@ export type Database = {
         Args: { p_contact_user_id: string; p_nickname?: string }
         Returns: boolean
       }
+      find_qr_ticket_by_short_code: {
+        Args: { p_short_code: string }
+        Returns: {
+          amount: number
+          chofer_id: string | null
+          created_at: string
+          dispositivo_uso: string | null
+          generated_at: string
+          id: string
+          is_transferred: boolean
+          latitud_validacion: number | null
+          longitud_validacion: number | null
+          metadata: Json | null
+          ruta_uso_id: string | null
+          status: string
+          token: string
+          transfer_expires_at: string | null
+          transfer_returned_at: string | null
+          transferred_to: string | null
+          unidad_uso_id: string | null
+          used_at: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "qr_tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       find_user_by_phone: {
         Args: { phone_param: string }
         Returns: {
