@@ -124,7 +124,7 @@ serve(async (req) => {
       const { data: originalUnit } = await supabaseAdmin
         .from("unidades_empresa")
         .select("numero_economico, placas")
-        .eq("id", ticket.used_by_unit_id)
+        .eq("id", ticket.unidad_uso_id)
         .single();
 
       // Count fraud attempts for this QR
@@ -148,12 +148,12 @@ serve(async (req) => {
 
       // Calculate distance if we have coordinates
       let distanceKm: number | null = null;
-      if (latitude && longitude && ticket.validation_latitude && ticket.validation_longitude) {
+      if (latitude && longitude && ticket.latitud_validacion && ticket.longitud_validacion) {
         const R = 6371;
-        const dLat = (latitude - ticket.validation_latitude) * Math.PI / 180;
-        const dLon = (longitude - ticket.validation_longitude) * Math.PI / 180;
+        const dLat = (latitude - ticket.latitud_validacion) * Math.PI / 180;
+        const dLon = (longitude - ticket.longitud_validacion) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(ticket.validation_latitude * Math.PI / 180) * Math.cos(latitude * Math.PI / 180) *
+          Math.cos(ticket.latitud_validacion * Math.PI / 180) * Math.cos(latitude * Math.PI / 180) *
           Math.sin(dLon/2) * Math.sin(dLon/2);
         distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       }
@@ -168,15 +168,15 @@ serve(async (req) => {
         qr_ticket_id: ticket.id,
         usuario_id: ticket.user_id,
         fecha_uso_original: ticket.used_at,
-        unidad_uso_original_id: ticket.used_by_unit_id,
-        ruta_uso_original: ticket.used_on_route_id,
-        lat_original: ticket.validation_latitude,
-        lng_original: ticket.validation_longitude,
+        unidad_uso_original_id: ticket.unidad_uso_id,
+        ruta_uso_original: ticket.ruta_uso_id,
+        lat_original: ticket.latitud_validacion,
+        lng_original: ticket.longitud_validacion,
         unidad_detecto_id: unidad_id,
         ruta_detecto: ruta_id,
         lat_detecto: latitude,
         lng_detecto: longitude,
-        tipo_fraude: ticket.used_by_unit_id === unidad_id ? "misma_unidad" : "otra_unidad",
+        tipo_fraude: ticket.unidad_uso_id === unidad_id ? "misma_unidad" : "otra_unidad",
         severidad: severity,
         total_intentos_usuario: totalAttempts,
         total_intentos_qr: (qrAttempts ?? 0) + 1,
@@ -195,7 +195,7 @@ serve(async (req) => {
         chofer_id: driver.id,
       });
 
-      const isSameUnit = ticket.used_by_unit_id === unidad_id;
+      const isSameUnit = ticket.unidad_uso_id === unidad_id;
 
       return new Response(JSON.stringify({
         valid: false,
@@ -206,7 +206,7 @@ serve(async (req) => {
           used_at: ticket.used_at,
           used_on_unit: originalUnit?.numero_economico || "Desconocida",
           used_on_plates: originalUnit?.placas || "",
-          used_on_route: ticket.used_on_route_id,
+          used_on_route: ticket.ruta_uso_id,
           minutes_elapsed: minutesElapsed,
           distance_km: distanceKm ? Math.round(distanceKm * 10) / 10 : null,
           is_same_unit: isSameUnit,
@@ -265,18 +265,23 @@ serve(async (req) => {
     // 5. VALID - Process the ticket
     const now = new Date().toISOString();
 
-    // Mark ticket as used
-    await supabaseAdmin
+    // Mark ticket as used (correct column names)
+    const { error: updateError } = await supabaseAdmin
       .from("qr_tickets")
       .update({
         status: "used",
         used_at: now,
-        used_by_unit_id: unidad_id,
-        used_on_route_id: ruta_id,
-        validation_latitude: latitude,
-        validation_longitude: longitude,
+        unidad_uso_id: unidad_id,
+        ruta_uso_id: ruta_id,
+        latitud_validacion: latitude,
+        longitud_validacion: longitude,
+        chofer_id: driver.id,
       })
       .eq("id", ticket.id);
+
+    if (updateError) {
+      console.error("[VALIDATE-QR] Error updating ticket:", updateError);
+    }
 
     // Reduce ticket count from user account
     const { data: currentAccount } = await supabaseAdmin
