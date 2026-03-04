@@ -133,6 +133,9 @@ export default function ValidarQr() {
   const loadDriverAssignment = async () => {
     if (!user) return;
     try {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00`;
+
       // Find the driver record linked to this user
       const { data: chofer } = await supabase
         .from("choferes_empresa")
@@ -142,38 +145,33 @@ export default function ValidarQr() {
         .limit(1)
         .single();
 
-      if (!chofer) return;
+      if (chofer) {
+        // Find today's assignment for this driver
+        const { data: asignacion } = await supabase
+          .from("asignaciones_chofer")
+          .select("unidad_id, producto_id")
+          .eq("chofer_id", chofer.id)
+          .eq("fecha", todayStr)
+          .limit(1)
+          .single();
 
-      const todayStr = new Date().toISOString().split("T")[0];
-
-      // Find today's assignment for this driver
-      const { data: asignacion } = await supabase
-        .from("asignaciones_chofer")
-        .select("unidad_id, producto_id")
-        .eq("chofer_id", chofer.id)
-        .eq("fecha", todayStr)
-        .limit(1)
-        .single();
-
-      if (asignacion) {
-        setAssignedUnitId(asignacion.unidad_id);
-        setAssignedRouteId(asignacion.producto_id);
-
-        // Load initial daily stats for this unit
-        if (asignacion.unidad_id) {
-          const todayStart = `${todayStr}T00:00:00`;
-          const { count } = await supabase
-            .from("logs_validacion_qr")
-            .select("*", { count: "exact", head: true })
-            .eq("unidad_id", asignacion.unidad_id)
-            .eq("resultado", "valido")
-            .gte("created_at", todayStart);
-
-          const c = count ?? 0;
-          setDailyCount(c);
-          setDailyTotal(c * 9);
+        if (asignacion) {
+          setAssignedUnitId(asignacion.unidad_id);
+          setAssignedRouteId(asignacion.producto_id);
         }
       }
+
+      // Load initial daily stats by chofer_id (works with or without assignment)
+      const { count } = await supabase
+        .from("logs_validacion_qr")
+        .select("*", { count: "exact", head: true })
+        .eq("chofer_id", user.id)
+        .eq("resultado", "valido")
+        .gte("created_at", todayStart);
+
+      const c = count ?? 0;
+      setDailyCount(c);
+      setDailyTotal(c * 9);
     } catch (err) {
       console.error("Error loading driver assignment:", err);
     }
