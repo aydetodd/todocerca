@@ -158,22 +158,19 @@ export default function PanelConcesionario() {
       if (fraudeRes.data) setFraudes(fraudeRes.data as any);
       if (cuentaRes.data) setCuentaConectada(cuentaRes.data);
 
-      // Calculate stats
-      if (liqRes.data && liqRes.data.length > 0) {
-        const today = new Date().toISOString().split("T")[0];
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-        const monthStart = new Date().toISOString().slice(0, 7) + "-01";
+      // Calculate stats from liquidaciones (for historical) and logs (for today)
+      const monthStart = new Date().toISOString().slice(0, 7) + "-01";
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
-        const todayLiq = (liqRes.data as any[]).find((l) => l.fecha_liquidacion === today);
+      if (liqRes.data && liqRes.data.length > 0) {
         const weekLiqs = (liqRes.data as any[]).filter((l) => l.fecha_liquidacion >= weekAgo);
         const monthLiqs = (liqRes.data as any[]).filter((l) => l.fecha_liquidacion >= monthStart);
 
-        setStats({
-          hoy: todayLiq?.total_boletos || 0,
+        setStats((prev) => ({
+          ...prev,
           semana: weekLiqs.reduce((s: number, l: any) => s + l.total_boletos, 0),
-          mes: monthLiqs.reduce((s: number, l: any) => s + l.total_boletos, 0),
           totalMes: monthLiqs.reduce((s: number, l: any) => s + Number(l.monto_neto), 0),
-        });
+        }));
       }
       // Fetch per-unit revenue for today
       const { data: misUnidades } = await supabase
@@ -228,6 +225,13 @@ export default function PanelConcesionario() {
         })).sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
 
         setIngresosUnidad(ingresos);
+
+        // Set real-time today stats from actual logs
+        const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
+        setStats((prev) => ({
+          ...prev,
+          hoy: totalBoletosHoy,
+        }));
       }
     } catch (err) {
       console.error("Error loading panel:", err);
