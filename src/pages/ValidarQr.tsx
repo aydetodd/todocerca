@@ -117,15 +117,67 @@ export default function ValidarQr() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [dailyCount, setDailyCount] = useState(0);
   const [dailyTotal, setDailyTotal] = useState(0);
+  const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
+  const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-focus input
+  // Load driver's assigned unit and initial daily stats
   useEffect(() => {
     if (!authLoading && user) {
       setTimeout(() => inputRef.current?.focus(), 300);
+      loadDriverAssignment();
     }
   }, [authLoading, user]);
+
+  const loadDriverAssignment = async () => {
+    if (!user) return;
+    try {
+      // Find the driver record linked to this user
+      const { data: chofer } = await supabase
+        .from("choferes_empresa")
+        .select("id, proveedor_id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (!chofer) return;
+
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      // Find today's assignment for this driver
+      const { data: asignacion } = await supabase
+        .from("asignaciones_chofer")
+        .select("unidad_id, producto_id")
+        .eq("chofer_id", chofer.id)
+        .eq("fecha", todayStr)
+        .limit(1)
+        .single();
+
+      if (asignacion) {
+        setAssignedUnitId(asignacion.unidad_id);
+        setAssignedRouteId(asignacion.producto_id);
+
+        // Load initial daily stats for this unit
+        if (asignacion.unidad_id) {
+          const todayStart = `${todayStr}T00:00:00`;
+          const { count } = await supabase
+            .from("logs_validacion_qr")
+            .select("*", { count: "exact", head: true })
+            .eq("unidad_id", asignacion.unidad_id)
+            .eq("resultado", "valido")
+            .gte("created_at", todayStart);
+
+          const c = count ?? 0;
+          setDailyCount(c);
+          setDailyTotal(c * 9);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading driver assignment:", err);
+    }
+  };
 
   // Cleanup flash timer
   useEffect(() => {
@@ -173,7 +225,7 @@ export default function ValidarQr() {
       }
 
       const { data, error } = await supabase.functions.invoke("validate-qr-ticket", {
-        body: { qr_token: token, latitude, longitude },
+        body: { qr_token: token, latitude, longitude, unidad_id: assignedUnitId, ruta_id: assignedRouteId },
       });
 
       if (error) throw error;
