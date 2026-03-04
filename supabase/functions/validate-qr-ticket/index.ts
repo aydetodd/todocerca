@@ -305,18 +305,25 @@ serve(async (req) => {
       chofer_id: driver.id,
     });
 
-    // Get daily count for this unit
+    // Get daily count - use unidad_id if available, otherwise count by chofer_id
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     
-    const { count: dailyCount } = await supabaseAdmin
+    let dailyQuery = supabaseAdmin
       .from("logs_validacion_qr")
       .select("*", { count: "exact", head: true })
-      .eq("unidad_id", unidad_id)
       .eq("resultado", "valido")
       .gte("created_at", todayStart.toISOString());
+    
+    if (unidad_id) {
+      dailyQuery = dailyQuery.eq("unidad_id", unidad_id);
+    } else {
+      dailyQuery = dailyQuery.eq("chofer_id", driver.id);
+    }
+    
+    const { count: dailyCount } = await dailyQuery;
 
-    console.log(`[VALIDATE-QR] Valid! Token: ${ticket.token.slice(-6)} Unit: ${unidad_id} Daily: ${dailyCount}`);
+    console.log(`[VALIDATE-QR] Valid! Token: ${ticket.token.slice(-6)} Unit: ${unidad_id} Chofer: ${driver.id} Daily: ${dailyCount}`);
 
     return new Response(JSON.stringify({
       valid: true,
