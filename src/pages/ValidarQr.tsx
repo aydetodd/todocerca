@@ -35,29 +35,6 @@ type ValidationResult = {
   };
 };
 
-// TTS helper
-const speak = (message: string, rate = 0.9) => {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(message);
-  u.lang = "es-MX";
-  u.rate = rate;
-  u.pitch = 0.9;
-  u.volume = 1.0;
-  const setVoice = () => {
-    const voices = window.speechSynthesis.getVoices();
-    const v = voices.find(
-      (v) =>
-        v.lang.startsWith("es") &&
-        (v.name.includes("Paulina") || v.name.includes("Monica") || v.name.includes("Francisca"))
-    ) || voices.find((v) => v.lang.startsWith("es"));
-    if (v) u.voice = v;
-    window.speechSynthesis.speak(u);
-  };
-  if (window.speechSynthesis.getVoices().length > 0) setVoice();
-  else window.speechSynthesis.onvoiceschanged = setVoice;
-};
-
 // Alert beep using Web Audio API
 const playAlertBeep = (type: "success" | "fraud" | "error") => {
   try {
@@ -238,14 +215,6 @@ export default function ValidarQr() {
 
         if (audioEnabled) {
           playAlertBeep("success");
-          setTimeout(() => {
-            speak(
-              `Boleto válido. Código ${res.details!.short_code.split("").join(" ")}. ` +
-              `Pasajero número ${res.details!.daily_passenger_count} del día. ` +
-              `Acumulado: ${res.details!.daily_total_mxn} pesos.`,
-              0.95
-            );
-          }, 400);
         }
 
         if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
@@ -255,47 +224,12 @@ export default function ValidarQr() {
 
         if (audioEnabled) {
           playAlertBeep("fraud");
-          if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-
-          setTimeout(() => {
-            const fd = res.fraud_details!;
-            const usedDate = new Date(fd.used_at);
-            const dateStr = usedDate.toLocaleDateString("es-MX", {
-              day: "numeric",
-              month: "long",
-            });
-            const timeStr = usedDate.toLocaleTimeString("es-MX", {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-
-            let msg = `¡Alerta de fraude! Boleto ya utilizado. `;
-            msg += `Código ${fd.short_code.split("").join(" ")}. `;
-            msg += `Fue usado el ${dateStr} a las ${timeStr}. `;
-            msg += `En la unidad ${fd.used_on_unit}. `;
-            msg += `Hace ${fd.minutes_elapsed} minutos. `;
-            if (fd.distance_km !== null) {
-              msg += `A ${fd.distance_km} kilómetros de aquí. `;
-            }
-            msg += `Severidad: ${
-              res.severity === "critical"
-                ? "Crítica"
-                : res.severity === "high"
-                ? "Alta"
-                : res.severity === "medium"
-                ? "Media"
-                : "Baja"
-            }. `;
-            msg += `Este usuario tiene ${fd.total_user_attempts} intentos de fraude registrados.`;
-
-            speak(msg, 0.85);
-          }, 1200);
         }
+        if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
       } else {
         // Other errors
         if (audioEnabled) {
           playAlertBeep("error");
-          setTimeout(() => speak(res.message, 0.95), 400);
         }
       }
     } catch (err: any) {
@@ -303,7 +237,6 @@ export default function ValidarQr() {
       toast.error("Error al validar QR");
       if (audioEnabled) {
         playAlertBeep("error");
-        setTimeout(() => speak("Error al validar el boleto. Intente de nuevo.", 0.95), 400);
       }
     } finally {
       setValidating(false);
