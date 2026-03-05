@@ -188,7 +188,7 @@ export default function PanelConcesionario() {
           .from("logs_validacion_qr")
           .select("unidad_id, chofer_id")
           .in("unidad_id", unidadIds)
-          .eq("resultado", "valido")
+          .eq("resultado", "valid")
           .gte("created_at", todayStart)
           .lte("created_at", todayEnd);
 

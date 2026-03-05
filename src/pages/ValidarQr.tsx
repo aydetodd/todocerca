@@ -166,7 +166,7 @@ export default function ValidarQr() {
         .from("logs_validacion_qr")
         .select("*", { count: "exact", head: true })
         .eq("chofer_id", user.id)
-        .eq("resultado", "valido")
+        .eq("resultado", "valid")
         .gte("created_at", todayStart);
 
       const c = count ?? 0;
