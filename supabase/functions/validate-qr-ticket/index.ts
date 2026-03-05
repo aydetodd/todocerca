@@ -100,7 +100,7 @@ serve(async (req) => {
     if (ticketError || !ticket) {
       // Log invalid attempt
       await supabaseAdmin.from("logs_validacion_qr").insert({
-        resultado: "invalido",
+        resultado: "invalid",
         mensaje_error: "QR inválido o no existe",
         latitud: latitude,
         longitud: longitude,
@@ -187,7 +187,7 @@ serve(async (req) => {
       // Log validation attempt
       await supabaseAdmin.from("logs_validacion_qr").insert({
         qr_ticket_id: ticket.id,
-        resultado: "fraude",
+        resultado: "fraud",
         mensaje_error: "QR ya utilizado - intento de fraude",
         latitud: latitude,
         longitud: longitude,
@@ -231,7 +231,7 @@ serve(async (req) => {
 
         await supabaseAdmin.from("logs_validacion_qr").insert({
           qr_ticket_id: ticket.id,
-          resultado: "expirado",
+          resultado: "expired",
           mensaje_error: "QR transferido expirado (24hrs)",
           latitud: latitude,
           longitud: longitude,
@@ -303,7 +303,7 @@ serve(async (req) => {
     // Log successful validation
     await supabaseAdmin.from("logs_validacion_qr").insert({
       qr_ticket_id: ticket.id,
-      resultado: "valido",
+      resultado: "valid",
       latitud: latitude,
       longitud: longitude,
       unidad_id,
@@ -317,7 +317,7 @@ serve(async (req) => {
     let dailyQuery = supabaseAdmin
       .from("logs_validacion_qr")
       .select("*", { count: "exact", head: true })
-      .eq("resultado", "valido")
+      .eq("resultado", "valid")
       .gte("created_at", todayStart.toISOString());
     
     if (unidad_id) {
