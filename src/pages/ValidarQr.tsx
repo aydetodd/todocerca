@@ -366,21 +366,46 @@ export default function ValidarQr() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Daily Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
+        {/* Daily Stats - Clickable */}
+        <div className="grid grid-cols-2 gap-3 cursor-pointer" onClick={toggleTicketList}>
+          <Card className="transition-colors hover:border-primary">
             <CardContent className="p-3 text-center">
               <p className="text-3xl font-bold text-foreground">{dailyCount}</p>
               <p className="text-xs text-muted-foreground">Pasajeros hoy</p>
+              <p className="text-[10px] text-primary mt-1">{showTicketList ? "▲ Ocultar" : "▼ Ver boletos"}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="transition-colors hover:border-primary">
             <CardContent className="p-3 text-center">
               <p className="text-3xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
               <p className="text-xs text-muted-foreground">Recaudado hoy</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Ticket List */}
+        {showTicketList && (
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados hoy</p>
+              {loadingTickets ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
+              ) : dailyTickets.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Sin boletos validados</p>
+              ) : (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {dailyTickets.map((t, i) => (
+                    <div key={i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
+                      <span className="font-mono text-sm font-bold text-foreground">#{t.short_code}</span>
+                      <span className="text-xs text-muted-foreground">{t.time}</span>
+                      <span className="text-xs font-semibold text-primary">$9.00</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* QR Input */}
         <Card>
