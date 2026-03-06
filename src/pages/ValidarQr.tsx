@@ -96,6 +96,9 @@ export default function ValidarQr() {
   const [dailyTotal, setDailyTotal] = useState(0);
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
+  const [showTicketList, setShowTicketList] = useState(false);
+  const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
 
