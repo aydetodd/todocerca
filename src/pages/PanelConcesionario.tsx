@@ -246,6 +246,55 @@ export default function PanelConcesionario() {
     }
   };
 
+  const toggleUnidadTickets = async (unidadId: string) => {
+    if (expandedUnidad === unidadId) {
+      setExpandedUnidad(null);
+      return;
+    }
+    setExpandedUnidad(unidadId);
+    setLoadingUnidadTickets(true);
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at")
+        .eq("unidad_id", unidadId)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const ticketIds = data.map((d: any) => d.qr_ticket_id).filter(Boolean);
+        const { data: tickets } = await supabase
+          .from("qr_tickets")
+          .select("id, token")
+          .in("id", ticketIds);
+
+        const tokenMap: Record<string, string> = {};
+        (tickets || []).forEach((t: any) => {
+          tokenMap[t.id] = t.token.slice(-6).toUpperCase();
+        });
+
+        setUnidadTickets(data.map((d: any) => ({
+          short_code: tokenMap[d.qr_ticket_id] || "------",
+          time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        })));
+      } else {
+        setUnidadTickets([]);
+      }
+    } catch (err) {
+      console.error("Error loading unit tickets:", err);
+    } finally {
+      setLoadingUnidadTickets(false);
+    }
+  };
+
   const handleStripeConnect = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("create-connect-account", {
