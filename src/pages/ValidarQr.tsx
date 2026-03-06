@@ -110,8 +110,11 @@ export default function ValidarQr() {
   const loadDriverAssignment = async () => {
     if (!user) return;
     try {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const todayStart = `${todayStr}T00:00:00`;
+      // Use Hermosillo time (UTC-7, no DST) for "today"
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
 
       // Find the driver record linked to this user
       const { data: chofer } = await supabase
