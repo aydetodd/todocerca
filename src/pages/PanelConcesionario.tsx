@@ -80,6 +80,9 @@ export default function PanelConcesionario() {
   const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0 });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
+  const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
+  const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
+  const [loadingUnidadTickets, setLoadingUnidadTickets] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
