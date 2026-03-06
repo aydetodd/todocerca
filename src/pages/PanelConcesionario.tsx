@@ -180,7 +180,10 @@ export default function PanelConcesionario() {
 
       if (misUnidades && misUnidades.length > 0) {
         const unidadIds = misUnidades.map((u: any) => u.id);
-        const todayStr = new Date().toISOString().split("T")[0];
+        // Use Hermosillo time (UTC-7, no DST) for "today"
+        const now = new Date();
+        const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+        const todayStr = hermosillo.toISOString().split("T")[0];
         const todayStart = `${todayStr}T00:00:00-07:00`;
         const todayEnd = `${todayStr}T23:59:59-07:00`;
 
