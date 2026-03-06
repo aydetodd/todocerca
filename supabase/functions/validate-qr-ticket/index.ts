@@ -310,15 +310,16 @@ serve(async (req) => {
       chofer_id: driver.id,
     });
 
-    // Get daily count - use unidad_id if available, otherwise count by chofer_id
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    // Get daily count using Hermosillo time (UTC-7, no DST)
+    const nowMs = Date.now() - 7 * 60 * 60 * 1000;
+    const hermosilloDate = new Date(nowMs).toISOString().split("T")[0];
+    const todayStartStr = `${hermosilloDate}T00:00:00-07:00`;
     
     let dailyQuery = supabaseAdmin
       .from("logs_validacion_qr")
       .select("*", { count: "exact", head: true })
       .eq("resultado", "valid")
-      .gte("created_at", todayStart.toISOString());
+      .gte("created_at", todayStartStr);
     
     if (unidad_id) {
       dailyQuery = dailyQuery.eq("unidad_id", unidad_id);
