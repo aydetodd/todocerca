@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
@@ -80,6 +80,9 @@ export default function PanelConcesionario() {
   const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0 });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
+  const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
+  const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
+  const [loadingUnidadTickets, setLoadingUnidadTickets] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -243,6 +246,44 @@ export default function PanelConcesionario() {
     }
   };
 
+  const toggleUnidadTickets = async (unidadId: string) => {
+    if (expandedUnidad === unidadId) {
+      setExpandedUnidad(null);
+      return;
+    }
+    setExpandedUnidad(unidadId);
+    setLoadingUnidadTickets(true);
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at")
+        .eq("unidad_id", unidadId)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setUnidadTickets(data.map((d: any) => ({
+          short_code: (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        })));
+      } else {
+        setUnidadTickets([]);
+      }
+    } catch (err) {
+      console.error("Error loading unit tickets:", err);
+    } finally {
+      setLoadingUnidadTickets(false);
+    }
+  };
+
   const handleStripeConnect = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("create-connect-account", {
@@ -399,23 +440,57 @@ export default function PanelConcesionario() {
                     </TableHeader>
                     <TableBody>
                       {ingresosUnidad.map((u) => (
-                        <TableRow key={u.unidad_id}>
-                          <TableCell className="py-2">
-                            <p className="font-bold text-sm">#{u.numero_economico}</p>
-                            {u.placas && (
-                              <p className="text-xs text-muted-foreground">{u.placas}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2 text-sm">
-                            {u.chofer_nombre || <span className="text-muted-foreground text-xs">Sin asignar</span>}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-semibold text-sm">
-                            {u.boletos_hoy}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-bold text-sm text-green-600">
-                            ${u.ingresos_hoy.toFixed(0)}
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={u.unidad_id}>
+                          <TableRow 
+                            className="cursor-pointer hover:bg-muted/30"
+                            onClick={() => u.boletos_hoy > 0 && toggleUnidadTickets(u.unidad_id)}
+                          >
+                            <TableCell className="py-2">
+                              <p className="font-bold text-sm">#{u.numero_economico}</p>
+                              {u.placas && (
+                                <p className="text-xs text-muted-foreground">{u.placas}</p>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-sm">
+                              {u.chofer_nombre || <span className="text-muted-foreground text-xs">Sin asignar</span>}
+                            </TableCell>
+                            <TableCell className="py-2 text-right font-semibold text-sm">
+                              {u.boletos_hoy}
+                              {u.boletos_hoy > 0 && (
+                                <span className="text-[10px] text-primary ml-1">
+                                  {expandedUnidad === u.unidad_id ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-right font-bold text-sm text-green-600">
+                              ${u.ingresos_hoy.toFixed(0)}
+                            </TableCell>
+                          </TableRow>
+                          {expandedUnidad === u.unidad_id && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="p-0">
+                                <div className="bg-muted/30 p-3">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados</p>
+                                  {loadingUnidadTickets ? (
+                                    <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
+                                  ) : unidadTickets.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center py-2">Sin boletos</p>
+                                  ) : (
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                      {unidadTickets.map((t, i) => (
+                                        <div key={i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
+                                          <span className="font-mono text-sm font-bold text-foreground">#{t.short_code}</span>
+                                          <span className="text-xs text-muted-foreground">{t.time}</span>
+                                          <span className="text-xs font-semibold text-primary">$9.00</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))}
                       {/* Totals row */}
                       <TableRow className="border-t-2 border-border bg-muted/50">

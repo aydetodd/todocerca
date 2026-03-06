@@ -96,6 +96,9 @@ export default function ValidarQr() {
   const [dailyTotal, setDailyTotal] = useState(0);
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
+  const [showTicketList, setShowTicketList] = useState(false);
+  const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -155,6 +158,43 @@ export default function ValidarQr() {
     } catch (err) {
       console.error("Error loading driver assignment:", err);
     }
+  };
+
+  const loadDailyTickets = async () => {
+    if (!user) return;
+    setLoadingTickets(true);
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at")
+        .eq("chofer_id", user.id)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setDailyTickets(data.map((d: any) => ({
+          short_code: (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        })));
+      } else {
+        setDailyTickets([]);
+      }
+    } catch (err) {
+      console.error("Error loading daily tickets:", err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const toggleTicketList = () => {
+    if (!showTicketList) loadDailyTickets();
+    setShowTicketList(!showTicketList);
   };
 
   // Cleanup flash timer
@@ -315,21 +355,46 @@ export default function ValidarQr() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Daily Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
+        {/* Daily Stats - Clickable */}
+        <div className="grid grid-cols-2 gap-3 cursor-pointer" onClick={toggleTicketList}>
+          <Card className="transition-colors hover:border-primary">
             <CardContent className="p-3 text-center">
               <p className="text-3xl font-bold text-foreground">{dailyCount}</p>
               <p className="text-xs text-muted-foreground">Pasajeros hoy</p>
+              <p className="text-[10px] text-primary mt-1">{showTicketList ? "▲ Ocultar" : "▼ Ver boletos"}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="transition-colors hover:border-primary">
             <CardContent className="p-3 text-center">
               <p className="text-3xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
               <p className="text-xs text-muted-foreground">Recaudado hoy</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Ticket List */}
+        {showTicketList && (
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados hoy</p>
+              {loadingTickets ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
+              ) : dailyTickets.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Sin boletos validados</p>
+              ) : (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {dailyTickets.map((t, i) => (
+                    <div key={i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
+                      <span className="font-mono text-sm font-bold text-foreground">#{t.short_code}</span>
+                      <span className="text-xs text-muted-foreground">{t.time}</span>
+                      <span className="text-xs font-semibold text-primary">$9.00</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* QR Input */}
         <Card>
