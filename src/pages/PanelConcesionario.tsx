@@ -270,19 +270,8 @@ export default function PanelConcesionario() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        const ticketIds = data.map((d: any) => d.qr_ticket_id).filter(Boolean);
-        const { data: tickets } = await supabase
-          .from("qr_tickets")
-          .select("id, token")
-          .in("id", ticketIds);
-
-        const tokenMap: Record<string, string> = {};
-        (tickets || []).forEach((t: any) => {
-          tokenMap[t.id] = t.token.slice(-6).toUpperCase();
-        });
-
         setUnidadTickets(data.map((d: any) => ({
-          short_code: tokenMap[d.qr_ticket_id] || "------",
+          short_code: (d.qr_ticket_id || "").slice(-6).toUpperCase(),
           time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
         })));
       } else {
