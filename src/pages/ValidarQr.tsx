@@ -160,6 +160,54 @@ export default function ValidarQr() {
     }
   };
 
+  const loadDailyTickets = async () => {
+    if (!user) return;
+    setLoadingTickets(true);
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at")
+        .eq("chofer_id", user.id)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const ticketIds = data.map((d: any) => d.qr_ticket_id).filter(Boolean);
+        const { data: tickets } = await supabase
+          .from("qr_tickets")
+          .select("id, token")
+          .in("id", ticketIds);
+
+        const tokenMap: Record<string, string> = {};
+        (tickets || []).forEach((t: any) => {
+          tokenMap[t.id] = t.token.slice(-6).toUpperCase();
+        });
+
+        setDailyTickets(data.map((d: any) => ({
+          short_code: tokenMap[d.qr_ticket_id] || "------",
+          time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        })));
+      } else {
+        setDailyTickets([]);
+      }
+    } catch (err) {
+      console.error("Error loading daily tickets:", err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const toggleTicketList = () => {
+    if (!showTicketList) loadDailyTickets();
+    setShowTicketList(!showTicketList);
+  };
+
   // Cleanup flash timer
   useEffect(() => {
     return () => {
