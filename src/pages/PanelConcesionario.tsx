@@ -451,23 +451,57 @@ export default function PanelConcesionario() {
                     </TableHeader>
                     <TableBody>
                       {ingresosUnidad.map((u) => (
-                        <TableRow key={u.unidad_id}>
-                          <TableCell className="py-2">
-                            <p className="font-bold text-sm">#{u.numero_economico}</p>
-                            {u.placas && (
-                              <p className="text-xs text-muted-foreground">{u.placas}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2 text-sm">
-                            {u.chofer_nombre || <span className="text-muted-foreground text-xs">Sin asignar</span>}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-semibold text-sm">
-                            {u.boletos_hoy}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-bold text-sm text-green-600">
-                            ${u.ingresos_hoy.toFixed(0)}
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={u.unidad_id}>
+                          <TableRow 
+                            className="cursor-pointer hover:bg-muted/30"
+                            onClick={() => u.boletos_hoy > 0 && toggleUnidadTickets(u.unidad_id)}
+                          >
+                            <TableCell className="py-2">
+                              <p className="font-bold text-sm">#{u.numero_economico}</p>
+                              {u.placas && (
+                                <p className="text-xs text-muted-foreground">{u.placas}</p>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-sm">
+                              {u.chofer_nombre || <span className="text-muted-foreground text-xs">Sin asignar</span>}
+                            </TableCell>
+                            <TableCell className="py-2 text-right font-semibold text-sm">
+                              {u.boletos_hoy}
+                              {u.boletos_hoy > 0 && (
+                                <span className="text-[10px] text-primary ml-1">
+                                  {expandedUnidad === u.unidad_id ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-right font-bold text-sm text-green-600">
+                              ${u.ingresos_hoy.toFixed(0)}
+                            </TableCell>
+                          </TableRow>
+                          {expandedUnidad === u.unidad_id && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="p-0">
+                                <div className="bg-muted/30 p-3">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados</p>
+                                  {loadingUnidadTickets ? (
+                                    <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
+                                  ) : unidadTickets.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center py-2">Sin boletos</p>
+                                  ) : (
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                      {unidadTickets.map((t, i) => (
+                                        <div key={i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
+                                          <span className="font-mono text-sm font-bold text-foreground">#{t.short_code}</span>
+                                          <span className="text-xs text-muted-foreground">{t.time}</span>
+                                          <span className="text-xs font-semibold text-primary">$9.00</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))}
                       {/* Totals row */}
                       <TableRow className="border-t-2 border-border bg-muted/50">
