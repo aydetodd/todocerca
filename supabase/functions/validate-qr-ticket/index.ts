@@ -319,7 +319,7 @@ serve(async (req) => {
       .from("logs_validacion_qr")
       .select("*", { count: "exact", head: true })
       .eq("resultado", "valid")
-      .gte("created_at", todayStart.toISOString());
+      .gte("created_at", todayStartStr);
     
     if (unidad_id) {
       dailyQuery = dailyQuery.eq("unidad_id", unidad_id);
