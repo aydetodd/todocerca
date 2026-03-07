@@ -2900,12 +2900,15 @@ export type Database = {
           created_at: string
           curp: string | null
           estado: string
+          fecha_revision: string | null
+          fecha_solicitud: string
           id: string
           motivo_rechazo: string | null
           razon_social: string | null
           rfc: string | null
           telefono_verificado: boolean | null
           tipo_negocio: string | null
+          total_unidades: number
           updated_at: string
         }
         Insert: {
@@ -2915,12 +2918,15 @@ export type Database = {
           created_at?: string
           curp?: string | null
           estado?: string
+          fecha_revision?: string | null
+          fecha_solicitud?: string
           id?: string
           motivo_rechazo?: string | null
           razon_social?: string | null
           rfc?: string | null
           telefono_verificado?: boolean | null
           tipo_negocio?: string | null
+          total_unidades?: number
           updated_at?: string
         }
         Update: {
@@ -2930,12 +2936,15 @@ export type Database = {
           created_at?: string
           curp?: string | null
           estado?: string
+          fecha_revision?: string | null
+          fecha_solicitud?: string
           id?: string
           motivo_rechazo?: string | null
           razon_social?: string | null
           rfc?: string | null
           telefono_verificado?: boolean | null
           tipo_negocio?: string | null
+          total_unidades?: number
           updated_at?: string
         }
         Relationships: [
