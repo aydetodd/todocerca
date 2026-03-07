@@ -719,14 +719,17 @@ export default function PanelConcesionario() {
               </CardContent>
             </Card>
 
-            {/* Required Documents */}
+            {/* Required Documents + WhatsApp */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4" /> Documentos Requeridos
                 </CardTitle>
+                <CardDescription className="text-xs">
+                  Envía estos documentos por WhatsApp al administrador
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="space-y-2 text-sm">
                   {[
                     "INE / Identificación Oficial",
@@ -742,6 +745,10 @@ export default function PanelConcesionario() {
                     </div>
                   ))}
                 </div>
+                <Button onClick={handleWhatsAppDocuments} className="w-full bg-green-600 hover:bg-green-700 text-white" size="sm">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar documentos por WhatsApp
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
