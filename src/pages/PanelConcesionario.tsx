@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
-  Users,
+  Users, Plus, MessageCircle, Loader2, Trash2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
