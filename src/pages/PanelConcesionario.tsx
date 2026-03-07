@@ -755,11 +755,68 @@ export default function PanelConcesionario() {
 
           {/* UNIDADES */}
           <TabsContent value="unidades" className="space-y-3 mt-4">
-            {unidades.length === 0 ? (
+            {/* Add Unit Button */}
+            <Button onClick={() => setShowAddUnit(!showAddUnit)} variant="outline" className="w-full" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {showAddUnit ? "Cancelar" : "Registrar nueva unidad"}
+            </Button>
+
+            {/* Add Unit Form */}
+            {showAddUnit && (
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Número Económico *</Label>
+                      <Input
+                        placeholder="Ej: 101"
+                        value={newUnit.numero_economico}
+                        onChange={(e) => setNewUnit({ ...newUnit, numero_economico: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Placas *</Label>
+                      <Input
+                        placeholder="Ej: ABC-123"
+                        value={newUnit.placas}
+                        onChange={(e) => setNewUnit({ ...newUnit, placas: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Línea</Label>
+                      <Input
+                        placeholder="Ej: Mercedes"
+                        value={newUnit.linea}
+                        onChange={(e) => setNewUnit({ ...newUnit, linea: e.target.value })}
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Modelo</Label>
+                      <Input
+                        placeholder="Ej: 2020"
+                        value={newUnit.modelo}
+                        onChange={(e) => setNewUnit({ ...newUnit, modelo: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddUnit} disabled={savingUnit} className="w-full" size="sm">
+                    {savingUnit ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                    Registrar unidad
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {unidades.length === 0 && !showAddUnit ? (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
                   <Bus className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p>No hay unidades registradas</p>
+                  <p className="text-xs mt-1">Presiona "Registrar nueva unidad" para agregar</p>
                 </CardContent>
               </Card>
             ) : (
@@ -775,9 +832,16 @@ export default function PanelConcesionario() {
                           {u.modelo && ` ${u.modelo}`}
                         </p>
                       </div>
-                      <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
-                        {estadoVerifLabel(u.estado_verificacion || undefined)}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
+                          {estadoVerifLabel(u.estado_verificacion || undefined)}
+                        </Badge>
+                        {u.estado_verificacion === "pending" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteUnit(u.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
