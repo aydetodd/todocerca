@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
-  Users,
+  Users, Plus, MessageCircle, Loader2, Trash2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +85,11 @@ export default function PanelConcesionario() {
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
   const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingUnidadTickets, setLoadingUnidadTickets] = useState(false);
+  
+  // Unit registration form
+  const [showAddUnit, setShowAddUnit] = useState(false);
+  const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
+  const [savingUnit, setSavingUnit] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -294,6 +301,111 @@ export default function PanelConcesionario() {
     } catch (err: any) {
       toast.error(err.message || "Error al crear cuenta Stripe");
     }
+  };
+
+  const handleAddUnit = async () => {
+    if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
+      toast.error("Número económico y placas son obligatorios");
+      return;
+    }
+    setSavingUnit(true);
+    try {
+      let verifId = verificacion?.id;
+
+      // Create verification request if none exists
+      if (!verifId) {
+        const { data: newVerif, error: verifError } = await (supabase
+          .from("verificaciones_concesionario") as any)
+          .insert({
+            concesionario_id: proveedor.id,
+            estado: "pending",
+            total_unidades: 0,
+          })
+          .select("id")
+          .single();
+
+        if (verifError) throw verifError;
+        verifId = newVerif.id;
+      }
+
+      // Insert unit detail
+      const { error: unitError } = await supabase
+        .from("detalles_verificacion_unidad")
+        .insert({
+          verificacion_id: verifId,
+          numero_economico: newUnit.numero_economico.trim().toUpperCase(),
+          placas: newUnit.placas.trim().toUpperCase(),
+          modelo: newUnit.modelo.trim() || null,
+          linea: newUnit.linea.trim() || null,
+          estado_verificacion: "pending",
+        });
+
+      if (unitError) throw unitError;
+
+      // Update total_unidades count
+      const { count } = await supabase
+        .from("detalles_verificacion_unidad")
+        .select("id", { count: "exact", head: true })
+        .eq("verificacion_id", verifId);
+
+      await (supabase
+        .from("verificaciones_concesionario") as any)
+        .update({ total_unidades: count || 0 })
+        .eq("id", verifId);
+
+      toast.success("Unidad registrada correctamente");
+      setNewUnit({ numero_economico: "", placas: "", modelo: "", linea: "" });
+      setShowAddUnit(false);
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Error al registrar unidad");
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
+  const handleDeleteUnit = async (unitId: string) => {
+    if (!confirm("¿Eliminar esta unidad?")) return;
+    try {
+      const { error } = await supabase
+        .from("detalles_verificacion_unidad")
+        .delete()
+        .eq("id", unitId);
+      if (error) throw error;
+
+      // Update count
+      if (verificacion?.id) {
+        const { count } = await supabase
+          .from("detalles_verificacion_unidad")
+          .select("id", { count: "exact", head: true })
+          .eq("verificacion_id", verificacion.id);
+
+        await (supabase
+          .from("verificaciones_concesionario") as any)
+          .update({ total_unidades: count || 0 })
+          .eq("id", verificacion.id);
+      }
+
+      toast.success("Unidad eliminada");
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar unidad");
+    }
+  };
+
+  const handleWhatsAppDocuments = () => {
+    const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
+    const message = encodeURIComponent(
+      `Hola, soy ${proveedor?.nombre_negocio || proveedor?.nombre || "concesionario"} y quiero enviar mis documentos para verificación:\n\n` +
+      `- INE / Identificación Oficial\n` +
+      `- Concesión IMTES\n` +
+      `- RFC (Constancia de Situación Fiscal)\n` +
+      `- Comprobante de Domicilio\n` +
+      `- Tarjeta de Circulación\n` +
+      `- Fotografías de unidades\n\n` +
+      `ID Proveedor: ${proveedor?.id}`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
   };
 
   if (authLoading || loading) {
@@ -600,21 +712,24 @@ export default function PanelConcesionario() {
                     <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No hay solicitud de verificación</p>
                     <p className="text-xs mt-1">
-                      Contacta al administrador para iniciar la verificación
+                      Registra tus unidades y envía tus documentos para iniciar la verificación
                     </p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Required Documents */}
+            {/* Required Documents + WhatsApp */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4" /> Documentos Requeridos
                 </CardTitle>
+                <CardDescription className="text-xs">
+                  Envía estos documentos por WhatsApp al administrador
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="space-y-2 text-sm">
                   {[
                     "INE / Identificación Oficial",
@@ -630,17 +745,78 @@ export default function PanelConcesionario() {
                     </div>
                   ))}
                 </div>
+                <Button onClick={handleWhatsAppDocuments} className="w-full bg-green-600 hover:bg-green-700 text-white" size="sm">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar documentos por WhatsApp
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* UNIDADES */}
           <TabsContent value="unidades" className="space-y-3 mt-4">
-            {unidades.length === 0 ? (
+            {/* Add Unit Button */}
+            <Button onClick={() => setShowAddUnit(!showAddUnit)} variant="outline" className="w-full" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {showAddUnit ? "Cancelar" : "Registrar nueva unidad"}
+            </Button>
+
+            {/* Add Unit Form */}
+            {showAddUnit && (
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Número Económico *</Label>
+                      <Input
+                        placeholder="Ej: 101"
+                        value={newUnit.numero_economico}
+                        onChange={(e) => setNewUnit({ ...newUnit, numero_economico: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Placas *</Label>
+                      <Input
+                        placeholder="Ej: ABC-123"
+                        value={newUnit.placas}
+                        onChange={(e) => setNewUnit({ ...newUnit, placas: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Línea</Label>
+                      <Input
+                        placeholder="Ej: Mercedes"
+                        value={newUnit.linea}
+                        onChange={(e) => setNewUnit({ ...newUnit, linea: e.target.value })}
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Modelo</Label>
+                      <Input
+                        placeholder="Ej: 2020"
+                        value={newUnit.modelo}
+                        onChange={(e) => setNewUnit({ ...newUnit, modelo: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddUnit} disabled={savingUnit} className="w-full" size="sm">
+                    {savingUnit ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                    Registrar unidad
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {unidades.length === 0 && !showAddUnit ? (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
                   <Bus className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p>No hay unidades registradas</p>
+                  <p className="text-xs mt-1">Presiona "Registrar nueva unidad" para agregar</p>
                 </CardContent>
               </Card>
             ) : (
@@ -656,9 +832,16 @@ export default function PanelConcesionario() {
                           {u.modelo && ` ${u.modelo}`}
                         </p>
                       </div>
-                      <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
-                        {estadoVerifLabel(u.estado_verificacion || undefined)}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
+                          {estadoVerifLabel(u.estado_verificacion || undefined)}
+                        </Badge>
+                        {u.estado_verificacion === "pending" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteUnit(u.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
