@@ -303,6 +303,111 @@ export default function PanelConcesionario() {
     }
   };
 
+  const handleAddUnit = async () => {
+    if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
+      toast.error("Número económico y placas son obligatorios");
+      return;
+    }
+    setSavingUnit(true);
+    try {
+      let verifId = verificacion?.id;
+
+      // Create verification request if none exists
+      if (!verifId) {
+        const { data: newVerif, error: verifError } = await supabase
+          .from("verificaciones_concesionario")
+          .insert({
+            concesionario_id: proveedor.id,
+            estado: "pending",
+            total_unidades: 0,
+          })
+          .select("id")
+          .single();
+
+        if (verifError) throw verifError;
+        verifId = newVerif.id;
+      }
+
+      // Insert unit detail
+      const { error: unitError } = await supabase
+        .from("detalles_verificacion_unidad")
+        .insert({
+          verificacion_id: verifId,
+          numero_economico: newUnit.numero_economico.trim().toUpperCase(),
+          placas: newUnit.placas.trim().toUpperCase(),
+          modelo: newUnit.modelo.trim() || null,
+          linea: newUnit.linea.trim() || null,
+          estado_verificacion: "pending",
+        });
+
+      if (unitError) throw unitError;
+
+      // Update total_unidades count
+      const { count } = await supabase
+        .from("detalles_verificacion_unidad")
+        .select("id", { count: "exact", head: true })
+        .eq("verificacion_id", verifId);
+
+      await supabase
+        .from("verificaciones_concesionario")
+        .update({ total_unidades: count || 0 })
+        .eq("id", verifId);
+
+      toast.success("Unidad registrada correctamente");
+      setNewUnit({ numero_economico: "", placas: "", modelo: "", linea: "" });
+      setShowAddUnit(false);
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Error al registrar unidad");
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
+  const handleDeleteUnit = async (unitId: string) => {
+    if (!confirm("¿Eliminar esta unidad?")) return;
+    try {
+      const { error } = await supabase
+        .from("detalles_verificacion_unidad")
+        .delete()
+        .eq("id", unitId);
+      if (error) throw error;
+
+      // Update count
+      if (verificacion?.id) {
+        const { count } = await supabase
+          .from("detalles_verificacion_unidad")
+          .select("id", { count: "exact", head: true })
+          .eq("verificacion_id", verificacion.id);
+
+        await supabase
+          .from("verificaciones_concesionario")
+          .update({ total_unidades: count || 0 })
+          .eq("id", verificacion.id);
+      }
+
+      toast.success("Unidad eliminada");
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar unidad");
+    }
+  };
+
+  const handleWhatsAppDocuments = () => {
+    const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
+    const message = encodeURIComponent(
+      `Hola, soy ${proveedor?.nombre_negocio || proveedor?.nombre || "concesionario"} y quiero enviar mis documentos para verificación:\n\n` +
+      `- INE / Identificación Oficial\n` +
+      `- Concesión IMTES\n` +
+      `- RFC (Constancia de Situación Fiscal)\n` +
+      `- Comprobante de Domicilio\n` +
+      `- Tarjeta de Circulación\n` +
+      `- Fotografías de unidades\n\n` +
+      `ID Proveedor: ${proveedor?.id}`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
