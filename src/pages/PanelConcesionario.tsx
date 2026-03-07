@@ -712,7 +712,7 @@ export default function PanelConcesionario() {
                     <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No hay solicitud de verificación</p>
                     <p className="text-xs mt-1">
-                      Contacta al administrador para iniciar la verificación
+                      Registra tus unidades y envía tus documentos para iniciar la verificación
                     </p>
                   </div>
                 )}
