@@ -314,8 +314,8 @@ export default function PanelConcesionario() {
 
       // Create verification request if none exists
       if (!verifId) {
-        const { data: newVerif, error: verifError } = await supabase
-          .from("verificaciones_concesionario")
+        const { data: newVerif, error: verifError } = await (supabase
+          .from("verificaciones_concesionario") as any)
           .insert({
             concesionario_id: proveedor.id,
             estado: "pending",
