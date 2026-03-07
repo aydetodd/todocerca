@@ -348,8 +348,8 @@ export default function PanelConcesionario() {
         .select("id", { count: "exact", head: true })
         .eq("verificacion_id", verifId);
 
-      await supabase
-        .from("verificaciones_concesionario")
+      await (supabase
+        .from("verificaciones_concesionario") as any)
         .update({ total_unidades: count || 0 })
         .eq("id", verifId);
 
