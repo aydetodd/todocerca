@@ -85,6 +85,11 @@ export default function PanelConcesionario() {
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
   const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingUnidadTickets, setLoadingUnidadTickets] = useState(false);
+  
+  // Unit registration form
+  const [showAddUnit, setShowAddUnit] = useState(false);
+  const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
+  const [savingUnit, setSavingUnit] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
