@@ -417,7 +417,12 @@ export default function ValidarQr() {
         {showTicketList && (
           <Card>
             <CardContent className="p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados hoy</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground">Boletos validados hoy</p>
+                <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="h-7 text-xs gap-1">
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
               {loadingTickets ? (
                 <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
               ) : dailyTickets.length === 0 ? (
