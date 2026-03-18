@@ -178,11 +178,9 @@ export const GlobalSOSListener = () => {
           if (shareLink) {
             const tokenMatch = shareLink.match(/\/sos\/([a-zA-Z0-9-]+)/);
             if (tokenMatch) {
-              const { data: alertData } = await supabase
-                .from('sos_alerts')
-                .select('latitude, longitude')
-                .eq('share_token', tokenMatch[1])
-                .single();
+              const { data: alertArr } = await supabase
+                .rpc('get_sos_by_token', { p_token: tokenMatch[1] });
+              const alertData = alertArr?.[0] || null;
               
               if (alertData) {
                 latitude = alertData.latitude;
