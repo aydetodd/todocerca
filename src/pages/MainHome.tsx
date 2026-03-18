@@ -15,20 +15,42 @@ export default function MainHome() {
   const [isConcesionario, setIsConcesionario] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    // Check if user is a provider with transport units
+    if (!user) {
+      console.log('[MainHome] No user, skipping concesionario check');
+      return;
+    }
     const checkConcesionario = async () => {
-      const { data: prov } = await supabase
-        .from('proveedores')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (prov) {
-        const { count } = await supabase
-          .from('unidades_empresa')
-          .select('*', { count: 'exact', head: true })
-          .eq('proveedor_id', prov.id);
-        setIsConcesionario((count ?? 0) > 0);
+      try {
+        console.log('[MainHome] Checking concesionario for user:', user.id);
+        const { data: prov, error: provError } = await supabase
+          .from('proveedores')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (provError) {
+          console.error('[MainHome] Error checking proveedor:', provError);
+          return;
+        }
+        
+        if (prov) {
+          const { count, error: unitError } = await supabase
+            .from('unidades_empresa')
+            .select('*', { count: 'exact', head: true })
+            .eq('proveedor_id', prov.id);
+          
+          if (unitError) {
+            console.error('[MainHome] Error checking unidades:', unitError);
+            return;
+          }
+          
+          console.log('[MainHome] Concesionario units count:', count);
+          setIsConcesionario((count ?? 0) > 0);
+        } else {
+          console.log('[MainHome] User is not a proveedor');
+        }
+      } catch (err) {
+        console.error('[MainHome] Concesionario check failed:', err);
       }
     };
     checkConcesionario();
