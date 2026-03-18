@@ -590,7 +590,7 @@ export default function PanelConcesionario() {
           <Card>
             <CardContent className="p-3 text-center">
               <Bus className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-              <p className="text-2xl font-bold text-foreground">{unidades.length}</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalUnidades}</p>
               <p className="text-xs text-muted-foreground">Unidades</p>
             </CardContent>
           </Card>
