@@ -80,7 +80,12 @@ export default function PanelConcesionario() {
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
-  const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0, totalUnidades: 0 });
+  const [stats, setStats] = useState({
+    hoy: 0, hoyAnterior: 0, labelHoyAnterior: '',
+    semana: 0, semanaAnterior: 0, labelSemanaAnterior: '',
+    totalMes: 0, mesAnterior: 0, labelMesAnterior: '',
+    mes: 0, totalUnidades: 0,
+  });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
