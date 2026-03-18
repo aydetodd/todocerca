@@ -69,11 +69,10 @@ export default function SOSView() {
         return;
       }
 
-      const { data: alertData, error: alertError } = await supabase
-        .from('sos_alerts')
-        .select('*')
-        .eq('share_token', token)
-        .single();
+      const { data: alertArr, error: alertError } = await supabase
+        .rpc('get_sos_by_token', { p_token: token });
+
+      const alertData = alertArr?.[0] || null;
 
       if (alertError || !alertData) {
         setError('Alerta no encontrada');
