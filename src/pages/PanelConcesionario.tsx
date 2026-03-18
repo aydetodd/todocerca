@@ -590,9 +590,14 @@ export default function PanelConcesionario() {
           <TabsContent value="ingresos" className="space-y-4 mt-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Ingresos del día por unidad
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Ingresos del día por unidad
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleDownloadCSVConcesionario} className="h-7 text-xs gap-1">
+                    <Download className="h-3 w-3" /> CSV
+                  </Button>
+                </div>
                 <CardDescription className="text-xs">
                   Boletos QR validados hoy · $9.00 MXN c/u
                 </CardDescription>
