@@ -3287,6 +3287,27 @@ export type Database = {
           pais_nombre: string
         }[]
       }
+      get_sos_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          resolved_at: string | null
+          share_token: string
+          status: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sos_alerts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_user_email_by_id: { Args: { p_user_id: string }; Returns: string }
       get_visible_tracker_ids: {
         Args: { _group_id: string; _user_id: string }
