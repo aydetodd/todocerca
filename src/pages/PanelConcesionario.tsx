@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
-  Users, Plus, MessageCircle, Loader2, Trash2,
+  Users, Plus, MessageCircle, Loader2, Trash2, Download,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { NavigationBar } from "@/components/NavigationBar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { downloadCSV } from "@/lib/csvExport";
 
 type Verificacion = {
   id: string;
@@ -393,6 +394,68 @@ export default function PanelConcesionario() {
     }
   };
 
+  const handleDownloadCSVConcesionario = async () => {
+    if (!proveedor) return;
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+      // Get all units for this provider
+      const { data: misUnidades } = await supabase
+        .from("unidades_empresa")
+        .select("id, nombre, numero_economico, placas")
+        .eq("proveedor_id", proveedor.id);
+
+      if (!misUnidades || misUnidades.length === 0) {
+        toast.info("No hay unidades registradas");
+        return;
+      }
+
+      const unidadIds = misUnidades.map((u: any) => u.id);
+      const unidadMap: Record<string, any> = {};
+      misUnidades.forEach((u: any) => { unidadMap[u.id] = u; });
+
+      const { data: logs } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at, unidad_id")
+        .in("unidad_id", unidadIds)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd)
+        .order("created_at", { ascending: true });
+
+      if (!logs || logs.length === 0) {
+        toast.info("No hay boletos para exportar hoy");
+        return;
+      }
+
+      const rows = logs.map((d: any, i: number) => {
+        const u = unidadMap[d.unidad_id];
+        return [
+          String(i + 1),
+          (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          u ? (u.numero_economico || u.nombre) : "",
+          u?.placas || "",
+          "$9.00",
+        ];
+      });
+
+      downloadCSV(
+        `boletos-concesionario-${todayStr}.csv`,
+        ["#", "Código", "Hora", "Unidad", "Placas", "Monto"],
+        rows
+      );
+      toast.success("CSV descargado");
+    } catch (err) {
+      console.error("CSV export error:", err);
+      toast.error("Error al exportar CSV");
+    }
+  };
+
   const handleWhatsAppDocuments = () => {
     const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
     const message = encodeURIComponent(
@@ -527,9 +590,14 @@ export default function PanelConcesionario() {
           <TabsContent value="ingresos" className="space-y-4 mt-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Ingresos del día por unidad
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Ingresos del día por unidad
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleDownloadCSVConcesionario} className="h-7 text-xs gap-1">
+                    <Download className="h-3 w-3" /> CSV
+                  </Button>
+                </div>
                 <CardDescription className="text-xs">
                   Boletos QR validados hoy · $9.00 MXN c/u
                 </CardDescription>

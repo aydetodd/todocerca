@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera } from "lucide-react";
+import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { BackButton } from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { downloadCSV } from "@/lib/csvExport";
 
 type ValidationResult = {
   valid: boolean;
@@ -189,6 +190,46 @@ export default function ValidarQr() {
       console.error("Error loading daily tickets:", err);
     } finally {
       setLoadingTickets(false);
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    if (!user) return;
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at, unidad_id")
+        .eq("chofer_id", user.id)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .order("created_at", { ascending: true });
+
+      if (!data || data.length === 0) {
+        toast.info("No hay boletos para exportar");
+        return;
+      }
+
+      const rows = data.map((d: any, i: number) => [
+        String(i + 1),
+        (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+        new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        "$9.00",
+      ]);
+
+      downloadCSV(
+        `boletos-chofer-${todayStr}.csv`,
+        ["#", "Código", "Hora", "Monto"],
+        rows
+      );
+      toast.success("CSV descargado");
+    } catch (err) {
+      console.error("CSV export error:", err);
+      toast.error("Error al exportar CSV");
     }
   };
 
@@ -376,7 +417,12 @@ export default function ValidarQr() {
         {showTicketList && (
           <Card>
             <CardContent className="p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Boletos validados hoy</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground">Boletos validados hoy</p>
+                <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="h-7 text-xs gap-1">
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
               {loadingTickets ? (
                 <p className="text-xs text-muted-foreground text-center py-2">Cargando...</p>
               ) : dailyTickets.length === 0 ? (
