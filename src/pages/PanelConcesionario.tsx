@@ -394,6 +394,68 @@ export default function PanelConcesionario() {
     }
   };
 
+  const handleDownloadCSVConcesionario = async () => {
+    if (!proveedor) return;
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+      // Get all units for this provider
+      const { data: misUnidades } = await supabase
+        .from("unidades_empresa")
+        .select("id, nombre, numero_economico, placas")
+        .eq("proveedor_id", proveedor.id);
+
+      if (!misUnidades || misUnidades.length === 0) {
+        toast.info("No hay unidades registradas");
+        return;
+      }
+
+      const unidadIds = misUnidades.map((u: any) => u.id);
+      const unidadMap: Record<string, any> = {};
+      misUnidades.forEach((u: any) => { unidadMap[u.id] = u; });
+
+      const { data: logs } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at, unidad_id")
+        .in("unidad_id", unidadIds)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd)
+        .order("created_at", { ascending: true });
+
+      if (!logs || logs.length === 0) {
+        toast.info("No hay boletos para exportar hoy");
+        return;
+      }
+
+      const rows = logs.map((d: any, i: number) => {
+        const u = unidadMap[d.unidad_id];
+        return [
+          String(i + 1),
+          (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          u ? (u.numero_economico || u.nombre) : "",
+          u?.placas || "",
+          "$9.00",
+        ];
+      });
+
+      downloadCSV(
+        `boletos-concesionario-${todayStr}.csv`,
+        ["#", "Código", "Hora", "Unidad", "Placas", "Monto"],
+        rows
+      );
+      toast.success("CSV descargado");
+    } catch (err) {
+      console.error("CSV export error:", err);
+      toast.error("Error al exportar CSV");
+    }
+  };
+
   const handleWhatsAppDocuments = () => {
     const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
     const message = encodeURIComponent(
