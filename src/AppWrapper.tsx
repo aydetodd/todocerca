@@ -45,7 +45,7 @@ import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
 import QrBoletos from "./pages/QrBoletos";
 import ComprarBoletos from "./pages/ComprarBoletos";
-import GenerarQr from "./pages/GenerarQr";
+// GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
