@@ -17,6 +17,7 @@ import { NavigationBar } from "@/components/NavigationBar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { downloadCSV } from "@/lib/csvExport";
 
 type Verificacion = {
   id: string;
