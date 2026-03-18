@@ -196,65 +196,83 @@ export default function PanelConcesionario() {
 
       if (misUnidades && misUnidades.length > 0) {
         const unidadIds = misUnidades.map((u: any) => u.id);
-        // Use Hermosillo time (UTC-7, no DST) for "today"
+        // Use Hermosillo time (UTC-7, no DST)
         const now = new Date();
         const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
         const todayStr = hermosillo.toISOString().split("T")[0];
         const todayStart = `${todayStr}T00:00:00-07:00`;
         const todayEnd = `${todayStr}T23:59:59-07:00`;
 
-        // Also calculate month start for accumulated month income
+        // Yesterday
+        const yesterday = new Date(hermosillo.getTime() - 86400000);
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+        const yesterdayStart = `${yesterdayStr}T00:00:00-07:00`;
+        const yesterdayEnd = `${yesterdayStr}T23:59:59-07:00`;
+
+        // Current week (Mon-Sun)
+        const dayOfWeek = hermosillo.getUTCDay(); // 0=Sun
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const mondayDate = new Date(hermosillo.getTime() - mondayOffset * 86400000);
+        const weekStartStr = mondayDate.toISOString().split("T")[0];
+        const currentWeekStart = `${weekStartStr}T00:00:00-07:00`;
+
+        // Previous week (Mon-Sun)
+        const prevMondayDate = new Date(mondayDate.getTime() - 7 * 86400000);
+        const prevSundayDate = new Date(mondayDate.getTime() - 86400000);
+        const prevWeekStart = `${prevMondayDate.toISOString().split("T")[0]}T00:00:00-07:00`;
+        const prevWeekEnd = `${prevSundayDate.toISOString().split("T")[0]}T23:59:59-07:00`;
+
+        // Current month
         const monthStart = `${todayStr.slice(0, 7)}-01T00:00:00-07:00`;
 
-        const { data: logsHoy } = await supabase
-          .from("logs_validacion_qr")
-          .select("unidad_id, chofer_id")
-          .in("unidad_id", unidadIds)
-          .eq("resultado", "valid")
-          .gte("created_at", todayStart)
-          .lte("created_at", todayEnd);
+        // Previous month
+        const curYear = parseInt(todayStr.slice(0, 4));
+        const curMonth = parseInt(todayStr.slice(5, 7));
+        const prevMonthYear = curMonth === 1 ? curYear - 1 : curYear;
+        const prevMonthNum = curMonth === 1 ? 12 : curMonth - 1;
+        const prevMonthStr = `${prevMonthYear}-${String(prevMonthNum).padStart(2, '0')}`;
+        const prevMonthStart = `${prevMonthStr}-01T00:00:00-07:00`;
+        // Last day of previous month
+        const lastDayPrev = new Date(curYear, curMonth - 1, 0).getDate();
+        const prevMonthEnd = `${prevMonthStr}-${lastDayPrev}T23:59:59-07:00`;
 
-        // Fetch month logs for accumulated income
-        const { count: logsMesCount } = await supabase
-          .from("logs_validacion_qr")
-          .select("id", { count: "exact", head: true })
-          .in("unidad_id", unidadIds)
-          .eq("resultado", "valid")
-          .gte("created_at", monthStart)
-          .lte("created_at", todayEnd);
+        // Format labels for previous periods
+        const diasSemana = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+        const meses = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const labelHoyAnterior = diasSemana[yesterday.getUTCDay()] + ' ' + yesterday.getUTCDate();
+        const prevWeekLabel = `${prevMondayDate.getUTCDate()}/${prevMondayDate.getUTCMonth()+1} - ${prevSundayDate.getUTCDate()}/${prevSundayDate.getUTCMonth()+1}`;
+        const labelMesAnterior = meses[prevMonthNum];
 
-        // Fetch week logs
-        const weekAgoDate = new Date(hermosillo.getTime() - 7 * 86400000);
-        const weekAgoStr = weekAgoDate.toISOString().split("T")[0];
-        const weekStart = `${weekAgoStr}T00:00:00-07:00`;
-        const { count: logsSemanaCount } = await supabase
-          .from("logs_validacion_qr")
-          .select("id", { count: "exact", head: true })
-          .in("unidad_id", unidadIds)
-          .eq("resultado", "valid")
-          .gte("created_at", weekStart)
-          .lte("created_at", todayEnd);
+        // Fetch all counts in parallel
+        const [
+          logsHoyRes,
+          logsAyerRes,
+          logsSemanaRes,
+          logsSemanaAntRes,
+          logsMesRes,
+          logsMesAntRes,
+          asignacionesRes,
+        ] = await Promise.all([
+          supabase.from("logs_validacion_qr").select("unidad_id, chofer_id").in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", todayStart).lte("created_at", todayEnd),
+          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", yesterdayStart).lte("created_at", yesterdayEnd),
+          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", currentWeekStart).lte("created_at", todayEnd),
+          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", prevWeekStart).lte("created_at", prevWeekEnd),
+          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", monthStart).lte("created_at", todayEnd),
+          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", prevMonthStart).lte("created_at", prevMonthEnd),
+          supabase.from("asignaciones_chofer").select("unidad_id, chofer_id, choferes_empresa(nombre)").in("unidad_id", unidadIds).eq("fecha", todayStr),
+        ]);
 
-        // Get active driver assignments for today
-        const { data: asignaciones } = await supabase
-          .from("asignaciones_chofer")
-          .select("unidad_id, chofer_id, choferes_empresa(nombre)")
-          .in("unidad_id", unidadIds)
-          .eq("fecha", todayStr);
-
+        const logsHoy = logsHoyRes.data || [];
         const choferMap: Record<string, string> = {};
-        (asignaciones || []).forEach((a: any) => {
+        (asignacionesRes.data || []).forEach((a: any) => {
           if (a.unidad_id && a.choferes_empresa?.nombre) {
             choferMap[a.unidad_id] = a.choferes_empresa.nombre;
           }
         });
 
-        // Group logs by unidad_id
         const countMap: Record<string, number> = {};
-        (logsHoy || []).forEach((log: any) => {
-          if (log.unidad_id) {
-            countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
-          }
+        logsHoy.forEach((log: any) => {
+          if (log.unidad_id) countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
         });
 
         const ingresos: IngresoUnidad[] = misUnidades.map((u: any) => ({
@@ -269,13 +287,19 @@ export default function PanelConcesionario() {
 
         setIngresosUnidad(ingresos);
 
-        // Set real-time today stats from actual logs
         const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
+        const logsMesCount = logsMesRes.count || 0;
         setStats({
           hoy: totalBoletosHoy,
-          semana: logsSemanaCount || 0,
-          totalMes: (logsMesCount || 0) * 9,
-          mes: logsMesCount || 0,
+          hoyAnterior: logsAyerRes.count || 0,
+          labelHoyAnterior: labelHoyAnterior,
+          semana: logsSemanaRes.count || 0,
+          semanaAnterior: logsSemanaAntRes.count || 0,
+          labelSemanaAnterior: prevWeekLabel,
+          totalMes: logsMesCount * 9,
+          mes: logsMesCount,
+          mesAnterior: (logsMesAntRes.count || 0) * 9,
+          labelMesAnterior: labelMesAnterior,
           totalUnidades: misUnidades.length,
         });
       } else {
