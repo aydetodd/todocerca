@@ -193,6 +193,46 @@ export default function ValidarQr() {
     }
   };
 
+  const handleDownloadCSV = async () => {
+    if (!user) return;
+    try {
+      const now = new Date();
+      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+      const todayStr = hermosillo.toISOString().split("T")[0];
+      const todayStart = `${todayStr}T00:00:00-07:00`;
+
+      const { data } = await supabase
+        .from("logs_validacion_qr")
+        .select("qr_ticket_id, created_at, unidad_id")
+        .eq("chofer_id", user.id)
+        .eq("resultado", "valid")
+        .gte("created_at", todayStart)
+        .order("created_at", { ascending: true });
+
+      if (!data || data.length === 0) {
+        toast.info("No hay boletos para exportar");
+        return;
+      }
+
+      const rows = data.map((d: any, i: number) => [
+        String(i + 1),
+        (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+        new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        "$9.00",
+      ]);
+
+      downloadCSV(
+        `boletos-chofer-${todayStr}.csv`,
+        ["#", "Código", "Hora", "Monto"],
+        rows
+      );
+      toast.success("CSV descargado");
+    } catch (err) {
+      console.error("CSV export error:", err);
+      toast.error("Error al exportar CSV");
+    }
+  };
+
   const toggleTicketList = () => {
     if (!showTicketList) loadDailyTickets();
     setShowTicketList(!showTicketList);
