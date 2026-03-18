@@ -198,12 +198,36 @@ export default function PanelConcesionario() {
         const todayStart = `${todayStr}T00:00:00-07:00`;
         const todayEnd = `${todayStr}T23:59:59-07:00`;
 
+        // Also calculate month start for accumulated month income
+        const monthStart = `${todayStr.slice(0, 7)}-01T00:00:00-07:00`;
+
         const { data: logsHoy } = await supabase
           .from("logs_validacion_qr")
           .select("unidad_id, chofer_id")
           .in("unidad_id", unidadIds)
           .eq("resultado", "valid")
           .gte("created_at", todayStart)
+          .lte("created_at", todayEnd);
+
+        // Fetch month logs for accumulated income
+        const { count: logsMesCount } = await supabase
+          .from("logs_validacion_qr")
+          .select("id", { count: "exact", head: true })
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valid")
+          .gte("created_at", monthStart)
+          .lte("created_at", todayEnd);
+
+        // Fetch week logs
+        const weekAgoDate = new Date(hermosillo.getTime() - 7 * 86400000);
+        const weekAgoStr = weekAgoDate.toISOString().split("T")[0];
+        const weekStart = `${weekAgoStr}T00:00:00-07:00`;
+        const { count: logsSemanaCount } = await supabase
+          .from("logs_validacion_qr")
+          .select("id", { count: "exact", head: true })
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valid")
+          .gte("created_at", weekStart)
           .lte("created_at", todayEnd);
 
         // Get active driver assignments for today
@@ -242,10 +266,15 @@ export default function PanelConcesionario() {
 
         // Set real-time today stats from actual logs
         const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
-        setStats((prev) => ({
-          ...prev,
+        setStats({
           hoy: totalBoletosHoy,
-        }));
+          semana: logsSemanaCount || 0,
+          totalMes: (logsMesCount || 0) * 9,
+          mes: logsMesCount || 0,
+          totalUnidades: misUnidades.length,
+        });
+      } else {
+        setStats(prev => ({ ...prev, totalUnidades: 0 }));
       }
     } catch (err) {
       console.error("Error loading panel:", err);
