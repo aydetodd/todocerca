@@ -80,7 +80,7 @@ export default function PanelConcesionario() {
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
-  const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0 });
+  const [stats, setStats] = useState({ hoy: 0, semana: 0, mes: 0, totalMes: 0, totalUnidades: 0 });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
@@ -198,12 +198,36 @@ export default function PanelConcesionario() {
         const todayStart = `${todayStr}T00:00:00-07:00`;
         const todayEnd = `${todayStr}T23:59:59-07:00`;
 
+        // Also calculate month start for accumulated month income
+        const monthStart = `${todayStr.slice(0, 7)}-01T00:00:00-07:00`;
+
         const { data: logsHoy } = await supabase
           .from("logs_validacion_qr")
           .select("unidad_id, chofer_id")
           .in("unidad_id", unidadIds)
           .eq("resultado", "valid")
           .gte("created_at", todayStart)
+          .lte("created_at", todayEnd);
+
+        // Fetch month logs for accumulated income
+        const { count: logsMesCount } = await supabase
+          .from("logs_validacion_qr")
+          .select("id", { count: "exact", head: true })
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valid")
+          .gte("created_at", monthStart)
+          .lte("created_at", todayEnd);
+
+        // Fetch week logs
+        const weekAgoDate = new Date(hermosillo.getTime() - 7 * 86400000);
+        const weekAgoStr = weekAgoDate.toISOString().split("T")[0];
+        const weekStart = `${weekAgoStr}T00:00:00-07:00`;
+        const { count: logsSemanaCount } = await supabase
+          .from("logs_validacion_qr")
+          .select("id", { count: "exact", head: true })
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valid")
+          .gte("created_at", weekStart)
           .lte("created_at", todayEnd);
 
         // Get active driver assignments for today
@@ -242,10 +266,15 @@ export default function PanelConcesionario() {
 
         // Set real-time today stats from actual logs
         const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
-        setStats((prev) => ({
-          ...prev,
+        setStats({
           hoy: totalBoletosHoy,
-        }));
+          semana: logsSemanaCount || 0,
+          totalMes: (logsMesCount || 0) * 9,
+          mes: logsMesCount || 0,
+          totalUnidades: misUnidades.length,
+        });
+      } else {
+        setStats(prev => ({ ...prev, totalUnidades: 0 }));
       }
     } catch (err) {
       console.error("Error loading panel:", err);
@@ -561,7 +590,7 @@ export default function PanelConcesionario() {
           <Card>
             <CardContent className="p-3 text-center">
               <Bus className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-              <p className="text-2xl font-bold text-foreground">{unidades.length}</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalUnidades}</p>
               <p className="text-xs text-muted-foreground">Unidades</p>
             </CardContent>
           </Card>
