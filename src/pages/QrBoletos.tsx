@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Ticket, ShoppingCart, QrCode, ArrowRight, Send } from "lucide-react";
+import { ShoppingCart, QrCode, ArrowRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
@@ -15,8 +15,6 @@ export default function QrBoletos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [ticketCount, setTicketCount] = useState(0);
-  const [totalComprado, setTotalComprado] = useState(0);
   const [activeQrCount, setActiveQrCount] = useState(0);
   const [firstActiveTicket, setFirstActiveTicket] = useState<any>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
@@ -26,7 +24,7 @@ export default function QrBoletos() {
     const purchase = searchParams.get("purchase");
     const qty = searchParams.get("qty");
     if (purchase === "success" && qty) {
-      toast.success(`¡Compra exitosa! Se agregarán ${qty} boletos a tu cuenta.`);
+      toast.success(`¡Compra exitosa! Se generarán ${qty} códigos QR automáticamente.`);
     } else if (purchase === "cancelled") {
       toast.info("Compra cancelada");
     }
@@ -34,36 +32,23 @@ export default function QrBoletos() {
 
   useEffect(() => {
     if (!user) return;
-    fetchBalance();
     fetchActiveQrs();
   }, [user]);
 
-  const fetchBalance = async () => {
-    const { data, error } = await supabase
-      .from("cuentas_boletos")
-      .select("ticket_count, total_comprado, total_usado")
-      .eq("user_id", user!.id)
-      .single();
-
-    if (!error && data) {
-      setTicketCount(data.ticket_count);
-      setTotalComprado(data.total_comprado);
-    }
-    setLoading(false);
-  };
-
   const fetchActiveQrs = async () => {
-    const { data, count } = await supabase
+    const { data } = await supabase
       .from("qr_tickets")
-      .select("*", { count: "exact" })
+      .select("*")
       .eq("user_id", user!.id)
       .eq("status", "active")
+      .eq("is_transferred", false)
       .order("generated_at", { ascending: true });
 
     if (data) {
       setActiveQrCount(data.length);
       setFirstActiveTicket(data.length > 0 ? data[0] : null);
     }
+    setLoading(false);
   };
 
   const handleShowQr = () => {
@@ -92,7 +77,6 @@ export default function QrBoletos() {
         window.open(whatsappUrl, "_blank");
       }
 
-      fetchBalance();
       fetchActiveQrs();
     } catch (error: any) {
       toast.error(error.message || "Error al transferir");
@@ -126,64 +110,39 @@ export default function QrBoletos() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Balance Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Boletos disponibles */}
-          <Card className="border-primary/30">
-            <CardContent className="p-4 text-center">
-              <Ticket className="h-8 w-8 mx-auto mb-1 text-primary" />
-              <p className="text-xs text-muted-foreground mb-1">Boletos</p>
-              <p className="text-4xl font-bold text-foreground">{ticketCount}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">disponibles</p>
-            </CardContent>
-          </Card>
+        {/* QR Digitales Card */}
+        <Card
+          className={`border-green-500/30 ${activeQrCount > 0 ? "cursor-pointer hover:bg-secondary/50" : ""}`}
+          onClick={activeQrCount > 0 ? handleShowQr : undefined}
+        >
+          <CardContent className="p-6 text-center">
+            <QrCode className="h-10 w-10 mx-auto mb-2 text-green-500" />
+            <p className="text-sm text-muted-foreground mb-1">QR Digitales Disponibles</p>
+            <p className="text-5xl font-bold text-green-500">{activeQrCount}</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {activeQrCount > 0 ? "Toca para ver tu QR" : "Sin QR disponibles"}
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* QR Digitales activos */}
-          <Card
-            className={`border-green-500/30 ${activeQrCount > 0 ? "cursor-pointer hover:bg-secondary/50" : ""}`}
-            onClick={activeQrCount > 0 ? handleShowQr : undefined}
-          >
-            <CardContent className="p-4 text-center">
-              <QrCode className="h-8 w-8 mx-auto mb-1 text-green-500" />
-              <p className="text-xs text-muted-foreground mb-1">QR Digitales</p>
-              <p className="text-4xl font-bold text-green-500">{activeQrCount}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {activeQrCount > 0 ? "toca para ver QR" : "sin QR activos"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            size="lg"
-            className="h-auto py-4 flex flex-col gap-1"
-            onClick={() => navigate("/wallet/qr-boletos/comprar")}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            <span className="text-sm font-semibold">Comprar Boletos</span>
-          </Button>
-          <Button
-            size="lg"
-            variant="secondary"
-            className="h-auto py-4 flex flex-col gap-1"
-            onClick={() => navigate("/wallet/qr-boletos/generar")}
-            disabled={ticketCount <= 0}
-          >
-            <QrCode className="h-5 w-5" />
-            <span className="text-sm font-semibold">Generar QR</span>
-          </Button>
-        </div>
+        {/* Comprar Button */}
+        <Button
+          size="lg"
+          className="w-full h-14 text-lg"
+          onClick={() => navigate("/wallet/qr-boletos/comprar")}
+        >
+          <ShoppingCart className="h-5 w-5 mr-2" />
+          Comprar Códigos QR
+        </Button>
 
         {/* Info */}
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
-            <p>• Compra boletos → aparecen en <strong className="text-foreground">Boletos</strong></p>
-            <p>• Genera QR → pasa de Boletos a <strong className="text-foreground">QR Digitales</strong></p>
-            <p>• Los boletos <strong className="text-foreground">no expiran</strong></p>
+            <p>• Compra códigos QR → se generan <strong className="text-foreground">automáticamente</strong></p>
+            <p>• Cada código QR vale <strong className="text-foreground">$9.00 MXN</strong></p>
+            <p>• Los QR <strong className="text-foreground">no expiran</strong> hasta que se usen</p>
             <p>• QR transferidos vencen en <strong className="text-foreground">24 horas</strong></p>
-            <p>• Cada boleto vale <strong className="text-foreground">$9.00 MXN</strong></p>
+            <p>• Muestra el QR al chofer para pagar tu pasaje</p>
           </CardContent>
         </Card>
 

@@ -45,7 +45,7 @@ import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
 import QrBoletos from "./pages/QrBoletos";
 import ComprarBoletos from "./pages/ComprarBoletos";
-import GenerarQr from "./pages/GenerarQr";
+// GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
@@ -139,7 +139,7 @@ export default function AppWrapper() {
           {/* Wallet QR Boletos */}
           <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
           <Route path="/wallet/qr-boletos/comprar" element={<ComprarBoletos />} />
-          <Route path="/wallet/qr-boletos/generar" element={<GenerarQr />} />
+          {/* GenerarQr route removed - QR codes generated automatically on purchase */}
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
           <Route path="/panel-concesionario" element={<PanelConcesionario />} />

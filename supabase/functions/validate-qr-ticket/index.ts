@@ -283,10 +283,10 @@ serve(async (req) => {
       console.error("[VALIDATE-QR] Error updating ticket:", updateError);
     }
 
-    // Reduce ticket count from user account
+    // Update total_usado counter (no longer decrement ticket_count since QR are generated directly)
     const { data: currentAccount } = await supabaseAdmin
       .from("cuentas_boletos")
-      .select("ticket_count, total_usado")
+      .select("total_usado")
       .eq("user_id", ticket.user_id)
       .single();
 
@@ -294,7 +294,6 @@ serve(async (req) => {
       await supabaseAdmin
         .from("cuentas_boletos")
         .update({
-          ticket_count: Math.max(0, currentAccount.ticket_count - 1),
           total_usado: currentAccount.total_usado + 1,
         })
         .eq("user_id", ticket.user_id);
