@@ -600,6 +600,11 @@ export default function PanelConcesionario() {
               <BarChart3 className="h-5 w-5 mx-auto text-primary mb-1" />
               <p className="text-2xl font-bold text-foreground">{stats.hoy}</p>
               <p className="text-xs text-muted-foreground">Pasajeros hoy</p>
+              {stats.hoyAnterior > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1 border-t border-border pt-1">
+                  {stats.labelHoyAnterior}: <span className="font-semibold text-foreground">{stats.hoyAnterior}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -607,13 +612,23 @@ export default function PanelConcesionario() {
               <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
               <p className="text-2xl font-bold text-foreground">${stats.totalMes.toFixed(0)}</p>
               <p className="text-xs text-muted-foreground">Neto este mes</p>
+              {stats.mesAnterior > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1 border-t border-border pt-1">
+                  {stats.labelMesAnterior}: <span className="font-semibold text-foreground">${stats.mesAnterior.toFixed(0)}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
               <TrendingUp className="h-5 w-5 mx-auto text-blue-500 mb-1" />
               <p className="text-2xl font-bold text-foreground">{stats.semana}</p>
-              <p className="text-xs text-muted-foreground">Semana</p>
+              <p className="text-xs text-muted-foreground">Semana (Lun-Dom)</p>
+              {stats.semanaAnterior > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1 border-t border-border pt-1">
+                  {stats.labelSemanaAnterior}: <span className="font-semibold text-foreground">{stats.semanaAnterior}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
