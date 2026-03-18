@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Minus, Plus, CreditCard } from "lucide-react";
+import { Minus, Plus, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export default function ComprarBoletos() {
         <div className="flex items-center gap-3">
           <BackButton />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Comprar Boletos QR</h1>
+            <h1 className="text-lg font-bold text-foreground">Comprar Códigos QR</h1>
             <p className="text-xs text-muted-foreground">Transporte Urbano - Hermosillo</p>
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function ComprarBoletos() {
         <Card>
           <CardContent className="p-6">
             <label className="text-sm font-medium text-foreground mb-3 block">
-              ¿Cuántos boletos deseas comprar?
+              ¿Cuántos códigos QR deseas comprar?
             </label>
             <div className="flex items-center justify-center gap-4 mb-4">
               <Button
@@ -112,7 +112,7 @@ export default function ComprarBoletos() {
                   size="sm"
                   onClick={() => setQuantity(opt)}
                 >
-                  {opt} boletos
+                  {opt} QR
                 </Button>
               ))}
             </div>
@@ -124,7 +124,7 @@ export default function ComprarBoletos() {
           <CardContent className="p-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Precio por boleto</span>
+                <span>Precio por código QR</span>
                 <span>$9.00 MXN</span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
@@ -145,9 +145,9 @@ export default function ComprarBoletos() {
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
             <p>• Pago seguro con tarjeta vía Stripe</p>
-            <p>• Los boletos se acreditan inmediatamente</p>
-            <p>• Sin comisiones adicionales — pagas $9.00 por boleto</p>
-            <p>• Los boletos no expiran</p>
+            <p>• Los códigos QR se generan <strong className="text-foreground">automáticamente</strong></p>
+            <p>• Sin comisiones adicionales — pagas $9.00 por QR</p>
+            <p>• Los QR no expiran hasta que se usen</p>
           </CardContent>
         </Card>
 

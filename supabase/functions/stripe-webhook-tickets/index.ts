@@ -31,7 +31,6 @@ serve(async (req) => {
     if (webhookSecret && sig) {
       event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
     } else {
-      // For development without webhook secret
       event = JSON.parse(body);
     }
 
@@ -40,7 +39,6 @@ serve(async (req) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       
-      // Only process ticket purchases
       if (session.metadata?.type !== "qr_boleto_purchase") {
         console.log("[WEBHOOK-TICKETS] Not a ticket purchase, skipping");
         return new Response(JSON.stringify({ received: true }), {
@@ -55,32 +53,50 @@ serve(async (req) => {
         throw new Error("Invalid metadata in session");
       }
 
-      console.log(`[WEBHOOK-TICKETS] Adding ${quantity} tickets to user ${userId}`);
+      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} QR codes for user ${userId}`);
 
-      // Get current account
+      // Generate QR tickets directly
+      const qrInserts = [];
+      for (let i = 0; i < quantity; i++) {
+        qrInserts.push({
+          user_id: userId,
+          token: crypto.randomUUID(),
+          amount: 9.00,
+          status: "active",
+          is_transferred: false,
+        });
+      }
+
+      const { error: insertError } = await supabaseAdmin
+        .from("qr_tickets")
+        .insert(qrInserts);
+
+      if (insertError) {
+        console.error("[WEBHOOK-TICKETS] Error inserting QR tickets:", insertError);
+        throw new Error("Error generating QR tickets");
+      }
+
+      // Update cuentas_boletos for tracking totals
       const { data: account } = await supabaseAdmin
         .from("cuentas_boletos")
-        .select("ticket_count, total_comprado")
+        .select("total_comprado")
         .eq("user_id", userId)
         .single();
 
       if (account) {
-        // Update existing account
         await supabaseAdmin
           .from("cuentas_boletos")
           .update({
-            ticket_count: account.ticket_count + quantity,
             total_comprado: account.total_comprado + quantity,
           })
           .eq("user_id", userId);
       } else {
-        // Create account (shouldn't happen due to trigger, but just in case)
         await supabaseAdmin
           .from("cuentas_boletos")
           .insert({
             user_id: userId,
-            ticket_count: quantity,
             total_comprado: quantity,
+            ticket_count: 0,
           });
       }
 
@@ -92,10 +108,10 @@ serve(async (req) => {
         monto_total: quantity * 9.00,
         stripe_payment_id: session.payment_intent as string,
         estado: "completado",
-        descripcion: `Compra de ${quantity} boleto${quantity > 1 ? 's' : ''} QR`,
+        descripcion: `Compra de ${quantity} código${quantity > 1 ? 's' : ''} QR`,
       });
 
-      console.log(`[WEBHOOK-TICKETS] Successfully added ${quantity} tickets to user ${userId}`);
+      console.log(`[WEBHOOK-TICKETS] Successfully generated ${quantity} QR codes for user ${userId}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
