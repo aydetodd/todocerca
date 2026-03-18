@@ -408,11 +408,15 @@ export default function DriverProfilePanel() {
     try {
       setLoading(true);
 
+      console.log('[DriverProfilePanel] Loading data for user:', user.id);
+      
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
         .select('id, nombre, proveedor_id')
         .eq('user_id', user.id)
         .eq('is_active', true);
+
+      console.log('[DriverProfilePanel] Drivers found:', drivers?.length, 'error:', driversError?.message);
 
       if (driversError || !drivers || drivers.length === 0) {
         setCompanies([]);
