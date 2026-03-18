@@ -443,27 +443,47 @@ export default function DriverProfilePanel() {
             .eq('is_available', true)
             .order('nombre');
 
-          const { data: assignment } = await supabase
+          let { data: assignment } = await supabase
             .from('asignaciones_chofer')
             .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
             .eq('chofer_id', driver.id)
             .eq('fecha', today)
             .maybeSingle();
 
-          let unitData = assignment?.unidades_empresa as any;
-
-          // Fallback: if today's assignment has no unit, get last known unit for this driver
-          if (!unitData && assignment) {
-            const { data: lastWithUnit } = await supabase
+          // Auto-carry: if no assignment today, copy the most recent one
+          if (!assignment) {
+            const { data: lastAssignment } = await supabase
               .from('asignaciones_chofer')
-              .select('unidades_empresa(nombre, descripcion, placas)')
+              .select('producto_id, unidad_id, asignado_por')
               .eq('chofer_id', driver.id)
-              .not('unidad_id', 'is', null)
               .order('fecha', { ascending: false })
               .limit(1)
               .maybeSingle();
-            unitData = lastWithUnit?.unidades_empresa as any;
+
+            if (lastAssignment) {
+              console.log('[DriverProfilePanel] Auto-carrying previous assignment for driver:', driver.id);
+              const { data: newAssignment, error: carryError } = await supabase
+                .from('asignaciones_chofer')
+                .upsert(
+                  {
+                    chofer_id: driver.id,
+                    producto_id: lastAssignment.producto_id,
+                    unidad_id: lastAssignment.unidad_id,
+                    fecha: today,
+                    asignado_por: lastAssignment.asignado_por,
+                  },
+                  { onConflict: 'chofer_id,fecha' }
+                )
+                .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
+                .maybeSingle();
+
+              if (!carryError && newAssignment) {
+                assignment = newAssignment;
+              }
+            }
           }
+
+          let unitData = assignment?.unidades_empresa as any;
 
           companiesData.push({
             driver: {

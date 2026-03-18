@@ -120,8 +120,45 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
       
       // Filter assignments to only those belonging to this provider's drivers
       const driverIds = driversList.map(d => d.id);
-      const filteredAssignments = (assignmentsRes.data || [])
-        .filter(a => driverIds.includes(a.chofer_id))
+      let todayAssignments = (assignmentsRes.data || [])
+        .filter(a => driverIds.includes(a.chofer_id));
+
+      // Auto-carry: for drivers without today's assignment, copy their last one
+      const assignedDriverIds = todayAssignments.map(a => a.chofer_id);
+      const driversWithoutToday = driverIds.filter(id => !assignedDriverIds.includes(id));
+
+      if (driversWithoutToday.length > 0) {
+        const carryPromises = driversWithoutToday.map(async (driverId) => {
+          const { data: lastAssignment } = await supabase
+            .from('asignaciones_chofer')
+            .select('producto_id, unidad_id, asignado_por')
+            .eq('chofer_id', driverId)
+            .order('fecha', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (lastAssignment) {
+            const { data: newA } = await supabase
+              .from('asignaciones_chofer')
+              .upsert(
+                {
+                  chofer_id: driverId,
+                  producto_id: lastAssignment.producto_id,
+                  unidad_id: lastAssignment.unidad_id,
+                  fecha: today,
+                  asignado_por: lastAssignment.asignado_por,
+                },
+                { onConflict: 'chofer_id,fecha' }
+              )
+              .select('id, chofer_id, producto_id, unidad_id, fecha, asignado_por')
+              .maybeSingle();
+            if (newA) todayAssignments.push(newA);
+          }
+        });
+        await Promise.all(carryPromises);
+      }
+
+      const filteredAssignments = todayAssignments
         .map(a => {
           const driver = driversList.find(d => d.id === a.chofer_id);
           const route = routesList.find(v => v.id === a.producto_id);
