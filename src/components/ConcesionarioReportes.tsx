@@ -184,6 +184,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       const choferIdsSet = new Set<string>();
       logs.forEach((l: any) => { if (l.chofer_id) choferIdsSet.add(l.chofer_id); });
       const choferIds = Array.from(choferIdsSet);
+      const choferMap: Record<string, string> = {};
       if (choferIds.length > 0) {
         const { data: choferData } = await supabase
           .from("choferes_empresa")
