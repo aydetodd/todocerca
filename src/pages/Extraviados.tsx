@@ -43,7 +43,6 @@ export default function Extraviados() {
         <CosasExtraviadas />
       </main>
 
-      <NavigationBar />
     </div>
   );
 }

@@ -43,7 +43,6 @@ export default function Donar() {
         <DonarCosas />
       </main>
 
-      <NavigationBar />
     </div>
   );
 }
