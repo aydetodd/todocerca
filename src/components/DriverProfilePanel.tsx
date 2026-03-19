@@ -480,6 +480,15 @@ export default function DriverProfilePanel() {
 
               if (!carryError && newAssignment) {
                 assignment = newAssignment;
+                // Sync profile.route_name so realtime map shows the correct route
+                const carriedRouteName = (newAssignment.productos as any)?.nombre;
+                if (carriedRouteName && user) {
+                  await supabase
+                    .from('profiles')
+                    .update({ route_name: carriedRouteName })
+                    .eq('user_id', user.id);
+                  console.log(`[DriverProfilePanel] Auto-carry synced profile.route_name to "${carriedRouteName}"`);
+                }
               }
             }
           }
