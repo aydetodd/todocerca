@@ -140,7 +140,7 @@ export const NavigationBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
-      {/* Top row: Taxi, SOS (Protocolo 1 - solo movilidad) */}
+      {/* Top row: Taxi (Protocolo 1 - solo movilidad, SOS oculto) */}
       <div className="container flex items-center justify-around py-1 border-b border-border/50">
         <Button
           variant="ghost"
@@ -153,19 +153,6 @@ export const NavigationBar = () => {
             <BadgeIndicator count={badges.taxi} />
           </div>
           <span className="text-[9px]">Taxi</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/sos')}
-          className="flex flex-col items-center gap-0.5 h-auto py-1.5 px-3 text-destructive hover:text-destructive"
-        >
-          <div className="relative">
-            <AlertTriangle className="h-4 w-4" />
-            <BadgeIndicator count={activeSosCount} />
-          </div>
-          <span className="text-[9px]">SOS</span>
         </Button>
       </div>
 
