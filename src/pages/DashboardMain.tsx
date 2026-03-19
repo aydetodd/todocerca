@@ -165,24 +165,8 @@ export default function DashboardMain() {
           </p>
         </div>
 
+        {/* Protocolo 1: Solo movilidad */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Buscar - Available for all users */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Search className="h-5 w-5" />
-                <span>Buscar</span>
-              </CardTitle>
-              <CardDescription>Encuentra productos y servicios cerca de ti</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" onClick={() => navigate("/search")}>
-                <Search className="h-4 w-4 mr-2" />
-                Buscar Productos
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Mi Perfil */}
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/mi-perfil')}>
             <CardHeader>
@@ -216,50 +200,6 @@ export default function DashboardMain() {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Mis Productos - Solo para proveedores */}
-          {isProvider && (
-            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/mis-productos')}>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Package className="h-5 w-5" />
-                  <span>Mis Productos</span>
-                </CardTitle>
-                <CardDescription>Gestiona tu catálogo de productos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">
-                  <Package className="h-4 w-4 mr-2" />
-                  Gestionar Productos
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Gestión de Apartados - Solo para proveedores */}
-          {isProvider && (
-            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/gestion-pedidos')}>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <ClipboardList className="h-5 w-5" />
-                  <span>Mis Apartados</span>
-                </CardTitle>
-                <CardDescription>Administra los apartados de clientes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Ver Apartados
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Donar Cosas - Available for all users */}
-          <DonarCosas />
-
-          {/* Cosas Extraviadas - Available for all users */}
-          <CosasExtraviadas />
         </div>
       </main>
     </div>

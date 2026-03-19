@@ -72,22 +72,7 @@ export default function MainHome() {
         {/* Viaje activo del pasajero */}
         <PassengerActiveTrip />
         
-        {/* Todos los botones del mismo tamaño */}
-        <Card
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/search')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Search className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Búsqueda</h3>
-              <p className="text-sm text-muted-foreground">Encuentra productos y servicios</p>
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* === Protocolo 1: Solo movilidad === */}
         <Card 
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
           onClick={() => navigate('/search?category=taxi')}
@@ -118,51 +103,6 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/donar')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Gift className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Cosas Regaladas</h3>
-              <p className="text-sm text-muted-foreground">Encuentra o regala cosas gratis</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/extraviados')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <HelpCircle className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Cosas Extraviadas</h3>
-              <p className="text-sm text-muted-foreground">Reporta o encuentra objetos perdidos</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/wallet/qr-boletos')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Ticket className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">QR Boleto Digital</h3>
-              <p className="text-sm text-muted-foreground">Compra y usa boletos de transporte</p>
-            </div>
-          </CardContent>
-        </Card>
-
         {isConcesionario && (
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
@@ -179,21 +119,6 @@ export default function MainHome() {
             </CardContent>
           </Card>
         )}
-
-        <Card 
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/votaciones')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Vote className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Votaciones</h3>
-              <p className="text-sm text-muted-foreground">Crea o participa en votaciones comunitarias</p>
-            </div>
-          </CardContent>
-        </Card>
 
       </main>
 
