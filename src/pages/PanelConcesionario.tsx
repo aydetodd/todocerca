@@ -466,7 +466,8 @@ export default function PanelConcesionario() {
       const { data: misUnidades } = await supabase
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas")
-        .eq("proveedor_id", proveedor.id);
+        .eq("proveedor_id", proveedor.id)
+        .neq("transport_type", "taxi"); // Protocolo 2: Taxi oculto
 
       if (!misUnidades || misUnidades.length === 0) {
         toast.info("No hay unidades registradas");
