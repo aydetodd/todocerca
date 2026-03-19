@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Gift, Bus, Car, HelpCircle, Vote, Ticket, BarChart3 } from 'lucide-react';
+import { Bus, Car, BarChart3 } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 import { SOSButton } from '@/components/SOSButton';

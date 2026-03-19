@@ -263,36 +263,18 @@ const Dashboard = () => {
           icon: MapIcon,
           visible: true,
         },
-        {
-          key: "productos" as const,
-          label: "Productos",
-          icon: Package,
-          visible: isProvider,
-        },
+        // Protocolo 1: Productos ocultos
+        // { key: "productos" as const, label: "Productos", icon: Package, visible: isProvider },
         {
           key: "rutas_privadas" as const,
           label: "Transporte",
           icon: Bus,
           visible: isProvider,
         },
-        {
-          key: "apartados" as const,
-          label: "Apartados",
-          icon: ShoppingCart,
-          visible: isProvider,
-        },
-        {
-          key: "citas" as const,
-          label: "Citas",
-          icon: Calendar,
-          visible: isProvider,
-        },
-        {
-          key: "horarios" as const,
-          label: "Horarios",
-          icon: Clock,
-          visible: isProvider,
-        },
+        // Protocolo 1: Apartados, Citas y Horarios ocultos
+        // { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
+        // { key: "citas" as const, label: "Citas", icon: Calendar, visible: isProvider },
+        // { key: "horarios" as const, label: "Horarios", icon: Clock, visible: isProvider },
         {
           key: "taxi" as const,
           label: "Taxista",
