@@ -833,21 +833,23 @@ const ProductSearch = () => {
           </div>
         </section>
 
-        <section aria-label="Categorías" className="mb-6">
-          <p className="text-sm text-muted-foreground mb-3">Categorías:</p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category.id}
-                variant={selectedCategoryId === category.id ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
-                onClick={() => handleCategoryClick(category.id)}
-              >
-                {category.name}
-              </Badge>
-            ))}
-          </div>
-        </section>
+        {!isRutasCategory && (
+          <section aria-label="Categorías" className="mb-6">
+            <p className="text-sm text-muted-foreground mb-3">Categorías:</p>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Badge
+                  key={category.id}
+                  variant={selectedCategoryId === category.id ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                  onClick={() => handleCategoryClick(category.id)}
+                >
+                  {category.name}
+                </Badge>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Route selector when "Rutas de Transporte" is selected */}
         {isRutasCategory && (
