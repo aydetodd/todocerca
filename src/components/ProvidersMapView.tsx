@@ -226,19 +226,22 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             return null;
           }
           
-          // For route searches: only show the product matching the driver's current assignment
-          // This prevents showing Route 17 when the driver is on Route 2
+          // For route searches: show ONLY the exact active route producto_id
+          // If the driver's active route doesn't match the searched products, hide it.
           let filteredProducts = provider.productos;
-          if (vehicleFilter === 'ruta' && realtimeLocation.route_producto_id) {
-            const assignedProductIds = new Set<string>();
-            // Add the primary assigned route
-            assignedProductIds.add(realtimeLocation.route_producto_id);
-            // Add any additional assignments for today
-            realtimeLocation.all_assignments?.forEach(a => assignedProductIds.add(a.productoId));
-            
-            const matched = provider.productos.filter(p => p.id && assignedProductIds.has(p.id));
-            if (matched.length > 0) {
-              filteredProducts = matched;
+          if (vehicleFilter === 'ruta') {
+            const activeRouteProductId = realtimeLocation.route_producto_id;
+
+            if (!activeRouteProductId) {
+              console.log(`❌ ${provider.business_name}: sin ruta activa, no mostrar en búsqueda de rutas`);
+              return null;
+            }
+
+            filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
+
+            if (filteredProducts.length === 0) {
+              console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId} no coincide con la búsqueda`);
+              return null;
             }
           }
 
