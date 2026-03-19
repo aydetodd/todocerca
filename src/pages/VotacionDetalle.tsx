@@ -605,7 +605,6 @@ export default function VotacionDetalle() {
             <h1 className="text-xl font-bold">Votación no encontrada</h1>
           </div>
         </header>
-        <NavigationBar />
       </div>
     );
   }
