@@ -644,9 +644,12 @@ export default function PanelConcesionario() {
         </div>
 
         <Tabs defaultValue="ingresos" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="ingresos" className="text-xs">
               <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+            </TabsTrigger>
+            <TabsTrigger value="reportes" className="text-xs">
+              <ClipboardList className="h-3 w-3 mr-1" /> Reportes
             </TabsTrigger>
             <TabsTrigger value="verificacion" className="text-xs">
               <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
