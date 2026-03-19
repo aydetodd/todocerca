@@ -441,6 +441,7 @@ export default function DriverProfilePanel() {
             .eq('proveedor_id', driver.proveedor_id)
             .eq('is_mobile', true)
             .eq('is_available', true)
+            .neq('route_type', 'taxi') // Protocolo 2: Taxi oculto
             .order('nombre');
 
           let { data: assignment } = await supabase
