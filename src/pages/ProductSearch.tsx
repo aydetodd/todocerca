@@ -746,21 +746,23 @@ const ProductSearch = () => {
           </header>
         )}
 
-        <form onSubmit={handleSearch} className="mb-4">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Buscar productos o servicios..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={loading}>
-              <SearchIcon className="w-4 h-4 mr-2" />
-              {loading ? "Buscando…" : "Buscar"}
-            </Button>
-          </div>
-        </form>
+        {!isRutasCategory && (
+          <form onSubmit={handleSearch} className="mb-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Buscar productos o servicios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" disabled={loading}>
+                <SearchIcon className="w-4 h-4 mr-2" />
+                {loading ? "Buscando…" : "Buscar"}
+              </Button>
+            </div>
+          </form>
+        )}
 
         <section aria-label="Ubicación" className="mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
