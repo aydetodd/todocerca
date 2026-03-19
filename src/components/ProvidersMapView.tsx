@@ -257,6 +257,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             }
           }
 
+          const resolvedRouteName = vehicleFilter === 'ruta'
+            ? (filteredProducts[0]?.nombre || routeName)
+            : routeName;
+
           return {
             ...provider,
             productos: filteredProducts,
@@ -264,7 +268,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             longitude: realtimeLocation.longitude,
             _realtimeStatus: status,
             _providerType: providerType,
-            _routeName: routeName,
+            _routeName: resolvedRouteName,
             _isBus: realtimeLocation.is_bus,
             _isTaxi: realtimeLocation.is_taxi,
             _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15,
