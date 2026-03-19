@@ -90,7 +90,7 @@ const TrackingGPS = () => {
         
         if (profileData) {
           // Si es proveedor y no tiene estado, usar 'available' por defecto
-          const currentStatus = profileData.estado || (profileData.role === 'proveedor' ? 'available' : 'offline');
+          const currentStatus = profileData.estado || 'available';
           console.log('[TRACKING GPS] Estado del usuario:', currentStatus);
           setUserStatus(currentStatus as 'available' | 'busy' | 'offline');
           

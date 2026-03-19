@@ -66,7 +66,7 @@ export function useProviderStatus() {
 
   // Realtime subscription
   useEffect(() => {
-    if (!userId || !isProvider) return;
+    if (!userId) return;
 
     const channel = supabase
       .channel(`provider_status_sync_${userId}`)
