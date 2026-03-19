@@ -98,35 +98,33 @@ const TrackingMap = ({
       // Crear icono personalizado según si es el dueño o no
       const isOwner = loc.member?.is_owner;
       const iconColor = isOwner ? '#ea580c' : '#2d9d78';
+      const emoji = isOwner ? '👑' : '📍';
       
       const customIcon = L.divIcon({
-        className: 'custom-tracking-marker',
-        html: `
-          <div style="
-            background-color: ${iconColor};
-            width: 32px;
-            height: 32px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            <div style="
-              transform: rotate(45deg);
-              color: white;
-              font-weight: bold;
-              font-size: 14px;
-            ">
-              ${isOwner ? '👑' : '📍'}
-            </div>
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
+        className: '',
+        html: `<div style="
+          background-color: ${iconColor};
+          width: 36px;
+          height: 36px;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 1000;
+        "><div style="
+          transform: rotate(45deg);
+          color: white;
+          font-weight: bold;
+          font-size: 16px;
+          line-height: 1;
+        ">${emoji}</div></div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36]
       });
 
       // Popup con información
@@ -150,6 +148,7 @@ const TrackingMap = ({
         markersRef.current[loc.user_id].getPopup()?.setContent(popupContent);
       } else {
         // Crear nuevo marcador
+        console.log('[TrackingMap] 📌 Creando marcador para:', loc.member?.nickname || loc.user_id, 'en', loc.latitude, loc.longitude);
         const marker = L.marker(position, { icon: customIcon }).addTo(mapRef.current!);
         
         marker.bindPopup(popupContent, {
