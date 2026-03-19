@@ -73,7 +73,8 @@ export default function MainHome() {
         <PassengerActiveTrip />
         
         {/* === Protocolo 1: Solo movilidad === */}
-        <Card 
+        {/* Protocolo 2: Taxi oculto */}
+        {/* <Card 
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
           onClick={() => navigate('/search?category=taxi')}
         >
@@ -86,7 +87,7 @@ export default function MainHome() {
               <p className="text-sm text-muted-foreground">Ver taxis disponibles en el mapa</p>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card 
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"

@@ -44,14 +44,15 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     bgColor: 'bg-amber-100',
     price: '$400 MXN/unidad/año',
   },
-  taxi: {
-    label: 'Taxi',
-    description: 'Unidades de taxi visibles en el mapa público',
-    icon: Car,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
-    price: '$400 MXN/unidad/año',
-  },
+  // Protocolo 2: Taxi oculto
+  // taxi: {
+  //   label: 'Taxi',
+  //   description: 'Unidades de taxi visibles en el mapa público',
+  //   icon: Car,
+  //   color: 'text-yellow-600',
+  //   bgColor: 'bg-yellow-100',
+  //   price: '$400 MXN/unidad/año',
+  // },
 };
 
 export default function MisRutas() {

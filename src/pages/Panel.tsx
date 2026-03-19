@@ -189,7 +189,8 @@ export default function Panel() {
     { id: 'apartados', icon: ClipboardList, title: 'Apartados', providerOnly: true },
     { id: 'citas', icon: Calendar, title: 'Citas', providerOnly: true },
     { id: 'horarios', icon: Clock, title: 'Horarios', providerOnly: true },
-    { id: 'taxi', icon: Car, title: 'Taxi', taxiOnly: true },
+    // Protocolo 2: Taxi oculto
+    // { id: 'taxi', icon: Car, title: 'Taxi', taxiOnly: true },
   ];
 
   const filteredItems = menuItems.filter(item => {
