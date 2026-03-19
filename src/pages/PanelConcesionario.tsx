@@ -1154,6 +1154,11 @@ export default function PanelConcesionario() {
               </>
             )}
           </TabsContent>
+
+          {/* REPORTES */}
+          <TabsContent value="reportes" className="space-y-4 mt-4">
+            {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} />}
+          </TabsContent>
         </Tabs>
       </div>
 
