@@ -106,6 +106,7 @@ serve(async (req) => {
         longitud: longitude,
         unidad_id,
         chofer_id: driver.id,
+        producto_id: ruta_id || null,
       });
 
       return new Response(JSON.stringify({
@@ -193,6 +194,7 @@ serve(async (req) => {
         longitud: longitude,
         unidad_id,
         chofer_id: driver.id,
+        producto_id: ruta_id || null,
       });
 
       const isSameUnit = ticket.unidad_uso_id === unidad_id;
@@ -237,6 +239,7 @@ serve(async (req) => {
           longitud: longitude,
           unidad_id,
           chofer_id: driver.id,
+          producto_id: ruta_id || null,
         });
 
         return new Response(JSON.stringify({
@@ -307,6 +310,7 @@ serve(async (req) => {
       longitud: longitude,
       unidad_id,
       chofer_id: driver.id,
+      producto_id: ruta_id || null,
     });
 
     // Get daily count using Hermosillo time (UTC-7, no DST)
