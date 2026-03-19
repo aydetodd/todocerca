@@ -19,7 +19,7 @@ export const StatusControl = () => {
           className={`
             w-12 h-12 rounded-full transition-all duration-300 ease-in-out border-2
             ${status === key
-              ? `${color} ${border} ${glow} scale-110 animate-pulse`
+              ? `${color} ${border} ${glow} scale-110`
               : `${dim} hover:opacity-70`
             }
           `}
