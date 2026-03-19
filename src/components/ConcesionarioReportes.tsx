@@ -148,8 +148,8 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       const targetUnitIds = filterUnidad === "all" ? unitIds : [filterUnidad];
 
       // Fetch logs including producto_id
-      let query = supabase
-        .from("logs_validacion_qr")
+      let query = (supabase
+        .from("logs_validacion_qr") as any)
         .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id")
         .in("unidad_id", targetUnitIds)
         .eq("resultado", "valid")
