@@ -76,8 +76,8 @@ export default function HistorialBoletos() {
 
     const { data } = await query;
     if (data) {
-      // For used tickets, fetch route info from validation logs
-      if (filter === "used" && data.length > 0) {
+      // For used and transferred tickets, fetch route info from validation logs
+      if ((filter === "used" || filter === "transferred") && data.length > 0) {
         const ticketIds = data.map((t: any) => t.id);
         const { data: logs } = await (supabase
           .from("logs_validacion_qr") as any)
