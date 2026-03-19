@@ -192,7 +192,8 @@ export default function PanelConcesionario() {
       const { data: misUnidades } = await supabase
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas, descripcion")
-        .eq("proveedor_id", prov.id);
+        .eq("proveedor_id", prov.id)
+        .neq("transport_type", "taxi"); // Protocolo 2: Taxi oculto
 
       if (misUnidades && misUnidades.length > 0) {
         const unidadIds = misUnidades.map((u: any) => u.id);
