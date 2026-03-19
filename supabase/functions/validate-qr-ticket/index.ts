@@ -194,6 +194,7 @@ serve(async (req) => {
         longitud: longitude,
         unidad_id,
         chofer_id: driver.id,
+        producto_id: ruta_id || null,
       });
 
       const isSameUnit = ticket.unidad_uso_id === unidad_id;
