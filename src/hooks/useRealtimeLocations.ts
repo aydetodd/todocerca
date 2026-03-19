@@ -312,20 +312,23 @@ export const useRealtimeLocations = () => {
           ]
         : allAssignments;
       
-      // Determine the specific route_producto_id for this location
+      // Determine the specific route/product currently ACTIVE for this location
+      // For private drivers we must be strict: ONLY today's assignment counts.
       const specificProductoId = isPrivateDriver
-        ? (activeAssignment?.productoId || rutaInfo?.productoId || null)
+        ? (activeAssignment?.productoId || null)
         : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
       
-      // Private route is determined by the SPECIFIC route/product, not by whether the provider has ANY private route
-      // For private drivers: check if their assigned product is private
-      // For owners: check if their specific route product is private
-      const isPrivateRoute = isPrivateDriver 
-        ? (specificProductoId ? (productoPrivacyMap.get(specificProductoId) ?? false) : true)
-        : (specificProductoId ? (productoPrivacyMap.get(specificProductoId) ?? false) : false);
+      // Private/public route is determined by the exact active product
+      const isPrivateRoute = specificProductoId
+        ? (productoPrivacyMap.get(specificProductoId) ?? false)
+        : false;
       
-      const isBus = profile.provider_type === 'ruta' || hasRutaProduct || isPrivateDriver;
-      // Private drivers/owners should NOT show as taxis
+      // Drivers only appear as bus when they actually have an active assignment.
+      const isBus = isPrivateDriver
+        ? !!specificProductoId
+        : (profile.provider_type === 'ruta' || hasRutaProduct);
+
+      // Keep taxi behavior for non-private-route contexts
       const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
       
       const location: ProveedorLocation = {
@@ -335,9 +338,9 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          // For private drivers, prioritize the assignment that matches profile.route_name
-          route_name: isPrivateDriver 
-            ? (activeAssignment?.routeName || profile.route_name || null)
+          // For private drivers, route visibility must come from today's assignment only
+          route_name: isPrivateDriver
+            ? (activeAssignment?.routeName || null)
             : (profile.route_name || routeNameFromProduct || null),
           // Use taxi product price first, then profile tarifa_km, then default 15
           tarifa_km: (proveedorId && taxiPriceMap.get(proveedorId)) || (profile as any).tarifa_km || 15
@@ -347,7 +350,6 @@ export const useRealtimeLocations = () => {
         is_private_driver: isPrivateDriver,
         is_private_route: isPrivateRoute,
         route_type: specificProductoId ? productoRouteTypeMap.get(specificProductoId) || null : (rutaInfo?.routeType || null),
-        // Set route_producto_id for ALL bus providers (already computed above)
         route_producto_id: specificProductoId,
         // For private drivers, use employer's proveedor_id for favorites/linking
         proveedor_id: isPrivateDriver
@@ -362,14 +364,10 @@ export const useRealtimeLocations = () => {
         unit_descripcion: activeAssignment?.unitDescripcion || null,
         driver_name: activeAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
         all_assignments: orderedAssignments.length > 0 ? orderedAssignments : undefined,
-        // For private drivers, use the EMPLOYER's proveedor_id to look up all route product IDs
-        // (drivers don't have their own proveedores record, so proveedorId would be null)
-        all_route_producto_ids: (() => {
-          const effectiveProvId = isPrivateDriver
-            ? (activeDrivers?.find(d => d.user_id === loc.user_id)?.proveedor_id || proveedorId)
-            : proveedorId;
-          return effectiveProvId ? providerAllRouteIds.get(effectiveProvId) || [] : [];
-        })(),
+        // For strict route isolation, private drivers expose only their active route id.
+        all_route_producto_ids: isPrivateDriver
+          ? (specificProductoId ? [specificProductoId] : [])
+          : (proveedorId ? providerAllRouteIds.get(proveedorId) || [] : []),
       };
       
       newLocationsMap.set(loc.user_id, location);
