@@ -721,6 +721,7 @@ const ProductSearch = () => {
         </section>
         {isMessagingOpen && selectedReceiverId && (
           <MessagingPanel
+            isOpen={isMessagingOpen}
             receiverId={selectedReceiverId}
             receiverName={selectedReceiverName || 'Usuario'}
             onClose={() => setIsMessagingOpen(false)}
