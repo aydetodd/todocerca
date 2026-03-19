@@ -1018,7 +1018,7 @@ const ProductSearch = () => {
             </div>
 
             {/* Hide map toggle for Cosas Gratis and Cosas Extraviadas - only show list */}
-            {!isCosasGratis && !isCosasExtraviadas && (
+            {!isCosasGratis && !isCosasExtraviadas && !isRutasCategory && (
               <div className="flex rounded-lg overflow-hidden border border-border mb-6">
                 <Button
                   type="button"
