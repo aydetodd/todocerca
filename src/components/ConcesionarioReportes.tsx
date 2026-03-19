@@ -208,7 +208,9 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       }
 
       // Fetch route names for producto_ids in logs
-      const productoIds: string[] = [...new Set(logs.filter((l: any) => l.producto_id).map((l: any) => l.producto_id as string))];
+      const productoIdsSet = new Set<string>();
+      logs.forEach((l: any) => { if (l.producto_id) productoIdsSet.add(l.producto_id); });
+      const productoIds = Array.from(productoIdsSet);
       const rutaMap: Record<string, string> = {};
       if (productoIds.length > 0) {
         const { data: prodData } = await supabase
