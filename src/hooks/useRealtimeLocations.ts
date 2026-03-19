@@ -110,18 +110,19 @@ export const useRealtimeLocations = () => {
     const proveedoresData = provResult.data;
     const proveedorMap = new Map(proveedoresData?.map(p => [p.user_id, p.id]) || []);
     const proveedorNameMap = new Map(proveedoresData?.map(p => [p.user_id, p.nombre]) || []);
+    const proveedorByIdNameMap = new Map(proveedoresData?.map(p => [p.id, p.nombre]) || []);
     const proveedorIds = proveedoresData?.map(p => p.id) || [];
 
     // Build a map of driver user_id → employer company name (via choferes_empresa)
     const driverEmployerMap = new Map<string, string>();
     const activeDrivers = driversResult.data;
-    
+
     // Buscar productos de taxi y ruta en paralelo
     let taxiQuery = supabase
       .from('productos')
       .select('proveedor_id, precio')
       .in('proveedor_id', proveedorIds);
-    
+
     if (taxiCategory?.id) {
       taxiQuery = taxiQuery.or(`category_id.eq.${taxiCategory.id},nombre.ilike.%taxi%,keywords.ilike.%taxi%,route_type.eq.taxi`);
     } else {
@@ -132,53 +133,61 @@ export const useRealtimeLocations = () => {
       .from('productos')
       .select('id, proveedor_id, nombre, is_private, route_type')
       .in('proveedor_id', proveedorIds);
-    
+
     if (rutaCategory?.id) {
       rutaQuery = rutaQuery.eq('category_id', rutaCategory.id);
     } else {
       rutaQuery = rutaQuery.ilike('nombre', 'Ruta %');
     }
-    
+
     const [taxiResult, rutaResult] = await Promise.all([taxiQuery, rutaQuery]);
-    
+
     const taxiProviderIds = new Set(taxiResult.data?.map(p => p.proveedor_id) || []);
     console.log('[fetchFullData] Taxi detection:', { taxiCategoryId: taxiCategory?.id, taxiProducts: taxiResult.data?.length, taxiProviderCount: taxiProviderIds.size });
     // Build map of proveedor_id → taxi product price (use the product's precio, not profiles.tarifa_km)
     const taxiPriceMap = new Map<string, number>();
     taxiResult.data?.forEach(p => {
-      // Keep the first (or most relevant) taxi product price per provider
       if (!taxiPriceMap.has(p.proveedor_id)) {
         taxiPriceMap.set(p.proveedor_id, p.precio);
       }
     });
+
     const rutaProducts = rutaResult.data;
-    const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean; routeType: string | null }>(); 
+    const rutaProviderMap = new Map<string, { nombre: string; productoId: string; isPrivate: boolean; routeType: string | null }>();
+    const providerRouteProductsMap = new Map<string, Array<{ id: string; nombre: string; isPrivate: boolean; routeType: string | null }>>();
     // Track ALL route product IDs per provider (for multi-route filtering)
     const providerAllRouteIds = new Map<string, string[]>();
-    // Track providers with ANY private route
-    const privateRouteOwnerIds = new Set<string>();
     // Track individual product privacy: productoId → isPrivate
     const productoPrivacyMap = new Map<string, boolean>();
     const productoRouteTypeMap = new Map<string, string | null>();
-    
+
     rutaProducts?.forEach(p => {
       if (!rutaProviderMap.has(p.proveedor_id)) {
-        rutaProviderMap.set(p.proveedor_id, { nombre: p.nombre, productoId: p.id, isPrivate: p.is_private || false, routeType: (p as any).route_type || null });
+        rutaProviderMap.set(p.proveedor_id, {
+          nombre: p.nombre,
+          productoId: p.id,
+          isPrivate: p.is_private || false,
+          routeType: (p as any).route_type || null,
+        });
       }
-      // Store ALL route product IDs per provider
+
       const existing = providerAllRouteIds.get(p.proveedor_id) || [];
       existing.push(p.id);
       providerAllRouteIds.set(p.proveedor_id, existing);
-      
-      // Track each product's privacy individually
+
+      const existingRouteProducts = providerRouteProductsMap.get(p.proveedor_id) || [];
+      existingRouteProducts.push({
+        id: p.id,
+        nombre: p.nombre,
+        isPrivate: p.is_private || false,
+        routeType: (p as any).route_type || null,
+      });
+      providerRouteProductsMap.set(p.proveedor_id, existingRouteProducts);
+
       productoPrivacyMap.set(p.id, p.is_private || false);
       productoRouteTypeMap.set(p.id, (p as any).route_type || null);
-      
-      if (p.is_private) {
-        privateRouteOwnerIds.add(p.proveedor_id);
-      }
     });
-    
+
     const privateDriverUserIds = new Set(
       activeDrivers?.map(d => d.user_id).filter(Boolean) || []
     );
@@ -197,16 +206,16 @@ export const useRealtimeLocations = () => {
     // Fetch today's driver assignments to get the REAL route name
     const today = new Date().toISOString().split('T')[0];
     const driverIds = activeDrivers?.map(d => d.id) || [];
-    
+
     let driverAssignmentMap = new Map<string, DriverAssignment[]>();
-    
+
     if (driverIds.length > 0) {
       const { data: assignments } = await supabase
         .from('asignaciones_chofer')
         .select('chofer_id, producto_id, unidad_id, productos(nombre)')
         .in('chofer_id', driverIds)
         .eq('fecha', today);
-      
+
       // Fetch unit details (nombre + placas) if any assignment has unidad_id
       const unitIds = assignments?.map(a => a.unidad_id).filter(Boolean) || [];
       let unitDataMap = new Map<string, { nombre: string; placas: string | null; descripcion: string | null }>();
@@ -242,7 +251,7 @@ export const useRealtimeLocations = () => {
           }
         }
       }
-      
+
       if (assignments) {
         // Map chofer_id → user_id
         const choferToUser = new Map(
@@ -252,16 +261,16 @@ export const useRealtimeLocations = () => {
         const choferNameMap = new Map(
           activeDrivers?.map(d => [d.id, d.nombre || null]) || []
         );
-        
+
         for (const a of assignments) {
           const userId = choferToUser.get(a.chofer_id);
           if (userId) {
-            const unitData = a.unidad_id 
-              ? unitDataMap.get(a.unidad_id) 
+            const unitData = a.unidad_id
+              ? unitDataMap.get(a.unidad_id)
               : fallbackUnitMap.get(a.chofer_id) || null;
             const driverRec = activeDrivers?.find(d => d.id === a.chofer_id);
             const empresaName = driverRec ? (driverRec as any).proveedores?.nombre : null;
-            
+
             const entry: DriverAssignment = {
               routeName: (a.productos as any)?.nombre || 'Ruta',
               productoId: a.producto_id,
@@ -271,7 +280,7 @@ export const useRealtimeLocations = () => {
               driverName: choferNameMap.get(a.chofer_id) || null,
               empresaName: empresaName || null,
             };
-            
+
             const existing = driverAssignmentMap.get(userId) || [];
             existing.push(entry);
             driverAssignmentMap.set(userId, existing);
@@ -279,28 +288,34 @@ export const useRealtimeLocations = () => {
         }
       }
     }
-    
+
     console.log('[fetchFullData] Driver assignments today:', driverAssignmentMap.size);
 
+    const normalizeRouteName = (name: string | null | undefined) => name?.trim().toLowerCase() || '';
     const newLocationsMap = new Map<string, ProveedorLocation>();
-    
+
     for (const loc of locationsData) {
       const profile = activeProfiles.find(p => p.user_id === loc.user_id);
       if (!profile) continue;
-      
+
       const proveedorId = proveedorMap.get(loc.user_id);
       const isPrivateDriver = privateDriverUserIds.has(loc.user_id);
-      
-      // Determine vehicle type
-      const hasRutaProduct = proveedorId ? rutaProviderMap.has(proveedorId) : false;
-      const rutaInfo = proveedorId ? rutaProviderMap.get(proveedorId) : null;
+      const driverRecord = activeDrivers?.find(d => d.user_id === loc.user_id) || null;
+      const effectiveProveedorId = isPrivateDriver
+        ? (driverRecord?.proveedor_id || proveedorId || null)
+        : (proveedorId || null);
+
+      // Determine vehicle type with employer provider context for choferes
+      const hasRutaProduct = effectiveProveedorId ? rutaProviderMap.has(effectiveProveedorId) : false;
+      const rutaInfo = effectiveProveedorId ? rutaProviderMap.get(effectiveProveedorId) : null;
       const routeNameFromProduct = rutaInfo?.nombre || null;
-      const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
-      
+      const hasTaxiProduct = effectiveProveedorId ? taxiProviderIds.has(effectiveProveedorId) : false;
+      const routeProductsForProvider = effectiveProveedorId ? (providerRouteProductsMap.get(effectiveProveedorId) || []) : [];
+
       const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
-      const normalizedProfileRouteName = profile.route_name?.trim().toLowerCase() || '';
+      const normalizedProfileRouteName = normalizeRouteName(profile.route_name);
       const profileMatchedAssignment = normalizedProfileRouteName
-        ? allAssignments.find(a => a.routeName?.trim().toLowerCase() === normalizedProfileRouteName)
+        ? allAssignments.find(a => normalizeRouteName(a.routeName) === normalizedProfileRouteName)
         : null;
       const activeAssignment = profileMatchedAssignment || allAssignments[0] || null;
       const orderedAssignments = activeAssignment
@@ -311,26 +326,54 @@ export const useRealtimeLocations = () => {
             ),
           ]
         : allAssignments;
-      
+
+      // Fallback when assignment rows are not readable (RLS): use profile.route_name + provider route catalog
+      const profileMatchedRouteProduct = normalizedProfileRouteName
+        ? routeProductsForProvider.find(r => normalizeRouteName(r.nombre) === normalizedProfileRouteName) || null
+        : null;
+
       // Determine the specific route/product currently ACTIVE for this location
-      // For private drivers we must be strict: ONLY today's assignment counts.
       const specificProductoId = isPrivateDriver
-        ? (activeAssignment?.productoId || null)
+        ? (activeAssignment?.productoId || profileMatchedRouteProduct?.id || null)
         : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
-      
+
       // Private/public route is determined by the exact active product
       const isPrivateRoute = specificProductoId
         ? (productoPrivacyMap.get(specificProductoId) ?? false)
         : false;
-      
-      // Drivers only appear as bus when they actually have an active assignment.
+
+      // Drivers appear as bus only when there is an active route assignment/product context
       const isBus = isPrivateDriver
         ? !!specificProductoId
         : (profile.provider_type === 'ruta' || hasRutaProduct);
 
       // Keep taxi behavior for non-private-route contexts
       const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
-      
+
+      const fallbackEmpresaName = isPrivateDriver
+        ? (driverEmployerMap.get(loc.user_id)
+            || (effectiveProveedorId ? proveedorByIdNameMap.get(effectiveProveedorId) : null)
+            || proveedorNameMap.get(loc.user_id)
+            || null)
+        : (proveedorNameMap.get(loc.user_id)
+            || (effectiveProveedorId ? proveedorByIdNameMap.get(effectiveProveedorId) : null)
+            || null);
+
+      const fallbackAssignment: DriverAssignment[] = (!orderedAssignments.length && specificProductoId)
+        ? [{
+            routeName: profileMatchedRouteProduct?.nombre || profile.route_name || routeNameFromProduct || 'Ruta',
+            productoId: specificProductoId,
+            unitName: null,
+            unitPlacas: null,
+            unitDescripcion: null,
+            driverName: isPrivateDriver ? (driverNameFallbackMap.get(loc.user_id) || null) : null,
+            empresaName: fallbackEmpresaName,
+          }]
+        : [];
+
+      const assignmentsForLocation = orderedAssignments.length > 0 ? orderedAssignments : fallbackAssignment;
+      const activeAssignmentForDisplay = assignmentsForLocation[0] || null;
+
       const location: ProveedorLocation = {
         ...loc,
         profiles: {
@@ -338,38 +381,40 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          // For private drivers, route visibility must come from today's assignment only
+          // Keep strict route source but recover from profile.route_name when assignment rows are not visible
           route_name: isPrivateDriver
-            ? (activeAssignment?.routeName || null)
+            ? (activeAssignmentForDisplay?.routeName || profile.route_name || profileMatchedRouteProduct?.nombre || null)
             : (profile.route_name || routeNameFromProduct || null),
           // Use taxi product price first, then profile tarifa_km, then default 15
-          tarifa_km: (proveedorId && taxiPriceMap.get(proveedorId)) || (profile as any).tarifa_km || 15
+          tarifa_km: (effectiveProveedorId && taxiPriceMap.get(effectiveProveedorId)) || (profile as any).tarifa_km || 15
         },
         is_taxi: isTaxi,
         is_bus: isBus,
         is_private_driver: isPrivateDriver,
         is_private_route: isPrivateRoute,
-        route_type: specificProductoId ? productoRouteTypeMap.get(specificProductoId) || null : (rutaInfo?.routeType || null),
+        route_type: specificProductoId
+          ? (productoRouteTypeMap.get(specificProductoId) ?? profileMatchedRouteProduct?.routeType ?? null)
+          : (rutaInfo?.routeType || null),
         route_producto_id: specificProductoId,
         // For private drivers, use employer's proveedor_id for favorites/linking
         proveedor_id: isPrivateDriver
-          ? (activeDrivers?.find(d => d.user_id === loc.user_id)?.proveedor_id || proveedorId || null)
-          : (proveedorId || null),
+          ? (driverRecord?.proveedor_id || effectiveProveedorId || null)
+          : (effectiveProveedorId || null),
         // For private drivers, use employer company name instead of their own provider entry
-        empresa_name: isPrivateDriver 
-          ? (activeAssignment?.empresaName || driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
-          : (proveedorNameMap.get(loc.user_id) || null),
-        unit_name: activeAssignment?.unitName || null,
-        unit_placas: activeAssignment?.unitPlacas || null,
-        unit_descripcion: activeAssignment?.unitDescripcion || null,
-        driver_name: activeAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
-        all_assignments: orderedAssignments.length > 0 ? orderedAssignments : undefined,
+        empresa_name: isPrivateDriver
+          ? (activeAssignmentForDisplay?.empresaName || fallbackEmpresaName)
+          : fallbackEmpresaName,
+        unit_name: activeAssignmentForDisplay?.unitName || null,
+        unit_placas: activeAssignmentForDisplay?.unitPlacas || null,
+        unit_descripcion: activeAssignmentForDisplay?.unitDescripcion || null,
+        driver_name: activeAssignmentForDisplay?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
+        all_assignments: assignmentsForLocation.length > 0 ? assignmentsForLocation : undefined,
         // For strict route isolation, private drivers expose only their active route id.
         all_route_producto_ids: isPrivateDriver
           ? (specificProductoId ? [specificProductoId] : [])
-          : (proveedorId ? providerAllRouteIds.get(proveedorId) || [] : []),
+          : (effectiveProveedorId ? providerAllRouteIds.get(effectiveProveedorId) || [] : []),
       };
-      
+
       newLocationsMap.set(loc.user_id, location);
     }
 
