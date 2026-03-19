@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  BarChart3, Download, Calendar, Bus, Users, Filter, Loader2, ChevronDown, ChevronUp,
+  BarChart3, Download, Calendar, Bus, Users, Filter, Loader2, ChevronDown, ChevronUp, Route,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,6 +23,8 @@ interface ReportRow {
   placas: string;
   chofer_id: string | null;
   chofer_nombre: string;
+  producto_id: string | null;
+  ruta_nombre: string;
   boletos: number;
   ingresos: number;
   tickets: { code: string; time: string; date: string }[];
@@ -82,13 +84,15 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   const [customEnd, setCustomEnd] = useState("");
   const [filterUnidad, setFilterUnidad] = useState("all");
   const [filterChofer, setFilterChofer] = useState("all");
+  const [filterRuta, setFilterRuta] = useState("all");
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Available units & drivers
+  // Available units, drivers & routes
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
+  const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
 
   useEffect(() => {
     loadCatalogs();
@@ -96,10 +100,10 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
   useEffect(() => {
     if (period !== "custom") fetchReport();
-  }, [period, filterUnidad, filterChofer]);
+  }, [period, filterUnidad, filterChofer, filterRuta]);
 
   const loadCatalogs = async () => {
-    const [uRes, cRes] = await Promise.all([
+    const [uRes, cRes, rRes] = await Promise.all([
       supabase
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas")
@@ -110,6 +114,12 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         .select("id, nombre, user_id")
         .eq("proveedor_id", proveedorId)
         .eq("is_active", true),
+      supabase
+        .from("productos")
+        .select("id, nombre")
+        .eq("proveedor_id", proveedorId)
+        .eq("is_transport_route", true)
+        .eq("is_active", true),
     ]);
 
     const units = (uRes.data || []).map((u: any) => ({
@@ -118,8 +128,8 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
     }));
     setUnidades(units);
     setChoferes((cRes.data || []).map((c: any) => ({ id: c.id, nombre: c.nombre || "Sin nombre" })));
+    setRutas((rRes.data || []).map((r: any) => ({ id: r.id, nombre: r.nombre || "Sin nombre" })));
 
-    // Auto-fetch report
     fetchReport(units.map((u) => u.id));
   };
 
@@ -137,16 +147,23 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
       const targetUnitIds = filterUnidad === "all" ? unitIds : [filterUnidad];
 
-      // Fetch logs
-      const { data: logs } = await supabase
+      // Fetch logs including producto_id
+      let query = supabase
         .from("logs_validacion_qr")
-        .select("qr_ticket_id, created_at, unidad_id, chofer_id")
+        .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id")
         .in("unidad_id", targetUnitIds)
         .eq("resultado", "valid")
         .gte("created_at", start)
         .lte("created_at", end)
         .order("created_at", { ascending: false })
         .limit(5000);
+
+      // Apply route filter at query level
+      if (filterRuta !== "all") {
+        query = query.eq("producto_id", filterRuta);
+      }
+
+      const { data: logs } = await query;
 
       if (!logs || logs.length === 0) {
         setRows([]);
@@ -163,7 +180,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       const unitMap: Record<string, any> = {};
       (unitData || []).forEach((u: any) => { unitMap[u.id] = u; });
 
-      // Fetch chofer names from chofer_ids in logs
+      // Fetch chofer names
       const choferIds = [...new Set(logs.filter((l: any) => l.chofer_id).map((l: any) => l.chofer_id))];
       const choferMap: Record<string, string> = {};
       if (choferIds.length > 0) {
@@ -176,7 +193,6 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           if (c.user_id) choferMap[c.user_id] = c.nombre || "Sin nombre";
         });
 
-        // Also try profiles for names
         const missingIds = choferIds.filter((id) => !choferMap[id]);
         if (missingIds.length > 0) {
           const { data: profileData } = await supabase
@@ -190,21 +206,28 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         }
       }
 
-      // Group by unidad + chofer
-      const groupKey = (log: any) => `${log.unidad_id || "none"}__${log.chofer_id || "none"}`;
-      const groups: Record<string, { unidad_id: string | null; chofer_id: string | null; tickets: any[] }> = {};
+      // Fetch route names for producto_ids in logs
+      const productoIds = [...new Set(logs.filter((l: any) => l.producto_id).map((l: any) => l.producto_id))];
+      const rutaMap: Record<string, string> = {};
+      if (productoIds.length > 0) {
+        const { data: prodData } = await supabase
+          .from("productos")
+          .select("id, nombre")
+          .in("id", productoIds);
+
+        (prodData || []).forEach((p: any) => {
+          rutaMap[p.id] = p.nombre || "Sin nombre";
+        });
+      }
+
+      // Group by unidad + chofer + ruta (producto_id)
+      const groupKey = (log: any) => `${log.unidad_id || "none"}__${log.chofer_id || "none"}__${log.producto_id || "none"}`;
+      const groups: Record<string, { unidad_id: string | null; chofer_id: string | null; producto_id: string | null; tickets: any[] }> = {};
 
       logs.forEach((log: any) => {
-        // Apply chofer filter
-        if (filterChofer !== "all") {
-          const choferEntries = choferes.filter((c) => c.id === filterChofer);
-          // We need to match by user_id or chofer_id
-          // Skip if doesn't match
-        }
-
         const key = groupKey(log);
         if (!groups[key]) {
-          groups[key] = { unidad_id: log.unidad_id, chofer_id: log.chofer_id, tickets: [] };
+          groups[key] = { unidad_id: log.unidad_id, chofer_id: log.chofer_id, producto_id: log.producto_id, tickets: [] };
         }
         groups[key].tickets.push(log);
       });
@@ -217,6 +240,8 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           placas: unit?.placas || "",
           chofer_id: g.chofer_id,
           chofer_nombre: g.chofer_id ? (choferMap[g.chofer_id] || g.chofer_id.slice(0, 8)) : "Sin chofer",
+          producto_id: g.producto_id,
+          ruta_nombre: g.producto_id ? (rutaMap[g.producto_id] || "Ruta desconocida") : "Sin ruta",
           boletos: g.tickets.length,
           ingresos: g.tickets.length * 9,
           tickets: g.tickets.map((t: any) => ({
@@ -249,6 +274,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         r.numero_economico,
         r.placas,
         r.chofer_nombre,
+        r.ruta_nombre,
         `#${t.code}`,
         t.date,
         t.time,
@@ -256,21 +282,20 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       ])
     );
 
-    // Add summary rows
+    // Summary
     const totalBoletos = rows.reduce((s, r) => s + r.boletos, 0);
     allTickets.push([]);
-    allTickets.push(["", "", "", "TOTAL", "", "", String(totalBoletos), `$${(totalBoletos * 9).toFixed(2)}`]);
+    allTickets.push(["", "", "", "", "TOTAL", "", "", String(totalBoletos), `$${(totalBoletos * 9).toFixed(2)}`]);
 
-    // Per-unit summary
     allTickets.push([]);
-    allTickets.push(["RESUMEN POR UNIDAD", "", "", "", "", "", "", ""]);
+    allTickets.push(["RESUMEN POR UNIDAD/RUTA", "", "", "", "", "", "", "", ""]);
     rows.forEach((r) => {
-      allTickets.push(["", r.numero_economico, r.placas, r.chofer_nombre, "", "", String(r.boletos), `$${r.ingresos.toFixed(2)}`]);
+      allTickets.push(["", r.numero_economico, r.placas, r.chofer_nombre, r.ruta_nombre, "", "", String(r.boletos), `$${r.ingresos.toFixed(2)}`]);
     });
 
     downloadCSV(
       `reporte-concesionario-${label.replace(/\s/g, "-")}.csv`,
-      ["#", "Unidad", "Placas", "Chofer", "Código QR", "Fecha", "Hora", "Monto"],
+      ["#", "Unidad", "Placas", "Chofer", "Ruta", "Código QR", "Fecha", "Hora", "Monto"],
       allTickets as string[][]
     );
     toast.success("Reporte CSV descargado");
@@ -339,7 +364,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Unidad</label>
               <Select value={filterUnidad} onValueChange={setFilterUnidad}>
@@ -364,6 +389,20 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
                   <SelectItem value="all">Todos</SelectItem>
                   {choferes.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Ruta</label>
+              <Select value={filterRuta} onValueChange={setFilterRuta}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {rutas.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nombre}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -406,7 +445,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
             </Button>
           </div>
           <CardDescription className="text-xs">
-            Desglose por unidad y chofer · $9.00 MXN c/u
+            Desglose por unidad, chofer y ruta · $9.00 MXN c/u
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -424,14 +463,14 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Unidad</TableHead>
-                  <TableHead className="text-xs">Chofer</TableHead>
+                  <TableHead className="text-xs">Chofer / Ruta</TableHead>
                   <TableHead className="text-xs text-right">Boletos</TableHead>
                   <TableHead className="text-xs text-right">Ingreso</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((r, idx) => {
-                  const key = `${r.unidad_id}-${r.chofer_id}-${idx}`;
+                  const key = `${r.unidad_id}-${r.chofer_id}-${r.producto_id}-${idx}`;
                   const isExpanded = expandedRow === key;
                   return (
                     <React.Fragment key={key}>
@@ -443,7 +482,10 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
                           <p className="font-bold text-sm">#{r.numero_economico}</p>
                           {r.placas && <p className="text-[10px] text-muted-foreground">{r.placas}</p>}
                         </TableCell>
-                        <TableCell className="py-2 text-sm">{r.chofer_nombre}</TableCell>
+                        <TableCell className="py-2">
+                          <p className="text-sm">{r.chofer_nombre}</p>
+                          <p className="text-[10px] text-primary font-medium">🚌 {r.ruta_nombre}</p>
+                        </TableCell>
                         <TableCell className="py-2 text-right font-semibold text-sm">
                           {r.boletos}
                           <span className="text-[10px] text-primary ml-1">{isExpanded ? "▲" : "▼"}</span>
