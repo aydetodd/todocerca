@@ -252,6 +252,11 @@ export default function HistorialBoletos() {
                           : `Usado: ${formatDate(t.used_at || t.generated_at)}`
                         }
                       </p>
+                      {filter === "used" && t._ruta_nombre && (
+                        <p className="text-xs text-primary font-medium">
+                          🚌 {t._ruta_nombre}
+                        </p>
+                      )}
                     </>
                   )}
                 </CardContent>
