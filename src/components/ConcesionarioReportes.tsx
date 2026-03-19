@@ -181,7 +181,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       (unitData || []).forEach((u: any) => { unitMap[u.id] = u; });
 
       // Fetch chofer names
-      const choferIds = [...new Set(logs.filter((l: any) => l.chofer_id).map((l: any) => l.chofer_id))];
+      const choferIds: string[] = [...new Set(logs.filter((l: any) => l.chofer_id).map((l: any) => l.chofer_id as string))];
       const choferMap: Record<string, string> = {};
       if (choferIds.length > 0) {
         const { data: choferData } = await supabase
