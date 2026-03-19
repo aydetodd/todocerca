@@ -226,24 +226,40 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             return null;
           }
           
-          // For route searches: show ONLY the exact active route producto_id
-          // If the driver's active route doesn't match the searched products, hide it.
+          // For route searches: strict isolation by active assignment/route only
           let filteredProducts = provider.productos;
           if (vehicleFilter === 'ruta') {
+            const searchedProductIds = new Set(provider.productos.map(p => p.id).filter(Boolean) as string[]);
             const activeRouteProductId = realtimeLocation.route_producto_id;
+            const assignmentProductIds = new Set((realtimeLocation.all_assignments || []).map(a => a.productoId));
 
-            if (!activeRouteProductId) {
-              console.log(`❌ ${provider.business_name}: sin ruta activa, no mostrar en búsqueda de rutas`);
-              return null;
+            const hasMatchByRouteId = !!activeRouteProductId && searchedProductIds.has(activeRouteProductId);
+            const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
+
+            // Private drivers must match today's assignment (source of truth)
+            if (realtimeLocation.is_private_driver) {
+              if (!hasMatchByAssignment) {
+                console.log(`❌ ${provider.business_name}: chofer sin asignación activa en la ruta buscada`);
+                return null;
+              }
+              filteredProducts = provider.productos.filter(p => !!p.id && assignmentProductIds.has(p.id));
+            } else {
+              // Non-driver providers use active route_producto_id
+              if (!hasMatchByRouteId) {
+                console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId || 'N/A'} no coincide con la búsqueda`);
+                return null;
+              }
+              filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
             }
 
-            filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
-
             if (filteredProducts.length === 0) {
-              console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId} no coincide con la búsqueda`);
               return null;
             }
           }
+
+          const resolvedRouteName = vehicleFilter === 'ruta'
+            ? (filteredProducts[0]?.nombre || routeName)
+            : routeName;
 
           return {
             ...provider,
@@ -252,7 +268,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             longitude: realtimeLocation.longitude,
             _realtimeStatus: status,
             _providerType: providerType,
-            _routeName: routeName,
+            _routeName: resolvedRouteName,
             _isBus: realtimeLocation.is_bus,
             _isTaxi: realtimeLocation.is_taxi,
             _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15,
@@ -329,7 +345,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
-    if (!mapRef.current || validProviders.length === 0) return;
+    if (!mapRef.current) return;
 
     // Track current provider IDs
     const currentProviderIds = new Set(validProviders.map(p => p.user_id));

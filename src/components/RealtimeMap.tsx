@@ -160,7 +160,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
-      filteredLocations = locations.filter(loc => loc.route_producto_id === privateRouteProductoId);
+      filteredLocations = locations.filter(loc => {
+        if (loc.route_producto_id === privateRouteProductoId) return true;
+        // Extra safety for driver rows: validate against today's assignments
+        return !!loc.all_assignments?.some(a => a.productoId === privateRouteProductoId);
+      });
       console.log('🔒 [Map] Filtering by ACTIVE route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
