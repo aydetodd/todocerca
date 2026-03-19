@@ -158,13 +158,14 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       filteredLocations = locations.filter(loc => fleetSet.has(loc.user_id));
       console.log('🏢 [Map] Fleet mode — user_ids:', fleetUserIds.length, '→', filteredLocations.length, 'units visible');
     }
-    // If viewing a specific route, show units matching that route product
+    // If viewing a specific route, show ONLY units currently assigned to that route
     else if (privateRouteProductoId) {
-      // Check route_producto_id, all_assignments, AND all_route_producto_ids
+      // Match by current assignment (today's route) or exact route_producto_id
+      // Do NOT use all_route_producto_ids — that includes ALL routes of the employer,
+      // which would show a driver assigned to Route 1 when searching Route 2
       filteredLocations = locations.filter(loc => 
         loc.route_producto_id === privateRouteProductoId ||
-        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId) ||
-        loc.all_route_producto_ids?.includes(privateRouteProductoId)
+        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)
       );
       // Fallback: if productoId filter yields 0 results (e.g. public route with no assignments),
       // fall back to filtering by the provider's user_id so the unit still appears
