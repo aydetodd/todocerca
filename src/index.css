@@ -387,6 +387,19 @@ Paleta: Azul marino profundo con acentos brillantes
   }
 }
 
+/* Fix Leaflet divIcon markers not showing due to Tailwind CSS resets */
+.custom-tracking-marker,
+.custom-gps-tracker-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure Leaflet markers are visible above tiles */
+.leaflet-marker-icon {
+  overflow: visible !important;
+}
+
 /* Dark themed Leaflet popups */
 .custom-popup-dark .leaflet-popup-content-wrapper {
   background: transparent;
