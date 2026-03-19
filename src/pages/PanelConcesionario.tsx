@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
-  Users, Plus, MessageCircle, Loader2, Trash2, Download,
+  Users, Plus, MessageCircle, Loader2, Trash2, Download, ClipboardList,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import ConcesionarioReportes from "@/components/ConcesionarioReportes";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -643,9 +644,12 @@ export default function PanelConcesionario() {
         </div>
 
         <Tabs defaultValue="ingresos" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="ingresos" className="text-xs">
               <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+            </TabsTrigger>
+            <TabsTrigger value="reportes" className="text-xs">
+              <ClipboardList className="h-3 w-3 mr-1" /> Reportes
             </TabsTrigger>
             <TabsTrigger value="verificacion" className="text-xs">
               <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
@@ -1149,6 +1153,11 @@ export default function PanelConcesionario() {
                 ))}
               </>
             )}
+          </TabsContent>
+
+          {/* REPORTES */}
+          <TabsContent value="reportes" className="space-y-4 mt-4">
+            {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} />}
           </TabsContent>
         </Tabs>
       </div>
