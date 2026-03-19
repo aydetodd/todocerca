@@ -226,8 +226,25 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             return null;
           }
           
+          // For route searches: only show the product matching the driver's current assignment
+          // This prevents showing Route 17 when the driver is on Route 2
+          let filteredProducts = provider.productos;
+          if (vehicleFilter === 'ruta' && realtimeLocation.route_producto_id) {
+            const assignedProductIds = new Set<string>();
+            // Add the primary assigned route
+            assignedProductIds.add(realtimeLocation.route_producto_id);
+            // Add any additional assignments for today
+            realtimeLocation.all_assignments?.forEach(a => assignedProductIds.add(a.productoId));
+            
+            const matched = provider.productos.filter(p => p.id && assignedProductIds.has(p.id));
+            if (matched.length > 0) {
+              filteredProducts = matched;
+            }
+          }
+
           return {
             ...provider,
+            productos: filteredProducts,
             latitude: realtimeLocation.latitude,
             longitude: realtimeLocation.longitude,
             _realtimeStatus: status,
@@ -238,6 +255,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15,
             _routeType: realtimeLocation.route_type || null,
             _isPrivateRoute: realtimeLocation.is_private_route || false,
+            _routeProductoId: realtimeLocation.route_producto_id || null,
           };
         }
         
