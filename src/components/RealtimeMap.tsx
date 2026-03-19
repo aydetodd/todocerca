@@ -158,23 +158,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       filteredLocations = locations.filter(loc => fleetSet.has(loc.user_id));
       console.log('🏢 [Map] Fleet mode — user_ids:', fleetUserIds.length, '→', filteredLocations.length, 'units visible');
     }
-    // If viewing a specific route, show ONLY units currently assigned to that route
+    // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
-      // Match by current assignment (today's route) or exact route_producto_id
-      // Do NOT use all_route_producto_ids — that includes ALL routes of the employer,
-      // which would show a driver assigned to Route 1 when searching Route 2
-      filteredLocations = locations.filter(loc => 
-        loc.route_producto_id === privateRouteProductoId ||
-        loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)
-      );
-      // Fallback: if productoId filter yields 0 results (e.g. public route with no assignments),
-      // fall back to filtering by the provider's user_id so the unit still appears
-      if (filteredLocations.length === 0 && privateRouteUserId) {
-        filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
-        console.log('🚌 [Map] productoId filter empty, fallback to userId →', filteredLocations.length, 'units');
-      } else {
-        console.log('🔒 [Map] Filtering by route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
-      }
+      filteredLocations = locations.filter(loc => loc.route_producto_id === privateRouteProductoId);
+      console.log('🔒 [Map] Filtering by ACTIVE route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);
@@ -242,8 +229,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       let driverLabel = location.driver_name || '';
       let empresaLabel = location.empresa_name || '';
 
-      // Resolve correct assignment when viewing a specific route (multi-company driver)
-      if (privateRouteProductoId && location.all_assignments?.length) {
+      // Resolve assignment details only when it matches the exact route being viewed
+      if (privateRouteProductoId && location.route_producto_id === privateRouteProductoId && location.all_assignments?.length) {
         const match = location.all_assignments.find(a => a.productoId === privateRouteProductoId);
         if (match) {
           routeLabel = match.routeName;
@@ -254,15 +241,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           empresaLabel = match.empresaName || '';
         }
       }
-      // Fallback: if viewing a specific route and the current routeLabel is from a DIFFERENT product,
-      // use the route name passed from MapView (which was fetched from the product record)
-      if (privateRouteProductoId) {
-        const hasMatchingAssignment = location.all_assignments?.some(a => a.productoId === privateRouteProductoId);
-        if (!hasMatchingAssignment && location.route_producto_id !== privateRouteProductoId) {
-          // Route label is from the wrong product — use the known route name from MapView
-          routeLabel = privateRouteNameProp || '';
-        }
+
+      if (privateRouteProductoId && !routeLabel) {
+        routeLabel = privateRouteNameProp || '';
       }
+
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
       const previousState = markerStatesRef.current[location.user_id];
       

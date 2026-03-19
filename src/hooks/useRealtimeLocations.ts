@@ -298,11 +298,23 @@ export const useRealtimeLocations = () => {
       const hasTaxiProduct = proveedorId ? taxiProviderIds.has(proveedorId) : false;
       
       const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
-      const firstAssignment = allAssignments[0] || null;
+      const normalizedProfileRouteName = profile.route_name?.trim().toLowerCase() || '';
+      const profileMatchedAssignment = normalizedProfileRouteName
+        ? allAssignments.find(a => a.routeName?.trim().toLowerCase() === normalizedProfileRouteName)
+        : null;
+      const activeAssignment = profileMatchedAssignment || allAssignments[0] || null;
+      const orderedAssignments = activeAssignment
+        ? [
+            activeAssignment,
+            ...allAssignments.filter(
+              a => !(a.productoId === activeAssignment.productoId && a.routeName === activeAssignment.routeName)
+            ),
+          ]
+        : allAssignments;
       
       // Determine the specific route_producto_id for this location
       const specificProductoId = isPrivateDriver
-        ? (firstAssignment?.productoId || rutaInfo?.productoId || null)
+        ? (activeAssignment?.productoId || rutaInfo?.productoId || null)
         : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
       
       // Private route is determined by the SPECIFIC route/product, not by whether the provider has ANY private route
@@ -316,8 +328,6 @@ export const useRealtimeLocations = () => {
       // Private drivers/owners should NOT show as taxis
       const isTaxi = isPrivateRoute ? false : (profile.provider_type === 'taxi' || hasTaxiProduct);
       
-      // allAssignments and firstAssignment already declared above for isPrivateRoute determination
-      
       const location: ProveedorLocation = {
         ...loc,
         profiles: {
@@ -325,9 +335,9 @@ export const useRealtimeLocations = () => {
           estado: profile.estado as 'available' | 'busy' | 'offline',
           telefono: profile.telefono,
           provider_type: profile.provider_type as 'taxi' | 'ruta' | null,
-          // For private drivers, use TODAY's first assignment; otherwise fall back to profile/product
+          // For private drivers, prioritize the assignment that matches profile.route_name
           route_name: isPrivateDriver 
-            ? (firstAssignment?.routeName || profile.route_name || null)
+            ? (activeAssignment?.routeName || profile.route_name || null)
             : (profile.route_name || routeNameFromProduct || null),
           // Use taxi product price first, then profile tarifa_km, then default 15
           tarifa_km: (proveedorId && taxiPriceMap.get(proveedorId)) || (profile as any).tarifa_km || 15
@@ -345,13 +355,13 @@ export const useRealtimeLocations = () => {
           : (proveedorId || null),
         // For private drivers, use employer company name instead of their own provider entry
         empresa_name: isPrivateDriver 
-          ? (firstAssignment?.empresaName || driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
+          ? (activeAssignment?.empresaName || driverEmployerMap.get(loc.user_id) || proveedorNameMap.get(loc.user_id) || null)
           : (proveedorNameMap.get(loc.user_id) || null),
-        unit_name: firstAssignment?.unitName || null,
-        unit_placas: firstAssignment?.unitPlacas || null,
-        unit_descripcion: firstAssignment?.unitDescripcion || null,
-        driver_name: firstAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
-        all_assignments: allAssignments.length > 0 ? allAssignments : undefined,
+        unit_name: activeAssignment?.unitName || null,
+        unit_placas: activeAssignment?.unitPlacas || null,
+        unit_descripcion: activeAssignment?.unitDescripcion || null,
+        driver_name: activeAssignment?.driverName || (isPrivateDriver ? driverNameFallbackMap.get(loc.user_id) : null) || null,
+        all_assignments: orderedAssignments.length > 0 ? orderedAssignments : undefined,
         // For private drivers, use the EMPLOYER's proveedor_id to look up all route product IDs
         // (drivers don't have their own proveedores record, so proveedorId would be null)
         all_route_producto_ids: (() => {
