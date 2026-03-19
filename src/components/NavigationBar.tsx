@@ -140,21 +140,8 @@ export const NavigationBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
-      {/* Top row: Apartados, Taxi, Citas, SOS */}
+      {/* Top row: Taxi, SOS (Protocolo 1 - solo movilidad) */}
       <div className="container flex items-center justify-around py-1 border-b border-border/50">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/dashboard?section=apartados')}
-          className="flex flex-col items-center gap-0.5 h-auto py-1.5 px-3"
-        >
-          <div className="relative">
-            <ShoppingCart className="h-4 w-4" />
-            <BadgeIndicator count={badges.apartados} />
-          </div>
-          <span className="text-[9px]">Apartados</span>
-        </Button>
-
         <Button
           variant="ghost"
           size="sm"
@@ -166,19 +153,6 @@ export const NavigationBar = () => {
             <BadgeIndicator count={badges.taxi} />
           </div>
           <span className="text-[9px]">Taxi</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/dashboard?section=citas')}
-          className="flex flex-col items-center gap-0.5 h-auto py-1.5 px-3"
-        >
-          <div className="relative">
-            <Calendar className="h-4 w-4" />
-            <BadgeIndicator count={badges.citas} />
-          </div>
-          <span className="text-[9px]">Citas</span>
         </Button>
 
         <Button
