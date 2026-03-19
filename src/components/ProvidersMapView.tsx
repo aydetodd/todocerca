@@ -345,7 +345,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
-    if (!mapRef.current || validProviders.length === 0) return;
+    if (!mapRef.current) return;
 
     // Track current provider IDs
     const currentProviderIds = new Set(validProviders.map(p => p.user_id));
