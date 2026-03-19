@@ -1650,6 +1650,7 @@ export type Database = {
           latitud: number | null
           longitud: number | null
           mensaje_error: string | null
+          producto_id: string | null
           qr_ticket_id: string | null
           resultado: string
           unidad_id: string | null
@@ -1663,6 +1664,7 @@ export type Database = {
           latitud?: number | null
           longitud?: number | null
           mensaje_error?: string | null
+          producto_id?: string | null
           qr_ticket_id?: string | null
           resultado: string
           unidad_id?: string | null
@@ -1676,11 +1678,19 @@ export type Database = {
           latitud?: number | null
           longitud?: number | null
           mensaje_error?: string | null
+          producto_id?: string | null
           qr_ticket_id?: string | null
           resultado?: string
           unidad_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "logs_validacion_qr_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "logs_validacion_qr_qr_ticket_id_fkey"
             columns: ["qr_ticket_id"]
