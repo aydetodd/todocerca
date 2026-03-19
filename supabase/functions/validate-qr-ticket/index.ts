@@ -106,6 +106,7 @@ serve(async (req) => {
         longitud: longitude,
         unidad_id,
         chofer_id: driver.id,
+        producto_id: ruta_id || null,
       });
 
       return new Response(JSON.stringify({
