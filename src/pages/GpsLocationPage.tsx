@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useGeography, GeografiaCompleta } from '@/hooks/useGeography';
 import { GeographySelector } from '@/components/GeographySelector';
-import { NavigationBar } from '@/components/NavigationBar';
+
 
 interface GpsLocationPageProps {
   basePath?: string;
