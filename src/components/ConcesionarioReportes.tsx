@@ -114,8 +114,8 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         .select("id, nombre, user_id")
         .eq("proveedor_id", proveedorId)
         .eq("is_active", true),
-      supabase
-        .from("productos")
+      (supabase
+        .from("productos") as any)
         .select("id, nombre")
         .eq("proveedor_id", proveedorId)
         .eq("is_transport_route", true)
