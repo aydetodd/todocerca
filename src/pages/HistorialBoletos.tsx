@@ -227,6 +227,11 @@ export default function HistorialBoletos() {
                                 ⏳ Vence: {formatDate(t.transfer_expires_at)}
                               </p>
                             )}
+                            {t._ruta_nombre && (
+                              <p className="text-xs text-primary font-medium">
+                                🚌 {t._ruta_nombre}
+                              </p>
+                            )}
                           </>
                         );
                       })()}
