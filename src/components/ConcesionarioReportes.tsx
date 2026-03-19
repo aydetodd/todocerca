@@ -193,7 +193,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           if (c.user_id) choferMap[c.user_id] = c.nombre || "Sin nombre";
         });
 
-        const missingIds = choferIds.filter((id) => !choferMap[id]);
+        const missingIds: string[] = choferIds.filter((id) => !choferMap[id]);
         if (missingIds.length > 0) {
           const { data: profileData } = await supabase
             .from("profiles")
