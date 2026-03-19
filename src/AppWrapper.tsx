@@ -101,6 +101,7 @@ export default function AppWrapper() {
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
+        <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
