@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useGeography, GeografiaCompleta } from '@/hooks/useGeography';
 import { GeographySelector } from '@/components/GeographySelector';
-import { NavigationBar } from '@/components/NavigationBar';
+
 
 interface GpsLocationPageProps {
   basePath?: string;
@@ -74,7 +74,6 @@ export default function GpsLocationPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationBar />
       
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* Header con breadcrumb */}

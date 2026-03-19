@@ -14,7 +14,7 @@ import { ShoppingCart as ShoppingCartComponent } from '@/components/ShoppingCart
 import { formatCurrency } from '@/lib/utils';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ProductCard } from '@/components/ProductCard';
-import { NavigationBar } from '@/components/NavigationBar';
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { AppointmentBooking } from '@/components/AppointmentBooking';
@@ -781,7 +781,7 @@ const ProviderProfile = () => {
         </Dialog>
         </div>
       </main>
-      <NavigationBar />
+      
     </div>
   );
 };

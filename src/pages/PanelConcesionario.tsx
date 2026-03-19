@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { BackButton } from "@/components/BackButton";
-import { NavigationBar } from "@/components/NavigationBar";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1151,7 +1151,7 @@ export default function PanelConcesionario() {
         </Tabs>
       </div>
 
-      <NavigationBar />
+      
     </div>
   );
 }

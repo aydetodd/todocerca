@@ -49,6 +49,7 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
+import { NavigationBar } from "@/components/NavigationBar";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
@@ -101,6 +102,7 @@ export default function AppWrapper() {
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
+        <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />

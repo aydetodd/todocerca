@@ -3,7 +3,7 @@ import { ArrowLeft, Plus, Vote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { NavigationBar } from '@/components/NavigationBar';
+
 import { useVotaciones } from '@/hooks/useVotaciones';
 
 export default function Votaciones() {
@@ -87,7 +87,7 @@ export default function Votaciones() {
         )}
       </main>
 
-      <NavigationBar />
+      
     </div>
   );
 }

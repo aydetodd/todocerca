@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search as SearchIcon, MapPin, Map as MapIcon, List, X, Clock, Heart, Share2, ShoppingCart, CalendarCheck, ChevronDown, ChevronUp } from "lucide-react";
 import { GlobalHeader } from "@/components/GlobalHeader";
-import { NavigationBar } from "@/components/NavigationBar";
+
 import ProvidersMapView from "@/components/ProvidersMapView";
 import { routeNameToId } from "@/hooks/useRouteOverlay";
 import { MessagingPanel } from "@/components/MessagingPanel";
@@ -1271,7 +1271,7 @@ const ProductSearch = () => {
         )}
       </main>
 
-      <NavigationBar />
+      
 
       <MessagingPanel
         isOpen={isMessagingOpen}

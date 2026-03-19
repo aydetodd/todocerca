@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { NavigationBar } from '@/components/NavigationBar';
+
 
 interface Votacion {
   id: string;
@@ -605,7 +605,6 @@ export default function VotacionDetalle() {
             <h1 className="text-xl font-bold">Votación no encontrada</h1>
           </div>
         </header>
-        <NavigationBar />
       </div>
     );
   }
@@ -916,7 +915,7 @@ export default function VotacionDetalle() {
         </DialogContent>
       </Dialog>
 
-      <NavigationBar />
+      
     </div>
   );
 }

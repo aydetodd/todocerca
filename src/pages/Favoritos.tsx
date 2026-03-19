@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFavoritos, Favorito } from '@/hooks/useFavoritos';
 import { GlobalHeader } from '@/components/GlobalHeader';
-import { NavigationBar } from '@/components/NavigationBar';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -173,7 +173,6 @@ export default function Favoritos() {
             </CardContent>
           </Card>
         </div>
-        <NavigationBar />
       </div>
     );
   }
@@ -187,7 +186,6 @@ export default function Favoritos() {
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
-        <NavigationBar />
       </div>
     );
   }
@@ -310,7 +308,7 @@ export default function Favoritos() {
             )}
           </div>
 
-          <NavigationBar />
+          
         </div>
       )}
 
