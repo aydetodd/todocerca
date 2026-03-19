@@ -736,9 +736,15 @@ const ProductSearch = () => {
       <GlobalHeader />
 
       <main className="container mx-auto px-4 pt-4 pb-40">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold">Buscar Productos y Servicios</h1>
-        </header>
+        {!isRutasCategory ? (
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold">Buscar Productos y Servicios</h1>
+          </header>
+        ) : (
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold">Rutas de Transporte</h1>
+          </header>
+        )}
 
         <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-2">
