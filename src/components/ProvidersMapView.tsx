@@ -226,21 +226,33 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             return null;
           }
           
-          // For route searches: show ONLY the exact active route producto_id
-          // If the driver's active route doesn't match the searched products, hide it.
+          // For route searches: strict isolation by active assignment/route only
           let filteredProducts = provider.productos;
           if (vehicleFilter === 'ruta') {
+            const searchedProductIds = new Set(provider.productos.map(p => p.id).filter(Boolean) as string[]);
             const activeRouteProductId = realtimeLocation.route_producto_id;
+            const assignmentProductIds = new Set((realtimeLocation.all_assignments || []).map(a => a.productoId));
 
-            if (!activeRouteProductId) {
-              console.log(`❌ ${provider.business_name}: sin ruta activa, no mostrar en búsqueda de rutas`);
-              return null;
+            const hasMatchByRouteId = !!activeRouteProductId && searchedProductIds.has(activeRouteProductId);
+            const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
+
+            // Private drivers must match today's assignment (source of truth)
+            if (realtimeLocation.is_private_driver) {
+              if (!hasMatchByAssignment) {
+                console.log(`❌ ${provider.business_name}: chofer sin asignación activa en la ruta buscada`);
+                return null;
+              }
+              filteredProducts = provider.productos.filter(p => !!p.id && assignmentProductIds.has(p.id));
+            } else {
+              // Non-driver providers use active route_producto_id
+              if (!hasMatchByRouteId) {
+                console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId || 'N/A'} no coincide con la búsqueda`);
+                return null;
+              }
+              filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
             }
 
-            filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
-
             if (filteredProducts.length === 0) {
-              console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId} no coincide con la búsqueda`);
               return null;
             }
           }
