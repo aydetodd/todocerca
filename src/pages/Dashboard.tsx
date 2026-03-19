@@ -251,12 +251,13 @@ const Dashboard = () => {
     () =>
       [
         { key: "perfil" as const, label: "Perfil", icon: User, visible: true },
-        {
-          key: "suscripcion" as const,
-          label: "Suscripción",
-          icon: CreditCard,
-          visible: isProvider,
-        },
+        // Protocolo 1: Suscripción de bienes/servicios oculta (transportes tienen su propia suscripción)
+        // {
+        //   key: "suscripcion" as const,
+        //   label: "Suscripción",
+        //   icon: CreditCard,
+        //   visible: isProvider,
+        // },
         {
           key: "tracking" as const,
           label: "Tracking GPS",
