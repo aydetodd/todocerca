@@ -140,7 +140,10 @@ export const NavigationBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
-      {/* Protocolo 1: Taxi row ocultado */}
+      {/* Semáforo de estado - visible en todas las páginas */}
+      <div className="flex justify-center py-1.5">
+        <StatusControl />
+      </div>
 
       {/* Bottom row: Inicio, Mensajes, Compartir, Panel */}
       <div className="container flex items-center justify-around py-2">

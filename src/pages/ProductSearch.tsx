@@ -689,6 +689,47 @@ const ProductSearch = () => {
     setPrivateRouteLink(''); // Clear private route link
   };
 
+  // Taxi mode: render fullscreen map directly without categories/search
+  if (isTaxiMode) {
+    return (
+      <div className="min-h-screen bg-background">
+        <section aria-label="Mapa de taxis" className="fixed inset-0 z-50 bg-background">
+          {/* Back button */}
+          <div className="absolute top-4 left-4 z-[1000]">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/home')}
+              className="shadow-lg bg-background/90 backdrop-blur-sm"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cerrar
+            </Button>
+          </div>
+          {/* Status control */}
+          <div className="absolute top-4 right-4 z-[1000]">
+            <StatusControl />
+          </div>
+          <div className="h-full w-full">
+            <ProvidersMapView
+              providers={mapProviders as any}
+              vehicleFilter="taxi"
+              onOpenChat={handleOpenChat}
+              routeOverlayId={null}
+            />
+          </div>
+        </section>
+        {isMessagingOpen && selectedReceiverId && (
+          <MessagingPanel
+            receiverId={selectedReceiverId}
+            receiverName={selectedReceiverName || 'Usuario'}
+            onClose={() => setIsMessagingOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <GlobalHeader />
