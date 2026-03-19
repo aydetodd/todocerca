@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Home, Share2, LayoutGrid, MessageCircle, ShoppingCart, Car, Calendar, AlertTriangle } from "lucide-react";
+import { StatusControl } from "@/components/StatusControl";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
