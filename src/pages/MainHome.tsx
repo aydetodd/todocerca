@@ -69,8 +69,8 @@ export default function MainHome() {
         {/* Panel de perfil de chofer (visible siempre para choferes autorizados) */}
         <DriverProfilePanel />
         
-        {/* Viaje activo del pasajero */}
-        <PassengerActiveTrip />
+        {/* Protocolo 2: Taxi oculto - Viaje activo del pasajero */}
+        {/* <PassengerActiveTrip /> */}
         
         {/* === Protocolo 1: Solo movilidad === */}
         {/* Protocolo 2: Taxi oculto */}
