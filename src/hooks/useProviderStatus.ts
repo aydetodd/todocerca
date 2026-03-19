@@ -53,14 +53,12 @@ export function useProviderStatus() {
 
       if (!mountedRef.current) return;
 
-      if (data?.role === 'proveedor') {
-        setIsProvider(true);
-        const s = (data.estado as UserStatus) || 'available';
-        setStatus(s);
-        // Sync to all instances
-        globalStatus = s;
-        listeners.forEach(fn => fn(s));
-      }
+      // Allow ALL users to use the semáforo (not just providers)
+      setIsProvider(true);
+      const s = (data?.estado as UserStatus) || 'available';
+      setStatus(s);
+      globalStatus = s;
+      listeners.forEach(fn => fn(s));
     };
 
     checkUserRole();
