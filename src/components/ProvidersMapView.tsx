@@ -235,14 +235,17 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
             const hasMatchByRouteId = !!activeRouteProductId && searchedProductIds.has(activeRouteProductId);
             const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
+            const hasAnyRouteMatch = hasMatchByRouteId || hasMatchByAssignment;
 
-            // Private drivers must match today's assignment (source of truth)
+            // Private drivers: accept assignment match OR active route product fallback
             if (realtimeLocation.is_private_driver) {
-              if (!hasMatchByAssignment) {
-                console.log(`❌ ${provider.business_name}: chofer sin asignación activa en la ruta buscada`);
+              if (!hasAnyRouteMatch) {
+                console.log(`❌ ${provider.business_name}: chofer sin coincidencia de ruta activa en la búsqueda`);
                 return null;
               }
-              filteredProducts = provider.productos.filter(p => !!p.id && assignmentProductIds.has(p.id));
+              filteredProducts = provider.productos.filter(
+                p => !!p.id && (assignmentProductIds.has(p.id) || p.id === activeRouteProductId)
+              );
             } else {
               // Non-driver providers use active route_producto_id
               if (!hasMatchByRouteId) {
