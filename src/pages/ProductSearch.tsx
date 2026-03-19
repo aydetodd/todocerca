@@ -96,6 +96,7 @@ const ProductSearch = () => {
   const [selectedProfesion, setSelectedProfesion] = useState<string | null>(null);
   const [loadingProfesiones, setLoadingProfesiones] = useState(false);
 
+  const isTaxiMode = initialCategory === 'taxi';
   const [results, setResults] = useState<any[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
