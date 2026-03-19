@@ -310,6 +310,7 @@ serve(async (req) => {
       longitud: longitude,
       unidad_id,
       chofer_id: driver.id,
+      producto_id: ruta_id || null,
     });
 
     // Get daily count using Hermosillo time (UTC-7, no DST)
