@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Car, BarChart3 } from 'lucide-react';
+import { Bus, Car, BarChart3, Ticket } from 'lucide-react';
 import { NavigationBar } from '@/components/NavigationBar';
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 import { SOSButton } from '@/components/SOSButton';
@@ -103,6 +103,21 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
+        <Card 
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/wallet/qr-boletos')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Ticket className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">QR Boleto Digital</h3>
+              <p className="text-sm text-muted-foreground">Compra y usa boletos de transporte</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {isConcesionario && (
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
@@ -122,8 +137,7 @@ export default function MainHome() {
 
       </main>
 
-      {/* Botón SOS flotante */}
-      <SOSButton />
+      {/* SOS oculto - Protocolo 1 */}
 
       <NavigationBar />
     </div>
