@@ -736,25 +736,33 @@ const ProductSearch = () => {
       <GlobalHeader />
 
       <main className="container mx-auto px-4 pt-4 pb-40">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold">Buscar Productos y Servicios</h1>
-        </header>
+        {!isRutasCategory ? (
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold">Buscar Productos y Servicios</h1>
+          </header>
+        ) : (
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold">Rutas de Transporte</h1>
+          </header>
+        )}
 
-        <form onSubmit={handleSearch} className="mb-4">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Buscar productos o servicios..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={loading}>
-              <SearchIcon className="w-4 h-4 mr-2" />
-              {loading ? "Buscando…" : "Buscar"}
-            </Button>
-          </div>
-        </form>
+        {!isRutasCategory && (
+          <form onSubmit={handleSearch} className="mb-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Buscar productos o servicios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" disabled={loading}>
+                <SearchIcon className="w-4 h-4 mr-2" />
+                {loading ? "Buscando…" : "Buscar"}
+              </Button>
+            </div>
+          </form>
+        )}
 
         <section aria-label="Ubicación" className="mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -825,21 +833,23 @@ const ProductSearch = () => {
           </div>
         </section>
 
-        <section aria-label="Categorías" className="mb-6">
-          <p className="text-sm text-muted-foreground mb-3">Categorías:</p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category.id}
-                variant={selectedCategoryId === category.id ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
-                onClick={() => handleCategoryClick(category.id)}
-              >
-                {category.name}
-              </Badge>
-            ))}
-          </div>
-        </section>
+        {!isRutasCategory && (
+          <section aria-label="Categorías" className="mb-6">
+            <p className="text-sm text-muted-foreground mb-3">Categorías:</p>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Badge
+                  key={category.id}
+                  variant={selectedCategoryId === category.id ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                  onClick={() => handleCategoryClick(category.id)}
+                >
+                  {category.name}
+                </Badge>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Route selector when "Rutas de Transporte" is selected */}
         {isRutasCategory && (
