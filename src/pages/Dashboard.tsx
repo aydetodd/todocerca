@@ -276,12 +276,13 @@ const Dashboard = () => {
         // { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
         // { key: "citas" as const, label: "Citas", icon: Calendar, visible: isProvider },
         // { key: "horarios" as const, label: "Horarios", icon: Clock, visible: isProvider },
-        {
-          key: "taxi" as const,
-          label: "Taxista",
-          icon: Car,
-          visible: showTaxi,
-        },
+        // Protocolo 2: Taxi oculto
+        // {
+        //   key: "taxi" as const,
+        //   label: "Taxista",
+        //   icon: Car,
+        //   visible: showTaxi,
+        // },
       ].filter((i) => i.visible),
     [isProvider, showTaxi]
   );
