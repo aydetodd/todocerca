@@ -103,7 +103,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   }, [period, filterUnidad, filterChofer, filterRuta]);
 
   const loadCatalogs = async () => {
-    const [uRes, cRes, rRes] = await Promise.all([
+    const [uRes, cRes] = await Promise.all([
       supabase
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas")
@@ -114,12 +114,6 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         .select("id, nombre, user_id")
         .eq("proveedor_id", proveedorId)
         .eq("is_active", true),
-      (supabase
-        .from("productos") as any)
-        .select("id, nombre")
-        .eq("proveedor_id", proveedorId)
-        .eq("is_transport_route", true)
-        .eq("is_active", true),
     ]);
 
     const units = (uRes.data || []).map((u: any) => ({
@@ -128,7 +122,27 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
     }));
     setUnidades(units);
     setChoferes((cRes.data || []).map((c: any) => ({ id: c.id, nombre: c.nombre || "Sin nombre" })));
-    setRutas((rRes.data || []).map((r: any) => ({ id: r.id, nombre: r.nombre || "Sin nombre" })));
+
+    // Load routes: get distinct producto_ids from validation logs for this concesionario's units
+    if (units.length > 0) {
+      const { data: logRoutes } = await (supabase
+        .from("logs_validacion_qr") as any)
+        .select("producto_id")
+        .in("unidad_id", units.map((u) => u.id))
+        .eq("resultado", "valid")
+        .not("producto_id", "is", null);
+
+      const uniqueProductoIds = [...new Set((logRoutes || []).map((l: any) => l.producto_id))] as string[];
+      
+      if (uniqueProductoIds.length > 0) {
+        const { data: prodData } = await supabase
+          .from("productos")
+          .select("id, nombre")
+          .in("id", uniqueProductoIds);
+        
+        setRutas((prodData || []).map((r: any) => ({ id: r.id, nombre: r.nombre || "Sin nombre" })));
+      }
+    }
 
     fetchReport(units.map((u) => u.id));
   };

@@ -75,7 +75,45 @@ export default function HistorialBoletos() {
     }
 
     const { data } = await query;
-    if (data) setTickets(data);
+    if (data) {
+      // For used tickets, fetch route info from validation logs
+      if (filter === "used" && data.length > 0) {
+        const ticketIds = data.map((t: any) => t.id);
+        const { data: logs } = await (supabase
+          .from("logs_validacion_qr") as any)
+          .select("qr_ticket_id, producto_id")
+          .in("qr_ticket_id", ticketIds)
+          .eq("resultado", "valid");
+
+        const routeProductIds = new Set<string>();
+        const ticketRouteMap: Record<string, string> = {};
+        (logs || []).forEach((l: any) => {
+          if (l.producto_id && l.qr_ticket_id) {
+            ticketRouteMap[l.qr_ticket_id] = l.producto_id;
+            routeProductIds.add(l.producto_id);
+          }
+        });
+
+        // Fetch route names
+        const routeNameMap: Record<string, string> = {};
+        if (routeProductIds.size > 0) {
+          const { data: prods } = await supabase
+            .from("productos")
+            .select("id, nombre")
+            .in("id", Array.from(routeProductIds));
+          (prods || []).forEach((p: any) => {
+            routeNameMap[p.id] = p.nombre;
+          });
+        }
+
+        // Attach route name to tickets
+        data.forEach((t: any) => {
+          const prodId = ticketRouteMap[t.id];
+          t._ruta_nombre = prodId ? routeNameMap[prodId] || null : null;
+        });
+      }
+      setTickets(data);
+    }
     setLoading(false);
   };
 
@@ -214,6 +252,11 @@ export default function HistorialBoletos() {
                           : `Usado: ${formatDate(t.used_at || t.generated_at)}`
                         }
                       </p>
+                      {filter === "used" && t._ruta_nombre && (
+                        <p className="text-xs text-primary font-medium">
+                          🚌 {t._ruta_nombre}
+                        </p>
+                      )}
                     </>
                   )}
                 </CardContent>
