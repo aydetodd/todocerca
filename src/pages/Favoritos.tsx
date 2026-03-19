@@ -173,7 +173,6 @@ export default function Favoritos() {
             </CardContent>
           </Card>
         </div>
-        <NavigationBar />
       </div>
     );
   }
