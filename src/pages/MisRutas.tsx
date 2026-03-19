@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Bus, CarFront, Truck, Car, ArrowLeft, Loader2 } from 'lucide-react';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 
-type TransportType = 'publico' | 'foraneo' | 'privado' | 'taxi';
+type TransportType = 'publico' | 'foraneo' | 'privado';
 
 const TRANSPORT_CONFIG: Record<TransportType, {
   label: string;
