@@ -240,7 +240,7 @@ export default function GenerarQr() {
         </Card>
       </div>
 
-      <NavigationBar />
+      
     </div>
   );
 }

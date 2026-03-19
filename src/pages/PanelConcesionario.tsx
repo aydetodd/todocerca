@@ -1151,7 +1151,7 @@ export default function PanelConcesionario() {
         </Tabs>
       </div>
 
-      <NavigationBar />
+      
     </div>
   );
 }

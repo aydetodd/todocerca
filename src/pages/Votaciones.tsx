@@ -87,7 +87,7 @@ export default function Votaciones() {
         )}
       </main>
 
-      <NavigationBar />
+      
     </div>
   );
 }

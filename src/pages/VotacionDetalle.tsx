@@ -915,7 +915,7 @@ export default function VotacionDetalle() {
         </DialogContent>
       </Dialog>
 
-      <NavigationBar />
+      
     </div>
   );
 }

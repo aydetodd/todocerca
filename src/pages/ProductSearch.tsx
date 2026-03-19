@@ -1271,7 +1271,7 @@ const ProductSearch = () => {
         )}
       </main>
 
-      <NavigationBar />
+      
 
       <MessagingPanel
         isOpen={isMessagingOpen}

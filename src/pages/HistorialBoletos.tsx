@@ -223,7 +223,7 @@ export default function HistorialBoletos() {
         )}
       </div>
 
-      <NavigationBar />
+      
     </div>
   );
 }

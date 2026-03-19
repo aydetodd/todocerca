@@ -210,7 +210,7 @@ const MessagesInbox = () => {
         receiverName={selectedChat?.name}
       />
 
-      <NavigationBar />
+      
     </div>
   );
 };

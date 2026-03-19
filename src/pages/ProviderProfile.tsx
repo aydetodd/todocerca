@@ -781,7 +781,7 @@ const ProviderProfile = () => {
         </Dialog>
         </div>
       </main>
-      <NavigationBar />
+      
     </div>
   );
 };

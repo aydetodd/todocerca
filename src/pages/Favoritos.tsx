@@ -308,7 +308,7 @@ export default function Favoritos() {
             )}
           </div>
 
-          <NavigationBar />
+          
         </div>
       )}
 

@@ -169,7 +169,7 @@ export default function ComprarBoletos() {
         </Button>
       </div>
 
-      <NavigationBar />
+      
     </div>
   );
 }

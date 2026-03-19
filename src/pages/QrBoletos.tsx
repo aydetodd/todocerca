@@ -202,7 +202,7 @@ export default function QrBoletos() {
         </DialogContent>
       </Dialog>
 
-      <NavigationBar />
+      
     </div>
   );
 }
