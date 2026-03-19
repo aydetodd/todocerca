@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GlobalHeader } from '@/components/GlobalHeader';
-import { NavigationBar } from '@/components/NavigationBar';
+
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useContacts } from '@/hooks/useContacts';
 import { MessagingPanel } from '@/components/MessagingPanel';
