@@ -45,17 +45,32 @@ const TrackingMap = ({
   const [allPopupsOpen, setAllPopupsOpen] = useState(false);
 
   useEffect(() => {
+    const container = document.getElementById('tracking-map');
+    if (!container) return;
+
+    // Limpiar instancia previa de Leaflet si existe en el contenedor
+    if ((container as any)._leaflet_id) {
+      delete (container as any)._leaflet_id;
+      container.innerHTML = '';
+    }
+
     if (!mapRef.current) {
       // Inicializar mapa centrado en México
       mapRef.current = L.map('tracking-map', { attributionControl: false }).setView([23.6345, -102.5528], 5);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
+
+      // Invalidar tamaño después de que el contenedor esté listo
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 200);
     }
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        hasInitializedView.current = false;
       }
     };
   }, []);
