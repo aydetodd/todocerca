@@ -44,6 +44,7 @@ export function routeNameToId(name: string | null | undefined): string | null {
   // Fuzzy: check if the name contains "manga" (case insensitive)
   const lower = name.toLowerCase();
   if (lower.includes('manga') && (lower.includes('1') || lower.includes('l1'))) return 'L1_MANGA';
+  if (lower.includes('bachoco') && (lower.includes('17') || lower.includes('l17'))) return 'L17_BACHOCO';
   // Also try case-insensitive direct match
   const lowerMap = Object.entries(ROUTE_NAME_MAP).find(([key]) => key.toLowerCase() === lower);
   if (lowerMap) return lowerMap[1];
