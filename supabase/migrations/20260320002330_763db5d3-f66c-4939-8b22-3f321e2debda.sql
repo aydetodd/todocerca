@@ -1,0 +1,1 @@
+UPDATE verificaciones_concesionario SET estado = 'approved', updated_at = now() WHERE id = 'd6656618-2172-44a2-bd2e-beb11000e60a';
