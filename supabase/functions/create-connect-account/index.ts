@@ -24,26 +24,37 @@ serve(async (req) => {
 
   try {
     // Authenticate user
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Usuario no autenticado");
+
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("Usuario no autenticado");
 
-    const { proveedor_id } = await req.json();
-    if (!proveedor_id) throw new Error("ID de proveedor requerido");
+    const payload = await req.json().catch(() => ({}));
+    const requestedProveedorId = payload?.proveedor_id ?? payload?.concesionario_id ?? null;
 
-    // Verify user owns this proveedor
-    const { data: proveedor, error: provError } = await supabaseAdmin
+    // Always resolve proveedor from authenticated owner to avoid mismatched IDs from client
+    const { data: ownedProviders, error: ownedProvidersError } = await supabaseAdmin
       .from("proveedores")
       .select("id, user_id, nombre_negocio")
-      .eq("id", proveedor_id)
       .eq("user_id", user.id)
-      .single();
+      .limit(5);
 
-    if (provError || !proveedor) {
+    if (ownedProvidersError || !ownedProviders?.length) {
       throw new Error("No tienes acceso a este proveedor");
     }
+
+    const proveedor = requestedProveedorId
+      ? ownedProviders.find((p: any) => p.id === requestedProveedorId)
+      : ownedProviders[0];
+
+    if (!proveedor) {
+      throw new Error("No tienes acceso a este proveedor");
+    }
+
+    const proveedor_id = proveedor.id;
 
     // Check if verification is approved
     const { data: verificacion } = await supabaseAdmin
