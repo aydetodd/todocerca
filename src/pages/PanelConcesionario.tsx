@@ -357,7 +357,18 @@ export default function PanelConcesionario() {
       const { data, error } = await supabase.functions.invoke("create-connect-account", {
         body: { proveedor_id: proveedor.id },
       });
-      if (error) throw error;
+
+      if (error) {
+        let message = "Error al crear cuenta Stripe";
+        try {
+          const payload = await error.context.json();
+          if (payload?.error) message = payload.error;
+        } catch {
+          if (error.message) message = error.message;
+        }
+        throw new Error(message);
+      }
+
       if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
       toast.error(err.message || "Error al crear cuenta Stripe");
