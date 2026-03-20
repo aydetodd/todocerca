@@ -31,6 +31,7 @@ import TaxiDriverRequests from '@/components/TaxiDriverRequests';
 import { Link } from 'react-router-dom';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
+import AdminVerificaciones from '@/components/AdminVerificaciones';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
@@ -371,6 +372,11 @@ export default function Panel() {
                     {/* Bandeja de respuestas del canal TodoCerca */}
                     <div className="pt-3 border-t">
                       <SystemInbox />
+                    </div>
+
+                    {/* Gestión de verificaciones de concesionarios */}
+                    <div className="pt-3 border-t">
+                      <AdminVerificaciones />
                     </div>
                   </>
                 )}
