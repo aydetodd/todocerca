@@ -373,6 +373,11 @@ export default function Panel() {
                     <div className="pt-3 border-t">
                       <SystemInbox />
                     </div>
+
+                    {/* Gestión de verificaciones de concesionarios */}
+                    <div className="pt-3 border-t">
+                      <AdminVerificaciones />
+                    </div>
                   </>
                 )}
                 
