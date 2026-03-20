@@ -38,7 +38,7 @@ serve(async (req) => {
     // Always resolve proveedor from authenticated owner to avoid mismatched IDs from client
     const { data: ownedProviders, error: ownedProvidersError } = await supabaseAdmin
       .from("proveedores")
-      .select("id, user_id, nombre_negocio")
+      .select("id, user_id, nombre")
       .eq("user_id", user.id)
       .limit(5);
 
@@ -94,7 +94,7 @@ serve(async (req) => {
           transfers: { requested: true },
         },
         business_profile: {
-          name: proveedor.nombre_negocio,
+          name: proveedor.nombre,
           mcc: "4111", // Local/suburban commuter passenger transportation
         },
       });
