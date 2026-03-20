@@ -29,6 +29,11 @@ const ROUTE_NAME_MAP: Record<string, string> = {
   'Línea 1 Manga': 'L1_MANGA',
   'Ruta 1 - La manga': 'L1_MANGA',
   'Ruta 1 - La Manga': 'L1_MANGA',
+  'Línea 17 - Bachoco': 'L17_BACHOCO',
+  'L17 Bachoco': 'L17_BACHOCO',
+  'Línea 17 Bachoco': 'L17_BACHOCO',
+  'Ruta 17 - Bachoco': 'L17_BACHOCO',
+  'Ruta 17 Bachoco': 'L17_BACHOCO',
   // Add more as GeoJSON files are created
 };
 
