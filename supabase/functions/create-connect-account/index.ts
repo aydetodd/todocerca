@@ -61,7 +61,7 @@ serve(async (req) => {
       .from("verificaciones_concesionario")
       .select("estado")
       .eq("concesionario_id", proveedor_id)
-      .eq("estado", "aprobado")
+      .eq("estado", "approved")
       .single();
 
     if (!verificacion) {
