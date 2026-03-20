@@ -355,7 +355,7 @@ export default function PanelConcesionario() {
   const handleStripeConnect = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("create-connect-account", {
-        body: { concesionario_id: proveedor.id },
+        body: { proveedor_id: proveedor.id },
       });
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
