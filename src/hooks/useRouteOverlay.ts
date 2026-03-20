@@ -16,6 +16,7 @@ interface RouteGeoJSON {
 // Map route IDs to GeoJSON file paths
 const ROUTE_FILES: Record<string, string> = {
   'L1_MANGA': '/data/rutas/L1_MANGA.geojson',
+  'L17_BACHOCO': '/data/rutas/L17_BACHOCO.geojson',
 };
 
 /**
