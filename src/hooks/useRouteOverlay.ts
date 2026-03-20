@@ -16,6 +16,7 @@ interface RouteGeoJSON {
 // Map route IDs to GeoJSON file paths
 const ROUTE_FILES: Record<string, string> = {
   'L1_MANGA': '/data/rutas/L1_MANGA.geojson',
+  'L17_BACHOCO': '/data/rutas/L17_BACHOCO.geojson',
 };
 
 /**
@@ -28,6 +29,11 @@ const ROUTE_NAME_MAP: Record<string, string> = {
   'Línea 1 Manga': 'L1_MANGA',
   'Ruta 1 - La manga': 'L1_MANGA',
   'Ruta 1 - La Manga': 'L1_MANGA',
+  'Línea 17 - Bachoco': 'L17_BACHOCO',
+  'L17 Bachoco': 'L17_BACHOCO',
+  'Línea 17 Bachoco': 'L17_BACHOCO',
+  'Ruta 17 - Bachoco': 'L17_BACHOCO',
+  'Ruta 17 Bachoco': 'L17_BACHOCO',
   // Add more as GeoJSON files are created
 };
 
@@ -38,6 +44,7 @@ export function routeNameToId(name: string | null | undefined): string | null {
   // Fuzzy: check if the name contains "manga" (case insensitive)
   const lower = name.toLowerCase();
   if (lower.includes('manga') && (lower.includes('1') || lower.includes('l1'))) return 'L1_MANGA';
+  if (lower.includes('bachoco') && (lower.includes('17') || lower.includes('l17'))) return 'L17_BACHOCO';
   // Also try case-insensitive direct match
   const lowerMap = Object.entries(ROUTE_NAME_MAP).find(([key]) => key.toLowerCase() === lower);
   if (lowerMap) return lowerMap[1];
