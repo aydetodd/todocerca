@@ -31,6 +31,7 @@ import TaxiDriverRequests from '@/components/TaxiDriverRequests';
 import { Link } from 'react-router-dom';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
+import AdminVerificaciones from '@/components/AdminVerificaciones';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
