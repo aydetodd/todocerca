@@ -38,7 +38,7 @@ serve(async (req) => {
     // Always resolve proveedor from authenticated owner to avoid mismatched IDs from client
     const { data: ownedProviders, error: ownedProvidersError } = await supabaseAdmin
       .from("proveedores")
-      .select("id, user_id, nombre_negocio")
+      .select("id, user_id, nombre")
       .eq("user_id", user.id)
       .limit(5);
 
