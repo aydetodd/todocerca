@@ -94,7 +94,7 @@ serve(async (req) => {
           transfers: { requested: true },
         },
         business_profile: {
-          name: proveedor.nombre_negocio,
+          name: proveedor.nombre,
           mcc: "4111", // Local/suburban commuter passenger transportation
         },
       });
