@@ -191,11 +191,8 @@ export default function ValidarQr() {
 
   const handleDownloadCSV = async () => {
     if (!user) return;
-    try {
-      const now = new Date();
-      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-      const todayStr = hermosillo.toISOString().split("T")[0];
-      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayStr = getHermosilloToday();
+      const todayStart = getHermosilloTodayStart();
 
       const { data } = await supabase
         .from("logs_validacion_qr")
