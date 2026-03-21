@@ -425,7 +425,7 @@ export default function DriverProfilePanel() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const companiesData: DriverCompanyData[] = [];
 
       await Promise.all(
