@@ -191,6 +191,7 @@ export default function ValidarQr() {
 
   const handleDownloadCSV = async () => {
     if (!user) return;
+    try {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
