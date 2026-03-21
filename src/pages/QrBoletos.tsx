@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ShoppingCart, QrCode, ArrowRight, Send } from "lucide-react";
+import { ShoppingCart, QrCode, ArrowRight, Send, Share2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useContacts } from "@/hooks/useContacts";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function QrBoletos() {
   const { user, loading: authLoading } = useAuth();
