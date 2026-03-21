@@ -147,7 +147,7 @@ export default function QrBoletos() {
     });
   };
 
-  const handleTransfer = async () => {
+  const handleTransfer = async (mode: 'external' | 'internal', receiverId?: string, receiverName?: string) => {
     if (!firstActiveTicket) return;
     try {
       const shortCode = firstActiveTicket.token.slice(-6).toUpperCase();
@@ -166,45 +166,91 @@ export default function QrBoletos() {
       if (error) throw error;
 
       setShowQrDialog(false);
+      setShowTransferOptions(false);
 
       const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nToken: ${firstActiveTicket.token}\nVálido por 24 horas.\n\nMuestra este QR al chofer para pagar tu pasaje.`;
 
-      let shared = false;
-      try {
-        if (navigator.share && qrBlob) {
-          const file = new File([qrBlob], `qr-boleto-${shortCode}.png`, { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: "QR Boleto Digital", text: shareText, files: [file] });
-            shared = true;
-          } else {
+      if (mode === 'internal' && receiverId) {
+        // Send via internal messaging
+        setSendingInternal(true);
+        try {
+          const { error: msgError } = await supabase
+            .from('messages')
+            .insert({
+              sender_id: user!.id,
+              receiver_id: receiverId,
+              message: shareText,
+              is_panic: false,
+            });
+          
+          if (msgError) throw msgError;
+          
+          setShowContactPicker(false);
+          toast.success(`QR enviado a ${receiverName || 'contacto'} por mensaje interno`);
+        } catch (e: any) {
+          // Cancel transfer if internal send fails
+          await supabase.functions.invoke("cancel-transfer", {
+            body: { ticket_id: firstActiveTicket.id },
+          });
+          toast.error("Error al enviar mensaje interno");
+        } finally {
+          setSendingInternal(false);
+        }
+      } else {
+        // External share
+        let shared = false;
+        try {
+          if (navigator.share && qrBlob) {
+            const file = new File([qrBlob], `qr-boleto-${shortCode}.png`, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: "QR Boleto Digital", text: shareText, files: [file] });
+              shared = true;
+            } else {
+              await navigator.share({ title: "QR Boleto Digital", text: shareText });
+              shared = true;
+            }
+          } else if (navigator.share) {
             await navigator.share({ title: "QR Boleto Digital", text: shareText });
             shared = true;
+          } else {
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            window.open(whatsappUrl, "_blank");
+            shared = true;
           }
-        } else if (navigator.share) {
-          await navigator.share({ title: "QR Boleto Digital", text: shareText });
-          shared = true;
-        } else {
-          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-          window.open(whatsappUrl, "_blank");
-          shared = true;
+        } catch {
+          // Share was cancelled or failed
         }
-      } catch {
-        // Share was cancelled or failed
-      }
 
-      if (!shared) {
-        await supabase.functions.invoke("cancel-transfer", {
-          body: { ticket_id: firstActiveTicket.id },
-        });
-        toast.info("Transferencia cancelada");
-      } else {
-        toast.success("QR transferido. Válido por 24 horas.");
+        if (!shared) {
+          await supabase.functions.invoke("cancel-transfer", {
+            body: { ticket_id: firstActiveTicket.id },
+          });
+          toast.info("Transferencia cancelada");
+        } else {
+          toast.success("QR transferido. Válido por 24 horas.");
+        }
       }
 
       fetchActiveQrs();
     } catch (error: any) {
       toast.error(error.message || "Error al transferir");
     }
+  };
+
+  // Merge conversations and contacts into a unique list for the picker
+  const getContactList = () => {
+    const map = new Map<string, { id: string; name: string }>();
+    conversations.forEach(c => {
+      if (c.sender_id !== '00000000-0000-0000-0000-000000000001') {
+        map.set(c.sender_id, { id: c.sender_id, name: c.sender_apodo });
+      }
+    });
+    contacts.forEach((c: any) => {
+      if (c.contact_user_id && !map.has(c.contact_user_id)) {
+        map.set(c.contact_user_id, { id: c.contact_user_id, name: c.contact_name || 'Contacto' });
+      }
+    });
+    return Array.from(map.values());
   };
 
   if (authLoading || loading) {
