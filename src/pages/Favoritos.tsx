@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFavoritos, Favorito } from '@/hooks/useFavoritos';
+import { getHermosilloToday } from '@/lib/utils';
 import { GlobalHeader } from '@/components/GlobalHeader';
 
 import { Card, CardContent } from '@/components/ui/card';
