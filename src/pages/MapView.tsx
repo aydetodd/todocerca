@@ -7,6 +7,7 @@ import { StatusControl } from '@/components/StatusControl';
 
 import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
+import { getHermosilloToday } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Users, Route } from 'lucide-react';
