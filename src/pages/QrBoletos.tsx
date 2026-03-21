@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ShoppingCart, QrCode, ArrowRight, Send } from "lucide-react";
+import { ShoppingCart, QrCode, ArrowRight, Send, Share2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useContacts } from "@/hooks/useContacts";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function QrBoletos() {
   const { user, loading: authLoading } = useAuth();
@@ -18,7 +21,12 @@ export default function QrBoletos() {
   const [activeQrCount, setActiveQrCount] = useState(0);
   const [firstActiveTicket, setFirstActiveTicket] = useState<any>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
+  const [showTransferOptions, setShowTransferOptions] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [sendingInternal, setSendingInternal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { conversations } = useUnreadMessages();
+  const { contacts } = useContacts();
 
   useEffect(() => {
     const purchase = searchParams.get("purchase");
@@ -139,7 +147,7 @@ export default function QrBoletos() {
     });
   };
 
-  const handleTransfer = async () => {
+  const handleTransfer = async (mode: 'external' | 'internal', receiverId?: string, receiverName?: string) => {
     if (!firstActiveTicket) return;
     try {
       const shortCode = firstActiveTicket.token.slice(-6).toUpperCase();
@@ -158,45 +166,91 @@ export default function QrBoletos() {
       if (error) throw error;
 
       setShowQrDialog(false);
+      setShowTransferOptions(false);
 
       const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nToken: ${firstActiveTicket.token}\nVálido por 24 horas.\n\nMuestra este QR al chofer para pagar tu pasaje.`;
 
-      let shared = false;
-      try {
-        if (navigator.share && qrBlob) {
-          const file = new File([qrBlob], `qr-boleto-${shortCode}.png`, { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: "QR Boleto Digital", text: shareText, files: [file] });
-            shared = true;
-          } else {
+      if (mode === 'internal' && receiverId) {
+        // Send via internal messaging
+        setSendingInternal(true);
+        try {
+          const { error: msgError } = await supabase
+            .from('messages')
+            .insert({
+              sender_id: user!.id,
+              receiver_id: receiverId,
+              message: shareText,
+              is_panic: false,
+            });
+          
+          if (msgError) throw msgError;
+          
+          setShowContactPicker(false);
+          toast.success(`QR enviado a ${receiverName || 'contacto'} por mensaje interno`);
+        } catch (e: any) {
+          // Cancel transfer if internal send fails
+          await supabase.functions.invoke("cancel-transfer", {
+            body: { ticket_id: firstActiveTicket.id },
+          });
+          toast.error("Error al enviar mensaje interno");
+        } finally {
+          setSendingInternal(false);
+        }
+      } else {
+        // External share
+        let shared = false;
+        try {
+          if (navigator.share && qrBlob) {
+            const file = new File([qrBlob], `qr-boleto-${shortCode}.png`, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: "QR Boleto Digital", text: shareText, files: [file] });
+              shared = true;
+            } else {
+              await navigator.share({ title: "QR Boleto Digital", text: shareText });
+              shared = true;
+            }
+          } else if (navigator.share) {
             await navigator.share({ title: "QR Boleto Digital", text: shareText });
             shared = true;
+          } else {
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            window.open(whatsappUrl, "_blank");
+            shared = true;
           }
-        } else if (navigator.share) {
-          await navigator.share({ title: "QR Boleto Digital", text: shareText });
-          shared = true;
-        } else {
-          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-          window.open(whatsappUrl, "_blank");
-          shared = true;
+        } catch {
+          // Share was cancelled or failed
         }
-      } catch {
-        // Share was cancelled or failed
-      }
 
-      if (!shared) {
-        await supabase.functions.invoke("cancel-transfer", {
-          body: { ticket_id: firstActiveTicket.id },
-        });
-        toast.info("Transferencia cancelada");
-      } else {
-        toast.success("QR transferido. Válido por 24 horas.");
+        if (!shared) {
+          await supabase.functions.invoke("cancel-transfer", {
+            body: { ticket_id: firstActiveTicket.id },
+          });
+          toast.info("Transferencia cancelada");
+        } else {
+          toast.success("QR transferido. Válido por 24 horas.");
+        }
       }
 
       fetchActiveQrs();
     } catch (error: any) {
       toast.error(error.message || "Error al transferir");
     }
+  };
+
+  // Merge conversations and contacts into a unique list for the picker
+  const getContactList = () => {
+    const map = new Map<string, { id: string; name: string }>();
+    conversations.forEach(c => {
+      if (c.sender_id !== '00000000-0000-0000-0000-000000000001') {
+        map.set(c.sender_id, { id: c.sender_id, name: c.sender_apodo });
+      }
+    });
+    contacts.forEach((c: any) => {
+      if (c.contact_user_id && !map.has(c.contact_user_id)) {
+        map.set(c.contact_user_id, { id: c.contact_user_id, name: c.contact_name || 'Contacto' });
+      }
+    });
+    return Array.from(map.values());
   };
 
   if (authLoading || loading) {
@@ -307,15 +361,79 @@ export default function QrBoletos() {
               <p className="text-xs text-muted-foreground">
                 Transporte Urbano - Hermosillo, Sonora
               </p>
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={handleTransfer}
-              >
-                <Send className="h-4 w-4 mr-2" /> Transferir QR
-              </Button>
+              {!showTransferOptions ? (
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => setShowTransferOptions(true)}
+                >
+                  <Send className="h-4 w-4 mr-2" /> Transferir QR
+                </Button>
+              ) : (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTransfer('external')}
+                  >
+                    <Share2 className="h-4 w-4 mr-1" /> Compartir
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setShowQrDialog(false);
+                      setShowContactPicker(true);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" /> Mensaje interno
+                  </Button>
+                </div>
+              )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Picker Dialog */}
+      <Dialog open={showContactPicker} onOpenChange={(open) => {
+        setShowContactPicker(open);
+        if (!open) setShowTransferOptions(false);
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enviar QR por mensaje</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Elige a quién enviar el boleto:</p>
+          <ScrollArea className="max-h-[300px]">
+            <div className="space-y-2">
+              {getContactList().length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No tienes contactos o conversaciones aún.
+                </p>
+              ) : (
+                getContactList().map((contact) => (
+                  <Button
+                    key={contact.id}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    disabled={sendingInternal}
+                    onClick={() => {
+                      // Re-open QR dialog briefly to generate image, then send
+                      setShowContactPicker(false);
+                      setShowQrDialog(true);
+                      setTimeout(() => {
+                        handleTransfer('internal', contact.id, contact.name);
+                      }, 300);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2 text-primary" />
+                    {contact.name}
+                  </Button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
