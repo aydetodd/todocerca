@@ -136,7 +136,7 @@ function SingleDriverPanel({
         });
       } else if (turnOn && data.vehicles.length > 0) {
         // Encender: asignar la primera ruta disponible (el usuario puede cambiarla después)
-        const today = new Date().toISOString().split('T')[0];
+        const today = getHermosilloToday();
         const firstVehicle = data.vehicles[0];
 
         const { error } = await supabase
