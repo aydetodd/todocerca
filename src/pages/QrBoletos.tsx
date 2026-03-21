@@ -159,7 +159,7 @@ export default function QrBoletos() {
 
       setShowQrDialog(false);
 
-      const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nVálido por 24 horas.\n\nMuestra este QR al chofer para pagar tu pasaje.`;
+      const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nToken: ${firstActiveTicket.token}\nVálido por 24 horas.\n\nMuestra este QR al chofer para pagar tu pasaje.`;
 
       let shared = false;
       try {
