@@ -508,7 +508,7 @@ export default function PanelConcesionario() {
         const u = unidadMap[d.unidad_id];
         return [
           String(i + 1),
-          (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
           new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
           u ? (u.numero_economico || u.nombre) : "",
           u?.placas || "",
