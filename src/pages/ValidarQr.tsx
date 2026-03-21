@@ -166,9 +166,9 @@ export default function ValidarQr() {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
-      const { data } = await supabase
-        .from("logs_validacion_qr")
-        .select("qr_ticket_id, created_at")
+      const { data } = await (supabase
+        .from("logs_validacion_qr") as any)
+        .select("qr_ticket_id, created_at, qr_tickets(token)")
         .eq("chofer_id", user.id)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
@@ -176,7 +176,7 @@ export default function ValidarQr() {
 
       if (data && data.length > 0) {
         setDailyTickets(data.map((d: any) => ({
-          short_code: (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          short_code: (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
           time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
         })));
       } else {
@@ -195,9 +195,9 @@ export default function ValidarQr() {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
-      const { data } = await supabase
-        .from("logs_validacion_qr")
-        .select("qr_ticket_id, created_at, unidad_id")
+      const { data } = await (supabase
+        .from("logs_validacion_qr") as any)
+        .select("qr_ticket_id, created_at, unidad_id, qr_tickets(token)")
         .eq("chofer_id", user.id)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
@@ -210,7 +210,7 @@ export default function ValidarQr() {
 
       const rows = data.map((d: any, i: number) => [
         String(i + 1),
-        (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+        (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
         new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
         "$9.00",
       ]);
