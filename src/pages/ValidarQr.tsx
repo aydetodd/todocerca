@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
+import { getHermosilloToday, getHermosilloTodayStart } from "@/lib/utils";
 
 type ValidationResult = {
   valid: boolean;
@@ -114,11 +115,8 @@ export default function ValidarQr() {
   const loadDriverAssignment = async () => {
     if (!user) return;
     try {
-      // Use Hermosillo time (UTC-7, no DST) for "today"
-      const now = new Date();
-      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-      const todayStr = hermosillo.toISOString().split("T")[0];
-      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayStr = getHermosilloToday();
+      const todayStart = getHermosilloTodayStart();
 
       // Find the driver record linked to this user
       const { data: chofer } = await supabase
@@ -165,10 +163,8 @@ export default function ValidarQr() {
     if (!user) return;
     setLoadingTickets(true);
     try {
-      const now = new Date();
-      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-      const todayStr = hermosillo.toISOString().split("T")[0];
-      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayStr = getHermosilloToday();
+      const todayStart = getHermosilloTodayStart();
 
       const { data } = await supabase
         .from("logs_validacion_qr")
@@ -196,10 +192,8 @@ export default function ValidarQr() {
   const handleDownloadCSV = async () => {
     if (!user) return;
     try {
-      const now = new Date();
-      const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-      const todayStr = hermosillo.toISOString().split("T")[0];
-      const todayStart = `${todayStr}T00:00:00-07:00`;
+      const todayStr = getHermosilloToday();
+      const todayStart = getHermosilloTodayStart();
 
       const { data } = await supabase
         .from("logs_validacion_qr")

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getHermosilloToday } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
@@ -135,7 +136,7 @@ function SingleDriverPanel({
         });
       } else if (turnOn && data.vehicles.length > 0) {
         // Encender: asignar la primera ruta disponible (el usuario puede cambiarla después)
-        const today = new Date().toISOString().split('T')[0];
+        const today = getHermosilloToday();
         const firstVehicle = data.vehicles[0];
 
         const { error } = await supabase
@@ -208,7 +209,7 @@ function SingleDriverPanel({
   const handleSelectRoute = async (vehicleId: string) => {
     try {
       setAssigning(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
 
       const { error } = await supabase
         .from('asignaciones_chofer')
@@ -424,7 +425,7 @@ export default function DriverProfilePanel() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const companiesData: DriverCompanyData[] = [];
 
       await Promise.all(

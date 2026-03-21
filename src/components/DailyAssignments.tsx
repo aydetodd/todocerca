@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
 import { supabase } from '@/integrations/supabase/client';
+import { getHermosilloToday } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -58,7 +59,7 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
   const [selectedRoute, setSelectedRoute] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getHermosilloToday();
 
   useEffect(() => {
     fetchData();

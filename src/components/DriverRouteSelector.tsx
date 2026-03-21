@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
+import { getHermosilloToday } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -163,7 +164,7 @@ export default function DriverRouteSelector() {
       setUnits((unitsRes.data || []) as Unit[]);
 
       // Check if there's already an assignment for today
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('id, producto_id, unidad_id, productos(nombre)')
@@ -206,7 +207,7 @@ export default function DriverRouteSelector() {
 
     try {
       setAssigning(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const unitId = selectedUnit || null;
 
       if (todayAssignment) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatUnitOption, formatUnitLabel } from '@/lib/unitDisplay';
 import { supabase } from '@/integrations/supabase/client';
+import { getHermosilloToday } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,7 @@ export default function PrivateRouteDrivers({
   const [savingAssignment, setSavingAssignment] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getHermosilloToday();
 
   useEffect(() => {
     fetchAll();

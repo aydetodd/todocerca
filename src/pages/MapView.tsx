@@ -7,6 +7,7 @@ import { StatusControl } from '@/components/StatusControl';
 
 import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
+import { getHermosilloToday } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Users, Route } from 'lucide-react';
@@ -261,7 +262,7 @@ export default function MapView() {
 
       if (!driver) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('producto_id, productos(nombre)')

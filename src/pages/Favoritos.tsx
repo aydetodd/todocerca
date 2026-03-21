@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFavoritos, Favorito } from '@/hooks/useFavoritos';
+import { getHermosilloToday } from '@/lib/utils';
 import { GlobalHeader } from '@/components/GlobalHeader';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -60,7 +61,7 @@ export default function Favoritos() {
           .map(f => f.producto!.id);
         
         if (privateRouteProductIds.length > 0) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getHermosilloToday();
           const { data: assignments } = await supabase
             .from('asignaciones_chofer')
             .select('producto_id')
