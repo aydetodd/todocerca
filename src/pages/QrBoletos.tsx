@@ -284,6 +284,7 @@ export default function QrBoletos() {
               <p className="text-xs text-muted-foreground">Muestra este código al chofer</p>
               <div className="bg-white p-4 rounded-xl inline-block">
                 <QRCodeSVG
+                  id="qr-code-svg"
                   value={firstActiveTicket.token}
                   size={200}
                   level="H"
