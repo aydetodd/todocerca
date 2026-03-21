@@ -21,7 +21,12 @@ export default function QrBoletos() {
   const [activeQrCount, setActiveQrCount] = useState(0);
   const [firstActiveTicket, setFirstActiveTicket] = useState<any>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
+  const [showTransferOptions, setShowTransferOptions] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [sendingInternal, setSendingInternal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { conversations } = useUnreadMessages();
+  const { contacts } = useContacts();
 
   useEffect(() => {
     const purchase = searchParams.get("purchase");
