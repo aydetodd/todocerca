@@ -209,7 +209,7 @@ function SingleDriverPanel({
   const handleSelectRoute = async (vehicleId: string) => {
     try {
       setAssigning(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
 
       const { error } = await supabase
         .from('asignaciones_chofer')
