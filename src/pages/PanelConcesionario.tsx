@@ -328,9 +328,9 @@ export default function PanelConcesionario() {
       const todayStart = `${todayStr}T00:00:00-07:00`;
       const todayEnd = `${todayStr}T23:59:59-07:00`;
 
-      const { data } = await supabase
-        .from("logs_validacion_qr")
-        .select("qr_ticket_id, created_at")
+      const { data } = await (supabase
+        .from("logs_validacion_qr") as any)
+        .select("qr_ticket_id, created_at, qr_tickets(token)")
         .eq("unidad_id", unidadId)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
@@ -339,7 +339,7 @@ export default function PanelConcesionario() {
 
       if (data && data.length > 0) {
         setUnidadTickets(data.map((d: any) => ({
-          short_code: (d.qr_ticket_id || "").slice(-6).toUpperCase(),
+          short_code: (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
           time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
         })));
       } else {
