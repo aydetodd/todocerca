@@ -33,3 +33,21 @@ export function formatCurrency(amount: number, locale: string = 'es-MX'): string
 
   return formatted;
 }
+
+/**
+ * Returns today's date string (YYYY-MM-DD) in Hermosillo timezone (UTC-7, no DST).
+ * All assignment fecha fields MUST use this to avoid timezone mismatches.
+ */
+export function getHermosilloToday(): string {
+  const now = new Date();
+  const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+  return hermosillo.toISOString().split('T')[0];
+}
+
+/**
+ * Returns the start-of-day ISO string for Hermosillo timezone.
+ * Useful for filtering records created today in Hermosillo time.
+ */
+export function getHermosilloTodayStart(): string {
+  return `${getHermosilloToday()}T00:00:00-07:00`;
+}
