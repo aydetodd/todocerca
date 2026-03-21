@@ -490,9 +490,9 @@ export default function PanelConcesionario() {
       const unidadMap: Record<string, any> = {};
       misUnidades.forEach((u: any) => { unidadMap[u.id] = u; });
 
-      const { data: logs } = await supabase
-        .from("logs_validacion_qr")
-        .select("qr_ticket_id, created_at, unidad_id")
+      const { data: logs } = await (supabase
+        .from("logs_validacion_qr") as any)
+        .select("qr_ticket_id, created_at, unidad_id, qr_tickets(token)")
         .in("unidad_id", unidadIds)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
