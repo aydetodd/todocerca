@@ -361,15 +361,79 @@ export default function QrBoletos() {
               <p className="text-xs text-muted-foreground">
                 Transporte Urbano - Hermosillo, Sonora
               </p>
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={handleTransfer}
-              >
-                <Send className="h-4 w-4 mr-2" /> Transferir QR
-              </Button>
+              {!showTransferOptions ? (
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => setShowTransferOptions(true)}
+                >
+                  <Send className="h-4 w-4 mr-2" /> Transferir QR
+                </Button>
+              ) : (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTransfer('external')}
+                  >
+                    <Share2 className="h-4 w-4 mr-1" /> Compartir
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setShowQrDialog(false);
+                      setShowContactPicker(true);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" /> Mensaje interno
+                  </Button>
+                </div>
+              )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Picker Dialog */}
+      <Dialog open={showContactPicker} onOpenChange={(open) => {
+        setShowContactPicker(open);
+        if (!open) setShowTransferOptions(false);
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enviar QR por mensaje</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Elige a quién enviar el boleto:</p>
+          <ScrollArea className="max-h-[300px]">
+            <div className="space-y-2">
+              {getContactList().length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No tienes contactos o conversaciones aún.
+                </p>
+              ) : (
+                getContactList().map((contact) => (
+                  <Button
+                    key={contact.id}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    disabled={sendingInternal}
+                    onClick={() => {
+                      // Re-open QR dialog briefly to generate image, then send
+                      setShowContactPicker(false);
+                      setShowQrDialog(true);
+                      setTimeout(() => {
+                        handleTransfer('internal', contact.id, contact.name);
+                      }, 300);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2 text-primary" />
+                    {contact.name}
+                  </Button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
