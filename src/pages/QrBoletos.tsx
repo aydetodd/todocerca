@@ -57,9 +57,101 @@ export default function QrBoletos() {
     }
   };
 
+  const generateQrImage = (token: string, shortCode: string): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('No canvas context'));
+
+      canvas.width = 600;
+      canvas.height = 820;
+
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.roundRect(0, 0, 600, 820, 20);
+      ctx.fill();
+
+      // Header bar
+      ctx.fillStyle = '#1e40af';
+      ctx.roundRect(0, 0, 600, 80, [20, 20, 0, 0]);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🚌 QR Boleto Digital', 300, 50);
+
+      // Subtitle
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillText('Transporte Urbano - Hermosillo, Sonora', 300, 115);
+
+      // Render QR from existing SVG
+      const svgEl = document.getElementById('qr-code-svg');
+      if (!svgEl) return reject(new Error('QR SVG not found'));
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const img = new Image();
+      img.onload = () => {
+        // QR white background
+        ctx.fillStyle = '#f9fafb';
+        ctx.roundRect(100, 135, 400, 400, 16);
+        ctx.fill();
+        ctx.drawImage(img, 120, 155, 360, 360);
+
+        // Short code
+        ctx.fillStyle = '#111827';
+        ctx.font = 'bold 40px monospace';
+        ctx.fillText(`#${shortCode}`, 300, 580);
+
+        // Price
+        ctx.fillStyle = '#2563eb';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillText('$9.00 MXN', 300, 625);
+
+        // Validity
+        ctx.fillStyle = '#dc2626';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillText('⏰ Válido por 24 horas', 300, 665);
+
+        // Instructions
+        ctx.fillStyle = '#374151';
+        ctx.font = '16px Arial, sans-serif';
+        ctx.fillText('Muestra este QR al chofer para pagar tu pasaje', 300, 710);
+
+        // UUID small
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '11px monospace';
+        ctx.fillText(token, 300, 750);
+
+        // Footer
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fillRect(40, 770, 520, 1);
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '12px Arial, sans-serif';
+        ctx.fillText('TodoCerca - todocerca.mx', 300, 800);
+
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to generate image'));
+        }, 'image/png');
+      };
+      img.onerror = reject;
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
+  };
+
   const handleTransfer = async () => {
     if (!firstActiveTicket) return;
     try {
+      const shortCode = firstActiveTicket.token.slice(-6).toUpperCase();
+      
+      // Generate QR image BEFORE marking as transferred (while SVG is still visible)
+      let qrBlob: Blob | null = null;
+      try {
+        qrBlob = await generateQrImage(firstActiveTicket.token, shortCode);
+      } catch (e) {
+        console.warn('Could not generate QR image:', e);
+      }
+
       const { data, error } = await supabase.functions.invoke("transfer-ticket", {
         body: { ticket_id: firstActiveTicket.id },
       });
@@ -67,11 +159,20 @@ export default function QrBoletos() {
 
       setShowQrDialog(false);
 
-      const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nVálido por 24 horas.\n\nMuestra este código al chofer para pagar tu pasaje.`;
+      const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nVálido por 24 horas.\n\nMuestra este QR al chofer para pagar tu pasaje.`;
 
       let shared = false;
       try {
-        if (navigator.share) {
+        if (navigator.share && qrBlob) {
+          const file = new File([qrBlob], `qr-boleto-${shortCode}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: "QR Boleto Digital", text: shareText, files: [file] });
+            shared = true;
+          } else {
+            await navigator.share({ title: "QR Boleto Digital", text: shareText });
+            shared = true;
+          }
+        } else if (navigator.share) {
           await navigator.share({ title: "QR Boleto Digital", text: shareText });
           shared = true;
         } else {
@@ -84,7 +185,6 @@ export default function QrBoletos() {
       }
 
       if (!shared) {
-        // Revert the transfer since sharing failed
         await supabase.functions.invoke("cancel-transfer", {
           body: { ticket_id: firstActiveTicket.id },
         });
