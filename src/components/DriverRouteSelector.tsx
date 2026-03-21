@@ -207,7 +207,7 @@ export default function DriverRouteSelector() {
 
     try {
       setAssigning(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const unitId = selectedUnit || null;
 
       if (todayAssignment) {
