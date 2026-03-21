@@ -75,19 +75,29 @@ export default function GenerarQr() {
       });
       if (error) throw error;
 
-      toast.success("QR marcado para transferir. Válido por 24 horas.");
-      
-      // Share via Web Share API or WhatsApp
       const shareText = `🚌 QR Boleto Digital - Transporte Urbano Hermosillo\n\nCódigo: ${data.short_code}\nVálido por 24 horas.\n\nMuestra este código al chofer para pagar tu pasaje.`;
-      
-      if (navigator.share) {
-        await navigator.share({
-          title: "QR Boleto Digital",
-          text: shareText,
+
+      let shared = false;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "QR Boleto Digital", text: shareText });
+          shared = true;
+        } else {
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+          window.open(whatsappUrl, "_blank");
+          shared = true;
+        }
+      } catch {
+        // Share was cancelled or failed
+      }
+
+      if (!shared) {
+        await supabase.functions.invoke("cancel-transfer", {
+          body: { ticket_id: ticketId },
         });
+        toast.info("Transferencia cancelada");
       } else {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-        window.open(whatsappUrl, "_blank");
+        toast.success("QR transferido. Válido por 24 horas.");
       }
 
       fetchActiveTickets();
