@@ -164,7 +164,7 @@ export default function DriverRouteSelector() {
       setUnits((unitsRes.data || []) as Unit[]);
 
       // Check if there's already an assignment for today
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('id, producto_id, unidad_id, productos(nombre)')
