@@ -262,7 +262,7 @@ export default function MapView() {
 
       if (!driver) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('producto_id, productos(nombre)')

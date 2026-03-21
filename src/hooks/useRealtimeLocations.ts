@@ -205,7 +205,7 @@ export const useRealtimeLocations = () => {
     });
 
     // Fetch today's driver assignments to get the REAL route name
-    const today = new Date().toISOString().split('T')[0];
+    const today = getHermosilloToday();
     const driverIds = activeDrivers?.map(d => d.id) || [];
 
     let driverAssignmentMap = new Map<string, DriverAssignment[]>();

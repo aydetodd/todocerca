@@ -59,7 +59,7 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
   const [selectedRoute, setSelectedRoute] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getHermosilloToday();
 
   useEffect(() => {
     fetchData();

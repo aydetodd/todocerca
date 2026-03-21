@@ -61,7 +61,7 @@ export default function Favoritos() {
           .map(f => f.producto!.id);
         
         if (privateRouteProductIds.length > 0) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getHermosilloToday();
           const { data: assignments } = await supabase
             .from('asignaciones_chofer')
             .select('producto_id')

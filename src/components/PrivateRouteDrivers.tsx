@@ -83,7 +83,7 @@ export default function PrivateRouteDrivers({
   const [savingAssignment, setSavingAssignment] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getHermosilloToday();
 
   useEffect(() => {
     fetchAll();
