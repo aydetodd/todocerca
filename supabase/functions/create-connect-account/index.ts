@@ -114,8 +114,8 @@ serve(async (req) => {
     // Create onboarding link
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${req.headers.get("origin")}/dashboard/transporte-publico/verificacion?stripe=refresh`,
-      return_url: `${req.headers.get("origin")}/dashboard/transporte-publico/qr-boletos?stripe=success`,
+      refresh_url: `${req.headers.get("origin")}/panel-concesionario?stripe=refresh`,
+      return_url: `${req.headers.get("origin")}/panel-concesionario?stripe=success`,
       type: "account_onboarding",
     });
 
