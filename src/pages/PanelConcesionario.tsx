@@ -98,6 +98,190 @@ export default function PanelConcesionario() {
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
 
+  const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Tiempo de espera agotado al cargar ${label}`));
+      }, ms);
+
+      promise
+        .then((result) => {
+          clearTimeout(timeoutId);
+          resolve(result);
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        });
+    });
+  };
+
+  const loadOperationalStats = async (provId: string) => {
+    const { data: misUnidades } = await withTimeout(
+      supabase
+        .from("unidades_empresa")
+        .select("id, nombre, numero_economico, placas, descripcion")
+        .eq("proveedor_id", provId)
+        .neq("transport_type", "taxi"),
+      12000,
+      "unidades"
+    );
+
+    if (!misUnidades || misUnidades.length === 0) {
+      setIngresosUnidad([]);
+      setStats((prev) => ({
+        ...prev,
+        hoy: 0,
+        hoyAnterior: 0,
+        semana: 0,
+        semanaAnterior: 0,
+        totalMes: 0,
+        mes: 0,
+        mesAnterior: 0,
+        totalUnidades: 0,
+      }));
+      return;
+    }
+
+    const unidadIds = misUnidades.map((u: any) => u.id);
+
+    // Use Hermosillo time (UTC-7, no DST)
+    const now = new Date();
+    const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+    const todayStr = hermosillo.toISOString().split("T")[0];
+    const todayStart = `${todayStr}T00:00:00-07:00`;
+    const todayEnd = `${todayStr}T23:59:59-07:00`;
+
+    // Yesterday
+    const yesterday = new Date(hermosillo.getTime() - 86400000);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    const yesterdayStart = `${yesterdayStr}T00:00:00-07:00`;
+    const yesterdayEnd = `${yesterdayStr}T23:59:59-07:00`;
+
+    // Current week (Mon-Sun)
+    const dayOfWeek = hermosillo.getUTCDay(); // 0=Sun
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const mondayDate = new Date(hermosillo.getTime() - mondayOffset * 86400000);
+    const weekStartStr = mondayDate.toISOString().split("T")[0];
+    const currentWeekStart = `${weekStartStr}T00:00:00-07:00`;
+
+    // Previous week (Mon-Sun)
+    const prevMondayDate = new Date(mondayDate.getTime() - 7 * 86400000);
+    const prevSundayDate = new Date(mondayDate.getTime() - 86400000);
+    const prevWeekStart = `${prevMondayDate.toISOString().split("T")[0]}T00:00:00-07:00`;
+    const prevWeekEnd = `${prevSundayDate.toISOString().split("T")[0]}T23:59:59-07:00`;
+
+    // Current month
+    const monthStart = `${todayStr.slice(0, 7)}-01T00:00:00-07:00`;
+
+    // Previous month
+    const curYear = parseInt(todayStr.slice(0, 4));
+    const curMonth = parseInt(todayStr.slice(5, 7));
+    const prevMonthYear = curMonth === 1 ? curYear - 1 : curYear;
+    const prevMonthNum = curMonth === 1 ? 12 : curMonth - 1;
+    const prevMonthStr = `${prevMonthYear}-${String(prevMonthNum).padStart(2, "0")}`;
+    const prevMonthStart = `${prevMonthStr}-01T00:00:00-07:00`;
+    // Last day of previous month
+    const lastDayPrev = new Date(curYear, curMonth - 1, 0).getDate();
+    const prevMonthEnd = `${prevMonthStr}-${lastDayPrev}T23:59:59-07:00`;
+
+    // Format labels for previous periods
+    const diasSemana = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+    const meses = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const labelHoyAnterior = `${diasSemana[yesterday.getUTCDay()]} ${yesterday.getUTCDate()}`;
+    const prevWeekLabel = `${prevMondayDate.getUTCDate()}/${prevMondayDate.getUTCMonth() + 1} - ${prevSundayDate.getUTCDate()}/${prevSundayDate.getUTCMonth() + 1}`;
+    const labelMesAnterior = meses[prevMonthNum];
+
+    // Single query for all period calculations
+    const [logsPeriodoRes, asignacionesRes] = await withTimeout(
+      Promise.all([
+        supabase
+          .from("logs_validacion_qr")
+          .select("unidad_id, created_at")
+          .in("unidad_id", unidadIds)
+          .eq("resultado", "valid")
+          .gte("created_at", prevMonthStart)
+          .lte("created_at", todayEnd),
+        supabase
+          .from("asignaciones_chofer")
+          .select("unidad_id, chofer_id, choferes_empresa(nombre)")
+          .in("unidad_id", unidadIds)
+          .eq("fecha", todayStr),
+      ]),
+      15000,
+      "estadísticas"
+    );
+
+    const logs = logsPeriodoRes.data || [];
+
+    const todayStartMs = Date.parse(todayStart);
+    const todayEndMs = Date.parse(todayEnd);
+    const yesterdayStartMs = Date.parse(yesterdayStart);
+    const yesterdayEndMs = Date.parse(yesterdayEnd);
+    const currentWeekStartMs = Date.parse(currentWeekStart);
+    const prevWeekStartMs = Date.parse(prevWeekStart);
+    const prevWeekEndMs = Date.parse(prevWeekEnd);
+    const monthStartMs = Date.parse(monthStart);
+    const prevMonthStartMs = Date.parse(prevMonthStart);
+    const prevMonthEndMs = Date.parse(prevMonthEnd);
+
+    const choferMap: Record<string, string> = {};
+    (asignacionesRes.data || []).forEach((a: any) => {
+      if (a.unidad_id && a.choferes_empresa?.nombre) {
+        choferMap[a.unidad_id] = a.choferes_empresa.nombre;
+      }
+    });
+
+    const countMap: Record<string, number> = {};
+    let logsAyerCount = 0;
+    let logsSemanaCount = 0;
+    let logsSemanaAntCount = 0;
+    let logsMesCount = 0;
+    let logsMesAntCount = 0;
+
+    logs.forEach((log: any) => {
+      const createdAtMs = Date.parse(log.created_at);
+
+      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs && log.unidad_id) {
+        countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
+      }
+      if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) logsAyerCount += 1;
+      if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) logsSemanaCount += 1;
+      if (createdAtMs >= prevWeekStartMs && createdAtMs <= prevWeekEndMs) logsSemanaAntCount += 1;
+      if (createdAtMs >= monthStartMs && createdAtMs <= todayEndMs) logsMesCount += 1;
+      if (createdAtMs >= prevMonthStartMs && createdAtMs <= prevMonthEndMs) logsMesAntCount += 1;
+    });
+
+    const ingresos: IngresoUnidad[] = misUnidades
+      .map((u: any) => ({
+        unidad_id: u.id,
+        numero_economico: u.numero_economico || u.nombre,
+        placas: u.placas,
+        descripcion: u.descripcion,
+        chofer_nombre: choferMap[u.id] || null,
+        boletos_hoy: countMap[u.id] || 0,
+        ingresos_hoy: (countMap[u.id] || 0) * 9,
+      }))
+      .sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
+
+    setIngresosUnidad(ingresos);
+
+    const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
+    setStats({
+      hoy: totalBoletosHoy,
+      hoyAnterior: logsAyerCount,
+      labelHoyAnterior,
+      semana: logsSemanaCount,
+      semanaAnterior: logsSemanaAntCount,
+      labelSemanaAnterior: prevWeekLabel,
+      totalMes: logsMesCount * 9,
+      mes: logsMesCount,
+      mesAnterior: logsMesAntCount * 9,
+      labelMesAnterior,
+      totalUnidades: misUnidades.length,
+    });
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -107,13 +291,26 @@ export default function PanelConcesionario() {
   }, [user, authLoading]);
 
   const fetchAll = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
     try {
       // Get provider
-      const { data: prov } = await supabase
-        .from("proveedores")
-        .select("*")
-        .eq("user_id", user!.id)
-        .single();
+      const { data: prov, error: provError } = await withTimeout(
+        supabase
+          .from("proveedores")
+          .select("*")
+          .eq("user_id", user.id)
+          .single(),
+        12000,
+        "perfil de concesionario"
+      );
+
+      if (provError) throw provError;
 
       if (!prov) {
         toast.error("No tienes un perfil de proveedor/concesionario");
@@ -124,14 +321,20 @@ export default function PanelConcesionario() {
 
       // Fetch everything in parallel
       // Pre-fetch IDs needed for nested queries
-      const [verifIdsRes, cuentaIdsRes] = await Promise.all([
-        supabase.from("verificaciones_concesionario").select("id").eq("concesionario_id", prov.id),
-        supabase.from("cuentas_conectadas").select("id").eq("concesionario_id", prov.id),
-      ]);
+      const [verifIdsRes, cuentaIdsRes] = await withTimeout(
+        Promise.all([
+          supabase.from("verificaciones_concesionario").select("id").eq("concesionario_id", prov.id),
+          supabase.from("cuentas_conectadas").select("id").eq("concesionario_id", prov.id),
+        ]),
+        12000,
+        "IDs de verificación y cuenta"
+      );
+
       const verifIds = verifIdsRes.data?.map((v: any) => v.id) || [];
       const cuentaIds = cuentaIdsRes.data?.map((c: any) => c.id) || [];
 
-      const [verifRes, unidadesRes, liqRes, fraudeRes, cuentaRes] = await Promise.all([
+      const [verifRes, unidadesRes, liqRes, cuentaRes] = await withTimeout(
+        Promise.all([
         supabase
           .from("verificaciones_concesionario")
           .select("*")
@@ -139,10 +342,12 @@ export default function PanelConcesionario() {
           .order("fecha_solicitud", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        supabase
-          .from("detalles_verificacion_unidad")
-          .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
-          .in("verificacion_id", verifIds.length > 0 ? verifIds : ["__none__"]),
+        verifIds.length > 0
+          ? supabase
+              .from("detalles_verificacion_unidad")
+              .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
+              .in("verificacion_id", verifIds)
+          : Promise.resolve({ data: [], error: null }),
         cuentaIds.length > 0
           ? supabase
               .from("liquidaciones_diarias")
@@ -152,157 +357,44 @@ export default function PanelConcesionario() {
               .limit(30)
           : Promise.resolve({ data: [], error: null }),
         supabase
-          .from("intentos_fraude")
-          .select("id, fecha_intento, severidad, tipo_fraude, distancia_km, tiempo_transcurrido_minutos, total_intentos_usuario, resuelto")
-          .order("fecha_intento", { ascending: false })
-          .limit(50),
-        supabase
           .from("cuentas_conectadas")
           .select("*")
           .eq("concesionario_id", prov.id)
           .maybeSingle(),
-      ]);
+      ]),
+      15000,
+      "datos base del panel"
+    );
 
       if (verifRes.data) setVerificacion(verifRes.data as any);
       if (unidadesRes.data) setUnidades(unidadesRes.data as any);
       if (liqRes.data) setLiquidaciones(liqRes.data as any);
-      if (fraudeRes.data) setFraudes(fraudeRes.data as any);
       if (cuentaRes.data) setCuentaConectada(cuentaRes.data);
 
-      // Calculate stats from liquidaciones (for historical) and logs (for today)
-      const monthStart = new Date().toISOString().slice(0, 7) + "-01";
-      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-
-      if (liqRes.data && liqRes.data.length > 0) {
-        const weekLiqs = (liqRes.data as any[]).filter((l) => l.fecha_liquidacion >= weekAgo);
-        const monthLiqs = (liqRes.data as any[]).filter((l) => l.fecha_liquidacion >= monthStart);
-
-        setStats((prev) => ({
-          ...prev,
-          semana: weekLiqs.reduce((s: number, l: any) => s + l.total_boletos, 0),
-          totalMes: monthLiqs.reduce((s: number, l: any) => s + Number(l.monto_neto), 0),
-        }));
+      try {
+        await loadOperationalStats(prov.id);
+      } catch (statsError) {
+        console.error("Error loading stats:", statsError);
+        toast.error("El panel cargó parcialmente; las estadísticas tardaron demasiado.");
       }
-      // Fetch per-unit revenue for today
-      const { data: misUnidades } = await supabase
-        .from("unidades_empresa")
-        .select("id, nombre, numero_economico, placas, descripcion")
-        .eq("proveedor_id", prov.id)
-        .neq("transport_type", "taxi"); // Protocolo 2: Taxi oculto
 
-      if (misUnidades && misUnidades.length > 0) {
-        const unidadIds = misUnidades.map((u: any) => u.id);
-        // Use Hermosillo time (UTC-7, no DST)
-        const now = new Date();
-        const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-        const todayStr = hermosillo.toISOString().split("T")[0];
-        const todayStart = `${todayStr}T00:00:00-07:00`;
-        const todayEnd = `${todayStr}T23:59:59-07:00`;
-
-        // Yesterday
-        const yesterday = new Date(hermosillo.getTime() - 86400000);
-        const yesterdayStr = yesterday.toISOString().split("T")[0];
-        const yesterdayStart = `${yesterdayStr}T00:00:00-07:00`;
-        const yesterdayEnd = `${yesterdayStr}T23:59:59-07:00`;
-
-        // Current week (Mon-Sun)
-        const dayOfWeek = hermosillo.getUTCDay(); // 0=Sun
-        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const mondayDate = new Date(hermosillo.getTime() - mondayOffset * 86400000);
-        const weekStartStr = mondayDate.toISOString().split("T")[0];
-        const currentWeekStart = `${weekStartStr}T00:00:00-07:00`;
-
-        // Previous week (Mon-Sun)
-        const prevMondayDate = new Date(mondayDate.getTime() - 7 * 86400000);
-        const prevSundayDate = new Date(mondayDate.getTime() - 86400000);
-        const prevWeekStart = `${prevMondayDate.toISOString().split("T")[0]}T00:00:00-07:00`;
-        const prevWeekEnd = `${prevSundayDate.toISOString().split("T")[0]}T23:59:59-07:00`;
-
-        // Current month
-        const monthStart = `${todayStr.slice(0, 7)}-01T00:00:00-07:00`;
-
-        // Previous month
-        const curYear = parseInt(todayStr.slice(0, 4));
-        const curMonth = parseInt(todayStr.slice(5, 7));
-        const prevMonthYear = curMonth === 1 ? curYear - 1 : curYear;
-        const prevMonthNum = curMonth === 1 ? 12 : curMonth - 1;
-        const prevMonthStr = `${prevMonthYear}-${String(prevMonthNum).padStart(2, '0')}`;
-        const prevMonthStart = `${prevMonthStr}-01T00:00:00-07:00`;
-        // Last day of previous month
-        const lastDayPrev = new Date(curYear, curMonth - 1, 0).getDate();
-        const prevMonthEnd = `${prevMonthStr}-${lastDayPrev}T23:59:59-07:00`;
-
-        // Format labels for previous periods
-        const diasSemana = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-        const meses = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        const labelHoyAnterior = diasSemana[yesterday.getUTCDay()] + ' ' + yesterday.getUTCDate();
-        const prevWeekLabel = `${prevMondayDate.getUTCDate()}/${prevMondayDate.getUTCMonth()+1} - ${prevSundayDate.getUTCDate()}/${prevSundayDate.getUTCMonth()+1}`;
-        const labelMesAnterior = meses[prevMonthNum];
-
-        // Fetch all counts in parallel
-        const [
-          logsHoyRes,
-          logsAyerRes,
-          logsSemanaRes,
-          logsSemanaAntRes,
-          logsMesRes,
-          logsMesAntRes,
-          asignacionesRes,
-        ] = await Promise.all([
-          supabase.from("logs_validacion_qr").select("unidad_id, chofer_id").in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", todayStart).lte("created_at", todayEnd),
-          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", yesterdayStart).lte("created_at", yesterdayEnd),
-          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", currentWeekStart).lte("created_at", todayEnd),
-          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", prevWeekStart).lte("created_at", prevWeekEnd),
-          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", monthStart).lte("created_at", todayEnd),
-          supabase.from("logs_validacion_qr").select("id", { count: "exact", head: true }).in("unidad_id", unidadIds).eq("resultado", "valid").gte("created_at", prevMonthStart).lte("created_at", prevMonthEnd),
-          supabase.from("asignaciones_chofer").select("unidad_id, chofer_id, choferes_empresa(nombre)").in("unidad_id", unidadIds).eq("fecha", todayStr),
-        ]);
-
-        const logsHoy = logsHoyRes.data || [];
-        const choferMap: Record<string, string> = {};
-        (asignacionesRes.data || []).forEach((a: any) => {
-          if (a.unidad_id && a.choferes_empresa?.nombre) {
-            choferMap[a.unidad_id] = a.choferes_empresa.nombre;
+      // Non-critical data should not block the initial render
+      void supabase
+        .from("intentos_fraude")
+        .select("id, fecha_intento, severidad, tipo_fraude, distancia_km, tiempo_transcurrido_minutos, total_intentos_usuario, resuelto")
+        .order("fecha_intento", { ascending: false })
+        .limit(50)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Error loading fraud data:", error);
+            return;
           }
-        });
-
-        const countMap: Record<string, number> = {};
-        logsHoy.forEach((log: any) => {
-          if (log.unidad_id) countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
-        });
-
-        const ingresos: IngresoUnidad[] = misUnidades.map((u: any) => ({
-          unidad_id: u.id,
-          numero_economico: u.numero_economico || u.nombre,
-          placas: u.placas,
-          descripcion: u.descripcion,
-          chofer_nombre: choferMap[u.id] || null,
-          boletos_hoy: countMap[u.id] || 0,
-          ingresos_hoy: (countMap[u.id] || 0) * 9,
-        })).sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
-
-        setIngresosUnidad(ingresos);
-
-        const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
-        const logsMesCount = logsMesRes.count || 0;
-        setStats({
-          hoy: totalBoletosHoy,
-          hoyAnterior: logsAyerRes.count || 0,
-          labelHoyAnterior: labelHoyAnterior,
-          semana: logsSemanaRes.count || 0,
-          semanaAnterior: logsSemanaAntRes.count || 0,
-          labelSemanaAnterior: prevWeekLabel,
-          totalMes: logsMesCount * 9,
-          mes: logsMesCount,
-          mesAnterior: (logsMesAntRes.count || 0) * 9,
-          labelMesAnterior: labelMesAnterior,
-          totalUnidades: misUnidades.length,
-        });
-      } else {
-        setStats(prev => ({ ...prev, totalUnidades: 0 }));
-      }
+          if (data) setFraudes(data as any);
+        })
+        .catch((error) => console.error("Error loading fraud data:", error));
     } catch (err) {
       console.error("Error loading panel:", err);
+      toast.error("No se pudo cargar el panel. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
