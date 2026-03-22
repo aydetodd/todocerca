@@ -98,13 +98,13 @@ export default function PanelConcesionario() {
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
 
-  const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Tiempo de espera agotado al cargar ${label}`));
       }, ms);
 
-      promise
+      Promise.resolve(promise)
         .then((result) => {
           clearTimeout(timeoutId);
           resolve(result);
@@ -379,19 +379,28 @@ export default function PanelConcesionario() {
       }
 
       // Non-critical data should not block the initial render
-      void supabase
-        .from("intentos_fraude")
-        .select("id, fecha_intento, severidad, tipo_fraude, distancia_km, tiempo_transcurrido_minutos, total_intentos_usuario, resuelto")
-        .order("fecha_intento", { ascending: false })
-        .limit(50)
-        .then(({ data, error }) => {
+      void (async () => {
+        try {
+          const { data, error } = await withTimeout(
+            supabase
+              .from("intentos_fraude")
+              .select("id, fecha_intento, severidad, tipo_fraude, distancia_km, tiempo_transcurrido_minutos, total_intentos_usuario, resuelto")
+              .order("fecha_intento", { ascending: false })
+              .limit(50),
+            10000,
+            "intentos de fraude"
+          );
+
           if (error) {
             console.error("Error loading fraud data:", error);
             return;
           }
+
           if (data) setFraudes(data as any);
-        })
-        .catch((error) => console.error("Error loading fraud data:", error));
+        } catch (error) {
+          console.error("Error loading fraud data:", error);
+        }
+      })();
     } catch (err) {
       console.error("Error loading panel:", err);
       toast.error("No se pudo cargar el panel. Inténtalo de nuevo.");
