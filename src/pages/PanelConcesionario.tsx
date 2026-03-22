@@ -123,6 +123,14 @@ export default function PanelConcesionario() {
       setProveedor(prov);
 
       // Fetch everything in parallel
+      // Pre-fetch IDs needed for nested queries
+      const [verifIdsRes, cuentaIdsRes] = await Promise.all([
+        supabase.from("verificaciones_concesionario").select("id").eq("concesionario_id", prov.id),
+        supabase.from("cuentas_conectadas").select("id").eq("concesionario_id", prov.id),
+      ]);
+      const verifIds = verifIdsRes.data?.map((v: any) => v.id) || [];
+      const cuentaIds = cuentaIdsRes.data?.map((c: any) => c.id) || [];
+
       const [verifRes, unidadesRes, liqRes, fraudeRes, cuentaRes] = await Promise.all([
         supabase
           .from("verificaciones_concesionario")
@@ -130,33 +138,19 @@ export default function PanelConcesionario() {
           .eq("concesionario_id", prov.id)
           .order("fecha_solicitud", { ascending: false })
           .limit(1)
-          .single(),
+          .maybeSingle(),
         supabase
           .from("detalles_verificacion_unidad")
           .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
-          .in(
-            "verificacion_id",
-            (
-              await supabase
-                .from("verificaciones_concesionario")
-                .select("id")
-                .eq("concesionario_id", prov.id)
-            ).data?.map((v: any) => v.id) || []
-          ),
-        supabase
-          .from("liquidaciones_diarias")
-          .select("*")
-          .in(
-            "cuenta_conectada_id",
-            (
-              await supabase
-                .from("cuentas_conectadas")
-                .select("id")
-                .eq("concesionario_id", prov.id)
-            ).data?.map((c: any) => c.id) || []
-          )
-          .order("fecha_liquidacion", { ascending: false })
-          .limit(30),
+          .in("verificacion_id", verifIds.length > 0 ? verifIds : ["__none__"]),
+        cuentaIds.length > 0
+          ? supabase
+              .from("liquidaciones_diarias")
+              .select("*")
+              .in("cuenta_conectada_id", cuentaIds)
+              .order("fecha_liquidacion", { ascending: false })
+              .limit(30)
+          : Promise.resolve({ data: [], error: null }),
         supabase
           .from("intentos_fraude")
           .select("id, fecha_intento, severidad, tipo_fraude, distancia_km, tiempo_transcurrido_minutos, total_intentos_usuario, resuelto")
@@ -166,7 +160,7 @@ export default function PanelConcesionario() {
           .from("cuentas_conectadas")
           .select("*")
           .eq("concesionario_id", prov.id)
-          .single(),
+          .maybeSingle(),
       ]);
 
       if (verifRes.data) setVerificacion(verifRes.data as any);
