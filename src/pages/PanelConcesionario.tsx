@@ -282,12 +282,29 @@ export default function PanelConcesionario() {
     });
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
       return;
     }
-    if (user) fetchAll();
+    if (user) {
+      fetchAll();
+
+      // Handle Stripe Connect return
+      const stripeParam = searchParams.get("stripe");
+      if (stripeParam === "success") {
+        toast.success("¡Registro en Stripe completado! Verificando estado...");
+        // Remove the param from the URL
+        setSearchParams({}, { replace: true });
+        // Re-fetch after a short delay to allow webhook to process
+        setTimeout(() => fetchAll(), 3000);
+      } else if (stripeParam === "refresh") {
+        toast.info("Completa tu registro en Stripe para recibir pagos.");
+        setSearchParams({}, { replace: true });
+      }
+    }
   }, [user, authLoading]);
 
   const fetchAll = async () => {
