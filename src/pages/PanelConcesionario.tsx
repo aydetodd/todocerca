@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
@@ -282,12 +282,29 @@ export default function PanelConcesionario() {
     });
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
       return;
     }
-    if (user) fetchAll();
+    if (user) {
+      fetchAll();
+
+      // Handle Stripe Connect return
+      const stripeParam = searchParams.get("stripe");
+      if (stripeParam === "success") {
+        toast.success("¡Registro en Stripe completado! Verificando estado...");
+        // Remove the param from the URL
+        setSearchParams({}, { replace: true });
+        // Re-fetch after a short delay to allow webhook to process
+        setTimeout(() => fetchAll(), 3000);
+      } else if (stripeParam === "refresh") {
+        toast.info("Completa tu registro en Stripe para recibir pagos.");
+        setSearchParams({}, { replace: true });
+      }
+    }
   }, [user, authLoading]);
 
   const fetchAll = async () => {
@@ -890,9 +907,25 @@ export default function PanelConcesionario() {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Estado:</span>
-                      <Badge className={cuentaConectada.pagos_habilitados ? "bg-green-600 text-white" : "bg-amber-500 text-white"}>
-                        {cuentaConectada.pagos_habilitados ? "Activa" : "Pendiente"}
+                      <Badge className={
+                        cuentaConectada.pagos_habilitados 
+                          ? "bg-green-600 text-white" 
+                          : cuentaConectada.estado_stripe === "en_revision"
+                            ? "bg-blue-500 text-white"
+                            : "bg-amber-500 text-white"
+                      }>
+                        {cuentaConectada.pagos_habilitados 
+                          ? "✅ Activa — Lista para recibir pagos" 
+                          : cuentaConectada.estado_stripe === "en_revision"
+                            ? "🔄 En revisión por Stripe"
+                            : "⏳ Pendiente de completar"}
                       </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Pagos:</span>
+                      <span className="text-sm">
+                        {cuentaConectada.pagos_habilitados ? "✅ Habilitados" : "❌ No habilitados"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Transferencias:</span>
@@ -900,6 +933,35 @@ export default function PanelConcesionario() {
                         {cuentaConectada.transferencias_habilitadas ? "✅ Habilitadas" : "❌ No habilitadas"}
                       </span>
                     </div>
+                    {cuentaConectada.stripe_account_id && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Cuenta:</span>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {cuentaConectada.stripe_account_id}
+                        </span>
+                      </div>
+                    )}
+                    {cuentaConectada.pagos_habilitados && cuentaConectada.transferencias_habilitadas && (
+                      <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-3 text-center">
+                        <CheckCircle2 className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                        <p className="text-sm font-medium text-green-400">
+                          ¡Tu cuenta está completamente configurada!
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Las liquidaciones diarias se depositarán automáticamente en tu cuenta CLABE.
+                        </p>
+                      </div>
+                    )}
+                    {cuentaConectada.requisitos_pendientes && Array.isArray(cuentaConectada.requisitos_pendientes) && cuentaConectada.requisitos_pendientes.length > 0 && (
+                      <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3">
+                        <p className="text-xs font-medium text-amber-400 mb-1">Requisitos pendientes:</p>
+                        <ul className="text-xs text-muted-foreground space-y-0.5">
+                          {(cuentaConectada.requisitos_pendientes as string[]).map((req: string, i: number) => (
+                            <li key={i}>• {req}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {!cuentaConectada.pagos_habilitados && (
                       <Button onClick={handleStripeConnect} className="w-full" size="sm">
                         Completar configuración de Stripe
