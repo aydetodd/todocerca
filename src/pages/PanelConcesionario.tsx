@@ -340,8 +340,8 @@ export default function PanelConcesionario() {
         withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
       ]);
 
-      const verifData = verifResult.status === "fulfilled" ? verifResult.value.data : null;
-      const cuentaData = cuentaResult.status === "fulfilled" ? cuentaResult.value.data : null;
+      const verifData = verifResult.status === "fulfilled" ? (verifResult.value as any).data : null;
+      const cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any).data : null;
 
       if (verifData) setVerificacion(verifData as any);
       if (cuentaData) setCuentaConectada(cuentaData);
@@ -349,7 +349,7 @@ export default function PanelConcesionario() {
       // Load unidades using the verificacion ID
       if (verifData?.id) {
         try {
-          const { data: uData } = await withTimeout(
+           const { data: uData } = await withTimeout<any>(
             supabase.from("detalles_verificacion_unidad")
               .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
               .eq("verificacion_id", verifData.id), 8000, "unidades verificación");
@@ -360,7 +360,7 @@ export default function PanelConcesionario() {
       // Load liquidaciones if cuenta exists
       if (cuentaData?.id) {
         try {
-          const { data: liqData } = await withTimeout(
+           const { data: liqData } = await withTimeout<any>(
             supabase.from("liquidaciones_diarias").select("*")
               .eq("cuenta_conectada_id", cuentaData.id)
               .order("fecha_liquidacion", { ascending: false }).limit(30), 8000, "liquidaciones");
