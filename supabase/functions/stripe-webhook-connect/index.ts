@@ -46,9 +46,12 @@ serve(async (req) => {
 
       let estado = "pendiente";
       if (chargesEnabled && payoutsEnabled) {
-        estado = "activo";
+        estado = "active";
       } else if (detailsSubmitted) {
-        estado = "en_revision";
+        estado = "onboarding";
+      }
+      else {
+        estado = "pending";
       }
 
       // Get pending requirements

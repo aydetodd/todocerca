@@ -89,6 +89,11 @@ serve(async (req) => {
         type: "express",
         country: "MX",
         email: user.email,
+        settings: {
+          dashboard: {
+            display_name: proveedor.nombre,
+          },
+        },
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
@@ -102,11 +107,15 @@ serve(async (req) => {
       accountId = account.id;
 
       // Save connected account
-      await supabaseAdmin.from("cuentas_conectadas").upsert({
+      const { error: upsertError } = await supabaseAdmin.from("cuentas_conectadas").upsert({
         concesionario_id: proveedor_id,
         stripe_account_id: accountId,
-        estado_stripe: "pendiente",
+        estado_stripe: "pending",
       }, { onConflict: "concesionario_id" });
+
+      if (upsertError) {
+        console.error(`[CONNECT] Error saving account to DB:`, upsertError);
+      }
 
       console.log(`[CONNECT] Created Stripe account ${accountId} for proveedor ${proveedor_id}`);
     }
@@ -117,6 +126,9 @@ serve(async (req) => {
       refresh_url: `${req.headers.get("origin")}/panel-concesionario?stripe=refresh`,
       return_url: `${req.headers.get("origin")}/panel-concesionario?stripe=success`,
       type: "account_onboarding",
+      collection_options: {
+        fields: "eventually_due",
+      },
     });
 
     return new Response(JSON.stringify({ url: accountLink.url }), {

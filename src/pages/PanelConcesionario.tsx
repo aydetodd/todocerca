@@ -25,7 +25,7 @@ type Verificacion = {
   estado: string;
   fecha_solicitud: string;
   fecha_revision: string | null;
-  notas_admin: string | null;
+  admin_notas: string | null;
   total_unidades: number;
 };
 
@@ -313,80 +313,60 @@ export default function PanelConcesionario() {
       return;
     }
 
-    setLoading(true);
-
     try {
+      setLoading(true);
       // Get provider
       const { data: prov, error: provError } = await withTimeout(
         supabase
           .from("proveedores")
           .select("*")
           .eq("user_id", user.id)
-          .single(),
+          .maybeSingle(),
         12000,
         "perfil de concesionario"
       );
 
-      if (provError) throw provError;
-
-      if (!prov) {
+      if (provError || !prov) {
         toast.error("No tienes un perfil de proveedor/concesionario");
-        navigate("/dashboard");
+        setLoading(false);
+        navigate("/home");
         return;
       }
       setProveedor(prov);
 
-      // Fetch everything in parallel
-      // Pre-fetch IDs needed for nested queries
-      const [verifIdsRes, cuentaIdsRes] = await withTimeout(
-        Promise.all([
-          supabase.from("verificaciones_concesionario").select("id").eq("concesionario_id", prov.id),
-          supabase.from("cuentas_conectadas").select("id").eq("concesionario_id", prov.id),
-        ]),
-        12000,
-        "IDs de verificación y cuenta"
-      );
+      // Fetch core data in parallel with independent error handling
+      const [verifResult, cuentaResult] = await Promise.allSettled([
+        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("fecha_solicitud", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
+        withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
+      ]);
 
-      const verifIds = verifIdsRes.data?.map((v: any) => v.id) || [];
-      const cuentaIds = cuentaIdsRes.data?.map((c: any) => c.id) || [];
+      const verifData = verifResult.status === "fulfilled" ? (verifResult.value as any).data : null;
+      const cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any).data : null;
 
-      const [verifRes, unidadesRes, liqRes, cuentaRes] = await withTimeout(
-        Promise.all([
-        supabase
-          .from("verificaciones_concesionario")
-          .select("*")
-          .eq("concesionario_id", prov.id)
-          .order("fecha_solicitud", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        verifIds.length > 0
-          ? supabase
-              .from("detalles_verificacion_unidad")
+      if (verifData) setVerificacion(verifData as any);
+      if (cuentaData) setCuentaConectada(cuentaData);
+
+      // Load unidades using the verificacion ID
+      if (verifData?.id) {
+        try {
+           const { data: uData } = await withTimeout<any>(
+            supabase.from("detalles_verificacion_unidad")
               .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
-              .in("verificacion_id", verifIds)
-          : Promise.resolve({ data: [], error: null }),
-        cuentaIds.length > 0
-          ? supabase
-              .from("liquidaciones_diarias")
-              .select("*")
-              .in("cuenta_conectada_id", cuentaIds)
-              .order("fecha_liquidacion", { ascending: false })
-              .limit(30)
-          : Promise.resolve({ data: [], error: null }),
-        supabase
-          .from("cuentas_conectadas")
-          .select("*")
-          .eq("concesionario_id", prov.id)
-          .maybeSingle(),
-      ]),
-      15000,
-      "datos base del panel"
-    );
+              .eq("verificacion_id", verifData.id), 8000, "unidades verificación");
+          if (uData) setUnidades(uData as any);
+        } catch (e) { console.error("Error loading unidades:", e); }
+      }
 
-      if (verifRes.data) setVerificacion(verifRes.data as any);
-      if (unidadesRes.data) setUnidades(unidadesRes.data as any);
-      if (liqRes.data) setLiquidaciones(liqRes.data as any);
-      if (cuentaRes.data) setCuentaConectada(cuentaRes.data);
+      // Load liquidaciones if cuenta exists
+      if (cuentaData?.id) {
+        try {
+           const { data: liqData } = await withTimeout<any>(
+            supabase.from("liquidaciones_diarias").select("*")
+              .eq("cuenta_conectada_id", cuentaData.id)
+              .order("fecha_liquidacion", { ascending: false }).limit(30), 8000, "liquidaciones");
+          if (liqData) setLiquidaciones(liqData as any);
+        } catch (e) { console.error("Error loading liquidaciones:", e); }
+      }
 
       try {
         await loadOperationalStats(prov.id);
@@ -910,13 +890,13 @@ export default function PanelConcesionario() {
                       <Badge className={
                         cuentaConectada.pagos_habilitados 
                           ? "bg-green-600 text-white" 
-                          : cuentaConectada.estado_stripe === "en_revision"
+                          : cuentaConectada.estado_stripe === "onboarding"
                             ? "bg-blue-500 text-white"
                             : "bg-amber-500 text-white"
                       }>
                         {cuentaConectada.pagos_habilitados 
                           ? "✅ Activa — Lista para recibir pagos" 
-                          : cuentaConectada.estado_stripe === "en_revision"
+                          : cuentaConectada.estado_stripe === "onboarding"
                             ? "🔄 En revisión por Stripe"
                             : "⏳ Pendiente de completar"}
                       </Badge>
@@ -1011,10 +991,10 @@ export default function PanelConcesionario() {
                         </span>
                       </div>
                     )}
-                    {verificacion.notas_admin && (
+                    {verificacion.admin_notas && (
                       <div className="bg-muted rounded-lg p-3 text-sm">
                         <p className="font-medium text-foreground mb-1">Notas del administrador:</p>
-                        <p className="text-muted-foreground">{verificacion.notas_admin}</p>
+                        <p className="text-muted-foreground">{verificacion.admin_notas}</p>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
