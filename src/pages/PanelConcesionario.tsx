@@ -25,7 +25,7 @@ type Verificacion = {
   estado: string;
   fecha_solicitud: string;
   fecha_revision: string | null;
-  notas_admin: string | null;
+  admin_notas: string | null;
   total_unidades: number;
 };
 
@@ -910,13 +910,13 @@ export default function PanelConcesionario() {
                       <Badge className={
                         cuentaConectada.pagos_habilitados 
                           ? "bg-green-600 text-white" 
-                          : cuentaConectada.estado_stripe === "en_revision"
+                          : cuentaConectada.estado_stripe === "onboarding"
                             ? "bg-blue-500 text-white"
                             : "bg-amber-500 text-white"
                       }>
                         {cuentaConectada.pagos_habilitados 
                           ? "✅ Activa — Lista para recibir pagos" 
-                          : cuentaConectada.estado_stripe === "en_revision"
+                          : cuentaConectada.estado_stripe === "onboarding"
                             ? "🔄 En revisión por Stripe"
                             : "⏳ Pendiente de completar"}
                       </Badge>
@@ -1011,10 +1011,10 @@ export default function PanelConcesionario() {
                         </span>
                       </div>
                     )}
-                    {verificacion.notas_admin && (
+                    {verificacion.admin_notas && (
                       <div className="bg-muted rounded-lg p-3 text-sm">
                         <p className="font-medium text-foreground mb-1">Notas del administrador:</p>
-                        <p className="text-muted-foreground">{verificacion.notas_admin}</p>
+                        <p className="text-muted-foreground">{verificacion.admin_notas}</p>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
