@@ -400,6 +400,7 @@ export type Database = {
           concesionario_id: string
           created_at: string
           estado_stripe: string | null
+          frecuencia_liquidacion: string
           id: string
           info_bancaria: Json | null
           pagos_habilitados: boolean | null
@@ -412,6 +413,7 @@ export type Database = {
           concesionario_id: string
           created_at?: string
           estado_stripe?: string | null
+          frecuencia_liquidacion?: string
           id?: string
           info_bancaria?: Json | null
           pagos_habilitados?: boolean | null
@@ -424,6 +426,7 @@ export type Database = {
           concesionario_id?: string
           created_at?: string
           estado_stripe?: string | null
+          frecuencia_liquidacion?: string
           id?: string
           info_bancaria?: Json | null
           pagos_habilitados?: boolean | null
