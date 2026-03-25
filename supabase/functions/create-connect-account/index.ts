@@ -80,9 +80,59 @@ serve(async (req) => {
       .single();
 
     let accountId: string;
+    let syncOnly = payload?.sync_only === true;
 
     if (existing?.stripe_account_id) {
       accountId = existing.stripe_account_id;
+
+      // Always sync current status from Stripe
+      try {
+        const account = await stripe.accounts.retrieve(accountId);
+        const chargesEnabled = account.charges_enabled ?? false;
+        const payoutsEnabled = account.payouts_enabled ?? false;
+        const detailsSubmitted = account.details_submitted ?? false;
+
+        let estado = "pending";
+        if (chargesEnabled && payoutsEnabled) {
+          estado = "active";
+        } else if (detailsSubmitted) {
+          estado = "onboarding";
+        }
+
+        const pendingReqs = account.requirements?.currently_due || [];
+
+        const { error: syncError } = await supabaseAdmin
+          .from("cuentas_conectadas")
+          .update({
+            estado_stripe: estado,
+            pagos_habilitados: chargesEnabled,
+            transferencias_habilitadas: payoutsEnabled,
+            requisitos_pendientes: pendingReqs.length > 0 ? pendingReqs : null,
+          })
+          .eq("stripe_account_id", accountId);
+
+        if (syncError) {
+          console.error(`[CONNECT] Sync error:`, syncError);
+        } else {
+          console.log(`[CONNECT] Synced account ${accountId}: ${estado}, charges=${chargesEnabled}, payouts=${payoutsEnabled}`);
+        }
+
+        // If sync_only mode, return the synced status without creating a new link
+        if (syncOnly) {
+          return new Response(JSON.stringify({
+            synced: true,
+            estado,
+            pagos_habilitados: chargesEnabled,
+            transferencias_habilitadas: payoutsEnabled,
+            requisitos_pendientes: pendingReqs.length > 0 ? pendingReqs : null,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+      } catch (syncErr) {
+        console.error(`[CONNECT] Error syncing account:`, syncErr);
+      }
     } else {
       // Create Stripe Express account
       const account = await stripe.accounts.create({
@@ -120,7 +170,7 @@ serve(async (req) => {
       console.log(`[CONNECT] Created Stripe account ${accountId} for proveedor ${proveedor_id}`);
     }
 
-    // Create onboarding link
+    // Create onboarding link with Spanish locale
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${req.headers.get("origin")}/panel-concesionario?stripe=refresh`,
@@ -131,7 +181,10 @@ serve(async (req) => {
       },
     });
 
-    return new Response(JSON.stringify({ url: accountLink.url }), {
+    // Append locale=es for Spanish UI
+    const urlWithLocale = accountLink.url + (accountLink.url.includes("?") ? "&locale=es" : "?locale=es");
+
+    return new Response(JSON.stringify({ url: urlWithLocale }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
