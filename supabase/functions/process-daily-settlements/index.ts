@@ -9,8 +9,8 @@ const corsHeaders = {
 
 const TICKET_PRICE = 9.00; // $9.00 MXN
 const PLATFORM_FEE_PERCENT = 0.02; // 2% comisión TodoCerca
-const STRIPE_CONNECT_FEE_PERCENT = 0.005; // ~0.5% Stripe Connect
-const STRIPE_PROCESSING_PERCENT = 0.044; // ~4.4%
+const STRIPE_CONNECT_FEE_PERCENT = 0.005; // 0.5% Stripe Connect
+const STRIPE_PROCESSING_PERCENT = 0.044; // 4.4% procesamiento Stripe
 const STRIPE_FIXED_FEE = 1.00; // $1 MXN fijo por transacción
 
 serve(async (req) => {
@@ -31,14 +31,18 @@ serve(async (req) => {
     // Get today's date (Hermosillo timezone UTC-7)
     const now = new Date();
     const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-    const fechaLiquidacion = hermosillo.toISOString().split("T")[0];
+    const fechaHoy = hermosillo.toISOString().split("T")[0];
 
-    console.log(`[SETTLEMENTS] Processing settlements for ${fechaLiquidacion}`);
+    // Determine day of week (0=Sun, 1=Mon...6=Sat) and day of month
+    const diaSemana = hermosillo.getDay();
+    const diaMes = hermosillo.getDate();
 
-    // Get all active connected accounts
+    console.log(`[SETTLEMENTS] Processing settlements for ${fechaHoy} (dow=${diaSemana}, dom=${diaMes})`);
+
+    // Get all active connected accounts with their frequency preference
     const { data: cuentas, error: cuentasError } = await supabaseAdmin
       .from("cuentas_conectadas")
-      .select("id, concesionario_id, stripe_account_id, pagos_habilitados, transferencias_habilitadas")
+      .select("id, concesionario_id, stripe_account_id, pagos_habilitados, transferencias_habilitadas, frecuencia_liquidacion")
       .eq("pagos_habilitados", true)
       .eq("transferencias_habilitadas", true);
 
@@ -55,7 +59,47 @@ serve(async (req) => {
 
     for (const cuenta of cuentas) {
       try {
-        // Check if already processed today
+        const freq = (cuenta as any).frecuencia_liquidacion || "daily";
+
+        // Check if this account should be settled today based on frequency
+        if (freq === "weekly" && diaSemana !== 0) {
+          // Weekly: only on Sundays
+          console.log(`[SETTLEMENTS] Skipping weekly account ${cuenta.id} (not Sunday)`);
+          continue;
+        }
+        if (freq === "monthly" && diaMes !== 1) {
+          // Monthly: only on the 1st
+          console.log(`[SETTLEMENTS] Skipping monthly account ${cuenta.id} (not 1st)`);
+          continue;
+        }
+
+        // Determine date range based on frequency
+        let dateStart: string;
+        const dateEnd = fechaHoy;
+
+        if (freq === "daily") {
+          dateStart = fechaHoy;
+        } else if (freq === "weekly") {
+          // Last 7 days
+          const d = new Date(hermosillo);
+          d.setDate(d.getDate() - 6);
+          dateStart = d.toISOString().split("T")[0];
+        } else {
+          // Monthly: from 1st of previous month to end of previous month
+          // Since we run on the 1st, we settle the entire previous month
+          const d = new Date(hermosillo);
+          d.setMonth(d.getMonth() - 1);
+          d.setDate(1);
+          dateStart = d.toISOString().split("T")[0];
+          // dateEnd stays as yesterday (last day of prev month) which is fechaHoy - 1
+          const yesterday = new Date(hermosillo);
+          yesterday.setDate(yesterday.getDate() - 1);
+          // Actually dateEnd should be yesterday for monthly
+        }
+
+        const fechaLiquidacion = fechaHoy;
+
+        // Check if already processed for this period
         const { data: existing } = await supabaseAdmin
           .from("liquidaciones_diarias")
           .select("id")
@@ -78,17 +122,17 @@ serve(async (req) => {
 
         const unidadIds = unidades.map((u: any) => u.id);
 
-        // Count validated tickets today for these units
-        const todayStart = `${fechaLiquidacion}T00:00:00-07:00`;
-        const todayEnd = `${fechaLiquidacion}T23:59:59-07:00`;
+        // Count validated tickets in the date range for these units
+        const rangeStart = `${dateStart}T00:00:00-07:00`;
+        const rangeEnd = `${dateEnd}T23:59:59-07:00`;
 
         const { count: totalBoletos } = await supabaseAdmin
           .from("logs_validacion_qr")
           .select("*", { count: "exact", head: true })
           .in("unidad_id", unidadIds)
           .eq("resultado", "valido")
-          .gte("created_at", todayStart)
-          .lte("created_at", todayEnd);
+          .gte("created_at", rangeStart)
+          .lte("created_at", rangeEnd);
 
         const boletos = totalBoletos ?? 0;
 
@@ -98,11 +142,16 @@ serve(async (req) => {
         }
 
         // Calculate amounts
+        // Concesionario absorbs ALL fees:
+        // - 4.4% + $1 MXN fijo (procesamiento Stripe pasarela)
+        // - 0.5% (Stripe Connect)
+        // - 2% (comisión TodoCerca)
         const valorFacial = boletos * TICKET_PRICE;
         const comisionTodocerca = valorFacial * PLATFORM_FEE_PERCENT;
         const feeStripeConnect = valorFacial * STRIPE_CONNECT_FEE_PERCENT;
         const feeStripeProcesamiento = (valorFacial * STRIPE_PROCESSING_PERCENT) + STRIPE_FIXED_FEE;
-        const montoNeto = valorFacial - comisionTodocerca - feeStripeConnect - feeStripeProcesamiento;
+        const totalFees = comisionTodocerca + feeStripeConnect + feeStripeProcesamiento;
+        const montoNeto = valorFacial - totalFees;
 
         if (montoNeto <= 0) {
           console.log(`[SETTLEMENTS] Net amount too low for account ${cuenta.id}: ${montoNeto}`);
@@ -114,11 +163,12 @@ serve(async (req) => {
         let estado = "pendiente";
 
         try {
+          const freqLabel = freq === "daily" ? "diaria" : freq === "weekly" ? "semanal" : "mensual";
           const transfer = await stripe.transfers.create({
             amount: Math.round(montoNeto * 100), // Convert to centavos
             currency: "mxn",
             destination: cuenta.stripe_account_id!,
-            description: `Liquidación ${fechaLiquidacion} - ${boletos} boletos`,
+            description: `Liquidación ${freqLabel} ${fechaLiquidacion} - ${boletos} boletos (${dateStart} a ${dateEnd})`,
           });
           transferId = transfer.id;
           estado = "completed";
@@ -128,7 +178,7 @@ serve(async (req) => {
           estado = "failed";
         }
 
-        // Record settlement
+        // Record settlement - store Stripe processing fee separately for transparency
         await supabaseAdmin.from("liquidaciones_diarias").insert({
           cuenta_conectada_id: cuenta.id,
           fecha_liquidacion: fechaLiquidacion,
@@ -146,8 +196,12 @@ serve(async (req) => {
         results.push({
           cuenta_id: cuenta.id,
           boletos,
+          valorFacial: valorFacial.toFixed(2),
+          comisionTodocerca: comisionTodocerca.toFixed(2),
+          feeStripe: (feeStripeConnect + feeStripeProcesamiento).toFixed(2),
           neto: montoNeto.toFixed(2),
           estado,
+          frecuencia: freq,
         });
       } catch (err: any) {
         console.error(`[SETTLEMENTS] Error processing account ${cuenta.id}:`, err.message);

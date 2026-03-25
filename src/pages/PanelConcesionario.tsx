@@ -98,6 +98,8 @@ export default function PanelConcesionario() {
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [frecuenciaLiq, setFrecuenciaLiq] = useState<string>("daily");
+  const [savingFreq, setSavingFreq] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
