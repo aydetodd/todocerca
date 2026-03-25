@@ -346,7 +346,10 @@ export default function PanelConcesionario() {
       const cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any).data : null;
 
       if (verifData) setVerificacion(verifData as any);
-      if (cuentaData) setCuentaConectada(cuentaData);
+      if (cuentaData) {
+        setCuentaConectada(cuentaData);
+        setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
+      }
 
       // Load unidades using the verificacion ID
       if (verifData?.id) {
@@ -1238,11 +1241,11 @@ export default function PanelConcesionario() {
                           <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión TodoCerca (5%):</span>
+                          <span className="text-muted-foreground">Comisión TodoCerca (2%):</span>
                           <span className="text-destructive">-${Number(l.monto_comision_todocerca).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión Stripe:</span>
+                          <span className="text-muted-foreground">Comisión Stripe (4.4% + 0.5% + $1):</span>
                           <span className="text-destructive">-${Number(l.monto_fee_stripe_connect).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-bold pt-1 border-t border-border">
