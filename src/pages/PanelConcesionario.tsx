@@ -97,6 +97,7 @@ export default function PanelConcesionario() {
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
@@ -296,10 +297,9 @@ export default function PanelConcesionario() {
       const stripeParam = searchParams.get("stripe");
       if (stripeParam === "success") {
         toast.success("¡Registro en Stripe completado! Verificando estado...");
-        // Remove the param from the URL
         setSearchParams({}, { replace: true });
-        // Re-fetch after a short delay to allow webhook to process
-        setTimeout(() => fetchAll(), 3000);
+        // Sync Stripe status then reload
+        syncStripeStatus().then(() => fetchAll());
       } else if (stripeParam === "refresh") {
         toast.info("Completa tu registro en Stripe para recibir pagos.");
         setSearchParams({}, { replace: true });
@@ -463,7 +463,40 @@ export default function PanelConcesionario() {
 
       if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
+      console.error("Stripe connect error:", err);
       toast.error(err.message || "Error al crear cuenta Stripe");
+    }
+  };
+
+  const syncStripeStatus = async () => {
+    if (!proveedor?.id) return;
+    try {
+      setSyncing(true);
+      const { data, error } = await supabase.functions.invoke("create-connect-account", {
+        body: { proveedor_id: proveedor.id, sync_only: true },
+      });
+      if (error) {
+        console.error("Sync error:", error);
+        return;
+      }
+      if (data?.synced) {
+        setCuentaConectada((prev: any) => prev ? {
+          ...prev,
+          estado_stripe: data.estado,
+          pagos_habilitados: data.pagos_habilitados,
+          transferencias_habilitadas: data.transferencias_habilitadas,
+          requisitos_pendientes: data.requisitos_pendientes,
+        } : prev);
+        if (data.pagos_habilitados && data.transferencias_habilitadas) {
+          toast.success("¡Tu cuenta Stripe está activa y lista para recibir pagos!");
+        } else {
+          toast.info("Estado sincronizado. Stripe aún requiere información adicional.");
+        }
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -943,8 +976,19 @@ export default function PanelConcesionario() {
                       </div>
                     )}
                     {!cuentaConectada.pagos_habilitados && (
-                      <Button onClick={handleStripeConnect} className="w-full" size="sm">
-                        Completar configuración de Stripe
+                      <div className="space-y-2">
+                        <Button onClick={handleStripeConnect} className="w-full" size="sm">
+                          Completar configuración de Stripe
+                        </Button>
+                        <Button onClick={syncStripeStatus} variant="outline" className="w-full" size="sm" disabled={syncing}>
+                          {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                          {syncing ? "Sincronizando..." : "🔄 Sincronizar estado desde Stripe"}
+                        </Button>
+                      </div>
+                    )}
+                    {cuentaConectada.pagos_habilitados && cuentaConectada.transferencias_habilitadas && (
+                      <Button onClick={syncStripeStatus} variant="ghost" className="w-full" size="sm" disabled={syncing}>
+                        {syncing ? "Sincronizando..." : "🔄 Actualizar estado"}
                       </Button>
                     )}
                   </>
