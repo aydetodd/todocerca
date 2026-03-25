@@ -966,7 +966,7 @@ export default function PanelConcesionario() {
                           ¡Tu cuenta está completamente configurada!
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Las liquidaciones diarias se depositarán automáticamente en tu cuenta CLABE.
+                          Las liquidaciones se depositarán automáticamente en tu cuenta CLABE según la frecuencia que elijas.
                         </p>
                       </div>
                     )}
@@ -1195,6 +1195,71 @@ export default function PanelConcesionario() {
 
           {/* LIQUIDACIONES */}
           <TabsContent value="liquidaciones" className="space-y-3 mt-4">
+            {/* Frequency selector */}
+            {cuentaConectada && cuentaConectada.pagos_habilitados && (
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Frecuencia de liquidación</p>
+                      <p className="text-xs text-muted-foreground">Elige cada cuándo recibir tus depósitos</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "daily", label: "Diaria", desc: "Cada día" },
+                      { value: "weekly", label: "Semanal", desc: "Domingos" },
+                      { value: "monthly", label: "Mensual", desc: "Día 1" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setFrecuenciaLiq(opt.value)}
+                        className={`rounded-lg border p-2 text-center transition-colors ${
+                          frecuenciaLiq === opt.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        <p className="text-sm font-medium">{opt.label}</p>
+                        <p className="text-xs">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                  {frecuenciaLiq !== ((cuentaConectada as any).frecuencia_liquidacion || "daily") && (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      disabled={savingFreq}
+                      onClick={async () => {
+                        setSavingFreq(true);
+                        const { error } = await supabase
+                          .from("cuentas_conectadas")
+                          .update({ frecuencia_liquidacion: frecuenciaLiq } as any)
+                          .eq("id", cuentaConectada.id);
+                        setSavingFreq(false);
+                        if (error) {
+                          toast.error("Error al guardar frecuencia");
+                        } else {
+                          setCuentaConectada((prev: any) => ({ ...prev, frecuencia_liquidacion: frecuenciaLiq }));
+                          toast.success(`Frecuencia cambiada a ${frecuenciaLiq === "daily" ? "diaria" : frecuenciaLiq === "weekly" ? "semanal" : "mensual"}`);
+                        }
+                      }}
+                    >
+                      {savingFreq ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Guardar frecuencia
+                    </Button>
+                  )}
+                  <div className="bg-muted rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium text-foreground">Desglose de comisiones por boleto ($9.00):</p>
+                    <p>• Pasarela Stripe: 4.4% + $1.00 MXN fijo</p>
+                    <p>• Stripe Connect: 0.5%</p>
+                    <p>• TodoCerca: 2%</p>
+                    <p className="font-medium text-foreground pt-1">Total descuento: ~6.9% + $1.00 fijo</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {liquidaciones.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
