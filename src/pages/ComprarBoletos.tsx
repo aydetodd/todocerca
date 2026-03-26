@@ -16,7 +16,7 @@ const QUICK_OPTIONS = [5, 10, 20];
 export default function ComprarBoletos() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [quantity, setQuantity] = useState(5);
+  const [quantity, setQuantity] = useState(10);
   const [purchasing, setPurchasing] = useState(false);
 
   const total = quantity * TICKET_PRICE;
