@@ -2755,6 +2755,7 @@ export type Database = {
           metadata: Json | null
           monto_total: number
           qr_ticket_id: string | null
+          stripe_fee: number | null
           stripe_payment_id: string | null
           tipo: string
           user_id: string
@@ -2768,6 +2769,7 @@ export type Database = {
           metadata?: Json | null
           monto_total: number
           qr_ticket_id?: string | null
+          stripe_fee?: number | null
           stripe_payment_id?: string | null
           tipo: string
           user_id: string
@@ -2781,6 +2783,7 @@ export type Database = {
           metadata?: Json | null
           monto_total?: number
           qr_ticket_id?: string | null
+          stripe_fee?: number | null
           stripe_payment_id?: string | null
           tipo?: string
           user_id?: string

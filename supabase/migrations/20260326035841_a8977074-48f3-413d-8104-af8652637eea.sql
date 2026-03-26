@@ -1,0 +1,1 @@
+ALTER TABLE transacciones_boletos ADD COLUMN stripe_fee numeric DEFAULT 0;
