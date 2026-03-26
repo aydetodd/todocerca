@@ -53,6 +53,28 @@ serve(async (req) => {
         throw new Error("Invalid metadata in session");
       }
 
+      // Get the actual Stripe fee from the payment intent's charge
+      let stripeFee = 0;
+      try {
+        const paymentIntentId = session.payment_intent as string;
+        if (paymentIntentId) {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+            expand: ["latest_charge"],
+          });
+          const charge = paymentIntent.latest_charge as Stripe.Charge;
+          if (charge?.balance_transaction) {
+            const balanceTx = await stripe.balanceTransactions.retrieve(
+              charge.balance_transaction as string
+            );
+            // fee_details contains the actual Stripe fee in centavos
+            stripeFee = balanceTx.fee / 100; // Convert from centavos to MXN
+            console.log(`[WEBHOOK-TICKETS] Actual Stripe fee: $${stripeFee.toFixed(2)} MXN`);
+          }
+        }
+      } catch (feeErr: any) {
+        console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
+      }
+
       console.log(`[WEBHOOK-TICKETS] Generating ${quantity} QR codes for user ${userId}`);
 
       // Generate QR tickets directly
@@ -100,7 +122,7 @@ serve(async (req) => {
           });
       }
 
-      // Record transaction
+      // Record transaction with actual Stripe fee
       await supabaseAdmin.from("transacciones_boletos").insert({
         user_id: userId,
         tipo: "compra",
@@ -109,9 +131,10 @@ serve(async (req) => {
         stripe_payment_id: session.payment_intent as string,
         estado: "completado",
         descripcion: `Compra de ${quantity} código${quantity > 1 ? 's' : ''} QR`,
+        stripe_fee: stripeFee,
       });
 
-      console.log(`[WEBHOOK-TICKETS] Successfully generated ${quantity} QR codes for user ${userId}`);
+      console.log(`[WEBHOOK-TICKETS] Successfully generated ${quantity} QR codes for user ${userId}, stripe_fee: $${stripeFee.toFixed(2)}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
