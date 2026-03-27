@@ -1315,11 +1315,37 @@ export default function PanelConcesionario() {
                   )}
                   <div className="bg-muted rounded-lg p-3 text-xs text-muted-foreground space-y-1">
                     <p className="font-medium text-foreground">Desglose de comisiones por boleto ($9.00):</p>
-                    <p>• Pasarela Stripe: 4.4% + $1.00 MXN fijo</p>
-                    <p>• Stripe Connect: 0.5%</p>
+                    <p>• Pasarela Stripe: 3.6% + $3.00 MXN por transacción</p>
                     <p>• TodoCerca: 2%</p>
-                    <p className="font-medium text-foreground pt-1">Total descuento: ~6.9% + $1.00 fijo</p>
+                    <p className="font-medium text-foreground pt-1">La cuota fija de $3.00 se diluye entre más boletos compre el usuario por transacción.</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Cobrar button */}
+            {cuentaConectada?.pagos_habilitados && cuentaConectada?.transferencias_habilitadas && (
+              <Card className={isSettlementAvailable() ? "border-primary/50" : ""}>
+                <CardContent className="p-4">
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    disabled={!isSettlementAvailable() || cobrandoLiq}
+                    onClick={handleCobrar}
+                  >
+                    {cobrandoLiq ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Procesando...</>
+                    ) : isSettlementAvailable() ? (
+                      <><DollarSign className="h-4 w-4 mr-2" /> Cobrar liquidación</>
+                    ) : (
+                      <><Clock className="h-4 w-4 mr-2" /> {getNextSettlementLabel()}</>
+                    )}
+                  </Button>
+                  {!isSettlementAvailable() && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Tu frecuencia es {frecuenciaLiq === "daily" ? "diaria" : frecuenciaLiq === "weekly" ? "semanal" : "mensual"}. El botón se habilitará cuando se cumpla el periodo.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -1374,7 +1400,7 @@ export default function PanelConcesionario() {
                           <span className="text-destructive">-${Number(l.monto_comision_todocerca).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión Stripe (4.4% + 0.5% + $1):</span>
+                          <span className="text-muted-foreground">Comisión Stripe (3.6% + $3.00/tx):</span>
                           <span className="text-destructive">-${Number(l.monto_fee_stripe_connect).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-bold pt-1 border-t border-border">
