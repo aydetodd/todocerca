@@ -78,24 +78,39 @@ serve(async (req) => {
           if (freq === "monthly" && diaMes !== 1) continue;
         }
 
-        // Determine date range
+        // Determine date range — settle the PREVIOUS closed period
         let dateStart: string;
-        const dateEnd = fechaHoy;
+        let dateEnd: string;
 
         if (freq === "daily") {
-          dateStart = fechaHoy;
+          // Settle yesterday
+          const yesterday = new Date(hermosillo);
+          yesterday.setDate(yesterday.getDate() - 1);
+          dateStart = yesterday.toISOString().split("T")[0];
+          dateEnd = dateStart;
         } else if (freq === "weekly") {
+          // Settle previous week (Mon-Sun)
           const d = new Date(hermosillo);
-          d.setDate(d.getDate() - 6);
-          dateStart = d.toISOString().split("T")[0];
+          d.setDate(d.getDate() - 7); // Go to previous week
+          const dow = d.getDay();
+          const mondayOffset = dow === 0 ? 6 : dow - 1;
+          const monday = new Date(d);
+          monday.setDate(monday.getDate() - mondayOffset);
+          const sunday = new Date(monday);
+          sunday.setDate(sunday.getDate() + 6);
+          dateStart = monday.toISOString().split("T")[0];
+          dateEnd = sunday.toISOString().split("T")[0];
         } else {
+          // Settle previous month
           const d = new Date(hermosillo);
           d.setMonth(d.getMonth() - 1);
           d.setDate(1);
           dateStart = d.toISOString().split("T")[0];
+          const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+          dateEnd = lastDay.toISOString().split("T")[0];
         }
 
-        const fechaLiquidacion = fechaHoy;
+        const fechaLiquidacion = dateEnd; // Use end of settled period as reference
 
         // Check if already processed
         const { data: existing } = await supabaseAdmin
