@@ -506,7 +506,70 @@ export default function PanelConcesionario() {
     }
   };
 
-  const handleAddUnit = async () => {
+  // Check if settlement is available based on frequency
+  const isSettlementAvailable = () => {
+    if (!cuentaConectada?.pagos_habilitados || !cuentaConectada?.transferencias_habilitadas) return false;
+    const freq = (cuentaConectada as any).frecuencia_liquidacion || "daily";
+    const now = new Date();
+    const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+    
+    // Find the last successful settlement date
+    const lastCompleted = liquidaciones.find((l) => l.estado === "completed");
+    
+    if (!lastCompleted) return true; // No settlements yet, allow
+
+    const lastDate = new Date(lastCompleted.fecha_liquidacion + "T12:00:00");
+    const todayStr = hermosillo.toISOString().split("T")[0];
+    const today = new Date(todayStr + "T12:00:00");
+    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / 86400000);
+
+    if (freq === "daily") return diffDays >= 1;
+    if (freq === "weekly") return diffDays >= 7;
+    if (freq === "monthly") return diffDays >= 28;
+    return false;
+  };
+
+  const getNextSettlementLabel = () => {
+    const freq = (cuentaConectada as any)?.frecuencia_liquidacion || "daily";
+    const lastCompleted = liquidaciones.find((l) => l.estado === "completed");
+    if (!lastCompleted) return "Disponible ahora";
+
+    const lastDate = new Date(lastCompleted.fecha_liquidacion + "T12:00:00");
+    let nextDate: Date;
+    if (freq === "daily") {
+      nextDate = new Date(lastDate.getTime() + 86400000);
+    } else if (freq === "weekly") {
+      nextDate = new Date(lastDate.getTime() + 7 * 86400000);
+    } else {
+      nextDate = new Date(lastDate);
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    return `Disponible: ${nextDate.toLocaleDateString("es-MX", { day: "numeric", month: "short" })}`;
+  };
+
+  const handleCobrar = async () => {
+    if (!cuentaConectada) return;
+    setCobrandoLiq(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-daily-settlements", {
+        body: { cuenta_id: cuentaConectada.id },
+      });
+      if (error) throw error;
+      if (data?.processed > 0) {
+        toast.success(`Liquidación procesada: ${data.results?.[0]?.neto ? "$" + data.results[0].neto + " MXN" : "exitosamente"}`);
+      } else {
+        toast.info("No hay boletos pendientes para liquidar en este periodo");
+      }
+      fetchAll();
+    } catch (err: any) {
+      console.error("Settlement error:", err);
+      toast.error("Error al procesar la liquidación");
+    } finally {
+      setCobrandoLiq(false);
+    }
+  };
+
+
     if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
       toast.error("Número económico y placas son obligatorios");
       return;
