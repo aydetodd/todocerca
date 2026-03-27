@@ -100,6 +100,7 @@ export default function PanelConcesionario() {
   const [syncing, setSyncing] = useState(false);
   const [frecuenciaLiq, setFrecuenciaLiq] = useState<string>("daily");
   const [savingFreq, setSavingFreq] = useState(false);
+  const [cobrandoLiq, setCobrandoLiq] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
@@ -505,8 +506,71 @@ export default function PanelConcesionario() {
     }
   };
 
-  const handleAddUnit = async () => {
-    if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
+  // Check if settlement is available based on frequency
+  const isSettlementAvailable = () => {
+    if (!cuentaConectada?.pagos_habilitados || !cuentaConectada?.transferencias_habilitadas) return false;
+    const freq = (cuentaConectada as any).frecuencia_liquidacion || "daily";
+    const now = new Date();
+    const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+    
+    // Find the last successful settlement date
+    const lastCompleted = liquidaciones.find((l) => l.estado === "completed");
+    
+    if (!lastCompleted) return true; // No settlements yet, allow
+
+    const lastDate = new Date(lastCompleted.fecha_liquidacion + "T12:00:00");
+    const todayStr = hermosillo.toISOString().split("T")[0];
+    const today = new Date(todayStr + "T12:00:00");
+    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / 86400000);
+
+    if (freq === "daily") return diffDays >= 1;
+    if (freq === "weekly") return diffDays >= 7;
+    if (freq === "monthly") return diffDays >= 28;
+    return false;
+  };
+
+  const getNextSettlementLabel = () => {
+    const freq = (cuentaConectada as any)?.frecuencia_liquidacion || "daily";
+    const lastCompleted = liquidaciones.find((l) => l.estado === "completed");
+    if (!lastCompleted) return "Disponible ahora";
+
+    const lastDate = new Date(lastCompleted.fecha_liquidacion + "T12:00:00");
+    let nextDate: Date;
+    if (freq === "daily") {
+      nextDate = new Date(lastDate.getTime() + 86400000);
+    } else if (freq === "weekly") {
+      nextDate = new Date(lastDate.getTime() + 7 * 86400000);
+    } else {
+      nextDate = new Date(lastDate);
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    return `Disponible: ${nextDate.toLocaleDateString("es-MX", { day: "numeric", month: "short" })}`;
+  };
+
+  const handleCobrar = async () => {
+    if (!cuentaConectada) return;
+    setCobrandoLiq(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-daily-settlements", {
+        body: { cuenta_id: cuentaConectada.id },
+      });
+      if (error) throw error;
+      if (data?.processed > 0) {
+        toast.success(`Liquidación procesada: ${data.results?.[0]?.neto ? "$" + data.results[0].neto + " MXN" : "exitosamente"}`);
+      } else {
+        toast.info("No hay boletos pendientes para liquidar en este periodo");
+      }
+      fetchAll();
+    } catch (err: any) {
+      console.error("Settlement error:", err);
+      toast.error("Error al procesar la liquidación");
+    } finally {
+      setCobrandoLiq(false);
+    }
+  };
+
+
+    const handleAddUnit = async () => {
       toast.error("Número económico y placas son obligatorios");
       return;
     }
@@ -1251,11 +1315,37 @@ export default function PanelConcesionario() {
                   )}
                   <div className="bg-muted rounded-lg p-3 text-xs text-muted-foreground space-y-1">
                     <p className="font-medium text-foreground">Desglose de comisiones por boleto ($9.00):</p>
-                    <p>• Pasarela Stripe: 4.4% + $1.00 MXN fijo</p>
-                    <p>• Stripe Connect: 0.5%</p>
+                    <p>• Pasarela Stripe: 3.6% + $3.00 MXN por transacción</p>
                     <p>• TodoCerca: 2%</p>
-                    <p className="font-medium text-foreground pt-1">Total descuento: ~6.9% + $1.00 fijo</p>
+                    <p className="font-medium text-foreground pt-1">La cuota fija de $3.00 se diluye entre más boletos compre el usuario por transacción.</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Cobrar button */}
+            {cuentaConectada?.pagos_habilitados && cuentaConectada?.transferencias_habilitadas && (
+              <Card className={isSettlementAvailable() ? "border-primary/50" : ""}>
+                <CardContent className="p-4">
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    disabled={!isSettlementAvailable() || cobrandoLiq}
+                    onClick={handleCobrar}
+                  >
+                    {cobrandoLiq ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Procesando...</>
+                    ) : isSettlementAvailable() ? (
+                      <><DollarSign className="h-4 w-4 mr-2" /> Cobrar liquidación</>
+                    ) : (
+                      <><Clock className="h-4 w-4 mr-2" /> {getNextSettlementLabel()}</>
+                    )}
+                  </Button>
+                  {!isSettlementAvailable() && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Tu frecuencia es {frecuenciaLiq === "daily" ? "diaria" : frecuenciaLiq === "weekly" ? "semanal" : "mensual"}. El botón se habilitará cuando se cumpla el periodo.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -1310,7 +1400,7 @@ export default function PanelConcesionario() {
                           <span className="text-destructive">-${Number(l.monto_comision_todocerca).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión Stripe (4.4% + 0.5% + $1):</span>
+                          <span className="text-muted-foreground">Comisión Stripe (3.6% + $3.00/tx):</span>
                           <span className="text-destructive">-${Number(l.monto_fee_stripe_connect).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-bold pt-1 border-t border-border">

@@ -25,6 +25,15 @@ serve(async (req) => {
   });
 
   try {
+    // Check if this is a manual trigger for a specific account
+    let manualCuentaId: string | null = null;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        manualCuentaId = body?.cuenta_id || null;
+      } catch { /* no body */ }
+    }
+
     // Get today's date (Hermosillo timezone UTC-7)
     const now = new Date();
     const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
@@ -33,14 +42,20 @@ serve(async (req) => {
     const diaSemana = hermosillo.getDay();
     const diaMes = hermosillo.getDate();
 
-    console.log(`[SETTLEMENTS] Processing for ${fechaHoy} (dow=${diaSemana}, dom=${diaMes})`);
+    console.log(`[SETTLEMENTS] Processing for ${fechaHoy} (dow=${diaSemana}, dom=${diaMes})${manualCuentaId ? ` [MANUAL: ${manualCuentaId}]` : ""}`);
 
-    // Get all active connected accounts
-    const { data: cuentas, error: cuentasError } = await supabaseAdmin
+    // Get active connected accounts
+    let query = supabaseAdmin
       .from("cuentas_conectadas")
       .select("id, concesionario_id, stripe_account_id, pagos_habilitados, transferencias_habilitadas, frecuencia_liquidacion")
       .eq("pagos_habilitados", true)
       .eq("transferencias_habilitadas", true);
+
+    if (manualCuentaId) {
+      query = query.eq("id", manualCuentaId);
+    }
+
+    const { data: cuentas, error: cuentasError } = await query;
 
     if (cuentasError) throw new Error(`Error fetching accounts: ${cuentasError.message}`);
     if (!cuentas || cuentas.length === 0) {
@@ -57,9 +72,11 @@ serve(async (req) => {
       try {
         const freq = (cuenta as any).frecuencia_liquidacion || "daily";
 
-        // Check frequency schedule
-        if (freq === "weekly" && diaSemana !== 0) continue;
-        if (freq === "monthly" && diaMes !== 1) continue;
+        // Skip frequency check for manual triggers
+        if (!manualCuentaId) {
+          if (freq === "weekly" && diaSemana !== 0) continue;
+          if (freq === "monthly" && diaMes !== 1) continue;
+        }
 
         // Determine date range
         let dateStart: string;
