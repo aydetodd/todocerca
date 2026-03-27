@@ -570,7 +570,7 @@ export default function PanelConcesionario() {
   };
 
 
-    if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
+    const handleAddUnit = async () => {
       toast.error("Número económico y placas son obligatorios");
       return;
     }
