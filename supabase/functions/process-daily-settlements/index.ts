@@ -140,7 +140,7 @@ serve(async (req) => {
           .from("logs_validacion_qr")
           .select("*", { count: "exact", head: true })
           .in("unidad_id", unidadIds)
-          .eq("resultado", "valido")
+          .eq("resultado", "valid")
           .gte("created_at", rangeStart)
           .lte("created_at", rangeEnd);
 
