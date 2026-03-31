@@ -552,7 +552,7 @@ export default function PanelConcesionario() {
     setCobrandoLiq(true);
     try {
       const { data, error } = await supabase.functions.invoke("process-daily-settlements", {
-        body: { cuenta_id: cuentaConectada.id },
+        body: { cuenta_id: cuentaConectada.id, frecuencia_liquidacion: frecuenciaLiq },
       });
       if (error) throw error;
       if (data?.processed > 0) {
