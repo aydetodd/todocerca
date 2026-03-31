@@ -27,10 +27,12 @@ serve(async (req) => {
   try {
     // Check if this is a manual trigger for a specific account
     let manualCuentaId: string | null = null;
+    let manualFrecuenciaLiquidacion: string | null = null;
     if (req.method === "POST") {
       try {
         const body = await req.json();
         manualCuentaId = body?.cuenta_id || null;
+        manualFrecuenciaLiquidacion = body?.frecuencia_liquidacion || null;
       } catch { /* no body */ }
     }
 
@@ -42,7 +44,7 @@ serve(async (req) => {
     const diaSemana = hermosillo.getDay();
     const diaMes = hermosillo.getDate();
 
-    console.log(`[SETTLEMENTS] Processing for ${fechaHoy} (dow=${diaSemana}, dom=${diaMes})${manualCuentaId ? ` [MANUAL: ${manualCuentaId}]` : ""}`);
+    console.log(`[SETTLEMENTS] Processing for ${fechaHoy} (dow=${diaSemana}, dom=${diaMes})${manualCuentaId ? ` [MANUAL: ${manualCuentaId}]` : ""}${manualFrecuenciaLiquidacion ? ` [FREQ: ${manualFrecuenciaLiquidacion}]` : ""}`);
 
     // Get active connected accounts
     let query = supabaseAdmin
@@ -70,7 +72,9 @@ serve(async (req) => {
 
     for (const cuenta of cuentas) {
       try {
-        const freq = (cuenta as any).frecuencia_liquidacion || "daily";
+        const freq = manualCuentaId && manualFrecuenciaLiquidacion
+          ? manualFrecuenciaLiquidacion
+          : (cuenta as any).frecuencia_liquidacion || "daily";
 
         // Skip frequency check for manual triggers
         if (!manualCuentaId) {

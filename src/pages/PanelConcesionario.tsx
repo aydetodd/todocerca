@@ -552,7 +552,7 @@ export default function PanelConcesionario() {
     setCobrandoLiq(true);
     try {
       const { data, error } = await supabase.functions.invoke("process-daily-settlements", {
-        body: { cuenta_id: cuentaConectada.id },
+        body: { cuenta_id: cuentaConectada.id, frecuencia_liquidacion: frecuenciaLiq },
       });
       if (error) throw error;
       if (data?.processed > 0) {
@@ -1297,15 +1297,18 @@ export default function PanelConcesionario() {
                       disabled={savingFreq}
                       onClick={async () => {
                         setSavingFreq(true);
-                        const { error } = await supabase
+                        const { data, error } = await supabase
                           .from("cuentas_conectadas")
                           .update({ frecuencia_liquidacion: frecuenciaLiq } as any)
-                          .eq("id", cuentaConectada.id);
+                          .eq("id", cuentaConectada.id)
+                          .select("id, frecuencia_liquidacion")
+                          .single();
                         setSavingFreq(false);
                         if (error) {
                           toast.error("Error al guardar frecuencia");
                         } else {
-                          setCuentaConectada((prev: any) => ({ ...prev, frecuencia_liquidacion: frecuenciaLiq }));
+                          setCuentaConectada((prev: any) => ({ ...prev, frecuencia_liquidacion: data?.frecuencia_liquidacion || frecuenciaLiq }));
+                          setFrecuenciaLiq(data?.frecuencia_liquidacion || frecuenciaLiq);
                           toast.success(`Frecuencia cambiada a ${frecuenciaLiq === "daily" ? "diaria" : frecuenciaLiq === "weekly" ? "semanal" : "mensual"}`);
                         }
                       }}
