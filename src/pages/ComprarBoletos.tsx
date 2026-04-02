@@ -103,19 +103,6 @@ export default function ComprarBoletos() {
               </Button>
             </div>
 
-            {/* Quick Options */}
-            <div className="flex gap-2 justify-center">
-              {QUICK_OPTIONS.map((opt) => (
-                <Button
-                  key={opt}
-                  variant={quantity === opt ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setQuantity(opt)}
-                >
-                  {opt} QR
-                </Button>
-              ))}
-            </div>
           </CardContent>
         </Card>
 
