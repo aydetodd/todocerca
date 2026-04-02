@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const TICKET_PRICE = 9.0;
-const QUICK_OPTIONS = [5, 10, 20];
+
 
 export default function ComprarBoletos() {
   const { user } = useAuth();
@@ -23,10 +23,10 @@ export default function ComprarBoletos() {
 
   const handleQuantityChange = (value: string) => {
     const num = parseInt(value);
-    if (!isNaN(num) && num >= 1 && num <= 100) {
+    if (!isNaN(num) && num >= 10 && num <= 100) {
       setQuantity(num);
     } else if (value === "") {
-      setQuantity(1);
+      setQuantity(10);
     }
   };
 
@@ -80,14 +80,14 @@ export default function ComprarBoletos() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
+                onClick={() => setQuantity(Math.max(10, quantity - 1))}
+                disabled={quantity <= 10}
               >
                 <Minus className="h-4 w-4" />
               </Button>
               <Input
                 type="number"
-                min={1}
+                min={10}
                 max={100}
                 value={quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
@@ -103,19 +103,6 @@ export default function ComprarBoletos() {
               </Button>
             </div>
 
-            {/* Quick Options */}
-            <div className="flex gap-2 justify-center">
-              {QUICK_OPTIONS.map((opt) => (
-                <Button
-                  key={opt}
-                  variant={quantity === opt ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setQuantity(opt)}
-                >
-                  {opt} QR
-                </Button>
-              ))}
-            </div>
           </CardContent>
         </Card>
 
