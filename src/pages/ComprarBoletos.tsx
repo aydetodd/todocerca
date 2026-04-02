@@ -87,7 +87,7 @@ export default function ComprarBoletos() {
               </Button>
               <Input
                 type="number"
-                min={1}
+                min={10}
                 max={100}
                 value={quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
