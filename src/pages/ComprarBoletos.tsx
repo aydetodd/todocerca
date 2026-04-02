@@ -23,7 +23,7 @@ export default function ComprarBoletos() {
 
   const handleQuantityChange = (value: string) => {
     const num = parseInt(value);
-    if (!isNaN(num) && num >= 1 && num <= 100) {
+    if (!isNaN(num) && num >= 10 && num <= 100) {
       setQuantity(num);
     } else if (value === "") {
       setQuantity(1);
