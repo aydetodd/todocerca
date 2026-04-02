@@ -26,7 +26,7 @@ export default function ComprarBoletos() {
     if (!isNaN(num) && num >= 10 && num <= 100) {
       setQuantity(num);
     } else if (value === "") {
-      setQuantity(1);
+      setQuantity(10);
     }
   };
 
