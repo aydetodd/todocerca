@@ -556,7 +556,14 @@ export default function PanelConcesionario() {
       });
       if (error) throw error;
       if (data?.processed > 0) {
-        toast.success(`Liquidación procesada: ${data.results?.[0]?.neto ? "$" + data.results[0].neto + " MXN" : "exitosamente"}`);
+        const resultado = data.results?.[0];
+        if (resultado?.estado === "completed") {
+          toast.success(`Liquidación procesada: ${resultado?.neto ? "$" + resultado.neto + " MXN" : "exitosamente"}`);
+        } else if (resultado?.estado === "failed") {
+          toast.error("La liquidación se calculó, pero la transferencia al concesionario falló");
+        } else {
+          toast.success("Liquidación procesada");
+        }
       } else {
         toast.info("No hay boletos pendientes para liquidar en este periodo");
       }
@@ -1381,8 +1388,8 @@ export default function PanelConcesionario() {
                       <div className="text-right flex items-center gap-2">
                         <div>
                           <p className="font-bold text-foreground">${Number(l.monto_neto).toFixed(2)}</p>
-                          <Badge className={`text-xs ${estadoLiqColor(l.estado)}`}>
-                            {l.estado === "completed" ? "Pagado" : l.estado === "failed" ? "Error" : "Pendiente"}
+                           <Badge className={`text-xs ${estadoLiqColor(l.estado)}`}>
+                             {l.estado === "completed" ? "Pagado" : l.estado === "failed" ? "Transferencia fallida" : "Pendiente"}
                           </Badge>
                         </div>
                         {expandedLiq === l.id ? (
@@ -1414,6 +1421,11 @@ export default function PanelConcesionario() {
                         {l.stripe_transfer_id && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Transfer: {l.stripe_transfer_id}
+                          </p>
+                        )}
+                        {l.estado === "failed" && (
+                          <p className="text-xs text-destructive mt-1">
+                            No se pudo enviar el depósito a Stripe Connect. El cálculo sí se guardó y puedes reintentar la liquidación.
                           </p>
                         )}
                       </div>
