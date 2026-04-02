@@ -556,7 +556,14 @@ export default function PanelConcesionario() {
       });
       if (error) throw error;
       if (data?.processed > 0) {
-        toast.success(`Liquidación procesada: ${data.results?.[0]?.neto ? "$" + data.results[0].neto + " MXN" : "exitosamente"}`);
+        const resultado = data.results?.[0];
+        if (resultado?.estado === "completed") {
+          toast.success(`Liquidación procesada: ${resultado?.neto ? "$" + resultado.neto + " MXN" : "exitosamente"}`);
+        } else if (resultado?.estado === "failed") {
+          toast.error("La liquidación se calculó, pero la transferencia al concesionario falló");
+        } else {
+          toast.success("Liquidación procesada");
+        }
       } else {
         toast.info("No hay boletos pendientes para liquidar en este periodo");
       }
