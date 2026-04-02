@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const TICKET_PRICE = 9.0;
-const QUICK_OPTIONS = [5, 10, 20];
+
 
 export default function ComprarBoletos() {
   const { user } = useAuth();
