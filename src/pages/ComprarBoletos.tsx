@@ -80,8 +80,8 @@ export default function ComprarBoletos() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
+                onClick={() => setQuantity(Math.max(10, quantity - 1))}
+                disabled={quantity <= 10}
               >
                 <Minus className="h-4 w-4" />
               </Button>
