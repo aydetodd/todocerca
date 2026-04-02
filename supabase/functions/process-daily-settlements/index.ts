@@ -9,6 +9,8 @@ const corsHeaders = {
 
 const TICKET_PRICE = 9.00; // $9.00 MXN
 const PLATFORM_FEE_PERCENT = 0.02; // 2% comisión TodoCerca
+const STRIPE_VARIABLE_FEE_PERCENT = 0.036; // 3.6%
+const STRIPE_FIXED_FEE = 3.00; // $3.00 MXN por transacción
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -119,12 +121,12 @@ serve(async (req) => {
         // Check if already processed
         const { data: existing } = await supabaseAdmin
           .from("liquidaciones_diarias")
-          .select("id")
+          .select("id, estado")
           .eq("cuenta_conectada_id", cuenta.id)
           .eq("fecha_liquidacion", fechaLiquidacion)
-          .single();
+          .maybeSingle();
 
-        if (existing) continue;
+        if (existing && existing.estado !== "failed") continue;
 
         // Get units for this concesionario
         const { data: unidades } = await supabaseAdmin
@@ -155,7 +157,7 @@ serve(async (req) => {
         // Sum all stripe_fee from transacciones_boletos for purchases in the range
         const { data: transacciones } = await supabaseAdmin
           .from("transacciones_boletos")
-          .select("stripe_fee, cantidad_boletos")
+          .select("stripe_fee, cantidad_boletos, monto_total")
           .eq("tipo", "compra")
           .eq("estado", "completado")
           .gte("created_at", rangeStart)
@@ -166,8 +168,13 @@ serve(async (req) => {
         let totalTicketsComprados = 0;
         if (transacciones && transacciones.length > 0) {
           for (const tx of transacciones) {
-            totalStripeFees += Number(tx.stripe_fee) || 0;
-            totalTicketsComprados += tx.cantidad_boletos;
+            const cantidadBoletosTx = Number(tx.cantidad_boletos) || 0;
+            const montoTotalTx = Number((tx as any).monto_total) || (cantidadBoletosTx * TICKET_PRICE);
+            const stripeFeeReal = Number(tx.stripe_fee) || 0;
+            const stripeFeeEstimado = (montoTotalTx * STRIPE_VARIABLE_FEE_PERCENT) + STRIPE_FIXED_FEE;
+
+            totalStripeFees += stripeFeeReal > 0 ? stripeFeeReal : stripeFeeEstimado;
+            totalTicketsComprados += cantidadBoletosTx;
           }
         }
 
@@ -180,7 +187,7 @@ serve(async (req) => {
           // Fallback: estimate fee as 3.6% + $3.00 per estimated transaction
           // Approximate 1 transaction per 10 tickets
           const estimatedTransactions = Math.max(1, Math.ceil(boletos / 10));
-          feeStripeProporcional = (boletos * TICKET_PRICE * 0.036) + (estimatedTransactions * 3.00);
+          feeStripeProporcional = (boletos * TICKET_PRICE * STRIPE_VARIABLE_FEE_PERCENT) + (estimatedTransactions * STRIPE_FIXED_FEE);
         }
 
         // Calculate amounts
@@ -214,8 +221,7 @@ serve(async (req) => {
           estado = "failed";
         }
 
-        // Record settlement
-        await supabaseAdmin.from("liquidaciones_diarias").insert({
+        const settlementPayload = {
           cuenta_conectada_id: cuenta.id,
           fecha_liquidacion: fechaLiquidacion,
           total_boletos: boletos,
@@ -226,7 +232,18 @@ serve(async (req) => {
           estado,
           stripe_transfer_id: transferId,
           fecha_procesamiento: new Date().toISOString(),
-        });
+        };
+
+        if (existing?.estado === "failed") {
+          await supabaseAdmin
+            .from("liquidaciones_diarias")
+            .update(settlementPayload)
+            .eq("id", existing.id);
+        } else {
+          await supabaseAdmin
+            .from("liquidaciones_diarias")
+            .insert(settlementPayload);
+        }
 
         processed++;
         results.push({
