@@ -6,6 +6,7 @@ import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { trackMessaging } from '@/lib/analytics';
+import { QRCodeSVG } from 'qrcode.react';
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
