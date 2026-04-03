@@ -6,6 +6,7 @@ import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { ScrollArea } from './ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { trackMessaging } from '@/lib/analytics';
+import { QRCodeSVG } from 'qrcode.react';
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -169,13 +170,37 @@ export const MessagingPanel = ({ isOpen, onClose, receiverId, receiverName }: Me
                     }
                   `}
                   >
-                    <span className="text-sm break-words whitespace-pre-wrap">
-                      {msg.message.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
-                        /^https?:\/\//.test(part) ? (
-                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-semibold break-all">{part}</a>
-                        ) : part
-                      )}
-                    </span>
+                    {(() => {
+                      const isQrTicket = msg.message.startsWith('🚌 QR Boleto Digital');
+                      if (isQrTicket) {
+                        const tokenMatch = msg.message.match(/Token:\s*([0-9a-f-]{36})/i);
+                        const codeMatch = msg.message.match(/Código:\s*(\w+)/);
+                        const token = tokenMatch?.[1];
+                        const code = codeMatch?.[1];
+                        return (
+                          <div className="text-center space-y-2">
+                            <p className="text-sm font-semibold">🚌 QR Boleto Digital - Transporte Urbano Hermosillo</p>
+                            {token && (
+                              <div className="bg-white p-3 rounded-xl inline-block">
+                                <QRCodeSVG value={token} size={160} level="H" includeMargin />
+                              </div>
+                            )}
+                            {code && <p className="text-lg font-mono font-bold">#{code}</p>}
+                            <p className="text-xs opacity-80">Válido por 24 horas</p>
+                            <p className="text-xs">Muestra este QR al chofer para pagar tu pasaje.</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <span className="text-sm break-words whitespace-pre-wrap">
+                          {msg.message.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                            /^https?:\/\//.test(part) ? (
+                              <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-semibold break-all">{part}</a>
+                            ) : part
+                          )}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <p className={`text-xs mt-1 ${
                     isOwn 
