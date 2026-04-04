@@ -50,6 +50,14 @@ serve(async (req) => {
       throw new Error("No se pudo cancelar la transferencia");
     }
 
+    // Log movement
+    await supabaseAdmin.from("movimientos_boleto").insert({
+      qr_ticket_id: ticket_id,
+      user_id: user.id,
+      tipo: "transfer_cancelled",
+      detalles: {},
+    });
+
     console.log(`[CANCEL-TRANSFER] Ticket ${updated.token.slice(-6)} transfer cancelled by user ${user.id}`);
 
     return new Response(JSON.stringify({ success: true, ticket: updated }), {

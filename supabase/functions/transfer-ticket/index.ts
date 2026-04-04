@@ -67,6 +67,15 @@ serve(async (req) => {
       throw new Error("Error al transferir boleto");
     }
 
+    // Log movement
+    const isReTransfer = !!ticket.transfer_returned_at;
+    await supabaseAdmin.from("movimientos_boleto").insert({
+      qr_ticket_id: ticket.id,
+      user_id: user.id,
+      tipo: isReTransfer ? "re_transferred" : "transferred",
+      detalles: { expires_at: expiresAt.toISOString(), transferred_to: transferred_to || null },
+    });
+
     console.log(`[TRANSFER-TICKET] Ticket ${ticket.token.slice(-6)} transferred, expires: ${expiresAt.toISOString()}`);
 
     return new Response(JSON.stringify({
