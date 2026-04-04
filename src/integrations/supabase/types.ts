@@ -1733,6 +1733,41 @@ export type Database = {
         }
         Relationships: []
       }
+      movimientos_boleto: {
+        Row: {
+          created_at: string
+          detalles: Json | null
+          id: string
+          qr_ticket_id: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detalles?: Json | null
+          id?: string
+          qr_ticket_id: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detalles?: Json | null
+          id?: string
+          qr_ticket_id?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_boleto_qr_ticket_id_fkey"
+            columns: ["qr_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paises: {
         Row: {
           codigo_iso: string
