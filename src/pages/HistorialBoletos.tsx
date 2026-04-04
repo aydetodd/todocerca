@@ -9,6 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 type FilterType = "active" | "used" | "transferred";
 
+interface Movement {
+  id: string;
+  tipo: string;
+  created_at: string;
+  detalles: any;
+}
+
 export default function HistorialBoletos() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +23,7 @@ export default function HistorialBoletos() {
   const [filter, setFilter] = useState<FilterType>("active");
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState({ active: 0, used: 0, transferred: 0 });
+  const [movementsMap, setMovementsMap] = useState<Record<string, Movement[]>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -29,26 +37,23 @@ export default function HistorialBoletos() {
 
   const fetchCounts = async () => {
     const [activeRes, usedRes, transferredRes] = await Promise.all([
-      // Activos: status=active AND is_transferred=false (available to use)
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "active")
         .eq("is_transferred", false),
-      // Usados: status=used
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
-      // Transferidos (saldo): solo los que siguen pendientes (is_transferred=true AND status=active)
+      // Transferred: any ticket that has ever been transferred (has movements)
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .eq("is_transferred", true)
-        .eq("status", "active"),
+        .or("is_transferred.eq.true,transfer_returned_at.not.is.null"),
     ]);
     setCounts({
       active: activeRes.count ?? 0,
@@ -94,7 +99,6 @@ export default function HistorialBoletos() {
           }
         });
 
-        // Fetch route names
         const routeNameMap: Record<string, string> = {};
         if (routeProductIds.size > 0) {
           const { data: prods } = await supabase
@@ -106,12 +110,29 @@ export default function HistorialBoletos() {
           });
         }
 
-        // Attach route name to tickets
         data.forEach((t: any) => {
           const prodId = ticketRouteMap[t.id];
           t._ruta_nombre = prodId ? routeNameMap[prodId] || null : null;
         });
       }
+
+      // For transferred tab, fetch all movements per ticket
+      if (filter === "transferred" && data.length > 0) {
+        const ticketIds = data.map((t: any) => t.id);
+        const { data: movements } = await (supabase
+          .from("movimientos_boleto") as any)
+          .select("*")
+          .in("qr_ticket_id", ticketIds)
+          .order("created_at", { ascending: true });
+
+        const map: Record<string, Movement[]> = {};
+        (movements || []).forEach((m: any) => {
+          if (!map[m.qr_ticket_id]) map[m.qr_ticket_id] = [];
+          map[m.qr_ticket_id].push(m);
+        });
+        setMovementsMap(map);
+      }
+
       setTickets(data);
     }
     setLoading(false);
@@ -122,6 +143,18 @@ export default function HistorialBoletos() {
       day: "numeric", month: "short", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
+
+  const getMovementLabel = (tipo: string) => {
+    switch (tipo) {
+      case "generated": return { icon: "🎫", label: "Generado", color: "text-green-500" };
+      case "transferred": return { icon: "📤", label: "Transferido", color: "text-amber-500" };
+      case "re_transferred": return { icon: "📤", label: "Re-transferido", color: "text-amber-500" };
+      case "transfer_cancelled": return { icon: "↩️", label: "Transferencia cancelada", color: "text-blue-400" };
+      case "transfer_expired": return { icon: "🔄", label: "Vencido y devuelto", color: "text-destructive" };
+      case "used": return { icon: "✅", label: "Usado", color: "text-green-500" };
+      default: return { icon: "•", label: tipo, color: "text-muted-foreground" };
+    }
+  };
 
   const filters: { label: string; value: FilterType; count: number }[] = [
     { label: "Activos", value: "active", count: counts.active },
@@ -135,18 +168,14 @@ export default function HistorialBoletos() {
   }
 
   const getTransferStatus = (t: any) => {
-    // Returned from expired transfer → Vencido (red)
-    if (t.transfer_returned_at) return "vencido";
-    // Used by recipient
+    if (t.transfer_returned_at && t.status === "active" && !t.is_transferred) return "devuelto";
     if (t.status === "used") return "usado";
-    // Still pending
     if (t.status === "active" && t.is_transferred) return "pendiente";
-    return "desconocido";
+    return "devuelto";
   };
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b border-border p-4">
         <div className="flex items-center gap-3">
           <BackButton />
@@ -158,7 +187,6 @@ export default function HistorialBoletos() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Filters with counts */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {filters.map((f) => (
             <Button
@@ -173,7 +201,6 @@ export default function HistorialBoletos() {
           ))}
         </div>
 
-        {/* Tickets List */}
         {loading ? (
           <div className="text-center py-8 text-muted-foreground animate-pulse">Cargando...</div>
         ) : tickets.length === 0 ? (
@@ -191,6 +218,7 @@ export default function HistorialBoletos() {
                     <>
                       {(() => {
                         const status = getTransferStatus(t);
+                        const movements = movementsMap[t.id] || [];
                         return (
                           <>
                             <div className="flex items-center justify-between">
@@ -203,32 +231,55 @@ export default function HistorialBoletos() {
                               {status === "pendiente" && (
                                 <span className="text-xs font-semibold text-amber-500">Pendiente</span>
                               )}
-                              {status === "vencido" && (
-                                <span className="text-xs font-semibold text-destructive">Vencido</span>
+                              {status === "devuelto" && (
+                                <span className="text-xs font-semibold text-green-500">Disponible</span>
                               )}
                             </div>
-                            {/* Green line: transfer date */}
-                            <p className="text-xs text-green-500">
-                              📤 Transferido: {formatDate(t.generated_at)}
-                            </p>
-                            {/* Red line: used or expired */}
-                            {status === "usado" && t.used_at && (
-                              <p className="text-xs text-destructive">
-                                ✅ Usado: {formatDate(t.used_at)}
-                              </p>
+
+                            {/* Full movement timeline */}
+                            {movements.length > 0 ? (
+                              <div className="mt-2 space-y-1 border-l-2 border-border pl-3 ml-1">
+                                {movements.map((m) => {
+                                  const { icon, label, color } = getMovementLabel(m.tipo);
+                                  return (
+                                    <div key={m.id} className="flex items-start gap-2">
+                                      <span className="text-xs">{icon}</span>
+                                      <div>
+                                        <span className={`text-xs font-medium ${color}`}>{label}</span>
+                                        <span className="text-xs text-muted-foreground ml-1">
+                                          {formatDate(m.created_at)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              /* Fallback for tickets without movement records */
+                              <>
+                                <p className="text-xs text-green-500">
+                                  📤 Transferido: {formatDate(t.generated_at)}
+                                </p>
+                                {status === "usado" && t.used_at && (
+                                  <p className="text-xs text-destructive">
+                                    ✅ Usado: {formatDate(t.used_at)}
+                                  </p>
+                                )}
+                                {status === "devuelto" && t.transfer_returned_at && (
+                                  <p className="text-xs text-destructive">
+                                    🔄 Vencido y devuelto: {formatDate(t.transfer_returned_at)}
+                                  </p>
+                                )}
+                                {status === "pendiente" && t.transfer_expires_at && (
+                                  <p className="text-xs text-amber-500">
+                                    ⏳ Vence: {formatDate(t.transfer_expires_at)}
+                                  </p>
+                                )}
+                              </>
                             )}
-                            {status === "vencido" && t.transfer_returned_at && (
-                              <p className="text-xs text-destructive">
-                                🔄 Vencido y devuelto: {formatDate(t.transfer_returned_at)}
-                              </p>
-                            )}
-                            {status === "pendiente" && t.transfer_expires_at && (
-                              <p className="text-xs text-amber-500">
-                                ⏳ Vence: {formatDate(t.transfer_expires_at)}
-                              </p>
-                            )}
+
                             {t._ruta_nombre && (
-                              <p className="text-xs text-primary font-medium">
+                              <p className="text-xs text-primary font-medium mt-1">
                                 🚌 {t._ruta_nombre}
                               </p>
                             )}
@@ -237,7 +288,6 @@ export default function HistorialBoletos() {
                       })()}
                     </>
                   ) : (
-                    /* Activos y Usados */
                     <>
                       <div className="flex items-center justify-between">
                         <p className={`font-mono text-sm font-bold ${
@@ -270,8 +320,6 @@ export default function HistorialBoletos() {
           </div>
         )}
       </div>
-
-      
     </div>
   );
 }
