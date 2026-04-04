@@ -91,6 +91,14 @@ serve(async (req) => {
       console.error("[GENERATE-QR] Update balance error:", updateError);
     }
 
+    // Log movement
+    await supabaseAdmin.from("movimientos_boleto").insert({
+      qr_ticket_id: ticket.id,
+      user_id: user.id,
+      tipo: "generated",
+      detalles: { short_code: token_qr.slice(-6).toUpperCase() },
+    });
+
     console.log(`[GENERATE-QR] QR generated: ${token_qr.slice(-6)} for user ${user.id}`);
 
     return new Response(JSON.stringify({ 

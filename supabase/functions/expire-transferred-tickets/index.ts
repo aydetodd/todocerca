@@ -54,6 +54,14 @@ serve(async (req) => {
         })
         .eq("id", ticket.id);
 
+      // Log movement
+      await supabaseAdmin.from("movimientos_boleto").insert({
+        qr_ticket_id: ticket.id,
+        user_id: ticket.user_id,
+        tipo: "transfer_expired",
+        detalles: {},
+      });
+
       expiredCount++;
       console.log(`[EXPIRE-TICKETS] Returned ticket ${ticket.token.slice(-6)} to active for user ${ticket.user_id}`);
     }

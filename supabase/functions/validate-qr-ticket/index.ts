@@ -302,6 +302,14 @@ serve(async (req) => {
         .eq("user_id", ticket.user_id);
     }
 
+    // Log movement
+    await supabaseAdmin.from("movimientos_boleto").insert({
+      qr_ticket_id: ticket.id,
+      user_id: ticket.user_id,
+      tipo: "used",
+      detalles: { ruta_id: ruta_id || null, unidad_id: unidad_id || null, chofer_id: driver.id },
+    });
+
     // Log successful validation
     await supabaseAdmin.from("logs_validacion_qr").insert({
       qr_ticket_id: ticket.id,
