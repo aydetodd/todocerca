@@ -48,6 +48,8 @@ serve(async (req) => {
 
       const userId = session.metadata.user_id;
       const quantity = parseInt(session.metadata.ticket_quantity || "0");
+      const ticketType = session.metadata.ticket_type || "normal";
+      const deviceId = session.metadata.device_id || null;
 
       if (!userId || quantity <= 0) {
         throw new Error("Invalid metadata in session");
@@ -66,8 +68,7 @@ serve(async (req) => {
             const balanceTx = await stripe.balanceTransactions.retrieve(
               charge.balance_transaction as string
             );
-            // fee_details contains the actual Stripe fee in centavos
-            stripeFee = balanceTx.fee / 100; // Convert from centavos to MXN
+            stripeFee = balanceTx.fee / 100;
             console.log(`[WEBHOOK-TICKETS] Actual Stripe fee: $${stripeFee.toFixed(2)} MXN`);
           }
         }
@@ -75,20 +76,23 @@ serve(async (req) => {
         console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
       }
 
-      // Calculate per-ticket Stripe fee
       const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
-      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}`);
+      const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
 
-      // Generate QR tickets with per-ticket Stripe fee
+      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}`);
+
+      // Generate QR tickets
       const qrInserts = [];
       for (let i = 0; i < quantity; i++) {
         qrInserts.push({
           user_id: userId,
           token: crypto.randomUUID(),
-          amount: 9.00,
+          amount: ticketAmount,
           status: "active",
           is_transferred: false,
           stripe_fee_unitario: stripeFeePerTicket,
+          ticket_type: ticketType,
+          device_id: ticketType !== "normal" ? deviceId : null,
         });
       }
 
@@ -101,7 +105,7 @@ serve(async (req) => {
         throw new Error("Error generating QR tickets");
       }
 
-      // Update cuentas_boletos for tracking totals
+      // Update cuentas_boletos
       const { data: account } = await supabaseAdmin
         .from("cuentas_boletos")
         .select("total_comprado")
@@ -125,19 +129,19 @@ serve(async (req) => {
           });
       }
 
-      // Record transaction with actual Stripe fee
+      // Record transaction
       await supabaseAdmin.from("transacciones_boletos").insert({
         user_id: userId,
         tipo: "compra",
         cantidad_boletos: quantity,
-        monto_total: quantity * 9.00,
+        monto_total: quantity * ticketAmount,
         stripe_payment_id: session.payment_intent as string,
         estado: "completado",
-        descripcion: `Compra de ${quantity} código${quantity > 1 ? 's' : ''} QR`,
+        descripcion: `Compra de ${quantity} código${quantity > 1 ? 's' : ''} QR${ticketType !== "normal" ? ` (${ticketType})` : ""}`,
         stripe_fee: stripeFee,
       });
 
-      console.log(`[WEBHOOK-TICKETS] Successfully generated ${quantity} QR codes for user ${userId}, stripe_fee: $${stripeFee.toFixed(2)}`);
+      console.log(`[WEBHOOK-TICKETS] Successfully generated ${quantity} ${ticketType} QR codes for user ${userId}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
