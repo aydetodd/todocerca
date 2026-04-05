@@ -379,6 +379,11 @@ export default function Panel() {
                     <div className="pt-3 border-t">
                       <AdminVerificaciones />
                     </div>
+
+                    {/* Gestión de descuentos sociales */}
+                    <div className="pt-3 border-t">
+                      <AdminDescuentos />
+                    </div>
                   </>
                 )}
                 
