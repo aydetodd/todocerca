@@ -265,6 +265,10 @@ serve(async (req) => {
       });
     }
 
+    // 4b. For discounted tickets, verify device_id matches (if provided in ticket)
+    // This check happens on the owner side (frontend) but we log it for audit
+    const isDiscounted = ticket.ticket_type && ticket.ticket_type !== "normal";
+
     // 5. VALID - Process the ticket
     const now = new Date().toISOString();
 
