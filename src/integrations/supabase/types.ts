@@ -2198,6 +2198,7 @@ export type Database = {
           metadata: Json | null
           ruta_uso_id: string | null
           status: string
+          stripe_fee_unitario: number | null
           token: string
           transfer_expires_at: string | null
           transfer_returned_at: string | null
@@ -2219,6 +2220,7 @@ export type Database = {
           metadata?: Json | null
           ruta_uso_id?: string | null
           status?: string
+          stripe_fee_unitario?: number | null
           token?: string
           transfer_expires_at?: string | null
           transfer_returned_at?: string | null
@@ -2240,6 +2242,7 @@ export type Database = {
           metadata?: Json | null
           ruta_uso_id?: string | null
           status?: string
+          stripe_fee_unitario?: number | null
           token?: string
           transfer_expires_at?: string | null
           transfer_returned_at?: string | null
@@ -3279,6 +3282,7 @@ export type Database = {
           metadata: Json | null
           ruta_uso_id: string | null
           status: string
+          stripe_fee_unitario: number | null
           token: string
           transfer_expires_at: string | null
           transfer_returned_at: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.qr_tickets ADD COLUMN stripe_fee_unitario numeric DEFAULT 0; COMMENT ON COLUMN public.qr_tickets.stripe_fee_unitario IS 'Stripe fee prorrateado por boleto al momento de la compra (cuota fija + variable / cantidad)';
