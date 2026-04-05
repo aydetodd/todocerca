@@ -7,7 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TICKET_PRICE_MXN = 900; // $9.00 MXN en centavos
+const TICKET_PRICE_NORMAL = 900; // $9.00 MXN in centavos
+const TICKET_PRICE_DESCUENTO = 450; // $4.50 MXN in centavos
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,6 +20,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
     // Authenticate user
     const authHeader = req.headers.get("Authorization")!;
@@ -27,13 +33,40 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("Usuario no autenticado");
 
-    const { quantity } = await req.json();
+    const { quantity, ticket_type = "normal", device_id } = await req.json();
     
     if (!quantity || quantity < 1 || quantity > 100) {
       throw new Error("Cantidad inválida. Mínimo 1, máximo 100 boletos.");
     }
 
-    const totalAmount = quantity * TICKET_PRICE_MXN; // en centavos MXN
+    // Validate discount eligibility
+    let unitPrice = TICKET_PRICE_NORMAL;
+    let validatedType = "normal";
+
+    if (ticket_type === "estudiante" || ticket_type === "tercera_edad") {
+      // Verify user has approved discount of this type with matching device
+      const { data: verification } = await supabaseAdmin
+        .from("verificaciones_descuento")
+        .select("id, device_id")
+        .eq("user_id", user.id)
+        .eq("tipo", ticket_type)
+        .eq("estado", "aprobado")
+        .single();
+
+      if (!verification) {
+        throw new Error("No tienes un descuento aprobado para este tipo de boleto.");
+      }
+
+      // Verify device matches
+      if (device_id && verification.device_id && device_id !== verification.device_id) {
+        throw new Error("Este descuento solo es válido desde el dispositivo donde fue solicitado.");
+      }
+
+      unitPrice = TICKET_PRICE_DESCUENTO;
+      validatedType = ticket_type;
+    }
+
+    const totalAmount = quantity * unitPrice;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -46,6 +79,12 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    const typeLabel = validatedType === "estudiante" 
+      ? " (Estudiante -50%)" 
+      : validatedType === "tercera_edad" 
+        ? " (Tercera Edad -50%)" 
+        : "";
+
     // Create one-time payment session for tickets
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -55,10 +94,10 @@ serve(async (req) => {
           price_data: {
             currency: "mxn",
             product_data: {
-              name: `QR Boleto Digital × ${quantity}`,
+              name: `QR Boleto Digital × ${quantity}${typeLabel}`,
               description: `${quantity} boleto${quantity > 1 ? 's' : ''} de transporte urbano - Hermosillo, Sonora`,
             },
-            unit_amount: TICKET_PRICE_MXN,
+            unit_amount: unitPrice,
           },
           quantity: quantity,
         },
@@ -69,11 +108,13 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         ticket_quantity: String(quantity),
+        ticket_type: validatedType,
+        device_id: device_id || "",
         type: "qr_boleto_purchase",
       },
     });
 
-    console.log(`[PURCHASE-TICKETS] Session created for ${quantity} tickets, user: ${user.email}`);
+    console.log(`[PURCHASE-TICKETS] Session created for ${quantity} ${validatedType} tickets, user: ${user.email}`);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

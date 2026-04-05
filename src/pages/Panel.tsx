@@ -32,6 +32,7 @@ import { Link } from 'react-router-dom';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
+import AdminDescuentos from '@/components/AdminDescuentos';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
@@ -377,6 +378,11 @@ export default function Panel() {
                     {/* Gestión de verificaciones de concesionarios */}
                     <div className="pt-3 border-t">
                       <AdminVerificaciones />
+                    </div>
+
+                    {/* Gestión de descuentos sociales */}
+                    <div className="pt-3 border-t">
+                      <AdminDescuentos />
                     </div>
                   </>
                 )}

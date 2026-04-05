@@ -1,25 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, CreditCard } from "lucide-react";
+import { Minus, Plus, CreditCard, GraduationCap, UserRound, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const TICKET_PRICE = 9.0;
+const TICKET_PRICE_NORMAL = 9.0;
+const TICKET_PRICE_DESCUENTO = 4.5;
 
+type DiscountType = "normal" | "estudiante" | "tercera_edad";
 
 export default function ComprarBoletos() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(10);
   const [purchasing, setPurchasing] = useState(false);
+  const [approvedDiscount, setApprovedDiscount] = useState<DiscountType>("normal");
+  const [loadingDiscount, setLoadingDiscount] = useState(true);
 
-  const total = quantity * TICKET_PRICE;
+  useEffect(() => {
+    if (user) checkDiscount();
+    else setLoadingDiscount(false);
+  }, [user]);
+
+  const checkDiscount = async () => {
+    const { data } = await (supabase
+      .from("verificaciones_descuento") as any)
+      .select("tipo, estado, device_id")
+      .eq("user_id", user!.id)
+      .eq("estado", "aprobado");
+
+    if (data && data.length > 0) {
+      // Check device match
+      const storedDeviceId = localStorage.getItem("tc_device_id");
+      const matched = data.find((v: any) => v.device_id === storedDeviceId);
+      if (matched) {
+        setApprovedDiscount(matched.tipo as DiscountType);
+      }
+    }
+    setLoadingDiscount(false);
+  };
+
+  const isDiscounted = approvedDiscount !== "normal";
+  const ticketPrice = isDiscounted ? TICKET_PRICE_DESCUENTO : TICKET_PRICE_NORMAL;
+  const total = quantity * ticketPrice;
 
   const handleQuantityChange = (value: string) => {
     const num = parseInt(value);
@@ -39,7 +69,11 @@ export default function ComprarBoletos() {
     setPurchasing(true);
     try {
       const { data, error } = await supabase.functions.invoke("purchase-tickets", {
-        body: { quantity },
+        body: { 
+          quantity, 
+          ticket_type: approvedDiscount,
+          device_id: localStorage.getItem("tc_device_id") || undefined,
+        },
       });
 
       if (error) throw error;
@@ -70,6 +104,39 @@ export default function ComprarBoletos() {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Discount badge */}
+        {isDiscounted && (
+          <Card className="border-green-500/40 bg-green-500/5">
+            <CardContent className="p-3 flex items-center gap-3">
+              {approvedDiscount === "estudiante" ? (
+                <GraduationCap className="h-5 w-5 text-blue-500" />
+              ) : (
+                <UserRound className="h-5 w-5 text-amber-500" />
+              )}
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  Descuento {approvedDiscount === "estudiante" ? "Estudiante" : "Tercera Edad"} activo
+                </p>
+                <p className="text-xs text-muted-foreground">50% de descuento · $4.50 MXN por boleto</p>
+              </div>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">-50%</Badge>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Link to request discount */}
+        {!isDiscounted && !loadingDiscount && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={() => navigate("/wallet/qr-boletos/descuento")}
+          >
+            <ShieldCheck className="h-4 w-4 mr-1" />
+            ¿Eres estudiante o adulto mayor? Solicita tu descuento
+          </Button>
+        )}
+
         {/* Quantity Input */}
         <Card>
           <CardContent className="p-6">
@@ -102,7 +169,6 @@ export default function ComprarBoletos() {
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-
           </CardContent>
         </Card>
 
@@ -112,12 +178,23 @@ export default function ComprarBoletos() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Precio por código QR</span>
-                <span>$9.00 MXN</span>
+                <span>
+                  {isDiscounted && (
+                    <span className="line-through mr-2 text-muted-foreground/50">$9.00</span>
+                  )}
+                  ${ticketPrice.toFixed(2)} MXN
+                </span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Cantidad</span>
                 <span>× {quantity}</span>
               </div>
+              {isDiscounted && (
+                <div className="flex justify-between text-sm text-green-500">
+                  <span>Ahorro total</span>
+                  <span>-${(quantity * (TICKET_PRICE_NORMAL - TICKET_PRICE_DESCUENTO)).toFixed(2)} MXN</span>
+                </div>
+              )}
               <div className="border-t border-border pt-2 flex justify-between">
                 <span className="font-semibold text-foreground">Total</span>
                 <span className="text-2xl font-bold text-primary">
@@ -133,8 +210,11 @@ export default function ComprarBoletos() {
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
             <p>• Pago seguro con tarjeta vía Stripe</p>
             <p>• Los códigos QR se generan <strong className="text-foreground">automáticamente</strong></p>
-            <p>• Sin comisiones adicionales — pagas $9.00 por QR</p>
+            <p>• Sin comisiones adicionales — pagas ${ticketPrice.toFixed(2)} por QR</p>
             <p>• Los QR no expiran hasta que se usen</p>
+            {isDiscounted && (
+              <p className="text-amber-500">• ⚠️ Los boletos con descuento NO se pueden transferir</p>
+            )}
           </CardContent>
         </Card>
 
@@ -143,7 +223,7 @@ export default function ComprarBoletos() {
           className="w-full h-14 text-lg"
           size="lg"
           onClick={handlePurchase}
-          disabled={purchasing || quantity < 1}
+          disabled={purchasing || quantity < 1 || loadingDiscount}
         >
           {purchasing ? (
             <span className="animate-pulse">Procesando...</span>
@@ -155,8 +235,6 @@ export default function ComprarBoletos() {
           )}
         </Button>
       </div>
-
-      
     </div>
   );
 }

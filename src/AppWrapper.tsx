@@ -49,6 +49,7 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
+import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
 
 // Component to activate global notifications
@@ -144,6 +145,7 @@ export default function AppWrapper() {
           {/* GenerarQr route removed - QR codes generated automatically on purchase */}
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
+          <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
           <Route path="/panel-concesionario" element={<PanelConcesionario />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />

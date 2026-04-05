@@ -47,6 +47,11 @@ serve(async (req) => {
       throw new Error("Boleto no encontrado o no disponible para transferir");
     }
 
+    // Block transfer of discounted tickets
+    if (ticket.ticket_type && ticket.ticket_type !== "normal") {
+      throw new Error("Los boletos con descuento social no se pueden transferir.");
+    }
+
     // Set 24-hour expiration
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);

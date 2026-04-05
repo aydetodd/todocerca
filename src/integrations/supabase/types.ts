@@ -2189,6 +2189,7 @@ export type Database = {
           amount: number
           chofer_id: string | null
           created_at: string
+          device_id: string | null
           dispositivo_uso: string | null
           generated_at: string
           id: string
@@ -2199,6 +2200,7 @@ export type Database = {
           ruta_uso_id: string | null
           status: string
           stripe_fee_unitario: number | null
+          ticket_type: string
           token: string
           transfer_expires_at: string | null
           transfer_returned_at: string | null
@@ -2211,6 +2213,7 @@ export type Database = {
           amount?: number
           chofer_id?: string | null
           created_at?: string
+          device_id?: string | null
           dispositivo_uso?: string | null
           generated_at?: string
           id?: string
@@ -2221,6 +2224,7 @@ export type Database = {
           ruta_uso_id?: string | null
           status?: string
           stripe_fee_unitario?: number | null
+          ticket_type?: string
           token?: string
           transfer_expires_at?: string | null
           transfer_returned_at?: string | null
@@ -2233,6 +2237,7 @@ export type Database = {
           amount?: number
           chofer_id?: string | null
           created_at?: string
+          device_id?: string | null
           dispositivo_uso?: string | null
           generated_at?: string
           id?: string
@@ -2243,6 +2248,7 @@ export type Database = {
           ruta_uso_id?: string | null
           status?: string
           stripe_fee_unitario?: number | null
+          ticket_type?: string
           token?: string
           transfer_expires_at?: string | null
           transfer_returned_at?: string | null
@@ -3011,6 +3017,45 @@ export type Database = {
           },
         ]
       }
+      verificaciones_descuento: {
+        Row: {
+          admin_notas: string | null
+          aprobado_por: string | null
+          created_at: string
+          device_id: string | null
+          estado: string
+          id: string
+          tipo: string
+          updated_at: string
+          url_credencial: string
+          user_id: string
+        }
+        Insert: {
+          admin_notas?: string | null
+          aprobado_por?: string | null
+          created_at?: string
+          device_id?: string | null
+          estado?: string
+          id?: string
+          tipo: string
+          updated_at?: string
+          url_credencial: string
+          user_id: string
+        }
+        Update: {
+          admin_notas?: string | null
+          aprobado_por?: string | null
+          created_at?: string
+          device_id?: string | null
+          estado?: string
+          id?: string
+          tipo?: string
+          updated_at?: string
+          url_credencial?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       votacion_miembros: {
         Row: {
           agregado_por: string | null
@@ -3273,6 +3318,7 @@ export type Database = {
           amount: number
           chofer_id: string | null
           created_at: string
+          device_id: string | null
           dispositivo_uso: string | null
           generated_at: string
           id: string
@@ -3283,6 +3329,7 @@ export type Database = {
           ruta_uso_id: string | null
           status: string
           stripe_fee_unitario: number | null
+          ticket_type: string
           token: string
           transfer_expires_at: string | null
           transfer_returned_at: string | null
