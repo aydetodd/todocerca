@@ -350,11 +350,12 @@ serve(async (req) => {
       valid: true,
       message: "QR BOLETO VÁLIDO",
       details: {
-        amount: 9.00,
+        amount: ticket.amount || 9.00,
         short_code: ticket.token.slice(-6).toUpperCase(),
         validated_at: now,
         daily_passenger_count: dailyCount ?? 0,
         daily_total_mxn: (dailyCount ?? 0) * 9.00,
+        ticket_type: ticket.ticket_type || "normal",
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
