@@ -32,6 +32,7 @@ import { Link } from 'react-router-dom';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
+import AdminDescuentos from '@/components/AdminDescuentos';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
