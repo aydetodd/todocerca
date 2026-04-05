@@ -75,9 +75,11 @@ serve(async (req) => {
         console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
       }
 
-      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} QR codes for user ${userId}`);
+      // Calculate per-ticket Stripe fee
+      const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
+      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}`);
 
-      // Generate QR tickets directly
+      // Generate QR tickets with per-ticket Stripe fee
       const qrInserts = [];
       for (let i = 0; i < quantity; i++) {
         qrInserts.push({
@@ -86,6 +88,7 @@ serve(async (req) => {
           amount: 9.00,
           status: "active",
           is_transferred: false,
+          stripe_fee_unitario: stripeFeePerTicket,
         });
       }
 

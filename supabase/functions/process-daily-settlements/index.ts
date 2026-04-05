@@ -142,52 +142,46 @@ serve(async (req) => {
         const rangeStart = `${dateStart}T00:00:00-07:00`;
         const rangeEnd = `${dateEnd}T23:59:59-07:00`;
 
-        const { count: totalBoletos } = await supabaseAdmin
+        // Get validated ticket logs with their qr_ticket_ids
+        const { data: logsValidacion } = await supabaseAdmin
           .from("logs_validacion_qr")
-          .select("*", { count: "exact", head: true })
+          .select("qr_ticket_id")
           .in("unidad_id", unidadIds)
           .eq("resultado", "valid")
           .gte("created_at", rangeStart)
           .lte("created_at", rangeEnd);
 
-        const boletos = totalBoletos ?? 0;
+        const boletos = logsValidacion?.length ?? 0;
         if (boletos === 0) continue;
 
-        // Get actual Stripe fees from purchase transactions in the period
-        // Sum all stripe_fee from transacciones_boletos for purchases in the range
-        const { data: transacciones } = await supabaseAdmin
-          .from("transacciones_boletos")
-          .select("stripe_fee, cantidad_boletos, monto_total")
-          .eq("tipo", "compra")
-          .eq("estado", "completado")
-          .gte("created_at", rangeStart)
-          .lte("created_at", rangeEnd);
+        // Get the per-ticket Stripe fees from qr_tickets table
+        const ticketIds = logsValidacion!
+          .map((l: any) => l.qr_ticket_id)
+          .filter((id: any) => id != null);
 
-        // Calculate total Stripe fees and total tickets from transactions
-        let totalStripeFees = 0;
-        let totalTicketsComprados = 0;
-        if (transacciones && transacciones.length > 0) {
-          for (const tx of transacciones) {
-            const cantidadBoletosTx = Number(tx.cantidad_boletos) || 0;
-            const montoTotalTx = Number((tx as any).monto_total) || (cantidadBoletosTx * TICKET_PRICE);
-            const stripeFeeReal = Number(tx.stripe_fee) || 0;
-            const stripeFeeEstimado = (montoTotalTx * STRIPE_VARIABLE_FEE_PERCENT) + STRIPE_FIXED_FEE;
+        let feeStripeProporcional = 0;
 
-            totalStripeFees += stripeFeeReal > 0 ? stripeFeeReal : stripeFeeEstimado;
-            totalTicketsComprados += cantidadBoletosTx;
+        if (ticketIds.length > 0) {
+          const { data: tickets } = await supabaseAdmin
+            .from("qr_tickets")
+            .select("stripe_fee_unitario")
+            .in("id", ticketIds);
+
+          if (tickets && tickets.length > 0) {
+            feeStripeProporcional = tickets.reduce(
+              (sum: number, t: any) => sum + (Number(t.stripe_fee_unitario) || 0),
+              0
+            );
           }
         }
 
-        // Calculate proportional Stripe fee for this concesionario's tickets
-        // If this concesionario validated X tickets out of Y total purchased, their share of fees is X/Y
-        let feeStripeProporcional = 0;
-        if (totalTicketsComprados > 0) {
-          feeStripeProporcional = (boletos / totalTicketsComprados) * totalStripeFees;
-        } else {
-          // Fallback: estimate fee as 3.6% + $3.00 per estimated transaction
-          // Approximate 1 transaction per 10 tickets
+        // Fallback for tickets without stripe_fee_unitario (legacy)
+        const ticketsWithFee = ticketIds.length > 0 ? feeStripeProporcional : 0;
+        if (ticketsWithFee === 0 && boletos > 0) {
+          // Legacy fallback: estimate 3.6% + $3.00 per ~10 tickets
           const estimatedTransactions = Math.max(1, Math.ceil(boletos / 10));
           feeStripeProporcional = (boletos * TICKET_PRICE * STRIPE_VARIABLE_FEE_PERCENT) + (estimatedTransactions * STRIPE_FIXED_FEE);
+          console.log(`[SETTLEMENTS] Using legacy fee estimation for account ${cuenta.id}`);
         }
 
         // Calculate amounts
