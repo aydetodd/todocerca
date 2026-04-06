@@ -85,9 +85,10 @@ serve(async (req) => {
       }
 
       const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
+      const cuotaFijaUnitario = quantity > 0 ? 3.00 / quantity : 0;
       const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
 
-      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}`);
+      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}, cuota_fija/ticket: $${cuotaFijaUnitario.toFixed(4)}`);
 
       // Generate QR tickets
       const qrInserts = [];
@@ -99,6 +100,7 @@ serve(async (req) => {
           status: "active",
           is_transferred: false,
           stripe_fee_unitario: stripeFeePerTicket,
+          stripe_cuota_fija_unitario: cuotaFijaUnitario,
           ticket_type: ticketType,
           device_id: ticketType !== "normal" ? deviceId : null,
         });
