@@ -164,24 +164,28 @@ serve(async (req) => {
         if (ticketIds.length > 0) {
           const { data: tickets } = await supabaseAdmin
             .from("qr_tickets")
-            .select("stripe_fee_unitario")
+            .select("stripe_cuota_fija_unitario, amount")
             .in("id", ticketIds);
 
           if (tickets && tickets.length > 0) {
-            feeStripeProporcional = tickets.reduce(
-              (sum: number, t: any) => sum + (Number(t.stripe_fee_unitario) || 0),
-              0
+            // Variable fee: 3.6% on total facial value of validated tickets
+            const totalFacialValidado = tickets.reduce(
+              (sum: number, t: any) => sum + (Number(t.amount) || TICKET_PRICE), 0
             );
+            const feeVariable = totalFacialValidado * STRIPE_VARIABLE_FEE_PERCENT;
+
+            // Fixed fee: sum of prorated $3.00 per ticket from original purchase
+            const feeFijo = tickets.reduce(
+              (sum: number, t: any) => sum + (Number(t.stripe_cuota_fija_unitario) || 0), 0
+            );
+
+            feeStripeProporcional = feeVariable + feeFijo;
+            console.log(`[SETTLEMENTS] Fee breakdown: variable=$${feeVariable.toFixed(2)} + fijo=$${feeFijo.toFixed(2)} = $${feeStripeProporcional.toFixed(2)}`);
           }
         }
 
-        // Fallback for tickets without stripe_fee_unitario (legacy)
-        // If sum is 0 but we have tickets, calculate mathematically per-ticket
+        // Fallback for tickets without stripe_cuota_fija_unitario (legacy)
         if (feeStripeProporcional === 0 && boletos > 0) {
-          // Each ticket's proportional fee = (purchase_total * 3.6% + $3.00) / purchase_qty
-          // Since we don't know original purchase qty, use the stored fee from qr_tickets
-          // or estimate: variable on facial + fixed $3.00 spread across ~10 tickets per purchase
-          // Best estimate: 3.6% on facial + $0.30 per ticket (assuming avg 10 per purchase)
           feeStripeProporcional = (boletos * TICKET_PRICE * STRIPE_VARIABLE_FEE_PERCENT) + (boletos * 0.30);
           console.log(`[SETTLEMENTS] Using legacy fee estimation for account ${cuenta.id}: $${feeStripeProporcional.toFixed(2)}`);
         }
