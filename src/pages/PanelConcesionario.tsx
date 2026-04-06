@@ -1270,6 +1270,7 @@ export default function PanelConcesionario() {
                         <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
                         <p className="text-sm text-muted-foreground">
                           Placas: {u.placas}
+                          {u.descripcion && ` • ${u.descripcion}`}
                           {u.linea && ` • ${u.linea}`}
                           {u.modelo && ` ${u.modelo}`}
                         </p>
