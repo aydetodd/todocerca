@@ -80,7 +80,7 @@ export default function SolicitudDescuento() {
     if (!user || !selectedType) return;
 
     const existing = getExistingVerification(selectedType);
-    if (existing && existing.estado !== "rechazado") {
+    if (existing && !["rechazado", "incompleto"].includes(existing.estado)) {
       toast.error("Ya tienes una solicitud para este tipo de descuento");
       return;
     }
@@ -103,7 +103,7 @@ export default function SolicitudDescuento() {
 
       const deviceId = getDeviceId();
 
-      if (existing?.estado === "rechazado") {
+      if (existing?.estado === "rechazado" || existing?.estado === "incompleto") {
         // Update existing rejected request
         const { error } = await (supabase
           .from("verificaciones_descuento") as any)
@@ -148,6 +148,8 @@ export default function SolicitudDescuento() {
         return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Aprobado</Badge>;
       case "rechazado":
         return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Rechazado</Badge>;
+      case "incompleto":
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" /> Incompleto</Badge>;
       default:
         return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> En revisión</Badge>;
     }
@@ -210,13 +212,13 @@ export default function SolicitudDescuento() {
                   {estudianteV && estadoBadge(estudianteV.estado)}
                 </div>
 
-                {estudianteV?.estado === "rechazado" && estudianteV.admin_notas && (
+                {(estudianteV?.estado === "rechazado" || estudianteV?.estado === "incompleto") && estudianteV.admin_notas && (
                   <p className="text-xs text-destructive mb-2">
                     Motivo: {estudianteV.admin_notas}
                   </p>
                 )}
 
-                {(!estudianteV || estudianteV.estado === "rechazado") && (
+                {(!estudianteV || estudianteV.estado === "rechazado" || estudianteV.estado === "incompleto") && (
                   <>
                     {selectedType === "estudiante" ? (
                       <div className="space-y-2">
@@ -285,13 +287,13 @@ export default function SolicitudDescuento() {
                   {terceraV && estadoBadge(terceraV.estado)}
                 </div>
 
-                {terceraV?.estado === "rechazado" && terceraV.admin_notas && (
+                {(terceraV?.estado === "rechazado" || terceraV?.estado === "incompleto") && terceraV.admin_notas && (
                   <p className="text-xs text-destructive mb-2">
                     Motivo: {terceraV.admin_notas}
                   </p>
                 )}
 
-                {(!terceraV || terceraV.estado === "rechazado") && (
+                {(!terceraV || terceraV.estado === "rechazado" || terceraV.estado === "incompleto") && (
                   <>
                     {selectedType === "tercera_edad" ? (
                       <div className="space-y-2">

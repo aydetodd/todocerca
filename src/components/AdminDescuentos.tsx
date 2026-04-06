@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, UserRound, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { GraduationCap, UserRound, CheckCircle2, XCircle, Loader2, ExternalLink, Clock } from "lucide-react";
 
 type SolicitudDescuento = {
   id: string;
@@ -62,7 +62,7 @@ export default function AdminDescuentos() {
     setLoading(false);
   };
 
-  const handleAction = async (id: string, action: "aprobado" | "rechazado") => {
+  const handleAction = async (id: string, action: "aprobado" | "rechazado" | "incompleto") => {
     setProcessing(id);
     try {
       const { error } = await (supabase
@@ -75,7 +75,10 @@ export default function AdminDescuentos() {
         .eq("id", id);
 
       if (error) throw error;
-      toast.success(action === "aprobado" ? "Descuento aprobado" : "Solicitud rechazada");
+      toast.success(
+        action === "aprobado" ? "Descuento aprobado" : 
+        action === "incompleto" ? "Marcado como incompleto" : "Solicitud rechazada"
+      );
       fetchSolicitudes();
     } catch (err: any) {
       toast.error(err.message);
@@ -154,6 +157,14 @@ export default function AdminDescuentos() {
                 Aprobar
               </Button>
               <Button
+                variant="outline"
+                className="flex-1 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                onClick={() => handleAction(s.id, "incompleto")}
+                disabled={processing === s.id}
+              >
+                <Clock className="h-4 w-4 mr-1" /> Incompleto
+              </Button>
+              <Button
                 variant="destructive"
                 className="flex-1"
                 onClick={() => handleAction(s.id, "rechazado")}
@@ -185,7 +196,7 @@ export default function AdminDescuentos() {
                     </p>
                   </div>
                 </div>
-                <Badge className={s.estado === "aprobado" ? "bg-green-500/20 text-green-400" : ""} variant={s.estado === "rechazado" ? "destructive" : "default"}>
+                <Badge className={s.estado === "aprobado" ? "bg-green-500/20 text-green-400" : s.estado === "incompleto" ? "bg-yellow-500/20 text-yellow-400" : ""} variant={s.estado === "rechazado" ? "destructive" : "default"}>
                   {s.estado}
                 </Badge>
               </CardContent>
