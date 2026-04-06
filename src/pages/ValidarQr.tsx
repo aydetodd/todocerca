@@ -408,45 +408,62 @@ export default function ValidarQr() {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
         flashing ? "bg-red-600" : result?.error_type === "fraud" ? "bg-red-950" : "bg-background"
       }`}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-card border-b border-border p-4">
+      {/* Compact Header */}
+      <div className="shrink-0 bg-card border-b border-border px-3 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <BackButton />
             <div>
-              <h1 className="text-lg font-bold text-foreground">Validar QR Boleto</h1>
-              <p className="text-xs text-muted-foreground">Escáner de chofer</p>
+              <h1 className="text-sm font-bold text-foreground">Validar QR Boleto</h1>
+              <p className="text-[10px] text-muted-foreground">Escáner de chofer</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className="text-muted-foreground"
-          >
-            {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant={showMap ? "default" : "outline"}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setShowMap(!showMap)}
+            >
+              <MapIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground"
+              onClick={() => setAudioEnabled(!audioEnabled)}
+            >
+              {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Daily Stats - Clickable */}
-        <div className="grid grid-cols-2 gap-3 cursor-pointer" onClick={toggleTicketList}>
-          <Card className="transition-colors hover:border-primary">
-            <CardContent className="p-3 text-center">
-              <p className="text-3xl font-bold text-foreground">{dailyCount}</p>
-              <p className="text-xs text-muted-foreground">Pasajeros hoy</p>
-              <p className="text-[10px] text-primary mt-1">{showTicketList ? "▲ Ocultar" : "▼ Ver boletos"}</p>
+      {/* Top Half: Map */}
+      {showMap && (
+        <div className="shrink-0 h-[40vh] border-b border-border">
+          <DriverMiniMap routeProductId={assignedRouteId} />
+        </div>
+      )}
+
+      {/* Bottom Half: Scanner - scrollable */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-28">
+        {/* Compact Daily Stats */}
+        <div className="grid grid-cols-2 gap-2 cursor-pointer" onClick={toggleTicketList}>
+          <Card>
+            <CardContent className="p-2 text-center">
+              <p className="text-2xl font-bold text-foreground">{dailyCount}</p>
+              <p className="text-[10px] text-muted-foreground">Pasajeros hoy</p>
             </CardContent>
           </Card>
-          <Card className="transition-colors hover:border-primary">
-            <CardContent className="p-3 text-center">
-              <p className="text-3xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
-              <p className="text-xs text-muted-foreground">Recaudado hoy</p>
+          <Card>
+            <CardContent className="p-2 text-center">
+              <p className="text-2xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
+              <p className="text-[10px] text-muted-foreground">Recaudado hoy</p>
             </CardContent>
           </Card>
         </div>
@@ -466,7 +483,7 @@ export default function ValidarQr() {
               ) : dailyTickets.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-2">Sin boletos validados</p>
               ) : (
-                <div className="space-y-1 max-h-48 overflow-y-auto">
+                <div className="space-y-1 max-h-32 overflow-y-auto">
                   {dailyTickets.map((t, i) => (
                     <div key={i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
                       <span className="font-mono text-sm font-bold text-foreground">#{t.short_code}</span>
@@ -483,11 +500,11 @@ export default function ValidarQr() {
         {/* Camera Scanner */}
         {cameraOpen && (
           <Card>
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">📷 Escaneando con cámara...</span>
-                <Button variant="ghost" size="icon" onClick={closeCamera}>
-                  <X className="h-5 w-5" />
+                <span className="text-xs font-medium text-foreground">📷 Escaneando...</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeCamera}>
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
               <div id="qr-camera-reader" className="w-full rounded-lg overflow-hidden" />
@@ -497,11 +514,7 @@ export default function ValidarQr() {
 
         {/* QR Input */}
         <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Keyboard className="h-4 w-4" />
-              <span className="text-sm font-medium">Ingrese o escanee el código QR</span>
-            </div>
+          <CardContent className="p-3 space-y-2">
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -509,33 +522,33 @@ export default function ValidarQr() {
                 onChange={(e) => setQrInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Token del boleto QR..."
-                className="font-mono text-lg"
+                className="font-mono text-base"
                 autoComplete="off"
                 autoFocus
               />
               <Button
                 onClick={() => handleValidateToken()}
                 disabled={!qrInput.trim() || validating}
-                size="lg"
-                className="px-4"
+                size="default"
+                className="px-3"
               >
                 {validating ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
                 ) : (
-                  <QrCode className="h-5 w-5" />
+                  <QrCode className="h-4 w-4" />
                 )}
               </Button>
               <Button
                 onClick={cameraOpen ? closeCamera : openCamera}
                 variant={cameraOpen ? "destructive" : "outline"}
-                size="lg"
-                className="px-4"
+                size="default"
+                className="px-3"
               >
-                <Camera className="h-5 w-5" />
+                <Camera className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Use un lector QR, escriba el código o escanee con la cámara 📷
+            <p className="text-[10px] text-muted-foreground text-center">
+              Lector QR, código manual o cámara 📷
             </p>
           </CardContent>
         </Card>
@@ -546,24 +559,20 @@ export default function ValidarQr() {
             {/* VALID */}
             {result.valid && result.details && (
               <Card className="border-green-500 border-2 bg-green-500/10">
-                <CardContent className="p-6 text-center space-y-3">
-                  <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-                  <h2 className="text-2xl font-bold text-green-600">✓ BOLETO VÁLIDO</h2>
-                  <p className="font-mono text-xl font-bold text-foreground">
+                <CardContent className="p-4 text-center space-y-2">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+                  <h2 className="text-xl font-bold text-green-600">✓ VÁLIDO</h2>
+                  <p className="font-mono text-lg font-bold text-foreground">
                     #{result.details.short_code}
                   </p>
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="bg-card rounded-lg p-3">
-                      <p className="text-2xl font-bold text-foreground">
-                        ${result.details.amount.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Valor</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-card rounded-lg p-2">
+                      <p className="text-xl font-bold text-foreground">${result.details.amount.toFixed(2)}</p>
+                      <p className="text-[10px] text-muted-foreground">Valor</p>
                     </div>
-                    <div className="bg-card rounded-lg p-3">
-                      <p className="text-2xl font-bold text-foreground">
-                        #{result.details.daily_passenger_count}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Pasajero del día</p>
+                    <div className="bg-card rounded-lg p-2">
+                      <p className="text-xl font-bold text-foreground">#{result.details.daily_passenger_count}</p>
+                      <p className="text-[10px] text-muted-foreground">Pasajero del día</p>
                     </div>
                   </div>
                 </CardContent>
@@ -577,60 +586,45 @@ export default function ValidarQr() {
                   flashing ? "border-white bg-red-800" : "border-red-500 bg-red-900/90"
                 }`}
               >
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 space-y-3">
                   <div className="text-center">
                     <ShieldAlert
-                      className={`h-20 w-20 mx-auto ${
+                      className={`h-16 w-16 mx-auto ${
                         flashing ? "text-white" : "text-red-400"
                       } animate-pulse`}
                     />
-                    <h2 className="text-2xl font-bold text-white mt-3">
-                      ⚠️ ALERTA DE FRAUDE
-                    </h2>
-                    <Badge className={`mt-2 text-base px-4 py-1 ${severityColor(result.severity)}`}>
-                      Severidad: {severityLabel(result.severity)}
+                    <h2 className="text-xl font-bold text-white mt-2">⚠️ FRAUDE</h2>
+                    <Badge className={`mt-1 text-sm px-3 py-0.5 ${severityColor(result.severity)}`}>
+                      {severityLabel(result.severity)}
                     </Badge>
                   </div>
-
-                  <div className="bg-red-950/80 rounded-lg p-4 space-y-2 text-sm">
+                  <div className="bg-red-950/80 rounded-lg p-3 space-y-1.5 text-xs">
                     <p className="text-red-200">
                       <strong className="text-white">Código:</strong>{" "}
-                      <span className="font-mono text-lg">#{result.fraud_details.short_code}</span>
+                      <span className="font-mono text-base">#{result.fraud_details.short_code}</span>
                     </p>
                     <p className="text-red-200">
-                      <strong className="text-white">Usado originalmente:</strong>{" "}
+                      <strong className="text-white">Usado:</strong>{" "}
                       {new Date(result.fraud_details.used_at).toLocaleString("es-MX", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
+                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                       })}
                     </p>
                     <p className="text-red-200">
-                      <strong className="text-white">Unidad original:</strong>{" "}
+                      <strong className="text-white">Unidad:</strong>{" "}
                       {result.fraud_details.used_on_unit}
-                      {result.fraud_details.used_on_plates &&
-                        ` (${result.fraud_details.used_on_plates})`}
+                      {result.fraud_details.used_on_plates && ` (${result.fraud_details.used_on_plates})`}
                     </p>
                     <p className="text-red-200">
-                      <strong className="text-white">Tiempo transcurrido:</strong>{" "}
-                      {result.fraud_details.minutes_elapsed} min
+                      <strong className="text-white">Hace:</strong> {result.fraud_details.minutes_elapsed} min
                     </p>
                     {result.fraud_details.distance_km !== null && (
                       <p className="text-red-200">
-                        <strong className="text-white">Distancia:</strong>{" "}
-                        {result.fraud_details.distance_km} km
+                        <strong className="text-white">Distancia:</strong> {result.fraud_details.distance_km} km
                       </p>
                     )}
                     <p className="text-red-200">
-                      <strong className="text-white">Intentos del usuario:</strong>{" "}
-                      <span className="text-red-300 font-bold text-lg">
-                        {result.fraud_details.total_user_attempts}
-                      </span>
-                    </p>
-                    <p className="text-red-200">
-                      <strong className="text-white">Misma unidad:</strong>{" "}
-                      {result.fraud_details.is_same_unit ? "Sí" : "No"}
+                      <strong className="text-white">Intentos:</strong>{" "}
+                      <span className="text-red-300 font-bold text-base">{result.fraud_details.total_user_attempts}</span>
                     </p>
                   </div>
                 </CardContent>
@@ -640,30 +634,27 @@ export default function ValidarQr() {
             {/* OTHER ERRORS */}
             {!result.valid && result.error_type !== "fraud" && (
               <Card className="border-amber-500 border-2 bg-amber-500/10">
-                <CardContent className="p-6 text-center space-y-3">
+                <CardContent className="p-4 text-center space-y-2">
                   {result.error_type === "expired_transfer" ? (
-                    <AlertTriangle className="h-16 w-16 mx-auto text-amber-500" />
+                    <AlertTriangle className="h-12 w-12 mx-auto text-amber-500" />
                   ) : (
-                    <XCircle className="h-16 w-16 mx-auto text-amber-500" />
+                    <XCircle className="h-12 w-12 mx-auto text-amber-500" />
                   )}
-                  <h2 className="text-xl font-bold text-amber-600">BOLETO NO VÁLIDO</h2>
-                  <p className="text-muted-foreground">{result.message}</p>
+                  <h2 className="text-lg font-bold text-amber-600">NO VÁLIDO</h2>
+                  <p className="text-sm text-muted-foreground">{result.message}</p>
                 </CardContent>
               </Card>
             )}
           </>
         )}
 
-        {/* Instructions when idle */}
-        {!result && !validating && (
+        {/* Idle state - only when no map */}
+        {!result && !validating && !showMap && (
           <Card>
-            <CardContent className="p-6 text-center text-muted-foreground space-y-2">
-              <QrCode className="h-12 w-12 mx-auto opacity-30" />
-              <p className="font-medium text-foreground">Listo para escanear</p>
-              <p className="text-sm">
-                Conecte un lector QR USB/Bluetooth o ingrese el código manualmente.
-                El lector enviará el código automáticamente al campo de texto.
-              </p>
+            <CardContent className="p-4 text-center text-muted-foreground space-y-2">
+              <QrCode className="h-10 w-10 mx-auto opacity-30" />
+              <p className="text-sm font-medium text-foreground">Listo para escanear</p>
+              <p className="text-xs">Conecte un lector QR o ingrese el código.</p>
             </CardContent>
           </Card>
         )}
