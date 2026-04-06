@@ -1,0 +1,1 @@
+ALTER TABLE qr_tickets ADD COLUMN stripe_cuota_fija_unitario numeric DEFAULT 0;
