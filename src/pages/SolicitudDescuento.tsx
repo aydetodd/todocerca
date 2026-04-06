@@ -148,6 +148,8 @@ export default function SolicitudDescuento() {
         return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Aprobado</Badge>;
       case "rechazado":
         return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Rechazado</Badge>;
+      case "incompleto":
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" /> Incompleto</Badge>;
       default:
         return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> En revisión</Badge>;
     }
