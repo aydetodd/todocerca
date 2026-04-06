@@ -95,6 +95,7 @@ export default function HistorialBoletos() {
         .in("id", transferredIds)
         .order("updated_at", { ascending: false })
         .limit(50);
+    }
 
     const { data } = await query;
     if (data) {
