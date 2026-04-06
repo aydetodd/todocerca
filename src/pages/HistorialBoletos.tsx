@@ -80,23 +80,29 @@ export default function HistorialBoletos() {
 
     const { data } = await query;
     if (data) {
-      // For used and transferred tickets, fetch route info from validation logs
+      // For used and transferred tickets, fetch route name from ruta_uso_id on the ticket itself
       if ((filter === "used" || filter === "transferred") && data.length > 0) {
-        const ticketIds = data.map((t: any) => t.id);
-        const { data: logs } = await (supabase
-          .from("logs_validacion_qr") as any)
-          .select("qr_ticket_id, producto_id")
-          .in("qr_ticket_id", ticketIds)
-          .eq("resultado", "valid");
-
         const routeProductIds = new Set<string>();
-        const ticketRouteMap: Record<string, string> = {};
-        (logs || []).forEach((l: any) => {
-          if (l.producto_id && l.qr_ticket_id) {
-            ticketRouteMap[l.qr_ticket_id] = l.producto_id;
-            routeProductIds.add(l.producto_id);
-          }
+        data.forEach((t: any) => {
+          if (t.ruta_uso_id) routeProductIds.add(t.ruta_uso_id);
         });
+
+        // Fallback: also check logs_validacion_qr for tickets missing ruta_uso_id
+        const ticketsWithoutRoute = data.filter((t: any) => !t.ruta_uso_id);
+        const ticketRouteMap: Record<string, string> = {};
+        if (ticketsWithoutRoute.length > 0) {
+          const { data: logs } = await (supabase
+            .from("logs_validacion_qr") as any)
+            .select("qr_ticket_id, producto_id")
+            .in("qr_ticket_id", ticketsWithoutRoute.map((t: any) => t.id))
+            .eq("resultado", "valid");
+          (logs || []).forEach((l: any) => {
+            if (l.producto_id && l.qr_ticket_id) {
+              ticketRouteMap[l.qr_ticket_id] = l.producto_id;
+              routeProductIds.add(l.producto_id);
+            }
+          });
+        }
 
         const routeNameMap: Record<string, string> = {};
         if (routeProductIds.size > 0) {
@@ -110,7 +116,7 @@ export default function HistorialBoletos() {
         }
 
         data.forEach((t: any) => {
-          const prodId = ticketRouteMap[t.id];
+          const prodId = t.ruta_uso_id || ticketRouteMap[t.id];
           t._ruta_nombre = prodId ? routeNameMap[prodId] || null : null;
         });
       }
