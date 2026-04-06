@@ -62,7 +62,7 @@ export default function AdminDescuentos() {
     setLoading(false);
   };
 
-  const handleAction = async (id: string, action: "aprobado" | "rechazado") => {
+  const handleAction = async (id: string, action: "aprobado" | "rechazado" | "incompleto") => {
     setProcessing(id);
     try {
       const { error } = await (supabase
