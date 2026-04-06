@@ -75,7 +75,10 @@ export default function AdminDescuentos() {
         .eq("id", id);
 
       if (error) throw error;
-      toast.success(action === "aprobado" ? "Descuento aprobado" : "Solicitud rechazada");
+      toast.success(
+        action === "aprobado" ? "Descuento aprobado" : 
+        action === "incompleto" ? "Marcado como incompleto" : "Solicitud rechazada"
+      );
       fetchSolicitudes();
     } catch (err: any) {
       toast.error(err.message);
