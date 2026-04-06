@@ -157,6 +157,14 @@ export default function AdminDescuentos() {
                 Aprobar
               </Button>
               <Button
+                variant="outline"
+                className="flex-1 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                onClick={() => handleAction(s.id, "incompleto")}
+                disabled={processing === s.id}
+              >
+                <Clock className="h-4 w-4 mr-1" /> Incompleto
+              </Button>
+              <Button
                 variant="destructive"
                 className="flex-1"
                 onClick={() => handleAction(s.id, "rechazado")}
