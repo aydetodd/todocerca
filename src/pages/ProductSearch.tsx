@@ -973,21 +973,19 @@ const ProductSearch = () => {
                           key={route.nombre}
                           variant={selectedRoute === route.nombre ? "default" : "outline"}
                           className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                          onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
+                          onClick={() => {
+                            const newRoute = selectedRoute === route.nombre ? null : route.nombre;
+                            setSelectedRoute(newRoute);
+                            if (newRoute) {
+                              // Auto-search for this specific route
+                              setTimeout(() => handleSearch(), 50);
+                            }
+                          }}
                         >
                           {route.nombre}
                         </Badge>
                       ))}
                     </div>
-                    <Button 
-                      type="button" 
-                      onClick={handleSearch} 
-                      disabled={loading}
-                      className="mt-4 w-full sm:w-auto"
-                    >
-                      <SearchIcon className="w-4 h-4 mr-2" />
-                      {loading ? "Buscando…" : "Buscar"}
-                    </Button>
                   </>
                 )}
               </>
