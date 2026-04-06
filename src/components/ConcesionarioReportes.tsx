@@ -121,18 +121,24 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       label: `${u.numero_economico || u.nombre}${u.placas ? ` · ${u.placas}` : ""}`,
     }));
     setUnidades(units);
-    setChoferes((cRes.data || []).map((c: any) => ({ id: c.id, nombre: c.nombre || "Sin nombre" })));
+    setChoferes((cRes.data || []).map((c: any) => ({ id: c.user_id || c.id, nombre: c.nombre || "Sin nombre" })));
 
     // Load routes: get distinct producto_ids from validation logs for this concesionario's units
     if (units.length > 0) {
-      const { data: logRoutes } = await (supabase
+        const { data: logRoutes } = await (supabase
         .from("logs_validacion_qr") as any)
-        .select("producto_id")
+          .select("producto_id, qr_tickets(ruta_uso_id)")
         .in("unidad_id", units.map((u) => u.id))
         .eq("resultado", "valid")
-        .not("producto_id", "is", null);
+          .or("producto_id.not.is.null,qr_tickets.ruta_uso_id.not.is.null");
 
-      const uniqueProductoIds = [...new Set((logRoutes || []).map((l: any) => l.producto_id))] as string[];
+       const uniqueProductoIds = [
+         ...new Set(
+           (logRoutes || [])
+             .map((l: any) => l.producto_id || l.qr_tickets?.ruta_uso_id || null)
+             .filter(Boolean)
+         ),
+       ] as string[];
       
       if (uniqueProductoIds.length > 0) {
         const { data: prodData } = await supabase
@@ -161,10 +167,9 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
       const targetUnitIds = filterUnidad === "all" ? unitIds : [filterUnidad];
 
-      // Fetch logs including producto_id
       let query = (supabase
         .from("logs_validacion_qr") as any)
-        .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id")
+        .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id, qr_tickets(token, unidad_uso_id, ruta_uso_id, chofer_id)")
         .in("unidad_id", targetUnitIds)
         .eq("resultado", "valid")
         .gte("created_at", start)
@@ -172,14 +177,31 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         .order("created_at", { ascending: false })
         .limit(5000);
 
-      // Apply route filter at query level
-      if (filterRuta !== "all") {
-        query = query.eq("producto_id", filterRuta);
-      }
-
       const { data: logs } = await query;
 
       if (!logs || logs.length === 0) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+
+      const normalizedLogs = (logs || [])
+        .map((log: any) => ({
+          ...log,
+          effectiveUnidadId: log.unidad_id || log.qr_tickets?.unidad_uso_id || null,
+          effectiveChoferId: log.chofer_id || log.qr_tickets?.chofer_id || null,
+          effectiveProductoId: log.producto_id || log.qr_tickets?.ruta_uso_id || null,
+          ticketToken: log.qr_tickets?.token || null,
+        }))
+        .filter((log: any) => log.effectiveUnidadId && targetUnitIds.includes(log.effectiveUnidadId));
+
+      const filteredLogs = normalizedLogs.filter((log: any) => {
+        if (filterChofer !== "all" && log.effectiveChoferId !== filterChofer) return false;
+        if (filterRuta !== "all" && log.effectiveProductoId !== filterRuta) return false;
+        return true;
+      });
+
+      if (filteredLogs.length === 0) {
         setRows([]);
         setLoading(false);
         return;
@@ -196,7 +218,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
       // Fetch chofer names
       const choferIdsSet = new Set<string>();
-      logs.forEach((l: any) => { if (l.chofer_id) choferIdsSet.add(l.chofer_id); });
+      filteredLogs.forEach((l: any) => { if (l.effectiveChoferId) choferIdsSet.add(l.effectiveChoferId); });
       const choferIds = Array.from(choferIdsSet);
       const choferMap: Record<string, string> = {};
       if (choferIds.length > 0) {
@@ -224,7 +246,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
       // Fetch route names for producto_ids in logs
       const productoIdsSet = new Set<string>();
-      logs.forEach((l: any) => { if (l.producto_id) productoIdsSet.add(l.producto_id); });
+      filteredLogs.forEach((l: any) => { if (l.effectiveProductoId) productoIdsSet.add(l.effectiveProductoId); });
       const productoIds = Array.from(productoIdsSet);
       const rutaMap: Record<string, string> = {};
       if (productoIds.length > 0) {
@@ -239,13 +261,18 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       }
 
       // Group by unidad + chofer + ruta (producto_id)
-      const groupKey = (log: any) => `${log.unidad_id || "none"}__${log.chofer_id || "none"}__${log.producto_id || "none"}`;
+      const groupKey = (log: any) => `${log.effectiveUnidadId || "none"}__${log.effectiveChoferId || "none"}__${log.effectiveProductoId || "none"}`;
       const groups: Record<string, { unidad_id: string | null; chofer_id: string | null; producto_id: string | null; tickets: any[] }> = {};
 
-      logs.forEach((log: any) => {
+      filteredLogs.forEach((log: any) => {
         const key = groupKey(log);
         if (!groups[key]) {
-          groups[key] = { unidad_id: log.unidad_id, chofer_id: log.chofer_id, producto_id: log.producto_id, tickets: [] };
+          groups[key] = {
+            unidad_id: log.effectiveUnidadId,
+            chofer_id: log.effectiveChoferId,
+            producto_id: log.effectiveProductoId,
+            tickets: [],
+          };
         }
         groups[key].tickets.push(log);
       });
@@ -263,7 +290,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           boletos: g.tickets.length,
           ingresos: g.tickets.length * 9,
           tickets: g.tickets.map((t: any) => ({
-            code: (t.qr_ticket_id || "").slice(-6).toUpperCase(),
+            code: (t.ticketToken || t.qr_ticket_id || "").slice(-6).toUpperCase(),
             time: new Date(t.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
             date: new Date(t.created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" }),
           })),
