@@ -35,8 +35,20 @@ export default function HistorialBoletos() {
     fetchTickets();
   }, [user, filter]);
 
+  const fetchTransferredTicketIds = async (): Promise<string[]> => {
+    // Get ticket IDs that have actual transfer-related movements
+    const { data: movements } = await (supabase
+      .from("movimientos_boleto") as any)
+      .select("qr_ticket_id")
+      .eq("user_id", user!.id)
+      .in("tipo", ["transferred", "re_transferred", "transfer_cancelled", "transfer_expired"]);
+    
+    const uniqueIds = [...new Set((movements || []).map((m: any) => m.qr_ticket_id))];
+    return uniqueIds as string[];
+  };
+
   const fetchCounts = async () => {
-    const [activeRes, usedRes, transferredRes] = await Promise.all([
+    const [activeRes, usedRes, transferredIds] = await Promise.all([
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
@@ -48,17 +60,12 @@ export default function HistorialBoletos() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
-      // Transferred: any ticket that has ever been transferred (has movements)
-      supabase
-        .from("qr_tickets")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user!.id)
-        .or("is_transferred.eq.true,transfer_returned_at.not.is.null"),
+      fetchTransferredTicketIds(),
     ]);
     setCounts({
       active: activeRes.count ?? 0,
       used: usedRes.count ?? 0,
-      transferred: transferredRes.count ?? 0,
+      transferred: transferredIds.length,
     });
   };
 
