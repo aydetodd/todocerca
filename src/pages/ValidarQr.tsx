@@ -103,6 +103,7 @@ export default function ValidarQr() {
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
