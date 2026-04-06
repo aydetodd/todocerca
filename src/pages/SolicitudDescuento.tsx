@@ -102,7 +102,7 @@ export default function SolicitudDescuento() {
 
       const deviceId = getDeviceId();
 
-      if (existing?.estado === "rechazado") {
+      if (existing?.estado === "rechazado" || existing?.estado === "incompleto") {
         // Update existing rejected request
         const { error } = await (supabase
           .from("verificaciones_descuento") as any)
