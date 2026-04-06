@@ -76,6 +76,14 @@ serve(async (req) => {
         console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
       }
 
+      // If Stripe API didn't return the fee, calculate it mathematically
+      // Stripe Mexico: 3.6% + $3.00 MXN fixed per transaction
+      if (stripeFee === 0 && quantity > 0) {
+        const totalAmount = quantity * ticketAmount;
+        stripeFee = (totalAmount * 0.036) + 3.00;
+        console.log(`[WEBHOOK-TICKETS] Calculated Stripe fee: $${stripeFee.toFixed(2)} MXN (${quantity} × $${ticketAmount})`);
+      }
+
       const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
       const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
 
