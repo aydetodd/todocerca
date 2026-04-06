@@ -77,9 +77,16 @@ const ProductSearch = () => {
   const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
   const autoSearchTriggeredRef = useRef(false);
 
-  const [searchPais, setSearchPais] = useState<string>("MX");
-  const [searchEstado, setSearchEstado] = useState<string>("");
-  const [searchCiudad, setSearchCiudad] = useState<string>("");
+  // Restore last used geography from localStorage
+  const [searchPais, setSearchPais] = useState<string>(() => {
+    return localStorage.getItem('lastSearchPais') || "MX";
+  });
+  const [searchEstado, setSearchEstado] = useState<string>(() => {
+    return localStorage.getItem('lastSearchEstado') || "";
+  });
+  const [searchCiudad, setSearchCiudad] = useState<string>(() => {
+    return localStorage.getItem('lastSearchCiudad') || "";
+  });
 
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
@@ -152,10 +159,29 @@ const ProductSearch = () => {
     [searchEstado, getMunicipios]
   );
 
-  // Auto-apply GPS-detected city when available (wait for both GPS and geo data)
+  // Persist geography changes to localStorage
+  useEffect(() => {
+    if (searchPais) localStorage.setItem('lastSearchPais', searchPais);
+  }, [searchPais]);
+  useEffect(() => {
+    if (searchEstado) localStorage.setItem('lastSearchEstado', searchEstado);
+  }, [searchEstado]);
+  useEffect(() => {
+    if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+      localStorage.setItem('lastSearchCiudad', searchCiudad);
+    }
+  }, [searchCiudad]);
 
+  // Auto-apply GPS-detected city ONLY if no saved geography exists
   useEffect(() => {
     if (gpsApplied || !gpsLocation || gpsLoading || geoDataLoading) return;
+
+    // Skip GPS auto-detect if user already has saved geography
+    const savedEstado = localStorage.getItem('lastSearchEstado');
+    if (savedEstado) {
+      setGpsApplied(true);
+      return;
+    }
 
     const { pais, estado, ciudad } = gpsLocation;
 
@@ -947,21 +973,19 @@ const ProductSearch = () => {
                           key={route.nombre}
                           variant={selectedRoute === route.nombre ? "default" : "outline"}
                           className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                          onClick={() => setSelectedRoute(selectedRoute === route.nombre ? null : route.nombre)}
+                          onClick={() => {
+                            const newRoute = selectedRoute === route.nombre ? null : route.nombre;
+                            setSelectedRoute(newRoute);
+                            if (newRoute) {
+                              // Auto-search for this specific route
+                              setTimeout(() => handleSearch(), 50);
+                            }
+                          }}
                         >
                           {route.nombre}
                         </Badge>
                       ))}
                     </div>
-                    <Button 
-                      type="button" 
-                      onClick={handleSearch} 
-                      disabled={loading}
-                      className="mt-4 w-full sm:w-auto"
-                    >
-                      <SearchIcon className="w-4 h-4 mr-2" />
-                      {loading ? "Buscando…" : "Buscar"}
-                    </Button>
                   </>
                 )}
               </>
