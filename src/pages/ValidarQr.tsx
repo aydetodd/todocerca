@@ -236,11 +236,53 @@ export default function ValidarQr() {
     setShowTicketList(!showTicketList);
   };
 
-  // Cleanup flash timer
+  // Cleanup flash timer and camera
   useEffect(() => {
     return () => {
       if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      if (html5QrRef.current) {
+        html5QrRef.current.stop().catch(() => {});
+      }
     };
+  }, []);
+
+  const openCamera = useCallback(async () => {
+    setCameraOpen(true);
+    // Wait for DOM to render the container
+    setTimeout(async () => {
+      try {
+        const scanner = new Html5Qrcode("qr-camera-reader");
+        html5QrRef.current = scanner;
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            // Auto-validate on scan
+            closeCamera();
+            setQrInput(decodedText);
+            // Trigger validation after setting input
+            setTimeout(() => {
+              const fakeEvent = { key: "Enter", preventDefault: () => {} } as React.KeyboardEvent;
+              // Directly call validate
+              handleValidateToken(decodedText);
+            }, 100);
+          },
+          () => {} // ignore errors during scanning
+        );
+      } catch (err: any) {
+        console.error("Camera error:", err);
+        toast.error("No se pudo acceder a la cámara");
+        setCameraOpen(false);
+      }
+    }, 100);
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    if (html5QrRef.current) {
+      html5QrRef.current.stop().catch(() => {});
+      html5QrRef.current = null;
+    }
+    setCameraOpen(false);
   }, []);
 
   const startFlashing = useCallback(() => {
