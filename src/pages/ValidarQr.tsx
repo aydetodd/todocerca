@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download } from "lucide-react";
+import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import { getHermosilloToday, getHermosilloTodayStart } from "@/lib/utils";
+import { Html5Qrcode } from "html5-qrcode";
 
 type ValidationResult = {
   valid: boolean;
@@ -103,6 +104,9 @@ export default function ValidarQr() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const html5QrRef = useRef<Html5Qrcode | null>(null);
+  const cameraContainerRef = useRef<HTMLDivElement>(null);
 
   // Load driver's assigned unit and initial daily stats
   useEffect(() => {
@@ -232,11 +236,49 @@ export default function ValidarQr() {
     setShowTicketList(!showTicketList);
   };
 
-  // Cleanup flash timer
+  // Cleanup flash timer and camera
   useEffect(() => {
     return () => {
       if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      if (html5QrRef.current) {
+        html5QrRef.current.stop().catch(() => {});
+      }
     };
+  }, []);
+
+  const openCamera = useCallback(async () => {
+    setCameraOpen(true);
+    setTimeout(async () => {
+      try {
+        const scanner = new Html5Qrcode("qr-camera-reader");
+        html5QrRef.current = scanner;
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            if (html5QrRef.current) {
+              html5QrRef.current.stop().catch(() => {});
+              html5QrRef.current = null;
+            }
+            setCameraOpen(false);
+            handleValidateToken(decodedText);
+          },
+          () => {}
+        );
+      } catch (err: any) {
+        console.error("Camera error:", err);
+        toast.error("No se pudo acceder a la cámara");
+        setCameraOpen(false);
+      }
+    }, 100);
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    if (html5QrRef.current) {
+      html5QrRef.current.stop().catch(() => {});
+      html5QrRef.current = null;
+    }
+    setCameraOpen(false);
   }, []);
 
   const startFlashing = useCallback(() => {
@@ -252,8 +294,8 @@ export default function ValidarQr() {
     }, 500);
   }, []);
 
-  const handleValidate = async () => {
-    const token = qrInput.trim();
+  const handleValidateToken = async (directToken?: string) => {
+    const token = (directToken || qrInput).trim();
     if (!token || validating) return;
 
     setValidating(true);
@@ -327,7 +369,7 @@ export default function ValidarQr() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleValidate();
+      handleValidateToken();
     }
   };
 
@@ -436,6 +478,21 @@ export default function ValidarQr() {
           </Card>
         )}
 
+        {/* Camera Scanner */}
+        {cameraOpen && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">📷 Escaneando con cámara...</span>
+                <Button variant="ghost" size="icon" onClick={closeCamera}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div id="qr-camera-reader" className="w-full rounded-lg overflow-hidden" />
+            </CardContent>
+          </Card>
+        )}
+
         {/* QR Input */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -455,10 +512,10 @@ export default function ValidarQr() {
                 autoFocus
               />
               <Button
-                onClick={handleValidate}
+                onClick={() => handleValidateToken()}
                 disabled={!qrInput.trim() || validating}
                 size="lg"
-                className="px-6"
+                className="px-4"
               >
                 {validating ? (
                   <div className="animate-spin h-5 w-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
@@ -466,9 +523,17 @@ export default function ValidarQr() {
                   <QrCode className="h-5 w-5" />
                 )}
               </Button>
+              <Button
+                onClick={cameraOpen ? closeCamera : openCamera}
+                variant={cameraOpen ? "destructive" : "outline"}
+                size="lg"
+                className="px-4"
+              >
+                <Camera className="h-5 w-5" />
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Use un lector QR externo o escriba el código manualmente
+              Use un lector QR, escriba el código o escanee con la cámara 📷
             </p>
           </CardContent>
         </Card>
