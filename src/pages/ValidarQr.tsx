@@ -248,7 +248,6 @@ export default function ValidarQr() {
 
   const openCamera = useCallback(async () => {
     setCameraOpen(true);
-    // Wait for DOM to render the container
     setTimeout(async () => {
       try {
         const scanner = new Html5Qrcode("qr-camera-reader");
@@ -257,17 +256,14 @@ export default function ValidarQr() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            // Auto-validate on scan
-            closeCamera();
-            setQrInput(decodedText);
-            // Trigger validation after setting input
-            setTimeout(() => {
-              const fakeEvent = { key: "Enter", preventDefault: () => {} } as React.KeyboardEvent;
-              // Directly call validate
-              handleValidateToken(decodedText);
-            }, 100);
+            if (html5QrRef.current) {
+              html5QrRef.current.stop().catch(() => {});
+              html5QrRef.current = null;
+            }
+            setCameraOpen(false);
+            handleValidateToken(decodedText);
           },
-          () => {} // ignore errors during scanning
+          () => {}
         );
       } catch (err: any) {
         console.error("Camera error:", err);
