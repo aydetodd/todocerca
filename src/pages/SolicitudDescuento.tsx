@@ -79,8 +79,7 @@ export default function SolicitudDescuento() {
   const handleUpload = async (file: File) => {
     if (!user || !selectedType) return;
 
-    const existing = getExistingVerification(selectedType);
-    if (existing && existing.estado !== "rechazado") {
+    if (existing && !["rechazado", "incompleto"].includes(existing.estado)) {
       toast.error("Ya tienes una solicitud para este tipo de descuento");
       return;
     }
