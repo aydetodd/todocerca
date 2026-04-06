@@ -176,12 +176,14 @@ serve(async (req) => {
         }
 
         // Fallback for tickets without stripe_fee_unitario (legacy)
-        const ticketsWithFee = ticketIds.length > 0 ? feeStripeProporcional : 0;
-        if (ticketsWithFee === 0 && boletos > 0) {
-          // Legacy fallback: estimate 3.6% + $3.00 per ~10 tickets
-          const estimatedTransactions = Math.max(1, Math.ceil(boletos / 10));
-          feeStripeProporcional = (boletos * TICKET_PRICE * STRIPE_VARIABLE_FEE_PERCENT) + (estimatedTransactions * STRIPE_FIXED_FEE);
-          console.log(`[SETTLEMENTS] Using legacy fee estimation for account ${cuenta.id}`);
+        // If sum is 0 but we have tickets, calculate mathematically per-ticket
+        if (feeStripeProporcional === 0 && boletos > 0) {
+          // Each ticket's proportional fee = (purchase_total * 3.6% + $3.00) / purchase_qty
+          // Since we don't know original purchase qty, use the stored fee from qr_tickets
+          // or estimate: variable on facial + fixed $3.00 spread across ~10 tickets per purchase
+          // Best estimate: 3.6% on facial + $0.30 per ticket (assuming avg 10 per purchase)
+          feeStripeProporcional = (boletos * TICKET_PRICE * STRIPE_VARIABLE_FEE_PERCENT) + (boletos * 0.30);
+          console.log(`[SETTLEMENTS] Using legacy fee estimation for account ${cuenta.id}: $${feeStripeProporcional.toFixed(2)}`);
         }
 
         // Calculate amounts
