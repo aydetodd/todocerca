@@ -294,8 +294,8 @@ export default function ValidarQr() {
     }, 500);
   }, []);
 
-  const handleValidate = async () => {
-    const token = qrInput.trim();
+  const handleValidateToken = async (directToken?: string) => {
+    const token = (directToken || qrInput).trim();
     if (!token || validating) return;
 
     setValidating(true);
