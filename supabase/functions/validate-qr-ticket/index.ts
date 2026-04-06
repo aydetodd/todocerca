@@ -34,6 +34,36 @@ serve(async (req) => {
     if (!qr_token) throw new Error("Token QR requerido");
 
     const cleanToken = qr_token.trim();
+    const hermosilloToday = new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+    let resolvedUnidadId = unidad_id || null;
+    let resolvedRutaId = ruta_id || null;
+    let driverRecordId: string | null = null;
+
+    const { data: choferRecord } = await supabaseAdmin
+      .from("choferes_empresa")
+      .select("id")
+      .eq("user_id", driver.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (choferRecord?.id) {
+      driverRecordId = choferRecord.id;
+    }
+
+    if (driverRecordId && (!resolvedUnidadId || !resolvedRutaId)) {
+      const { data: asignacion } = await supabaseAdmin
+        .from("asignaciones_chofer")
+        .select("unidad_id, producto_id")
+        .eq("chofer_id", driverRecordId)
+        .eq("fecha", hermosilloToday)
+        .maybeSingle();
+
+      if (asignacion) {
+        resolvedUnidadId = resolvedUnidadId || asignacion.unidad_id || null;
+        resolvedRutaId = resolvedRutaId || asignacion.producto_id || null;
+      }
+    }
 
     // 1. Find the QR ticket - support both full UUID token and 6-char short code
     let ticket = null;
@@ -104,9 +134,9 @@ serve(async (req) => {
         mensaje_error: "QR inválido o no existe",
         latitud: latitude,
         longitud: longitude,
-        unidad_id,
+        unidad_id: resolvedUnidadId,
         chofer_id: driver.id,
-        producto_id: ruta_id || null,
+        producto_id: resolvedRutaId,
       });
 
       return new Response(JSON.stringify({
@@ -173,11 +203,11 @@ serve(async (req) => {
         ruta_uso_original: ticket.ruta_uso_id,
         lat_original: ticket.latitud_validacion,
         lng_original: ticket.longitud_validacion,
-        unidad_detecto_id: unidad_id,
-        ruta_detecto: ruta_id,
+        unidad_detecto_id: resolvedUnidadId,
+        ruta_detecto: resolvedRutaId,
         lat_detecto: latitude,
         lng_detecto: longitude,
-        tipo_fraude: ticket.unidad_uso_id === unidad_id ? "misma_unidad" : "otra_unidad",
+        tipo_fraude: ticket.unidad_uso_id === resolvedUnidadId ? "misma_unidad" : "otra_unidad",
         severidad: severity,
         total_intentos_usuario: totalAttempts,
         total_intentos_qr: (qrAttempts ?? 0) + 1,
@@ -192,12 +222,12 @@ serve(async (req) => {
         mensaje_error: "QR ya utilizado - intento de fraude",
         latitud: latitude,
         longitud: longitude,
-        unidad_id,
+        unidad_id: resolvedUnidadId,
         chofer_id: driver.id,
-        producto_id: ruta_id || null,
+        producto_id: resolvedRutaId,
       });
 
-      const isSameUnit = ticket.unidad_uso_id === unidad_id;
+      const isSameUnit = ticket.unidad_uso_id === resolvedUnidadId;
 
       return new Response(JSON.stringify({
         valid: false,
@@ -237,9 +267,9 @@ serve(async (req) => {
           mensaje_error: "QR transferido expirado (24hrs)",
           latitud: latitude,
           longitud: longitude,
-          unidad_id,
+          unidad_id: resolvedUnidadId,
           chofer_id: driver.id,
-          producto_id: ruta_id || null,
+          producto_id: resolvedRutaId,
         });
 
         return new Response(JSON.stringify({
@@ -278,8 +308,8 @@ serve(async (req) => {
       .update({
         status: "used",
         used_at: now,
-        unidad_uso_id: unidad_id,
-        ruta_uso_id: ruta_id,
+        unidad_uso_id: resolvedUnidadId,
+        ruta_uso_id: resolvedRutaId,
         latitud_validacion: latitude,
         longitud_validacion: longitude,
         chofer_id: driver.id,
@@ -311,7 +341,7 @@ serve(async (req) => {
       qr_ticket_id: ticket.id,
       user_id: ticket.user_id,
       tipo: "used",
-      detalles: { ruta_id: ruta_id || null, unidad_id: unidad_id || null, chofer_id: driver.id },
+      detalles: { ruta_id: resolvedRutaId, unidad_id: resolvedUnidadId, chofer_id: driver.id },
     });
 
     // Log successful validation
@@ -320,9 +350,9 @@ serve(async (req) => {
       resultado: "valid",
       latitud: latitude,
       longitud: longitude,
-      unidad_id,
+      unidad_id: resolvedUnidadId,
       chofer_id: driver.id,
-      producto_id: ruta_id || null,
+      producto_id: resolvedRutaId,
     });
 
     // Get daily count using Hermosillo time (UTC-7, no DST)
@@ -336,15 +366,15 @@ serve(async (req) => {
       .eq("resultado", "valid")
       .gte("created_at", todayStartStr);
     
-    if (unidad_id) {
-      dailyQuery = dailyQuery.eq("unidad_id", unidad_id);
+    if (resolvedUnidadId) {
+      dailyQuery = dailyQuery.eq("unidad_id", resolvedUnidadId);
     } else {
       dailyQuery = dailyQuery.eq("chofer_id", driver.id);
     }
     
     const { count: dailyCount } = await dailyQuery;
 
-    console.log(`[VALIDATE-QR] Valid! Token: ${ticket.token.slice(-6)} Unit: ${unidad_id} Chofer: ${driver.id} Daily: ${dailyCount}`);
+    console.log(`[VALIDATE-QR] Valid! Token: ${ticket.token.slice(-6)} Unit: ${resolvedUnidadId} Ruta: ${resolvedRutaId} Chofer: ${driver.id} Daily: ${dailyCount}`);
 
     return new Response(JSON.stringify({
       valid: true,
