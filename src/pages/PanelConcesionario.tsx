@@ -58,6 +58,7 @@ type UnidadDetalle = {
   placas: string;
   modelo: string | null;
   linea: string | null;
+  descripcion: string | null;
   estado_verificacion: string | null;
 };
 
@@ -352,16 +353,41 @@ export default function PanelConcesionario() {
         setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
       }
 
-      // Load unidades using the verificacion ID
-      if (verifData?.id) {
-        try {
-           const { data: uData } = await withTimeout<any>(
+      // Load unidades from unidades_empresa (the actual registered units)
+      try {
+        const { data: empresaUnidades } = await withTimeout<any>(
+          supabase.from("unidades_empresa")
+            .select("id, nombre, numero_economico, placas, descripcion")
+            .eq("proveedor_id", prov.id)
+            .neq("transport_type", "taxi"),
+          8000, "unidades empresa");
+
+        // Also load verification status if available
+        let verifMap: Record<string, string> = {};
+        if (verifData?.id) {
+          const { data: verifUnidades } = await withTimeout<any>(
             supabase.from("detalles_verificacion_unidad")
-              .select("id, numero_economico, placas, modelo, linea, estado_verificacion, verificacion_id")
+              .select("numero_economico, placas, estado_verificacion")
               .eq("verificacion_id", verifData.id), 8000, "unidades verificación");
-          if (uData) setUnidades(uData as any);
-        } catch (e) { console.error("Error loading unidades:", e); }
-      }
+          if (verifUnidades) {
+            for (const vu of verifUnidades) {
+              verifMap[`${vu.numero_economico}-${vu.placas}`] = vu.estado_verificacion || 'pending';
+            }
+          }
+        }
+
+        if (empresaUnidades) {
+          setUnidades(empresaUnidades.map((u: any) => ({
+            id: u.id,
+            numero_economico: u.numero_economico || u.nombre,
+            placas: u.placas || '',
+            modelo: null,
+            linea: null,
+            descripcion: u.descripcion || null,
+            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || null,
+          })));
+        }
+      } catch (e) { console.error("Error loading unidades:", e); }
 
       // Load liquidaciones if cuenta exists
       if (cuentaData?.id) {
@@ -1244,6 +1270,7 @@ export default function PanelConcesionario() {
                         <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
                         <p className="text-sm text-muted-foreground">
                           Placas: {u.placas}
+                          {u.descripcion && ` • ${u.descripcion}`}
                           {u.linea && ` • ${u.linea}`}
                           {u.modelo && ` ${u.modelo}`}
                         </p>
