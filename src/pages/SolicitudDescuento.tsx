@@ -287,13 +287,13 @@ export default function SolicitudDescuento() {
                   {terceraV && estadoBadge(terceraV.estado)}
                 </div>
 
-                {terceraV?.estado === "rechazado" && terceraV.admin_notas && (
+                {(terceraV?.estado === "rechazado" || terceraV?.estado === "incompleto") && terceraV.admin_notas && (
                   <p className="text-xs text-destructive mb-2">
                     Motivo: {terceraV.admin_notas}
                   </p>
                 )}
 
-                {(!terceraV || terceraV.estado === "rechazado") && (
+                {(!terceraV || terceraV.estado === "rechazado" || terceraV.estado === "incompleto") && (
                   <>
                     {selectedType === "tercera_edad" ? (
                       <div className="space-y-2">
