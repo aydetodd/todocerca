@@ -196,7 +196,7 @@ export default function AdminDescuentos() {
                     </p>
                   </div>
                 </div>
-                <Badge className={s.estado === "aprobado" ? "bg-green-500/20 text-green-400" : ""} variant={s.estado === "rechazado" ? "destructive" : "default"}>
+                <Badge className={s.estado === "aprobado" ? "bg-green-500/20 text-green-400" : s.estado === "incompleto" ? "bg-yellow-500/20 text-yellow-400" : ""} variant={s.estado === "rechazado" ? "destructive" : "default"}>
                   {s.estado}
                 </Badge>
               </CardContent>
