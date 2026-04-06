@@ -497,7 +497,7 @@ export default function ValidarQr() {
                 autoFocus
               />
               <Button
-                onClick={handleValidate}
+                onClick={() => handleValidateToken()}
                 disabled={!qrInput.trim() || validating}
                 size="lg"
                 className="px-6"
