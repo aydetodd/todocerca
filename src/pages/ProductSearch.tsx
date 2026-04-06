@@ -159,10 +159,29 @@ const ProductSearch = () => {
     [searchEstado, getMunicipios]
   );
 
-  // Auto-apply GPS-detected city when available (wait for both GPS and geo data)
+  // Persist geography changes to localStorage
+  useEffect(() => {
+    if (searchPais) localStorage.setItem('lastSearchPais', searchPais);
+  }, [searchPais]);
+  useEffect(() => {
+    if (searchEstado) localStorage.setItem('lastSearchEstado', searchEstado);
+  }, [searchEstado]);
+  useEffect(() => {
+    if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
+      localStorage.setItem('lastSearchCiudad', searchCiudad);
+    }
+  }, [searchCiudad]);
 
+  // Auto-apply GPS-detected city ONLY if no saved geography exists
   useEffect(() => {
     if (gpsApplied || !gpsLocation || gpsLoading || geoDataLoading) return;
+
+    // Skip GPS auto-detect if user already has saved geography
+    const savedEstado = localStorage.getItem('lastSearchEstado');
+    if (savedEstado) {
+      setGpsApplied(true);
+      return;
+    }
 
     const { pais, estado, ciudad } = gpsLocation;
 
