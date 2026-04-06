@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, UserRound, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { GraduationCap, UserRound, CheckCircle2, XCircle, Loader2, ExternalLink, Clock } from "lucide-react";
 
 type SolicitudDescuento = {
   id: string;
