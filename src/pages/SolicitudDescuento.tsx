@@ -212,13 +212,13 @@ export default function SolicitudDescuento() {
                   {estudianteV && estadoBadge(estudianteV.estado)}
                 </div>
 
-                {estudianteV?.estado === "rechazado" && estudianteV.admin_notas && (
+                {(estudianteV?.estado === "rechazado" || estudianteV?.estado === "incompleto") && estudianteV.admin_notas && (
                   <p className="text-xs text-destructive mb-2">
                     Motivo: {estudianteV.admin_notas}
                   </p>
                 )}
 
-                {(!estudianteV || estudianteV.estado === "rechazado") && (
+                {(!estudianteV || estudianteV.estado === "rechazado" || estudianteV.estado === "incompleto") && (
                   <>
                     {selectedType === "estudiante" ? (
                       <div className="space-y-2">
