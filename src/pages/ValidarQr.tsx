@@ -104,6 +104,9 @@ export default function ValidarQr() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const html5QrRef = useRef<Html5Qrcode | null>(null);
+  const cameraContainerRef = useRef<HTMLDivElement>(null);
 
   // Load driver's assigned unit and initial daily stats
   useEffect(() => {
