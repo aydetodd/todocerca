@@ -58,6 +58,7 @@ type UnidadDetalle = {
   placas: string;
   modelo: string | null;
   linea: string | null;
+  descripcion: string | null;
   estado_verificacion: string | null;
 };
 
