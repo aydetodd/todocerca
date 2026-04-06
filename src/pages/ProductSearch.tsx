@@ -77,9 +77,16 @@ const ProductSearch = () => {
   const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
   const autoSearchTriggeredRef = useRef(false);
 
-  const [searchPais, setSearchPais] = useState<string>("MX");
-  const [searchEstado, setSearchEstado] = useState<string>("");
-  const [searchCiudad, setSearchCiudad] = useState<string>("");
+  // Restore last used geography from localStorage
+  const [searchPais, setSearchPais] = useState<string>(() => {
+    return localStorage.getItem('lastSearchPais') || "MX";
+  });
+  const [searchEstado, setSearchEstado] = useState<string>(() => {
+    return localStorage.getItem('lastSearchEstado') || "";
+  });
+  const [searchCiudad, setSearchCiudad] = useState<string>(() => {
+    return localStorage.getItem('lastSearchCiudad') || "";
+  });
 
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
