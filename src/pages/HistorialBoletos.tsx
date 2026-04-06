@@ -71,11 +71,11 @@ export default function HistorialBoletos() {
       .limit(50);
 
     if (filter === "active") {
-      query = query.eq("status", "active").eq("is_transferred", false);
+      query = query.eq("status", "active").eq("is_transferred", false).order("generated_at", { ascending: false });
     } else if (filter === "used") {
-      query = query.eq("status", "used");
+      query = query.eq("status", "used").order("used_at", { ascending: false, nullsFirst: false });
     } else if (filter === "transferred") {
-      query = query.or("is_transferred.eq.true,transfer_returned_at.not.is.null");
+      query = query.or("is_transferred.eq.true,transfer_returned_at.not.is.null").order("updated_at", { ascending: false });
     }
 
     const { data } = await query;
