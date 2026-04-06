@@ -68,7 +68,6 @@ export default function HistorialBoletos() {
       .from("qr_tickets")
       .select("*")
       .eq("user_id", user!.id)
-      .order("generated_at", { ascending: false })
       .limit(50);
 
     if (filter === "active") {
