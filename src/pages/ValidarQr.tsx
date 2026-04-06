@@ -478,6 +478,21 @@ export default function ValidarQr() {
           </Card>
         )}
 
+        {/* Camera Scanner */}
+        {cameraOpen && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">📷 Escaneando con cámara...</span>
+                <Button variant="ghost" size="icon" onClick={closeCamera}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div id="qr-camera-reader" className="w-full rounded-lg overflow-hidden" />
+            </CardContent>
+          </Card>
+        )}
+
         {/* QR Input */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -500,7 +515,7 @@ export default function ValidarQr() {
                 onClick={() => handleValidateToken()}
                 disabled={!qrInput.trim() || validating}
                 size="lg"
-                className="px-6"
+                className="px-4"
               >
                 {validating ? (
                   <div className="animate-spin h-5 w-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
@@ -508,9 +523,17 @@ export default function ValidarQr() {
                   <QrCode className="h-5 w-5" />
                 )}
               </Button>
+              <Button
+                onClick={cameraOpen ? closeCamera : openCamera}
+                variant={cameraOpen ? "destructive" : "outline"}
+                size="lg"
+                className="px-4"
+              >
+                <Camera className="h-5 w-5" />
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Use un lector QR externo o escriba el código manualmente
+              Use un lector QR, escriba el código o escanee con la cámara 📷
             </p>
           </CardContent>
         </Card>
