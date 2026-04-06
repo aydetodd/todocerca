@@ -1,0 +1,1 @@
+UPDATE qr_tickets SET stripe_cuota_fija_unitario = 0.30 WHERE stripe_cuota_fija_unitario = 0;
