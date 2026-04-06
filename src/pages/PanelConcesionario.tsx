@@ -198,11 +198,11 @@ export default function PanelConcesionario() {
     const labelMesAnterior = meses[prevMonthNum];
 
     // Single query for all period calculations
-    const [logsPeriodoRes, asignacionesRes] = await withTimeout(
+      const [logsPeriodoRes, asignacionesRes] = await withTimeout(
       Promise.all([
         supabase
           .from("logs_validacion_qr")
-          .select("unidad_id, created_at")
+            .select("unidad_id, created_at, qr_ticket_id, producto_id, qr_tickets(unidad_uso_id, ruta_uso_id)")
           .in("unidad_id", unidadIds)
           .eq("resultado", "valid")
           .gte("created_at", prevMonthStart)
@@ -217,7 +217,11 @@ export default function PanelConcesionario() {
       "estadísticas"
     );
 
-    const logs = logsPeriodoRes.data || [];
+    const logs = (logsPeriodoRes.data || []).map((log: any) => ({
+      ...log,
+      effectiveUnidadId: log.unidad_id || log.qr_tickets?.unidad_uso_id || null,
+      effectiveProductoId: log.producto_id || log.qr_tickets?.ruta_uso_id || null,
+    })).filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
 
     const todayStartMs = Date.parse(todayStart);
     const todayEndMs = Date.parse(todayEnd);
@@ -247,8 +251,8 @@ export default function PanelConcesionario() {
     logs.forEach((log: any) => {
       const createdAtMs = Date.parse(log.created_at);
 
-      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs && log.unidad_id) {
-        countMap[log.unidad_id] = (countMap[log.unidad_id] || 0) + 1;
+      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs && log.effectiveUnidadId) {
+        countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
       }
       if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) logsAyerCount += 1;
       if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) logsSemanaCount += 1;
@@ -454,15 +458,17 @@ export default function PanelConcesionario() {
 
       const { data } = await (supabase
         .from("logs_validacion_qr") as any)
-        .select("qr_ticket_id, created_at, qr_tickets(token)")
+        .select("qr_ticket_id, created_at, qr_tickets(token, unidad_uso_id)")
         .eq("unidad_id", unidadId)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
         .lte("created_at", todayEnd)
         .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        setUnidadTickets(data.map((d: any) => ({
+      const normalized = (data || []).filter((d: any) => d.unidad_id === unidadId || d.qr_tickets?.unidad_uso_id === unidadId);
+
+      if (normalized.length > 0) {
+        setUnidadTickets(normalized.map((d: any) => ({
           short_code: (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
           time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
         })));
@@ -720,7 +726,7 @@ export default function PanelConcesionario() {
 
       const { data: logs } = await (supabase
         .from("logs_validacion_qr") as any)
-        .select("qr_ticket_id, created_at, unidad_id, qr_tickets(token)")
+        .select("qr_ticket_id, created_at, unidad_id, qr_tickets(token, unidad_uso_id)")
         .in("unidad_id", unidadIds)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
@@ -732,8 +738,13 @@ export default function PanelConcesionario() {
         return;
       }
 
-      const rows = logs.map((d: any, i: number) => {
-        const u = unidadMap[d.unidad_id];
+      const normalizedLogs = (logs || []).map((d: any) => ({
+        ...d,
+        effectiveUnidadId: d.unidad_id || d.qr_tickets?.unidad_uso_id || null,
+      })).filter((d: any) => d.effectiveUnidadId && unidadMap[d.effectiveUnidadId]);
+
+      const rows = normalizedLogs.map((d: any, i: number) => {
+        const u = unidadMap[d.effectiveUnidadId];
         return [
           String(i + 1),
           (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
