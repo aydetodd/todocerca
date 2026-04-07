@@ -35,20 +35,42 @@ export default function HistorialBoletos() {
     fetchTickets();
   }, [user, filter]);
 
-  const fetchTransferredTicketIds = async (): Promise<string[]> => {
-    // Get ticket IDs that have actual transfer-related movements
-    const { data: movements } = await (supabase
-      .from("movimientos_boleto") as any)
-      .select("qr_ticket_id")
+  const fetchTransferredTickets = async () => {
+    // 1) Currently transferred (pending)
+    const { data: pending } = await supabase
+      .from("qr_tickets")
+      .select("*")
       .eq("user_id", user!.id)
-      .in("tipo", ["transferred", "re_transferred", "transfer_cancelled", "transfer_expired"]);
-    
-    const uniqueIds = [...new Set((movements || []).map((m: any) => m.qr_ticket_id))];
-    return uniqueIds as string[];
+      .eq("status", "active")
+      .eq("is_transferred", true);
+
+    // 2) Were transferred and returned (have transfer_returned_at)
+    const { data: returned } = await supabase
+      .from("qr_tickets")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("status", "active")
+      .eq("is_transferred", false)
+      .not("transfer_returned_at", "is", null);
+
+    // 3) Were transferred and then used
+    const { data: usedTransferred } = await supabase
+      .from("qr_tickets")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("status", "used")
+      .not("transferred_to", "is", null);
+
+    // Deduplicate by id
+    const map = new Map<string, any>();
+    [...(pending || []), ...(returned || []), ...(usedTransferred || [])].forEach(t => {
+      map.set(t.id, t);
+    });
+    return Array.from(map.values());
   };
 
   const fetchCounts = async () => {
-    const [activeRes, usedRes, transferredIds] = await Promise.all([
+    const [activeRes, usedRes, transferredTickets] = await Promise.all([
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
@@ -60,12 +82,18 @@ export default function HistorialBoletos() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
-      fetchTransferredTicketIds(),
+      fetchTransferredTickets(),
     ]);
+
+    // Active count should exclude returned tickets (they show in transferred)
+    const returnedCount = transferredTickets.filter(
+      (t: any) => t.status === "active" && !t.is_transferred && t.transfer_returned_at
+    ).length;
+
     setCounts({
-      active: activeRes.count ?? 0,
+      active: (activeRes.count ?? 0) - returnedCount,
       used: usedRes.count ?? 0,
-      transferred: transferredIds.length,
+      transferred: transferredTickets.length,
     });
   };
 
@@ -78,35 +106,75 @@ export default function HistorialBoletos() {
       .limit(50);
 
     if (filter === "active") {
-      query = query.eq("status", "active").eq("is_transferred", false).order("generated_at", { ascending: false });
+      query = query
+        .eq("status", "active")
+        .eq("is_transferred", false)
+        .is("transfer_returned_at", null)
+        .order("generated_at", { ascending: false });
     } else if (filter === "used") {
       query = query.eq("status", "used").order("used_at", { ascending: false, nullsFirst: false });
     } else if (filter === "transferred") {
-      // Fetch only tickets with actual transfer movements
-      const transferredIds = await fetchTransferredTicketIds();
-      if (transferredIds.length === 0) {
+      const transferred = await fetchTransferredTickets();
+      if (transferred.length === 0) {
         setTickets([]);
+        setMovementsMap({});
         setLoading(false);
         return;
       }
-      query = supabase
-        .from("qr_tickets")
+      // Sort: pending first, then by most recent update
+      transferred.sort((a, b) => {
+        const aIsPending = a.is_transferred ? 0 : 1;
+        const bIsPending = b.is_transferred ? 0 : 1;
+        if (aIsPending !== bIsPending) return aIsPending - bIsPending;
+        return new Date(b.updated_at || b.generated_at).getTime() - new Date(a.updated_at || a.generated_at).getTime();
+      });
+
+      // Fetch movements and route info for these tickets
+      const ticketIds = transferred.map((t: any) => t.id);
+      const { data: movements } = await (supabase
+        .from("movimientos_boleto") as any)
         .select("*")
-        .in("id", transferredIds)
-        .order("updated_at", { ascending: false })
-        .limit(50);
+        .in("qr_ticket_id", ticketIds)
+        .order("created_at", { ascending: true });
+
+      const map: Record<string, Movement[]> = {};
+      (movements || []).forEach((m: any) => {
+        if (!map[m.qr_ticket_id]) map[m.qr_ticket_id] = [];
+        map[m.qr_ticket_id].push(m);
+      });
+      setMovementsMap(map);
+
+      // Fetch route names
+      const routeProductIds = new Set<string>();
+      transferred.forEach((t: any) => {
+        if (t.ruta_uso_id) routeProductIds.add(t.ruta_uso_id);
+      });
+      if (routeProductIds.size > 0) {
+        const { data: prods } = await supabase
+          .from("productos")
+          .select("id, nombre")
+          .in("id", Array.from(routeProductIds));
+        const routeNameMap: Record<string, string> = {};
+        (prods || []).forEach((p: any) => { routeNameMap[p.id] = p.nombre; });
+        transferred.forEach((t: any) => {
+          t._ruta_nombre = t.ruta_uso_id ? routeNameMap[t.ruta_uso_id] || null : null;
+        });
+      }
+
+      setTickets(transferred);
+      setLoading(false);
+      return;
     }
 
     const { data } = await query;
     if (data) {
-      // For used and transferred tickets, fetch route name from ruta_uso_id on the ticket itself
-      if ((filter === "used" || filter === "transferred") && data.length > 0) {
+      // For used tickets, fetch route name
+      if (filter === "used" && data.length > 0) {
         const routeProductIds = new Set<string>();
         data.forEach((t: any) => {
           if (t.ruta_uso_id) routeProductIds.add(t.ruta_uso_id);
         });
 
-        // Fallback: also check logs_validacion_qr for tickets missing ruta_uso_id
         const ticketsWithoutRoute = data.filter((t: any) => !t.ruta_uso_id);
         const ticketRouteMap: Record<string, string> = {};
         if (ticketsWithoutRoute.length > 0) {
@@ -138,23 +206,6 @@ export default function HistorialBoletos() {
           const prodId = t.ruta_uso_id || ticketRouteMap[t.id];
           t._ruta_nombre = prodId ? routeNameMap[prodId] || null : null;
         });
-      }
-
-      // For transferred tab, fetch all movements per ticket
-      if (filter === "transferred" && data.length > 0) {
-        const ticketIds = data.map((t: any) => t.id);
-        const { data: movements } = await (supabase
-          .from("movimientos_boleto") as any)
-          .select("*")
-          .in("qr_ticket_id", ticketIds)
-          .order("created_at", { ascending: true });
-
-        const map: Record<string, Movement[]> = {};
-        (movements || []).forEach((m: any) => {
-          if (!map[m.qr_ticket_id]) map[m.qr_ticket_id] = [];
-          map[m.qr_ticket_id].push(m);
-        });
-        setMovementsMap(map);
       }
 
       setTickets(data);
