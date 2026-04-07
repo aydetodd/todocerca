@@ -472,8 +472,10 @@ const ProductSearch = () => {
     };
   }, [initialCategory, categoryParamProcessed]);
 
-  const handleSearch = async (e?: FormEvent) => {
+  const handleSearch = async (e?: FormEvent, overrideRoute?: string | null) => {
     e?.preventDefault();
+    // Allow callers to pass the route directly to avoid stale closure issues
+    const effectiveRoute = overrideRoute !== undefined ? overrideRoute : selectedRoute;
 
     setLoading(true);
     setHasSearched(true);
@@ -627,8 +629,8 @@ const ProductSearch = () => {
         }
 
         // Route filter (for "Rutas de Transporte")
-        if (isRutasCategory && selectedRoute) {
-          query = query.eq("nombre", selectedRoute);
+        if (isRutasCategory && effectiveRoute) {
+          query = query.eq("nombre", effectiveRoute);
         }
 
         // Profession filter (for "Profesiones y oficios")
@@ -977,8 +979,8 @@ const ProductSearch = () => {
                             const newRoute = selectedRoute === route.nombre ? null : route.nombre;
                             setSelectedRoute(newRoute);
                             if (newRoute) {
-                              // Auto-search for this specific route
-                              setTimeout(() => handleSearch(), 50);
+                              // Pass route directly to avoid stale closure
+                              setTimeout(() => handleSearch(undefined, newRoute), 50);
                             }
                           }}
                         >
