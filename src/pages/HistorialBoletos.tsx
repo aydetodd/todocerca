@@ -106,23 +106,64 @@ export default function HistorialBoletos() {
       .limit(50);
 
     if (filter === "active") {
-      query = query.eq("status", "active").eq("is_transferred", false).order("generated_at", { ascending: false });
+      query = query
+        .eq("status", "active")
+        .eq("is_transferred", false)
+        .is("transfer_returned_at", null)
+        .order("generated_at", { ascending: false });
     } else if (filter === "used") {
       query = query.eq("status", "used").order("used_at", { ascending: false, nullsFirst: false });
     } else if (filter === "transferred") {
-      // Fetch only tickets with actual transfer movements
-      const transferredIds = await fetchTransferredTicketIds();
-      if (transferredIds.length === 0) {
+      const transferred = await fetchTransferredTickets();
+      if (transferred.length === 0) {
         setTickets([]);
+        setMovementsMap({});
         setLoading(false);
         return;
       }
-      query = supabase
-        .from("qr_tickets")
+      // Sort: pending first, then by most recent update
+      transferred.sort((a, b) => {
+        const aIsPending = a.is_transferred ? 0 : 1;
+        const bIsPending = b.is_transferred ? 0 : 1;
+        if (aIsPending !== bIsPending) return aIsPending - bIsPending;
+        return new Date(b.updated_at || b.generated_at).getTime() - new Date(a.updated_at || a.generated_at).getTime();
+      });
+
+      // Fetch movements and route info for these tickets
+      const ticketIds = transferred.map((t: any) => t.id);
+      const { data: movements } = await (supabase
+        .from("movimientos_boleto") as any)
         .select("*")
-        .in("id", transferredIds)
-        .order("updated_at", { ascending: false })
-        .limit(50);
+        .in("qr_ticket_id", ticketIds)
+        .order("created_at", { ascending: true });
+
+      const map: Record<string, Movement[]> = {};
+      (movements || []).forEach((m: any) => {
+        if (!map[m.qr_ticket_id]) map[m.qr_ticket_id] = [];
+        map[m.qr_ticket_id].push(m);
+      });
+      setMovementsMap(map);
+
+      // Fetch route names
+      const routeProductIds = new Set<string>();
+      transferred.forEach((t: any) => {
+        if (t.ruta_uso_id) routeProductIds.add(t.ruta_uso_id);
+      });
+      if (routeProductIds.size > 0) {
+        const { data: prods } = await supabase
+          .from("productos")
+          .select("id, nombre")
+          .in("id", Array.from(routeProductIds));
+        const routeNameMap: Record<string, string> = {};
+        (prods || []).forEach((p: any) => { routeNameMap[p.id] = p.nombre; });
+        transferred.forEach((t: any) => {
+          t._ruta_nombre = t.ruta_uso_id ? routeNameMap[t.ruta_uso_id] || null : null;
+        });
+      }
+
+      setTickets(transferred);
+      setLoading(false);
+      return;
     }
 
     const { data } = await query;
