@@ -164,10 +164,26 @@ serve(async (req) => {
         if (ticketIds.length > 0) {
           const { data: tickets } = await supabaseAdmin
             .from("qr_tickets")
-            .select("stripe_cuota_fija_unitario, amount")
+            .select("stripe_cuota_fija_unitario, amount, ticket_type")
             .in("id", ticketIds);
 
           if (tickets && tickets.length > 0) {
+            // Count by ticket type
+            for (const t of tickets) {
+              const amt = Number(t.amount) || TICKET_PRICE;
+              const tipo = (t as any).ticket_type || "normal";
+              if (tipo === "estudiante") {
+                boletosEstudiante++;
+                montoEstudiante += amt;
+              } else if (tipo === "tercera_edad") {
+                boletosTerceraEdad++;
+                montoTerceraEdad += amt;
+              } else {
+                boletosNormales++;
+                montoNormales += amt;
+              }
+            }
+
             // Variable fee: 3.6% on total facial value of validated tickets
             const totalFacialValidado = tickets.reduce(
               (sum: number, t: any) => sum + (Number(t.amount) || TICKET_PRICE), 0
@@ -181,6 +197,7 @@ serve(async (req) => {
 
             feeStripeProporcional = feeVariable + feeFijo;
             console.log(`[SETTLEMENTS] Fee breakdown: variable=$${feeVariable.toFixed(2)} + fijo=$${feeFijo.toFixed(2)} = $${feeStripeProporcional.toFixed(2)}`);
+            console.log(`[SETTLEMENTS] Ticket types: normal=${boletosNormales}, estudiante=${boletosEstudiante}, tercera_edad=${boletosTerceraEdad}`);
           }
         }
 
@@ -190,8 +207,8 @@ serve(async (req) => {
           console.log(`[SETTLEMENTS] Using legacy fee estimation for account ${cuenta.id}: $${feeStripeProporcional.toFixed(2)}`);
         }
 
-        // Calculate amounts
-        const valorFacial = boletos * TICKET_PRICE;
+        // Calculate amounts using real facial values per type
+        const valorFacial = montoNormales + montoEstudiante + montoTerceraEdad;
         const comisionTodocerca = valorFacial * PLATFORM_FEE_PERCENT;
         const totalFees = comisionTodocerca + feeStripeProporcional;
         const montoNeto = valorFacial - totalFees;
