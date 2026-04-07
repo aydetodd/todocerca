@@ -472,8 +472,10 @@ const ProductSearch = () => {
     };
   }, [initialCategory, categoryParamProcessed]);
 
-  const handleSearch = async (e?: FormEvent) => {
+  const handleSearch = async (e?: FormEvent, overrideRoute?: string | null) => {
     e?.preventDefault();
+    // Allow callers to pass the route directly to avoid stale closure issues
+    const effectiveRoute = overrideRoute !== undefined ? overrideRoute : selectedRoute;
 
     setLoading(true);
     setHasSearched(true);
