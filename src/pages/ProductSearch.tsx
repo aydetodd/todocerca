@@ -629,8 +629,8 @@ const ProductSearch = () => {
         }
 
         // Route filter (for "Rutas de Transporte")
-        if (isRutasCategory && selectedRoute) {
-          query = query.eq("nombre", selectedRoute);
+        if (isRutasCategory && effectiveRoute) {
+          query = query.eq("nombre", effectiveRoute);
         }
 
         // Profession filter (for "Profesiones y oficios")
