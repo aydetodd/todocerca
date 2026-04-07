@@ -1446,10 +1446,39 @@ export default function PanelConcesionario() {
 
                     {expandedLiq === l.id && (
                       <div className="mt-3 pt-3 border-t border-border space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Valor facial ({l.total_boletos} × $9.00):</span>
-                          <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
-                        </div>
+                        {/* Desglose por tipo de boleto */}
+                        {((l.boletos_normales || 0) > 0 || (l.boletos_estudiante || 0) > 0 || (l.boletos_tercera_edad || 0) > 0) ? (
+                          <>
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Desglose por tipo:</p>
+                            {(l.boletos_normales || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">🎫 Normal ({l.boletos_normales} × $9.00):</span>
+                                <span className="text-foreground">${Number(l.monto_normales || 0).toFixed(2)}</span>
+                              </div>
+                            )}
+                            {(l.boletos_estudiante || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">🎓 Estudiante ({l.boletos_estudiante} × $4.50):</span>
+                                <span className="text-foreground">${Number(l.monto_estudiante || 0).toFixed(2)}</span>
+                              </div>
+                            )}
+                            {(l.boletos_tercera_edad || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">👴 Tercera edad ({l.boletos_tercera_edad} × $4.50):</span>
+                                <span className="text-foreground">${Number(l.monto_tercera_edad || 0).toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between pt-1 border-t border-border/50">
+                              <span className="text-muted-foreground">Valor facial total:</span>
+                              <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Valor facial ({l.total_boletos} × $9.00):</span>
+                            <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Comisión TodoCerca (2%):</span>
                           <span className="text-destructive">-${Number(l.monto_comision_todocerca).toFixed(2)}</span>
