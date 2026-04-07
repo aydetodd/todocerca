@@ -35,20 +35,42 @@ export default function HistorialBoletos() {
     fetchTickets();
   }, [user, filter]);
 
-  const fetchTransferredTicketIds = async (): Promise<string[]> => {
-    // Get ticket IDs that have actual transfer-related movements
-    const { data: movements } = await (supabase
-      .from("movimientos_boleto") as any)
-      .select("qr_ticket_id")
+  const fetchTransferredTickets = async () => {
+    // 1) Currently transferred (pending)
+    const { data: pending } = await supabase
+      .from("qr_tickets")
+      .select("*")
       .eq("user_id", user!.id)
-      .in("tipo", ["transferred", "re_transferred", "transfer_cancelled", "transfer_expired"]);
-    
-    const uniqueIds = [...new Set((movements || []).map((m: any) => m.qr_ticket_id))];
-    return uniqueIds as string[];
+      .eq("status", "active")
+      .eq("is_transferred", true);
+
+    // 2) Were transferred and returned (have transfer_returned_at)
+    const { data: returned } = await supabase
+      .from("qr_tickets")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("status", "active")
+      .eq("is_transferred", false)
+      .not("transfer_returned_at", "is", null);
+
+    // 3) Were transferred and then used
+    const { data: usedTransferred } = await supabase
+      .from("qr_tickets")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("status", "used")
+      .not("transferred_to", "is", null);
+
+    // Deduplicate by id
+    const map = new Map<string, any>();
+    [...(pending || []), ...(returned || []), ...(usedTransferred || [])].forEach(t => {
+      map.set(t.id, t);
+    });
+    return Array.from(map.values());
   };
 
   const fetchCounts = async () => {
-    const [activeRes, usedRes, transferredIds] = await Promise.all([
+    const [activeRes, usedRes, transferredTickets] = await Promise.all([
       supabase
         .from("qr_tickets")
         .select("*", { count: "exact", head: true })
@@ -60,12 +82,18 @@ export default function HistorialBoletos() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("status", "used"),
-      fetchTransferredTicketIds(),
+      fetchTransferredTickets(),
     ]);
+
+    // Active count should exclude returned tickets (they show in transferred)
+    const returnedCount = transferredTickets.filter(
+      (t: any) => t.status === "active" && !t.is_transferred && t.transfer_returned_at
+    ).length;
+
     setCounts({
-      active: activeRes.count ?? 0,
+      active: (activeRes.count ?? 0) - returnedCount,
       used: usedRes.count ?? 0,
-      transferred: transferredIds.length,
+      transferred: transferredTickets.length,
     });
   };
 
