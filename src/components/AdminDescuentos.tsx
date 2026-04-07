@@ -64,24 +64,56 @@ export default function AdminDescuentos() {
 
   const handleAction = async (id: string, action: "aprobado" | "rechazado" | "incompleto") => {
     setProcessing(id);
+    const solicitud = solicitudes.find((s) => s.id === id);
     try {
-      const { error } = await (supabase
+      const now = new Date();
+      const { data: updated, error } = await (supabase
         .from("verificaciones_descuento") as any)
         .update({
           estado: action,
           admin_notas: notas[id] || null,
-          updated_at: new Date().toISOString(),
+          updated_at: now.toISOString(),
         })
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) throw error;
+      if (!updated) throw new Error("No se pudo actualizar, verifica permisos");
+
+      // Send internal message to the user
+      if (solicitud) {
+        const tipoLabel = solicitud.tipo === "estudiante" ? "Estudiante" : "Tercera Edad";
+        const fechaHora = now.toLocaleString("es-MX", { 
+          dateStyle: "long", timeStyle: "short" 
+        });
+        
+        let mensaje = "";
+        if (action === "aprobado") {
+          mensaje = `✅ ¡Tu solicitud de Descuento Social (${tipoLabel}) ha sido APROBADA!\n\n📅 Fecha: ${fechaHora}\n\nA partir de ahora tus boletos costarán $4.50 MXN en vez de $9.00. Recuerda que los boletos con descuento no son transferibles y solo se pueden usar desde tu dispositivo registrado.`;
+        } else if (action === "rechazado") {
+          mensaje = `❌ Tu solicitud de Descuento Social (${tipoLabel}) ha sido RECHAZADA.\n\n📅 Fecha: ${fechaHora}${notas[id] ? `\n📝 Motivo: ${notas[id]}` : ""}\n\nPuedes volver a enviar tu solicitud con la documentación correcta desde la sección de Descuento Social.`;
+        } else {
+          mensaje = `⚠️ Tu solicitud de Descuento Social (${tipoLabel}) está marcada como INCOMPLETA.\n\n📅 Fecha: ${fechaHora}${notas[id] ? `\n📝 Observación: ${notas[id]}` : ""}\n\nPor favor sube nuevamente tu credencial con la información completa y legible.`;
+        }
+
+        await supabase.from("messages").insert({
+          sender_id: "00000000-0000-0000-0000-000000000001",
+          receiver_id: solicitud.user_id,
+          message: mensaje,
+          is_panic: false,
+          is_read: false,
+        });
+      }
+
       toast.success(
-        action === "aprobado" ? "Descuento aprobado" : 
-        action === "incompleto" ? "Marcado como incompleto" : "Solicitud rechazada"
+        action === "aprobado" ? "Descuento aprobado ✅" : 
+        action === "incompleto" ? "Marcado como incompleto ⚠️" : "Solicitud rechazada ❌"
       );
       fetchSolicitudes();
     } catch (err: any) {
-      toast.error(err.message);
+      console.error("Error al procesar solicitud:", err);
+      toast.error(err.message || "Error al procesar solicitud");
     } finally {
       setProcessing(null);
     }
