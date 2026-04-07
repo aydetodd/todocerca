@@ -95,6 +95,9 @@ export default function PanelConcesionario() {
     mes: 0, totalUnidades: 0,
   });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
+  const [detalleLiq, setDetalleLiq] = useState<string | null>(null);
+  const [detalleTickets, setDetalleTickets] = useState<any[]>([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
   const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
