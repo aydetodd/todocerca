@@ -95,6 +95,9 @@ export default function PanelConcesionario() {
     mes: 0, totalUnidades: 0,
   });
   const [expandedLiq, setExpandedLiq] = useState<string | null>(null);
+  const [detalleLiq, setDetalleLiq] = useState<string | null>(null);
+  const [detalleTickets, setDetalleTickets] = useState<any[]>([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [ingresosUnidad, setIngresosUnidad] = useState<IngresoUnidad[]>([]);
   const [expandedUnidad, setExpandedUnidad] = useState<string | null>(null);
   const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
@@ -1445,18 +1448,76 @@ export default function PanelConcesionario() {
                     </div>
 
                     {expandedLiq === l.id && (() => {
-                      const bNorm = l.boletos_normales || 0;
-                      const bEst = l.boletos_estudiante || 0;
-                      const bTer = l.boletos_tercera_edad || 0;
-                      const mNorm = Number(l.monto_normales || 0);
-                      const mEst = Number(l.monto_estudiante || 0);
-                      const mTer = Number(l.monto_tercera_edad || 0);
+                      // Fallback: if type breakdown is all zeros but total > 0, infer all normal
+                      const hasTypeData = (l.boletos_normales || 0) + (l.boletos_estudiante || 0) + (l.boletos_tercera_edad || 0) > 0;
+                      const bNorm = hasTypeData ? (l.boletos_normales || 0) : l.total_boletos;
+                      const bEst = hasTypeData ? (l.boletos_estudiante || 0) : 0;
+                      const bTer = hasTypeData ? (l.boletos_tercera_edad || 0) : 0;
+                      const mNorm = hasTypeData ? Number(l.monto_normales || 0) : Number(l.monto_valor_facial);
+                      const mEst = hasTypeData ? Number(l.monto_estudiante || 0) : 0;
+                      const mTer = hasTypeData ? Number(l.monto_tercera_edad || 0) : 0;
                       const valorFacial = Number(l.monto_valor_facial);
                       const feeStripeTotal = Number(l.monto_fee_stripe_connect);
                       const feeVariable = valorFacial * 0.036;
-                      const feeFija = feeStripeTotal - feeVariable;
+                      const feeFija = Math.max(0, feeStripeTotal - feeVariable);
                       const comisionTC = Number(l.monto_comision_todocerca);
                       const totalDescuentos = comisionTC + feeStripeTotal;
+
+                      const handleVerDetalle = async (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        if (detalleLiq === l.id) {
+                          setDetalleLiq(null);
+                          return;
+                        }
+                        setLoadingDetalle(true);
+                        setDetalleLiq(l.id);
+                        try {
+                          // Get units for this concesionario
+                          const unidadIds = unidades.map(u => u.id);
+                          if (unidadIds.length === 0) { setDetalleTickets([]); return; }
+
+                          const fecha = l.fecha_liquidacion;
+                          const rangeStart = `${fecha}T00:00:00-07:00`;
+                          const rangeEnd = `${fecha}T23:59:59-07:00`;
+
+                          const { data: logs } = await supabase
+                            .from("logs_validacion_qr")
+                            .select("qr_ticket_id, created_at, unidad_id, producto_id")
+                            .in("unidad_id", unidadIds)
+                            .eq("resultado", "valid")
+                            .gte("created_at", rangeStart)
+                            .lte("created_at", rangeEnd);
+
+                          if (!logs || logs.length === 0) { setDetalleTickets([]); return; }
+
+                          const ticketIds = logs.map((lo: any) => lo.qr_ticket_id).filter(Boolean);
+                          const { data: tickets } = await supabase
+                            .from("qr_tickets")
+                            .select("id, amount, ticket_type, stripe_fee_unitario, stripe_cuota_fija_unitario")
+                            .in("id", ticketIds);
+
+                          // Merge logs with ticket data
+                          const merged = logs.map((lo: any) => {
+                            const t = tickets?.find((tk: any) => tk.id === lo.qr_ticket_id);
+                            const unidad = unidades.find(u => u.id === lo.unidad_id);
+                            return {
+                              hora: new Date(lo.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+                              unidad: unidad?.numero_economico || "—",
+                              tipo: t?.ticket_type || "normal",
+                              monto: Number(t?.amount || 9),
+                              feeVariable: Number(t?.amount || 9) * 0.036,
+                              feeFija: Number(t?.stripe_cuota_fija_unitario || 0),
+                              feeTotal: Number(t?.stripe_fee_unitario || 0),
+                            };
+                          });
+                          setDetalleTickets(merged);
+                        } catch (err) {
+                          console.error("Error fetching detail:", err);
+                          setDetalleTickets([]);
+                        } finally {
+                          setLoadingDetalle(false);
+                        }
+                      };
 
                       return (
                         <div className="mt-3 pt-3 border-t border-border space-y-1.5 text-sm">
@@ -1492,7 +1553,7 @@ export default function PanelConcesionario() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Stripe fija prorrateada ($3/compra):</span>
-                            <span className="text-destructive">-${Math.max(0, feeFija).toFixed(2)}</span>
+                            <span className="text-destructive">-${feeFija.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-xs pt-1 border-t border-border/30">
                             <span className="text-muted-foreground">Total descuentos:</span>
@@ -1513,6 +1574,61 @@ export default function PanelConcesionario() {
                             <p className="text-xs text-destructive mt-1">
                               No se pudo enviar el depósito a Stripe Connect. El cálculo sí se guardó y puedes reintentar la liquidación.
                             </p>
+                          )}
+
+                          {/* Detail button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={handleVerDetalle}
+                          >
+                            {loadingDetalle && detalleLiq === l.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <ClipboardList className="h-4 w-4 mr-2" />
+                            )}
+                            {detalleLiq === l.id ? "Ocultar detalle" : "Ver detalle por boleto"}
+                          </Button>
+
+                          {detalleLiq === l.id && !loadingDetalle && (
+                            <div className="mt-2 space-y-1 bg-muted/30 rounded-lg p-3">
+                              <p className="text-xs font-semibold text-muted-foreground mb-2">🔍 Detalle por boleto validado:</p>
+                              {detalleTickets.length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center">No se encontraron datos detallados</p>
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-5 gap-1 text-[10px] font-semibold text-muted-foreground border-b border-border pb-1 mb-1">
+                                    <span>Hora</span>
+                                    <span>Unidad</span>
+                                    <span>Tipo</span>
+                                    <span className="text-right">Valor</span>
+                                    <span className="text-right">Fee fija</span>
+                                  </div>
+                                  {detalleTickets.map((dt: any, idx: number) => (
+                                    <div key={idx} className="grid grid-cols-5 gap-1 text-[11px]">
+                                      <span className="text-muted-foreground">{dt.hora}</span>
+                                      <span className="text-foreground">{dt.unidad}</span>
+                                      <span className="text-foreground capitalize">{dt.tipo === "tercera_edad" ? "3ª edad" : dt.tipo}</span>
+                                      <span className="text-right text-foreground">${dt.monto.toFixed(2)}</span>
+                                      <span className="text-right text-destructive">${dt.feeFija.toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                  <div className="grid grid-cols-5 gap-1 text-[11px] font-semibold border-t border-border pt-1 mt-1">
+                                    <span className="col-span-3 text-muted-foreground">Totales:</span>
+                                    <span className="text-right text-foreground">
+                                      ${detalleTickets.reduce((s: number, d: any) => s + d.monto, 0).toFixed(2)}
+                                    </span>
+                                    <span className="text-right text-destructive">
+                                      ${detalleTickets.reduce((s: number, d: any) => s + d.feeFija, 0).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    * La cuota fija de $3.00 MXN se prorratea entre los boletos de cada compra. Ej: 10 boletos en una compra = $0.30 c/u
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
                       );
