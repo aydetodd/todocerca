@@ -168,14 +168,13 @@ export default function HistorialBoletos() {
 
     const { data } = await query;
     if (data) {
-      // For used and transferred tickets, fetch route name from ruta_uso_id on the ticket itself
-      if ((filter === "used" || filter === "transferred") && data.length > 0) {
+      // For used tickets, fetch route name
+      if (filter === "used" && data.length > 0) {
         const routeProductIds = new Set<string>();
         data.forEach((t: any) => {
           if (t.ruta_uso_id) routeProductIds.add(t.ruta_uso_id);
         });
 
-        // Fallback: also check logs_validacion_qr for tickets missing ruta_uso_id
         const ticketsWithoutRoute = data.filter((t: any) => !t.ruta_uso_id);
         const ticketRouteMap: Record<string, string> = {};
         if (ticketsWithoutRoute.length > 0) {
@@ -207,23 +206,6 @@ export default function HistorialBoletos() {
           const prodId = t.ruta_uso_id || ticketRouteMap[t.id];
           t._ruta_nombre = prodId ? routeNameMap[prodId] || null : null;
         });
-      }
-
-      // For transferred tab, fetch all movements per ticket
-      if (filter === "transferred" && data.length > 0) {
-        const ticketIds = data.map((t: any) => t.id);
-        const { data: movements } = await (supabase
-          .from("movimientos_boleto") as any)
-          .select("*")
-          .in("qr_ticket_id", ticketIds)
-          .order("created_at", { ascending: true });
-
-        const map: Record<string, Movement[]> = {};
-        (movements || []).forEach((m: any) => {
-          if (!map[m.qr_ticket_id]) map[m.qr_ticket_id] = [];
-          map[m.qr_ticket_id].push(m);
-        });
-        setMovementsMap(map);
       }
 
       setTickets(data);
