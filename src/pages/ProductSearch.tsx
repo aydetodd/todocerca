@@ -979,8 +979,8 @@ const ProductSearch = () => {
                             const newRoute = selectedRoute === route.nombre ? null : route.nombre;
                             setSelectedRoute(newRoute);
                             if (newRoute) {
-                              // Auto-search for this specific route
-                              setTimeout(() => handleSearch(), 50);
+                              // Pass route directly to avoid stale closure
+                              setTimeout(() => handleSearch(undefined, newRoute), 50);
                             }
                           }}
                         >
