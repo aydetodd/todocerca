@@ -255,6 +255,12 @@ serve(async (req) => {
           estado,
           stripe_transfer_id: transferId,
           fecha_procesamiento: new Date().toISOString(),
+          boletos_normales: boletosNormales,
+          boletos_estudiante: boletosEstudiante,
+          boletos_tercera_edad: boletosTerceraEdad,
+          monto_normales: montoNormales,
+          monto_estudiante: montoEstudiante,
+          monto_tercera_edad: montoTerceraEdad,
         };
 
         if (existing?.estado === "failed") {

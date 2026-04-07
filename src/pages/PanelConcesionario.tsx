@@ -39,6 +39,12 @@ type Liquidacion = {
   monto_neto: number;
   estado: string;
   stripe_transfer_id: string | null;
+  boletos_normales?: number;
+  boletos_estudiante?: number;
+  boletos_tercera_edad?: number;
+  monto_normales?: number;
+  monto_estudiante?: number;
+  monto_tercera_edad?: number;
 };
 
 type FraudeResumen = {
