@@ -1488,6 +1488,9 @@ export type Database = {
       }
       liquidaciones_diarias: {
         Row: {
+          boletos_estudiante: number
+          boletos_normales: number
+          boletos_tercera_edad: number
           created_at: string
           cuenta_conectada_id: string
           estado: string
@@ -1495,14 +1498,20 @@ export type Database = {
           fecha_procesamiento: string | null
           id: string
           monto_comision_todocerca: number
+          monto_estudiante: number
           monto_fee_stripe_connect: number
           monto_neto: number
+          monto_normales: number
+          monto_tercera_edad: number
           monto_valor_facial: number
           stripe_transfer_id: string | null
           total_boletos: number
           updated_at: string
         }
         Insert: {
+          boletos_estudiante?: number
+          boletos_normales?: number
+          boletos_tercera_edad?: number
           created_at?: string
           cuenta_conectada_id: string
           estado?: string
@@ -1510,14 +1519,20 @@ export type Database = {
           fecha_procesamiento?: string | null
           id?: string
           monto_comision_todocerca?: number
+          monto_estudiante?: number
           monto_fee_stripe_connect?: number
           monto_neto?: number
+          monto_normales?: number
+          monto_tercera_edad?: number
           monto_valor_facial?: number
           stripe_transfer_id?: string | null
           total_boletos?: number
           updated_at?: string
         }
         Update: {
+          boletos_estudiante?: number
+          boletos_normales?: number
+          boletos_tercera_edad?: number
           created_at?: string
           cuenta_conectada_id?: string
           estado?: string
@@ -1525,8 +1540,11 @@ export type Database = {
           fecha_procesamiento?: string | null
           id?: string
           monto_comision_todocerca?: number
+          monto_estudiante?: number
           monto_fee_stripe_connect?: number
           monto_neto?: number
+          monto_normales?: number
+          monto_tercera_edad?: number
           monto_valor_facial?: number
           stripe_transfer_id?: string | null
           total_boletos?: number
