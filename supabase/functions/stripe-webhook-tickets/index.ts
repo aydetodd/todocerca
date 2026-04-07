@@ -76,6 +76,8 @@ serve(async (req) => {
         console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
       }
 
+      const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
+
       // If Stripe API didn't return the fee, calculate it mathematically
       // Stripe Mexico: 3.6% + $3.00 MXN fixed per transaction
       if (stripeFee === 0 && quantity > 0) {
@@ -86,7 +88,6 @@ serve(async (req) => {
 
       const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
       const cuotaFijaUnitario = quantity > 0 ? 3.00 / quantity : 0;
-      const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
 
       console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}, cuota_fija/ticket: $${cuotaFijaUnitario.toFixed(4)}`);
 
