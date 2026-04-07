@@ -32,17 +32,13 @@ export default function ComprarBoletos() {
   const checkDiscount = async () => {
     const { data } = await (supabase
       .from("verificaciones_descuento") as any)
-      .select("tipo, estado, device_id")
+      .select("tipo, estado")
       .eq("user_id", user!.id)
       .eq("estado", "aprobado");
 
     if (data && data.length > 0) {
-      // Check device match
-      const storedDeviceId = localStorage.getItem("tc_device_id");
-      const matched = data.find((v: any) => v.device_id === storedDeviceId);
-      if (matched) {
-        setApprovedDiscount(matched.tipo as DiscountType);
-      }
+      // Use the first approved discount found
+      setApprovedDiscount(data[0].tipo as DiscountType);
     }
     setLoadingDiscount(false);
   };
