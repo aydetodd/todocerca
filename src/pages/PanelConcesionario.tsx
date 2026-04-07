@@ -1444,65 +1444,79 @@ export default function PanelConcesionario() {
                       </div>
                     </div>
 
-                    {expandedLiq === l.id && (
-                      <div className="mt-3 pt-3 border-t border-border space-y-1 text-sm">
-                        {/* Desglose por tipo de boleto */}
-                        {((l.boletos_normales || 0) > 0 || (l.boletos_estudiante || 0) > 0 || (l.boletos_tercera_edad || 0) > 0) ? (
-                          <>
-                            <p className="text-xs font-semibold text-muted-foreground mb-1">Desglose por tipo:</p>
-                            {(l.boletos_normales || 0) > 0 && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">🎫 Normal ({l.boletos_normales} × $9.00):</span>
-                                <span className="text-foreground">${Number(l.monto_normales || 0).toFixed(2)}</span>
-                              </div>
-                            )}
-                            {(l.boletos_estudiante || 0) > 0 && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">🎓 Estudiante ({l.boletos_estudiante} × $4.50):</span>
-                                <span className="text-foreground">${Number(l.monto_estudiante || 0).toFixed(2)}</span>
-                              </div>
-                            )}
-                            {(l.boletos_tercera_edad || 0) > 0 && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">👴 Tercera edad ({l.boletos_tercera_edad} × $4.50):</span>
-                                <span className="text-foreground">${Number(l.monto_tercera_edad || 0).toFixed(2)}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between pt-1 border-t border-border/50">
-                              <span className="text-muted-foreground">Valor facial total:</span>
-                              <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
-                            </div>
-                          </>
-                        ) : (
+                    {expandedLiq === l.id && (() => {
+                      const bNorm = l.boletos_normales || 0;
+                      const bEst = l.boletos_estudiante || 0;
+                      const bTer = l.boletos_tercera_edad || 0;
+                      const mNorm = Number(l.monto_normales || 0);
+                      const mEst = Number(l.monto_estudiante || 0);
+                      const mTer = Number(l.monto_tercera_edad || 0);
+                      const valorFacial = Number(l.monto_valor_facial);
+                      const feeStripeTotal = Number(l.monto_fee_stripe_connect);
+                      const feeVariable = valorFacial * 0.036;
+                      const feeFija = feeStripeTotal - feeVariable;
+                      const comisionTC = Number(l.monto_comision_todocerca);
+                      const totalDescuentos = comisionTC + feeStripeTotal;
+
+                      return (
+                        <div className="mt-3 pt-3 border-t border-border space-y-1.5 text-sm">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">📊 Desglose por tipo de boleto:</p>
+                          
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Valor facial ({l.total_boletos} × $9.00):</span>
-                            <span className="text-foreground">${Number(l.monto_valor_facial).toFixed(2)}</span>
+                            <span className="text-muted-foreground">🎫 Normal ({bNorm} × $9.00):</span>
+                            <span className="text-foreground">${mNorm.toFixed(2)}</span>
                           </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión TodoCerca (2%):</span>
-                          <span className="text-destructive">-${Number(l.monto_comision_todocerca).toFixed(2)}</span>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">🎓 Estudiante ({bEst} × $4.50):</span>
+                            <span className="text-foreground">${mEst.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">👴 Tercera edad ({bTer} × $4.50):</span>
+                            <span className="text-foreground">${mTer.toFixed(2)}</span>
+                          </div>
+
+                          <div className="flex justify-between pt-1.5 border-t border-border/50 font-medium">
+                            <span className="text-muted-foreground">💰 Valor facial total ({l.total_boletos} boletos):</span>
+                            <span className="text-foreground">${valorFacial.toFixed(2)}</span>
+                          </div>
+
+                          <p className="text-xs font-semibold text-muted-foreground mt-2 mb-1">📉 Deducciones:</p>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Comisión TodoCerca (2%):</span>
+                            <span className="text-destructive">-${comisionTC.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Stripe variable (3.6%):</span>
+                            <span className="text-destructive">-${feeVariable.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Stripe fija prorrateada ($3/compra):</span>
+                            <span className="text-destructive">-${Math.max(0, feeFija).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs pt-1 border-t border-border/30">
+                            <span className="text-muted-foreground">Total descuentos:</span>
+                            <span className="text-destructive">-${totalDescuentos.toFixed(2)}</span>
+                          </div>
+
+                          <div className="flex justify-between font-bold pt-2 border-t border-border text-base">
+                            <span>✅ Neto depositado:</span>
+                            <span className="text-green-500">${Number(l.monto_neto).toFixed(2)}</span>
+                          </div>
+
+                          {l.stripe_transfer_id && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Transfer: {l.stripe_transfer_id}
+                            </p>
+                          )}
+                          {l.estado === "failed" && (
+                            <p className="text-xs text-destructive mt-1">
+                              No se pudo enviar el depósito a Stripe Connect. El cálculo sí se guardó y puedes reintentar la liquidación.
+                            </p>
+                          )}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Comisión Stripe (3.6% + $3.00/tx):</span>
-                          <span className="text-destructive">-${Number(l.monto_fee_stripe_connect).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold pt-1 border-t border-border">
-                          <span>Neto depositado:</span>
-                          <span className="text-green-600">${Number(l.monto_neto).toFixed(2)}</span>
-                        </div>
-                        {l.stripe_transfer_id && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Transfer: {l.stripe_transfer_id}
-                          </p>
-                        )}
-                        {l.estado === "failed" && (
-                          <p className="text-xs text-destructive mt-1">
-                            No se pudo enviar el depósito a Stripe Connect. El cálculo sí se guardó y puedes reintentar la liquidación.
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               ))
