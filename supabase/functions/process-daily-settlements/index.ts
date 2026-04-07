@@ -160,6 +160,12 @@ serve(async (req) => {
           .filter((id: any) => id != null);
 
         let feeStripeProporcional = 0;
+        let boletosNormales = 0;
+        let boletosEstudiante = 0;
+        let boletosTerceraEdad = 0;
+        let montoNormales = 0;
+        let montoEstudiante = 0;
+        let montoTerceraEdad = 0;
 
         if (ticketIds.length > 0) {
           const { data: tickets } = await supabaseAdmin
