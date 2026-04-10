@@ -776,6 +776,51 @@ export default function PanelMaquiladora() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: CSV Import */}
+      <Dialog open={showCsvImport} onOpenChange={setShowCsvImport}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" /> Importar empleados desde CSV
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Se encontraron <strong>{csvPreview.length}</strong> empleados en el archivo. Formato esperado:
+            </p>
+            <code className="text-xs bg-muted p-2 rounded block">Nombre,Nómina,Departamento,Turno,Teléfono</code>
+            <div className="max-h-60 overflow-auto border rounded">
+              <table className="w-full text-xs">
+                <thead className="bg-muted sticky top-0">
+                  <tr>
+                    <th className="p-1 text-left">Nombre</th>
+                    <th className="p-1 text-left">Nómina</th>
+                    <th className="p-1 text-left">Depto</th>
+                    <th className="p-1 text-left">Turno</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvPreview.slice(0, 50).map((row, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-1">{row.nombre}</td>
+                      <td className="p-1">{row.numero_nomina}</td>
+                      <td className="p-1">{row.departamento}</td>
+                      <td className="p-1">{row.turno}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {csvPreview.length > 50 && (
+                <p className="text-xs text-muted-foreground text-center py-1">...y {csvPreview.length - 50} más</p>
+              )}
+            </div>
+            <Button onClick={handleCsvImport} className="w-full" disabled={csvImporting}>
+              {csvImporting ? `Importando... (${csvPreview.length} empleados)` : `Importar ${csvPreview.length} empleados`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
