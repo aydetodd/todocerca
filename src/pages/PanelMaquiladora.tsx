@@ -84,6 +84,14 @@ export default function PanelMaquiladora() {
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvPreview, setCsvPreview] = useState<Array<{ nombre: string; numero_nomina: string; departamento: string; turno: string; telefono: string }>>([]);
 
+  // Contratos - buscar concesionarios
+  const [concesionarioSearch, setConcesionarioSearch] = useState("");
+  const [concesionariosFound, setConcesionariosFound] = useState<any[]>([]);
+  const [searchingConcesionarios, setSearchingConcesionarios] = useState(false);
+  const [showSolicitarContrato, setShowSolicitarContrato] = useState(false);
+  const [concesionarioSeleccionado, setConcesionarioSeleccionado] = useState<any>(null);
+  const [savingContrato, setSavingContrato] = useState(false);
+
   // Registration form
   const [regNombre, setRegNombre] = useState("");
   const [regRfc, setRegRfc] = useState("");
