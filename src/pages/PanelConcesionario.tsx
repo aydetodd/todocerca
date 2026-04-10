@@ -995,26 +995,31 @@ export default function PanelConcesionario() {
         </div>
 
         <Tabs defaultValue="ingresos" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="ingresos" className="text-xs">
-              <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
-            </TabsTrigger>
-            <TabsTrigger value="reportes" className="text-xs">
-              <ClipboardList className="h-3 w-3 mr-1" /> Reportes
-            </TabsTrigger>
-            <TabsTrigger value="verificacion" className="text-xs">
-              <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
-            </TabsTrigger>
-            <TabsTrigger value="unidades" className="text-xs">
-              <Bus className="h-3 w-3 mr-1" /> Unidades
-            </TabsTrigger>
-            <TabsTrigger value="liquidaciones" className="text-xs">
-              <DollarSign className="h-3 w-3 mr-1" /> Pagos
-            </TabsTrigger>
-            <TabsTrigger value="fraude" className="text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex w-auto min-w-full">
+              <TabsTrigger value="ingresos" className="text-xs">
+                <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+              </TabsTrigger>
+              <TabsTrigger value="reportes" className="text-xs">
+                <ClipboardList className="h-3 w-3 mr-1" /> Reportes
+              </TabsTrigger>
+              <TabsTrigger value="verificacion" className="text-xs">
+                <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
+              </TabsTrigger>
+              <TabsTrigger value="unidades" className="text-xs">
+                <Bus className="h-3 w-3 mr-1" /> Unidades
+              </TabsTrigger>
+              <TabsTrigger value="liquidaciones" className="text-xs">
+                <DollarSign className="h-3 w-3 mr-1" /> Pagos
+              </TabsTrigger>
+              <TabsTrigger value="fraude" className="text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
+              </TabsTrigger>
+              <TabsTrigger value="empresas" className="text-xs">
+                <Building2 className="h-3 w-3 mr-1" /> Empresas
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* INGRESOS POR UNIDAD */}
           <TabsContent value="ingresos" className="space-y-4 mt-4">
