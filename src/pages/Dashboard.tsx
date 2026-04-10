@@ -60,6 +60,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [empresaTransporte, setEmpresaTransporte] = useState<any>(null);
+  const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false);
+  const [empresaForm, setEmpresaForm] = useState({ nombre: '', rfc: '', contacto_nombre: '', contacto_telefono: '', contacto_email: '' });
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
