@@ -4,8 +4,10 @@ import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
   Users, Plus, MessageCircle, Loader2, Trash2, Download, ClipboardList,
+  Building2, Search, Handshake,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConcesionarioReportes from "@/components/ConcesionarioReportes";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
