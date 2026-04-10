@@ -420,8 +420,12 @@ export default function ValidarQr() {
           <div className="flex items-center gap-2">
             <BackButton />
             <div>
-              <h1 className="text-sm font-bold text-foreground">Validar QR Boleto</h1>
-              <p className="text-[10px] text-muted-foreground">Escáner de chofer</p>
+              <h1 className="text-sm font-bold text-foreground">
+                {scanMode === "personal" ? "Transporte Personal" : "Validar QR Boleto"}
+              </h1>
+              <p className="text-[10px] text-muted-foreground">
+                {scanMode === "personal" ? "Modo maquiladora" : "Escáner de chofer"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
