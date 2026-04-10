@@ -791,26 +791,30 @@ export default function PanelMaquiladora() {
             </p>
             <code className="text-xs bg-muted p-2 rounded block">Nombre,Nómina,Departamento,Turno,Teléfono</code>
             <div className="max-h-60 overflow-auto border rounded">
-              <table className="w-full text-xs">
-                <thead className="bg-muted sticky top-0">
-                  <tr>
-                    <th className="p-1 text-left">Nombre</th>
-                    <th className="p-1 text-left">Nómina</th>
-                    <th className="p-1 text-left">Depto</th>
-                    <th className="p-1 text-left">Turno</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvPreview.slice(0, 50).map((row, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="p-1">{row.nombre}</td>
-                      <td className="p-1">{row.numero_nomina}</td>
-                      <td className="p-1">{row.departamento}</td>
-                      <td className="p-1">{row.turno}</td>
+              <div className="overflow-x-auto">
+                <table className="min-w-[500px] w-full text-xs">
+                  <thead className="bg-muted sticky top-0">
+                    <tr>
+                      <th className="p-1 text-left whitespace-nowrap">Nombre</th>
+                      <th className="p-1 text-left whitespace-nowrap">Nómina</th>
+                      <th className="p-1 text-left whitespace-nowrap">Depto</th>
+                      <th className="p-1 text-left whitespace-nowrap">Turno</th>
+                      <th className="p-1 text-left whitespace-nowrap">Teléfono</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {csvPreview.slice(0, 50).map((row, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="p-1 whitespace-nowrap">{row.nombre}</td>
+                        <td className="p-1 whitespace-nowrap">{row.numero_nomina}</td>
+                        <td className="p-1 whitespace-nowrap">{row.departamento}</td>
+                        <td className="p-1 whitespace-nowrap">{row.turno}</td>
+                        <td className="p-1 whitespace-nowrap">{row.telefono || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               {csvPreview.length > 50 && (
                 <p className="text-xs text-muted-foreground text-center py-1">...y {csvPreview.length - 50} más</p>
               )}
