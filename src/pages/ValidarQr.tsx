@@ -430,6 +430,15 @@ export default function ValidarQr() {
           </div>
           <div className="flex items-center gap-1">
             <Button
+              variant={scanMode === "personal" ? "default" : "outline"}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setScanMode(scanMode === "boleto" ? "personal" : "boleto")}
+              title={scanMode === "personal" ? "Modo: Transporte Personal" : "Cambiar a Transporte Personal"}
+            >
+              <Building2 className="h-4 w-4" />
+            </Button>
+            <Button
               variant={showMap ? "default" : "outline"}
               size="icon"
               className="h-8 w-8"
