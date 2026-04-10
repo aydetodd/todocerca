@@ -383,7 +383,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 pb-24">
         <div className="mb-4">
           <h2 className="text-3xl font-bold text-foreground mb-2">
             ¡Bienvenido, {profile?.nombre}!
