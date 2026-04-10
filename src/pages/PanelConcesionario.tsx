@@ -848,6 +848,81 @@ export default function PanelConcesionario() {
     }
   };
 
+  // === Empresas / Contratos functions ===
+  const searchEmpresas = async () => {
+    if (!empresaSearch.trim()) return;
+    setSearchingEmpresas(true);
+    const { data } = await supabase
+      .from("empresas_transporte")
+      .select("id, nombre, rfc, contacto_nombre, contacto_telefono")
+      .eq("is_active", true)
+      .ilike("nombre", `%${empresaSearch.trim()}%`)
+      .limit(10);
+    setEmpresasFound(data || []);
+    setSearchingEmpresas(false);
+  };
+
+  const loadContratosEmpresa = async (provId: string) => {
+    const { data } = await supabase
+      .from("contratos_transporte")
+      .select("*, empresas_transporte(nombre)")
+      .eq("concesionario_id", provId)
+      .order("created_at", { ascending: false });
+    setContratosEmpresa(data || []);
+  };
+
+  const handleProponerContrato = async () => {
+    if (!proveedor || !empresaSeleccionada) return;
+    setSavingContrato(true);
+    const { error } = await supabase.from("contratos_transporte").insert({
+      concesionario_id: proveedor.id,
+      empresa_id: empresaSeleccionada.id,
+      tarifa_por_persona: parseFloat(contratoTarifa) || 15,
+      frecuencia_corte: contratoFrecuencia,
+      descripcion: contratoDescripcion || `Transporte de personal - ${empresaSeleccionada.nombre}`,
+      estado: "pendiente",
+      iniciado_por: "concesionario",
+      is_active: false,
+    });
+    setSavingContrato(false);
+    if (error) {
+      toast.error("Error al proponer contrato: " + error.message);
+    } else {
+      toast.success("Propuesta de contrato enviada");
+      setShowProponerContrato(false);
+      setEmpresaSeleccionada(null);
+      setContratoTarifa("15");
+      setContratoDescripcion("");
+      loadContratosEmpresa(proveedor.id);
+    }
+  };
+
+  const handleAceptarContrato = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "aceptado", is_active: true })
+      .eq("id", contratoId);
+    if (error) {
+      toast.error("Error: " + error.message);
+    } else {
+      toast.success("Contrato aceptado");
+      if (proveedor) loadContratosEmpresa(proveedor.id);
+    }
+  };
+
+  const handleRechazarContrato = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "rechazado", is_active: false })
+      .eq("id", contratoId);
+    if (error) {
+      toast.error("Error: " + error.message);
+    } else {
+      toast.success("Contrato rechazado");
+      if (proveedor) loadContratosEmpresa(proveedor.id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
