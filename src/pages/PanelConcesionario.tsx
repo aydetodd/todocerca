@@ -1827,10 +1827,151 @@ export default function PanelConcesionario() {
           <TabsContent value="reportes" className="space-y-4 mt-4">
             {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} />}
           </TabsContent>
+
+          {/* EMPRESAS / CONTRATOS */}
+          <TabsContent value="empresas" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Search className="h-4 w-4" /> Buscar empresa
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Busca empresas (maquiladoras) para proponer un contrato de transporte
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nombre de la empresa..."
+                    value={empresaSearch}
+                    onChange={e => setEmpresaSearch(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchEmpresas()}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={searchEmpresas} disabled={searchingEmpresas}>
+                    {searchingEmpresas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                {empresasFound.map(emp => (
+                  <Card key={emp.id} className="bg-muted/50">
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{emp.nombre}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {emp.rfc || "Sin RFC"} · {emp.contacto_nombre || ""}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="default" onClick={() => {
+                        setEmpresaSeleccionada(emp);
+                        setShowProponerContrato(true);
+                      }}>
+                        <Handshake className="h-3 w-3 mr-1" /> Proponer
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Mis contratos con empresas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {contratosEmpresa.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6">
+                    <Building2 className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Sin contratos</p>
+                    <p className="text-xs">Busca una empresa arriba para proponer un contrato</p>
+                  </div>
+                ) : (
+                  contratosEmpresa.map((c: any) => (
+                    <Card key={c.id} className="bg-muted/50">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm">
+                            {(c.empresas_transporte as any)?.nombre || "Empresa"}
+                          </p>
+                          <Badge variant={c.estado === "aceptado" ? "default" : c.estado === "rechazado" ? "destructive" : "secondary"}>
+                            {c.estado === "aceptado" ? "Activo" : c.estado === "rechazado" ? "Rechazado" : "Pendiente"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Tarifa: ${Number(c.tarifa_por_persona).toFixed(2)}/persona · {c.frecuencia_corte}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Desde {c.fecha_inicio} · Iniciado por: {c.iniciado_por}
+                        </p>
+                        {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
+                              <XCircle className="h-3 w-3 mr-1" /> Rechazar
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
-      
+      {/* Dialog: Proponer contrato */}
+      <Dialog open={showProponerContrato} onOpenChange={setShowProponerContrato}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5" /> Proponer contrato
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
+            </p>
+            <div>
+              <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
+              <Input
+                type="number"
+                value={contratoTarifa}
+                onChange={e => setContratoTarifa(e.target.value)}
+                placeholder="15.00"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Frecuencia de corte</label>
+              <select
+                className="w-full border rounded-md p-2 text-sm bg-background"
+                value={contratoFrecuencia}
+                onChange={e => setContratoFrecuencia(e.target.value)}
+              >
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual">Mensual</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descripción (opcional)</label>
+              <Input
+                value={contratoDescripcion}
+                onChange={e => setContratoDescripcion(e.target.value)}
+                placeholder="Transporte turno matutino..."
+              />
+            </div>
+            <Button onClick={handleProponerContrato} disabled={savingContrato} className="w-full">
+              {savingContrato ? "Enviando..." : "Enviar propuesta"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
