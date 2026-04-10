@@ -1949,6 +1949,7 @@ export default function PanelConcesionario() {
                         {c.estado === "aceptado" && user && (
                           <ContratoNotas contratoId={c.id} autorTipo="concesionario" userId={user.id} />
                         )}
+                      </CardContent>
                     </Card>
                   ))
                 )}

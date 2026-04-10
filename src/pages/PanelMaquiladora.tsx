@@ -729,6 +729,7 @@ export default function PanelMaquiladora() {
                   {c.estado === "aceptado" && user && (
                     <ContratoNotas contratoId={c.id} autorTipo="empresa" userId={user.id} />
                   )}
+                </CardContent>
               </Card>
             ))}
 
