@@ -347,6 +347,61 @@ export default function PanelMaquiladora() {
     if (empresa) await loadEmpleados(empresa.id);
   };
 
+  const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { toast({ title: "Error", description: "El archivo CSV está vacío", variant: "destructive" }); return; }
+      // Skip header row
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
+        return { nombre: cols[0] || "", numero_nomina: cols[1] || "", departamento: cols[2] || "", turno: cols[3] || "matutino", telefono: cols[4] || "" };
+      }).filter(r => r.nombre);
+      setCsvPreview(rows);
+      setShowCsvImport(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleCsvImport = async () => {
+    if (!empresa || !csvPreview.length) return;
+    setCsvImporting(true);
+    let importados = 0;
+    let errores = 0;
+    for (const row of csvPreview) {
+      const { data: newEmp, error } = await supabase
+        .from("empleados_empresa")
+        .insert({
+          empresa_id: empresa.id,
+          nombre: row.nombre,
+          numero_nomina: row.numero_nomina || null,
+          departamento: row.departamento || null,
+          turno: row.turno || "matutino",
+          qr_tipo: "fijo",
+        })
+        .select()
+        .single();
+      if (error) { errores++; continue; }
+      if (newEmp) {
+        await supabase.from("qr_empleados").insert({
+          empleado_id: newEmp.id,
+          empresa_id: empresa.id,
+          qr_tipo: "fijo",
+        });
+        importados++;
+      }
+    }
+    setCsvImporting(false);
+    setShowCsvImport(false);
+    setCsvPreview([]);
+    await loadEmpleados(empresa.id);
+    toast({ title: "✅ Importación completada", description: `${importados} empleados importados${errores > 0 ? `, ${errores} errores` : ""}` });
+  };
+
   const handleExportCSV = () => {
     if (!empleados.length) return;
     const headers = "Nombre,Nómina,Departamento,Turno,Tipo QR,Activo\n";
