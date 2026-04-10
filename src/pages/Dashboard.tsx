@@ -288,6 +288,12 @@ const Dashboard = () => {
           icon: Bus,
           visible: isProvider,
         },
+        {
+          key: "empresa" as const,
+          label: "Empresa Transporte",
+          icon: Building2,
+          visible: true,
+        },
         // Protocolo 1: Apartados, Citas y Horarios ocultos
         // { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
         // { key: "citas" as const, label: "Citas", icon: Calendar, visible: isProvider },
