@@ -382,6 +382,7 @@ export type Database = {
           iniciado_por: string
           is_active: boolean
           tarifa_por_persona: number
+          turnos: Json | null
           updated_at: string
         }
         Insert: {
@@ -397,6 +398,7 @@ export type Database = {
           iniciado_por?: string
           is_active?: boolean
           tarifa_por_persona?: number
+          turnos?: Json | null
           updated_at?: string
         }
         Update: {
@@ -412,6 +414,7 @@ export type Database = {
           iniciado_por?: string
           is_active?: boolean
           tarifa_por_persona?: number
+          turnos?: Json | null
           updated_at?: string
         }
         Relationships: [
