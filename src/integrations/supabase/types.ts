@@ -2589,6 +2589,56 @@ export type Database = {
         }
         Relationships: []
       }
+      recursos_contrato: {
+        Row: {
+          aprobado_por: string | null
+          contrato_id: string
+          created_at: string
+          detalle: string | null
+          estado: string
+          id: string
+          nombre_recurso: string
+          recurso_id: string
+          solicitado_por: string
+          tipo_recurso: string
+          updated_at: string
+        }
+        Insert: {
+          aprobado_por?: string | null
+          contrato_id: string
+          created_at?: string
+          detalle?: string | null
+          estado?: string
+          id?: string
+          nombre_recurso: string
+          recurso_id: string
+          solicitado_por: string
+          tipo_recurso: string
+          updated_at?: string
+        }
+        Update: {
+          aprobado_por?: string | null
+          contrato_id?: string
+          created_at?: string
+          detalle?: string | null
+          estado?: string
+          id?: string
+          nombre_recurso?: string
+          recurso_id?: string
+          solicitado_por?: string
+          tipo_recurso?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recursos_contrato_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ruta_invitaciones: {
         Row: {
           accepted_at: string | null
