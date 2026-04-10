@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  Building2,
   Bus,
   Calendar,
   Car,
@@ -37,6 +38,8 @@ import { ProviderAppointments } from "@/components/ProviderAppointments";
 import TaxiDriverRequests from "@/components/TaxiDriverRequests";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { useDashboardBadges } from "@/hooks/useDashboardBadges";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type DashboardSection =
   | "perfil"
@@ -47,7 +50,8 @@ type DashboardSection =
   | "apartados"
   | "citas"
   | "horarios"
-  | "taxi";
+  | "taxi"
+  | "empresa";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -56,10 +60,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showTaxiTab, setShowTaxiTab] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [empresaTransporte, setEmpresaTransporte] = useState<any>(null);
+  const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false);
+  const [empresaForm, setEmpresaForm] = useState({ nombre: '', rfc: '', contacto_nombre: '', contacto_telefono: '', contacto_email: '' });
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
@@ -72,7 +79,7 @@ const Dashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
       window.history.replaceState({}, '', '/dashboard');
@@ -171,6 +178,15 @@ const Dashboard = () => {
         // Fetch subscription info for providers
         await fetchSubscriptionInfo();
       }
+
+      // Check empresa de transporte for any user
+      const { data: empresaData } = await supabase
+        .from('empresas_transporte')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      setEmpresaTransporte(empresaData);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -232,6 +248,35 @@ const Dashboard = () => {
     }
   }
 
+  async function handleRegistrarEmpresa() {
+    if (!empresaForm.nombre.trim()) {
+      toast({ title: 'Error', description: 'El nombre de la empresa es obligatorio', variant: 'destructive' });
+      return;
+    }
+    try {
+      setRegistrandoEmpresa(true);
+      const { data, error } = await supabase
+        .from('empresas_transporte')
+        .insert({
+          user_id: user!.id,
+          nombre: empresaForm.nombre.trim(),
+          rfc: empresaForm.rfc.trim() || null,
+          contacto_nombre: empresaForm.contacto_nombre.trim() || null,
+          contacto_telefono: empresaForm.contacto_telefono.trim() || null,
+          contacto_email: empresaForm.contacto_email.trim() || null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setEmpresaTransporte(data);
+      toast({ title: 'Empresa registrada', description: 'Tu empresa ha sido registrada exitosamente' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setRegistrandoEmpresa(false);
+    }
+  }
+
   const isProvider = profile?.role === "proveedor";
   const showTaxi = isProvider && showTaxiTab;
 
@@ -271,6 +316,12 @@ const Dashboard = () => {
           label: "Transporte",
           icon: Bus,
           visible: isProvider,
+        },
+        {
+          key: "empresa" as const,
+          label: "Empresa Transporte",
+          icon: Building2,
+          visible: true,
         },
         // Protocolo 1: Apartados, Citas y Horarios ocultos
         // { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
@@ -614,6 +665,97 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <Button onClick={() => getProfile()}>Recargar</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeSection === "empresa" && (
+              <div>
+                {empresaTransporte ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        {empresaTransporte.nombre}
+                      </CardTitle>
+                      <CardDescription>
+                        Tu empresa está registrada. Gestiona empleados, contratos y reportes.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => navigate('/panel-maquiladora')} className="w-full">
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Abrir Panel Empresa
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Registrar Empresa de Transporte
+                      </CardTitle>
+                      <CardDescription>
+                        Registra tu empresa o maquiladora para gestionar el transporte de personal con control por pasajero mediante QR.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-nombre">Nombre de la empresa *</Label>
+                        <Input
+                          id="empresa-nombre"
+                          placeholder="Ej: Maquiladora ABC S.A. de C.V."
+                          value={empresaForm.nombre}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, nombre: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-rfc">RFC (opcional)</Label>
+                        <Input
+                          id="empresa-rfc"
+                          placeholder="Ej: MAB123456ABC"
+                          value={empresaForm.rfc}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, rfc: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-contacto">Nombre de contacto</Label>
+                        <Input
+                          id="empresa-contacto"
+                          placeholder="Nombre del responsable"
+                          value={empresaForm.contacto_nombre}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_nombre: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-tel">Teléfono de contacto</Label>
+                        <Input
+                          id="empresa-tel"
+                          placeholder="+52..."
+                          value={empresaForm.contacto_telefono}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_telefono: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-email">Email de contacto</Label>
+                        <Input
+                          id="empresa-email"
+                          type="email"
+                          placeholder="contacto@empresa.com"
+                          value={empresaForm.contacto_email}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_email: e.target.value }))}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleRegistrarEmpresa}
+                        disabled={registrandoEmpresa || !empresaForm.nombre.trim()}
+                        className="w-full"
+                      >
+                        {registrandoEmpresa ? 'Registrando...' : 'Registrar Empresa'}
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
