@@ -670,6 +670,97 @@ const Dashboard = () => {
                 )}
               </div>
             )}
+
+            {activeSection === "empresa" && (
+              <div>
+                {empresaTransporte ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        {empresaTransporte.nombre}
+                      </CardTitle>
+                      <CardDescription>
+                        Tu empresa está registrada. Gestiona empleados, contratos y reportes.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => navigate('/panel-maquiladora')} className="w-full">
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Abrir Panel Empresa
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Registrar Empresa de Transporte
+                      </CardTitle>
+                      <CardDescription>
+                        Registra tu empresa o maquiladora para gestionar el transporte de personal con control por pasajero mediante QR.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-nombre">Nombre de la empresa *</Label>
+                        <Input
+                          id="empresa-nombre"
+                          placeholder="Ej: Maquiladora ABC S.A. de C.V."
+                          value={empresaForm.nombre}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, nombre: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-rfc">RFC (opcional)</Label>
+                        <Input
+                          id="empresa-rfc"
+                          placeholder="Ej: MAB123456ABC"
+                          value={empresaForm.rfc}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, rfc: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-contacto">Nombre de contacto</Label>
+                        <Input
+                          id="empresa-contacto"
+                          placeholder="Nombre del responsable"
+                          value={empresaForm.contacto_nombre}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_nombre: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-tel">Teléfono de contacto</Label>
+                        <Input
+                          id="empresa-tel"
+                          placeholder="+52..."
+                          value={empresaForm.contacto_telefono}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_telefono: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="empresa-email">Email de contacto</Label>
+                        <Input
+                          id="empresa-email"
+                          type="email"
+                          placeholder="contacto@empresa.com"
+                          value={empresaForm.contacto_email}
+                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_email: e.target.value }))}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleRegistrarEmpresa}
+                        disabled={registrandoEmpresa || !empresaForm.nombre.trim()}
+                        className="w-full"
+                      >
+                        {registrandoEmpresa ? 'Registrando...' : 'Registrar Empresa'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </main>
