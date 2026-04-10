@@ -953,6 +953,24 @@ export default function PanelMaquiladora() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Solicitar contrato */}
+      <Dialog open={showSolicitarContrato} onOpenChange={setShowSolicitarContrato}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Solicitar transporte</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Solicitar servicio de transporte de personal a <strong>{concesionarioSeleccionado?.nombre}</strong>.
+              El concesionario definirá la tarifa por persona al aceptar.
+            </p>
+            <Button onClick={handleSolicitarContrato} disabled={savingContrato} className="w-full">
+              {savingContrato ? "Enviando..." : "Enviar solicitud"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
