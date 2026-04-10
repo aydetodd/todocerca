@@ -322,7 +322,8 @@ export default function ValidarQr() {
         // Continue without location
       }
 
-      const { data, error } = await supabase.functions.invoke("validate-qr-ticket", {
+      const functionName = scanMode === "personal" ? "validar-qr-empleado" : "validate-qr-ticket";
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { qr_token: token, latitude, longitude, unidad_id: assignedUnitId, ruta_id: assignedRouteId },
       });
 
