@@ -463,6 +463,8 @@ export default function ValidarQr() {
     }
   };
 
+  // Show personal mode stats if explicitly set OR if last scan was employee type
+  const showPersonalStats = scanMode === "personal" || lastResultType === "personal" || isPrivateRoute;
   const isPersonalMode = scanMode === "personal";
 
   return (
