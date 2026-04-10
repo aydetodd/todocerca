@@ -653,6 +653,54 @@ export default function PanelMaquiladora() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: WhatsApp Invite */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-green-600" /> Invitar empleado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Enviar invitación por SMS a <strong>{inviteEmpleado?.nombre}</strong> para que descargue la app y vincule su cuenta.
+            </p>
+            <div>
+              <Label>Número de teléfono</Label>
+              <Input
+                value={invitePhone}
+                onChange={e => setInvitePhone(e.target.value)}
+                placeholder="+52 644 123 4567"
+                type="tel"
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={sendingInvite || !invitePhone.trim()}
+              onClick={async () => {
+                if (!inviteEmpleado) return;
+                setSendingInvite(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('send-employee-invite', {
+                    body: { empleado_id: inviteEmpleado.id, phone_number: invitePhone },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast({ title: '✅ Invitación enviada', description: `SMS enviado a ${invitePhone}` });
+                  setShowInviteDialog(false);
+                } catch (err: any) {
+                  toast({ title: 'Error', description: err.message, variant: 'destructive' });
+                } finally {
+                  setSendingInvite(false);
+                }
+              }}
+            >
+              {sendingInvite ? "Enviando..." : "Enviar invitación por SMS"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

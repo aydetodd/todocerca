@@ -50,6 +50,7 @@ import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
 import PanelMaquiladora from "./pages/PanelMaquiladora";
+import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
 
