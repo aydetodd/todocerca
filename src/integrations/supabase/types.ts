@@ -3807,6 +3807,10 @@ export type Database = {
         Args: { p_chofer_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_concesionario_for_empresa: {
+        Args: { p_empresa_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_empresa_transporte_admin: {
         Args: { p_empresa_id: string; p_user_id: string }
         Returns: boolean
