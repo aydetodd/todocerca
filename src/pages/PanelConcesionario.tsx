@@ -883,15 +883,22 @@ export default function PanelConcesionario() {
   const handleProponerContrato = async () => {
     if (!proveedor || !empresaSeleccionada) return;
     setSavingContrato(true);
+    const turnosSeleccionados = contratoTurnos
+      .filter(t => t.selected)
+      .map(t => ({ turno: t.turno, unidades: t.unidades }));
+    const descAuto = turnosSeleccionados.length > 0
+      ? turnosSeleccionados.map(t => `${t.turno} (${t.unidades} unid.)`).join(", ")
+      : `Transporte de personal - ${empresaSeleccionada.nombre}`;
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
       tarifa_por_persona: parseFloat(contratoTarifa) || 15,
       frecuencia_corte: contratoFrecuencia,
-      descripcion: contratoDescripcion || `Transporte de personal - ${empresaSeleccionada.nombre}`,
+      descripcion: contratoDescripcion || descAuto,
       estado: "pendiente",
       iniciado_por: "concesionario",
       is_active: false,
+      turnos: turnosSeleccionados,
     });
     setSavingContrato(false);
     if (error) {
@@ -902,6 +909,7 @@ export default function PanelConcesionario() {
       setEmpresaSeleccionada(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
+      setContratoTurnos(prev => prev.map(t => ({ ...t, selected: false, unidades: 1 })));
       loadContratosEmpresa(proveedor.id);
     }
   };
