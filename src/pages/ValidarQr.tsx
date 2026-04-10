@@ -92,6 +92,7 @@ export default function ValidarQr() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [qrInput, setQrInput] = useState("");
+  const [scanMode, setScanMode] = useState<"boleto" | "personal">("boleto");
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [flashing, setFlashing] = useState(false);
