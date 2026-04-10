@@ -443,6 +443,22 @@ export default function PanelConcesionario() {
       // Load contratos con empresas
       void loadContratosEmpresa(prov.id);
 
+      // Realtime: refrescar contratos cuando la empresa acepta/rechaza
+      const chContratos = supabase
+        .channel("contratos-concesionario-" + prov.id)
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "contratos_transporte",
+          filter: `concesionario_id=eq.${prov.id}`,
+        }, () => {
+          loadContratosEmpresa(prov.id);
+        })
+        .subscribe();
+
+      // Cleanup on unmount
+      return () => { supabase.removeChannel(chContratos); };
+
       // Non-critical data should not block the initial render
       void (async () => {
         try {
