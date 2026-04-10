@@ -663,23 +663,69 @@ export default function PanelMaquiladora() {
 
           {/* CONTRATOS TAB */}
           <TabsContent value="contratos" className="space-y-3">
+            {/* Buscar concesionarios */}
+            <Card>
+              <CardContent className="p-3 space-y-2">
+                <p className="text-sm font-medium">Buscar concesionario de transporte</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nombre del concesionario..."
+                    value={concesionarioSearch}
+                    onChange={e => setConcesionarioSearch(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchConcesionarios()}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={searchConcesionarios} disabled={searchingConcesionarios}>
+                    {searchingConcesionarios ? "..." : "Buscar"}
+                  </Button>
+                </div>
+                {concesionariosFound.map(p => (
+                  <div key={p.id} className="flex items-center justify-between bg-muted/50 rounded p-2">
+                    <div>
+                      <p className="text-sm font-medium">{p.nombre}</p>
+                      <p className="text-xs text-muted-foreground">{p.ciudad || ""}</p>
+                    </div>
+                    <Button size="sm" onClick={() => {
+                      setConcesionarioSeleccionado(p);
+                      setShowSolicitarContrato(true);
+                    }}>
+                      Solicitar
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Lista de contratos */}
             {contratos.map(c => (
               <Card key={c.id}>
                 <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-1">
                     <div>
-                      <div className="font-medium text-sm">{c.descripcion || "Contrato de transporte"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Tarifa: ${Number(c.tarifa_por_persona).toFixed(2)} / persona · {c.frecuencia_corte}
+                      <div className="font-medium text-sm">
+                        {(c.proveedores as any)?.nombre || c.descripcion || "Contrato de transporte"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Desde {c.fecha_inicio} {c.fecha_fin ? `hasta ${c.fecha_fin}` : "· Indefinido"}
+                        {c.tarifa_por_persona > 0 ? `Tarifa: $${Number(c.tarifa_por_persona).toFixed(2)} / persona · ` : "Tarifa por definir · "}{c.frecuencia_corte}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Desde {c.fecha_inicio} · Iniciado por: {c.iniciado_por}
                       </div>
                     </div>
-                    <Badge variant={c.is_active ? "default" : "secondary"}>
-                      {c.is_active ? "Activo" : "Inactivo"}
+                    <Badge variant={c.estado === "aceptado" ? "default" : c.estado === "rechazado" ? "destructive" : "secondary"}>
+                      {c.estado === "aceptado" ? "Activo" : c.estado === "rechazado" ? "Rechazado" : "Pendiente"}
                     </Badge>
                   </div>
+                  {c.estado === "pendiente" && c.iniciado_por === "concesionario" && (
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="default" onClick={() => handleAceptarContratoEmpresa(c.id)}>
+                        Aceptar
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleRechazarContratoEmpresa(c.id)}>
+                        Rechazar
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -688,7 +734,7 @@ export default function PanelMaquiladora() {
               <div className="text-center text-muted-foreground py-8">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
                 <p>No hay contratos registrados</p>
-                <p className="text-xs">Los contratos se crean al vincular con un concesionario</p>
+                <p className="text-xs">Busca un concesionario arriba para solicitar transporte</p>
               </div>
             )}
           </TabsContent>
