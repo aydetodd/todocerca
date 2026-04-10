@@ -49,6 +49,7 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelConcesionario from "./pages/PanelConcesionario";
+import PanelMaquiladora from "./pages/PanelMaquiladora";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
 
