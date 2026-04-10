@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
+import RecursosContrato from "@/components/RecursosContrato";
 
 type Verificacion = {
   id: string;
@@ -1947,8 +1948,11 @@ export default function PanelConcesionario() {
                             </Button>
                           </div>
                         )}
-                        {c.estado === "aceptado" && user && (
-                          <ContratoNotas contratoId={c.id} autorTipo="concesionario" userId={user.id} />
+                        {c.estado === "aceptado" && user && proveedor && (
+                          <>
+                            <RecursosContrato contratoId={c.id} proveedorId={proveedor.id} rol="concesionario" userId={user.id} />
+                            <ContratoNotas contratoId={c.id} autorTipo="concesionario" userId={user.id} />
+                          </>
                         )}
                       </CardContent>
                     </Card>
