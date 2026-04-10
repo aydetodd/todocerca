@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download, X, Map as MapIcon, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
