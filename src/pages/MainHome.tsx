@@ -13,6 +13,7 @@ export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isConcesionario, setIsConcesionario] = useState(false);
+  const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
 
   useEffect(() => {
     if (!user) {
