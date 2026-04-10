@@ -97,16 +97,21 @@ const playAlertBeep = (type: "success" | "fraud" | "error") => {
 export default function ValidarQr() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const choferParam = searchParams.get("chofer"); // chofer_empresa.id from URL
   const [qrInput, setQrInput] = useState("");
   const [scanMode, setScanMode] = useState<"boleto" | "personal">("boleto");
+  const [lastResultType, setLastResultType] = useState<"boleto" | "personal" | null>(null);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [flashing, setFlashing] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [dailyCount, setDailyCount] = useState(0);
   const [dailyTotal, setDailyTotal] = useState(0);
+  const [dailyPersonalCount, setDailyPersonalCount] = useState(0);
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
+  const [isPrivateRoute, setIsPrivateRoute] = useState(false);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -131,17 +136,21 @@ export default function ValidarQr() {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
-      // Find the driver record linked to this user
-      const { data: chofer } = await supabase
+      // Find the specific chofer record (by URL param or first active)
+      let choferQuery = supabase
         .from("choferes_empresa")
         .select("id, proveedor_id")
         .eq("user_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
+        .eq("is_active", true);
+
+      if (choferParam) {
+        choferQuery = choferQuery.eq("id", choferParam);
+      }
+
+      const { data: chofer } = await choferQuery.limit(1).single();
 
       if (chofer) {
-        // Find today's assignment for this driver
+        // Find today's assignment for this specific driver record
         const { data: asignacion } = await supabase
           .from("asignaciones_chofer")
           .select("unidad_id, producto_id")
@@ -153,20 +162,43 @@ export default function ValidarQr() {
         if (asignacion) {
           setAssignedUnitId(asignacion.unidad_id);
           setAssignedRouteId(asignacion.producto_id);
+
+          // Check if this is a private route
+          if (asignacion.producto_id) {
+            const { data: producto } = await supabase
+              .from("productos")
+              .select("route_type")
+              .eq("id", asignacion.producto_id)
+              .single();
+            if (producto?.route_type === "privada") {
+              setIsPrivateRoute(true);
+              setScanMode("personal");
+            }
+          }
         }
       }
 
-      // Load initial daily stats by chofer_id (works with or without assignment)
-      const { count } = await supabase
+      // Load public ticket stats (only for this driver + route)
+      const ticketQuery = supabase
         .from("logs_validacion_qr")
         .select("*", { count: "exact", head: true })
         .eq("chofer_id", user.id)
         .eq("resultado", "valid")
         .gte("created_at", todayStart);
 
+      const { count } = await ticketQuery;
       const c = count ?? 0;
       setDailyCount(c);
       setDailyTotal(c * 9);
+
+      // Load employee validation stats for today
+      const { count: personalCount } = await supabase
+        .from("validaciones_transporte_personal")
+        .select("*", { count: "exact", head: true })
+        .eq("chofer_id", user.id)
+        .eq("fecha_local", todayStr);
+
+      setDailyPersonalCount(personalCount ?? 0);
     } catch (err) {
       console.error("Error loading driver assignment:", err);
     }
