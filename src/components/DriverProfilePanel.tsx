@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getHermosilloToday } from '@/lib/utils';
@@ -8,13 +8,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Navigation, Share2, Bus, Loader2, QrCode } from 'lucide-react';
+import { Navigation, Share2, Bus, Loader2, QrCode, Users } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
-  let fill = '#FFFFFF'; let stroke = '#cccccc'; // White = public
-  if (isPrivate || routeType === 'privada') { fill = '#FDB813'; stroke = '#D4960A'; } // Yellow
-  else if (routeType === 'foranea') { fill = '#3B82F6'; stroke = '#2563EB'; } // Blue
+  let fill = '#FFFFFF'; let stroke = '#cccccc';
+  if (isPrivate || routeType === 'privada') { fill = '#FDB813'; stroke = '#D4960A'; }
+  else if (routeType === 'foranea') { fill = '#3B82F6'; stroke = '#2563EB'; }
   
   return `<svg width="20" height="32" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
@@ -47,7 +47,6 @@ const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
 </svg>`;
 };
 
-/** Get the right SVG icon for the driver panel based on route type */
 const getVehicleIconSvg = (routeType?: string | null, isPrivate?: boolean, status?: string) => {
   if (routeType === 'taxi') {
     const color = getTaxiColorByStatus(status || 'available');
@@ -102,11 +101,80 @@ interface DriverCompanyData {
   todayAssignment: TodayAssignment | null;
 }
 
+function PassengerCountBadge({ choferId }: { choferId: string }) {
+  const [publicCount, setPublicCount] = useState(0);
+  const [personalCount, setPersonalCount] = useState(0);
+
+  const loadCounts = useCallback(async () => {
+    const today = getHermosilloToday();
+    const startOfDay = `${today}T00:00:00`;
+    const endOfDay = `${today}T23:59:59`;
+
+    const [pubRes, privRes] = await Promise.all([
+      supabase
+        .from('logs_validacion_qr')
+        .select('id', { count: 'exact', head: true })
+        .eq('chofer_id', choferId)
+        .eq('resultado', 'valido')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay),
+      supabase
+        .from('validaciones_transporte_personal')
+        .select('id', { count: 'exact', head: true })
+        .eq('chofer_id', choferId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay),
+    ]);
+
+    setPublicCount(pubRes.count || 0);
+    setPersonalCount(privRes.count || 0);
+  }, [choferId]);
+
+  useEffect(() => {
+    loadCounts();
+
+    const ch1 = supabase
+      .channel(`passenger-pub-${choferId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs_validacion_qr' }, (payload) => {
+        if ((payload.new as any).chofer_id === choferId && (payload.new as any).resultado === 'valido') {
+          setPublicCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
+
+    const ch2 = supabase
+      .channel(`passenger-priv-${choferId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'validaciones_transporte_personal' }, (payload) => {
+        if ((payload.new as any).chofer_id === choferId) {
+          setPersonalCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
+    };
+  }, [choferId, loadCounts]);
+
+  const total = publicCount + personalCount;
+  if (total === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 shrink-0">
+      <Users className="h-3 w-3" />
+      <span className="text-xs font-bold">{total}</span>
+    </div>
+  );
+}
+
 function SingleDriverPanel({
   data,
+  allDriverIds,
   onRefresh,
 }: {
   data: DriverCompanyData;
+  allDriverIds: string[];
   onRefresh: () => void;
 }) {
   const { user } = useAuth();
@@ -117,12 +185,26 @@ function SingleDriverPanel({
 
   const isActive = !!data.todayAssignment;
 
+  const deactivateOtherDrivers = async (excludeDriverId: string) => {
+    const today = getHermosilloToday();
+    const otherIds = allDriverIds.filter(id => id !== excludeDriverId);
+    if (otherIds.length === 0) return;
+
+    // Delete today's assignments for all other driver profiles
+    for (const otherId of otherIds) {
+      await supabase
+        .from('asignaciones_chofer')
+        .delete()
+        .eq('chofer_id', otherId)
+        .eq('fecha', today);
+    }
+  };
+
   const handleToggleActive = async (turnOn: boolean) => {
     try {
       setToggling(true);
 
       if (!turnOn && data.todayAssignment) {
-        // Apagar: eliminar asignación de hoy
         const { error } = await supabase
           .from('asignaciones_chofer')
           .delete()
@@ -135,7 +217,9 @@ function SingleDriverPanel({
           description: `Ya no apareces en "${data.todayAssignment.vehicleName}"`,
         });
       } else if (turnOn && data.vehicles.length > 0) {
-        // Encender: asignar la primera ruta disponible (el usuario puede cambiarla después)
+        // First deactivate all other driver profiles
+        await deactivateOtherDrivers(data.driver.id);
+
         const today = getHermosilloToday();
         const firstVehicle = data.vehicles[0];
 
@@ -211,6 +295,9 @@ function SingleDriverPanel({
       setAssigning(true);
       const today = getHermosilloToday();
 
+      // Deactivate other driver profiles when changing route
+      await deactivateOtherDrivers(data.driver.id);
+
       const { error } = await supabase
         .from('asignaciones_chofer')
         .upsert(
@@ -261,7 +348,7 @@ function SingleDriverPanel({
   return (
     <Card className={`border-primary/30 transition-all duration-300 ${isActive ? 'bg-primary/5' : 'bg-muted/30 opacity-60'}`}>
       <CardContent className="p-3 space-y-2">
-        {/* Row 1: Icon + Empresa + Chofer + Unit info + Switch + Invitar */}
+        {/* Row 1: Icon + Empresa + Chofer + Unit info + Passenger count + Switch + Invitar */}
         <div className="flex items-center gap-2.5">
           {(() => {
             const assignedVehicle = data.todayAssignment ? data.vehicles.find(v => v.id === data.todayAssignment!.producto_id) : null;
@@ -287,6 +374,9 @@ function SingleDriverPanel({
               </p>
             )}
           </div>
+
+          {/* Live passenger count */}
+          {isActive && <PassengerCountBadge choferId={data.driver.id} />}
 
           {/* Toggle de encendido/apagado */}
           <div className="flex flex-col items-center shrink-0 gap-0.5">
@@ -317,7 +407,7 @@ function SingleDriverPanel({
           })()}
         </div>
 
-        {/* Row 2: Route selector + Ubicación (solo si está activa) */}
+        {/* Row 2: Route selector + Cobrar + Ubicación */}
         {isActive && (
           <div className="flex items-center gap-2">
             <Select
@@ -409,15 +499,11 @@ export default function DriverProfilePanel() {
     try {
       setLoading(true);
 
-      console.log('[DriverProfilePanel] Loading data for user:', user.id);
-      
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
         .select('id, nombre, proveedor_id')
         .eq('user_id', user.id)
         .eq('is_active', true);
-
-      console.log('[DriverProfilePanel] Drivers found:', drivers?.length, 'error:', driversError?.message);
 
       if (driversError || !drivers || drivers.length === 0) {
         setCompanies([]);
@@ -427,6 +513,9 @@ export default function DriverProfilePanel() {
 
       const today = getHermosilloToday();
       const companiesData: DriverCompanyData[] = [];
+
+      // Track which driver IDs have an active assignment today
+      let activeDriverId: string | null = null;
 
       await Promise.all(
         drivers.map(async (driver) => {
@@ -442,7 +531,7 @@ export default function DriverProfilePanel() {
             .eq('proveedor_id', driver.proveedor_id)
             .eq('is_mobile', true)
             .eq('is_available', true)
-            .neq('route_type', 'taxi') // Protocolo 2: Taxi oculto
+            .neq('route_type', 'taxi')
             .order('nombre');
 
           let { data: assignment } = await supabase
@@ -452,8 +541,8 @@ export default function DriverProfilePanel() {
             .eq('fecha', today)
             .maybeSingle();
 
-          // Auto-carry: if no assignment today, copy the most recent one
-          if (!assignment) {
+          // Auto-carry only if NO other driver is already active today
+          if (!assignment && !activeDriverId) {
             const { data: lastAssignment } = await supabase
               .from('asignaciones_chofer')
               .select('producto_id, unidad_id, asignado_por')
@@ -481,17 +570,19 @@ export default function DriverProfilePanel() {
 
               if (!carryError && newAssignment) {
                 assignment = newAssignment;
-                // Sync profile.route_name so realtime map shows the correct route
                 const carriedRouteName = (newAssignment.productos as any)?.nombre;
                 if (carriedRouteName && user) {
                   await supabase
                     .from('profiles')
                     .update({ route_name: carriedRouteName })
                     .eq('user_id', user.id);
-                  console.log(`[DriverProfilePanel] Auto-carry synced profile.route_name to "${carriedRouteName}"`);
                 }
               }
             }
+          }
+
+          if (assignment) {
+            activeDriverId = driver.id;
           }
 
           let unitData = assignment?.unidades_empresa as any;
@@ -523,6 +614,22 @@ export default function DriverProfilePanel() {
         })
       );
 
+      // ENFORCE: only one active — if multiple have assignments, keep only the first
+      const activeOnes = companiesData.filter(c => c.todayAssignment !== null);
+      if (activeOnes.length > 1) {
+        // Keep the first active, deactivate the rest
+        for (let i = 1; i < activeOnes.length; i++) {
+          const extra = activeOnes[i];
+          if (extra.todayAssignment) {
+            await supabase
+              .from('asignaciones_chofer')
+              .delete()
+              .eq('id', extra.todayAssignment.id);
+            extra.todayAssignment = null;
+          }
+        }
+      }
+
       setCompanies(companiesData);
     } catch (error) {
       console.error('[DriverProfilePanel] Error:', error);
@@ -532,6 +639,8 @@ export default function DriverProfilePanel() {
   };
 
   if (loading || companies.length === 0) return null;
+
+  const allDriverIds = companies.map(c => c.driver.id);
 
   return (
     <div className="space-y-3">
@@ -548,6 +657,7 @@ export default function DriverProfilePanel() {
         <SingleDriverPanel
           key={companyData.driver.id}
           data={companyData}
+          allDriverIds={allDriverIds}
           onRefresh={loadAllDriverData}
         />
       ))}
