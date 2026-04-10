@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
+import ContratoNotas from "@/components/ContratoNotas";
 
 type Verificacion = {
   id: string;
