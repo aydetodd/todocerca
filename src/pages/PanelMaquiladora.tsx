@@ -527,7 +527,7 @@ export default function PanelMaquiladora() {
               <Button size="sm" variant="outline" asChild title="Importar CSV masivo">
                 <label className="cursor-pointer">
                   <Upload className="h-4 w-4" />
-                  <input type="file" accept=".csv" className="hidden" onChange={handleCsvFile} />
+                  <input type="file" accept=".csv,text/csv,text/plain,application/vnd.ms-excel" className="hidden" onChange={handleCsvFile} />
                 </label>
               </Button>
               <Button size="sm" variant="outline" onClick={() => empresa && loadEmpleados(empresa.id)}>
