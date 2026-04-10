@@ -148,6 +148,7 @@ export default function AppWrapper() {
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
           <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
           <Route path="/panel-concesionario" element={<PanelConcesionario />} />
+          <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
