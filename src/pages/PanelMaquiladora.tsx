@@ -145,7 +145,76 @@ export default function PanelMaquiladora() {
     setValidacionesHoy(count ?? 0);
   };
 
-  const handleRegistroEmpresa = async () => {
+  const handleMassSendQr = async () => {
+    if (!empresa) return;
+    setMassSending(true);
+    
+    const activeEmps = empleados.filter(e => e.is_active);
+    let renovados = 0;
+    let enviados = 0;
+    let sinCuenta = 0;
+
+    for (const emp of activeEmps) {
+      // 1. Regenerate QR for rotativo employees
+      if (emp.qr_tipo === "rotativo") {
+        await supabase
+          .from("qr_empleados")
+          .update({ status: "revoked" })
+          .eq("empleado_id", emp.id)
+          .eq("status", "active");
+
+        await supabase.from("qr_empleados").insert({
+          empleado_id: emp.id,
+          empresa_id: empresa.id,
+          qr_tipo: "rotativo",
+          fecha_vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        });
+        renovados++;
+      }
+
+      // 2. Get the active QR for this employee
+      const { data: qr } = await supabase
+        .from("qr_empleados")
+        .select("token")
+        .eq("empleado_id", emp.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!qr) continue;
+
+      // 3. Send via internal message if employee has an app account
+      if (emp.user_id) {
+        const shortCode = String(qr.token).slice(-6).toUpperCase();
+        const message = `🏭 ${empresa.nombre}\n\n📋 Hola ${emp.nombre}, aquí está tu código QR de transporte:\n\n🔑 Código: ${shortCode}\n🎫 Token: ${qr.token}\n📅 Tipo: ${emp.qr_tipo === "fijo" ? "Permanente" : "Rotativo (renovable)"}\n\nMuestra este código al chofer al abordar la unidad.`;
+
+        await supabase.from("messages").insert({
+          sender_id: user!.id,
+          receiver_id: emp.user_id,
+          message,
+          is_panic: false,
+          is_read: false,
+        });
+        enviados++;
+      } else {
+        sinCuenta++;
+      }
+    }
+
+    setMassSending(false);
+    setShowMassSend(false);
+    
+    let description = `${renovados} QR renovados, ${enviados} mensajes enviados.`;
+    if (sinCuenta > 0) {
+      description += ` ${sinCuenta} empleados sin cuenta en la app (comparte su QR manualmente).`;
+    }
+    
+    toast({ title: "✅ Envío masivo completado", description });
+    await loadEmpleados(empresa.id);
+  };
+
+
     if (!regNombre.trim()) {
       toast({ title: "Error", description: "Ingresa el nombre de la empresa", variant: "destructive" });
       return;
