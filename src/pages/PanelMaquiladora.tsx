@@ -450,6 +450,9 @@ export default function PanelMaquiladora() {
               <Button size="sm" onClick={() => setShowAddEmpleado(true)} className="flex-1">
                 <Plus className="h-4 w-4 mr-1" /> Agregar
               </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowMassSend(true)} title="Envío masivo de QR">
+                <Send className="h-4 w-4" />
+              </Button>
               <Button size="sm" variant="outline" onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-1" /> CSV
               </Button>
