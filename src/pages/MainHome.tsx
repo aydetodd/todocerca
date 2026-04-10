@@ -146,6 +146,23 @@ export default function MainHome() {
           </Card>
         )}
 
+        {isEmpresaTransporte && (
+          <Card 
+            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-orange-500/30"
+            onClick={() => navigate('/panel-maquiladora')}
+          >
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="h-7 w-7 text-orange-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Panel Empresa</h3>
+                <p className="text-sm text-muted-foreground">Transporte de personal y reportes</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       </main>
 
       {/* SOS oculto - Protocolo 1 */}
