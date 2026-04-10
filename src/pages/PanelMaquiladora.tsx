@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw } from "lucide-react";
+import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Empresa {
   id: string;
