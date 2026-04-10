@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download, X, Map as MapIcon, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,16 +97,21 @@ const playAlertBeep = (type: "success" | "fraud" | "error") => {
 export default function ValidarQr() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const choferParam = searchParams.get("chofer"); // chofer_empresa.id from URL
   const [qrInput, setQrInput] = useState("");
   const [scanMode, setScanMode] = useState<"boleto" | "personal">("boleto");
+  const [lastResultType, setLastResultType] = useState<"boleto" | "personal" | null>(null);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [flashing, setFlashing] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [dailyCount, setDailyCount] = useState(0);
   const [dailyTotal, setDailyTotal] = useState(0);
+  const [dailyPersonalCount, setDailyPersonalCount] = useState(0);
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
+  const [isPrivateRoute, setIsPrivateRoute] = useState(false);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -131,17 +136,21 @@ export default function ValidarQr() {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
-      // Find the driver record linked to this user
-      const { data: chofer } = await supabase
+      // Find the specific chofer record (by URL param or first active)
+      let choferQuery = supabase
         .from("choferes_empresa")
         .select("id, proveedor_id")
         .eq("user_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
+        .eq("is_active", true);
+
+      if (choferParam) {
+        choferQuery = choferQuery.eq("id", choferParam);
+      }
+
+      const { data: chofer } = await choferQuery.limit(1).single();
 
       if (chofer) {
-        // Find today's assignment for this driver
+        // Find today's assignment for this specific driver record
         const { data: asignacion } = await supabase
           .from("asignaciones_chofer")
           .select("unidad_id, producto_id")
@@ -153,20 +162,43 @@ export default function ValidarQr() {
         if (asignacion) {
           setAssignedUnitId(asignacion.unidad_id);
           setAssignedRouteId(asignacion.producto_id);
+
+          // Check if this is a private route
+          if (asignacion.producto_id) {
+            const { data: producto } = await supabase
+              .from("productos")
+              .select("route_type")
+              .eq("id", asignacion.producto_id)
+              .single();
+            if (producto?.route_type === "privada") {
+              setIsPrivateRoute(true);
+              setScanMode("personal");
+            }
+          }
         }
       }
 
-      // Load initial daily stats by chofer_id (works with or without assignment)
-      const { count } = await supabase
+      // Load public ticket stats (only for this driver + route)
+      const ticketQuery = supabase
         .from("logs_validacion_qr")
         .select("*", { count: "exact", head: true })
         .eq("chofer_id", user.id)
         .eq("resultado", "valid")
         .gte("created_at", todayStart);
 
+      const { count } = await ticketQuery;
       const c = count ?? 0;
       setDailyCount(c);
       setDailyTotal(c * 9);
+
+      // Load employee validation stats for today
+      const { count: personalCount } = await supabase
+        .from("validaciones_transporte_personal")
+        .select("*", { count: "exact", head: true })
+        .eq("chofer_id", user.id)
+        .eq("fecha_local", todayStr);
+
+      setDailyPersonalCount(personalCount ?? 0);
     } catch (err) {
       console.error("Error loading driver assignment:", err);
     }
@@ -349,9 +381,16 @@ export default function ValidarQr() {
       setResult(res);
 
       if (res.valid && res.details) {
-        // SUCCESS
-        setDailyCount(res.details.daily_passenger_count);
-        setDailyTotal(typeof res.details.daily_total_mxn === "number" ? res.details.daily_total_mxn : 0);
+        // Detect if this was an employee or ticket validation
+        const isEmployeeResult = !!res.details.employee_name;
+        setLastResultType(isEmployeeResult ? "personal" : "boleto");
+
+        if (isEmployeeResult) {
+          setDailyPersonalCount(res.details.daily_passenger_count);
+        } else {
+          setDailyCount(res.details.daily_passenger_count);
+          setDailyTotal(typeof res.details.daily_total_mxn === "number" ? res.details.daily_total_mxn : res.details.daily_passenger_count * 9);
+        }
 
         if (audioEnabled) {
           playAlertBeep("success");
@@ -424,6 +463,8 @@ export default function ValidarQr() {
     }
   };
 
+  // Show personal mode stats if explicitly set OR if last scan was employee type
+  const showPersonalStats = scanMode === "personal" || lastResultType === "personal" || isPrivateRoute;
   const isPersonalMode = scanMode === "personal";
 
   return (
@@ -487,16 +528,18 @@ export default function ValidarQr() {
       <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-28">
         {/* Compact Daily Stats */}
         <div
-          className={`grid gap-2 ${isPersonalMode ? "grid-cols-1" : "grid-cols-2 cursor-pointer"}`}
-          onClick={isPersonalMode ? undefined : toggleTicketList}
+          className={`grid gap-2 ${showPersonalStats ? "grid-cols-1" : "grid-cols-2 cursor-pointer"}`}
+          onClick={showPersonalStats ? undefined : toggleTicketList}
         >
           <Card>
             <CardContent className="p-2 text-center">
-              <p className="text-2xl font-bold text-foreground">{dailyCount}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {showPersonalStats ? dailyPersonalCount : dailyCount}
+              </p>
               <p className="text-[10px] text-muted-foreground">Pasajeros hoy</p>
             </CardContent>
           </Card>
-          {!isPersonalMode && (
+          {!showPersonalStats && (
             <Card>
               <CardContent className="p-2 text-center">
                 <p className="text-2xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
@@ -507,7 +550,7 @@ export default function ValidarQr() {
         </div>
 
         {/* Ticket List */}
-        {!isPersonalMode && showTicketList && (
+        {!showPersonalStats && showTicketList && (
           <Card>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-2">

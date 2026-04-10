@@ -344,7 +344,7 @@ function SingleDriverPanel({
                   size="sm"
                   variant="default"
                   className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
-                  onClick={() => navigate('/wallet/qr-boletos/validar')}
+                  onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
                 >
                   <QrCode className="h-3 w-3 mr-1" />
                   Cobrar
