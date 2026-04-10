@@ -434,6 +434,9 @@ export default function PanelConcesionario() {
         toast.error("El panel cargó parcialmente; las estadísticas tardaron demasiado.");
       }
 
+      // Load contratos con empresas
+      void loadContratosEmpresa(prov.id);
+
       // Non-critical data should not block the initial render
       void (async () => {
         try {
