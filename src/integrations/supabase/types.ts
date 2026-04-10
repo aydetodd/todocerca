@@ -368,6 +368,119 @@ export type Database = {
         }
         Relationships: []
       }
+      contratos_transporte: {
+        Row: {
+          concesionario_id: string
+          created_at: string
+          descripcion: string | null
+          empresa_id: string
+          fecha_fin: string | null
+          fecha_inicio: string
+          frecuencia_corte: string
+          id: string
+          is_active: boolean
+          tarifa_por_persona: number
+          updated_at: string
+        }
+        Insert: {
+          concesionario_id: string
+          created_at?: string
+          descripcion?: string | null
+          empresa_id: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          frecuencia_corte?: string
+          id?: string
+          is_active?: boolean
+          tarifa_por_persona?: number
+          updated_at?: string
+        }
+        Update: {
+          concesionario_id?: string
+          created_at?: string
+          descripcion?: string | null
+          empresa_id?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          frecuencia_corte?: string
+          id?: string
+          is_active?: boolean
+          tarifa_por_persona?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_transporte_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_transporte_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cortes_transporte: {
+        Row: {
+          contrato_id: string
+          created_at: string
+          estado: string
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          monto_total: number
+          notas_concesionario: string | null
+          notas_empresa: string | null
+          tarifa_aplicada: number
+          total_empleados_unicos: number
+          total_validaciones: number
+          updated_at: string
+        }
+        Insert: {
+          contrato_id: string
+          created_at?: string
+          estado?: string
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          monto_total?: number
+          notas_concesionario?: string | null
+          notas_empresa?: string | null
+          tarifa_aplicada: number
+          total_empleados_unicos?: number
+          total_validaciones?: number
+          updated_at?: string
+        }
+        Update: {
+          contrato_id?: string
+          created_at?: string
+          estado?: string
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          monto_total?: number
+          notas_concesionario?: string | null
+          notas_empresa?: string | null
+          tarifa_aplicada?: number
+          total_empleados_unicos?: number
+          total_validaciones?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cortes_transporte_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cuentas_boletos: {
         Row: {
           id: string
@@ -561,6 +674,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      empleados_empresa: {
+        Row: {
+          created_at: string
+          departamento: string | null
+          empresa_id: string
+          id: string
+          is_active: boolean
+          nombre: string
+          numero_nomina: string | null
+          qr_tipo: string
+          turno: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          departamento?: string | null
+          empresa_id: string
+          id?: string
+          is_active?: boolean
+          nombre: string
+          numero_nomina?: string | null
+          qr_tipo?: string
+          turno?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          departamento?: string | null
+          empresa_id?: string
+          id?: string
+          is_active?: boolean
+          nombre?: string
+          numero_nomina?: string | null
+          qr_tipo?: string
+          turno?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas_transporte: {
+        Row: {
+          contacto_email: string | null
+          contacto_nombre: string | null
+          contacto_telefono: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          nombre: string
+          rfc: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contacto_email?: string | null
+          contacto_nombre?: string | null
+          contacto_telefono?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          nombre: string
+          rfc?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contacto_email?: string | null
+          contacto_nombre?: string | null
+          contacto_telefono?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          nombre?: string
+          rfc?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       favoritos: {
         Row: {
@@ -2202,6 +2407,57 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_empleados: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          empresa_id: string
+          fecha_vigencia_fin: string | null
+          fecha_vigencia_inicio: string
+          id: string
+          qr_tipo: string
+          status: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          empresa_id: string
+          fecha_vigencia_fin?: string | null
+          fecha_vigencia_inicio?: string
+          id?: string
+          qr_tipo?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          empresa_id?: string
+          fecha_vigencia_fin?: string | null
+          fecha_vigencia_inicio?: string
+          id?: string
+          qr_tipo?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_empleados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_empleados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_tickets: {
         Row: {
           amount: number
@@ -2973,6 +3229,100 @@ export type Database = {
         }
         Relationships: []
       }
+      validaciones_transporte_personal: {
+        Row: {
+          chofer_id: string
+          contrato_id: string | null
+          created_at: string
+          empleado_id: string
+          empresa_id: string
+          fecha_local: string
+          id: string
+          latitud: number | null
+          longitud: number | null
+          qr_empleado_id: string
+          ruta_id: string | null
+          turno: string | null
+          unidad_id: string | null
+          validated_at: string
+        }
+        Insert: {
+          chofer_id: string
+          contrato_id?: string | null
+          created_at?: string
+          empleado_id: string
+          empresa_id: string
+          fecha_local?: string
+          id?: string
+          latitud?: number | null
+          longitud?: number | null
+          qr_empleado_id: string
+          ruta_id?: string | null
+          turno?: string | null
+          unidad_id?: string | null
+          validated_at?: string
+        }
+        Update: {
+          chofer_id?: string
+          contrato_id?: string | null
+          created_at?: string
+          empleado_id?: string
+          empresa_id?: string
+          fecha_local?: string
+          id?: string
+          latitud?: number | null
+          longitud?: number | null
+          qr_empleado_id?: string
+          ruta_id?: string | null
+          turno?: string | null
+          unidad_id?: string | null
+          validated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validaciones_transporte_personal_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "validaciones_transporte_personal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "validaciones_transporte_personal_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_transporte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "validaciones_transporte_personal_qr_empleado_id_fkey"
+            columns: ["qr_empleado_id"]
+            isOneToOne: false
+            referencedRelation: "qr_empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "validaciones_transporte_personal_ruta_id_fkey"
+            columns: ["ruta_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "validaciones_transporte_personal_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       verificaciones_concesionario: {
         Row: {
           admin_notas: string | null
@@ -3455,6 +3805,10 @@ export type Database = {
       }
       is_chofer_self: {
         Args: { p_chofer_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_empresa_transporte_admin: {
+        Args: { p_empresa_id: string; p_user_id: string }
         Returns: boolean
       }
       is_invited_to_product: {

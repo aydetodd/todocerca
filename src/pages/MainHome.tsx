@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Car, BarChart3, Ticket } from 'lucide-react';
+import { Bus, Car, BarChart3, Ticket, Building2 } from 'lucide-react';
 
 import PassengerActiveTrip from '@/components/PassengerActiveTrip';
 import { SOSButton } from '@/components/SOSButton';
@@ -13,6 +13,7 @@ export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isConcesionario, setIsConcesionario] = useState(false);
+  const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -53,7 +54,16 @@ export default function MainHome() {
         console.error('[MainHome] Concesionario check failed:', err);
       }
     };
+    const checkEmpresaTransporte = async () => {
+      const { count } = await supabase
+        .from('empresas_transporte')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      setIsEmpresaTransporte((count ?? 0) > 0);
+    };
     checkConcesionario();
+    checkEmpresaTransporte();
   }, [user]);
 
   return (
@@ -131,6 +141,23 @@ export default function MainHome() {
               <div className="flex-1">
                 <h3 className="font-semibold text-lg">Panel Concesionario</h3>
                 <p className="text-sm text-muted-foreground">Ingresos, liquidaciones y gestión</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isEmpresaTransporte && (
+          <Card 
+            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-orange-500/30"
+            onClick={() => navigate('/panel-maquiladora')}
+          >
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="h-7 w-7 text-orange-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Panel Empresa</h3>
+                <p className="text-sm text-muted-foreground">Transporte de personal y reportes</p>
               </div>
             </CardContent>
           </Card>

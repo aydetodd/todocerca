@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download, X, Map as MapIcon } from "lucide-react";
+import { QrCode, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Volume2, VolumeX, Keyboard, Camera, Download, X, Map as MapIcon, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -92,6 +92,7 @@ export default function ValidarQr() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [qrInput, setQrInput] = useState("");
+  const [scanMode, setScanMode] = useState<"boleto" | "personal">("boleto");
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [flashing, setFlashing] = useState(false);
@@ -321,7 +322,8 @@ export default function ValidarQr() {
         // Continue without location
       }
 
-      const { data, error } = await supabase.functions.invoke("validate-qr-ticket", {
+      const functionName = scanMode === "personal" ? "validar-qr-empleado" : "validate-qr-ticket";
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { qr_token: token, latitude, longitude, unidad_id: assignedUnitId, ruta_id: assignedRouteId },
       });
 
@@ -418,11 +420,24 @@ export default function ValidarQr() {
           <div className="flex items-center gap-2">
             <BackButton />
             <div>
-              <h1 className="text-sm font-bold text-foreground">Validar QR Boleto</h1>
-              <p className="text-[10px] text-muted-foreground">Escáner de chofer</p>
+              <h1 className="text-sm font-bold text-foreground">
+                {scanMode === "personal" ? "Transporte Personal" : "Validar QR Boleto"}
+              </h1>
+              <p className="text-[10px] text-muted-foreground">
+                {scanMode === "personal" ? "Modo maquiladora" : "Escáner de chofer"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant={scanMode === "personal" ? "default" : "outline"}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setScanMode(scanMode === "boleto" ? "personal" : "boleto")}
+              title={scanMode === "personal" ? "Modo: Transporte Personal" : "Cambiar a Transporte Personal"}
+            >
+              <Building2 className="h-4 w-4" />
+            </Button>
             <Button
               variant={showMap ? "default" : "outline"}
               size="icon"
