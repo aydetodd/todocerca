@@ -690,6 +690,15 @@ export default function PanelMaquiladora() {
                   <div className="text-xs text-muted-foreground">Nómina: #{selectedEmpleado.numero_nomina}</div>
                 )}
               </div>
+              <div className="w-full flex items-center gap-1 mt-1">
+                <Input value={showQr.token} readOnly className="text-[10px] font-mono flex-1" />
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => {
+                  navigator.clipboard.writeText(showQr.token);
+                  toast({ title: 'Token copiado' });
+                }}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
