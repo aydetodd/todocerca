@@ -66,7 +66,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
