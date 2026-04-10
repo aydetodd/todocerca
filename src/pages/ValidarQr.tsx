@@ -130,6 +130,38 @@ export default function ValidarQr() {
     }
   }, [authLoading, user]);
 
+  // Realtime passenger count updates
+  useEffect(() => {
+    if (!user) return;
+    const todayStart = getHermosilloTodayStart();
+    const todayStr = getHermosilloToday();
+
+    const ch1 = supabase
+      .channel("validar-qr-public-" + user.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "logs_validacion_qr" }, (payload) => {
+        const row = payload.new as any;
+        if (row.chofer_id === user.id && row.resultado === "valid" && row.created_at >= todayStart) {
+          setDailyCount((prev) => prev + 1);
+        }
+      })
+      .subscribe();
+
+    const ch2 = supabase
+      .channel("validar-qr-personal-" + user.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "validaciones_transporte_personal" }, (payload) => {
+        const row = payload.new as any;
+        if (row.chofer_id === user.id && row.fecha_local === todayStr) {
+          setDailyPersonalCount((prev) => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
+    };
+  }, [user]);
+
   const loadDriverAssignment = async () => {
     if (!user) return;
     try {
