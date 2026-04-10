@@ -77,6 +77,9 @@ export default function PanelMaquiladora() {
   const [inviteEmpleado, setInviteEmpleado] = useState<Empleado | null>(null);
   const [invitePhone, setInvitePhone] = useState("");
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<Array<{ nombre: string; numero_nomina: string; departamento: string; turno: string; telefono: string }>>([]);
 
   // Registration form
   const [regNombre, setRegNombre] = useState("");
