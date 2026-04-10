@@ -148,10 +148,72 @@ export default function PanelMaquiladora() {
   const loadContratos = async (empresaId: string) => {
     const { data } = await supabase
       .from("contratos_transporte")
-      .select("*")
+      .select("*, proveedores:concesionario_id(nombre)")
       .eq("empresa_id", empresaId)
       .order("created_at", { ascending: false });
-    if (data) setContratos(data);
+    if (data) setContratos(data as any);
+  };
+
+  const searchConcesionarios = async () => {
+    if (!concesionarioSearch.trim()) return;
+    setSearchingConcesionarios(true);
+    const { data } = await supabase
+      .from("proveedores")
+      .select("id, nombre, telefono, ciudad")
+      .ilike("nombre", `%${concesionarioSearch.trim()}%`)
+      .limit(10);
+    setConcesionariosFound(data || []);
+    setSearchingConcesionarios(false);
+  };
+
+  const handleSolicitarContrato = async () => {
+    if (!empresa || !concesionarioSeleccionado) return;
+    setSavingContrato(true);
+    const { error } = await supabase.from("contratos_transporte").insert({
+      empresa_id: empresa.id,
+      concesionario_id: concesionarioSeleccionado.id,
+      tarifa_por_persona: 0,
+      frecuencia_corte: "quincenal",
+      descripcion: `Solicitud de transporte - ${empresa.nombre}`,
+      estado: "pendiente",
+      iniciado_por: "empresa",
+      is_active: false,
+    });
+    setSavingContrato(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "✅ Solicitud enviada", description: "El concesionario definirá la tarifa al aceptar" });
+      setShowSolicitarContrato(false);
+      setConcesionarioSeleccionado(null);
+      loadContratos(empresa.id);
+    }
+  };
+
+  const handleAceptarContratoEmpresa = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "aceptado", is_active: true })
+      .eq("id", contratoId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "✅ Contrato aceptado" });
+      if (empresa) loadContratos(empresa.id);
+    }
+  };
+
+  const handleRechazarContratoEmpresa = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "rechazado", is_active: false })
+      .eq("id", contratoId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Contrato rechazado" });
+      if (empresa) loadContratos(empresa.id);
+    }
   };
 
   const loadValidacionesHoy = async (empresaId: string) => {
