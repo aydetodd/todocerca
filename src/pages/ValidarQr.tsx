@@ -322,12 +322,22 @@ export default function ValidarQr() {
         // Continue without location
       }
 
-      const functionName = scanMode === "personal" ? "validar-qr-empleado" : "validate-qr-ticket";
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { qr_token: token, latitude, longitude, unidad_id: assignedUnitId, ruta_id: assignedRouteId },
-      });
+      const primaryFn = scanMode === "personal" ? "validar-qr-empleado" : "validate-qr-ticket";
+      const fallbackFn = scanMode === "personal" ? "validate-qr-ticket" : "validar-qr-empleado";
+      const reqBody = { qr_token: token, latitude, longitude, unidad_id: assignedUnitId, ruta_id: assignedRouteId };
 
-      if (error) throw error;
+      const { data: primaryData, error: primaryError } = await supabase.functions.invoke(primaryFn, { body: reqBody });
+      if (primaryError) throw primaryError;
+
+      let data = primaryData;
+
+      // If primary says invalid (not fraud), try the other function automatically
+      if (!data?.valid && data?.error_type !== "fraud") {
+        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke(fallbackFn, { body: reqBody });
+        if (!fallbackError && fallbackData?.valid) {
+          data = fallbackData;
+        }
+      }
 
       const res = data as ValidationResult;
       setResult(res);
