@@ -79,7 +79,7 @@ const Dashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
       window.history.replaceState({}, '', '/dashboard');
@@ -178,6 +178,15 @@ const Dashboard = () => {
         // Fetch subscription info for providers
         await fetchSubscriptionInfo();
       }
+
+      // Check empresa de transporte for any user
+      const { data: empresaData } = await supabase
+        .from('empresas_transporte')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      setEmpresaTransporte(empresaData);
     } catch (error: any) {
       toast({
         title: "Error",
