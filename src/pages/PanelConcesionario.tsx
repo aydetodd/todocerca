@@ -124,6 +124,12 @@ export default function PanelConcesionario() {
   const [contratoTarifa, setContratoTarifa] = useState("15");
   const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
   const [contratoDescripcion, setContratoDescripcion] = useState("");
+  const [contratoTurnos, setContratoTurnos] = useState<{ turno: string; unidades: number; selected: boolean }[]>([
+    { turno: "Matutino", unidades: 1, selected: false },
+    { turno: "Vespertino", unidades: 1, selected: false },
+    { turno: "Nocturno", unidades: 1, selected: false },
+    { turno: "Mixto", unidades: 1, selected: false },
+  ]);
   const [savingContrato, setSavingContrato] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
@@ -877,15 +883,22 @@ export default function PanelConcesionario() {
   const handleProponerContrato = async () => {
     if (!proveedor || !empresaSeleccionada) return;
     setSavingContrato(true);
+    const turnosSeleccionados = contratoTurnos
+      .filter(t => t.selected)
+      .map(t => ({ turno: t.turno, unidades: t.unidades }));
+    const descAuto = turnosSeleccionados.length > 0
+      ? turnosSeleccionados.map(t => `${t.turno} (${t.unidades} unid.)`).join(", ")
+      : `Transporte de personal - ${empresaSeleccionada.nombre}`;
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
       tarifa_por_persona: parseFloat(contratoTarifa) || 15,
       frecuencia_corte: contratoFrecuencia,
-      descripcion: contratoDescripcion || `Transporte de personal - ${empresaSeleccionada.nombre}`,
+      descripcion: contratoDescripcion || descAuto,
       estado: "pendiente",
       iniciado_por: "concesionario",
       is_active: false,
+      turnos: turnosSeleccionados,
     });
     setSavingContrato(false);
     if (error) {
@@ -896,6 +909,7 @@ export default function PanelConcesionario() {
       setEmpresaSeleccionada(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
+      setContratoTurnos(prev => prev.map(t => ({ ...t, selected: false, unidades: 1 })));
       loadContratosEmpresa(proveedor.id);
     }
   };
@@ -1959,14 +1973,56 @@ export default function PanelConcesionario() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Descripción (opcional)</label>
+              <label className="text-sm font-medium mb-2 block">Turnos y unidades disponibles</label>
+              <div className="space-y-2">
+                {contratoTurnos.map((t, idx) => (
+                  <div key={t.turno} className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 min-w-[120px] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={t.selected}
+                        onChange={e => {
+                          const updated = [...contratoTurnos];
+                          updated[idx] = { ...updated[idx], selected: e.target.checked };
+                          setContratoTurnos(updated);
+                        }}
+                        className="rounded border-input"
+                      />
+                      <span className="text-sm">{t.turno}</span>
+                    </label>
+                    {t.selected && (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={t.unidades}
+                          onChange={e => {
+                            const updated = [...contratoTurnos];
+                            updated[idx] = { ...updated[idx], unidades: Math.max(1, parseInt(e.target.value) || 1) };
+                            setContratoTurnos(updated);
+                          }}
+                          className="w-16 h-8 text-center"
+                        />
+                        <span className="text-xs text-muted-foreground">unidades</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Notas adicionales (opcional)</label>
               <Input
                 value={contratoDescripcion}
                 onChange={e => setContratoDescripcion(e.target.value)}
-                placeholder="Transporte turno matutino..."
+                placeholder="Detalles adicionales..."
               />
             </div>
-            <Button onClick={handleProponerContrato} disabled={savingContrato} className="w-full">
+            <Button
+              onClick={handleProponerContrato}
+              disabled={savingContrato || !contratoTurnos.some(t => t.selected)}
+              className="w-full"
+            >
               {savingContrato ? "Enviando..." : "Enviar propuesta"}
             </Button>
           </div>
