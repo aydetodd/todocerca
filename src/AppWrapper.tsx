@@ -140,6 +140,7 @@ export default function AppWrapper() {
           <Route path="/votaciones/:id" element={<VotacionDetalle />} />
           <Route path="/sos/:token" element={<SOSView />} />
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
+          <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           {/* Wallet QR Boletos */}
           <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
