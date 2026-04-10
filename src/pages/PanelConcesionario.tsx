@@ -891,11 +891,13 @@ export default function PanelConcesionario() {
   };
 
   const loadContratosEmpresa = async (provId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("contratos_transporte")
       .select("*, empresas_transporte(nombre)")
       .eq("concesionario_id", provId)
       .order("created_at", { ascending: false });
+    if (error) console.error("Error loading contratos:", error);
+    console.log("Contratos loaded for provId", provId, ":", data);
     setContratosEmpresa(data || []);
   };
 
