@@ -124,6 +124,12 @@ export default function PanelConcesionario() {
   const [contratoTarifa, setContratoTarifa] = useState("15");
   const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
   const [contratoDescripcion, setContratoDescripcion] = useState("");
+  const [contratoTurnos, setContratoTurnos] = useState<{ turno: string; unidades: number; selected: boolean }[]>([
+    { turno: "Matutino", unidades: 1, selected: false },
+    { turno: "Vespertino", unidades: 1, selected: false },
+    { turno: "Nocturno", unidades: 1, selected: false },
+    { turno: "Mixto", unidades: 1, selected: false },
+  ]);
   const [savingContrato, setSavingContrato] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
