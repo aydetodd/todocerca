@@ -45,6 +45,9 @@ interface Contrato {
   fecha_inicio: string;
   fecha_fin: string | null;
   is_active: boolean;
+  estado: string;
+  iniciado_por: string;
+  proveedores?: { nombre: string } | null;
 }
 
 interface QrEmpleado {
