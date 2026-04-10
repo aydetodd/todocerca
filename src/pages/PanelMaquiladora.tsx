@@ -33,6 +33,7 @@ interface Empleado {
   turno: string | null;
   qr_tipo: string;
   is_active: boolean;
+  user_id: string | null;
 }
 
 interface Contrato {
