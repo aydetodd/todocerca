@@ -2003,6 +2003,47 @@ export type Database = {
           },
         ]
       }
+      notas_contrato: {
+        Row: {
+          autor_id: string
+          autor_tipo: string
+          contenido: string
+          contrato_id: string
+          created_at: string
+          id: string
+          leido_contraparte: boolean
+          tipo_nota: string
+        }
+        Insert: {
+          autor_id: string
+          autor_tipo: string
+          contenido: string
+          contrato_id: string
+          created_at?: string
+          id?: string
+          leido_contraparte?: boolean
+          tipo_nota?: string
+        }
+        Update: {
+          autor_id?: string
+          autor_tipo?: string
+          contenido?: string
+          contrato_id?: string
+          created_at?: string
+          id?: string
+          leido_contraparte?: boolean
+          tipo_nota?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_contrato_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paises: {
         Row: {
           codigo_iso: string
@@ -3829,6 +3870,10 @@ export type Database = {
       }
       is_invited_to_product: {
         Args: { p_producto_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_parte_contrato: {
+        Args: { p_contrato_id: string; p_user_id: string }
         Returns: boolean
       }
       is_product_owner: {

@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
+import ContratoNotas from "@/components/ContratoNotas";
 
 type Verificacion = {
   id: string;
@@ -1945,6 +1946,9 @@ export default function PanelConcesionario() {
                               <XCircle className="h-3 w-3 mr-1" /> Rechazar
                             </Button>
                           </div>
+                        )}
+                        {c.estado === "aceptado" && user && (
+                          <ContratoNotas contratoId={c.id} autorTipo="concesionario" userId={user.id} />
                         )}
                       </CardContent>
                     </Card>
