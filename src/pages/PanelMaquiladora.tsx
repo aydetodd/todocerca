@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send } from "lucide-react";
+import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send, MessageSquare } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -73,6 +73,10 @@ export default function PanelMaquiladora() {
   const [selectedEmpleado, setSelectedEmpleado] = useState<Empleado | null>(null);
   const [showMassSend, setShowMassSend] = useState(false);
   const [massSending, setMassSending] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmpleado, setInviteEmpleado] = useState<Empleado | null>(null);
+  const [invitePhone, setInvitePhone] = useState("");
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   // Registration form
   const [regNombre, setRegNombre] = useState("");
@@ -478,6 +482,14 @@ export default function PanelMaquiladora() {
                       <Badge variant={emp.qr_tipo === "fijo" ? "secondary" : "outline"} className="text-[10px]">
                         {emp.qr_tipo}
                       </Badge>
+                      {emp.user_id ? (
+                        <Badge variant="outline" className="text-[9px] text-green-600 border-green-300">✓</Badge>
+                      ) : (
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Enviar invitación WhatsApp"
+                          onClick={() => { setInviteEmpleado(emp); setInvitePhone(""); setShowInviteDialog(true); }}>
+                          <MessageSquare className="h-3.5 w-3.5 text-green-600" />
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleViewQr(emp)}>
                         <QrCode className="h-4 w-4" />
                       </Button>
