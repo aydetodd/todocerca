@@ -528,16 +528,18 @@ export default function ValidarQr() {
       <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-28">
         {/* Compact Daily Stats */}
         <div
-          className={`grid gap-2 ${isPersonalMode ? "grid-cols-1" : "grid-cols-2 cursor-pointer"}`}
-          onClick={isPersonalMode ? undefined : toggleTicketList}
+          className={`grid gap-2 ${showPersonalStats ? "grid-cols-1" : "grid-cols-2 cursor-pointer"}`}
+          onClick={showPersonalStats ? undefined : toggleTicketList}
         >
           <Card>
             <CardContent className="p-2 text-center">
-              <p className="text-2xl font-bold text-foreground">{dailyCount}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {showPersonalStats ? dailyPersonalCount : dailyCount}
+              </p>
               <p className="text-[10px] text-muted-foreground">Pasajeros hoy</p>
             </CardContent>
           </Card>
-          {!isPersonalMode && (
+          {!showPersonalStats && (
             <Card>
               <CardContent className="p-2 text-center">
                 <p className="text-2xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
