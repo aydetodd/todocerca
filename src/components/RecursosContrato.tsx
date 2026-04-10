@@ -101,8 +101,9 @@ export default function RecursosContrato({ contratoId, proveedorId, rol, userId 
     if (tipo === "unidad") {
       const { data } = await supabase
         .from("unidades_empresa")
-        .select("id, nombre, numero_economico, placas")
-        .eq("proveedor_id", proveedorId);
+        .select("id, nombre, numero_economico, placas, transport_type")
+        .eq("proveedor_id", proveedorId)
+        .eq("transport_type", "privado");
       setAvailableItems(
         (data || [])
           .filter(u => !existingIds.has(u.id))
@@ -132,7 +133,8 @@ export default function RecursosContrato({ contratoId, proveedorId, rol, userId 
         .from("productos")
         .select("id, nombre")
         .eq("proveedor_id", proveedorId)
-        .eq("is_mobile", true);
+        .eq("is_mobile", true)
+        .eq("route_type", "privada");
       setAvailableItems(
         (data || [])
           .filter(r => !existingIds.has(r.id))
