@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send, MessageSquare } from "lucide-react";
+import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send, MessageSquare, Upload } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -77,6 +77,9 @@ export default function PanelMaquiladora() {
   const [inviteEmpleado, setInviteEmpleado] = useState<Empleado | null>(null);
   const [invitePhone, setInvitePhone] = useState("");
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<Array<{ nombre: string; numero_nomina: string; departamento: string; turno: string; telefono: string }>>([]);
 
   // Registration form
   const [regNombre, setRegNombre] = useState("");
@@ -344,6 +347,61 @@ export default function PanelMaquiladora() {
     if (empresa) await loadEmpleados(empresa.id);
   };
 
+  const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { toast({ title: "Error", description: "El archivo CSV está vacío", variant: "destructive" }); return; }
+      // Skip header row
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
+        return { nombre: cols[0] || "", numero_nomina: cols[1] || "", departamento: cols[2] || "", turno: cols[3] || "matutino", telefono: cols[4] || "" };
+      }).filter(r => r.nombre);
+      setCsvPreview(rows);
+      setShowCsvImport(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleCsvImport = async () => {
+    if (!empresa || !csvPreview.length) return;
+    setCsvImporting(true);
+    let importados = 0;
+    let errores = 0;
+    for (const row of csvPreview) {
+      const { data: newEmp, error } = await supabase
+        .from("empleados_empresa")
+        .insert({
+          empresa_id: empresa.id,
+          nombre: row.nombre,
+          numero_nomina: row.numero_nomina || null,
+          departamento: row.departamento || null,
+          turno: row.turno || "matutino",
+          qr_tipo: "fijo",
+        })
+        .select()
+        .single();
+      if (error) { errores++; continue; }
+      if (newEmp) {
+        await supabase.from("qr_empleados").insert({
+          empleado_id: newEmp.id,
+          empresa_id: empresa.id,
+          qr_tipo: "fijo",
+        });
+        importados++;
+      }
+    }
+    setCsvImporting(false);
+    setShowCsvImport(false);
+    setCsvPreview([]);
+    await loadEmpleados(empresa.id);
+    toast({ title: "✅ Importación completada", description: `${importados} empleados importados${errores > 0 ? `, ${errores} errores` : ""}` });
+  };
+
   const handleExportCSV = () => {
     if (!empleados.length) return;
     const headers = "Nombre,Nómina,Departamento,Turno,Tipo QR,Activo\n";
@@ -397,7 +455,12 @@ export default function PanelMaquiladora() {
             </div>
             <div>
               <Label>Teléfono de contacto</Label>
-              <Input value={regTelefono} onChange={e => setRegTelefono(e.target.value)} placeholder="+52 662 123 4567" />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-md text-sm font-medium shrink-0">
+                  <span>🇲🇽</span> <span>+52</span>
+                </div>
+                <Input value={regTelefono} onChange={e => setRegTelefono(e.target.value)} placeholder="644 123 4567" />
+              </div>
             </div>
             <Button onClick={handleRegistroEmpresa} className="w-full">Registrar empresa</Button>
           </CardContent>
@@ -460,6 +523,12 @@ export default function PanelMaquiladora() {
               </Button>
               <Button size="sm" variant="outline" onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-1" /> CSV
+              </Button>
+              <Button size="sm" variant="outline" asChild title="Importar CSV masivo">
+                <label className="cursor-pointer">
+                  <Upload className="h-4 w-4" />
+                  <input type="file" accept=".csv" className="hidden" onChange={handleCsvFile} />
+                </label>
               </Button>
               <Button size="sm" variant="outline" onClick={() => empresa && loadEmpleados(empresa.id)}>
                 <RefreshCw className="h-4 w-4" />
@@ -668,12 +737,17 @@ export default function PanelMaquiladora() {
             </p>
             <div>
               <Label>Número de teléfono</Label>
-              <Input
-                value={invitePhone}
-                onChange={e => setInvitePhone(e.target.value)}
-                placeholder="+52 644 123 4567"
-                type="tel"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-md text-sm font-medium shrink-0">
+                  <span>🇲🇽</span> <span>+52</span>
+                </div>
+                <Input
+                  value={invitePhone}
+                  onChange={e => setInvitePhone(e.target.value)}
+                  placeholder="644 123 4567"
+                  type="tel"
+                />
+              </div>
             </div>
             <Button
               className="w-full"
@@ -681,13 +755,14 @@ export default function PanelMaquiladora() {
               onClick={async () => {
                 if (!inviteEmpleado) return;
                 setSendingInvite(true);
+                const phoneToSend = invitePhone.replace(/\D/g, "").startsWith("52") ? invitePhone : `+52${invitePhone.replace(/\D/g, "")}`;
                 try {
                   const { data, error } = await supabase.functions.invoke('send-employee-invite', {
-                    body: { empleado_id: inviteEmpleado.id, phone_number: invitePhone },
+                    body: { empleado_id: inviteEmpleado.id, phone_number: phoneToSend },
                   });
                   if (error) throw error;
                   if (data?.error) throw new Error(data.error);
-                  toast({ title: '✅ Invitación enviada', description: `SMS enviado a ${invitePhone}` });
+                  toast({ title: '✅ Invitación enviada', description: `SMS enviado a +52 ${invitePhone}` });
                   setShowInviteDialog(false);
                 } catch (err: any) {
                   toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -697,6 +772,51 @@ export default function PanelMaquiladora() {
               }}
             >
               {sendingInvite ? "Enviando..." : "Enviar invitación por SMS"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: CSV Import */}
+      <Dialog open={showCsvImport} onOpenChange={setShowCsvImport}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" /> Importar empleados desde CSV
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Se encontraron <strong>{csvPreview.length}</strong> empleados en el archivo. Formato esperado:
+            </p>
+            <code className="text-xs bg-muted p-2 rounded block">Nombre,Nómina,Departamento,Turno,Teléfono</code>
+            <div className="max-h-60 overflow-auto border rounded">
+              <table className="w-full text-xs">
+                <thead className="bg-muted sticky top-0">
+                  <tr>
+                    <th className="p-1 text-left">Nombre</th>
+                    <th className="p-1 text-left">Nómina</th>
+                    <th className="p-1 text-left">Depto</th>
+                    <th className="p-1 text-left">Turno</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvPreview.slice(0, 50).map((row, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-1">{row.nombre}</td>
+                      <td className="p-1">{row.numero_nomina}</td>
+                      <td className="p-1">{row.departamento}</td>
+                      <td className="p-1">{row.turno}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {csvPreview.length > 50 && (
+                <p className="text-xs text-muted-foreground text-center py-1">...y {csvPreview.length - 50} más</p>
+              )}
+            </div>
+            <Button onClick={handleCsvImport} className="w-full" disabled={csvImporting}>
+              {csvImporting ? `Importando... (${csvPreview.length} empleados)` : `Importar ${csvPreview.length} empleados`}
             </Button>
           </div>
         </DialogContent>
