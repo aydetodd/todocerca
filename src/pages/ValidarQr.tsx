@@ -381,9 +381,16 @@ export default function ValidarQr() {
       setResult(res);
 
       if (res.valid && res.details) {
-        // SUCCESS
-        setDailyCount(res.details.daily_passenger_count);
-        setDailyTotal(typeof res.details.daily_total_mxn === "number" ? res.details.daily_total_mxn : 0);
+        // Detect if this was an employee or ticket validation
+        const isEmployeeResult = !!res.details.employee_name;
+        setLastResultType(isEmployeeResult ? "personal" : "boleto");
+
+        if (isEmployeeResult) {
+          setDailyPersonalCount(res.details.daily_passenger_count);
+        } else {
+          setDailyCount(res.details.daily_passenger_count);
+          setDailyTotal(typeof res.details.daily_total_mxn === "number" ? res.details.daily_total_mxn : res.details.daily_passenger_count * 9);
+        }
 
         if (audioEnabled) {
           playAlertBeep("success");
