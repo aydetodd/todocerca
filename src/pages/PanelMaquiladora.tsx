@@ -214,7 +214,7 @@ export default function PanelMaquiladora() {
     await loadEmpleados(empresa.id);
   };
 
-
+  const handleRegistroEmpresa = async () => {
     if (!regNombre.trim()) {
       toast({ title: "Error", description: "Ingresa el nombre de la empresa", variant: "destructive" });
       return;
