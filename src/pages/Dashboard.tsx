@@ -277,6 +277,7 @@ const Dashboard = () => {
     }
   }
 
+  const isProvider = profile?.role === "proveedor";
   const showTaxi = isProvider && showTaxiTab;
 
   const badges = useDashboardBadges(
