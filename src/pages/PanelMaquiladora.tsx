@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw } from "lucide-react";
+import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Empresa {
   id: string;
@@ -32,6 +33,7 @@ interface Empleado {
   turno: string | null;
   qr_tipo: string;
   is_active: boolean;
+  user_id: string | null;
 }
 
 interface Contrato {
@@ -69,6 +71,8 @@ export default function PanelMaquiladora() {
   const [showAddEmpleado, setShowAddEmpleado] = useState(false);
   const [showQr, setShowQr] = useState<QrEmpleado | null>(null);
   const [selectedEmpleado, setSelectedEmpleado] = useState<Empleado | null>(null);
+  const [showMassSend, setShowMassSend] = useState(false);
+  const [massSending, setMassSending] = useState(false);
 
   // Registration form
   const [regNombre, setRegNombre] = useState("");
@@ -140,6 +144,75 @@ export default function PanelMaquiladora() {
       .eq("empresa_id", empresaId)
       .eq("fecha_local", hermosilloToday);
     setValidacionesHoy(count ?? 0);
+  };
+
+  const handleMassSendQr = async () => {
+    if (!empresa) return;
+    setMassSending(true);
+    
+    const activeEmps = empleados.filter(e => e.is_active);
+    let renovados = 0;
+    let enviados = 0;
+    let sinCuenta = 0;
+
+    for (const emp of activeEmps) {
+      // 1. Regenerate QR for rotativo employees
+      if (emp.qr_tipo === "rotativo") {
+        await supabase
+          .from("qr_empleados")
+          .update({ status: "revoked" })
+          .eq("empleado_id", emp.id)
+          .eq("status", "active");
+
+        await supabase.from("qr_empleados").insert({
+          empleado_id: emp.id,
+          empresa_id: empresa.id,
+          qr_tipo: "rotativo",
+          fecha_vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        });
+        renovados++;
+      }
+
+      // 2. Get the active QR for this employee
+      const { data: qr } = await supabase
+        .from("qr_empleados")
+        .select("token")
+        .eq("empleado_id", emp.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!qr) continue;
+
+      // 3. Send via internal message if employee has an app account
+      if (emp.user_id) {
+        const shortCode = String(qr.token).slice(-6).toUpperCase();
+        const message = `🏭 ${empresa.nombre}\n\n📋 Hola ${emp.nombre}, aquí está tu código QR de transporte:\n\n🔑 Código: ${shortCode}\n🎫 Token: ${qr.token}\n📅 Tipo: ${emp.qr_tipo === "fijo" ? "Permanente" : "Rotativo (renovable)"}\n\nMuestra este código al chofer al abordar la unidad.`;
+
+        await supabase.from("messages").insert({
+          sender_id: user!.id,
+          receiver_id: emp.user_id,
+          message,
+          is_panic: false,
+          is_read: false,
+        });
+        enviados++;
+      } else {
+        sinCuenta++;
+      }
+    }
+
+    setMassSending(false);
+    setShowMassSend(false);
+    
+    let description = `${renovados} QR renovados, ${enviados} mensajes enviados.`;
+    if (sinCuenta > 0) {
+      description += ` ${sinCuenta} empleados sin cuenta en la app (comparte su QR manualmente).`;
+    }
+    
+    toast({ title: "✅ Envío masivo completado", description });
+    await loadEmpleados(empresa.id);
   };
 
   const handleRegistroEmpresa = async () => {
@@ -378,6 +451,9 @@ export default function PanelMaquiladora() {
               <Button size="sm" onClick={() => setShowAddEmpleado(true)} className="flex-1">
                 <Plus className="h-4 w-4 mr-1" /> Agregar
               </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowMassSend(true)} title="Envío masivo de QR">
+                <Send className="h-4 w-4" />
+              </Button>
               <Button size="sm" variant="outline" onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-1" /> CSV
               </Button>
@@ -537,6 +613,34 @@ export default function PanelMaquiladora() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Mass QR Send */}
+      <AlertDialog open={showMassSend} onOpenChange={setShowMassSend}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" /> Envío masivo de QR
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-2">
+              <p>Esta acción realizará lo siguiente para los <strong>{empleados.filter(e => e.is_active).length} empleados activos</strong>:</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>🔄 <strong>Renovar</strong> los QR de tipo rotativo (vigencia 7 días)</li>
+                <li>📩 <strong>Enviar</strong> el QR por mensaje interno a empleados con cuenta en la app</li>
+                <li>Los QR fijos se mantienen sin cambios</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Empleados sin cuenta en la app no recibirán mensaje — comparte su QR manualmente desde el ícono 🔳.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={massSending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMassSendQr} disabled={massSending}>
+              {massSending ? "Enviando..." : "Renovar y enviar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
