@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send, MessageSquare, Upload } from "lucide-react";
+import { Building2, Users, QrCode, BarChart3, FileText, Plus, Download, Trash2, RefreshCw, Send, MessageSquare, Upload, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -689,6 +689,15 @@ export default function PanelMaquiladora() {
                 {selectedEmpleado?.numero_nomina && (
                   <div className="text-xs text-muted-foreground">Nómina: #{selectedEmpleado.numero_nomina}</div>
                 )}
+              </div>
+              <div className="w-full flex items-center gap-1 mt-1">
+                <Input value={showQr.token} readOnly className="text-[10px] font-mono flex-1" />
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => {
+                  navigator.clipboard.writeText(showQr.token);
+                  toast({ title: 'Token copiado' });
+                }}>
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}
