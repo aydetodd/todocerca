@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  Building2,
   Bus,
   Calendar,
   Car,
@@ -37,6 +38,8 @@ import { ProviderAppointments } from "@/components/ProviderAppointments";
 import TaxiDriverRequests from "@/components/TaxiDriverRequests";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { useDashboardBadges } from "@/hooks/useDashboardBadges";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type DashboardSection =
   | "perfil"
@@ -47,7 +50,8 @@ type DashboardSection =
   | "apartados"
   | "citas"
   | "horarios"
-  | "taxi";
+  | "taxi"
+  | "empresa";
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
