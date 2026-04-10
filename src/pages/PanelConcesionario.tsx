@@ -114,6 +114,18 @@ export default function PanelConcesionario() {
   const [savingFreq, setSavingFreq] = useState(false);
   const [cobrandoLiq, setCobrandoLiq] = useState(false);
 
+  // Contratos con empresas
+  const [empresaSearch, setEmpresaSearch] = useState("");
+  const [empresasFound, setEmpresasFound] = useState<any[]>([]);
+  const [searchingEmpresas, setSearchingEmpresas] = useState(false);
+  const [contratosEmpresa, setContratosEmpresa] = useState<any[]>([]);
+  const [showProponerContrato, setShowProponerContrato] = useState(false);
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState<any>(null);
+  const [contratoTarifa, setContratoTarifa] = useState("15");
+  const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
+  const [contratoDescripcion, setContratoDescripcion] = useState("");
+  const [savingContrato, setSavingContrato] = useState(false);
+
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
