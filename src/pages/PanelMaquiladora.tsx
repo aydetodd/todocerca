@@ -70,6 +70,8 @@ export default function PanelMaquiladora() {
   const [showAddEmpleado, setShowAddEmpleado] = useState(false);
   const [showQr, setShowQr] = useState<QrEmpleado | null>(null);
   const [selectedEmpleado, setSelectedEmpleado] = useState<Empleado | null>(null);
+  const [showMassSend, setShowMassSend] = useState(false);
+  const [massSending, setMassSending] = useState(false);
 
   // Registration form
   const [regNombre, setRegNombre] = useState("");
