@@ -681,6 +681,7 @@ export type Database = {
           departamento: string | null
           empresa_id: string
           id: string
+          invite_token: string
           is_active: boolean
           nombre: string
           numero_nomina: string | null
@@ -694,6 +695,7 @@ export type Database = {
           departamento?: string | null
           empresa_id: string
           id?: string
+          invite_token?: string
           is_active?: boolean
           nombre: string
           numero_nomina?: string | null
@@ -707,6 +709,7 @@ export type Database = {
           departamento?: string | null
           empresa_id?: string
           id?: string
+          invite_token?: string
           is_active?: boolean
           nombre?: string
           numero_nomina?: string | null
