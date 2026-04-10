@@ -455,7 +455,12 @@ export default function PanelMaquiladora() {
             </div>
             <div>
               <Label>Teléfono de contacto</Label>
-              <Input value={regTelefono} onChange={e => setRegTelefono(e.target.value)} placeholder="+52 662 123 4567" />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-md text-sm font-medium shrink-0">
+                  <span>🇲🇽</span> <span>+52</span>
+                </div>
+                <Input value={regTelefono} onChange={e => setRegTelefono(e.target.value)} placeholder="644 123 4567" />
+              </div>
             </div>
             <Button onClick={handleRegistroEmpresa} className="w-full">Registrar empresa</Button>
           </CardContent>
@@ -732,12 +737,17 @@ export default function PanelMaquiladora() {
             </p>
             <div>
               <Label>Número de teléfono</Label>
-              <Input
-                value={invitePhone}
-                onChange={e => setInvitePhone(e.target.value)}
-                placeholder="+52 644 123 4567"
-                type="tel"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-md text-sm font-medium shrink-0">
+                  <span>🇲🇽</span> <span>+52</span>
+                </div>
+                <Input
+                  value={invitePhone}
+                  onChange={e => setInvitePhone(e.target.value)}
+                  placeholder="644 123 4567"
+                  type="tel"
+                />
+              </div>
             </div>
             <Button
               className="w-full"
