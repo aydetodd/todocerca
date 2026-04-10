@@ -612,6 +612,34 @@ export default function PanelMaquiladora() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Mass QR Send */}
+      <AlertDialog open={showMassSend} onOpenChange={setShowMassSend}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" /> Envío masivo de QR
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-2">
+              <p>Esta acción realizará lo siguiente para los <strong>{empleados.filter(e => e.is_active).length} empleados activos</strong>:</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>🔄 <strong>Renovar</strong> los QR de tipo rotativo (vigencia 7 días)</li>
+                <li>📩 <strong>Enviar</strong> el QR por mensaje interno a empleados con cuenta en la app</li>
+                <li>Los QR fijos se mantienen sin cambios</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Empleados sin cuenta en la app no recibirán mensaje — comparte su QR manualmente desde el ícono 🔳.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={massSending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMassSendQr} disabled={massSending}>
+              {massSending ? "Enviando..." : "Renovar y enviar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
