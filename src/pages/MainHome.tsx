@@ -54,7 +54,16 @@ export default function MainHome() {
         console.error('[MainHome] Concesionario check failed:', err);
       }
     };
+    const checkEmpresaTransporte = async () => {
+      const { count } = await supabase
+        .from('empresas_transporte')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      setIsEmpresaTransporte((count ?? 0) > 0);
+    };
     checkConcesionario();
+    checkEmpresaTransporte();
   }, [user]);
 
   return (
