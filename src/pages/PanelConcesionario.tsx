@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
+import RecursosContrato from "@/components/RecursosContrato";
 
 type Verificacion = {
   id: string;
