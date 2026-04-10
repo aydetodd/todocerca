@@ -31,11 +31,17 @@ type ValidationResult = {
     total_user_attempts: number;
   };
   details?: {
-    amount: number;
+    amount?: number;
     short_code: string;
     validated_at: string;
     daily_passenger_count: number;
-    daily_total_mxn: number;
+    daily_total_mxn?: number;
+    employee_name?: string;
+    employee_id?: string;
+    department?: string;
+    shift?: string;
+    company_name?: string;
+    qr_type?: string;
   };
 };
 
@@ -334,7 +340,7 @@ export default function ValidarQr() {
       // If primary says invalid (not fraud), try the other function automatically
       if (!data?.valid && data?.error_type !== "fraud") {
         const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke(fallbackFn, { body: reqBody });
-        if (!fallbackError && fallbackData?.valid) {
+        if (!fallbackError && fallbackData && (fallbackData.valid || fallbackData.error_type !== "invalid")) {
           data = fallbackData;
         }
       }
@@ -345,7 +351,7 @@ export default function ValidarQr() {
       if (res.valid && res.details) {
         // SUCCESS
         setDailyCount(res.details.daily_passenger_count);
-        setDailyTotal(res.details.daily_total_mxn);
+        setDailyTotal(typeof res.details.daily_total_mxn === "number" ? res.details.daily_total_mxn : 0);
 
         if (audioEnabled) {
           playAlertBeep("success");
@@ -418,6 +424,8 @@ export default function ValidarQr() {
     }
   };
 
+  const isPersonalMode = scanMode === "personal";
+
   return (
     <div
       className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
@@ -478,23 +486,28 @@ export default function ValidarQr() {
       {/* Bottom Half: Scanner - scrollable */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-28">
         {/* Compact Daily Stats */}
-        <div className="grid grid-cols-2 gap-2 cursor-pointer" onClick={toggleTicketList}>
+        <div
+          className={`grid gap-2 ${isPersonalMode ? "grid-cols-1" : "grid-cols-2 cursor-pointer"}`}
+          onClick={isPersonalMode ? undefined : toggleTicketList}
+        >
           <Card>
             <CardContent className="p-2 text-center">
               <p className="text-2xl font-bold text-foreground">{dailyCount}</p>
               <p className="text-[10px] text-muted-foreground">Pasajeros hoy</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-2 text-center">
-              <p className="text-2xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
-              <p className="text-[10px] text-muted-foreground">Recaudado hoy</p>
-            </CardContent>
-          </Card>
+          {!isPersonalMode && (
+            <Card>
+              <CardContent className="p-2 text-center">
+                <p className="text-2xl font-bold text-foreground">${dailyTotal.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground">Recaudado hoy</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Ticket List */}
-        {showTicketList && (
+        {!isPersonalMode && showTicketList && (
           <Card>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-2">
@@ -546,7 +559,7 @@ export default function ValidarQr() {
                 value={qrInput}
                 onChange={(e) => setQrInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Token del boleto QR..."
+                placeholder={isPersonalMode ? "Token del empleado QR..." : "Token del boleto QR..."}
                 className="font-mono text-base"
                 autoComplete="off"
                 autoFocus
@@ -586,20 +599,44 @@ export default function ValidarQr() {
               <Card className="border-green-500 border-2 bg-green-500/10">
                 <CardContent className="p-4 text-center space-y-2">
                   <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
-                  <h2 className="text-xl font-bold text-green-600">✓ VÁLIDO</h2>
+                  <h2 className="text-xl font-bold text-green-600">
+                    {result.details.employee_name ? "✓ EMPLEADO REGISTRADO" : "✓ VÁLIDO"}
+                  </h2>
                   <p className="font-mono text-lg font-bold text-foreground">
                     #{result.details.short_code}
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-card rounded-lg p-2">
-                      <p className="text-xl font-bold text-foreground">${result.details.amount.toFixed(2)}</p>
-                      <p className="text-[10px] text-muted-foreground">Valor</p>
+                  {result.details.employee_name ? (
+                    <>
+                      <div className="space-y-1 text-sm text-foreground">
+                        <p className="font-semibold">{result.details.employee_name}</p>
+                        {result.details.company_name && (
+                          <p className="text-muted-foreground">{result.details.company_name}</p>
+                        )}
+                        {(result.details.department || result.details.shift) && (
+                          <p className="text-muted-foreground">
+                            {[result.details.department, result.details.shift].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="bg-card rounded-lg p-2">
+                          <p className="text-xl font-bold text-foreground">#{result.details.daily_passenger_count}</p>
+                          <p className="text-[10px] text-muted-foreground">Pasajeros registrados hoy</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-card rounded-lg p-2">
+                        <p className="text-xl font-bold text-foreground">${(result.details.amount ?? 0).toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground">Valor</p>
+                      </div>
+                      <div className="bg-card rounded-lg p-2">
+                        <p className="text-xl font-bold text-foreground">#{result.details.daily_passenger_count}</p>
+                        <p className="text-[10px] text-muted-foreground">Pasajero del día</p>
+                      </div>
                     </div>
-                    <div className="bg-card rounded-lg p-2">
-                      <p className="text-xl font-bold text-foreground">#{result.details.daily_passenger_count}</p>
-                      <p className="text-[10px] text-muted-foreground">Pasajero del día</p>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             )}
