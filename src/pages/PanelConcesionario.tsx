@@ -344,6 +344,23 @@ export default function PanelConcesionario() {
     }
   }, [user, authLoading]);
 
+  // Realtime: refrescar contratos cuando la empresa acepta/rechaza
+  useEffect(() => {
+    if (!proveedor?.id) return;
+    const ch = supabase
+      .channel("contratos-concesionario-" + proveedor.id)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "contratos_transporte",
+        filter: `concesionario_id=eq.${proveedor.id}`,
+      }, () => {
+        loadContratosEmpresa(proveedor.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [proveedor?.id]);
+
   const fetchAll = async () => {
     if (!user?.id) {
       setLoading(false);
