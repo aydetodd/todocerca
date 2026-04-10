@@ -4,8 +4,10 @@ import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
   Clock, CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, BarChart3,
   Users, Plus, MessageCircle, Loader2, Trash2, Download, ClipboardList,
+  Building2, Search, Handshake,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConcesionarioReportes from "@/components/ConcesionarioReportes";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -111,6 +113,18 @@ export default function PanelConcesionario() {
   const [frecuenciaLiq, setFrecuenciaLiq] = useState<string>("daily");
   const [savingFreq, setSavingFreq] = useState(false);
   const [cobrandoLiq, setCobrandoLiq] = useState(false);
+
+  // Contratos con empresas
+  const [empresaSearch, setEmpresaSearch] = useState("");
+  const [empresasFound, setEmpresasFound] = useState<any[]>([]);
+  const [searchingEmpresas, setSearchingEmpresas] = useState(false);
+  const [contratosEmpresa, setContratosEmpresa] = useState<any[]>([]);
+  const [showProponerContrato, setShowProponerContrato] = useState(false);
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState<any>(null);
+  const [contratoTarifa, setContratoTarifa] = useState("15");
+  const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
+  const [contratoDescripcion, setContratoDescripcion] = useState("");
+  const [savingContrato, setSavingContrato] = useState(false);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
@@ -419,6 +433,9 @@ export default function PanelConcesionario() {
         console.error("Error loading stats:", statsError);
         toast.error("El panel cargó parcialmente; las estadísticas tardaron demasiado.");
       }
+
+      // Load contratos con empresas
+      void loadContratosEmpresa(prov.id);
 
       // Non-critical data should not block the initial render
       void (async () => {
@@ -834,6 +851,81 @@ export default function PanelConcesionario() {
     }
   };
 
+  // === Empresas / Contratos functions ===
+  const searchEmpresas = async () => {
+    if (!empresaSearch.trim()) return;
+    setSearchingEmpresas(true);
+    const { data } = await supabase
+      .from("empresas_transporte")
+      .select("id, nombre, rfc, contacto_nombre, contacto_telefono")
+      .eq("is_active", true)
+      .ilike("nombre", `%${empresaSearch.trim()}%`)
+      .limit(10);
+    setEmpresasFound(data || []);
+    setSearchingEmpresas(false);
+  };
+
+  const loadContratosEmpresa = async (provId: string) => {
+    const { data } = await supabase
+      .from("contratos_transporte")
+      .select("*, empresas_transporte(nombre)")
+      .eq("concesionario_id", provId)
+      .order("created_at", { ascending: false });
+    setContratosEmpresa(data || []);
+  };
+
+  const handleProponerContrato = async () => {
+    if (!proveedor || !empresaSeleccionada) return;
+    setSavingContrato(true);
+    const { error } = await supabase.from("contratos_transporte").insert({
+      concesionario_id: proveedor.id,
+      empresa_id: empresaSeleccionada.id,
+      tarifa_por_persona: parseFloat(contratoTarifa) || 15,
+      frecuencia_corte: contratoFrecuencia,
+      descripcion: contratoDescripcion || `Transporte de personal - ${empresaSeleccionada.nombre}`,
+      estado: "pendiente",
+      iniciado_por: "concesionario",
+      is_active: false,
+    });
+    setSavingContrato(false);
+    if (error) {
+      toast.error("Error al proponer contrato: " + error.message);
+    } else {
+      toast.success("Propuesta de contrato enviada");
+      setShowProponerContrato(false);
+      setEmpresaSeleccionada(null);
+      setContratoTarifa("15");
+      setContratoDescripcion("");
+      loadContratosEmpresa(proveedor.id);
+    }
+  };
+
+  const handleAceptarContrato = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "aceptado", is_active: true })
+      .eq("id", contratoId);
+    if (error) {
+      toast.error("Error: " + error.message);
+    } else {
+      toast.success("Contrato aceptado");
+      if (proveedor) loadContratosEmpresa(proveedor.id);
+    }
+  };
+
+  const handleRechazarContrato = async (contratoId: string) => {
+    const { error } = await supabase
+      .from("contratos_transporte")
+      .update({ estado: "rechazado", is_active: false })
+      .eq("id", contratoId);
+    if (error) {
+      toast.error("Error: " + error.message);
+    } else {
+      toast.success("Contrato rechazado");
+      if (proveedor) loadContratosEmpresa(proveedor.id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -903,26 +995,31 @@ export default function PanelConcesionario() {
         </div>
 
         <Tabs defaultValue="ingresos" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="ingresos" className="text-xs">
-              <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
-            </TabsTrigger>
-            <TabsTrigger value="reportes" className="text-xs">
-              <ClipboardList className="h-3 w-3 mr-1" /> Reportes
-            </TabsTrigger>
-            <TabsTrigger value="verificacion" className="text-xs">
-              <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
-            </TabsTrigger>
-            <TabsTrigger value="unidades" className="text-xs">
-              <Bus className="h-3 w-3 mr-1" /> Unidades
-            </TabsTrigger>
-            <TabsTrigger value="liquidaciones" className="text-xs">
-              <DollarSign className="h-3 w-3 mr-1" /> Pagos
-            </TabsTrigger>
-            <TabsTrigger value="fraude" className="text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex w-auto min-w-full">
+              <TabsTrigger value="ingresos" className="text-xs">
+                <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+              </TabsTrigger>
+              <TabsTrigger value="reportes" className="text-xs">
+                <ClipboardList className="h-3 w-3 mr-1" /> Reportes
+              </TabsTrigger>
+              <TabsTrigger value="verificacion" className="text-xs">
+                <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
+              </TabsTrigger>
+              <TabsTrigger value="unidades" className="text-xs">
+                <Bus className="h-3 w-3 mr-1" /> Unidades
+              </TabsTrigger>
+              <TabsTrigger value="liquidaciones" className="text-xs">
+                <DollarSign className="h-3 w-3 mr-1" /> Pagos
+              </TabsTrigger>
+              <TabsTrigger value="fraude" className="text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
+              </TabsTrigger>
+              <TabsTrigger value="empresas" className="text-xs">
+                <Building2 className="h-3 w-3 mr-1" /> Empresas
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* INGRESOS POR UNIDAD */}
           <TabsContent value="ingresos" className="space-y-4 mt-4">
@@ -1730,10 +1827,151 @@ export default function PanelConcesionario() {
           <TabsContent value="reportes" className="space-y-4 mt-4">
             {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} />}
           </TabsContent>
+
+          {/* EMPRESAS / CONTRATOS */}
+          <TabsContent value="empresas" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Search className="h-4 w-4" /> Buscar empresa
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Busca empresas (maquiladoras) para proponer un contrato de transporte
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nombre de la empresa..."
+                    value={empresaSearch}
+                    onChange={e => setEmpresaSearch(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchEmpresas()}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={searchEmpresas} disabled={searchingEmpresas}>
+                    {searchingEmpresas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                {empresasFound.map(emp => (
+                  <Card key={emp.id} className="bg-muted/50">
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{emp.nombre}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {emp.rfc || "Sin RFC"} · {emp.contacto_nombre || ""}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="default" onClick={() => {
+                        setEmpresaSeleccionada(emp);
+                        setShowProponerContrato(true);
+                      }}>
+                        <Handshake className="h-3 w-3 mr-1" /> Proponer
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Mis contratos con empresas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {contratosEmpresa.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6">
+                    <Building2 className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Sin contratos</p>
+                    <p className="text-xs">Busca una empresa arriba para proponer un contrato</p>
+                  </div>
+                ) : (
+                  contratosEmpresa.map((c: any) => (
+                    <Card key={c.id} className="bg-muted/50">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm">
+                            {(c.empresas_transporte as any)?.nombre || "Empresa"}
+                          </p>
+                          <Badge variant={c.estado === "aceptado" ? "default" : c.estado === "rechazado" ? "destructive" : "secondary"}>
+                            {c.estado === "aceptado" ? "Activo" : c.estado === "rechazado" ? "Rechazado" : "Pendiente"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Tarifa: ${Number(c.tarifa_por_persona).toFixed(2)}/persona · {c.frecuencia_corte}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Desde {c.fecha_inicio} · Iniciado por: {c.iniciado_por}
+                        </p>
+                        {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
+                              <XCircle className="h-3 w-3 mr-1" /> Rechazar
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
-      
+      {/* Dialog: Proponer contrato */}
+      <Dialog open={showProponerContrato} onOpenChange={setShowProponerContrato}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5" /> Proponer contrato
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
+            </p>
+            <div>
+              <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
+              <Input
+                type="number"
+                value={contratoTarifa}
+                onChange={e => setContratoTarifa(e.target.value)}
+                placeholder="15.00"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Frecuencia de corte</label>
+              <select
+                className="w-full border rounded-md p-2 text-sm bg-background"
+                value={contratoFrecuencia}
+                onChange={e => setContratoFrecuencia(e.target.value)}
+              >
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual">Mensual</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descripción (opcional)</label>
+              <Input
+                value={contratoDescripcion}
+                onChange={e => setContratoDescripcion(e.target.value)}
+                placeholder="Transporte turno matutino..."
+              />
+            </div>
+            <Button onClick={handleProponerContrato} disabled={savingContrato} className="w-full">
+              {savingContrato ? "Enviando..." : "Enviar propuesta"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

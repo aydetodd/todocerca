@@ -374,10 +374,12 @@ export type Database = {
           created_at: string
           descripcion: string | null
           empresa_id: string
+          estado: string
           fecha_fin: string | null
           fecha_inicio: string
           frecuencia_corte: string
           id: string
+          iniciado_por: string
           is_active: boolean
           tarifa_por_persona: number
           updated_at: string
@@ -387,10 +389,12 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           empresa_id: string
+          estado?: string
           fecha_fin?: string | null
           fecha_inicio?: string
           frecuencia_corte?: string
           id?: string
+          iniciado_por?: string
           is_active?: boolean
           tarifa_por_persona?: number
           updated_at?: string
@@ -400,10 +404,12 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           empresa_id?: string
+          estado?: string
           fecha_fin?: string | null
           fecha_inicio?: string
           frecuencia_corte?: string
           id?: string
+          iniciado_por?: string
           is_active?: boolean
           tarifa_por_persona?: number
           updated_at?: string
