@@ -755,13 +755,14 @@ export default function PanelMaquiladora() {
               onClick={async () => {
                 if (!inviteEmpleado) return;
                 setSendingInvite(true);
+                const phoneToSend = invitePhone.replace(/\D/g, "").startsWith("52") ? invitePhone : `+52${invitePhone.replace(/\D/g, "")}`;
                 try {
                   const { data, error } = await supabase.functions.invoke('send-employee-invite', {
-                    body: { empleado_id: inviteEmpleado.id, phone_number: invitePhone },
+                    body: { empleado_id: inviteEmpleado.id, phone_number: phoneToSend },
                   });
                   if (error) throw error;
                   if (data?.error) throw new Error(data.error);
-                  toast({ title: '✅ Invitación enviada', description: `SMS enviado a ${invitePhone}` });
+                  toast({ title: '✅ Invitación enviada', description: `SMS enviado a +52 ${invitePhone}` });
                   setShowInviteDialog(false);
                 } catch (err: any) {
                   toast({ title: 'Error', description: err.message, variant: 'destructive' });
