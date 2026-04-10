@@ -550,7 +550,7 @@ export default function ValidarQr() {
         </div>
 
         {/* Ticket List */}
-        {!isPersonalMode && showTicketList && (
+        {!showPersonalStats && showTicketList && (
           <Card>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-2">
