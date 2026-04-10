@@ -248,7 +248,35 @@ const Dashboard = () => {
     }
   }
 
-  const isProvider = profile?.role === "proveedor";
+  async function handleRegistrarEmpresa() {
+    if (!empresaForm.nombre.trim()) {
+      toast({ title: 'Error', description: 'El nombre de la empresa es obligatorio', variant: 'destructive' });
+      return;
+    }
+    try {
+      setRegistrandoEmpresa(true);
+      const { data, error } = await supabase
+        .from('empresas_transporte')
+        .insert({
+          user_id: user!.id,
+          nombre: empresaForm.nombre.trim(),
+          rfc: empresaForm.rfc.trim() || null,
+          contacto_nombre: empresaForm.contacto_nombre.trim() || null,
+          contacto_telefono: empresaForm.contacto_telefono.trim() || null,
+          contacto_email: empresaForm.contacto_email.trim() || null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setEmpresaTransporte(data);
+      toast({ title: 'Empresa registrada', description: 'Tu empresa ha sido registrada exitosamente' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setRegistrandoEmpresa(false);
+    }
+  }
+
   const showTaxi = isProvider && showTaxiTab;
 
   const badges = useDashboardBadges(
