@@ -40,26 +40,35 @@ serve(async (req) => {
     let resolvedRutaId = ruta_id || null;
     let driverRecordId: string | null = null;
 
-    const { data: choferRecord } = await supabaseAdmin
+    const { data: choferRecords } = await supabaseAdmin
       .from("choferes_empresa")
       .select("id")
       .eq("user_id", driver.id)
       .eq("is_active", true)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    if (choferRecord?.id) {
-      driverRecordId = choferRecord.id;
+    const choferRecordIds = (choferRecords || []).map((record) => record.id);
+
+    if (choferRecordIds.length > 0) {
+      driverRecordId = choferRecordIds[0];
     }
 
-    if (driverRecordId && (!resolvedUnidadId || !resolvedRutaId)) {
-      const { data: asignacion } = await supabaseAdmin
+    if (choferRecordIds.length > 0 && (!resolvedUnidadId || !resolvedRutaId)) {
+      const { data: asignaciones } = await supabaseAdmin
         .from("asignaciones_chofer")
-        .select("unidad_id, producto_id")
-        .eq("chofer_id", driverRecordId)
+        .select("chofer_id, unidad_id, producto_id")
+        .in("chofer_id", choferRecordIds)
         .eq("fecha", hermosilloToday)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
+
+      const asignacion = (asignaciones || []).find((item) => {
+        const unidadMatches = !resolvedUnidadId || item.unidad_id === resolvedUnidadId;
+        const rutaMatches = !resolvedRutaId || item.producto_id === resolvedRutaId;
+        return unidadMatches && rutaMatches;
+      }) || (asignaciones || []).find((item) => item.unidad_id || item.producto_id) || asignaciones?.[0];
 
       if (asignacion) {
+        driverRecordId = asignacion.chofer_id || driverRecordId;
         resolvedUnidadId = resolvedUnidadId || asignacion.unidad_id || null;
         resolvedRutaId = resolvedRutaId || asignacion.producto_id || null;
       }
