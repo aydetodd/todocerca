@@ -168,39 +168,36 @@ export default function ValidarQr() {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
-      // Find the specific chofer record (by URL param or first active)
-      let choferQuery = supabase
+      const { data: choferes } = await supabase
         .from("choferes_empresa")
         .select("id, proveedor_id")
         .eq("user_id", user.id)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
 
-      if (choferParam) {
-        choferQuery = choferQuery.eq("id", choferParam);
-      }
+      const choferesDisponibles = (choferes || []).filter((chofer: any) => !choferParam || chofer.id === choferParam);
 
-      const { data: chofer } = await choferQuery.limit(1).single();
+      if (choferesDisponibles.length > 0) {
+        const choferIds = choferesDisponibles.map((chofer: any) => chofer.id);
 
-      if (chofer) {
-        // Find today's assignment for this specific driver record
-        const { data: asignacion } = await supabase
+        const { data: asignaciones } = await supabase
           .from("asignaciones_chofer")
-          .select("unidad_id, producto_id")
-          .eq("chofer_id", chofer.id)
+          .select("chofer_id, unidad_id, producto_id")
+          .in("chofer_id", choferIds)
           .eq("fecha", todayStr)
-          .limit(1)
-          .single();
+          .order("created_at", { ascending: false });
 
-        if (asignacion) {
-          setAssignedUnitId(asignacion.unidad_id);
-          setAssignedRouteId(asignacion.producto_id);
+        const asignacionActiva = (asignaciones || []).find((asignacion: any) => !choferParam || asignacion.chofer_id === choferParam) || asignaciones?.[0];
 
-          // Check if this is a private route
-          if (asignacion.producto_id) {
+        if (asignacionActiva) {
+          setAssignedUnitId(asignacionActiva.unidad_id);
+          setAssignedRouteId(asignacionActiva.producto_id);
+
+          if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
               .select("route_type")
-              .eq("id", asignacion.producto_id)
+              .eq("id", asignacionActiva.producto_id)
               .single();
             if (producto?.route_type === "privada") {
               setIsPrivateRoute(true);
