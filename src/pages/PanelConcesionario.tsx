@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
+import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 
 type Verificacion = {
   id: string;
@@ -181,6 +182,20 @@ export default function PanelConcesionario() {
 
     const unidadIds = misUnidades.map((u: any) => u.id);
 
+    const { data: choferRecords } = await withTimeout(
+      supabase
+        .from("choferes_empresa")
+        .select("id, user_id, nombre")
+        .eq("proveedor_id", provId)
+        .eq("is_active", true),
+      12000,
+      "choferes"
+    );
+
+    const choferUserIds = (choferRecords || [])
+      .map((chofer: any) => chofer.user_id)
+      .filter(Boolean);
+
     // Use Hermosillo time (UTC-7, no DST)
     const now = new Date();
     const hermosillo = new Date(now.getTime() - 7 * 60 * 60 * 1000);
@@ -228,31 +243,31 @@ export default function PanelConcesionario() {
     const prevWeekLabel = `${prevMondayDate.getUTCDate()}/${prevMondayDate.getUTCMonth() + 1} - ${prevSundayDate.getUTCDate()}/${prevSundayDate.getUTCMonth() + 1}`;
     const labelMesAnterior = meses[prevMonthNum];
 
-    // Single query for all period calculations
-      const [logsPeriodoRes, asignacionesRes] = await withTimeout(
+    const [logsPeriodoRes, asignacionesRes] = await withTimeout(
       Promise.all([
         supabase
           .from("logs_validacion_qr")
-            .select("unidad_id, created_at, qr_ticket_id, producto_id, qr_tickets(unidad_uso_id, ruta_uso_id)")
-          .in("unidad_id", unidadIds)
+          .select("unidad_id, chofer_id, created_at, qr_ticket_id, producto_id, qr_tickets(unidad_uso_id, ruta_uso_id, chofer_id)")
+          .in("chofer_id", choferUserIds.length > 0 ? choferUserIds : [user?.id || provId])
           .eq("resultado", "valid")
           .gte("created_at", prevMonthStart)
           .lte("created_at", todayEnd),
         supabase
           .from("asignaciones_chofer")
-          .select("unidad_id, chofer_id, choferes_empresa(nombre)")
-          .in("unidad_id", unidadIds)
-          .eq("fecha", todayStr),
+          .select("unidad_id, producto_id, fecha, created_at, chofer_id, choferes_empresa(nombre)")
+          .in("chofer_id", (choferRecords || []).map((chofer: any) => chofer.id))
+          .gte("fecha", prevMonthStart.slice(0, 10))
+          .lte("fecha", todayStr),
       ]),
       15000,
       "estadísticas"
     );
 
-    const logs = (logsPeriodoRes.data || []).map((log: any) => ({
-      ...log,
-      effectiveUnidadId: log.unidad_id || log.qr_tickets?.unidad_uso_id || null,
-      effectiveProductoId: log.producto_id || log.qr_tickets?.ruta_uso_id || null,
-    })).filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
+    const logs = applyTransportAssignmentFallback(
+      (logsPeriodoRes.data || []) as any[],
+      (choferRecords || []) as any[],
+      (asignacionesRes.data || []) as any[]
+    ).filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
 
     const todayStartMs = Date.parse(todayStart);
     const todayEndMs = Date.parse(todayEnd);
@@ -266,11 +281,13 @@ export default function PanelConcesionario() {
     const prevMonthEndMs = Date.parse(prevMonthEnd);
 
     const choferMap: Record<string, string> = {};
-    (asignacionesRes.data || []).forEach((a: any) => {
+    (asignacionesRes.data || [])
+      .filter((a: any) => a.fecha === todayStr)
+      .forEach((a: any) => {
       if (a.unidad_id && a.choferes_empresa?.nombre) {
         choferMap[a.unidad_id] = a.choferes_empresa.nombre;
       }
-    });
+      });
 
     const countMap: Record<string, number> = {};
     let logsAyerCount = 0;
