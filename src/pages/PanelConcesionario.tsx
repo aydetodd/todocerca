@@ -302,11 +302,16 @@ export default function PanelConcesionario() {
     let logsMesCount = 0;
     let logsMesAntCount = 0;
 
+    let noUnitTodayCount = 0;
     logs.forEach((log: any) => {
       const createdAtMs = Date.parse(log.created_at);
 
-      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs && log.effectiveUnidadId) {
-        countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
+      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs) {
+        if (log.effectiveUnidadId) {
+          countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
+        } else {
+          noUnitTodayCount += 1;
+        }
       }
       if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) logsAyerCount += 1;
       if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) logsSemanaCount += 1;
