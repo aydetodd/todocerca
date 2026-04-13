@@ -9,6 +9,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCSV } from "@/lib/csvExport";
+import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { toast } from "sonner";
 
 interface Props {
@@ -94,6 +95,24 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
 
+  const dedupeChoferes = (records: any[]) => {
+    const choferMap = new Map<string, { id: string; nombre: string }>();
+
+    [...records]
+      .sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0))
+      .forEach((chofer) => {
+        const key = chofer.user_id || chofer.id;
+        if (!key || choferMap.has(key)) return;
+
+        choferMap.set(key, {
+          id: key,
+          nombre: chofer.nombre || "Sin nombre",
+        });
+      });
+
+    return Array.from(choferMap.values());
+  };
+
   useEffect(() => {
     loadCatalogs();
   }, [proveedorId]);
@@ -103,7 +122,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   }, [period, filterUnidad, filterChofer, filterRuta]);
 
   const loadCatalogs = async () => {
-    const [uRes, cRes] = await Promise.all([
+    const [uRes, cRes, rutasRes] = await Promise.all([
       supabase
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas")
@@ -111,62 +130,53 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         .neq("transport_type", "taxi"),
       supabase
         .from("choferes_empresa")
-        .select("id, nombre, user_id")
+        .select("id, nombre, user_id, created_at")
         .eq("proveedor_id", proveedorId)
         .eq("is_active", true),
+      supabase
+        .from("productos")
+        .select("id, nombre")
+        .eq("proveedor_id", proveedorId)
+        .eq("is_available", true)
+        .eq("is_mobile", true)
+        .neq("route_type", "taxi")
+        .order("nombre"),
     ]);
 
     const units = (uRes.data || []).map((u: any) => ({
       id: u.id,
       label: `${u.numero_economico || u.nombre}${u.placas ? ` · ${u.placas}` : ""}`,
     }));
+
+    const choferesCatalogo = dedupeChoferes(cRes.data || []);
+    const rutasCatalogo = (rutasRes.data || []).map((ruta: any) => ({
+      id: ruta.id,
+      nombre: ruta.nombre || "Sin nombre",
+    }));
+
     setUnidades(units);
-    setChoferes((cRes.data || []).map((c: any) => ({ id: c.user_id || c.id, nombre: c.nombre || "Sin nombre" })));
+    setChoferes(choferesCatalogo);
+    setRutas(rutasCatalogo);
 
-    // Load routes: get distinct producto_ids from validation logs for this concesionario's drivers/units
-    const choferUserIds = (cRes.data || []).map((c: any) => c.user_id).filter(Boolean);
-    if (units.length > 0 || choferUserIds.length > 0) {
-        let logRoutesQuery = (supabase
-        .from("logs_validacion_qr") as any)
-          .select("producto_id, qr_tickets(ruta_uso_id)")
-        .eq("resultado", "valid")
-          .or("producto_id.not.is.null,qr_tickets.ruta_uso_id.not.is.null");
-
-        // Query by chofer_id (user_id) to catch logs without unit
-        if (choferUserIds.length > 0) {
-          logRoutesQuery = logRoutesQuery.in("chofer_id", choferUserIds);
-        } else {
-          logRoutesQuery = logRoutesQuery.in("unidad_id", units.map((u) => u.id));
-        }
-
-        const { data: logRoutes } = await logRoutesQuery;
-
-       const uniqueProductoIds = [
-         ...new Set(
-           (logRoutes || [])
-             .map((l: any) => l.producto_id || l.qr_tickets?.ruta_uso_id || null)
-             .filter(Boolean)
-         ),
-       ] as string[];
-      
-      if (uniqueProductoIds.length > 0) {
-        const { data: prodData } = await supabase
-          .from("productos")
-          .select("id, nombre")
-          .in("id", uniqueProductoIds);
-        
-        setRutas((prodData || []).map((r: any) => ({ id: r.id, nombre: r.nombre || "Sin nombre" })));
-      }
-    }
-
-    fetchReport(units.map((u) => u.id), (cRes.data || []).map((c: any) => c.user_id).filter(Boolean));
+    fetchReport(
+      units.map((u) => u.id),
+      choferesCatalogo.map((chofer) => chofer.id),
+      cRes.data || [],
+      rutasCatalogo
+    );
   };
 
-  const fetchReport = async (unitIdsOverride?: string[], choferUserIdsOverride?: string[]) => {
+  const fetchReport = async (
+    unitIdsOverride?: string[],
+    choferUserIdsOverride?: string[],
+    choferRecordsOverride?: any[],
+    rutasOverride?: { id: string; nombre: string }[]
+  ) => {
     setLoading(true);
     try {
       const unitIds = unitIdsOverride || unidades.map((u) => u.id);
       const choferUserIds = choferUserIdsOverride || choferes.map((c) => c.id);
+      const choferRecords = choferRecordsOverride || [];
 
       if (unitIds.length === 0 && choferUserIds.length === 0) {
         setRows([]);
@@ -195,7 +205,13 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         query = query.in("unidad_id", targetUnitIds);
       }
 
-      const { data: logs } = await query;
+      const [{ data: logs }, { data: asignaciones }] = await Promise.all([
+        query,
+        supabase
+          .from("asignaciones_chofer")
+          .select("chofer_id, unidad_id, producto_id, fecha, created_at")
+          .in("chofer_id", (choferRecords || []).map((chofer: any) => chofer.id || "").filter(Boolean)),
+      ]);
 
       if (!logs || logs.length === 0) {
         setRows([]);
@@ -203,14 +219,14 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         return;
       }
 
-      const normalizedLogs = (logs || [])
-        .map((log: any) => ({
+      const normalizedLogs = applyTransportAssignmentFallback(
+        (logs || []).map((log: any) => ({
           ...log,
-          effectiveUnidadId: log.unidad_id || log.qr_tickets?.unidad_uso_id || null,
-          effectiveChoferId: log.chofer_id || log.qr_tickets?.chofer_id || null,
-          effectiveProductoId: log.producto_id || log.qr_tickets?.ruta_uso_id || null,
           ticketToken: log.qr_tickets?.token || null,
-        }))
+        })),
+        choferRecords,
+        asignaciones || []
+      )
         .filter((log: any) => {
           // If filtering by specific unit, require match
           if (filterUnidad !== "all") return log.effectiveUnidadId === filterUnidad;
@@ -245,13 +261,8 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       const choferIds = Array.from(choferIdsSet);
       const choferMap: Record<string, string> = {};
       if (choferIds.length > 0) {
-        const { data: choferData } = await supabase
-          .from("choferes_empresa")
-          .select("id, nombre, user_id")
-          .in("user_id", choferIds);
-
-        (choferData || []).forEach((c: any) => {
-          if (c.user_id) choferMap[c.user_id] = c.nombre || "Sin nombre";
+        dedupeChoferes(choferRecords).forEach((chofer) => {
+          choferMap[chofer.id] = chofer.nombre;
         });
 
         const missingIds: string[] = choferIds.filter((id) => !choferMap[id]);
@@ -272,11 +283,19 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       filteredLogs.forEach((l: any) => { if (l.effectiveProductoId) productoIdsSet.add(l.effectiveProductoId); });
       const productoIds = Array.from(productoIdsSet);
       const rutaMap: Record<string, string> = {};
+      (rutasOverride || rutas).forEach((ruta) => {
+        rutaMap[ruta.id] = ruta.nombre;
+      });
+
       if (productoIds.length > 0) {
-        const { data: prodData } = await supabase
-          .from("productos")
-          .select("id, nombre")
-          .in("id", productoIds);
+        const missingProductoIds = productoIds.filter((id) => !rutaMap[id]);
+
+        const { data: prodData } = missingProductoIds.length > 0
+          ? await supabase
+              .from("productos")
+              .select("id, nombre")
+              .in("id", missingProductoIds)
+          : { data: [] as any[] };
 
         (prodData || []).forEach((p: any) => {
           rutaMap[p.id] = p.nombre || "Sin nombre";
