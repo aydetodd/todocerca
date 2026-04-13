@@ -267,7 +267,13 @@ export default function PanelConcesionario() {
       (logsPeriodoRes.data || []) as any[],
       (choferRecords || []) as any[],
       (asignacionesRes.data || []) as any[]
-    ).filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
+    ).filter((log: any) => {
+      // Include if unit matches OR if it's from one of our drivers (even without unit)
+      if (log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId)) return true;
+      // Include logs from our drivers even without unit assignment
+      if (choferUserIds.includes(log.chofer_id)) return true;
+      return false;
+    });
 
     const todayStartMs = Date.parse(todayStart);
     const todayEndMs = Date.parse(todayEnd);
@@ -296,11 +302,16 @@ export default function PanelConcesionario() {
     let logsMesCount = 0;
     let logsMesAntCount = 0;
 
+    let noUnitTodayCount = 0;
     logs.forEach((log: any) => {
       const createdAtMs = Date.parse(log.created_at);
 
-      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs && log.effectiveUnidadId) {
-        countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
+      if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs) {
+        if (log.effectiveUnidadId) {
+          countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
+        } else {
+          noUnitTodayCount += 1;
+        }
       }
       if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) logsAyerCount += 1;
       if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) logsSemanaCount += 1;
@@ -320,6 +331,19 @@ export default function PanelConcesionario() {
         ingresos_hoy: (countMap[u.id] || 0) * 9,
       }))
       .sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
+
+    // Add "Sin unidad asignada" row if there are logs without unit
+    if (noUnitTodayCount > 0) {
+      ingresos.push({
+        unidad_id: "sin-unidad",
+        numero_economico: "Sin unidad asignada",
+        placas: null,
+        descripcion: null,
+        chofer_nombre: null,
+        boletos_hoy: noUnitTodayCount,
+        ingresos_hoy: noUnitTodayCount * 9,
+      });
+    }
 
     setIngresosUnidad(ingresos);
 

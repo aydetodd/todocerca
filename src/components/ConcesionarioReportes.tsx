@@ -123,14 +123,23 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
     setUnidades(units);
     setChoferes((cRes.data || []).map((c: any) => ({ id: c.user_id || c.id, nombre: c.nombre || "Sin nombre" })));
 
-    // Load routes: get distinct producto_ids from validation logs for this concesionario's units
-    if (units.length > 0) {
-        const { data: logRoutes } = await (supabase
+    // Load routes: get distinct producto_ids from validation logs for this concesionario's drivers/units
+    const choferUserIds = (cRes.data || []).map((c: any) => c.user_id).filter(Boolean);
+    if (units.length > 0 || choferUserIds.length > 0) {
+        let logRoutesQuery = (supabase
         .from("logs_validacion_qr") as any)
           .select("producto_id, qr_tickets(ruta_uso_id)")
-        .in("unidad_id", units.map((u) => u.id))
         .eq("resultado", "valid")
           .or("producto_id.not.is.null,qr_tickets.ruta_uso_id.not.is.null");
+
+        // Query by chofer_id (user_id) to catch logs without unit
+        if (choferUserIds.length > 0) {
+          logRoutesQuery = logRoutesQuery.in("chofer_id", choferUserIds);
+        } else {
+          logRoutesQuery = logRoutesQuery.in("unidad_id", units.map((u) => u.id));
+        }
+
+        const { data: logRoutes } = await logRoutesQuery;
 
        const uniqueProductoIds = [
          ...new Set(
@@ -150,14 +159,16 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       }
     }
 
-    fetchReport(units.map((u) => u.id));
+    fetchReport(units.map((u) => u.id), (cRes.data || []).map((c: any) => c.user_id).filter(Boolean));
   };
 
-  const fetchReport = async (unitIdsOverride?: string[]) => {
+  const fetchReport = async (unitIdsOverride?: string[], choferUserIdsOverride?: string[]) => {
     setLoading(true);
     try {
       const unitIds = unitIdsOverride || unidades.map((u) => u.id);
-      if (unitIds.length === 0) {
+      const choferUserIds = choferUserIdsOverride || choferes.map((c) => c.id);
+
+      if (unitIds.length === 0 && choferUserIds.length === 0) {
         setRows([]);
         setLoading(false);
         return;
@@ -167,15 +178,22 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
       const targetUnitIds = filterUnidad === "all" ? unitIds : [filterUnidad];
 
+      // Query by chofer_id (user_id) to catch logs without unit assignment
       let query = (supabase
         .from("logs_validacion_qr") as any)
         .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id, qr_tickets(token, unidad_uso_id, ruta_uso_id, chofer_id)")
-        .in("unidad_id", targetUnitIds)
         .eq("resultado", "valid")
         .gte("created_at", start)
         .lte("created_at", end)
         .order("created_at", { ascending: false })
         .limit(5000);
+
+      // Use chofer_id filter to catch all logs (with or without unit)
+      if (choferUserIds.length > 0) {
+        query = query.in("chofer_id", choferUserIds);
+      } else {
+        query = query.in("unidad_id", targetUnitIds);
+      }
 
       const { data: logs } = await query;
 
@@ -193,7 +211,12 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           effectiveProductoId: log.producto_id || log.qr_tickets?.ruta_uso_id || null,
           ticketToken: log.qr_tickets?.token || null,
         }))
-        .filter((log: any) => log.effectiveUnidadId && targetUnitIds.includes(log.effectiveUnidadId));
+        .filter((log: any) => {
+          // If filtering by specific unit, require match
+          if (filterUnidad !== "all") return log.effectiveUnidadId === filterUnidad;
+          // Otherwise include all (with or without unit)
+          return true;
+        });
 
       const filteredLogs = normalizedLogs.filter((log: any) => {
         if (filterChofer !== "all" && log.effectiveChoferId !== filterChofer) return false;
