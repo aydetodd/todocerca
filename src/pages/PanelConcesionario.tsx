@@ -267,7 +267,13 @@ export default function PanelConcesionario() {
       (logsPeriodoRes.data || []) as any[],
       (choferRecords || []) as any[],
       (asignacionesRes.data || []) as any[]
-    ).filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
+    ).filter((log: any) => {
+      // Include if unit matches OR if it's from one of our drivers (even without unit)
+      if (log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId)) return true;
+      // Include logs from our drivers even without unit assignment
+      if (choferUserIds.includes(log.chofer_id)) return true;
+      return false;
+    });
 
     const todayStartMs = Date.parse(todayStart);
     const todayEndMs = Date.parse(todayEnd);
