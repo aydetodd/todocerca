@@ -332,6 +332,19 @@ export default function PanelConcesionario() {
       }))
       .sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
 
+    // Add "Sin unidad asignada" row if there are logs without unit
+    if (noUnitTodayCount > 0) {
+      ingresos.push({
+        unidad_id: "sin-unidad",
+        numero_economico: "Sin unidad asignada",
+        placas: null,
+        descripcion: null,
+        chofer_nombre: null,
+        boletos_hoy: noUnitTodayCount,
+        ingresos_hoy: noUnitTodayCount * 9,
+      });
+    }
+
     setIngresosUnidad(ingresos);
 
     const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
