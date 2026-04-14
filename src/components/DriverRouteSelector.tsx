@@ -191,8 +191,11 @@ export default function DriverRouteSelector() {
         setSelectedUnit(assignment.unidad_id || '');
       }
 
-      // Show popup if no assignment for today or to confirm
-      setIsOpen(true);
+      // Only show popup if there's NO assignment for today
+      // If assignment already exists, keep it and don't bother the driver
+      if (!assignment) {
+        setIsOpen(true);
+      }
       setChecked(true);
     } catch (error) {
       console.error('[DriverRouteSelector] Error:', error);
