@@ -143,15 +143,32 @@ export default function DriverRouteSelector() {
       };
       setDriverInfo(info);
 
-      // Fetch routes and units in parallel
+      // Fetch the driver's last assignment to determine transport type context
+      const { data: lastAssignmentData } = await supabase
+        .from('asignaciones_chofer')
+        .select('producto_id, productos(route_type)')
+        .eq('chofer_id', driverData.id)
+        .order('fecha', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const lastRouteType = (lastAssignmentData?.productos as any)?.route_type || null;
+
+      // Fetch routes filtered by transport type, and units in parallel
+      let routesQuery = supabase
+        .from('productos')
+        .select('id, nombre, descripcion')
+        .eq('proveedor_id', driverData.proveedor_id)
+        .eq('is_available', true)
+        .eq('is_mobile', true);
+
+      // If we know the driver's route type, filter to it
+      if (lastRouteType) {
+        routesQuery = routesQuery.eq('route_type', lastRouteType);
+      }
+
       const [routesRes, unitsRes] = await Promise.all([
-        supabase
-          .from('productos')
-          .select('id, nombre, descripcion')
-          .eq('proveedor_id', driverData.proveedor_id)
-          .eq('is_available', true)
-          .eq('is_mobile', true)
-          .order('nombre'),
+        routesQuery.order('nombre'),
         supabase
           .from('unidades_empresa')
           .select('id, nombre, placas, descripcion')
