@@ -534,6 +534,10 @@ export default function DriverProfilePanel() {
             .neq('route_type', 'taxi')
             .order('nombre');
 
+          // Determine the route_type from the driver's current/last assignment
+          // to filter vehicles and isolate public vs private
+          let assignedRouteType: string | null = null;
+
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
             .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
@@ -583,6 +587,16 @@ export default function DriverProfilePanel() {
 
           if (assignment) {
             activeDriverId = driver.id;
+            // Determine route_type from the assigned product
+            const assignedVehicle = (vehicleList || []).find((v: any) => v.id === assignment!.producto_id);
+            assignedRouteType = assignedVehicle?.route_type || null;
+          }
+
+          // Filter vehicles to only show routes of the same type as the current assignment
+          // This prevents public/private mixing in the driver's route selector
+          let filteredVehicles = (vehicleList || []) as Vehicle[];
+          if (assignedRouteType) {
+            filteredVehicles = filteredVehicles.filter(v => v.route_type === assignedRouteType);
           }
 
           let unitData = assignment?.unidades_empresa as any;
@@ -594,7 +608,7 @@ export default function DriverProfilePanel() {
               proveedor_id: driver.proveedor_id,
               businessName: proveedor?.nombre || 'Empresa',
             },
-            vehicles: (vehicleList || []) as Vehicle[],
+            vehicles: filteredVehicles,
             todayAssignment: assignment
               ? {
                   id: assignment.id,
