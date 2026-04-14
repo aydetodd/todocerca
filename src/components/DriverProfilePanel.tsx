@@ -534,6 +534,10 @@ export default function DriverProfilePanel() {
             .neq('route_type', 'taxi')
             .order('nombre');
 
+          // Determine the route_type from the driver's current/last assignment
+          // to filter vehicles and isolate public vs private
+          let assignedRouteType: string | null = null;
+
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
             .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
