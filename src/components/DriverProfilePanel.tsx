@@ -587,6 +587,16 @@ export default function DriverProfilePanel() {
 
           if (assignment) {
             activeDriverId = driver.id;
+            // Determine route_type from the assigned product
+            const assignedVehicle = (vehicleList || []).find((v: any) => v.id === assignment!.producto_id);
+            assignedRouteType = assignedVehicle?.route_type || null;
+          }
+
+          // Filter vehicles to only show routes of the same type as the current assignment
+          // This prevents public/private mixing in the driver's route selector
+          let filteredVehicles = (vehicleList || []) as Vehicle[];
+          if (assignedRouteType) {
+            filteredVehicles = filteredVehicles.filter(v => v.route_type === assignedRouteType);
           }
 
           let unitData = assignment?.unidades_empresa as any;
@@ -598,7 +608,7 @@ export default function DriverProfilePanel() {
               proveedor_id: driver.proveedor_id,
               businessName: proveedor?.nombre || 'Empresa',
             },
-            vehicles: (vehicleList || []) as Vehicle[],
+            vehicles: filteredVehicles,
             todayAssignment: assignment
               ? {
                   id: assignment.id,
