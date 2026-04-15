@@ -531,8 +531,14 @@ export default function DriverProfilePanel() {
             .neq('route_type', 'taxi')
             .order('nombre');
 
-          // Determine the route_type from the driver's assignment
-          let assignedRouteType: string | null = null;
+          // Use driver's transport_type to filter vehicles
+          const routeTypeMap: Record<string, string> = {
+            publico: 'publica',
+            foraneo: 'foranea',
+            privado: 'privada',
+            taxi: 'taxi',
+          };
+          const driverRouteType = routeTypeMap[(driver as any).transport_type] || null;
 
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
@@ -545,16 +551,12 @@ export default function DriverProfilePanel() {
 
           if (assignment) {
             activeDriverId = driver.id;
-            // Determine route_type from the assigned product
-            const assignedVehicle = (vehicleList || []).find((v: any) => v.id === assignment!.producto_id);
-            assignedRouteType = assignedVehicle?.route_type || null;
           }
 
-          // Filter vehicles to only show routes of the same type as the current assignment
-          // This prevents public/private mixing in the driver's route selector
+          // Filter vehicles by the driver's transport type
           let filteredVehicles = (vehicleList || []) as Vehicle[];
-          if (assignedRouteType) {
-            filteredVehicles = filteredVehicles.filter(v => v.route_type === assignedRouteType);
+          if (driverRouteType) {
+            filteredVehicles = filteredVehicles.filter(v => v.route_type === driverRouteType);
           }
 
           let unitData = assignment?.unidades_empresa as any;
