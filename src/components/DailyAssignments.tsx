@@ -111,52 +111,21 @@ export default function DailyAssignments({ proveedorId }: DailyAssignmentsProps)
         supabase
           .from('asignaciones_chofer')
           .select('id, chofer_id, producto_id, unidad_id, fecha, asignado_por')
-          .eq('fecha', today)
-          .order('created_at', { ascending: true }),
+          .order('fecha', { ascending: false }),
       ]);
 
       const driversList = (driversRes.data || []) as Driver[];
       const routesList = (routesRes.data || []) as Route[];
       const unitsList = (unitsRes.data || []) as Unit[];
       
-      // Filter assignments to only those belonging to this provider's drivers
+      // For each driver, find their LATEST assignment (permanent model)
       const driverIds = driversList.map(d => d.id);
-      let todayAssignments = (assignmentsRes.data || [])
-        .filter(a => driverIds.includes(a.chofer_id));
-
-      // Auto-carry: for drivers without today's assignment, copy their last one
-      const assignedDriverIds = todayAssignments.map(a => a.chofer_id);
-      const driversWithoutToday = driverIds.filter(id => !assignedDriverIds.includes(id));
-
-      if (driversWithoutToday.length > 0) {
-        const carryPromises = driversWithoutToday.map(async (driverId) => {
-          const { data: lastAssignment } = await supabase
-            .from('asignaciones_chofer')
-            .select('producto_id, unidad_id, asignado_por')
-            .eq('chofer_id', driverId)
-            .order('fecha', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (lastAssignment) {
-            const { data: newA } = await supabase
-              .from('asignaciones_chofer')
-              .upsert(
-                {
-                  chofer_id: driverId,
-                  producto_id: lastAssignment.producto_id,
-                  unidad_id: lastAssignment.unidad_id,
-                  fecha: today,
-                  asignado_por: lastAssignment.asignado_por,
-                },
-                { onConflict: 'chofer_id,fecha' }
-              )
-              .select('id, chofer_id, producto_id, unidad_id, fecha, asignado_por')
-              .maybeSingle();
-            if (newA) todayAssignments.push(newA);
-          }
-        });
-        await Promise.all(carryPromises);
+      const allAssignments = (assignmentsRes.data || []);
+      const todayAssignments: typeof allAssignments = [];
+      
+      for (const driverId of driverIds) {
+        const latest = allAssignments.find(a => a.chofer_id === driverId);
+        if (latest) todayAssignments.push(latest);
       }
 
       const filteredAssignments = todayAssignments
