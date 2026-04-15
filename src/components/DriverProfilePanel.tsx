@@ -510,6 +510,7 @@ export default function DriverProfilePanel() {
         return;
       }
 
+      const companiesData: DriverCompanyData[] = [];
       // Track which driver IDs have an active assignment
       let activeDriverId: string | null = null;
 
