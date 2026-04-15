@@ -115,6 +115,7 @@ export default function PrivateRouteDrivers({
           .from('choferes_empresa')
           .select('*')
           .eq('proveedor_id', proveedorId)
+          .eq('transport_type', transportType)
           .order('created_at', { ascending: true }),
         (() => {
           const routeTypeMap: Record<string, string> = {
@@ -286,6 +287,7 @@ export default function PrivateRouteDrivers({
           proveedor_id: proveedorId,
           telefono: newPhone,
           nombre: newName || null,
+          transport_type: transportType,
         })
         .select()
         .single();

@@ -193,7 +193,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       const { count, error } = await supabase
         .from('choferes_empresa')
         .select('id', { count: 'exact', head: true })
-        .eq('proveedor_id', proveedorId);
+        .eq('proveedor_id', proveedorId)
+        .eq('transport_type', transportType);
       if (!error && count !== null) setDriversCount(count);
     } catch (error) {
       console.error('Error fetching drivers count:', error);
