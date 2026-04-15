@@ -186,17 +186,15 @@ function SingleDriverPanel({
   const isActive = !!data.todayAssignment;
 
   const deactivateOtherDrivers = async (excludeDriverId: string) => {
-    const today = getHermosilloToday();
     const otherIds = allDriverIds.filter(id => id !== excludeDriverId);
     if (otherIds.length === 0) return;
 
-    // Delete today's assignments for all other driver profiles
+    // Delete ALL assignments for other driver profiles (permanent model)
     for (const otherId of otherIds) {
       await supabase
         .from('asignaciones_chofer')
         .delete()
-        .eq('chofer_id', otherId)
-        .eq('fecha', today);
+        .eq('chofer_id', otherId);
     }
   };
 
@@ -205,6 +203,7 @@ function SingleDriverPanel({
       setToggling(true);
 
       if (!turnOn && data.todayAssignment) {
+        // Delete the permanent assignment
         const { error } = await supabase
           .from('asignaciones_chofer')
           .delete()
@@ -217,7 +216,6 @@ function SingleDriverPanel({
           description: `Ya no apareces en "${data.todayAssignment.vehicleName}"`,
         });
       } else if (turnOn && data.vehicles.length > 0) {
-        // First deactivate all other driver profiles
         await deactivateOtherDrivers(data.driver.id);
 
         const today = getHermosilloToday();
@@ -225,14 +223,11 @@ function SingleDriverPanel({
 
         const { error } = await supabase
           .from('asignaciones_chofer')
-          .upsert(
-            {
-              chofer_id: data.driver.id,
-              producto_id: firstVehicle.id,
-              fecha: today,
-            },
-            { onConflict: 'chofer_id,fecha' }
-          );
+          .insert({
+            chofer_id: data.driver.id,
+            producto_id: firstVehicle.id,
+            fecha: today,
+          });
 
         if (error) throw error;
 
