@@ -75,7 +75,7 @@ export default function DriverRouteSelector() {
       // Check if user is a registered driver (by user_id)
       const { data: driver, error: driverError } = await supabase
         .from('choferes_empresa')
-        .select('id, proveedor_id, nombre')
+        .select('id, proveedor_id, nombre, transport_type')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
