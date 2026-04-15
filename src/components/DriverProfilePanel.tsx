@@ -500,7 +500,7 @@ export default function DriverProfilePanel() {
 
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
-        .select('id, nombre, proveedor_id')
+        .select('id, nombre, proveedor_id, transport_type')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
