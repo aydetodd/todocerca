@@ -510,10 +510,7 @@ export default function DriverProfilePanel() {
         return;
       }
 
-      const today = getHermosilloToday();
-      const companiesData: DriverCompanyData[] = [];
-
-      // Track which driver IDs have an active assignment today
+      // Track which driver IDs have an active assignment
       let activeDriverId: string | null = null;
 
       await Promise.all(
@@ -533,56 +530,17 @@ export default function DriverProfilePanel() {
             .neq('route_type', 'taxi')
             .order('nombre');
 
-          // Determine the route_type from the driver's current/last assignment
-          // to filter vehicles and isolate public vs private
+          // Determine the route_type from the driver's assignment
           let assignedRouteType: string | null = null;
 
+          // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
             .eq('chofer_id', driver.id)
-            .eq('fecha', today)
+            .order('fecha', { ascending: false })
+            .limit(1)
             .maybeSingle();
-
-          // Auto-carry only if NO other driver is already active today
-          if (!assignment && !activeDriverId) {
-            const { data: lastAssignment } = await supabase
-              .from('asignaciones_chofer')
-              .select('producto_id, unidad_id, asignado_por')
-              .eq('chofer_id', driver.id)
-              .order('fecha', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (lastAssignment) {
-              console.log('[DriverProfilePanel] Auto-carrying previous assignment for driver:', driver.id);
-              const { data: newAssignment, error: carryError } = await supabase
-                .from('asignaciones_chofer')
-                .upsert(
-                  {
-                    chofer_id: driver.id,
-                    producto_id: lastAssignment.producto_id,
-                    unidad_id: lastAssignment.unidad_id,
-                    fecha: today,
-                    asignado_por: lastAssignment.asignado_por,
-                  },
-                  { onConflict: 'chofer_id,fecha' }
-                )
-                .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
-                .maybeSingle();
-
-              if (!carryError && newAssignment) {
-                assignment = newAssignment;
-                const carriedRouteName = (newAssignment.productos as any)?.nombre;
-                if (carriedRouteName && user) {
-                  await supabase
-                    .from('profiles')
-                    .update({ route_name: carriedRouteName })
-                    .eq('user_id', user.id);
-                }
-              }
-            }
-          }
 
           if (assignment) {
             activeDriverId = driver.id;
