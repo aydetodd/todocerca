@@ -186,17 +186,15 @@ function SingleDriverPanel({
   const isActive = !!data.todayAssignment;
 
   const deactivateOtherDrivers = async (excludeDriverId: string) => {
-    const today = getHermosilloToday();
     const otherIds = allDriverIds.filter(id => id !== excludeDriverId);
     if (otherIds.length === 0) return;
 
-    // Delete today's assignments for all other driver profiles
+    // Delete ALL assignments for other driver profiles (permanent model)
     for (const otherId of otherIds) {
       await supabase
         .from('asignaciones_chofer')
         .delete()
-        .eq('chofer_id', otherId)
-        .eq('fecha', today);
+        .eq('chofer_id', otherId);
     }
   };
 
@@ -205,6 +203,7 @@ function SingleDriverPanel({
       setToggling(true);
 
       if (!turnOn && data.todayAssignment) {
+        // Delete the permanent assignment
         const { error } = await supabase
           .from('asignaciones_chofer')
           .delete()
@@ -217,7 +216,6 @@ function SingleDriverPanel({
           description: `Ya no apareces en "${data.todayAssignment.vehicleName}"`,
         });
       } else if (turnOn && data.vehicles.length > 0) {
-        // First deactivate all other driver profiles
         await deactivateOtherDrivers(data.driver.id);
 
         const today = getHermosilloToday();
@@ -225,14 +223,11 @@ function SingleDriverPanel({
 
         const { error } = await supabase
           .from('asignaciones_chofer')
-          .upsert(
-            {
-              chofer_id: data.driver.id,
-              producto_id: firstVehicle.id,
-              fecha: today,
-            },
-            { onConflict: 'chofer_id,fecha' }
-          );
+          .insert({
+            chofer_id: data.driver.id,
+            producto_id: firstVehicle.id,
+            fecha: today,
+          });
 
         if (error) throw error;
 
@@ -293,23 +288,27 @@ function SingleDriverPanel({
   const handleSelectRoute = async (vehicleId: string) => {
     try {
       setAssigning(true);
-      const today = getHermosilloToday();
 
-      // Deactivate other driver profiles when changing route
       await deactivateOtherDrivers(data.driver.id);
 
-      const { error } = await supabase
-        .from('asignaciones_chofer')
-        .upsert(
-          {
+      if (data.todayAssignment) {
+        // Update existing assignment in place
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .update({ producto_id: vehicleId })
+          .eq('id', data.todayAssignment.id);
+        if (error) throw error;
+      } else {
+        const today = getHermosilloToday();
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .insert({
             chofer_id: data.driver.id,
             producto_id: vehicleId,
             fecha: today,
-          },
-          { onConflict: 'chofer_id,fecha' }
-        );
-
-      if (error) throw error;
+          });
+        if (error) throw error;
+      }
 
       const selectedVehicle = data.vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
@@ -321,7 +320,7 @@ function SingleDriverPanel({
 
       toast({
         title: '✅ Ruta asignada',
-        description: `Hoy cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
+        description: `Cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
       });
 
       onRefresh();
@@ -501,7 +500,7 @@ export default function DriverProfilePanel() {
 
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
-        .select('id, nombre, proveedor_id')
+        .select('id, nombre, proveedor_id, transport_type')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
@@ -511,10 +510,8 @@ export default function DriverProfilePanel() {
         return;
       }
 
-      const today = getHermosilloToday();
       const companiesData: DriverCompanyData[] = [];
-
-      // Track which driver IDs have an active assignment today
+      // Track which driver IDs have an active assignment
       let activeDriverId: string | null = null;
 
       await Promise.all(
@@ -534,69 +531,32 @@ export default function DriverProfilePanel() {
             .neq('route_type', 'taxi')
             .order('nombre');
 
-          // Determine the route_type from the driver's current/last assignment
-          // to filter vehicles and isolate public vs private
-          let assignedRouteType: string | null = null;
+          // Use driver's transport_type to filter vehicles
+          const routeTypeMap: Record<string, string> = {
+            publico: 'publica',
+            foraneo: 'foranea',
+            privado: 'privada',
+            taxi: 'taxi',
+          };
+          const driverRouteType = routeTypeMap[(driver as any).transport_type] || null;
 
+          // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
             .eq('chofer_id', driver.id)
-            .eq('fecha', today)
+            .order('fecha', { ascending: false })
+            .limit(1)
             .maybeSingle();
-
-          // Auto-carry only if NO other driver is already active today
-          if (!assignment && !activeDriverId) {
-            const { data: lastAssignment } = await supabase
-              .from('asignaciones_chofer')
-              .select('producto_id, unidad_id, asignado_por')
-              .eq('chofer_id', driver.id)
-              .order('fecha', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (lastAssignment) {
-              console.log('[DriverProfilePanel] Auto-carrying previous assignment for driver:', driver.id);
-              const { data: newAssignment, error: carryError } = await supabase
-                .from('asignaciones_chofer')
-                .upsert(
-                  {
-                    chofer_id: driver.id,
-                    producto_id: lastAssignment.producto_id,
-                    unidad_id: lastAssignment.unidad_id,
-                    fecha: today,
-                    asignado_por: lastAssignment.asignado_por,
-                  },
-                  { onConflict: 'chofer_id,fecha' }
-                )
-                .select('id, producto_id, asignado_por, unidad_id, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
-                .maybeSingle();
-
-              if (!carryError && newAssignment) {
-                assignment = newAssignment;
-                const carriedRouteName = (newAssignment.productos as any)?.nombre;
-                if (carriedRouteName && user) {
-                  await supabase
-                    .from('profiles')
-                    .update({ route_name: carriedRouteName })
-                    .eq('user_id', user.id);
-                }
-              }
-            }
-          }
 
           if (assignment) {
             activeDriverId = driver.id;
-            // Determine route_type from the assigned product
-            const assignedVehicle = (vehicleList || []).find((v: any) => v.id === assignment!.producto_id);
-            assignedRouteType = assignedVehicle?.route_type || null;
           }
 
-          // Filter vehicles to only show routes of the same type as the current assignment
-          // This prevents public/private mixing in the driver's route selector
+          // Filter vehicles by the driver's transport type
           let filteredVehicles = (vehicleList || []) as Vehicle[];
-          if (assignedRouteType) {
-            filteredVehicles = filteredVehicles.filter(v => v.route_type === assignedRouteType);
+          if (driverRouteType) {
+            filteredVehicles = filteredVehicles.filter(v => v.route_type === driverRouteType);
           }
 
           let unitData = assignment?.unidades_empresa as any;

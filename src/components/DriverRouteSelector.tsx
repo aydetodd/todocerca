@@ -75,7 +75,7 @@ export default function DriverRouteSelector() {
       // Check if user is a registered driver (by user_id)
       const { data: driver, error: driverError } = await supabase
         .from('choferes_empresa')
-        .select('id, proveedor_id, nombre')
+        .select('id, proveedor_id, nombre, transport_type')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -101,7 +101,7 @@ export default function DriverRouteSelector() {
           
           const { data: allDrivers } = await supabase
             .from('choferes_empresa')
-            .select('id, proveedor_id, nombre, telefono')
+            .select('id, proveedor_id, nombre, telefono, transport_type')
             .eq('is_active', true)
             .is('user_id', null);
 
@@ -143,16 +143,17 @@ export default function DriverRouteSelector() {
       };
       setDriverInfo(info);
 
-      // Fetch the driver's last assignment to determine transport type context
-      const { data: lastAssignmentData } = await supabase
-        .from('asignaciones_chofer')
-        .select('producto_id, productos(route_type)')
-        .eq('chofer_id', driverData.id)
-        .order('fecha', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Use the driver's transport_type to filter routes
+      const driverTransportType = driverData.transport_type || null;
 
-      const lastRouteType = (lastAssignmentData?.productos as any)?.route_type || null;
+      // Map transport_type to route_type
+      const routeTypeMap: Record<string, string> = {
+        publico: 'publica',
+        foraneo: 'foranea',
+        privado: 'privada',
+        taxi: 'taxi',
+      };
+      const routeTypeFilter = driverTransportType ? routeTypeMap[driverTransportType] || null : null;
 
       // Fetch routes filtered by transport type, and units in parallel
       let routesQuery = supabase
@@ -162,9 +163,8 @@ export default function DriverRouteSelector() {
         .eq('is_available', true)
         .eq('is_mobile', true);
 
-      // If we know the driver's route type, filter to it
-      if (lastRouteType) {
-        routesQuery = routesQuery.eq('route_type', lastRouteType);
+      if (routeTypeFilter) {
+        routesQuery = routesQuery.eq('route_type', routeTypeFilter);
       }
 
       const [routesRes, unitsRes] = await Promise.all([
@@ -180,13 +180,13 @@ export default function DriverRouteSelector() {
       setRoutes((routesRes.data || []) as Route[]);
       setUnits((unitsRes.data || []) as Unit[]);
 
-      // Check if there's already an assignment for today
-      const today = getHermosilloToday();
+      // Check if there's already ANY assignment (permanent — not date-scoped)
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('id, producto_id, unidad_id, productos(nombre)')
         .eq('chofer_id', driverData.id)
-        .eq('fecha', today)
+        .order('fecha', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (assignment) {
@@ -208,8 +208,7 @@ export default function DriverRouteSelector() {
         setSelectedUnit(assignment.unidad_id || '');
       }
 
-      // Only show popup if there's NO assignment for today
-      // If assignment already exists, keep it and don't bother the driver
+      // Only show popup if there's NO assignment at all
       if (!assignment) {
         setIsOpen(true);
       }
