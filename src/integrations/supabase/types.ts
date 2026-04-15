@@ -203,6 +203,7 @@ export type Database = {
           nombre: string | null
           proveedor_id: string
           telefono: string
+          transport_type: string
           updated_at: string
           user_id: string | null
         }
@@ -214,6 +215,7 @@ export type Database = {
           nombre?: string | null
           proveedor_id: string
           telefono: string
+          transport_type?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -225,6 +227,7 @@ export type Database = {
           nombre?: string | null
           proveedor_id?: string
           telefono?: string
+          transport_type?: string
           updated_at?: string
           user_id?: string | null
         }
