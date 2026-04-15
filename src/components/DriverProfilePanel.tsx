@@ -288,23 +288,27 @@ function SingleDriverPanel({
   const handleSelectRoute = async (vehicleId: string) => {
     try {
       setAssigning(true);
-      const today = getHermosilloToday();
 
-      // Deactivate other driver profiles when changing route
       await deactivateOtherDrivers(data.driver.id);
 
-      const { error } = await supabase
-        .from('asignaciones_chofer')
-        .upsert(
-          {
+      if (data.todayAssignment) {
+        // Update existing assignment in place
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .update({ producto_id: vehicleId })
+          .eq('id', data.todayAssignment.id);
+        if (error) throw error;
+      } else {
+        const today = getHermosilloToday();
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .insert({
             chofer_id: data.driver.id,
             producto_id: vehicleId,
             fecha: today,
-          },
-          { onConflict: 'chofer_id,fecha' }
-        );
-
-      if (error) throw error;
+          });
+        if (error) throw error;
+      }
 
       const selectedVehicle = data.vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
@@ -316,7 +320,7 @@ function SingleDriverPanel({
 
       toast({
         title: '✅ Ruta asignada',
-        description: `Hoy cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
+        description: `Cubrirás: ${selectedVehicle?.nombre || 'Ruta'}`,
       });
 
       onRefresh();
