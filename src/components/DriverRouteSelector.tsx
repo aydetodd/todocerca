@@ -180,13 +180,13 @@ export default function DriverRouteSelector() {
       setRoutes((routesRes.data || []) as Route[]);
       setUnits((unitsRes.data || []) as Unit[]);
 
-      // Check if there's already an assignment for today
-      const today = getHermosilloToday();
+      // Check if there's already ANY assignment (permanent — not date-scoped)
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
         .select('id, producto_id, unidad_id, productos(nombre)')
         .eq('chofer_id', driverData.id)
-        .eq('fecha', today)
+        .order('fecha', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (assignment) {
@@ -208,8 +208,7 @@ export default function DriverRouteSelector() {
         setSelectedUnit(assignment.unidad_id || '');
       }
 
-      // Only show popup if there's NO assignment for today
-      // If assignment already exists, keep it and don't bother the driver
+      // Only show popup if there's NO assignment at all
       if (!assignment) {
         setIsOpen(true);
       }
