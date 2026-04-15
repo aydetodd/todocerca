@@ -101,7 +101,7 @@ export default function DriverRouteSelector() {
           
           const { data: allDrivers } = await supabase
             .from('choferes_empresa')
-            .select('id, proveedor_id, nombre, telefono')
+            .select('id, proveedor_id, nombre, telefono, transport_type')
             .eq('is_active', true)
             .is('user_id', null);
 
