@@ -417,7 +417,7 @@ function SingleDriverPanel({
               </SelectContent>
             </Select>
 
-            {data.todayAssignment && (
+            {isActive && data.todayAssignment && (
               <>
                 <Button
                   size="sm"
