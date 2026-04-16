@@ -101,6 +101,8 @@ interface DriverCompanyData {
   todayAssignment: TodayAssignment | null;
 }
 
+const normalizeRouteName = (name: string | null | undefined) => name?.trim().toLowerCase() || '';
+
 function PassengerCountBadge({ choferId }: { choferId: string }) {
   const [publicCount, setPublicCount] = useState(0);
   const [personalCount, setPersonalCount] = useState(0);
@@ -170,11 +172,13 @@ function PassengerCountBadge({ choferId }: { choferId: string }) {
 
 function SingleDriverPanel({
   data,
-  allDriverIds,
+  activeRouteName,
+  profileStatus,
   onRefresh,
 }: {
   data: DriverCompanyData;
-  allDriverIds: string[];
+  activeRouteName: string | null;
+  profileStatus: 'available' | 'busy' | 'offline';
   onRefresh: () => void;
 }) {
   const { user } = useAuth();
@@ -183,64 +187,51 @@ function SingleDriverPanel({
   const [assigning, setAssigning] = useState(false);
   const [toggling, setToggling] = useState(false);
 
-  const isActive = !!data.todayAssignment;
-
-  const deactivateOtherDrivers = async (excludeDriverId: string) => {
-    const otherIds = allDriverIds.filter(id => id !== excludeDriverId);
-    if (otherIds.length === 0) return;
-
-    // Delete ALL assignments for other driver profiles (permanent model)
-    for (const otherId of otherIds) {
-      await supabase
-        .from('asignaciones_chofer')
-        .delete()
-        .eq('chofer_id', otherId);
-    }
-  };
+  const hasAssignment = !!data.todayAssignment;
+  const isCurrentRoute = hasAssignment && normalizeRouteName(activeRouteName) === normalizeRouteName(data.todayAssignment?.vehicleName);
+  const isActive = hasAssignment && profileStatus !== 'offline' && isCurrentRoute;
 
   const handleToggleActive = async (turnOn: boolean) => {
     try {
       setToggling(true);
 
-      if (!turnOn && data.todayAssignment) {
-        // Delete the permanent assignment
+      if (!user) return;
+
+      if (!data.todayAssignment) {
+        toast({
+          title: 'Sin asignación',
+          description: 'Primero el concesionario debe dejarte ruta y unidad asignadas.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!turnOn) {
         const { error } = await supabase
-          .from('asignaciones_chofer')
-          .delete()
-          .eq('id', data.todayAssignment.id);
+          .from('profiles')
+          .update({ estado: 'offline' })
+          .eq('user_id', user.id);
 
         if (error) throw error;
 
         toast({
           title: '🔴 Ruta desactivada',
-          description: `Ya no apareces en "${data.todayAssignment.vehicleName}"`,
+          description: `Tu unidad y ruta quedaron guardadas en "${data.todayAssignment.vehicleName}"`,
         });
-      } else if (turnOn && data.vehicles.length > 0) {
-        await deactivateOtherDrivers(data.driver.id);
-
-        const today = getHermosilloToday();
-        const firstVehicle = data.vehicles[0];
-
+      } else {
         const { error } = await supabase
-          .from('asignaciones_chofer')
-          .insert({
-            chofer_id: data.driver.id,
-            producto_id: firstVehicle.id,
-            fecha: today,
-          });
+          .from('profiles')
+          .update({
+            estado: 'available',
+            route_name: data.todayAssignment.vehicleName,
+          })
+          .eq('user_id', user.id);
 
         if (error) throw error;
 
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ route_name: firstVehicle.nombre })
-            .eq('user_id', user.id);
-        }
-
         toast({
           title: '🟢 Ruta activada',
-          description: `Ahora apareces en "${firstVehicle.nombre}"`,
+          description: `Ahora apareces en "${data.todayAssignment.vehicleName}"`,
         });
       }
 
@@ -289,32 +280,26 @@ function SingleDriverPanel({
     try {
       setAssigning(true);
 
-      await deactivateOtherDrivers(data.driver.id);
-
-      if (data.todayAssignment) {
-        // Update existing assignment in place
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .update({ producto_id: vehicleId })
-          .eq('id', data.todayAssignment.id);
-        if (error) throw error;
-      } else {
-        const today = getHermosilloToday();
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .insert({
-            chofer_id: data.driver.id,
-            producto_id: vehicleId,
-            fecha: today,
-          });
-        if (error) throw error;
+      if (!data.todayAssignment || !user) {
+        toast({
+          title: 'Sin permiso',
+          description: 'Solo puedes cambiar la ruta; la unidad la deja fija el concesionario.',
+          variant: 'destructive',
+        });
+        return;
       }
+
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .update({ producto_id: vehicleId })
+        .eq('id', data.todayAssignment.id);
+      if (error) throw error;
 
       const selectedVehicle = data.vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
         await supabase
           .from('profiles')
-          .update({ route_name: selectedVehicle.nombre })
+          .update({ route_name: selectedVehicle.nombre, estado: 'available' })
           .eq('user_id', user.id);
       }
 
@@ -345,7 +330,7 @@ function SingleDriverPanel({
   if (unitInfo?.placas) vehicleParts.push(unitInfo.placas);
 
   return (
-    <Card className={`border-primary/30 transition-all duration-300 ${isActive ? 'bg-primary/5' : 'bg-muted/30 opacity-60'}`}>
+    <Card className={`border-primary/30 transition-all duration-300 ${hasAssignment ? 'bg-primary/5' : 'bg-muted/30 opacity-60'} ${isActive ? 'ring-1 ring-primary/30' : ''}`}>
       <CardContent className="p-3 space-y-2">
         {/* Row 1: Icon + Empresa + Chofer + Unit info + Passenger count + Switch + Invitar */}
         <div className="flex items-center gap-2.5">
@@ -367,6 +352,11 @@ function SingleDriverPanel({
             <p className="text-xs text-muted-foreground leading-tight truncate">
               Chofer: {driverName}
             </p>
+            {data.todayAssignment && (
+              <p className="text-xs text-muted-foreground leading-tight truncate">
+                Ruta: {data.todayAssignment.vehicleName}
+              </p>
+            )}
             {vehicleParts.length > 0 && (
               <p className="text-xs text-muted-foreground leading-tight truncate">
                 {vehicleParts.join('    ')}
@@ -390,7 +380,7 @@ function SingleDriverPanel({
             </span>
           </div>
 
-          {isActive && data.todayAssignment && (() => {
+          {hasAssignment && data.todayAssignment && (() => {
             const assignedVehicle = data.vehicles.find(v => v.id === data.todayAssignment!.producto_id);
             return assignedVehicle?.is_private ? (
               <Button
@@ -407,7 +397,7 @@ function SingleDriverPanel({
         </div>
 
         {/* Row 2: Route selector + Cobrar + Ubicación */}
-        {isActive && (
+        {hasAssignment && (
           <div className="flex items-center gap-2">
             <Select
               value={currentRouteId}
@@ -472,6 +462,8 @@ export default function DriverProfilePanel() {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<DriverCompanyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeRouteName, setActiveRouteName] = useState<string | null>(null);
+  const [profileStatus, setProfileStatus] = useState<'available' | 'busy' | 'offline'>('offline');
 
   useEffect(() => {
     if (user) loadAllDriverData();
@@ -498,6 +490,15 @@ export default function DriverProfilePanel() {
     try {
       setLoading(true);
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('route_name, estado')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setActiveRouteName(profile?.route_name || null);
+      setProfileStatus((profile?.estado as 'available' | 'busy' | 'offline' | null) || 'offline');
+
       const { data: drivers, error: driversError } = await supabase
         .from('choferes_empresa')
         .select('id, nombre, proveedor_id, transport_type')
@@ -511,8 +512,6 @@ export default function DriverProfilePanel() {
       }
 
       const companiesData: DriverCompanyData[] = [];
-      // Track which driver IDs have an active assignment
-      let activeDriverId: string | null = null;
 
       await Promise.all(
         drivers.map(async (driver) => {
@@ -549,10 +548,6 @@ export default function DriverProfilePanel() {
             .limit(1)
             .maybeSingle();
 
-          if (assignment) {
-            activeDriverId = driver.id;
-          }
-
           // Filter vehicles by the driver's transport type
           let filteredVehicles = (vehicleList || []) as Vehicle[];
           if (driverRouteType) {
@@ -588,22 +583,6 @@ export default function DriverProfilePanel() {
         })
       );
 
-      // ENFORCE: only one active — if multiple have assignments, keep only the first
-      const activeOnes = companiesData.filter(c => c.todayAssignment !== null);
-      if (activeOnes.length > 1) {
-        // Keep the first active, deactivate the rest
-        for (let i = 1; i < activeOnes.length; i++) {
-          const extra = activeOnes[i];
-          if (extra.todayAssignment) {
-            await supabase
-              .from('asignaciones_chofer')
-              .delete()
-              .eq('id', extra.todayAssignment.id);
-            extra.todayAssignment = null;
-          }
-        }
-      }
-
       setCompanies(companiesData);
     } catch (error) {
       console.error('[DriverProfilePanel] Error:', error);
@@ -613,8 +592,6 @@ export default function DriverProfilePanel() {
   };
 
   if (loading || companies.length === 0) return null;
-
-  const allDriverIds = companies.map(c => c.driver.id);
 
   return (
     <div className="space-y-3">
@@ -631,7 +608,8 @@ export default function DriverProfilePanel() {
         <SingleDriverPanel
           key={companyData.driver.id}
           data={companyData}
-          allDriverIds={allDriverIds}
+          activeRouteName={activeRouteName}
+          profileStatus={profileStatus}
           onRefresh={loadAllDriverData}
         />
       ))}
