@@ -51,3 +51,19 @@ export function getHermosilloToday(): string {
 export function getHermosilloTodayStart(): string {
   return `${getHermosilloToday()}T00:00:00-07:00`;
 }
+
+/**
+ * Extracts a short route name from a full route name.
+ * Removes extra descriptions like "Aeropuerto - San Luis" or "Transportes de Hermosillo".
+ * Examples:
+ *   "Ruta 1 La Manga, Aeropuerto - San Luis" -> "Ruta 1 La Manga"
+ *   "Línea 17 Bachoco, Transportes de Hermosillo" -> "Línea 17 Bachoco"
+ */
+export function formatShortRouteName(routeName: string | null | undefined): string {
+  if (!routeName) return 'Ruta';
+  
+  // Remove everything after the first comma
+  const shortName = routeName.split(',')[0].trim();
+  
+  return shortName || 'Ruta';
+}
