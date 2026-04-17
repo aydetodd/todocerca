@@ -411,7 +411,6 @@ function SingleDriverPanel({
                 {data.vehicles.map(v => (
                   <SelectItem key={v.id} value={v.id} className="text-xs">
                     {v.nombre}
-                    {v.descripcion ? ` — ${v.descripcion}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
