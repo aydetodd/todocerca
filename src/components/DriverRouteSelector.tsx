@@ -201,7 +201,7 @@ export default function DriverRouteSelector() {
           id: assignment.id,
           producto_id: assignment.producto_id,
           unidad_id: assignment.unidad_id,
-          routeName: (assignment.productos as any)?.nombre || 'Ruta',
+          routeName: formatShortRouteName((assignment.productos as any)?.nombre) || 'Ruta',
           unitName,
         });
         setSelectedRoute(assignment.producto_id);
@@ -254,7 +254,7 @@ export default function DriverRouteSelector() {
         if (error) throw error;
       }
 
-      const routeName = routes.find(r => r.id === selectedRoute)?.nombre || 'Ruta';
+      const routeName = formatShortRouteName(routes.find(r => r.id === selectedRoute)?.nombre) || 'Ruta';
       const selectedUnitObj = units.find(u => u.id === selectedUnit);
       const unitName = selectedUnitObj ? formatUnitLabel(selectedUnitObj) : undefined;
 
@@ -289,7 +289,7 @@ export default function DriverRouteSelector() {
   const handleConfirmCurrent = () => {
     toast({
       title: "✅ Ruta confirmada",
-      description: `Hoy cubrirás: ${todayAssignment?.routeName}${todayAssignment?.unitName ? ` en ${todayAssignment.unitName}` : ''}`,
+      description: `Hoy cubrirás: ${formatShortRouteName(todayAssignment?.routeName)}${todayAssignment?.unitName ? ` en ${todayAssignment.unitName}` : ''}`,
     });
     setIsOpen(false);
   };
@@ -367,7 +367,7 @@ export default function DriverRouteSelector() {
                 <Check className="h-4 w-4 text-primary shrink-0" />
                 <div className="text-sm">
                   <span className="font-medium">Asignación actual:</span>{' '}
-                  {todayAssignment.routeName}
+                  {formatShortRouteName(todayAssignment.routeName)}
                   {todayAssignment.unitName && ` en ${todayAssignment.unitName}`}
                 </div>
               </div>
