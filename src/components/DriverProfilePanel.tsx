@@ -551,8 +551,8 @@ export default function DriverProfilePanel() {
 
           // Filter vehicles by the driver's transport type
           let filteredVehicles = (vehicleList || []) as Vehicle[];
-          if (driverRouteType) {
-            filteredVehicles = filteredVehicles.filter(v => v.route_type === driverRouteType);
+          if (allowedRouteTypes) {
+            filteredVehicles = filteredVehicles.filter(v => v.route_type && allowedRouteTypes.includes(v.route_type));
           }
 
           let unitData = assignment?.unidades_empresa as any;
