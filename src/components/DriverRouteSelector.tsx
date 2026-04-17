@@ -146,14 +146,14 @@ export default function DriverRouteSelector() {
       // Use the driver's transport_type to filter routes
       const driverTransportType = driverData.transport_type || null;
 
-      // Map transport_type to route_type
-      const routeTypeMap: Record<string, string> = {
-        publico: 'publica',
-        foraneo: 'foranea',
-        privado: 'privada',
-        taxi: 'taxi',
+      // Map transport_type to allowed route_types (public routes are 'urbana' in DB)
+      const allowedRouteTypesMap: Record<string, string[]> = {
+        publico: ['urbana', 'publica'],
+        foraneo: ['foranea'],
+        privado: ['privada'],
+        taxi: ['taxi'],
       };
-      const routeTypeFilter = driverTransportType ? routeTypeMap[driverTransportType] || null : null;
+      const allowedRouteTypes = driverTransportType ? allowedRouteTypesMap[driverTransportType] || null : null;
 
       // Fetch routes filtered by transport type, and units in parallel
       let routesQuery = supabase
@@ -163,8 +163,8 @@ export default function DriverRouteSelector() {
         .eq('is_available', true)
         .eq('is_mobile', true);
 
-      if (routeTypeFilter) {
-        routesQuery = routesQuery.eq('route_type', routeTypeFilter);
+      if (allowedRouteTypes) {
+        routesQuery = routesQuery.in('route_type', allowedRouteTypes);
       }
 
       const [routesRes, unitsRes] = await Promise.all([
