@@ -333,7 +333,6 @@ export default function DriverRouteSelector() {
                   {routes.map((route) => (
                     <SelectItem key={route.id} value={route.id}>
                       {route.nombre}
-                      {route.descripcion ? ` — ${route.descripcion}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
