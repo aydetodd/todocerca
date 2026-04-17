@@ -216,7 +216,7 @@ function SingleDriverPanel({
 
         toast({
           title: '🔴 Ruta desactivada',
-          description: `Tu unidad y ruta quedaron guardadas en "${data.todayAssignment.vehicleName}"`,
+          description: `Tu unidad y ruta quedaron guardadas en "${formatShortRouteName(data.todayAssignment.vehicleName)}"`,
         });
       } else {
         const { error } = await supabase
@@ -269,7 +269,7 @@ function SingleDriverPanel({
 
     const inviteLink = `${window.location.origin}/mapa?type=ruta&token=${token}`;
     const mensaje = encodeURIComponent(
-      `🚌 ¡Sigue mi ruta "${data.todayAssignment.vehicleName}" en tiempo real!\n\n` +
+      `🚌 ¡Sigue mi ruta "${formatShortRouteName(data.todayAssignment.vehicleName)}" en tiempo real!\n\n` +
       `📍 Haz clic aquí para ver dónde voy:\n${inviteLink}\n\n` +
       `Descarga TodoCerca para más servicios.`
     );
@@ -354,7 +354,7 @@ function SingleDriverPanel({
             </p>
             {data.todayAssignment && (
               <p className="text-xs text-muted-foreground leading-tight truncate">
-                Ruta: {data.todayAssignment.vehicleName}
+                Ruta: {formatShortRouteName(data.todayAssignment.vehicleName)}
               </p>
             )}
             {vehicleParts.length > 0 && (
