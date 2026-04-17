@@ -531,13 +531,14 @@ export default function DriverProfilePanel() {
             .order('nombre');
 
           // Use driver's transport_type to filter vehicles
-          const routeTypeMap: Record<string, string> = {
-            publico: 'publica',
-            foraneo: 'foranea',
-            privado: 'privada',
-            taxi: 'taxi',
+          // Public routes are stored as 'urbana' in DB
+          const allowedRouteTypesMap: Record<string, string[]> = {
+            publico: ['urbana', 'publica'],
+            foraneo: ['foranea'],
+            privado: ['privada'],
+            taxi: ['taxi'],
           };
-          const driverRouteType = routeTypeMap[(driver as any).transport_type] || null;
+          const allowedRouteTypes = allowedRouteTypesMap[(driver as any).transport_type] || null;
 
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
