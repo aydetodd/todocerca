@@ -231,7 +231,7 @@ function SingleDriverPanel({
 
         toast({
           title: '🟢 Ruta activada',
-          description: `Ahora apareces en "${data.todayAssignment.vehicleName}"`,
+          description: `Ahora apareces en "${formatShortRouteName(data.todayAssignment.vehicleName)}"`,
         });
       }
 
