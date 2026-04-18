@@ -33,7 +33,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("Usuario no autenticado");
 
-    const { quantity, ticket_type = "normal", device_id } = await req.json();
+    const { quantity, ticket_type = "normal", device_id, city_label } = await req.json();
     
     if (!quantity || quantity < 1 || quantity > 100) {
       throw new Error("Cantidad inválida. Mínimo 1, máximo 100 boletos.");
