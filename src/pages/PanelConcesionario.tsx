@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ShieldCheck, FileText, DollarSign, AlertTriangle, Bus, TrendingUp,
@@ -86,6 +86,7 @@ type IngresoUnidad = {
 export default function PanelConcesionario() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const activeFetchIdRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [proveedor, setProveedor] = useState<any>(null);
   const [verificacion, setVerificacion] = useState<Verificacion | null>(null);
@@ -153,7 +154,9 @@ export default function PanelConcesionario() {
     });
   };
 
-  const loadOperationalStats = async (provId: string) => {
+  const loadOperationalStats = async (provId: string, fetchId?: number) => {
+    const isCurrentFetch = () => fetchId === undefined || fetchId === activeFetchIdRef.current;
+
     const { data: misUnidades } = await withTimeout(
       supabase
         .from("unidades_empresa")
@@ -165,6 +168,7 @@ export default function PanelConcesionario() {
     );
 
     if (!misUnidades || misUnidades.length === 0) {
+      if (!isCurrentFetch()) return;
       setIngresosUnidad([]);
       setStats((prev) => ({
         ...prev,
@@ -345,6 +349,7 @@ export default function PanelConcesionario() {
       });
     }
 
+    if (!isCurrentFetch()) return;
     setIngresosUnidad(ingresos);
 
     const totalBoletosHoy = ingresos.reduce((s: number, u: IngresoUnidad) => s + u.boletos_hoy, 0);
@@ -410,8 +415,12 @@ export default function PanelConcesionario() {
       return;
     }
 
+    const fetchId = activeFetchIdRef.current + 1;
+    activeFetchIdRef.current = fetchId;
+    const isCurrentFetch = () => fetchId === activeFetchIdRef.current;
+
     try {
-      setLoading(true);
+      if (isCurrentFetch()) setLoading(true);
       // Get provider
       const { data: prov, error: provError } = await withTimeout(
         supabase
@@ -422,6 +431,8 @@ export default function PanelConcesionario() {
         12000,
         "perfil de concesionario"
       );
+
+      if (!isCurrentFetch()) return;
 
       if (provError || !prov) {
         toast.error("No tienes un perfil de proveedor/concesionario");
@@ -439,6 +450,8 @@ export default function PanelConcesionario() {
 
       const verifData = verifResult.status === "fulfilled" ? (verifResult.value as any).data : null;
       const cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any).data : null;
+
+      if (!isCurrentFetch()) return;
 
       if (verifData) setVerificacion(verifData as any);
       if (cuentaData) {
@@ -470,6 +483,7 @@ export default function PanelConcesionario() {
         }
 
         if (empresaUnidades) {
+          if (!isCurrentFetch()) return;
           setUnidades(empresaUnidades.map((u: any) => ({
             id: u.id,
             numero_economico: u.numero_economico || u.nombre,
@@ -494,8 +508,9 @@ export default function PanelConcesionario() {
       }
 
       try {
-        await loadOperationalStats(prov.id);
+        await loadOperationalStats(prov.id, fetchId);
       } catch (statsError) {
+        if (!isCurrentFetch()) return;
         console.error("Error loading stats:", statsError);
         toast.error("El panel cargó parcialmente; las estadísticas tardaron demasiado.");
       }
@@ -521,16 +536,17 @@ export default function PanelConcesionario() {
             return;
           }
 
-          if (data) setFraudes(data as any);
+          if (data && isCurrentFetch()) setFraudes(data as any);
         } catch (error) {
           console.error("Error loading fraud data:", error);
         }
       })();
     } catch (err) {
+      if (!isCurrentFetch()) return;
       console.error("Error loading panel:", err);
       toast.error("No se pudo cargar el panel. Inténtalo de nuevo.");
     } finally {
-      setLoading(false);
+      if (isCurrentFetch()) setLoading(false);
     }
   };
 
