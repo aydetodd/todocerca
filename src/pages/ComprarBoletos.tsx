@@ -82,6 +82,7 @@ export default function ComprarBoletos() {
           quantity, 
           ticket_type: approvedDiscount,
           device_id: localStorage.getItem("tc_device_id") || undefined,
+          city_label: cityLabel,
         },
       });
 
