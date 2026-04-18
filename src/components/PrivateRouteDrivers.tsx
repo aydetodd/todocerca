@@ -306,11 +306,7 @@ export default function PrivateRouteDrivers({
         return;
       }
 
-      const { error } = await supabase
-        .from('asignaciones_chofer')
-        .update({ unidad_id: unitId || null, asignado_por: user.id })
-        .eq('id', existing.id);
-      if (error) throw error;
+      await upsertTodayAssignment(driverId, { unidad_id: unitId || null });
 
       toast({ title: "✅ Unidad asignada" });
       fetchAll();
