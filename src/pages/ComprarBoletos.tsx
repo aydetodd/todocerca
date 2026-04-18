@@ -20,10 +20,22 @@ type DiscountType = "normal" | "estudiante" | "tercera_edad";
 export default function ComprarBoletos() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { location: gpsLocation } = useCurrentCity();
   const [quantity, setQuantity] = useState(10);
   const [purchasing, setPurchasing] = useState(false);
   const [approvedDiscount, setApprovedDiscount] = useState<DiscountType>("normal");
   const [loadingDiscount, setLoadingDiscount] = useState(true);
+
+  // Resolve city: prioritize user's manual search selection, fallback to GPS
+  const cityLabel = useMemo(() => {
+    const searchCiudad = localStorage.getItem('lastSearchCiudad') || '';
+    const searchEstado = localStorage.getItem('lastSearchEstado') || '';
+    if (searchCiudad && searchEstado) return `${searchCiudad}, ${searchEstado}`;
+    if (searchCiudad) return searchCiudad;
+    if (gpsLocation?.ciudad && gpsLocation?.estado) return `${gpsLocation.ciudad}, ${gpsLocation.estado}`;
+    if (gpsLocation?.ciudad) return gpsLocation.ciudad;
+    return 'tu ciudad';
+  }, [gpsLocation]);
 
   useEffect(() => {
     if (user) checkDiscount();
