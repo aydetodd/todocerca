@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, CreditCard, GraduationCap, UserRound, ShieldCheck } from "lucide-react";
+import { Minus, Plus, CreditCard, GraduationCap, UserRound, ShieldCheck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentCity } from "@/hooks/useCurrentCity";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,10 +20,22 @@ type DiscountType = "normal" | "estudiante" | "tercera_edad";
 export default function ComprarBoletos() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { location: gpsLocation } = useCurrentCity();
   const [quantity, setQuantity] = useState(10);
   const [purchasing, setPurchasing] = useState(false);
   const [approvedDiscount, setApprovedDiscount] = useState<DiscountType>("normal");
   const [loadingDiscount, setLoadingDiscount] = useState(true);
+
+  // Resolve city: prioritize user's manual search selection, fallback to GPS
+  const cityLabel = useMemo(() => {
+    const searchCiudad = localStorage.getItem('lastSearchCiudad') || '';
+    const searchEstado = localStorage.getItem('lastSearchEstado') || '';
+    if (searchCiudad && searchEstado) return `${searchCiudad}, ${searchEstado}`;
+    if (searchCiudad) return searchCiudad;
+    if (gpsLocation?.ciudad && gpsLocation?.estado) return `${gpsLocation.ciudad}, ${gpsLocation.estado}`;
+    if (gpsLocation?.ciudad) return gpsLocation.ciudad;
+    return 'tu ciudad';
+  }, [gpsLocation]);
 
   useEffect(() => {
     if (user) checkDiscount();
@@ -69,6 +82,7 @@ export default function ComprarBoletos() {
           quantity, 
           ticket_type: approvedDiscount,
           device_id: localStorage.getItem("tc_device_id") || undefined,
+          city_label: cityLabel,
         },
       });
 
@@ -94,12 +108,26 @@ export default function ComprarBoletos() {
           <BackButton />
           <div>
             <h1 className="text-lg font-bold text-foreground">Comprar Códigos QR</h1>
-            <p className="text-xs text-muted-foreground">Transporte Urbano - Hermosillo</p>
+            <p className="text-xs text-muted-foreground">Transporte Urbano</p>
           </div>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* City scope banner — large & bold */}
+        <Card className="border-primary/40 bg-primary/10">
+          <CardContent className="p-4 flex items-start gap-3">
+            <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-base font-extrabold text-foreground leading-tight">
+                Estos boletos son válidos SOLO en el transporte público de {cityLabel}.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                El precio aplica a la tarifa local. No se pueden usar en otra ciudad.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
         {/* Discount badge */}
         {isDiscounted && (
           <Card className="border-green-500/40 bg-green-500/5">

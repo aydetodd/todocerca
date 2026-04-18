@@ -33,7 +33,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("Usuario no autenticado");
 
-    const { quantity, ticket_type = "normal", device_id } = await req.json();
+    const { quantity, ticket_type = "normal", device_id, city_label } = await req.json();
     
     if (!quantity || quantity < 1 || quantity > 100) {
       throw new Error("Cantidad inválida. Mínimo 1, máximo 100 boletos.");
@@ -85,6 +85,8 @@ serve(async (req) => {
         ? " (Tercera Edad -50%)" 
         : "";
 
+    const cityForLabel = (city_label && String(city_label).trim()) || "tu ciudad";
+
     // Create one-time payment session for tickets
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -95,7 +97,7 @@ serve(async (req) => {
             currency: "mxn",
             product_data: {
               name: `QR Boleto Digital × ${quantity}${typeLabel}`,
-              description: `${quantity} boleto${quantity > 1 ? 's' : ''} de transporte urbano - Hermosillo, Sonora`,
+              description: `VÁLIDO SOLO en transporte público de ${cityForLabel}. ${quantity} boleto${quantity > 1 ? 's' : ''}.`,
             },
             unit_amount: unitPrice,
           },
@@ -110,6 +112,7 @@ serve(async (req) => {
         ticket_quantity: String(quantity),
         ticket_type: validatedType,
         device_id: device_id || "",
+        city_label: cityForLabel,
         type: "qr_boleto_purchase",
       },
     });
