@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, CreditCard, GraduationCap, UserRound, ShieldCheck } from "lucide-react";
+import { Minus, Plus, CreditCard, GraduationCap, UserRound, ShieldCheck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentCity } from "@/hooks/useCurrentCity";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
