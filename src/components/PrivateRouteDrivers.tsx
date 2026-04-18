@@ -152,16 +152,44 @@ export default function PrivateRouteDrivers({
       setRoutes((routesRes.data || []) as Route[]);
       setUnits((unitsRes.data || []) as Unit[]);
 
-      // Fetch today's assignments for these drivers
+      // Fetch assignments: prefer today's row, otherwise fall back to the
+      // driver's most recent assignment so the concesionario's setup persists
+      // day-to-day until they manually change it.
       if (driversList.length > 0) {
         const driverIds = driversList.map(d => d.id);
-        const { data: assignData } = await supabase
+        const { data: allAssign } = await supabase
           .from('asignaciones_chofer')
-          .select('id, chofer_id, producto_id, unidad_id')
-          .eq('fecha', today)
-          .in('chofer_id', driverIds);
+          .select('id, chofer_id, producto_id, unidad_id, fecha, created_at')
+          .in('chofer_id', driverIds)
+          .order('fecha', { ascending: false })
+          .order('created_at', { ascending: false });
 
-        setAssignments((assignData || []) as TodayAssignment[]);
+        const latestByDriver = new Map<string, TodayAssignment>();
+        const todayByDriver = new Map<string, TodayAssignment>();
+        (allAssign || []).forEach((row: any) => {
+          if (!latestByDriver.has(row.chofer_id)) {
+            latestByDriver.set(row.chofer_id, {
+              id: row.id,
+              chofer_id: row.chofer_id,
+              producto_id: row.producto_id,
+              unidad_id: row.unidad_id,
+            });
+          }
+          if (row.fecha === today && !todayByDriver.has(row.chofer_id)) {
+            todayByDriver.set(row.chofer_id, {
+              id: row.id,
+              chofer_id: row.chofer_id,
+              producto_id: row.producto_id,
+              unidad_id: row.unidad_id,
+            });
+          }
+        });
+
+        const merged: TodayAssignment[] = driverIds
+          .map(id => todayByDriver.get(id) || latestByDriver.get(id))
+          .filter(Boolean) as TodayAssignment[];
+
+        setAssignments(merged);
       } else {
         setAssignments([]);
       }
