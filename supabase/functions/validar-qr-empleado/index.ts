@@ -148,6 +148,51 @@ serve(async (req) => {
       });
     }
 
+    // 4b. ANTI-CRUCE: este endpoint solo acepta QR de empleado en rutas PRIVADAS (maquiladora/shelter).
+    // Si la ruta asignada es pública o foránea, rechazar.
+    if (resolvedRutaId) {
+      const { data: rutaInfo } = await supabaseAdmin
+        .from("productos")
+        .select("transport_type, proveedor_id")
+        .eq("id", resolvedRutaId)
+        .maybeSingle();
+
+      const rutaTipo = rutaInfo?.transport_type || null;
+      if (rutaTipo && rutaTipo !== "privado") {
+        return new Response(JSON.stringify({
+          valid: false,
+          error_type: "wrong_scanner",
+          message: "Este QR es de empleado de empresa. No se puede usar en transporte público.",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // 4c. ANTI-CRUCE entre concesionarios: la unidad/ruta debe pertenecer al concesionario
+      // que tiene contrato activo con la empresa del empleado.
+      if (rutaInfo?.proveedor_id) {
+        const { data: contratoMatch } = await supabaseAdmin
+          .from("contratos_transporte")
+          .select("id")
+          .eq("empresa_id", empleado.empresa_id)
+          .eq("concesionario_id", rutaInfo.proveedor_id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (!contratoMatch) {
+          return new Response(JSON.stringify({
+            valid: false,
+            error_type: "wrong_scanner",
+            message: "Este QR pertenece a una empresa sin contrato activo con este concesionario.",
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+      }
+    }
+
     // 5. Check duplicate: same employee, same day, same shift direction
     const { data: existingToday } = await supabaseAdmin
       .from("validaciones_transporte_personal")
