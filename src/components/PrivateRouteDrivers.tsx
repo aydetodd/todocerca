@@ -658,7 +658,7 @@ export default function PrivateRouteDrivers({
                     {(hasRoutes || hasUnits) && (
                       <div className="bg-muted/20 rounded-md p-2 space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                          📋 Asignación de hoy
+                          📋 Asignación actual (se mantiene hasta que la cambies)
                           {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
