@@ -200,29 +200,54 @@ export default function PrivateRouteDrivers({
     }
   };
 
+  const upsertTodayAssignment = async (
+    driverId: string,
+    fields: { producto_id?: string | null; unidad_id?: string | null }
+  ) => {
+    if (!user) return;
+    // Look up if there is already a row for TODAY for this driver
+    const { data: todayRow } = await supabase
+      .from('asignaciones_chofer')
+      .select('id, producto_id, unidad_id')
+      .eq('chofer_id', driverId)
+      .eq('fecha', today)
+      .maybeSingle();
+
+    const current = assignments.find(a => a.chofer_id === driverId);
+    const merged = {
+      producto_id: fields.producto_id !== undefined ? fields.producto_id : (todayRow?.producto_id ?? current?.producto_id ?? null),
+      unidad_id: fields.unidad_id !== undefined ? fields.unidad_id : (todayRow?.unidad_id ?? current?.unidad_id ?? null),
+    };
+
+    if (!merged.producto_id) {
+      throw new Error('Selecciona ruta primero');
+    }
+
+    if (todayRow) {
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .update({ producto_id: merged.producto_id, unidad_id: merged.unidad_id, asignado_por: user.id })
+        .eq('id', todayRow.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .insert({
+          chofer_id: driverId,
+          producto_id: merged.producto_id,
+          unidad_id: merged.unidad_id,
+          fecha: today,
+          asignado_por: user.id,
+        });
+      if (error) throw error;
+    }
+  };
+
   const handleAssignRoute = async (driverId: string, routeId: string) => {
     if (!user) return;
     try {
       setSavingAssignment(driverId);
-      const existing = assignments.find(a => a.chofer_id === driverId);
-
-      if (existing) {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .update({ producto_id: routeId, asignado_por: user.id })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .insert({
-            chofer_id: driverId,
-            producto_id: routeId,
-            fecha: today,
-            asignado_por: user.id,
-          });
-        if (error) throw error;
-      }
+      await upsertTodayAssignment(driverId, { producto_id: routeId });
 
       // Also sync the driver's profile route_name
       const driver = drivers.find(d => d.id === driverId);
