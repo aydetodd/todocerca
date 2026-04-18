@@ -152,16 +152,44 @@ export default function PrivateRouteDrivers({
       setRoutes((routesRes.data || []) as Route[]);
       setUnits((unitsRes.data || []) as Unit[]);
 
-      // Fetch today's assignments for these drivers
+      // Fetch assignments: prefer today's row, otherwise fall back to the
+      // driver's most recent assignment so the concesionario's setup persists
+      // day-to-day until they manually change it.
       if (driversList.length > 0) {
         const driverIds = driversList.map(d => d.id);
-        const { data: assignData } = await supabase
+        const { data: allAssign } = await supabase
           .from('asignaciones_chofer')
-          .select('id, chofer_id, producto_id, unidad_id')
-          .eq('fecha', today)
-          .in('chofer_id', driverIds);
+          .select('id, chofer_id, producto_id, unidad_id, fecha, created_at')
+          .in('chofer_id', driverIds)
+          .order('fecha', { ascending: false })
+          .order('created_at', { ascending: false });
 
-        setAssignments((assignData || []) as TodayAssignment[]);
+        const latestByDriver = new Map<string, TodayAssignment>();
+        const todayByDriver = new Map<string, TodayAssignment>();
+        (allAssign || []).forEach((row: any) => {
+          if (!latestByDriver.has(row.chofer_id)) {
+            latestByDriver.set(row.chofer_id, {
+              id: row.id,
+              chofer_id: row.chofer_id,
+              producto_id: row.producto_id,
+              unidad_id: row.unidad_id,
+            });
+          }
+          if (row.fecha === today && !todayByDriver.has(row.chofer_id)) {
+            todayByDriver.set(row.chofer_id, {
+              id: row.id,
+              chofer_id: row.chofer_id,
+              producto_id: row.producto_id,
+              unidad_id: row.unidad_id,
+            });
+          }
+        });
+
+        const merged: TodayAssignment[] = driverIds
+          .map(id => todayByDriver.get(id) || latestByDriver.get(id))
+          .filter(Boolean) as TodayAssignment[];
+
+        setAssignments(merged);
       } else {
         setAssignments([]);
       }
@@ -172,29 +200,54 @@ export default function PrivateRouteDrivers({
     }
   };
 
+  const upsertTodayAssignment = async (
+    driverId: string,
+    fields: { producto_id?: string | null; unidad_id?: string | null }
+  ) => {
+    if (!user) return;
+    // Look up if there is already a row for TODAY for this driver
+    const { data: todayRow } = await supabase
+      .from('asignaciones_chofer')
+      .select('id, producto_id, unidad_id')
+      .eq('chofer_id', driverId)
+      .eq('fecha', today)
+      .maybeSingle();
+
+    const current = assignments.find(a => a.chofer_id === driverId);
+    const merged = {
+      producto_id: fields.producto_id !== undefined ? fields.producto_id : (todayRow?.producto_id ?? current?.producto_id ?? null),
+      unidad_id: fields.unidad_id !== undefined ? fields.unidad_id : (todayRow?.unidad_id ?? current?.unidad_id ?? null),
+    };
+
+    if (!merged.producto_id) {
+      throw new Error('Selecciona ruta primero');
+    }
+
+    if (todayRow) {
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .update({ producto_id: merged.producto_id, unidad_id: merged.unidad_id, asignado_por: user.id })
+        .eq('id', todayRow.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('asignaciones_chofer')
+        .insert({
+          chofer_id: driverId,
+          producto_id: merged.producto_id,
+          unidad_id: merged.unidad_id,
+          fecha: today,
+          asignado_por: user.id,
+        });
+      if (error) throw error;
+    }
+  };
+
   const handleAssignRoute = async (driverId: string, routeId: string) => {
     if (!user) return;
     try {
       setSavingAssignment(driverId);
-      const existing = assignments.find(a => a.chofer_id === driverId);
-
-      if (existing) {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .update({ producto_id: routeId, asignado_por: user.id })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('asignaciones_chofer')
-          .insert({
-            chofer_id: driverId,
-            producto_id: routeId,
-            fecha: today,
-            asignado_por: user.id,
-          });
-        if (error) throw error;
-      }
+      await upsertTodayAssignment(driverId, { producto_id: routeId });
 
       // Also sync the driver's profile route_name
       const driver = drivers.find(d => d.id === driverId);
@@ -253,11 +306,7 @@ export default function PrivateRouteDrivers({
         return;
       }
 
-      const { error } = await supabase
-        .from('asignaciones_chofer')
-        .update({ unidad_id: unitId || null, asignado_por: user.id })
-        .eq('id', existing.id);
-      if (error) throw error;
+      await upsertTodayAssignment(driverId, { unidad_id: unitId || null });
 
       toast({ title: "✅ Unidad asignada" });
       fetchAll();
@@ -609,7 +658,7 @@ export default function PrivateRouteDrivers({
                     {(hasRoutes || hasUnits) && (
                       <div className="bg-muted/20 rounded-md p-2 space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                          📋 Asignación de hoy
+                          📋 Asignación actual (se mantiene hasta que la cambies)
                           {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
