@@ -107,12 +107,26 @@ export default function ComprarBoletos() {
           <BackButton />
           <div>
             <h1 className="text-lg font-bold text-foreground">Comprar Códigos QR</h1>
-            <p className="text-xs text-muted-foreground">Transporte Urbano - Hermosillo</p>
+            <p className="text-xs text-muted-foreground">Transporte Urbano</p>
           </div>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* City scope banner — large & bold */}
+        <Card className="border-primary/40 bg-primary/10">
+          <CardContent className="p-4 flex items-start gap-3">
+            <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-base font-extrabold text-foreground leading-tight">
+                Estos boletos son válidos SOLO en el transporte público de {cityLabel}.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                El precio aplica a la tarifa local. No se pueden usar en otra ciudad.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
         {/* Discount badge */}
         {isDiscounted && (
           <Card className="border-green-500/40 bg-green-500/5">
