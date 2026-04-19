@@ -149,16 +149,17 @@ serve(async (req) => {
     }
 
     // 4b. ANTI-CRUCE: este endpoint solo acepta QR de empleado en rutas PRIVADAS (maquiladora/shelter).
-    // Si la ruta asignada es pública o foránea, rechazar.
+    // Si la ruta asignada NO es privada, rechazar.
     if (resolvedRutaId) {
       const { data: rutaInfo } = await supabaseAdmin
         .from("productos")
-        .select("transport_type, proveedor_id")
+        .select("route_type, is_private, proveedor_id")
         .eq("id", resolvedRutaId)
         .maybeSingle();
 
-      const rutaTipo = rutaInfo?.transport_type || null;
-      if (rutaTipo && rutaTipo !== "privado") {
+      const rutaTipo = rutaInfo?.route_type || null;
+      const esPrivada = !!rutaInfo?.is_private || rutaTipo === "privada";
+      if (!esPrivada) {
         return new Response(JSON.stringify({
           valid: false,
           error_type: "wrong_scanner",

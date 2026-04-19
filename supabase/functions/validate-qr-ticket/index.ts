@@ -308,21 +308,44 @@ serve(async (req) => {
     // This check happens on the owner side (frontend) but we log it for audit
     const isDiscounted = ticket.ticket_type && ticket.ticket_type !== "normal";
 
-    // 4c. ANTI-CRUCE: este endpoint solo acepta QR pagados en rutas PÚBLICAS o FORÁNEAS.
-    // Si la ruta asignada al chofer es privada (maquiladora), rechazar.
+    // 4c. ANTI-CRUCE: este endpoint solo acepta QR con qr_scope='publico'.
+    //  - Verifica el scope del propio boleto (un QR de empleado nunca debe pasar aquí).
+    //  - Verifica además que la ruta asignada al chofer NO sea privada (maquiladora).
+    if ((ticket as any).qr_scope && (ticket as any).qr_scope !== "publico") {
+      await supabaseAdmin.from("logs_validacion_qr").insert({
+        qr_ticket_id: ticket.id,
+        resultado: "invalid",
+        mensaje_error: `QR no es de transporte público (scope=${(ticket as any).qr_scope})`,
+        latitud: latitude,
+        longitud: longitude,
+        unidad_id: resolvedUnidadId,
+        chofer_id: driver.id,
+        producto_id: resolvedRutaId,
+      });
+      return new Response(JSON.stringify({
+        valid: false,
+        error_type: "wrong_scanner",
+        message: "Este QR es de empresa privada. Use el escáner de personal.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     if (resolvedRutaId) {
       const { data: rutaInfo } = await supabaseAdmin
         .from("productos")
-        .select("transport_type, nombre")
+        .select("route_type, is_private, nombre")
         .eq("id", resolvedRutaId)
         .maybeSingle();
 
-      const rutaTipo = rutaInfo?.transport_type || null;
-      if (rutaTipo && rutaTipo !== "publico" && rutaTipo !== "foraneo") {
+      const rutaTipo = rutaInfo?.route_type || null;
+      const esPrivada = !!rutaInfo?.is_private || rutaTipo === "privada";
+      if (esPrivada) {
         await supabaseAdmin.from("logs_validacion_qr").insert({
           qr_ticket_id: ticket.id,
           resultado: "invalid",
-          mensaje_error: `QR pagado no se acepta en ruta ${rutaTipo}`,
+          mensaje_error: `QR pagado no se acepta en ruta privada (route_type=${rutaTipo})`,
           latitud: latitude,
           longitud: longitude,
           unidad_id: resolvedUnidadId,
