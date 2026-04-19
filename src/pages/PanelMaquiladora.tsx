@@ -656,7 +656,7 @@ export default function PanelMaquiladora() {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleGenerateQr(emp)}>
                         <RefreshCw className="h-3 w-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleToggleEmpleado(emp)}>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleDeleteEmpleado(emp)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
