@@ -422,6 +422,22 @@ export default function PanelMaquiladora() {
     if (empresa) await loadEmpleados(empresa.id);
   };
 
+  const handleDeleteEmpleado = async (emp: Empleado) => {
+    if (!confirm(`¿Eliminar definitivamente a ${emp.nombre}? Se borrarán también sus QR y validaciones.`)) return;
+    try {
+      // Borrar dependencias primero (validaciones y QRs del empleado)
+      await supabase.from("validaciones_transporte_personal").delete().eq("empleado_id", emp.id);
+      await supabase.from("qr_tickets_empresa").delete().eq("empleado_id", emp.id);
+      const { error } = await supabase.from("empleados_empresa").delete().eq("id", emp.id);
+      if (error) throw error;
+      toast({ title: "Empleado eliminado", description: emp.nombre });
+      if (empresa) await loadEmpleados(empresa.id);
+    } catch (err: any) {
+      console.error("Error eliminando empleado:", err);
+      toast({ title: "Error", description: err.message || "No se pudo eliminar", variant: "destructive" });
+    }
+  };
+
   const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
