@@ -196,10 +196,10 @@ export default function ValidarQr() {
           if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
-              .select("route_type")
+              .select("route_type, is_private")
               .eq("id", asignacionActiva.producto_id)
               .single();
-            if (producto?.route_type === "privada") {
+            if (producto?.route_type === "privada" || (producto as any)?.is_private) {
               setIsPrivateRoute(true);
               setScanMode("personal");
             }
