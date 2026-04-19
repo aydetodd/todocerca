@@ -427,7 +427,7 @@ export default function PanelMaquiladora() {
     try {
       // Borrar dependencias primero (validaciones y QRs del empleado)
       await supabase.from("validaciones_transporte_personal").delete().eq("empleado_id", emp.id);
-      await supabase.from("qr_tickets_empresa").delete().eq("empleado_id", emp.id);
+      await supabase.from("qr_empleados").delete().eq("empleado_id", emp.id);
       const { error } = await supabase.from("empleados_empresa").delete().eq("id", emp.id);
       if (error) throw error;
       toast({ title: "Empleado eliminado", description: emp.nombre });
