@@ -2527,6 +2527,7 @@ export type Database = {
           latitud_validacion: number | null
           longitud_validacion: number | null
           metadata: Json | null
+          qr_scope: string
           ruta_uso_id: string | null
           status: string
           stripe_cuota_fija_unitario: number | null
@@ -2552,6 +2553,7 @@ export type Database = {
           latitud_validacion?: number | null
           longitud_validacion?: number | null
           metadata?: Json | null
+          qr_scope?: string
           ruta_uso_id?: string | null
           status?: string
           stripe_cuota_fija_unitario?: number | null
@@ -2577,6 +2579,7 @@ export type Database = {
           latitud_validacion?: number | null
           longitud_validacion?: number | null
           metadata?: Json | null
+          qr_scope?: string
           ruta_uso_id?: string | null
           status?: string
           stripe_cuota_fija_unitario?: number | null
@@ -3803,6 +3806,7 @@ export type Database = {
           latitud_validacion: number | null
           longitud_validacion: number | null
           metadata: Json | null
+          qr_scope: string
           ruta_uso_id: string | null
           status: string
           stripe_cuota_fija_unitario: number | null
