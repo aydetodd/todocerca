@@ -180,14 +180,17 @@ export default function ValidarQr() {
       if (choferesDisponibles.length > 0) {
         const choferIds = choferesDisponibles.map((chofer: any) => chofer.id);
 
+        // Buscar TODAS las asignaciones (no solo hoy) — persisten día a día
         const { data: asignaciones } = await supabase
           .from("asignaciones_chofer")
-          .select("chofer_id, unidad_id, producto_id")
+          .select("chofer_id, unidad_id, producto_id, fecha")
           .in("chofer_id", choferIds)
-          .eq("fecha", todayStr)
+          .order("fecha", { ascending: false })
           .order("created_at", { ascending: false });
 
-        const asignacionActiva = (asignaciones || []).find((asignacion: any) => !choferParam || asignacion.chofer_id === choferParam) || asignaciones?.[0];
+        const filtradas = (asignaciones || []).filter((a: any) => !choferParam || a.chofer_id === choferParam);
+        // Preferir la de hoy; si no, la más reciente
+        const asignacionActiva = filtradas.find((a: any) => a.fecha === todayStr) || filtradas[0];
 
         if (asignacionActiva) {
           setAssignedUnitId(asignacionActiva.unidad_id);
