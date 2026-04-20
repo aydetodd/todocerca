@@ -290,14 +290,19 @@ export default function PanelConcesionario() {
     const prevMonthStartMs = Date.parse(prevMonthStart);
     const prevMonthEndMs = Date.parse(prevMonthEnd);
 
+    // Build chofer map from the MOST RECENT assignment per unit (persistent — not date-scoped)
+    // Per memory: persistencia-asignaciones-chofer — assignments persist day-to-day until changed
     const choferMap: Record<string, string> = {};
-    (asignacionesRes.data || [])
-      .filter((a: any) => a.fecha === todayStr)
-      .forEach((a: any) => {
-      if (a.unidad_id && a.choferes_empresa?.nombre) {
+    const sortedAsignaciones = [...(asignacionesRes.data || [])].sort((a: any, b: any) => {
+      const dateCmp = (b.fecha || '').localeCompare(a.fecha || '');
+      if (dateCmp !== 0) return dateCmp;
+      return Date.parse(b.created_at || '0') - Date.parse(a.created_at || '0');
+    });
+    sortedAsignaciones.forEach((a: any) => {
+      if (a.unidad_id && a.choferes_empresa?.nombre && !choferMap[a.unidad_id]) {
         choferMap[a.unidad_id] = a.choferes_empresa.nombre;
       }
-      });
+    });
 
     const countMap: Record<string, number> = {};
     let logsAyerCount = 0;
@@ -541,10 +546,10 @@ export default function PanelConcesionario() {
           console.error("Error loading fraud data:", error);
         }
       })();
-    } catch (err) {
+    } catch (err: any) {
       if (!isCurrentFetch()) return;
-      console.error("Error loading panel:", err);
-      toast.error("No se pudo cargar el panel. Inténtalo de nuevo.");
+      console.error("[PanelConcesionario] Error loading panel:", err?.message || err, err);
+      toast.error(`No se pudo cargar el panel: ${err?.message || 'Error desconocido'}`);
     } finally {
       if (isCurrentFetch()) setLoading(false);
     }
