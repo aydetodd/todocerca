@@ -424,10 +424,14 @@ export default function PanelConcesionario() {
     activeFetchIdRef.current = fetchId;
     const isCurrentFetch = () => fetchId === activeFetchIdRef.current;
 
+    let prov: any = null;
+    let verifData: any = null;
+    let cuentaData: any = null;
+
     try {
       if (isCurrentFetch()) setLoading(true);
       // Get provider
-      const { data: prov, error: provError } = await withTimeout(
+      const provRes = await withTimeout(
         supabase
           .from("proveedores")
           .select("*")
@@ -436,6 +440,8 @@ export default function PanelConcesionario() {
         12000,
         "perfil de concesionario"
       );
+      prov = provRes.data;
+      const provError = provRes.error;
 
       if (!isCurrentFetch()) return;
 
@@ -446,16 +452,31 @@ export default function PanelConcesionario() {
         return;
       }
       setProveedor(prov);
+    } catch (err: any) {
+      if (!isCurrentFetch()) return;
+      console.error("[PanelConcesionario] Error cargando proveedor:", err?.message, err?.stack);
+      toast.error(`No se pudo cargar el perfil: ${err?.message || 'Error desconocido'}`);
+      setLoading(false);
+      return;
+    }
 
-      // Fetch core data in parallel with independent error handling
+    // Fetch core data in parallel — independent error handling, never throws
+    try {
       const [verifResult, cuentaResult] = await Promise.allSettled([
         withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("fecha_solicitud", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
         withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
       ]);
 
-      const verifData = verifResult.status === "fulfilled" ? (verifResult.value as any).data : null;
-      const cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any).data : null;
+      verifData = verifResult.status === "fulfilled" ? (verifResult.value as any)?.data : null;
+      cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any)?.data : null;
 
+      if (verifResult.status === "rejected") console.error("[PanelConcesionario] verificación falló:", verifResult.reason);
+      if (cuentaResult.status === "rejected") console.error("[PanelConcesionario] cuenta conectada falló:", cuentaResult.reason);
+    } catch (e: any) {
+      console.error("[PanelConcesionario] Error cargando verificación/cuenta:", e?.message);
+    }
+
+    try {
       if (!isCurrentFetch()) return;
 
       if (verifData) setVerificacion(verifData as any);
@@ -463,6 +484,7 @@ export default function PanelConcesionario() {
         setCuentaConectada(cuentaData);
         setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
       }
+
 
       // Load unidades from unidades_empresa (the actual registered units)
       try {
