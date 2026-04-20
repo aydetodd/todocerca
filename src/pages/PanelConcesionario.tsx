@@ -414,7 +414,7 @@ export default function PanelConcesionario() {
     return () => { supabase.removeChannel(ch); };
   }, [proveedor?.id]);
 
-  const fetchAll = async () => {
+  async function fetchAll() {
     if (!user?.id) {
       setLoading(false);
       return;
@@ -577,7 +577,7 @@ export default function PanelConcesionario() {
     } finally {
       if (isCurrentFetch()) setLoading(false);
     }
-  };
+  }
 
   const toggleUnidadTickets = async (unidadId: string) => {
     if (expandedUnidad === unidadId) {
@@ -643,7 +643,7 @@ export default function PanelConcesionario() {
     }
   };
 
-  const syncStripeStatus = async () => {
+  async function syncStripeStatus() {
     if (!proveedor?.id) return;
     try {
       setSyncing(true);
@@ -673,7 +673,7 @@ export default function PanelConcesionario() {
     } finally {
       setSyncing(false);
     }
-  };
+  }
 
   // Check if settlement is available based on frequency
   const isSettlementAvailable = () => {
@@ -976,7 +976,7 @@ export default function PanelConcesionario() {
     setSearchingEmpresas(false);
   };
 
-  const loadContratosEmpresa = async (provId: string) => {
+  async function loadContratosEmpresa(provId: string) {
     const { data, error } = await supabase
       .from("contratos_transporte")
       .select("*, empresas_transporte(nombre)")
@@ -985,7 +985,7 @@ export default function PanelConcesionario() {
     if (error) console.error("Error loading contratos:", error);
     console.log("Contratos loaded for provId", provId, ":", data);
     setContratosEmpresa(data || []);
-  };
+  }
 
   const handleProponerContrato = async () => {
     if (!proveedor || !empresaSeleccionada) return;
