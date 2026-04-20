@@ -485,13 +485,6 @@ export default function PanelConcesionario() {
         setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
       }
 
-      if (!isCurrentFetch()) return;
-
-      if (verifData) setVerificacion(verifData as any);
-      if (cuentaData) {
-        setCuentaConectada(cuentaData);
-        setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
-      }
 
       // Load unidades from unidades_empresa (the actual registered units)
       try {
