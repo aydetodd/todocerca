@@ -520,8 +520,10 @@ export default function PanelConcesionario() {
         toast.error("El panel cargó parcialmente; las estadísticas tardaron demasiado.");
       }
 
-      // Load contratos con empresas
-      void loadContratosEmpresa(prov.id);
+      // Load contratos con empresas (non-blocking — own error handling)
+      loadContratosEmpresa(prov.id).catch((e) => {
+        console.error("[PanelConcesionario] loadContratosEmpresa failed:", e?.message, e);
+      });
 
       // Non-critical data should not block the initial render
       void (async () => {
@@ -548,7 +550,7 @@ export default function PanelConcesionario() {
       })();
     } catch (err: any) {
       if (!isCurrentFetch()) return;
-      console.error("[PanelConcesionario] Error loading panel:", err?.message || err, err);
+      console.error("[PanelConcesionario] Error loading panel:", err?.message, err?.stack, err);
       toast.error(`No se pudo cargar el panel: ${err?.message || 'Error desconocido'}`);
     } finally {
       if (isCurrentFetch()) setLoading(false);
