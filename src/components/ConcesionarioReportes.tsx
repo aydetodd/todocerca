@@ -28,7 +28,7 @@ interface ReportRow {
   ruta_nombre: string;
   boletos: number;
   ingresos: number;
-  tickets: { code: string; time: string; date: string }[];
+  tickets: { code: string; time: string; date: string; amount: number }[];
 }
 
 function getHermosillo() {
