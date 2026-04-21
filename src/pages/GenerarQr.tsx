@@ -177,7 +177,7 @@ export default function GenerarQr() {
               <p className="text-2xl font-mono font-bold text-foreground mb-1">
                 #{shortCode}
               </p>
-              <p className="text-lg font-semibold text-primary mb-4">$9.00 MXN</p>
+              <p className="text-lg font-semibold text-primary mb-4">${(ticket.amount || 9).toFixed(2)} MXN</p>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => copyCode(ticket.token)}>

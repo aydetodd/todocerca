@@ -113,7 +113,7 @@ export default function QrBoletos() {
         // Price
         ctx.fillStyle = '#2563eb';
         ctx.font = 'bold 28px Arial, sans-serif';
-        ctx.fillText('$9.00 MXN', 300, 625);
+        ctx.fillText(`$${(firstActiveTicket.amount || 9).toFixed(2)} MXN`, 300, 625);
 
         // Validity
         ctx.fillStyle = '#dc2626';
@@ -309,7 +309,7 @@ export default function QrBoletos() {
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
             <p>• Compra códigos QR → se generan <strong className="text-foreground">automáticamente</strong></p>
-            <p>• Cada código QR vale <strong className="text-foreground">$9.00 MXN</strong></p>
+            <p>• Precio según tipo: ordinario <strong className="text-foreground">$9.00</strong>, con descuento <strong className="text-foreground">$4.50</strong></p>
             <p>• Los QR <strong className="text-foreground">no expiran</strong> hasta que se usen</p>
             <p>• QR transferidos vencen en <strong className="text-foreground">24 horas</strong></p>
             <p>• Muestra el QR al chofer para pagar tu pasaje</p>
@@ -357,7 +357,7 @@ export default function QrBoletos() {
               >
                 📋 {firstActiveTicket.token}
               </button>
-              <p className="text-lg font-semibold text-primary">$9.00 MXN</p>
+              <p className="text-lg font-semibold text-primary">${(firstActiveTicket.amount || 9).toFixed(2)} MXN</p>
               <p className="text-xs text-muted-foreground">
                 Transporte Urbano - Hermosillo, Sonora
               </p>
