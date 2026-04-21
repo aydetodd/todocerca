@@ -7,8 +7,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TICKET_PRICE_NORMAL = 900; // $9.00 MXN in centavos
-const TICKET_PRICE_DESCUENTO = 450; // $4.50 MXN in centavos
+// Precios en centavos MXN — provisionales, se ajustarán con concesionarios
+const PRICE_MAP: Record<string, number> = {
+  normal: 900,        // $9.00
+  estudiante: 500,    // $5.00
+  tercera_edad: 500,  // $5.00
+  nino_menor_5: 0,    // Gratis
+  nino_5_10: 500,     // $5.00
+  discapacitado: 500, // $5.00
+  embarazada: 500,    // $5.00
+  ceguera_total: 0,   // Gratis
+};
+
+const LABEL_MAP: Record<string, string> = {
+  normal: "",
+  estudiante: " (Estudiante)",
+  tercera_edad: " (Tercera Edad)",
+  nino_menor_5: " (Niño <5 años — Gratis)",
+  nino_5_10: " (Niño 5-10 años)",
+  discapacitado: " (Discapacidad)",
+  embarazada: " (Embarazada)",
+  ceguera_total: " (Ceguera Total — Gratis)",
+};
+
+const DISCOUNT_TYPES = ["estudiante", "tercera_edad", "nino_menor_5", "nino_5_10", "discapacitado", "embarazada", "ceguera_total"];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,7 +48,6 @@ serve(async (req) => {
   );
 
   try {
-    // Authenticate user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
@@ -34,17 +55,16 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Usuario no autenticado");
 
     const { quantity, ticket_type = "normal", device_id, city_label } = await req.json();
-    
+
     if (!quantity || quantity < 1 || quantity > 100) {
       throw new Error("Cantidad inválida. Mínimo 1, máximo 100 boletos.");
     }
 
-    // Validate discount eligibility
-    let unitPrice = TICKET_PRICE_NORMAL;
+    let unitPrice = PRICE_MAP["normal"];
     let validatedType = "normal";
 
-    if (ticket_type === "estudiante" || ticket_type === "tercera_edad") {
-      // Verify user has approved discount of this type with matching device
+    if (DISCOUNT_TYPES.includes(ticket_type)) {
+      // Verify user has approved discount of this type
       const { data: verification } = await supabaseAdmin
         .from("verificaciones_descuento")
         .select("id, device_id")
@@ -57,37 +77,98 @@ serve(async (req) => {
         throw new Error("No tienes un descuento aprobado para este tipo de boleto.");
       }
 
-      // Verify device matches
       if (device_id && verification.device_id && device_id !== verification.device_id) {
         throw new Error("Este descuento solo es válido desde el dispositivo donde fue solicitado.");
       }
 
-      unitPrice = TICKET_PRICE_DESCUENTO;
+      unitPrice = PRICE_MAP[ticket_type] ?? PRICE_MAP["normal"];
       validatedType = ticket_type;
     }
 
-    const totalAmount = quantity * unitPrice;
+    const cityForLabel = (city_label && String(city_label).trim()) || "tu ciudad";
 
+    // Handle FREE ticket types — generate directly without Stripe
+    if (unitPrice === 0) {
+      const qrInserts = [];
+      for (let i = 0; i < quantity; i++) {
+        qrInserts.push({
+          user_id: user.id,
+          token: crypto.randomUUID(),
+          amount: 0,
+          status: "active",
+          is_transferred: false,
+          stripe_fee_unitario: 0,
+          stripe_cuota_fija_unitario: 0,
+          ticket_type: validatedType,
+          device_id: device_id || null,
+        });
+      }
+
+      const { error: insertError } = await supabaseAdmin
+        .from("qr_tickets")
+        .insert(qrInserts);
+
+      if (insertError) {
+        console.error("[PURCHASE-TICKETS] Error inserting free tickets:", insertError);
+        throw new Error("Error al generar boletos gratuitos");
+      }
+
+      // Update cuentas_boletos
+      const { data: account } = await supabaseAdmin
+        .from("cuentas_boletos")
+        .select("total_comprado")
+        .eq("user_id", user.id)
+        .single();
+
+      if (account) {
+        await supabaseAdmin
+          .from("cuentas_boletos")
+          .update({ total_comprado: account.total_comprado + quantity })
+          .eq("user_id", user.id);
+      } else {
+        await supabaseAdmin
+          .from("cuentas_boletos")
+          .insert({ user_id: user.id, total_comprado: quantity, ticket_count: 0 });
+      }
+
+      // Record transaction
+      await supabaseAdmin.from("transacciones_boletos").insert({
+        user_id: user.id,
+        tipo: "compra",
+        cantidad_boletos: quantity,
+        monto_total: 0,
+        stripe_payment_id: null,
+        estado: "completado",
+        descripcion: `${quantity} código${quantity > 1 ? "s" : ""} QR gratuito${quantity > 1 ? "s" : ""} (${validatedType})`,
+        stripe_fee: 0,
+      });
+
+      console.log(`[PURCHASE-TICKETS] Generated ${quantity} FREE ${validatedType} tickets for user ${user.email}`);
+
+      // Return redirect URL directly (no Stripe checkout)
+      const origin = req.headers.get("origin") || "";
+      return new Response(JSON.stringify({
+        url: `${origin}/wallet/qr-boletos?purchase=success&qty=${quantity}`,
+        free: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // PAID ticket flow — Stripe checkout
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
 
-    const typeLabel = validatedType === "estudiante" 
-      ? " (Estudiante -50%)" 
-      : validatedType === "tercera_edad" 
-        ? " (Tercera Edad -50%)" 
-        : "";
+    const typeLabel = LABEL_MAP[validatedType] || "";
 
-    const cityForLabel = (city_label && String(city_label).trim()) || "tu ciudad";
-
-    // Create one-time payment session for tickets
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -97,7 +178,7 @@ serve(async (req) => {
             currency: "mxn",
             product_data: {
               name: `QR Boleto Digital × ${quantity}${typeLabel}`,
-              description: `VÁLIDO SOLO en transporte público de ${cityForLabel}. ${quantity} boleto${quantity > 1 ? 's' : ''}.`,
+              description: `VÁLIDO SOLO en transporte público de ${cityForLabel}. ${quantity} boleto${quantity > 1 ? "s" : ""}.`,
             },
             unit_amount: unitPrice,
           },
@@ -117,7 +198,7 @@ serve(async (req) => {
       },
     });
 
-    console.log(`[PURCHASE-TICKETS] Session created for ${quantity} ${validatedType} tickets, user: ${user.email}`);
+    console.log(`[PURCHASE-TICKETS] Session created for ${quantity} ${validatedType} tickets @ $${(unitPrice / 100).toFixed(2)}, user: ${user.email}`);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

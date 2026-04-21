@@ -7,6 +7,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Precios en pesos MXN — deben coincidir con purchase-tickets
+const PRICE_MAP: Record<string, number> = {
+  normal: 9.0,
+  estudiante: 5.0,
+  tercera_edad: 5.0,
+  nino_menor_5: 0,
+  nino_5_10: 5.0,
+  discapacitado: 5.0,
+  embarazada: 5.0,
+  ceguera_total: 0,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -38,7 +50,7 @@ serve(async (req) => {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      
+
       if (session.metadata?.type !== "qr_boleto_purchase") {
         console.log("[WEBHOOK-TICKETS] Not a ticket purchase, skipping");
         return new Response(JSON.stringify({ received: true }), {
@@ -76,7 +88,8 @@ serve(async (req) => {
         console.warn(`[WEBHOOK-TICKETS] Could not retrieve Stripe fee: ${feeErr.message}`);
       }
 
-      const ticketAmount = ticketType === "normal" ? 9.00 : 4.50;
+      // Use the price map to determine ticket amount
+      const ticketAmount = PRICE_MAP[ticketType] ?? 9.0;
 
       // If Stripe API didn't return the fee, calculate it mathematically
       // Stripe Mexico: 3.6% + $3.00 MXN fixed per transaction
@@ -89,7 +102,7 @@ serve(async (req) => {
       const stripeFeePerTicket = quantity > 0 ? stripeFee / quantity : 0;
       const cuotaFijaUnitario = quantity > 0 ? 3.00 / quantity : 0;
 
-      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}, cuota_fija/ticket: $${cuotaFijaUnitario.toFixed(4)}`);
+      console.log(`[WEBHOOK-TICKETS] Generating ${quantity} ${ticketType} QR codes for user ${userId}, amount: $${ticketAmount}, fee/ticket: $${stripeFeePerTicket.toFixed(4)}`);
 
       // Generate QR tickets
       const qrInserts = [];
@@ -148,7 +161,7 @@ serve(async (req) => {
         monto_total: quantity * ticketAmount,
         stripe_payment_id: session.payment_intent as string,
         estado: "completado",
-        descripcion: `Compra de ${quantity} código${quantity > 1 ? 's' : ''} QR${ticketType !== "normal" ? ` (${ticketType})` : ""}`,
+        descripcion: `Compra de ${quantity} código${quantity > 1 ? "s" : ""} QR${ticketType !== "normal" ? ` (${ticketType})` : ""}`,
         stripe_fee: stripeFee,
       });
 
