@@ -335,6 +335,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
             code: (t.ticketToken || t.qr_ticket_id || "").slice(-6).toUpperCase(),
             time: new Date(t.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
             date: new Date(t.created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" }),
+            amount: t.qr_tickets?.amount ?? 9,
           })),
         };
       }).sort((a, b) => b.boletos - a.boletos);
