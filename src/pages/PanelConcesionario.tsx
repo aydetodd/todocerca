@@ -251,7 +251,7 @@ export default function PanelConcesionario() {
       Promise.all([
         supabase
           .from("logs_validacion_qr")
-          .select("unidad_id, chofer_id, created_at, qr_ticket_id, producto_id, qr_tickets(unidad_uso_id, ruta_uso_id, chofer_id)")
+          .select("unidad_id, chofer_id, created_at, qr_ticket_id, producto_id, qr_tickets(unidad_uso_id, ruta_uso_id, chofer_id, amount, ticket_type)")
           .in("chofer_id", choferUserIds.length > 0 ? choferUserIds : [user?.id || provId])
           .eq("resultado", "valid")
           .gte("created_at", prevMonthStart)
@@ -305,28 +305,38 @@ export default function PanelConcesionario() {
     });
 
     const countMap: Record<string, number> = {};
+    const amountMap: Record<string, number> = {};
     let logsAyerCount = 0;
+    let logsAyerAmount = 0;
     let logsSemanaCount = 0;
+    let logsSemanaAmount = 0;
     let logsSemanaAntCount = 0;
+    let logsSemanaAntAmount = 0;
     let logsMesCount = 0;
+    let logsMesAmount = 0;
     let logsMesAntCount = 0;
+    let logsMesAntAmount = 0;
 
     let noUnitTodayCount = 0;
+    let noUnitTodayAmount = 0;
     logs.forEach((log: any) => {
       const createdAtMs = Date.parse(log.created_at);
+      const ticketAmount = log.qr_tickets?.amount ?? 9;
 
       if (createdAtMs >= todayStartMs && createdAtMs <= todayEndMs) {
         if (log.effectiveUnidadId) {
           countMap[log.effectiveUnidadId] = (countMap[log.effectiveUnidadId] || 0) + 1;
+          amountMap[log.effectiveUnidadId] = (amountMap[log.effectiveUnidadId] || 0) + ticketAmount;
         } else {
           noUnitTodayCount += 1;
+          noUnitTodayAmount += ticketAmount;
         }
       }
-      if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) logsAyerCount += 1;
-      if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) logsSemanaCount += 1;
-      if (createdAtMs >= prevWeekStartMs && createdAtMs <= prevWeekEndMs) logsSemanaAntCount += 1;
-      if (createdAtMs >= monthStartMs && createdAtMs <= todayEndMs) logsMesCount += 1;
-      if (createdAtMs >= prevMonthStartMs && createdAtMs <= prevMonthEndMs) logsMesAntCount += 1;
+      if (createdAtMs >= yesterdayStartMs && createdAtMs <= yesterdayEndMs) { logsAyerCount += 1; logsAyerAmount += ticketAmount; }
+      if (createdAtMs >= currentWeekStartMs && createdAtMs <= todayEndMs) { logsSemanaCount += 1; logsSemanaAmount += ticketAmount; }
+      if (createdAtMs >= prevWeekStartMs && createdAtMs <= prevWeekEndMs) { logsSemanaAntCount += 1; logsSemanaAntAmount += ticketAmount; }
+      if (createdAtMs >= monthStartMs && createdAtMs <= todayEndMs) { logsMesCount += 1; logsMesAmount += ticketAmount; }
+      if (createdAtMs >= prevMonthStartMs && createdAtMs <= prevMonthEndMs) { logsMesAntCount += 1; logsMesAntAmount += ticketAmount; }
     });
 
     const ingresos: IngresoUnidad[] = misUnidades
@@ -337,7 +347,7 @@ export default function PanelConcesionario() {
         descripcion: u.descripcion,
         chofer_nombre: choferMap[u.id] || null,
         boletos_hoy: countMap[u.id] || 0,
-        ingresos_hoy: (countMap[u.id] || 0) * 9,
+        ingresos_hoy: amountMap[u.id] || 0,
       }))
       .sort((a: IngresoUnidad, b: IngresoUnidad) => b.boletos_hoy - a.boletos_hoy);
 
@@ -350,7 +360,7 @@ export default function PanelConcesionario() {
         descripcion: null,
         chofer_nombre: null,
         boletos_hoy: noUnitTodayCount,
-        ingresos_hoy: noUnitTodayCount * 9,
+        ingresos_hoy: noUnitTodayAmount,
       });
     }
 
@@ -365,9 +375,9 @@ export default function PanelConcesionario() {
       semana: logsSemanaCount,
       semanaAnterior: logsSemanaAntCount,
       labelSemanaAnterior: prevWeekLabel,
-      totalMes: logsMesCount * 9,
+      totalMes: logsMesAmount,
       mes: logsMesCount,
-      mesAnterior: logsMesAntCount * 9,
+      mesAnterior: logsMesAntAmount,
       labelMesAnterior,
       totalUnidades: misUnidades.length,
     });
@@ -1155,7 +1165,7 @@ export default function PanelConcesionario() {
                   </Button>
                 </div>
                 <CardDescription className="text-xs">
-                  Boletos QR validados hoy · $9.00 MXN c/u
+                  Boletos QR validados hoy · Precio según tipo
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">

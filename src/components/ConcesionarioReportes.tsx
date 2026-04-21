@@ -191,7 +191,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       // Query by chofer_id (user_id) to catch logs without unit assignment
       let query = (supabase
         .from("logs_validacion_qr") as any)
-        .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id, qr_tickets(token, unidad_uso_id, ruta_uso_id, chofer_id)")
+        .select("qr_ticket_id, created_at, unidad_id, chofer_id, producto_id, qr_tickets(token, unidad_uso_id, ruta_uso_id, chofer_id, amount, ticket_type)")
         .eq("resultado", "valid")
         .gte("created_at", start)
         .lte("created_at", end)
@@ -330,7 +330,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
           producto_id: g.producto_id,
           ruta_nombre: g.producto_id ? (rutaMap[g.producto_id] || "Ruta desconocida") : "Sin ruta",
           boletos: g.tickets.length,
-          ingresos: g.tickets.length * 9,
+          ingresos: g.tickets.reduce((sum: number, t: any) => sum + (t.qr_tickets?.amount ?? 9), 0),
           tickets: g.tickets.map((t: any) => ({
             code: (t.ticketToken || t.qr_ticket_id || "").slice(-6).toUpperCase(),
             time: new Date(t.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
@@ -365,14 +365,15 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
         `#${t.code}`,
         t.date,
         t.time,
-        "$9.00",
+        `$${(t.amount ?? 9).toFixed(2)}`,
       ])
     );
 
     // Summary
     const totalBoletos = rows.reduce((s, r) => s + r.boletos, 0);
+    const totalIngresos = rows.reduce((s, r) => s + r.ingresos, 0);
     allTickets.push([]);
-    allTickets.push(["", "", "", "", "TOTAL", "", "", String(totalBoletos), `$${(totalBoletos * 9).toFixed(2)}`]);
+    allTickets.push(["", "", "", "", "TOTAL", "", "", String(totalBoletos), `$${totalIngresos.toFixed(2)}`]);
 
     allTickets.push([]);
     allTickets.push(["RESUMEN POR UNIDAD/RUTA", "", "", "", "", "", "", "", ""]);
@@ -532,7 +533,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
             </Button>
           </div>
           <CardDescription className="text-xs">
-            Desglose por unidad, chofer y ruta · $9.00 MXN c/u
+            Desglose por unidad, chofer y ruta · Precio según tipo
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
