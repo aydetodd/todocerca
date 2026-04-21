@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, UserRound, CheckCircle2, XCircle, Loader2, ExternalLink, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, ExternalLink, Clock } from "lucide-react";
+import { getCategoryConfig, getCategoryLabel, getCategoryPrice } from "@/lib/ticketCategories";
 
 type SolicitudDescuento = {
   id: string;
@@ -42,7 +43,6 @@ export default function AdminDescuentos() {
       return;
     }
 
-    // Fetch user info for each
     const enriched = await Promise.all(
       (data || []).map(async (s: any) => {
         const { data: profile } = await supabase
@@ -81,16 +81,20 @@ export default function AdminDescuentos() {
       if (error) throw error;
       if (!updated) throw new Error("No se pudo actualizar, verifica permisos");
 
-      // Send internal message to the user
       if (solicitud) {
-        const tipoLabel = solicitud.tipo === "estudiante" ? "Estudiante" : "Tercera Edad";
-        const fechaHora = now.toLocaleString("es-MX", { 
-          dateStyle: "long", timeStyle: "short" 
+        const catConfig = getCategoryConfig(solicitud.tipo);
+        const tipoLabel = catConfig?.label || solicitud.tipo;
+        const precio = getCategoryPrice(solicitud.tipo);
+        const precioText = precio === 0 ? "Gratis" : `$${precio.toFixed(2)} MXN`;
+
+        const fechaHora = now.toLocaleString("es-MX", {
+          dateStyle: "long",
+          timeStyle: "short",
         });
-        
+
         let mensaje = "";
         if (action === "aprobado") {
-          mensaje = `✅ ¡Tu solicitud de Descuento Social (${tipoLabel}) ha sido APROBADA!\n\n📅 Fecha: ${fechaHora}\n\nA partir de ahora tus boletos costarán $4.50 MXN en vez de $9.00. Recuerda que los boletos con descuento no son transferibles y solo se pueden usar desde tu dispositivo registrado.`;
+          mensaje = `✅ ¡Tu solicitud de Descuento Social (${tipoLabel}) ha sido APROBADA!\n\n📅 Fecha: ${fechaHora}\n\nA partir de ahora tus boletos costarán ${precioText} en vez de $9.00. Recuerda que los boletos con descuento no son transferibles y solo se pueden usar desde tu dispositivo registrado.`;
         } else if (action === "rechazado") {
           mensaje = `❌ Tu solicitud de Descuento Social (${tipoLabel}) ha sido RECHAZADA.\n\n📅 Fecha: ${fechaHora}${notas[id] ? `\n📝 Motivo: ${notas[id]}` : ""}\n\nPuedes volver a enviar tu solicitud con la documentación correcta desde la sección de Descuento Social.`;
         } else {
@@ -107,8 +111,11 @@ export default function AdminDescuentos() {
       }
 
       toast.success(
-        action === "aprobado" ? "Descuento aprobado ✅" : 
-        action === "incompleto" ? "Marcado como incompleto ⚠️" : "Solicitud rechazada ❌"
+        action === "aprobado"
+          ? "Descuento aprobado ✅"
+          : action === "incompleto"
+          ? "Marcado como incompleto ⚠️"
+          : "Solicitud rechazada ❌"
       );
       fetchSolicitudes();
     } catch (err: any) {
@@ -140,100 +147,110 @@ export default function AdminDescuentos() {
         <p className="text-sm text-muted-foreground">No hay solicitudes pendientes.</p>
       )}
 
-      {pendientes.map((s) => (
-        <Card key={s.id} className="border-yellow-500/30">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {s.tipo === "estudiante" ? (
-                  <GraduationCap className="h-5 w-5 text-blue-500" />
-                ) : (
-                  <UserRound className="h-5 w-5 text-amber-500" />
-                )}
-                <div>
-                  <p className="font-medium text-foreground capitalize">{s.tipo.replace("_", " ")}</p>
-                  <p className="text-xs text-muted-foreground">{s.user_email} · {s.user_phone}</p>
+      {pendientes.map((s) => {
+        const catConfig = getCategoryConfig(s.tipo);
+        return (
+          <Card key={s.id} className="border-yellow-500/30">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{catConfig?.icon || "🎫"}</span>
+                  <div>
+                    <p className="font-medium text-foreground">{catConfig?.label || s.tipo}</p>
+                    <p className="text-xs text-muted-foreground">{s.user_email} · {s.user_phone}</p>
+                    <p className="text-xs text-primary">
+                      Precio: {catConfig?.esGratis ? "Gratis" : `$${(catConfig?.precio || 9).toFixed(2)} MXN`}
+                    </p>
+                  </div>
                 </div>
+                <Badge variant="secondary">Pendiente</Badge>
               </div>
-              <Badge variant="secondary">Pendiente</Badge>
-            </div>
 
-            <a
-              href={s.url_credencial}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              <ExternalLink className="h-3 w-3" /> Ver credencial
-            </a>
-
-            <p className="text-xs text-muted-foreground">
-              Device ID: {s.device_id || "No registrado"}
-            </p>
-
-            <Textarea
-              placeholder="Notas del admin (opcional, motivo de rechazo)"
-              value={notas[s.id] || ""}
-              onChange={(e) => setNotas({ ...notas, [s.id]: e.target.value })}
-              className="text-sm"
-              rows={2}
-            />
-
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={() => handleAction(s.id, "aprobado")}
-                disabled={processing === s.id}
+              <a
+                href={s.url_credencial}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-primary hover:underline"
               >
-                {processing === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-                Aprobar
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
-                onClick={() => handleAction(s.id, "incompleto")}
-                disabled={processing === s.id}
-              >
-                <Clock className="h-4 w-4 mr-1" /> Incompleto
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={() => handleAction(s.id, "rechazado")}
-                disabled={processing === s.id}
-              >
-                <XCircle className="h-4 w-4 mr-1" /> Rechazar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                <ExternalLink className="h-3 w-3" /> Ver credencial
+              </a>
+
+              <p className="text-xs text-muted-foreground">
+                Device ID: {s.device_id || "No registrado"}
+              </p>
+
+              <Textarea
+                placeholder="Notas del admin (opcional, motivo de rechazo)"
+                value={notas[s.id] || ""}
+                onChange={(e) => setNotas({ ...notas, [s.id]: e.target.value })}
+                className="text-sm"
+                rows={2}
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => handleAction(s.id, "aprobado")}
+                  disabled={processing === s.id}
+                >
+                  {processing === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                  Aprobar
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                  onClick={() => handleAction(s.id, "incompleto")}
+                  disabled={processing === s.id}
+                >
+                  <Clock className="h-4 w-4 mr-1" /> Incompleto
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => handleAction(s.id, "rechazado")}
+                  disabled={processing === s.id}
+                >
+                  <XCircle className="h-4 w-4 mr-1" /> Rechazar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {procesadas.length > 0 && (
         <>
           <h3 className="text-sm font-semibold text-muted-foreground mt-6">Historial</h3>
-          {procesadas.map((s) => (
-            <Card key={s.id} className="opacity-70">
-              <CardContent className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {s.tipo === "estudiante" ? (
-                    <GraduationCap className="h-4 w-4 text-blue-500" />
-                  ) : (
-                    <UserRound className="h-4 w-4 text-amber-500" />
-                  )}
-                  <div>
-                    <p className="text-sm">{s.user_email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(s.created_at).toLocaleDateString()}
-                    </p>
+          {procesadas.map((s) => {
+            const catConfig = getCategoryConfig(s.tipo);
+            return (
+              <Card key={s.id} className="opacity-70">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{catConfig?.icon || "🎫"}</span>
+                    <div>
+                      <p className="text-sm">{catConfig?.label || s.tipo} · {s.user_email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(s.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <Badge className={s.estado === "aprobado" ? "bg-green-500/20 text-green-400" : s.estado === "incompleto" ? "bg-yellow-500/20 text-yellow-400" : ""} variant={s.estado === "rechazado" ? "destructive" : "default"}>
-                  {s.estado}
-                </Badge>
-              </CardContent>
-            </Card>
-          ))}
+                  <Badge
+                    className={
+                      s.estado === "aprobado"
+                        ? "bg-green-500/20 text-green-400"
+                        : s.estado === "incompleto"
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : ""
+                    }
+                    variant={s.estado === "rechazado" ? "destructive" : "default"}
+                  >
+                    {s.estado}
+                  </Badge>
+                </CardContent>
+              </Card>
+            );
+          })}
         </>
       )}
     </div>
