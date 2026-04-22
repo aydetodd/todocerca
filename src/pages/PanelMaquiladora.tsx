@@ -423,18 +423,26 @@ export default function PanelMaquiladora() {
   };
 
   const handleDeleteEmpleado = async (emp: Empleado) => {
-    if (!confirm(`¿Eliminar definitivamente a ${emp.nombre}? Se borrarán también sus QR y validaciones.`)) return;
+    if (!confirm(`¿Dar de baja a ${emp.nombre}? Su historial se conservará y sus QR activos quedarán revocados.`)) return;
     try {
-      // Borrar dependencias primero (validaciones y QRs del empleado)
-      await supabase.from("validaciones_transporte_personal").delete().eq("empleado_id", emp.id);
-      await supabase.from("qr_empleados").delete().eq("empleado_id", emp.id);
-      const { error } = await supabase.from("empleados_empresa").delete().eq("id", emp.id);
+      await supabase
+        .from("qr_empleados")
+        .update({ status: "revoked" })
+        .eq("empleado_id", emp.id)
+        .eq("status", "active");
+
+      const { error } = await supabase
+        .from("empleados_empresa")
+        .update({ is_active: false })
+        .eq("id", emp.id);
+
       if (error) throw error;
-      toast({ title: "Empleado eliminado", description: emp.nombre });
+
+      toast({ title: "Empleado dado de baja", description: emp.nombre });
       if (empresa) await loadEmpleados(empresa.id);
     } catch (err: any) {
-      console.error("Error eliminando empleado:", err);
-      toast({ title: "Error", description: err.message || "No se pudo eliminar", variant: "destructive" });
+      console.error("Error dando de baja empleado:", err);
+      toast({ title: "Error", description: err.message || "No se pudo dar de baja", variant: "destructive" });
     }
   };
 
@@ -656,7 +664,7 @@ export default function PanelMaquiladora() {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleGenerateQr(emp)}>
                         <RefreshCw className="h-3 w-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleDeleteEmpleado(emp)}>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Dar de baja empleado" onClick={() => handleDeleteEmpleado(emp)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
