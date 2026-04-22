@@ -427,9 +427,18 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         toast({ title: "Error", description: "Selecciona país, estado, ciudad y número de línea", variant: "destructive" });
         return;
       }
-      const routeName = selectedNombreRuta
-        ? `Línea ${selectedLinea} - ${selectedNombreRuta}`
-        : `Línea ${selectedLinea}`;
+      const matchedLocalRoute = rutasLocalData.find((r: any) => {
+        const key = r.linea === 0 ? 'Especial' : String(r.linea);
+        const selectedLabel = (selectedNombreRuta || '').trim();
+        const routeLabel = (r.ramal || '').trim();
+        return key === selectedLinea && routeLabel === selectedLabel;
+      });
+
+      const routeName = matchedLocalRoute?.nombre || (
+        selectedNombreRuta
+          ? `Línea ${selectedLinea} - ${selectedNombreRuta}`
+          : `Línea ${selectedLinea}`
+      );
       
       try {
         const { data: category } = await supabase
