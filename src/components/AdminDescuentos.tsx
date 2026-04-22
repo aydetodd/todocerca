@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, Loader2, ExternalLink, Clock } from "lucide-react";
-import { getCategoryConfig, getCategoryLabel, getCategoryPrice } from "@/lib/ticketCategories";
+import { getCategoryConfig, getCategoryPrice } from "@/lib/ticketCategories";
 
 type SolicitudDescuento = {
   id: string;
@@ -62,7 +62,11 @@ export default function AdminDescuentos() {
     setLoading(false);
   };
 
-  const handleAction = async (id: string, action: "aprobado" | "rechazado" | "incompleto") => {
+  const handleAction = async (
+    id: string,
+    action: "aprobado" | "rechazado" | "incompleto",
+    sourceState?: string
+  ) => {
     setProcessing(id);
     const solicitud = solicitudes.find((s) => s.id === id);
     try {
@@ -95,6 +99,8 @@ export default function AdminDescuentos() {
         let mensaje = "";
         if (action === "aprobado") {
           mensaje = `✅ ¡Tu solicitud de Descuento Social (${tipoLabel}) ha sido APROBADA!\n\n📅 Fecha: ${fechaHora}\n\nA partir de ahora tus boletos costarán ${precioText} en vez de $9.00. Recuerda que los boletos con descuento no son transferibles y solo se pueden usar desde tu dispositivo registrado.`;
+        } else if (action === "rechazado" && sourceState === "aprobado") {
+          mensaje = `🚫 Tu descuento social (${tipoLabel}) fue dado de BAJA.\n\n📅 Fecha: ${fechaHora}${notas[id] ? `\n📝 Motivo: ${notas[id]}` : ""}\n\nA partir de ahora tus nuevas compras volverán a la tarifa ordinaria hasta que un administrador apruebe nuevamente una solicitud.`;
         } else if (action === "rechazado") {
           mensaje = `❌ Tu solicitud de Descuento Social (${tipoLabel}) ha sido RECHAZADA.\n\n📅 Fecha: ${fechaHora}${notas[id] ? `\n📝 Motivo: ${notas[id]}` : ""}\n\nPuedes volver a enviar tu solicitud con la documentación correcta desde la sección de Descuento Social.`;
         } else {
@@ -115,6 +121,8 @@ export default function AdminDescuentos() {
           ? "Descuento aprobado ✅"
           : action === "incompleto"
           ? "Marcado como incompleto ⚠️"
+          : sourceState === "aprobado"
+          ? "Descuento dado de baja 🚫"
           : "Solicitud rechazada ❌"
       );
       fetchSolicitudes();
@@ -225,28 +233,55 @@ export default function AdminDescuentos() {
             const catConfig = getCategoryConfig(s.tipo);
             return (
               <Card key={s.id} className="opacity-70">
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{catConfig?.icon || "🎫"}</span>
-                    <div>
-                      <p className="text-sm">{catConfig?.label || s.tipo} · {s.user_email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(s.created_at).toLocaleDateString()}
-                      </p>
+                <CardContent className="p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{catConfig?.icon || "🎫"}</span>
+                      <div>
+                        <p className="text-sm">{catConfig?.label || s.tipo} · {s.user_email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(s.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
+                    <Badge
+                      className={
+                        s.estado === "aprobado"
+                          ? "bg-green-500/20 text-green-400"
+                          : s.estado === "incompleto"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : ""
+                      }
+                      variant={s.estado === "rechazado" ? "destructive" : "default"}
+                    >
+                      {s.estado}
+                    </Badge>
                   </div>
-                  <Badge
-                    className={
-                      s.estado === "aprobado"
-                        ? "bg-green-500/20 text-green-400"
-                        : s.estado === "incompleto"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : ""
-                    }
-                    variant={s.estado === "rechazado" ? "destructive" : "default"}
-                  >
-                    {s.estado}
-                  </Badge>
+
+                  {s.estado === "aprobado" && (
+                    <>
+                      <Textarea
+                        placeholder="Motivo de baja del descuento (opcional)"
+                        value={notas[s.id] || ""}
+                        onChange={(e) => setNotas({ ...notas, [s.id]: e.target.value })}
+                        className="text-sm"
+                        rows={2}
+                      />
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => handleAction(s.id, "rechazado", s.estado)}
+                        disabled={processing === s.id}
+                      >
+                        {processing === s.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <XCircle className="h-4 w-4 mr-1" />
+                        )}
+                        Dar de baja descuento
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             );
