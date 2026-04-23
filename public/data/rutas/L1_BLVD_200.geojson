@@ -1,0 +1,1981 @@
+{
+  "type": "FeatureCollection",
+  "name": "Ruta_L1_Blvd_200_UNE_Cajeme",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Línea 1 - Blvd-200",
+        "color_normal": "#0066CC",
+        "empresa": "UNE Cajeme",
+        "total_paradas": 98
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -109.9280843,
+            27.4917912
+          ],
+          [
+            -109.9279418,
+            27.49189
+          ],
+          [
+            -109.9279291,
+            27.5117317
+          ],
+          [
+            -109.9237801,
+            27.5117673
+          ],
+          [
+            -109.9232416,
+            27.5118304
+          ],
+          [
+            -109.9217269,
+            27.5123288
+          ],
+          [
+            -109.9213941,
+            27.5124062
+          ],
+          [
+            -109.9197386,
+            27.5123573
+          ],
+          [
+            -109.919616,
+            27.5123149
+          ],
+          [
+            -109.9125618,
+            27.5123002
+          ],
+          [
+            -109.9124576,
+            27.5124921
+          ],
+          [
+            -109.9125718,
+            27.5130161
+          ],
+          [
+            -109.9126444,
+            27.5131029
+          ],
+          [
+            -109.9126641,
+            27.5191079
+          ],
+          [
+            -109.8972081,
+            27.5191236
+          ],
+          [
+            -109.9014724,
+            27.525134
+          ],
+          [
+            -109.8963172,
+            27.5251453
+          ],
+          [
+            -109.8963437,
+            27.5278798
+          ],
+          [
+            -109.8944294,
+            27.5278904
+          ],
+          [
+            -109.8944153,
+            27.5283594
+          ],
+          [
+            -109.8957857,
+            27.5283443
+          ],
+          [
+            -109.89579,
+            27.5251781
+          ],
+          [
+            -109.8969224,
+            27.5251803
+          ],
+          [
+            -109.8969142,
+            27.5241907
+          ],
+          [
+            -109.8974557,
+            27.5241645
+          ],
+          [
+            -109.897458,
+            27.522882
+          ],
+          [
+            -109.8981051,
+            27.522822
+          ],
+          [
+            -109.8983679,
+            27.522887
+          ],
+          [
+            -109.8998834,
+            27.5228603
+          ],
+          [
+            -109.8972451,
+            27.519147
+          ],
+          [
+            -109.9126962,
+            27.51913
+          ],
+          [
+            -109.9126674,
+            27.512574
+          ],
+          [
+            -109.9127813,
+            27.5124636
+          ],
+          [
+            -109.9144073,
+            27.5124771
+          ],
+          [
+            -109.9196367,
+            27.5124395
+          ],
+          [
+            -109.9197785,
+            27.5124
+          ],
+          [
+            -109.9215159,
+            27.512415
+          ],
+          [
+            -109.9217852,
+            27.5123611
+          ],
+          [
+            -109.9232897,
+            27.5118601
+          ],
+          [
+            -109.9237922,
+            27.5118025
+          ],
+          [
+            -109.9241711,
+            27.511802
+          ],
+          [
+            -109.9292429,
+            27.5117699
+          ],
+          [
+            -109.9292395,
+            27.4918105
+          ],
+          [
+            -109.9447515,
+            27.4917873
+          ],
+          [
+            -109.9446899,
+            27.4827262
+          ],
+          [
+            -109.9609398,
+            27.4827237
+          ],
+          [
+            -109.9609596,
+            27.4863518
+          ],
+          [
+            -109.9736663,
+            27.48632
+          ],
+          [
+            -109.9737156,
+            27.4827308
+          ],
+          [
+            -109.9818815,
+            27.4827102
+          ],
+          [
+            -109.9818702,
+            27.4856979
+          ],
+          [
+            -109.9886864,
+            27.4857016
+          ],
+          [
+            -109.989745,
+            27.4855006
+          ],
+          [
+            -109.9902429,
+            27.4854516
+          ],
+          [
+            -109.9898882,
+            27.4865681
+          ],
+          [
+            -109.9898517,
+            27.4892358
+          ],
+          [
+            -109.9898479,
+            27.4892927
+          ],
+          [
+            -109.9884815,
+            27.4891888
+          ],
+          [
+            -109.9852317,
+            27.4892095
+          ],
+          [
+            -109.9837183,
+            27.4894903
+          ],
+          [
+            -109.9832874,
+            27.4895321
+          ],
+          [
+            -109.9772687,
+            27.4895386
+          ],
+          [
+            -109.9765656,
+            27.4902386
+          ],
+          [
+            -109.9763774,
+            27.4903281
+          ],
+          [
+            -109.9755799,
+            27.4903958
+          ],
+          [
+            -109.9755333,
+            27.4902627
+          ],
+          [
+            -109.9753773,
+            27.4902046
+          ],
+          [
+            -109.9751624,
+            27.4902589
+          ],
+          [
+            -109.9751173,
+            27.490449
+          ],
+          [
+            -109.9752679,
+            27.4906222
+          ],
+          [
+            -109.9753057,
+            27.4910886
+          ],
+          [
+            -109.9734741,
+            27.4910709
+          ],
+          [
+            -109.9734428,
+            27.496723
+          ],
+          [
+            -109.9732139,
+            27.4968504
+          ],
+          [
+            -109.9724729,
+            27.4970028
+          ],
+          [
+            -109.9719574,
+            27.4968468
+          ],
+          [
+            -109.9713142,
+            27.4959397
+          ],
+          [
+            -109.9706779,
+            27.4957016
+          ],
+          [
+            -109.9700337,
+            27.4954295
+          ],
+          [
+            -109.9698264,
+            27.4951082
+          ],
+          [
+            -109.969657,
+            27.494292
+          ],
+          [
+            -109.969459,
+            27.4938533
+          ],
+          [
+            -109.9691728,
+            27.4936707
+          ],
+          [
+            -109.9675851,
+            27.49302
+          ],
+          [
+            -109.9668294,
+            27.4924949
+          ],
+          [
+            -109.9660711,
+            27.4914505
+          ],
+          [
+            -109.965742,
+            27.4912983
+          ],
+          [
+            -109.9652736,
+            27.4914143
+          ],
+          [
+            -109.9650324,
+            27.4918386
+          ],
+          [
+            -109.9655593,
+            27.4937741
+          ],
+          [
+            -109.9657565,
+            27.4951963
+          ],
+          [
+            -109.9610924,
+            27.4938205
+          ],
+          [
+            -109.9610765,
+            27.4863143
+          ],
+          [
+            -109.9476359,
+            27.4864245
+          ],
+          [
+            -109.9476447,
+            27.4826822
+          ],
+          [
+            -109.9453028,
+            27.4826916
+          ],
+          [
+            -109.9453849,
+            27.4917848
+          ],
+          [
+            -109.9280942,
+            27.4917909
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 1",
+        "orden": 1,
+        "tipo": "inicio_final"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9280843,
+          27.4917912
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 2",
+        "orden": 2,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9279418,
+          27.49189
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 3",
+        "orden": 3,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9279291,
+          27.5117317
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 4",
+        "orden": 4,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9237801,
+          27.5117673
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 5",
+        "orden": 5,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9232416,
+          27.5118304
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 6",
+        "orden": 6,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9217269,
+          27.5123288
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 7",
+        "orden": 7,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9213941,
+          27.5124062
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 8",
+        "orden": 8,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9197386,
+          27.5123573
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 9",
+        "orden": 9,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.919616,
+          27.5123149
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 10",
+        "orden": 10,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9125618,
+          27.5123002
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 11",
+        "orden": 11,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9124576,
+          27.5124921
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 12",
+        "orden": 12,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9125718,
+          27.5130161
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 13",
+        "orden": 13,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9126444,
+          27.5131029
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 14",
+        "orden": 14,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9126641,
+          27.5191079
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 15",
+        "orden": 15,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8972081,
+          27.5191236
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 16",
+        "orden": 16,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9014724,
+          27.525134
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 17",
+        "orden": 17,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8963172,
+          27.5251453
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 18",
+        "orden": 18,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8963437,
+          27.5278798
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 19",
+        "orden": 19,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8944294,
+          27.5278904
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 20",
+        "orden": 20,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8944153,
+          27.5283594
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 21",
+        "orden": 21,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8957857,
+          27.5283443
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 22",
+        "orden": 22,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.89579,
+          27.5251781
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 23",
+        "orden": 23,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8969224,
+          27.5251803
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 24",
+        "orden": 24,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8969142,
+          27.5241907
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 25",
+        "orden": 25,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8974557,
+          27.5241645
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 26",
+        "orden": 26,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.897458,
+          27.522882
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 27",
+        "orden": 27,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8981051,
+          27.522822
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 28",
+        "orden": 28,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8983679,
+          27.522887
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 29",
+        "orden": 29,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8998834,
+          27.5228603
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 30",
+        "orden": 30,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.8972451,
+          27.519147
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 31",
+        "orden": 31,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9126962,
+          27.51913
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 32",
+        "orden": 32,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9126674,
+          27.512574
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 33",
+        "orden": 33,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9127813,
+          27.5124636
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 34",
+        "orden": 34,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9144073,
+          27.5124771
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 35",
+        "orden": 35,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9196367,
+          27.5124395
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 36",
+        "orden": 36,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9197785,
+          27.5124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 37",
+        "orden": 37,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9215159,
+          27.512415
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 38",
+        "orden": 38,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9217852,
+          27.5123611
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 39",
+        "orden": 39,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9232897,
+          27.5118601
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 40",
+        "orden": 40,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9237922,
+          27.5118025
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 41",
+        "orden": 41,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9241711,
+          27.511802
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 42",
+        "orden": 42,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9292429,
+          27.5117699
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 43",
+        "orden": 43,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9292395,
+          27.4918105
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 44",
+        "orden": 44,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9447515,
+          27.4917873
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 45",
+        "orden": 45,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9446899,
+          27.4827262
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 46",
+        "orden": 46,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9609398,
+          27.4827237
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 47",
+        "orden": 47,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9609596,
+          27.4863518
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 48",
+        "orden": 48,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9736663,
+          27.48632
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 49",
+        "orden": 49,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9737156,
+          27.4827308
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 50",
+        "orden": 50,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9818815,
+          27.4827102
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 51",
+        "orden": 51,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9818702,
+          27.4856979
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 52",
+        "orden": 52,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9886864,
+          27.4857016
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 53",
+        "orden": 53,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.989745,
+          27.4855006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 54",
+        "orden": 54,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9902429,
+          27.4854516
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 55",
+        "orden": 55,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9898882,
+          27.4865681
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 56",
+        "orden": 56,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9898517,
+          27.4892358
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 57",
+        "orden": 57,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9898479,
+          27.4892927
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 58",
+        "orden": 58,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9884815,
+          27.4891888
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 59",
+        "orden": 59,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9852317,
+          27.4892095
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 60",
+        "orden": 60,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9837183,
+          27.4894903
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 61",
+        "orden": 61,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9832874,
+          27.4895321
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 62",
+        "orden": 62,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9772687,
+          27.4895386
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 63",
+        "orden": 63,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9765656,
+          27.4902386
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 64",
+        "orden": 64,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9763774,
+          27.4903281
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 65",
+        "orden": 65,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9755799,
+          27.4903958
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 66",
+        "orden": 66,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9755333,
+          27.4902627
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 67",
+        "orden": 67,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9753773,
+          27.4902046
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 68",
+        "orden": 68,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9751624,
+          27.4902589
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 69",
+        "orden": 69,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9751173,
+          27.490449
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 70",
+        "orden": 70,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9752679,
+          27.4906222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 71",
+        "orden": 71,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9753057,
+          27.4910886
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 72",
+        "orden": 72,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9734741,
+          27.4910709
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 73",
+        "orden": 73,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9734428,
+          27.496723
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 74",
+        "orden": 74,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9732139,
+          27.4968504
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 75",
+        "orden": 75,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9724729,
+          27.4970028
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 76",
+        "orden": 76,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9719574,
+          27.4968468
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 77",
+        "orden": 77,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9713142,
+          27.4959397
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 78",
+        "orden": 78,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9706779,
+          27.4957016
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 79",
+        "orden": 79,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9700337,
+          27.4954295
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 80",
+        "orden": 80,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9698264,
+          27.4951082
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 81",
+        "orden": 81,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.969657,
+          27.494292
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 82",
+        "orden": 82,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.969459,
+          27.4938533
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 83",
+        "orden": 83,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9691728,
+          27.4936707
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 84",
+        "orden": 84,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9675851,
+          27.49302
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 85",
+        "orden": 85,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9668294,
+          27.4924949
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 86",
+        "orden": 86,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9660711,
+          27.4914505
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 87",
+        "orden": 87,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.965742,
+          27.4912983
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 88",
+        "orden": 88,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9652736,
+          27.4914143
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 89",
+        "orden": 89,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9650324,
+          27.4918386
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 90",
+        "orden": 90,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9655593,
+          27.4937741
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 91",
+        "orden": 91,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9657565,
+          27.4951963
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 92",
+        "orden": 92,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9610924,
+          27.4938205
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 93",
+        "orden": 93,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9610765,
+          27.4863143
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 94",
+        "orden": 94,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9476359,
+          27.4864245
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 95",
+        "orden": 95,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9476447,
+          27.4826822
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 96",
+        "orden": 96,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9453028,
+          27.4826916
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 97",
+        "orden": 97,
+        "tipo": "parada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9453849,
+          27.4917848
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ruta_id": "L1_BLVD_200",
+        "nombre": "Point 98",
+        "orden": 98,
+        "tipo": "inicio_final"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.9280942,
+          27.4917909
+        ]
+      }
+    }
+  ]
+}
