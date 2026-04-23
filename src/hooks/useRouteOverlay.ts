@@ -69,7 +69,6 @@ export function useRouteOverlay(
   routeId: string | null
 ) {
   const polylineRef = useRef<L.Polyline | null>(null);
-  const stopsLayerRef = useRef<L.LayerGroup | null>(null);
   const currentRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -82,9 +81,6 @@ export function useRouteOverlay(
       if (!map.hasLayer(polylineRef.current)) {
         polylineRef.current.addTo(map);
       }
-      if (stopsLayerRef.current && !map.hasLayer(stopsLayerRef.current)) {
-        stopsLayerRef.current.addTo(map);
-      }
       return;
     }
 
@@ -92,11 +88,6 @@ export function useRouteOverlay(
     if (polylineRef.current) {
       polylineRef.current.remove();
       polylineRef.current = null;
-    }
-    if (stopsLayerRef.current) {
-      stopsLayerRef.current.clearLayers();
-      stopsLayerRef.current.remove();
-      stopsLayerRef.current = null;
     }
     currentRouteRef.current = null;
 
@@ -116,7 +107,6 @@ export function useRouteOverlay(
         if (cancelled || !mapRef.current) return;
 
         const lineFeature = data.features.find(f => f.geometry.type === 'LineString');
-        const stopFeatures = data.features.filter(f => f.geometry.type === 'Point');
 
         if (!lineFeature) return;
 
@@ -138,35 +128,7 @@ export function useRouteOverlay(
         // Fit map to route bounds
         mapRef.current!.fitBounds(polyline.getBounds(), { padding: [40, 40] });
 
-        // Draw stop markers
-        const stopsLayer = L.layerGroup().addTo(mapRef.current!);
-        stopsLayerRef.current = stopsLayer;
-
-        stopFeatures.forEach(stop => {
-          const [lng, lat] = stop.geometry.coordinates as number[];
-          const isTerminal = stop.properties.tipo === 'inicio_final';
-          const radius = isTerminal ? 7 : 4;
-          const fillColor = isTerminal ? '#0066CC' : '#3b82f6';
-
-          const circle = L.circleMarker([lat, lng], {
-            radius,
-            fillColor,
-            color: '#fff',
-            weight: 2,
-            fillOpacity: 0.9,
-          }).addTo(stopsLayer);
-
-          circle.bindPopup(
-            `<div style="background:#273547;color:#fafafa;padding:8px 12px;border-radius:8px;min-width:160px;">
-              <p style="font-size:11px;color:#3b82f6;margin:0 0 2px 0;">Parada ${stop.properties.orden}</p>
-              <p style="font-weight:600;font-size:13px;margin:0;">${stop.properties.nombre}</p>
-              ${isTerminal ? '<p style="font-size:11px;color:#fbbf24;margin:4px 0 0 0;">📍 Terminal</p>' : ''}
-            </div>`,
-            { className: 'custom-popup-dark', closeButton: true }
-          );
-        });
-
-        console.log(`[useRouteOverlay] ✅ Route ${routeId} drawn with ${stopFeatures.length} stops`);
+        console.log(`[useRouteOverlay] ✅ Route ${routeId} drawn without stop markers`);
       })
       .catch(err => {
         console.error('[useRouteOverlay] Error loading GeoJSON:', err);

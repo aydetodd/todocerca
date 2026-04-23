@@ -113,9 +113,19 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
         if (routeLayerRef.current) {
           mapRef.current.removeLayer(routeLayerRef.current);
         }
-        routeLayerRef.current = L.geoJSON(geojson, {
+
+        const lineFeatures = {
+          ...geojson,
+          features: Array.isArray(geojson.features)
+            ? geojson.features.filter((feature: any) => feature?.geometry?.type === 'LineString')
+            : [],
+        };
+
+        routeLayerRef.current = L.geoJSON(lineFeatures, {
           style: { color: '#2563eb', weight: 4, opacity: 0.8 },
         }).addTo(mapRef.current);
+
+        if (!routeLayerRef.current.getLayers().length) return;
         mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [20, 20] });
       })
       .catch(() => {});
