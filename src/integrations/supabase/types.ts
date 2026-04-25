@@ -627,6 +627,42 @@ export type Database = {
           },
         ]
       }
+      device_verification_codes: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          device_fingerprint: string
+          expires_at: string
+          id: string
+          phone: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          device_fingerprint: string
+          expires_at?: string
+          id?: string
+          phone: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          device_fingerprint?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       documentos_concesionario: {
         Row: {
           concesionario_id: string
@@ -3227,6 +3263,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          device_name: string | null
+          device_type: string
+          id: string
+          is_active: boolean
+          last_ip: string | null
+          last_seen_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          device_name?: string | null
+          device_type?: string
+          id?: string
+          is_active?: boolean
+          last_ip?: string | null
+          last_seen_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string | null
+          device_type?: string
+          id?: string
+          is_active?: boolean
+          last_ip?: string | null
+          last_seen_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       unidades_empresa: {
         Row: {
