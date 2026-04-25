@@ -496,7 +496,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("[VALIDATE-QR] Error:", error);
-    return new Response(JSON.stringify({ valid: false, error: error.message }), {
+    const message = error instanceof Error ? error.message : "Error al validar QR";
+    return new Response(JSON.stringify({ valid: false, error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
