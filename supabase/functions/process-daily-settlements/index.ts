@@ -177,14 +177,32 @@ serve(async (req) => {
         const rangeStart = `${dateStart}T00:00:00-07:00`;
         const rangeEnd = `${dateEnd}T23:59:59-07:00`;
 
-        // Get validated ticket logs with their qr_ticket_ids
-        const { data: logsValidacion } = await supabaseAdmin
+        const { data: choferRecords } = await supabaseAdmin
+          .from("choferes_empresa")
+          .select("id, user_id")
+          .eq("proveedor_id", cuenta.concesionario_id)
+          .eq("is_active", true);
+
+        const choferUserIds = (choferRecords || []).map((chofer: any) => chofer.user_id).filter(Boolean);
+
+        // Get validated ticket logs with their qr_ticket_ids, including legacy logs missing unidad_id
+        const { data: rawLogsValidacion } = await supabaseAdmin
           .from("logs_validacion_qr")
-          .select("qr_ticket_id")
-          .in("unidad_id", unidadIds)
+          .select("qr_ticket_id, created_at, unidad_id, producto_id, chofer_id, qr_tickets(unidad_uso_id, ruta_uso_id, amount, ticket_type)")
+          .in("chofer_id", choferUserIds.length > 0 ? choferUserIds : ["00000000-0000-0000-0000-000000000000"])
           .eq("resultado", "valid")
           .gte("created_at", rangeStart)
           .lte("created_at", rangeEnd);
+
+        const { data: asignaciones } = await supabaseAdmin
+          .from("asignaciones_chofer")
+          .select("chofer_id, unidad_id, producto_id, fecha, created_at")
+          .in("chofer_id", (choferRecords || []).map((chofer: any) => chofer.id).filter(Boolean))
+          .lte("fecha", dateEnd);
+
+        const logsValidacion = (rawLogsValidacion || [])
+          .map((log: any) => resolveLogTransport(log, choferRecords || [], asignaciones || []))
+          .filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
 
         const boletos = logsValidacion?.length ?? 0;
         if (boletos === 0) continue;
