@@ -351,7 +351,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("[SETTLEMENTS] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Error al procesar liquidaciones";
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
