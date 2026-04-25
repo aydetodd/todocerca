@@ -121,6 +121,8 @@ export default function AppWrapper() {
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
+        {/* Verificación de dispositivo móvil nuevo */}
+        <DeviceVerificationProvider />
         <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />
