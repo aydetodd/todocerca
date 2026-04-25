@@ -93,6 +93,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   // Available units, drivers & routes
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
+  const [choferRecordsCache, setChoferRecordsCache] = useState<any[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
 
   const dedupeChoferes = (records: any[]) => {
@@ -156,6 +157,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
 
     setUnidades(units);
     setChoferes(choferesCatalogo);
+    setChoferRecordsCache(cRes.data || []);
     setRutas(rutasCatalogo);
 
     fetchReport(
@@ -176,7 +178,7 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
     try {
       const unitIds = unitIdsOverride || unidades.map((u) => u.id);
       const choferUserIds = choferUserIdsOverride || choferes.map((c) => c.id);
-      const choferRecords = choferRecordsOverride || [];
+      const choferRecords = choferRecordsOverride || choferRecordsCache;
 
       if (unitIds.length === 0 && choferUserIds.length === 0) {
         setRows([]);

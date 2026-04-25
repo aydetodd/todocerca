@@ -12,6 +12,41 @@ const PLATFORM_FEE_PERCENT = 0.02; // 2% comisión TodoCerca
 const STRIPE_VARIABLE_FEE_PERCENT = 0.036; // 3.6%
 const STRIPE_FIXED_FEE = 3.00; // $3.00 MXN por transacción
 
+const getHermosilloDateFromTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const hermosillo = new Date(date.getTime() - 7 * 60 * 60 * 1000);
+  return hermosillo.toISOString().split("T")[0];
+};
+
+const resolveLogTransport = (log: any, choferRecords: any[], assignments: any[]) => {
+  const choferRecordIds = choferRecords
+    .filter((chofer) => chofer.user_id === log.chofer_id)
+    .map((chofer) => chofer.id);
+  const existingUnidadId = log.unidad_id || log.qr_tickets?.unidad_uso_id || null;
+  const existingProductoId = log.producto_id || log.qr_tickets?.ruta_uso_id || null;
+  const logDate = getHermosilloDateFromTimestamp(log.created_at);
+
+  const sorted = [...assignments]
+    .filter((assignment) => choferRecordIds.includes(assignment.chofer_id))
+    .sort((a, b) => {
+      const dateCompare = String(b.fecha || "").localeCompare(String(a.fecha || ""));
+      if (dateCompare !== 0) return dateCompare;
+      return Date.parse(b.created_at || "0") - Date.parse(a.created_at || "0");
+    });
+
+  const match =
+    sorted.find((assignment) => assignment.fecha === logDate && assignment.unidad_id && (!existingProductoId || assignment.producto_id === existingProductoId)) ||
+    sorted.find((assignment) => assignment.unidad_id && (!existingProductoId || assignment.producto_id === existingProductoId)) ||
+    sorted.find((assignment) => assignment.unidad_id) ||
+    null;
+
+  return {
+    ...log,
+    effectiveUnidadId: existingUnidadId || match?.unidad_id || null,
+    effectiveProductoId: existingProductoId || match?.producto_id || null,
+  };
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -142,14 +177,32 @@ serve(async (req) => {
         const rangeStart = `${dateStart}T00:00:00-07:00`;
         const rangeEnd = `${dateEnd}T23:59:59-07:00`;
 
-        // Get validated ticket logs with their qr_ticket_ids
-        const { data: logsValidacion } = await supabaseAdmin
+        const { data: choferRecords } = await supabaseAdmin
+          .from("choferes_empresa")
+          .select("id, user_id")
+          .eq("proveedor_id", cuenta.concesionario_id)
+          .eq("is_active", true);
+
+        const choferUserIds = (choferRecords || []).map((chofer: any) => chofer.user_id).filter(Boolean);
+
+        // Get validated ticket logs with their qr_ticket_ids, including legacy logs missing unidad_id
+        const { data: rawLogsValidacion } = await supabaseAdmin
           .from("logs_validacion_qr")
-          .select("qr_ticket_id")
-          .in("unidad_id", unidadIds)
+          .select("qr_ticket_id, created_at, unidad_id, producto_id, chofer_id, qr_tickets(unidad_uso_id, ruta_uso_id, amount, ticket_type)")
+          .in("chofer_id", choferUserIds.length > 0 ? choferUserIds : ["00000000-0000-0000-0000-000000000000"])
           .eq("resultado", "valid")
           .gte("created_at", rangeStart)
           .lte("created_at", rangeEnd);
+
+        const { data: asignaciones } = await supabaseAdmin
+          .from("asignaciones_chofer")
+          .select("chofer_id, unidad_id, producto_id, fecha, created_at")
+          .in("chofer_id", (choferRecords || []).map((chofer: any) => chofer.id).filter(Boolean))
+          .lte("fecha", dateEnd);
+
+        const logsValidacion = (rawLogsValidacion || [])
+          .map((log: any) => resolveLogTransport(log, choferRecords || [], asignaciones || []))
+          .filter((log: any) => log.effectiveUnidadId && unidadIds.includes(log.effectiveUnidadId));
 
         const boletos = logsValidacion?.length ?? 0;
         if (boletos === 0) continue;
@@ -298,7 +351,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("[SETTLEMENTS] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Error al procesar liquidaciones";
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
