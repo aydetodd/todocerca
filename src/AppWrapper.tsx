@@ -53,12 +53,28 @@ import PanelMaquiladora from "./pages/PanelMaquiladora";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
+import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
+import { useDeviceVerification } from "@/hooks/useDeviceVerification";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
   useRegistrationNotifications();
   useGlobalNotifications();
   return null;
+};
+
+// Rutas públicas exentas de verificación de dispositivo
+const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing"];
+
+const DeviceVerificationProvider = () => {
+  const location = useLocation();
+  const { status, recheck } = useDeviceVerification();
+
+  const isPublic = PUBLIC_PATHS.some((p) => location.pathname.startsWith(p));
+  if (isPublic) return null;
+  if (status !== "needs_verification") return null;
+
+  return <DeviceVerificationGate onVerified={recheck} />;
 };
 
 // Direct navigation handler - after auth, go straight to main home
@@ -105,6 +121,8 @@ export default function AppWrapper() {
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
+        {/* Verificación de dispositivo móvil nuevo */}
+        <DeviceVerificationProvider />
         <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />
