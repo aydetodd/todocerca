@@ -53,25 +53,64 @@ serve(async (req) => {
       driverRecordId = choferRecordIds[0];
     }
 
+    if (choferRecordIds.length === 0) {
+      return new Response(JSON.stringify({
+        valid: false,
+        error_type: "driver_not_linked",
+        message: "Este usuario no está vinculado como chofer activo.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     if (choferRecordIds.length > 0 && (!resolvedUnidadId || !resolvedRutaId)) {
       const { data: asignaciones } = await supabaseAdmin
         .from("asignaciones_chofer")
-        .select("chofer_id, unidad_id, producto_id")
+        .select("chofer_id, unidad_id, producto_id, fecha, created_at")
         .in("chofer_id", choferRecordIds)
-        .eq("fecha", hermosilloToday)
+        .lte("fecha", hermosilloToday)
+        .order("fecha", { ascending: false })
         .order("created_at", { ascending: false });
 
-      const asignacion = (asignaciones || []).find((item) => {
+      const assignmentMatches = (item: any) => {
         const unidadMatches = !resolvedUnidadId || item.unidad_id === resolvedUnidadId;
         const rutaMatches = !resolvedRutaId || item.producto_id === resolvedRutaId;
-        return unidadMatches && rutaMatches;
-      }) || (asignaciones || []).find((item) => item.unidad_id || item.producto_id) || asignaciones?.[0];
+        return unidadMatches && rutaMatches && item.unidad_id && item.producto_id;
+      };
+
+      const asignacion =
+        (asignaciones || []).find((item) => item.fecha === hermosilloToday && assignmentMatches(item)) ||
+        (asignaciones || []).find(assignmentMatches) ||
+        (asignaciones || []).find((item) => item.unidad_id && item.producto_id) ||
+        asignaciones?.[0];
 
       if (asignacion) {
         driverRecordId = asignacion.chofer_id || driverRecordId;
         resolvedUnidadId = resolvedUnidadId || asignacion.unidad_id || null;
         resolvedRutaId = resolvedRutaId || asignacion.producto_id || null;
       }
+    }
+
+    if (!resolvedUnidadId || !resolvedRutaId) {
+      await supabaseAdmin.from("logs_validacion_qr").insert({
+        resultado: "invalid",
+        mensaje_error: "Chofer sin unidad o ruta asignada",
+        latitud: latitude,
+        longitud: longitude,
+        unidad_id: resolvedUnidadId,
+        chofer_id: driver.id,
+        producto_id: resolvedRutaId,
+      });
+
+      return new Response(JSON.stringify({
+        valid: false,
+        error_type: "assignment_required",
+        message: "No puedes cobrar boletos sin una unidad y ruta asignadas. Pide al concesionario asignarte antes de validar.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     // 1. Find the QR ticket - support both full UUID token and 6-char short code
