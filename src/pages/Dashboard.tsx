@@ -534,67 +534,6 @@ const Dashboard = () => {
 
                     {/* Acciones de cuenta */}
                     <div className="pt-4 border-t space-y-3">
-                      {/* Suscripción de proveedor desactivada: solo concesionarios pueden registrarse */}
-
-                      {!isProvider && (
-                        <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
-                          <div className="space-y-1">
-                            <h3 className="flex items-center gap-2 text-base font-semibold">
-                              <Bus className="h-4 w-4 text-primary" />
-                              Registrarme como Concesionario de Transporte
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              Registra tu concesionaria para dar de alta unidades. Cada unidad se suscribe por $400 MXN al año.
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="concesionario-nombre">Nombre del concesionario *</Label>
-                            <Input
-                              id="concesionario-nombre"
-                              placeholder="Ej: Transportes Villa"
-                              value={concesionarioForm.nombre}
-                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, nombre: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="concesionario-telefono">Teléfono *</Label>
-                            <Input
-                              id="concesionario-telefono"
-                              placeholder="+52..."
-                              value={concesionarioForm.telefono}
-                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, telefono: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="concesionario-direccion">Dirección</Label>
-                            <Input
-                              id="concesionario-direccion"
-                              placeholder="Base, oficina o domicilio fiscal"
-                              value={concesionarioForm.direccion}
-                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, direccion: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="concesionario-descripcion">Descripción</Label>
-                            <Textarea
-                              id="concesionario-descripcion"
-                              placeholder="Servicio urbano, foráneo o privado"
-                              value={concesionarioForm.descripcion}
-                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, descripcion: e.target.value }))}
-                              rows={2}
-                            />
-                          </div>
-                          <Button
-                            onClick={handleRegistrarConcesionario}
-                            disabled={registrandoConcesionario || !concesionarioForm.nombre.trim() || !concesionarioForm.telefono.trim()}
-                            className="w-full"
-                          >
-                            <Bus className="h-4 w-4 mr-2" />
-                            {registrandoConcesionario ? 'Registrando...' : 'Registrarme como Concesionario'}
-                          </Button>
-                        </div>
-                      )}
-
                       <Button
                         variant="ghost"
                         className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
