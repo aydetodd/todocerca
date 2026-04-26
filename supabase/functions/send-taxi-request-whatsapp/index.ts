@@ -153,7 +153,7 @@ Abre la app para aceptar o rechazar.`;
   } catch (error: any) {
     console.error('Error en send-taxi-request-whatsapp:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Error interno' }),
+      JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) || 'Error interno' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

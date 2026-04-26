@@ -112,7 +112,7 @@ serve(async (req) => {
     console.error('Error in send-whatsapp-welcome function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         details: 'Failed to send WhatsApp welcome message'
       }),
       {
