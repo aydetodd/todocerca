@@ -40,6 +40,7 @@ import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { useDashboardBadges } from "@/hooks/useDashboardBadges";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type DashboardSection =
   | "perfil"
@@ -63,6 +64,8 @@ const Dashboard = () => {
   const [empresaTransporte, setEmpresaTransporte] = useState<any>(null);
   const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false);
   const [empresaForm, setEmpresaForm] = useState({ nombre: '', rfc: '', contacto_nombre: '', contacto_telefono: '', contacto_email: '' });
+  const [registrandoConcesionario, setRegistrandoConcesionario] = useState(false);
+  const [concesionarioForm, setConcesionarioForm] = useState({ nombre: '', telefono: '', direccion: '', descripcion: '' });
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
@@ -274,6 +277,51 @@ const Dashboard = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setRegistrandoEmpresa(false);
+    }
+  }
+
+  async function handleRegistrarConcesionario() {
+    if (!concesionarioForm.nombre.trim() || !concesionarioForm.telefono.trim()) {
+      toast({ title: 'Error', description: 'Nombre y teléfono son obligatorios', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setRegistrandoConcesionario(true);
+      const { data: existingProvider } = await supabase
+        .from('proveedores')
+        .select('id')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      const providerPayload = {
+        user_id: user!.id,
+        nombre: concesionarioForm.nombre.trim(),
+        email: user?.email || '',
+        telefono: concesionarioForm.telefono.trim(),
+        business_address: concesionarioForm.direccion.trim() || null,
+        description: concesionarioForm.descripcion.trim() || 'Concesionario de transporte',
+      };
+
+      const { data: proveedorData, error: proveedorError } = existingProvider
+        ? await supabase.from('proveedores').update(providerPayload).eq('user_id', user!.id).select().single()
+        : await supabase.from('proveedores').insert(providerPayload).select().single();
+      if (proveedorError) throw proveedorError;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'proveedor', provider_type: null, route_name: null })
+        .eq('user_id', user!.id);
+      if (profileError) throw profileError;
+
+      setProfile((prev: any) => ({ ...prev, role: 'proveedor', provider_type: null, route_name: null }));
+      setUserSpecificData(proveedorData);
+      toast({ title: 'Concesionario registrado', description: 'Ya puedes registrar y suscribir tus unidades por $400 MXN al año.' });
+      navigate('/panel-concesionario');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setRegistrandoConcesionario(false);
     }
   }
 
