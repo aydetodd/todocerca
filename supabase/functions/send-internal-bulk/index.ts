@@ -145,7 +145,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('[send-internal-bulk] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Error interno' }),
+      JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) || 'Error interno' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -91,9 +91,9 @@ serve(async (req) => {
       limit: 20,
     });
 
-    const upgradeSubscription = subscriptions.data.find((sub) => {
+    const upgradeSubscription = subscriptions.data.find((sub: any) => {
       const statusOk = sub.status === "active" || sub.status === "trialing";
-      const hasPrice = sub.items.data.some((item) => item.price?.id === UPGRADE_PRICE_ID);
+      const hasPrice = sub.items.data.some((item: any) => item.price?.id === UPGRADE_PRICE_ID);
       return statusOk && hasPrice;
     });
 
@@ -106,7 +106,7 @@ serve(async (req) => {
         limit: 10,
       });
 
-      const upgradeCharge = charges.data.find((charge) =>
+      const upgradeCharge = charges.data.find((charge: any) =>
         charge.paid &&
         charge.status === "succeeded" &&
         charge.metadata?.upgrade_type === "cliente_to_proveedor"

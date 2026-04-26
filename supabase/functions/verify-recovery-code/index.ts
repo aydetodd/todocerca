@@ -87,7 +87,7 @@ serve(async (req) => {
     console.error("[VERIFY-RECOVERY-CODE] Error:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Error al procesar solicitud" 
+        error: (error instanceof Error ? error.message : String(error)) || "Error al procesar solicitud" 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

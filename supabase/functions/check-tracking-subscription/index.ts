@@ -76,7 +76,7 @@ serve(async (req) => {
 
     // Filtrar suscripciones activas o en trial
     const activeSubscriptions = subscriptions.data.filter(
-      sub => sub.status === 'active' || sub.status === 'trialing'
+      (sub: any) => sub.status === 'active' || sub.status === 'trialing'
     );
 
     const hasActiveSub = activeSubscriptions.length > 0;
@@ -85,7 +85,7 @@ serve(async (req) => {
     if (hasActiveSub) {
       // Elegir la suscripción con current_period_end válido (y la más lejana)
       const subscriptionsWithEnd = activeSubscriptions
-        .map((sub) => {
+        .map((sub: any) => {
           const raw = (sub as any)?.current_period_end;
           const ts =
             typeof raw === 'number'
@@ -95,11 +95,11 @@ serve(async (req) => {
                 : null;
           return { sub, ts };
         })
-        .filter(({ ts }) => typeof ts === 'number' && Number.isFinite(ts));
+        .filter(({ ts }: { ts: any }) => typeof ts === 'number' && Number.isFinite(ts));
 
       const subscription =
         subscriptionsWithEnd.length > 0
-          ? subscriptionsWithEnd.sort((a, b) => (b.ts as number) - (a.ts as number))[0].sub
+          ? subscriptionsWithEnd.sort((a: any, b: any) => (b.ts as number) - (a.ts as number))[0].sub
           : activeSubscriptions[0];
 
       const rawEnd = (subscription as any)?.current_period_end;
