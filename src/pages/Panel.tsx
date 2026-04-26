@@ -302,22 +302,7 @@ export default function Panel() {
                 </div>
               )}
               
-              {/* Botón para convertirse en proveedor si es cliente */}
-              {profile?.role === 'cliente' && (
-                <div className="pt-4 border-t">
-                  <Button
-                    onClick={handleUpgradeToProvider}
-                    disabled={upgrading}
-                    className="w-full"
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    {upgrading ? 'Procesando...' : 'Convertirme en Proveedor ($200 MXN/año)'}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    Publica hasta 500 productos y servicios
-                  </p>
-                </div>
-              )}
+              {/* Suscripción de proveedor desactivada: solo concesionarios disponibles */}
               
               {/* QR Code Generator for Providers */}
               {isProvider && userSpecificData?.id && (

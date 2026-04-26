@@ -486,24 +486,7 @@ const Dashboard = () => {
 
                     {/* Acciones de cuenta */}
                     <div className="pt-4 border-t space-y-3">
-                      {/* Convertirse en proveedor (solo clientes) */}
-                      {!isProvider && (
-                        <div>
-                          <Button
-                            onClick={handleUpgradeToProvider}
-                            disabled={upgrading}
-                            className="w-full"
-                          >
-                            <Briefcase className="h-4 w-4 mr-2" />
-                            {upgrading
-                              ? "Procesando..."
-                              : "Convertirme en Proveedor (7 días gratis)"}
-                          </Button>
-                          <p className="text-xs text-muted-foreground text-center mt-1">
-                            🎉 ¡Prueba 7 días gratis sin tarjeta! Después $200 MXN/año
-                          </p>
-                        </div>
-                      )}
+                      {/* Suscripción de proveedor desactivada: solo concesionarios pueden registrarse */}
 
                       <Button
                         variant="ghost"
