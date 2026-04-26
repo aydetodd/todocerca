@@ -40,6 +40,7 @@ import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { useDashboardBadges } from "@/hooks/useDashboardBadges";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type DashboardSection =
   | "perfil"
@@ -63,6 +64,8 @@ const Dashboard = () => {
   const [empresaTransporte, setEmpresaTransporte] = useState<any>(null);
   const [registrandoEmpresa, setRegistrandoEmpresa] = useState(false);
   const [empresaForm, setEmpresaForm] = useState({ nombre: '', rfc: '', contacto_nombre: '', contacto_telefono: '', contacto_email: '' });
+  const [registrandoConcesionario, setRegistrandoConcesionario] = useState(false);
+  const [concesionarioForm, setConcesionarioForm] = useState({ nombre: '', telefono: '', direccion: '', descripcion: '' });
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
@@ -277,6 +280,51 @@ const Dashboard = () => {
     }
   }
 
+  async function handleRegistrarConcesionario() {
+    if (!concesionarioForm.nombre.trim() || !concesionarioForm.telefono.trim()) {
+      toast({ title: 'Error', description: 'Nombre y teléfono son obligatorios', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setRegistrandoConcesionario(true);
+      const { data: existingProvider } = await supabase
+        .from('proveedores')
+        .select('id')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      const providerPayload = {
+        user_id: user!.id,
+        nombre: concesionarioForm.nombre.trim(),
+        email: user?.email || '',
+        telefono: concesionarioForm.telefono.trim(),
+        business_address: concesionarioForm.direccion.trim() || null,
+        description: concesionarioForm.descripcion.trim() || 'Concesionario de transporte',
+      };
+
+      const { data: proveedorData, error: proveedorError } = existingProvider
+        ? await supabase.from('proveedores').update(providerPayload).eq('user_id', user!.id).select().single()
+        : await supabase.from('proveedores').insert(providerPayload).select().single();
+      if (proveedorError) throw proveedorError;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'proveedor', provider_type: null, route_name: null })
+        .eq('user_id', user!.id);
+      if (profileError) throw profileError;
+
+      setProfile((prev: any) => ({ ...prev, role: 'proveedor', provider_type: null, route_name: null }));
+      setUserSpecificData(proveedorData);
+      toast({ title: 'Concesionario registrado', description: 'Ya puedes registrar y suscribir tus unidades por $400 MXN al año.' });
+      navigate('/panel-concesionario');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setRegistrandoConcesionario(false);
+    }
+  }
+
   const isProvider = profile?.role === "proveedor";
   const showTaxi = isProvider && showTaxiTab;
 
@@ -487,6 +535,65 @@ const Dashboard = () => {
                     {/* Acciones de cuenta */}
                     <div className="pt-4 border-t space-y-3">
                       {/* Suscripción de proveedor desactivada: solo concesionarios pueden registrarse */}
+
+                      {!isProvider && (
+                        <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                          <div className="space-y-1">
+                            <h3 className="flex items-center gap-2 text-base font-semibold">
+                              <Bus className="h-4 w-4 text-primary" />
+                              Registrarme como Concesionario de Transporte
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              Registra tu concesionaria para dar de alta unidades. Cada unidad se suscribe por $400 MXN al año.
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="concesionario-nombre">Nombre del concesionario *</Label>
+                            <Input
+                              id="concesionario-nombre"
+                              placeholder="Ej: Transportes Villa"
+                              value={concesionarioForm.nombre}
+                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, nombre: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="concesionario-telefono">Teléfono *</Label>
+                            <Input
+                              id="concesionario-telefono"
+                              placeholder="+52..."
+                              value={concesionarioForm.telefono}
+                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, telefono: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="concesionario-direccion">Dirección</Label>
+                            <Input
+                              id="concesionario-direccion"
+                              placeholder="Base, oficina o domicilio fiscal"
+                              value={concesionarioForm.direccion}
+                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, direccion: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="concesionario-descripcion">Descripción</Label>
+                            <Textarea
+                              id="concesionario-descripcion"
+                              placeholder="Servicio urbano, foráneo o privado"
+                              value={concesionarioForm.descripcion}
+                              onChange={(e) => setConcesionarioForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                              rows={2}
+                            />
+                          </div>
+                          <Button
+                            onClick={handleRegistrarConcesionario}
+                            disabled={registrandoConcesionario || !concesionarioForm.nombre.trim() || !concesionarioForm.telefono.trim()}
+                            className="w-full"
+                          >
+                            <Bus className="h-4 w-4 mr-2" />
+                            {registrandoConcesionario ? 'Registrando...' : 'Registrarme como Concesionario'}
+                          </Button>
+                        </div>
+                      )}
 
                       <Button
                         variant="ghost"
