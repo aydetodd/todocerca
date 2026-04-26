@@ -39,6 +39,7 @@ import TaxiDriverRequests from "@/components/TaxiDriverRequests";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { useDashboardBadges } from "@/hooks/useDashboardBadges";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -647,12 +648,12 @@ const Dashboard = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="concesionario-telefono">Teléfono *</Label>
-                      <Input
+                      <PhoneInput
                         id="concesionario-telefono"
-                        placeholder="+52..."
+                        label="Teléfono"
+                        required
                         value={concesionarioForm.telefono}
-                        onChange={(e) => setConcesionarioForm(prev => ({ ...prev, telefono: e.target.value }))}
+                        onChange={(value) => setConcesionarioForm(prev => ({ ...prev, telefono: value }))}
                       />
                     </div>
                     <div className="space-y-2">
@@ -824,12 +825,11 @@ const Dashboard = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="empresa-tel">Teléfono de contacto</Label>
-                        <Input
+                        <PhoneInput
                           id="empresa-tel"
-                          placeholder="+52..."
+                          label="Teléfono de contacto"
                           value={empresaForm.contacto_telefono}
-                          onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_telefono: e.target.value }))}
+                          onChange={(value) => setEmpresaForm(prev => ({ ...prev, contacto_telefono: value }))}
                         />
                       </div>
                       <div className="space-y-2">
