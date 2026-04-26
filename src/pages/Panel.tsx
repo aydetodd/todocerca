@@ -305,10 +305,10 @@ export default function Panel() {
               )}
               
               {/* Registro como Concesionario de Transporte ($400 MXN/año por unidad) */}
-              {!isProvider && (
+              {!isProvider && !showProviderForm && (
                 <div className="pt-4 border-t">
                   <Button
-                    onClick={() => navigate('/registro-proveedor')}
+                    onClick={() => setShowProviderForm(true)}
                     className="w-full bg-primary hover:bg-primary/90"
                     size="lg"
                   >
@@ -318,6 +318,30 @@ export default function Panel() {
                   <p className="text-xs text-muted-foreground mt-2 text-center">
                     Suscripción anual de $400 MXN por cada unidad registrada
                   </p>
+                </div>
+              )}
+
+              {!isProvider && showProviderForm && (
+                <div className="pt-4 border-t">
+                  <ProviderRegistration
+                    userData={{
+                      email: user?.email || '',
+                      nombre: profile?.nombre || '',
+                      telefono: userSpecificData?.telefono || profile?.telefono || '',
+                      codigoPostal: userSpecificData?.codigo_postal || '',
+                    }}
+                    onComplete={() => {
+                      setShowProviderForm(false);
+                      window.location.reload();
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2"
+                    onClick={() => setShowProviderForm(false)}
+                  >
+                    Cancelar
+                  </Button>
                 </div>
               )}
 
