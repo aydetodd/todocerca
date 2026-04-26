@@ -121,7 +121,7 @@ serve(async (req) => {
     
     const body = new URLSearchParams({
       To: `+${formattedPhone}`,
-      From: twilioPhoneNumber,
+      From: twilioPhoneNumber!,
       Body: message,
     });
 
