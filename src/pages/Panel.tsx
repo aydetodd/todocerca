@@ -33,6 +33,7 @@ import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
+import ProviderRegistration from '@/components/ProviderRegistration';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
