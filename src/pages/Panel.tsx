@@ -49,6 +49,7 @@ export default function Panel() {
   const [showReport, setShowReport] = useState(false);
   const [sendingBulk, setSendingBulk] = useState(false);
   const [bulkMessage, setBulkMessage] = useState('');
+  const [showProviderForm, setShowProviderForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
