@@ -33,6 +33,7 @@ import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
+import ProviderRegistration from '@/components/ProviderRegistration';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
 
@@ -48,6 +49,7 @@ export default function Panel() {
   const [showReport, setShowReport] = useState(false);
   const [sendingBulk, setSendingBulk] = useState(false);
   const [bulkMessage, setBulkMessage] = useState('');
+  const [showProviderForm, setShowProviderForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -302,8 +304,47 @@ export default function Panel() {
                 </div>
               )}
               
-              {/* Suscripción de proveedor desactivada: solo concesionarios disponibles */}
-              
+              {/* Registro como Concesionario de Transporte ($400 MXN/año por unidad) */}
+              {!isProvider && !showProviderForm && (
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={() => setShowProviderForm(true)}
+                    className="w-full bg-primary hover:bg-primary/90"
+                    size="lg"
+                  >
+                    <Car className="h-4 w-4 mr-2" />
+                    Registrarme como Concesionario de Transporte
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Suscripción anual de $400 MXN por cada unidad registrada
+                  </p>
+                </div>
+              )}
+
+              {!isProvider && showProviderForm && (
+                <div className="pt-4 border-t">
+                  <ProviderRegistration
+                    userData={{
+                      email: user?.email || '',
+                      nombre: profile?.nombre || '',
+                      telefono: userSpecificData?.telefono || profile?.telefono || '',
+                      codigoPostal: userSpecificData?.codigo_postal || '',
+                    }}
+                    onComplete={() => {
+                      setShowProviderForm(false);
+                      window.location.reload();
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2"
+                    onClick={() => setShowProviderForm(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+
               {/* QR Code Generator for Providers */}
               {isProvider && userSpecificData?.id && (
                 <div className="pt-4 border-t">
