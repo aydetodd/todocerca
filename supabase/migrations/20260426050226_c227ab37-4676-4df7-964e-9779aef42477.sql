@@ -1,0 +1,1 @@
+UPDATE public.profiles SET role = 'cliente' WHERE consecutive_number = 1 AND role = 'proveedor';
