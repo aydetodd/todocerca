@@ -302,8 +302,23 @@ export default function Panel() {
                 </div>
               )}
               
-              {/* Suscripción de proveedor desactivada: solo concesionarios disponibles */}
-              
+              {/* Registro como Concesionario de Transporte ($400 MXN/año por unidad) */}
+              {!isProvider && (
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={() => navigate('/registro-proveedor')}
+                    className="w-full bg-primary hover:bg-primary/90"
+                    size="lg"
+                  >
+                    <Car className="h-4 w-4 mr-2" />
+                    Registrarme como Concesionario de Transporte
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Suscripción anual de $400 MXN por cada unidad registrada
+                  </p>
+                </div>
+              )}
+
               {/* QR Code Generator for Providers */}
               {isProvider && userSpecificData?.id && (
                 <div className="pt-4 border-t">
