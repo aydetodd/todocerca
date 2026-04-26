@@ -361,9 +361,9 @@ const Dashboard = () => {
         // { key: "productos" as const, label: "Productos", icon: Package, visible: isProvider },
         {
           key: "rutas_privadas" as const,
-          label: "Transporte",
+          label: isProvider ? "Transporte" : "Registrarme como Concesionario",
           icon: Bus,
-          visible: isProvider,
+          visible: true,
         },
         {
           key: "empresa" as const,
