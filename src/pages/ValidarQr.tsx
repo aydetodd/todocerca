@@ -520,6 +520,19 @@ export default function ValidarQr() {
   const showPersonalStats = scanMode === "personal" || lastResultType === "personal" || isPrivateRoute;
   const isPersonalMode = scanMode === "personal";
 
+  // Modo "por viaje": el chofer no escanea QR, solo registra inicio/fin de viaje
+  if (tripContract) {
+    return (
+      <DriverTripPanel
+        contratoId={tripContract.contratoId}
+        choferEmpresaId={tripContract.choferEmpresaId}
+        unidadId={tripContract.unidadId}
+        routeProductId={tripContract.routeProductId}
+        empresaNombre={tripContract.empresaNombre}
+      />
+    );
+  }
+
   return (
     <div
       className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
