@@ -2106,6 +2106,8 @@ export default function PanelConcesionario() {
             </Card>
           </TabsContent>
         </Tabs>
+          );
+        })()}
       </div>
 
       {/* Dialog: Proponer contrato */}
