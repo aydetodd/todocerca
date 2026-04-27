@@ -60,6 +60,16 @@ export function useAuth() {
     user,
     session,
     loading,
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => {
+      // Liberar la sesión única antes de cerrar
+      if (user) {
+        try {
+          await supabase.from('active_sessions').delete().eq('user_id', user.id);
+        } catch (e) {
+          console.warn('No se pudo liberar active_session:', e);
+        }
+      }
+      return supabase.auth.signOut();
+    },
   };
 }
