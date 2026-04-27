@@ -13,6 +13,7 @@ import { downloadCSV } from "@/lib/csvExport";
 import { getHermosilloToday, getHermosilloTodayStart } from "@/lib/utils";
 import { Html5Qrcode } from "html5-qrcode";
 import { DriverMiniMap } from "@/components/DriverMiniMap";
+import { DriverTripPanel } from "@/components/DriverTripPanel";
 
 type ValidationResult = {
   valid: boolean;
@@ -112,6 +113,13 @@ export default function ValidarQr() {
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
   const [isPrivateRoute, setIsPrivateRoute] = useState(false);
+  const [tripContract, setTripContract] = useState<{
+    contratoId: string;
+    choferEmpresaId: string;
+    unidadId: string | null;
+    routeProductId: string | null;
+    empresaNombre?: string;
+  } | null>(null);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
