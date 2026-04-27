@@ -747,7 +747,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
               disabled={loading || !validateForm()}
               size="lg"
             >
-              {loading ? 'Procesando...' : `Comenzar Prueba Gratis (7 días)`}
+              {loading ? 'Procesando...' : `Activar Suscripción`}
             </Button>
           </div>
         </CardContent>
