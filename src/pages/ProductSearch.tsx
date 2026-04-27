@@ -968,36 +968,41 @@ const ProductSearch = () => {
             {/* Public/Foráneo routes - show available routes */}
             {selectedRouteType && selectedRouteType !== 'privado' && (
               <>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} en {searchCiudad === ALL_MUNICIPIOS_VALUE ? searchEstado : `${searchCiudad}, ${searchEstado}`}:
-                </p>
-                {loadingRoutes ? (
-                  <p className="text-sm text-muted-foreground">Cargando rutas...</p>
-                ) : availableRoutes.length === 0 ? (
-                  <p className="text-sm text-destructive">
-                    No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} registradas en esta ubicación.
+                {!searchCiudad || searchCiudad === ALL_MUNICIPIOS_VALUE ? (
+                  <p className="text-sm text-muted-foreground">
+                    Selecciona una ciudad/municipio para ver las rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} disponibles.
                   </p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
-                      {availableRoutes.map((route) => (
-                        <Badge
-                          key={route.nombre}
-                          variant={selectedRoute === route.nombre ? "default" : "outline"}
-                          className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                          onClick={() => {
-                            const newRoute = selectedRoute === route.nombre ? null : route.nombre;
-                            setSelectedRoute(newRoute);
-                            if (newRoute) {
-                              // Pass route directly to avoid stale closure
-                              setTimeout(() => handleSearch(undefined, newRoute), 50);
-                            }
-                          }}
-                        >
-                          {route.nombre}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} en {searchCiudad}, {searchEstado}:
+                    </p>
+                    {loadingRoutes ? (
+                      <p className="text-sm text-muted-foreground">Cargando rutas...</p>
+                    ) : availableRoutes.length === 0 ? (
+                      <p className="text-sm text-destructive">
+                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} registradas en esta ubicación.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableRoutes.map((route) => (
+                          <Badge
+                            key={route.nombre}
+                            variant={selectedRoute === route.nombre ? "default" : "outline"}
+                            className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
+                            onClick={() => {
+                              const newRoute = selectedRoute === route.nombre ? null : route.nombre;
+                              setSelectedRoute(newRoute);
+                              if (newRoute) {
+                                setTimeout(() => handleSearch(undefined, newRoute), 50);
+                              }
+                            }}
+                          >
+                            {route.nombre}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </>
