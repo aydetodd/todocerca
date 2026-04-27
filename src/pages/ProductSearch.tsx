@@ -286,6 +286,12 @@ const ProductSearch = () => {
       setSelectedRoute(null);
       return;
     }
+    // Require a specific municipio selected (not "Todos") before listing routes
+    if (!searchCiudad || searchCiudad === ALL_MUNICIPIOS_VALUE) {
+      setAvailableRoutes([]);
+      setSelectedRoute(null);
+      return;
+    }
 
     const fetchAvailableRoutes = async () => {
       setLoadingRoutes(true);
