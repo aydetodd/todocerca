@@ -267,9 +267,13 @@ const ProductSearch = () => {
   const isRutasCategory = selectedCategoryName === "Rutas de Transporte";
   const isProfesionesCategory = selectedCategoryName === "Profesiones y oficios";
 
-  // Reset route type when category changes
+  // Default to "publico" automatically when entering Rutas de Transporte
   useEffect(() => {
-    if (!isRutasCategory) {
+    if (isRutasCategory) {
+      if (selectedRouteType === null) {
+        setSelectedRouteType('publico');
+      }
+    } else {
       setSelectedRouteType(null);
       setPrivateRouteLink('');
     }
