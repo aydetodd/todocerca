@@ -637,7 +637,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               1. Unidades {transportType === 'taxi' ? '/ Taxis' : '/ Autobuses'}
             </CardTitle>
             <CardDescription>
-              Cada unidad requiere una suscripción de $400 MXN/año. Registra tus unidades con placas o No. económico.
+              Cada unidad requiere una suscripción de{' '}
+              <span className="line-through text-muted-foreground">$800 MXN/año</span>{' '}
+              <span className="font-bold text-primary">$400 MXN/año</span>{' '}
+              <span className="inline-block px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold align-middle">PROMOCIÓN</span>
+              . Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -665,7 +669,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <Alert>
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <span className="font-medium">Suscripción requerida:</span> $400 MXN/año por unidad. Pago seguro vía Stripe.
+                  <span className="font-medium">Suscripción requerida:</span>{' '}
+                  <span className="line-through text-muted-foreground">$800</span>{' '}
+                  <span className="font-bold text-primary">$400 MXN/año</span> por unidad{' '}
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold">PROMO</span>. Pago seguro vía Stripe.
                 </AlertDescription>
               </Alert>
             )}
@@ -756,7 +763,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               ) : hasAvailableSlot ? (
                 <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad (slot disponible)</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad ($400/año)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad (<span className="line-through opacity-70 mx-1">$800</span> $400/año)</>
               )}
             </Button>
           </CardContent>
