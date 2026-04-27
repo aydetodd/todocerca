@@ -2167,6 +2167,26 @@ export default function PanelConcesionario() {
                 />
               </div>
             )}
+            {contratoModeloCobro === "por_viaje" && (
+              <div className="space-y-2 p-3 rounded-md border border-border bg-muted/30">
+                <p className="text-xs font-semibold text-foreground">
+                  📍 Geocercas para conteo automático de viajes
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Marca en el mapa el punto de salida (terminal) y de llegada (maquiladora). El viaje se cuenta automáticamente cuando el chofer entra al destino.
+                </p>
+                <ContractGeofencePicker
+                  origen={contratoOrigen}
+                  destino={contratoDestino}
+                  radio={contratoRadio}
+                  onChange={({ origen, destino, radio }) => {
+                    setContratoOrigen(origen);
+                    setContratoDestino(destino);
+                    setContratoRadio(radio);
+                  }}
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">Frecuencia de corte</label>
               <select
