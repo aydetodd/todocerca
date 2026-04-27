@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConcesionarioReportes from "@/components/ConcesionarioReportes";
+import { ReporteViajes } from "@/components/ReporteViajes";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -129,6 +130,7 @@ export default function PanelConcesionario() {
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState<any>(null);
   const [contratoTarifa, setContratoTarifa] = useState("15");
   const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
+  const [contratoModeloCobro, setContratoModeloCobro] = useState<"por_persona" | "por_viaje">("por_persona");
   const [contratoDescripcion, setContratoDescripcion] = useState("");
   const [contratoTurnos, setContratoTurnos] = useState<{ turno: string; unidades: number; selected: boolean }[]>([
     { turno: "Matutino", unidades: 1, selected: false },
@@ -1067,14 +1069,15 @@ export default function PanelConcesionario() {
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
-      tarifa_por_persona: parseFloat(contratoTarifa) || 15,
+      tarifa_por_persona: contratoModeloCobro === "por_viaje" ? 0 : (parseFloat(contratoTarifa) || 15),
       frecuencia_corte: contratoFrecuencia,
       descripcion: contratoDescripcion || descAuto,
       estado: "pendiente",
       iniciado_por: "concesionario",
       is_active: false,
       turnos: turnosSeleccionados,
-    });
+      modelo_cobro: contratoModeloCobro,
+    } as any);
     setSavingContrato(false);
     if (error) {
       toast.error("Error al proponer contrato: " + error.message);
@@ -1183,32 +1186,60 @@ export default function PanelConcesionario() {
           </Card>
         </div>
 
-        <Tabs defaultValue="ingresos" className="w-full">
+        {(() => {
+          // Determinar si el concesionario opera EXCLUSIVAMENTE en modo "por viaje"
+          // (todos sus contratos activos aceptados son por_viaje)
+          const contratosActivos = contratosEmpresa.filter((c: any) => c.is_active && c.estado === "aceptado");
+          const soloPorViaje = contratosActivos.length > 0 &&
+            contratosActivos.every((c: any) => c.modelo_cobro === "por_viaje");
+
+          return (
+        <Tabs defaultValue={soloPorViaje ? "unidades" : "ingresos"} className="w-full">
           <div className="overflow-x-auto">
             <TabsList className="inline-flex w-auto min-w-full">
-              <TabsTrigger value="ingresos" className="text-xs">
-                <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
-              </TabsTrigger>
-              <TabsTrigger value="reportes" className="text-xs">
-                <ClipboardList className="h-3 w-3 mr-1" /> Reportes
-              </TabsTrigger>
+              {!soloPorViaje && (
+                <TabsTrigger value="ingresos" className="text-xs">
+                  <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+                </TabsTrigger>
+              )}
+              {!soloPorViaje && (
+                <TabsTrigger value="reportes" className="text-xs">
+                  <ClipboardList className="h-3 w-3 mr-1" /> Reportes
+                </TabsTrigger>
+              )}
+              {soloPorViaje && (
+                <TabsTrigger value="viajes" className="text-xs">
+                  <ClipboardList className="h-3 w-3 mr-1" /> Viajes
+                </TabsTrigger>
+              )}
               <TabsTrigger value="verificacion" className="text-xs">
                 <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
               </TabsTrigger>
               <TabsTrigger value="unidades" className="text-xs">
                 <Bus className="h-3 w-3 mr-1" /> Unidades
               </TabsTrigger>
-              <TabsTrigger value="liquidaciones" className="text-xs">
-                <DollarSign className="h-3 w-3 mr-1" /> Pagos
-              </TabsTrigger>
-              <TabsTrigger value="fraude" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
-              </TabsTrigger>
+              {!soloPorViaje && (
+                <TabsTrigger value="liquidaciones" className="text-xs">
+                  <DollarSign className="h-3 w-3 mr-1" /> Pagos
+                </TabsTrigger>
+              )}
+              {!soloPorViaje && (
+                <TabsTrigger value="fraude" className="text-xs">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
+                </TabsTrigger>
+              )}
               <TabsTrigger value="empresas" className="text-xs">
                 <Building2 className="h-3 w-3 mr-1" /> Empresas
               </TabsTrigger>
             </TabsList>
           </div>
+
+          {/* Reporte simple de viajes (modo por_viaje) */}
+          {soloPorViaje && (
+            <TabsContent value="viajes" className="space-y-3 mt-4">
+              <ReporteViajes proveedorId={proveedor?.id} />
+            </TabsContent>
+          )}
 
           {/* INGRESOS POR UNIDAD */}
           <TabsContent value="ingresos" className="space-y-4 mt-4">
@@ -2076,6 +2107,8 @@ export default function PanelConcesionario() {
             </Card>
           </TabsContent>
         </Tabs>
+          );
+        })()}
       </div>
 
       {/* Dialog: Proponer contrato */}
@@ -2091,14 +2124,32 @@ export default function PanelConcesionario() {
               Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
             </p>
             <div>
-              <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
-              <Input
-                type="number"
-                value={contratoTarifa}
-                onChange={e => setContratoTarifa(e.target.value)}
-                placeholder="15.00"
-              />
+              <label className="text-sm font-medium mb-1 block">Modelo de cobro</label>
+              <select
+                className="w-full border rounded-md p-2 text-sm bg-background"
+                value={contratoModeloCobro}
+                onChange={e => setContratoModeloCobro(e.target.value as "por_persona" | "por_viaje")}
+              >
+                <option value="por_persona">Por persona transportada (QR)</option>
+                <option value="por_viaje">Por viaje completo (sin QR)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {contratoModeloCobro === "por_viaje"
+                  ? "El chofer no escanea QR; solo registra inicio y fin de cada viaje."
+                  : "El chofer cobra QR a cada pasajero según la tarifa."}
+              </p>
             </div>
+            {contratoModeloCobro === "por_persona" && (
+              <div>
+                <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
+                <Input
+                  type="number"
+                  value={contratoTarifa}
+                  onChange={e => setContratoTarifa(e.target.value)}
+                  placeholder="15.00"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">Frecuencia de corte</label>
               <select

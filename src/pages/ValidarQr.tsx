@@ -13,6 +13,7 @@ import { downloadCSV } from "@/lib/csvExport";
 import { getHermosilloToday, getHermosilloTodayStart } from "@/lib/utils";
 import { Html5Qrcode } from "html5-qrcode";
 import { DriverMiniMap } from "@/components/DriverMiniMap";
+import { DriverTripPanel } from "@/components/DriverTripPanel";
 
 type ValidationResult = {
   valid: boolean;
@@ -112,6 +113,13 @@ export default function ValidarQr() {
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
   const [isPrivateRoute, setIsPrivateRoute] = useState(false);
+  const [tripContract, setTripContract] = useState<{
+    contratoId: string;
+    choferEmpresaId: string;
+    unidadId: string | null;
+    routeProductId: string | null;
+    empresaNombre?: string;
+  } | null>(null);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -199,12 +207,33 @@ export default function ValidarQr() {
           if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
-              .select("route_type, is_private")
+              .select("route_type, is_private, proveedor_id")
               .eq("id", asignacionActiva.producto_id)
               .single();
             if (producto?.route_type === "privada" || (producto as any)?.is_private) {
               setIsPrivateRoute(true);
               setScanMode("personal");
+
+              // Detect "por_viaje" contract for this concesionario
+              if (producto?.proveedor_id) {
+                const { data: contratos } = await (supabase as any)
+                  .from("contratos_transporte")
+                  .select("id, modelo_cobro, empresas_transporte(nombre)")
+                  .eq("concesionario_id", producto.proveedor_id)
+                  .eq("is_active", true)
+                  .eq("estado", "aceptado");
+                const tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
+                if (tripContrato) {
+                  const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
+                  setTripContract({
+                    contratoId: tripContrato.id,
+                    choferEmpresaId: choferActivo.id,
+                    unidadId: asignacionActiva.unidad_id,
+                    routeProductId: asignacionActiva.producto_id,
+                    empresaNombre: tripContrato.empresas_transporte?.nombre,
+                  });
+                }
+              }
             }
           }
         }
@@ -490,6 +519,19 @@ export default function ValidarQr() {
   // Show personal mode stats if explicitly set OR if last scan was employee type
   const showPersonalStats = scanMode === "personal" || lastResultType === "personal" || isPrivateRoute;
   const isPersonalMode = scanMode === "personal";
+
+  // Modo "por viaje": el chofer no escanea QR, solo registra inicio/fin de viaje
+  if (tripContract) {
+    return (
+      <DriverTripPanel
+        contratoId={tripContract.contratoId}
+        choferEmpresaId={tripContract.choferEmpresaId}
+        unidadId={tripContract.unidadId}
+        routeProductId={tripContract.routeProductId}
+        empresaNombre={tripContract.empresaNombre}
+      />
+    );
+  }
 
   return (
     <div

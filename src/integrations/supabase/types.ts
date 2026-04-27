@@ -417,6 +417,7 @@ export type Database = {
           id: string
           iniciado_por: string
           is_active: boolean
+          modelo_cobro: string
           tarifa_por_persona: number
           turnos: Json | null
           updated_at: string
@@ -433,6 +434,7 @@ export type Database = {
           id?: string
           iniciado_por?: string
           is_active?: boolean
+          modelo_cobro?: string
           tarifa_por_persona?: number
           turnos?: Json | null
           updated_at?: string
@@ -449,6 +451,7 @@ export type Database = {
           id?: string
           iniciado_por?: string
           is_active?: boolean
+          modelo_cobro?: string
           tarifa_por_persona?: number
           turnos?: Json | null
           updated_at?: string
@@ -3643,6 +3646,85 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      viajes_realizados: {
+        Row: {
+          chofer_id: string
+          contrato_id: string
+          created_at: string
+          estado: string
+          fecha: string
+          fin_at: string | null
+          fin_lat: number | null
+          fin_lng: number | null
+          id: string
+          inicio_at: string | null
+          inicio_lat: number | null
+          inicio_lng: number | null
+          notas: string | null
+          numero_viaje: number
+          unidad_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          chofer_id: string
+          contrato_id: string
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fin_at?: string | null
+          fin_lat?: number | null
+          fin_lng?: number | null
+          id?: string
+          inicio_at?: string | null
+          inicio_lat?: number | null
+          inicio_lng?: number | null
+          notas?: string | null
+          numero_viaje?: number
+          unidad_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chofer_id?: string
+          contrato_id?: string
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fin_at?: string | null
+          fin_lat?: number | null
+          fin_lng?: number | null
+          id?: string
+          inicio_at?: string | null
+          inicio_lat?: number | null
+          inicio_lng?: number | null
+          notas?: string | null
+          numero_viaje?: number
+          unidad_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viajes_realizados_chofer_id_fkey"
+            columns: ["chofer_id"]
+            isOneToOne: false
+            referencedRelation: "choferes_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viajes_realizados_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viajes_realizados_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       votacion_miembros: {
         Row: {
