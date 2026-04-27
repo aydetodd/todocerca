@@ -758,27 +758,54 @@ export default function PanelConcesionario() {
   };
 
 
+  // Buy a new unit slot via Stripe (no data collected upfront — slot first, register later)
+  const handleBuySlot = async () => {
+    setBuyingSlot(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico' }
+      });
+      if (error) throw error;
+      if (data?.action === 'checkout' && data?.url) {
+        window.open(data.url, '_blank');
+        toast.info("Redirigiendo a Stripe. Al completar el pago vuelve aquí para registrar tu unidad.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "No se pudo iniciar el pago");
+    } finally {
+      setBuyingSlot(false);
+    }
+  };
+
+  // Refresh slot count from Stripe
+  const refreshSlotCount = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'status', transportType: 'urbana', uiTransportType: 'publico' }
+      });
+      if (data?.action === 'status') {
+        setSlotsQuantity(data.quantity || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching slot count:', err);
+    }
+  };
+
   const handleAddUnit = async () => {
     if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
       toast.error("Número económico y placas son obligatorios");
       return;
     }
+
+    // Verify there's a paid slot available
+    const availableSlots = slotsQuantity - unidades.length;
+    if (availableSlots <= 0) {
+      toast.error("No tienes slots disponibles. Compra un slot primero.");
+      return;
+    }
+
     setSavingUnit(true);
     try {
-      // 1) Verificar suscripción / slot disponible. Si no hay, mandar a Stripe (mismo flujo que "Añadir Unidad" en Transporte Público)
-      const { data: slotData, error: slotError } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico' }
-      });
-
-      if (slotError) throw slotError;
-
-      if (slotData?.action === 'checkout' && slotData?.url) {
-        window.open(slotData.url, '_blank');
-        toast.info("Redirigiendo a Stripe. Completa el pago para activar la suscripción de la unidad.");
-        setSavingUnit(false);
-        return;
-      }
-
       let verifId = verificacion?.id;
 
       // Create verification request if none exists
