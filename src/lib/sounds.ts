@@ -103,7 +103,7 @@ export const playMessageSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Tienes un nuevo mensaje en todocerca punto mx');
+      speakMessage('Tienes un nuevo mensaje en Todo Cerca');
     }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de mensaje:', error);
@@ -117,7 +117,7 @@ export const playOrderSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Tienes un nuevo pedido en todocerca punto mx');
+      speakMessage('Tienes un nuevo pedido en Todo Cerca');
     }, 300);
 
     // Vibración corta
@@ -136,7 +136,7 @@ export const playAppointmentSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Tienes una nueva cita en todocerca punto mx');
+      speakMessage('Tienes una nueva cita en Todo Cerca');
     }, 300);
 
     // Vibración corta
@@ -155,7 +155,7 @@ export const playTaxiAlertSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Tienes una nueva solicitud de taxi en todocerca punto mx');
+      speakMessage('Tienes una nueva solicitud de taxi en Todo Cerca');
     }, 300);
 
     // Vibración
@@ -221,7 +221,7 @@ export const playSirenSound = () => {
     
     // Mensaje de voz después de los beeps
     setTimeout(() => {
-      speakMessage('¡Alerta! Tienes un llamado de auxilio en todocerca punto mx');
+      speakMessage('¡Alerta! Tienes un llamado de auxilio en Todo Cerca');
     }, 600);
 
     // Vibración SOS Morse
@@ -241,7 +241,7 @@ export const playClientRegistrationSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Nuevo cliente registrado en todocerca punto mx');
+      speakMessage('Nuevo cliente registrado en Todo Cerca');
     }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de registro cliente:', error);
@@ -255,7 +255,7 @@ export const playProviderRegistrationSound = () => {
   try {
     playAttentionBeep();
     setTimeout(() => {
-      speakMessage('Nuevo proveedor registrado en todocerca punto mx');
+      speakMessage('Nuevo proveedor registrado en Todo Cerca');
     }, 300);
   } catch (error) {
     console.error('Error reproduciendo sonido de registro proveedor:', error);
