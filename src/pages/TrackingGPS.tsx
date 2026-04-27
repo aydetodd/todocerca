@@ -743,8 +743,8 @@ const TrackingGPS = () => {
                   <CardTitle className="text-2xl">Tracking GPS Familiar</CardTitle>
                 </div>
                 <CardDescription>
-                  ¡Prueba 7 días gratis sin tarjeta! Rastrea hasta 5 dispositivos en tiempo real. 
-                  Después de la prueba, elegirás el nombre de tu grupo.
+                  Rastrea hasta 5 dispositivos en tiempo real por solo $400 MXN/año.
+                  Después del pago, elegirás el nombre de tu grupo.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
