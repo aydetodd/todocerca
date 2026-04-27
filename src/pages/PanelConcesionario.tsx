@@ -1069,6 +1069,11 @@ export default function PanelConcesionario() {
     const descAuto = turnosSeleccionados.length > 0
       ? turnosSeleccionados.map(t => `${t.turno} (${t.unidades} unid.)`).join(", ")
       : `Transporte de personal - ${empresaSeleccionada.nombre}`;
+    if (contratoModeloCobro === "por_viaje" && (!contratoOrigen || !contratoDestino)) {
+      setSavingContrato(false);
+      toast.error("Marca el origen y destino en el mapa para contar viajes automáticamente");
+      return;
+    }
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
@@ -1080,6 +1085,11 @@ export default function PanelConcesionario() {
       is_active: false,
       turnos: turnosSeleccionados,
       modelo_cobro: contratoModeloCobro,
+      origen_lat: contratoOrigen?.lat ?? null,
+      origen_lng: contratoOrigen?.lng ?? null,
+      destino_lat: contratoDestino?.lat ?? null,
+      destino_lng: contratoDestino?.lng ?? null,
+      geocerca_radio_m: contratoRadio,
     } as any);
     setSavingContrato(false);
     if (error) {
@@ -1090,6 +1100,9 @@ export default function PanelConcesionario() {
       setEmpresaSeleccionada(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
+      setContratoOrigen(null);
+      setContratoDestino(null);
+      setContratoRadio(150);
       setContratoTurnos(prev => prev.map(t => ({ ...t, selected: false, unidades: 1 })));
       loadContratosEmpresa(proveedor.id);
     }
