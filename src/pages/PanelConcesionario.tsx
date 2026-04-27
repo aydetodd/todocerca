@@ -129,6 +129,7 @@ export default function PanelConcesionario() {
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState<any>(null);
   const [contratoTarifa, setContratoTarifa] = useState("15");
   const [contratoFrecuencia, setContratoFrecuencia] = useState("quincenal");
+  const [contratoModeloCobro, setContratoModeloCobro] = useState<"por_persona" | "por_viaje">("por_persona");
   const [contratoDescripcion, setContratoDescripcion] = useState("");
   const [contratoTurnos, setContratoTurnos] = useState<{ turno: string; unidades: number; selected: boolean }[]>([
     { turno: "Matutino", unidades: 1, selected: false },
@@ -1067,14 +1068,15 @@ export default function PanelConcesionario() {
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
-      tarifa_por_persona: parseFloat(contratoTarifa) || 15,
+      tarifa_por_persona: contratoModeloCobro === "por_viaje" ? 0 : (parseFloat(contratoTarifa) || 15),
       frecuencia_corte: contratoFrecuencia,
       descripcion: contratoDescripcion || descAuto,
       estado: "pendiente",
       iniciado_por: "concesionario",
       is_active: false,
       turnos: turnosSeleccionados,
-    });
+      modelo_cobro: contratoModeloCobro,
+    } as any);
     setSavingContrato(false);
     if (error) {
       toast.error("Error al proponer contrato: " + error.message);
