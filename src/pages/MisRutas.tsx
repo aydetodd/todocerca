@@ -218,9 +218,13 @@ export default function MisRutas() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg text-foreground">{config.label}</h3>
                       <p className="text-sm text-muted-foreground">{config.description}</p>
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {config.price}
-                      </Badge>
+                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs line-through text-muted-foreground">$800</span>
+                        <Badge variant="outline" className="text-xs font-bold text-primary border-primary/40">
+                          {config.price}
+                        </Badge>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-semibold">PROMO</span>
+                      </div>
                     </div>
                     <ArrowLeft className="h-5 w-5 text-muted-foreground rotate-180 shrink-0" />
                   </div>
