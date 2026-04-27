@@ -75,11 +75,6 @@ serve(async (req) => {
       },
       // Permitir códigos promocionales en la UI de Stripe
       allow_promotion_codes: true,
-      // 7 días de prueba gratis sin tarjeta
-      payment_method_collection: 'if_required',
-      subscription_data: {
-        trial_period_days: 7,
-      },
     };
 
     logStep("Configuración de sesión", { 

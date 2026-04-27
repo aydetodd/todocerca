@@ -379,7 +379,7 @@ const TrackingGPS = () => {
 
       toast({
         title: 'Redirigiendo...',
-        description: 'Completa el registro para tu prueba gratis de 7 días'
+        description: 'Completa el pago para activar tu suscripción'
       });
 
       const { data, error } = await supabase.functions.invoke('create-tracking-checkout', {
@@ -743,8 +743,8 @@ const TrackingGPS = () => {
                   <CardTitle className="text-2xl">Tracking GPS Familiar</CardTitle>
                 </div>
                 <CardDescription>
-                  ¡Prueba 7 días gratis sin tarjeta! Rastrea hasta 5 dispositivos en tiempo real. 
-                  Después de la prueba, elegirás el nombre de tu grupo.
+                  Rastrea hasta 5 dispositivos en tiempo real por solo $400 MXN/año.
+                  Después del pago, elegirás el nombre de tu grupo.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -755,17 +755,17 @@ const TrackingGPS = () => {
                     <li>✓ Ubicación en tiempo real</li>
                     <li>✓ Privacidad total (solo tu grupo)</li>
                     <li>✓ Sin publicidad</li>
-                    <li>✓ <strong>7 días gratis</strong>, después $400 MXN/año</li>
+                    <li>✓ <strong>$400 MXN/año</strong></li>
                   </ul>
                 </div>
                 
                 <Button onClick={handleStartSubscription} className="w-full" size="lg">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Comenzar Prueba Gratis (7 días)
+                  Activar Suscripción ($400/año)
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  Sin tarjeta de crédito. Podrás ingresar códigos de descuento en la pasarela de pago.
+                  Pago seguro vía Stripe. Podrás ingresar códigos de descuento en la pasarela de pago.
                 </p>
               </CardContent>
             </Card>
@@ -982,7 +982,7 @@ const TrackingGPS = () => {
                   </p>
                   <Button onClick={handleSubscribe} className="w-full">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Activar Suscripción (7 días gratis)
+                    Activar Suscripción ($400/año)
                   </Button>
                 </div>
               )}

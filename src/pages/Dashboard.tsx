@@ -238,7 +238,7 @@ const Dashboard = () => {
         window.open(data.url, "_blank");
         toast({
           title: "Redirigiendo",
-          description: "Completa el registro para tu prueba gratis de 7 días",
+          description: "Completa el pago para activar tu suscripción",
         });
       }
     } catch (error: any) {

@@ -772,7 +772,7 @@ export default function PanelConcesionario() {
 
       if (slotData?.action === 'checkout' && slotData?.url) {
         window.open(slotData.url, '_blank');
-        toast.info("Redirigiendo a Stripe. Completa el pago o inicia los 7 días gratis. Al volver podrás registrar la unidad.");
+        toast.info("Redirigiendo a Stripe. Completa el pago para activar la suscripción de la unidad.");
         setSavingUnit(false);
         return;
       }
