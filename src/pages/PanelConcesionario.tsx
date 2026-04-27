@@ -778,7 +778,7 @@ export default function PanelConcesionario() {
     setBuyingSlot(true);
     try {
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico' }
+        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico', returnTo: '/panel-concesionario' }
       });
       if (error) throw error;
       if (data?.action === 'checkout' && data?.url) {
