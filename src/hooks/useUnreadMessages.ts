@@ -112,7 +112,7 @@ export const useUnreadMessages = () => {
   useEffect(() => {
     fetchConversations();
 
-    // Subscribe to new messages
+    // Subscribe to new messages AND updates (read receipts)
     const channel = supabase
       .channel('unread_messages')
       .on(
@@ -122,8 +122,19 @@ export const useUnreadMessages = () => {
           schema: 'public',
           table: 'messages'
         },
-        (payload) => {
-          // Refresh conversations when new message arrives
+        () => {
+          fetchConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          // Refresh badge count when messages are marked as read
           fetchConversations();
         }
       )
