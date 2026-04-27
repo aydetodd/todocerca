@@ -410,7 +410,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         
         toast({
           title: "¡Registro exitoso!",
-          description: `Se registraron ${products.length} productos. Redirigiendo a tu prueba gratis...`,
+          description: `Se registraron ${products.length} productos. Redirigiendo al pago...`,
         });
         
         // Open Stripe checkout in new tab
