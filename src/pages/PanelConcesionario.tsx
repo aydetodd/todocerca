@@ -139,6 +139,9 @@ export default function PanelConcesionario() {
     { turno: "Mixto", unidades: 1, selected: false },
   ]);
   const [savingContrato, setSavingContrato] = useState(false);
+  const [contratoOrigen, setContratoOrigen] = useState<{ lat: number; lng: number } | null>(null);
+  const [contratoDestino, setContratoDestino] = useState<{ lat: number; lng: number } | null>(null);
+  const [contratoRadio, setContratoRadio] = useState<number>(150);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
