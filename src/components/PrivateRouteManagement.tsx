@@ -313,7 +313,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         window.open(data.url, '_blank');
         toast({
           title: "Redirigiendo a Stripe",
-          description: "Completa el pago o prueba gratis. Al volver podrás registrar tu unidad.",
+          description: "Completa el pago. Al volver podrás registrar tu unidad.",
         });
       }
     } catch (error: any) {
