@@ -113,6 +113,8 @@ export default function PanelConcesionario() {
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
+  const [slotsQuantity, setSlotsQuantity] = useState<number>(0);
+  const [buyingSlot, setBuyingSlot] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [frecuenciaLiq, setFrecuenciaLiq] = useState<string>("daily");
   const [savingFreq, setSavingFreq] = useState(false);
