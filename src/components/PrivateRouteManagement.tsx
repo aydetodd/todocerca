@@ -756,7 +756,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               ) : hasAvailableSlot ? (
                 <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad (slot disponible)</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad (7 días gratis)</>
+                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad ($400/año)</>
               )}
             </Button>
           </CardContent>
