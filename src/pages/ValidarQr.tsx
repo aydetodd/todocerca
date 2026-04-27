@@ -119,6 +119,11 @@ export default function ValidarQr() {
     unidadId: string | null;
     routeProductId: string | null;
     empresaNombre?: string;
+    origenLat?: number | null;
+    origenLng?: number | null;
+    destinoLat?: number | null;
+    destinoLng?: number | null;
+    radioM?: number;
   } | null>(null);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
