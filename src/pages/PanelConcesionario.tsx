@@ -763,6 +763,20 @@ export default function PanelConcesionario() {
     }
     setSavingUnit(true);
     try {
+      // 1) Verificar suscripción / slot disponible. Si no hay, mandar a Stripe (mismo flujo que "Añadir Unidad" en Transporte Público)
+      const { data: slotData, error: slotError } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico' }
+      });
+
+      if (slotError) throw slotError;
+
+      if (slotData?.action === 'checkout' && slotData?.url) {
+        window.open(slotData.url, '_blank');
+        toast.info("Redirigiendo a Stripe. Completa el pago o inicia los 7 días gratis. Al volver podrás registrar la unidad.");
+        setSavingUnit(false);
+        return;
+      }
+
       let verifId = verificacion?.id;
 
       // Create verification request if none exists
