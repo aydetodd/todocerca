@@ -67,11 +67,6 @@ serve(async (req) => {
         mode: "subscription",
         success_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=success`,
         cancel_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=cancelled`,
-        // 7 días de prueba gratis sin tarjeta
-        payment_method_collection: "if_required",
-        subscription_data: {
-          trial_period_days: 7,
-        },
         metadata: { plan_type: `ruta_${routeType}`, user_id: user.id },
         allow_promotion_codes: true,
       };
