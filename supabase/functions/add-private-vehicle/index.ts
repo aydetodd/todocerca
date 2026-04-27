@@ -46,10 +46,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email: user.email });
 
-    const { action, transportType, uiTransportType } = await req.json().catch(() => ({ action: 'add', transportType: 'privada', uiTransportType: 'privado' }));
+    const { action, transportType, uiTransportType, returnTo } = await req.json().catch(() => ({ action: 'add', transportType: 'privada', uiTransportType: 'privado' }));
     const routeType = transportType || 'privada';
     const priceId = ROUTE_PRICE_IDS[routeType] || ROUTE_PRICE_IDS.privada;
-    logStep("Action requested", { action, routeType, priceId });
+    logStep("Action requested", { action, routeType, priceId, returnTo });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -61,12 +61,19 @@ serve(async (req) => {
       // This ensures every addition goes through the payment gateway
       logStep("Creating checkout session for new unit");
 
+      // Build success/cancel URLs — allow returnTo override (e.g., /panel-concesionario)
+      const origin = req.headers.get("origin");
+      const basePath = returnTo || `/mis-rutas?tipo=${uiTransportType || 'privado'}`;
+      const separator = basePath.includes('?') ? '&' : '?';
+      const successUrl = `${origin}${basePath}${separator}private_route=success`;
+      const cancelUrl = `${origin}${basePath}${separator}private_route=cancelled`;
+
       const sessionConfig: any = {
         customer_email: user.email,
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
-        success_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=success`,
-        cancel_url: `${req.headers.get("origin")}/mis-rutas?tipo=${uiTransportType || 'privado'}&private_route=cancelled`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         metadata: { plan_type: `ruta_${routeType}`, user_id: user.id },
         allow_promotion_codes: true,
       };

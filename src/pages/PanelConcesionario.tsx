@@ -113,6 +113,8 @@ export default function PanelConcesionario() {
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
   const [savingUnit, setSavingUnit] = useState(false);
+  const [slotsQuantity, setSlotsQuantity] = useState<number>(0);
+  const [buyingSlot, setBuyingSlot] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [frecuenciaLiq, setFrecuenciaLiq] = useState<string>("daily");
   const [savingFreq, setSavingFreq] = useState(false);
@@ -392,6 +394,7 @@ export default function PanelConcesionario() {
     }
     if (user) {
       fetchAll();
+      refreshSlotCount();
 
       // Handle Stripe Connect return
       const stripeParam = searchParams.get("stripe");
@@ -402,6 +405,20 @@ export default function PanelConcesionario() {
         syncStripeStatus().then(() => fetchAll());
       } else if (stripeParam === "refresh") {
         toast.info("Completa tu registro en Stripe para recibir pagos.");
+        setSearchParams({}, { replace: true });
+      }
+
+      // Handle private route (slot purchase) return
+      const slotParam = searchParams.get("private_route");
+      if (slotParam === "success") {
+        toast.success("✅ Slot activado. Ahora registra los datos de tu unidad.");
+        setSearchParams({}, { replace: true });
+        // Wait briefly for Stripe webhook then refresh slots and open form
+        setTimeout(() => {
+          refreshSlotCount().then(() => setShowAddUnit(true));
+        }, 1500);
+      } else if (slotParam === "cancelled") {
+        toast.info("Compra de slot cancelada.");
         setSearchParams({}, { replace: true });
       }
     }
@@ -756,27 +773,54 @@ export default function PanelConcesionario() {
   };
 
 
+  // Buy a new unit slot via Stripe (no data collected upfront — slot first, register later)
+  const handleBuySlot = async () => {
+    setBuyingSlot(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico', returnTo: '/panel-concesionario' }
+      });
+      if (error) throw error;
+      if (data?.action === 'checkout' && data?.url) {
+        window.open(data.url, '_blank');
+        toast.info("Redirigiendo a Stripe. Al completar el pago vuelve aquí para registrar tu unidad.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "No se pudo iniciar el pago");
+    } finally {
+      setBuyingSlot(false);
+    }
+  };
+
+  // Refresh slot count from Stripe
+  const refreshSlotCount = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('add-private-vehicle', {
+        body: { action: 'status', transportType: 'urbana', uiTransportType: 'publico' }
+      });
+      if (data?.action === 'status') {
+        setSlotsQuantity(data.quantity || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching slot count:', err);
+    }
+  };
+
   const handleAddUnit = async () => {
     if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
       toast.error("Número económico y placas son obligatorios");
       return;
     }
+
+    // Verify there's a paid slot available
+    const availableSlots = slotsQuantity - unidades.length;
+    if (availableSlots <= 0) {
+      toast.error("No tienes slots disponibles. Compra un slot primero.");
+      return;
+    }
+
     setSavingUnit(true);
     try {
-      // 1) Verificar suscripción / slot disponible. Si no hay, mandar a Stripe (mismo flujo que "Añadir Unidad" en Transporte Público)
-      const { data: slotData, error: slotError } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add', transportType: 'urbana', uiTransportType: 'publico' }
-      });
-
-      if (slotError) throw slotError;
-
-      if (slotData?.action === 'checkout' && slotData?.url) {
-        window.open(slotData.url, '_blank');
-        toast.info("Redirigiendo a Stripe. Completa el pago para activar la suscripción de la unidad.");
-        setSavingUnit(false);
-        return;
-      }
-
       let verifId = verificacion?.id;
 
       // Create verification request if none exists
@@ -1459,61 +1503,86 @@ export default function PanelConcesionario() {
 
           {/* UNIDADES */}
           <TabsContent value="unidades" className="space-y-3 mt-4">
-            {/* Add Unit Button */}
-            <Button onClick={() => setShowAddUnit(!showAddUnit)} variant="outline" className="w-full" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              {showAddUnit ? "Cancelar" : "Registrar nueva unidad"}
-            </Button>
+            {(() => {
+              const availableSlots = Math.max(0, slotsQuantity - unidades.length);
+              const hasSlot = availableSlots > 0;
 
-            {/* Add Unit Form */}
-            {showAddUnit && (
-              <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Número Económico *</Label>
-                      <Input
-                        placeholder="Ej: 101"
-                        value={newUnit.numero_economico}
-                        onChange={(e) => setNewUnit({ ...newUnit, numero_economico: e.target.value })}
-                        maxLength={20}
-                      />
+              return (
+                <>
+                  {/* Slot status badge */}
+                  {slotsQuantity > 0 && (
+                    <div className="text-xs text-center text-muted-foreground bg-muted/50 rounded-md py-2">
+                      🚌 Unidades: {unidades.length} / {slotsQuantity} slot(s) pagado(s)
+                      {hasSlot && <span className="ml-1 text-primary font-medium">· {availableSlots} disponible(s)</span>}
                     </div>
-                    <div>
-                      <Label className="text-xs">Placas *</Label>
-                      <Input
-                        placeholder="Ej: ABC-123"
-                        value={newUnit.placas}
-                        onChange={(e) => setNewUnit({ ...newUnit, placas: e.target.value })}
-                        maxLength={20}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Línea</Label>
-                      <Input
-                        placeholder="Ej: Mercedes"
-                        value={newUnit.linea}
-                        onChange={(e) => setNewUnit({ ...newUnit, linea: e.target.value })}
-                        maxLength={50}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Modelo</Label>
-                      <Input
-                        placeholder="Ej: 2020"
-                        value={newUnit.modelo}
-                        onChange={(e) => setNewUnit({ ...newUnit, modelo: e.target.value })}
-                        maxLength={20}
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleAddUnit} disabled={savingUnit} className="w-full" size="sm">
-                    {savingUnit ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                    Registrar unidad
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+                  )}
+
+                  {/* Action button: buy slot OR register unit */}
+                  {hasSlot ? (
+                    <Button onClick={() => setShowAddUnit(!showAddUnit)} variant="outline" className="w-full" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {showAddUnit ? "Cancelar" : `Registrar unidad (${availableSlots} slot disponible)`}
+                    </Button>
+                  ) : (
+                    <Button onClick={handleBuySlot} disabled={buyingSlot} className="w-full" size="sm">
+                      {buyingSlot ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                      Comprar slot de unidad ($400 MXN/año)
+                    </Button>
+                  )}
+
+                  {/* Add Unit Form (only visible when slot is available) */}
+                  {showAddUnit && hasSlot && (
+                    <Card>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Número Económico *</Label>
+                            <Input
+                              placeholder="Ej: 101"
+                              value={newUnit.numero_economico}
+                              onChange={(e) => setNewUnit({ ...newUnit, numero_economico: e.target.value })}
+                              maxLength={20}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Placas *</Label>
+                            <Input
+                              placeholder="Ej: ABC-123"
+                              value={newUnit.placas}
+                              onChange={(e) => setNewUnit({ ...newUnit, placas: e.target.value })}
+                              maxLength={20}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Línea</Label>
+                            <Input
+                              placeholder="Ej: Mercedes"
+                              value={newUnit.linea}
+                              onChange={(e) => setNewUnit({ ...newUnit, linea: e.target.value })}
+                              maxLength={50}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Modelo</Label>
+                            <Input
+                              placeholder="Ej: 2020"
+                              value={newUnit.modelo}
+                              onChange={(e) => setNewUnit({ ...newUnit, modelo: e.target.value })}
+                              maxLength={20}
+                            />
+                          </div>
+                        </div>
+                        <Button onClick={handleAddUnit} disabled={savingUnit} className="w-full" size="sm">
+                          {savingUnit ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                          Registrar unidad
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              );
+            })()}
+
 
             {unidades.length === 0 && !showAddUnit ? (
               <Card>
