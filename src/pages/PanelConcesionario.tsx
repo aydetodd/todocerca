@@ -2093,14 +2093,32 @@ export default function PanelConcesionario() {
               Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
             </p>
             <div>
-              <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
-              <Input
-                type="number"
-                value={contratoTarifa}
-                onChange={e => setContratoTarifa(e.target.value)}
-                placeholder="15.00"
-              />
+              <label className="text-sm font-medium mb-1 block">Modelo de cobro</label>
+              <select
+                className="w-full border rounded-md p-2 text-sm bg-background"
+                value={contratoModeloCobro}
+                onChange={e => setContratoModeloCobro(e.target.value as "por_persona" | "por_viaje")}
+              >
+                <option value="por_persona">Por persona transportada (QR)</option>
+                <option value="por_viaje">Por viaje completo (sin QR)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {contratoModeloCobro === "por_viaje"
+                  ? "El chofer no escanea QR; solo registra inicio y fin de cada viaje."
+                  : "El chofer cobra QR a cada pasajero según la tarifa."}
+              </p>
             </div>
+            {contratoModeloCobro === "por_persona" && (
+              <div>
+                <label className="text-sm font-medium">Tarifa por persona (MXN)</label>
+                <Input
+                  type="number"
+                  value={contratoTarifa}
+                  onChange={e => setContratoTarifa(e.target.value)}
+                  placeholder="15.00"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">Frecuencia de corte</label>
               <select
