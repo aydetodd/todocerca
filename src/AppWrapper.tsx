@@ -55,6 +55,7 @@ import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
 import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
+import { SingleSessionGate } from "@/components/SingleSessionGate";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
@@ -123,6 +124,8 @@ export default function AppWrapper() {
         <NavigationHandler />
         {/* Verificación de dispositivo móvil nuevo */}
         <DeviceVerificationProvider />
+        {/* Sesión única por usuario (bloqueo duro) */}
+        <SingleSessionGate />
         <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />

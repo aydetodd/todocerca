@@ -39,7 +39,7 @@ export function SingleSessionGate() {
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+        <div className="text-xs text-muted-foreground bg-muted border border-border rounded-lg p-3">
           💡 Si no tienes acceso al otro dispositivo, cierra sesión aquí y vuelve a iniciar sesión.
           Esto liberará el bloqueo y podrás usar este dispositivo.
         </div>
