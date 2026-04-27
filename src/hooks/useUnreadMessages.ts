@@ -110,38 +110,60 @@ export const useUnreadMessages = () => {
   };
 
   useEffect(() => {
-    fetchConversations();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    // Subscribe to new messages AND updates (read receipts)
-    const channel = supabase
-      .channel('unread_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          // Refresh badge count when messages are marked as read
-          fetchConversations();
-        }
-      )
-      .subscribe();
+    const setup = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      await fetchConversations();
+
+      // Channel unique per user to ensure clean subscription
+      channel = supabase
+        .channel(`unread_messages_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `receiver_id=eq.${user.id}`,
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .subscribe();
+    };
+
+    setup();
+
+    // Re-setup when auth changes (login/logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+      setup();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
