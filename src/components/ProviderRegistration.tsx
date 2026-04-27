@@ -488,9 +488,8 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
               >
                 <div className="text-center space-y-2">
                   <h4 className="font-semibold">{plan.name}</h4>
-                  <Badge variant="default" className="bg-green-600">🎉 7 días gratis</Badge>
                   <div className="text-2xl font-bold text-primary">${plan.price} MXN</div>
-                  <p className="text-xs text-muted-foreground">/año (después del periodo de prueba)</p>
+                  <p className="text-xs text-muted-foreground">/año</p>
                   <Badge variant="secondary">{plan.maxProducts} productos</Badge>
                   <p className="text-xs text-muted-foreground">{plan.description}</p>
                 </div>
