@@ -755,13 +755,13 @@ const TrackingGPS = () => {
                     <li>✓ Ubicación en tiempo real</li>
                     <li>✓ Privacidad total (solo tu grupo)</li>
                     <li>✓ Sin publicidad</li>
-                    <li>✓ <strong>7 días gratis</strong>, después $400 MXN/año</li>
+                    <li>✓ <strong>$400 MXN/año</strong></li>
                   </ul>
                 </div>
                 
                 <Button onClick={handleStartSubscription} className="w-full" size="lg">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Comenzar Prueba Gratis (7 días)
+                  Activar Suscripción ($400/año)
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
