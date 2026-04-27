@@ -712,7 +712,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         <CardHeader>
           <CardTitle>Registro de Proveedor</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Completa tu información y registra al menos un producto. <strong>¡Prueba 7 días gratis sin tarjeta!</strong>
+            Completa tu información y registra al menos un producto. <strong>Suscripción anual desde $200 MXN.</strong>
           </p>
         </CardHeader>
 
