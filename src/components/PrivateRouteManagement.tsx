@@ -665,7 +665,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <Alert>
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <span className="font-medium">🎉 ¡7 días gratis!</span> Prueba sin tarjeta. $400 MXN/año por unidad después del periodo de prueba.
+                  <span className="font-medium">Suscripción requerida:</span> $400 MXN/año por unidad. Pago seguro vía Stripe.
                 </AlertDescription>
               </Alert>
             )}
