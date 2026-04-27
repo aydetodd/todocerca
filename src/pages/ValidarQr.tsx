@@ -218,7 +218,7 @@ export default function ValidarQr() {
               if (producto?.proveedor_id) {
                 const { data: contratos } = await (supabase as any)
                   .from("contratos_transporte")
-                  .select("id, modelo_cobro, empresas_transporte(nombre)")
+                  .select("id, modelo_cobro, origen_lat, origen_lng, destino_lat, destino_lng, geocerca_radio_m, empresas_transporte(nombre)")
                   .eq("concesionario_id", producto.proveedor_id)
                   .eq("is_active", true)
                   .eq("estado", "aceptado");
@@ -231,6 +231,11 @@ export default function ValidarQr() {
                     unidadId: asignacionActiva.unidad_id,
                     routeProductId: asignacionActiva.producto_id,
                     empresaNombre: tripContrato.empresas_transporte?.nombre,
+                    origenLat: tripContrato.origen_lat,
+                    origenLng: tripContrato.origen_lng,
+                    destinoLat: tripContrato.destino_lat,
+                    destinoLng: tripContrato.destino_lng,
+                    radioM: tripContrato.geocerca_radio_m ?? 150,
                   });
                 }
               }
