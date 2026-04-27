@@ -409,15 +409,20 @@ export type Database = {
           concesionario_id: string
           created_at: string
           descripcion: string | null
+          destino_lat: number | null
+          destino_lng: number | null
           empresa_id: string
           estado: string
           fecha_fin: string | null
           fecha_inicio: string
           frecuencia_corte: string
+          geocerca_radio_m: number
           id: string
           iniciado_por: string
           is_active: boolean
           modelo_cobro: string
+          origen_lat: number | null
+          origen_lng: number | null
           tarifa_por_persona: number
           turnos: Json | null
           updated_at: string
@@ -426,15 +431,20 @@ export type Database = {
           concesionario_id: string
           created_at?: string
           descripcion?: string | null
+          destino_lat?: number | null
+          destino_lng?: number | null
           empresa_id: string
           estado?: string
           fecha_fin?: string | null
           fecha_inicio?: string
           frecuencia_corte?: string
+          geocerca_radio_m?: number
           id?: string
           iniciado_por?: string
           is_active?: boolean
           modelo_cobro?: string
+          origen_lat?: number | null
+          origen_lng?: number | null
           tarifa_por_persona?: number
           turnos?: Json | null
           updated_at?: string
@@ -443,15 +453,20 @@ export type Database = {
           concesionario_id?: string
           created_at?: string
           descripcion?: string | null
+          destino_lat?: number | null
+          destino_lng?: number | null
           empresa_id?: string
           estado?: string
           fecha_fin?: string | null
           fecha_inicio?: string
           frecuencia_corte?: string
+          geocerca_radio_m?: number
           id?: string
           iniciado_por?: string
           is_active?: boolean
           modelo_cobro?: string
+          origen_lat?: number | null
+          origen_lng?: number | null
           tarifa_por_persona?: number
           turnos?: Json | null
           updated_at?: string

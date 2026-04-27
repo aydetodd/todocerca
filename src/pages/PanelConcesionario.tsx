@@ -25,6 +25,7 @@ import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
+import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
 type Verificacion = {
   id: string;
@@ -139,6 +140,9 @@ export default function PanelConcesionario() {
     { turno: "Mixto", unidades: 1, selected: false },
   ]);
   const [savingContrato, setSavingContrato] = useState(false);
+  const [contratoOrigen, setContratoOrigen] = useState<{ lat: number; lng: number } | null>(null);
+  const [contratoDestino, setContratoDestino] = useState<{ lat: number; lng: number } | null>(null);
+  const [contratoRadio, setContratoRadio] = useState<number>(150);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
@@ -1066,6 +1070,11 @@ export default function PanelConcesionario() {
     const descAuto = turnosSeleccionados.length > 0
       ? turnosSeleccionados.map(t => `${t.turno} (${t.unidades} unid.)`).join(", ")
       : `Transporte de personal - ${empresaSeleccionada.nombre}`;
+    if (contratoModeloCobro === "por_viaje" && (!contratoOrigen || !contratoDestino)) {
+      setSavingContrato(false);
+      toast.error("Marca el origen y destino en el mapa para contar viajes automáticamente");
+      return;
+    }
     const { error } = await supabase.from("contratos_transporte").insert({
       concesionario_id: proveedor.id,
       empresa_id: empresaSeleccionada.id,
@@ -1077,6 +1086,11 @@ export default function PanelConcesionario() {
       is_active: false,
       turnos: turnosSeleccionados,
       modelo_cobro: contratoModeloCobro,
+      origen_lat: contratoOrigen?.lat ?? null,
+      origen_lng: contratoOrigen?.lng ?? null,
+      destino_lat: contratoDestino?.lat ?? null,
+      destino_lng: contratoDestino?.lng ?? null,
+      geocerca_radio_m: contratoRadio,
     } as any);
     setSavingContrato(false);
     if (error) {
@@ -1087,6 +1101,9 @@ export default function PanelConcesionario() {
       setEmpresaSeleccionada(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
+      setContratoOrigen(null);
+      setContratoDestino(null);
+      setContratoRadio(150);
       setContratoTurnos(prev => prev.map(t => ({ ...t, selected: false, unidades: 1 })));
       loadContratosEmpresa(proveedor.id);
     }
@@ -2147,6 +2164,26 @@ export default function PanelConcesionario() {
                   value={contratoTarifa}
                   onChange={e => setContratoTarifa(e.target.value)}
                   placeholder="15.00"
+                />
+              </div>
+            )}
+            {contratoModeloCobro === "por_viaje" && (
+              <div className="space-y-2 p-3 rounded-md border border-border bg-muted/30">
+                <p className="text-xs font-semibold text-foreground">
+                  📍 Geocercas para conteo automático de viajes
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Marca en el mapa el punto de salida (terminal) y de llegada (maquiladora). El viaje se cuenta automáticamente cuando el chofer entra al destino.
+                </p>
+                <ContractGeofencePicker
+                  origen={contratoOrigen}
+                  destino={contratoDestino}
+                  radio={contratoRadio}
+                  onChange={({ origen, destino, radio }) => {
+                    setContratoOrigen(origen);
+                    setContratoDestino(destino);
+                    setContratoRadio(radio);
+                  }}
                 />
               </div>
             )}
