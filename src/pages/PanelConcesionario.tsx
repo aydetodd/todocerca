@@ -1185,32 +1185,60 @@ export default function PanelConcesionario() {
           </Card>
         </div>
 
-        <Tabs defaultValue="ingresos" className="w-full">
+        {(() => {
+          // Determinar si el concesionario opera EXCLUSIVAMENTE en modo "por viaje"
+          // (todos sus contratos activos aceptados son por_viaje)
+          const contratosActivos = contratosEmpresa.filter((c: any) => c.is_active && c.estado === "aceptado");
+          const soloPorViaje = contratosActivos.length > 0 &&
+            contratosActivos.every((c: any) => c.modelo_cobro === "por_viaje");
+
+          return (
+        <Tabs defaultValue={soloPorViaje ? "unidades" : "ingresos"} className="w-full">
           <div className="overflow-x-auto">
             <TabsList className="inline-flex w-auto min-w-full">
-              <TabsTrigger value="ingresos" className="text-xs">
-                <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
-              </TabsTrigger>
-              <TabsTrigger value="reportes" className="text-xs">
-                <ClipboardList className="h-3 w-3 mr-1" /> Reportes
-              </TabsTrigger>
+              {!soloPorViaje && (
+                <TabsTrigger value="ingresos" className="text-xs">
+                  <BarChart3 className="h-3 w-3 mr-1" /> Ingresos
+                </TabsTrigger>
+              )}
+              {!soloPorViaje && (
+                <TabsTrigger value="reportes" className="text-xs">
+                  <ClipboardList className="h-3 w-3 mr-1" /> Reportes
+                </TabsTrigger>
+              )}
+              {soloPorViaje && (
+                <TabsTrigger value="viajes" className="text-xs">
+                  <ClipboardList className="h-3 w-3 mr-1" /> Viajes
+                </TabsTrigger>
+              )}
               <TabsTrigger value="verificacion" className="text-xs">
                 <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
               </TabsTrigger>
               <TabsTrigger value="unidades" className="text-xs">
                 <Bus className="h-3 w-3 mr-1" /> Unidades
               </TabsTrigger>
-              <TabsTrigger value="liquidaciones" className="text-xs">
-                <DollarSign className="h-3 w-3 mr-1" /> Pagos
-              </TabsTrigger>
-              <TabsTrigger value="fraude" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
-              </TabsTrigger>
+              {!soloPorViaje && (
+                <TabsTrigger value="liquidaciones" className="text-xs">
+                  <DollarSign className="h-3 w-3 mr-1" /> Pagos
+                </TabsTrigger>
+              )}
+              {!soloPorViaje && (
+                <TabsTrigger value="fraude" className="text-xs">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Fraude
+                </TabsTrigger>
+              )}
               <TabsTrigger value="empresas" className="text-xs">
                 <Building2 className="h-3 w-3 mr-1" /> Empresas
               </TabsTrigger>
             </TabsList>
           </div>
+
+          {/* Reporte simple de viajes (modo por_viaje) */}
+          {soloPorViaje && (
+            <TabsContent value="viajes" className="space-y-3 mt-4">
+              <ReporteViajes proveedorId={proveedor?.id} />
+            </TabsContent>
+          )}
 
           {/* INGRESOS POR UNIDAD */}
           <TabsContent value="ingresos" className="space-y-4 mt-4">
