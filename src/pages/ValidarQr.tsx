@@ -207,12 +207,33 @@ export default function ValidarQr() {
           if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
-              .select("route_type, is_private")
+              .select("route_type, is_private, proveedor_id")
               .eq("id", asignacionActiva.producto_id)
               .single();
             if (producto?.route_type === "privada" || (producto as any)?.is_private) {
               setIsPrivateRoute(true);
               setScanMode("personal");
+
+              // Detect "por_viaje" contract for this concesionario
+              if (producto?.proveedor_id) {
+                const { data: contratos } = await (supabase as any)
+                  .from("contratos_transporte")
+                  .select("id, modelo_cobro, empresas_transporte(nombre)")
+                  .eq("concesionario_id", producto.proveedor_id)
+                  .eq("is_active", true)
+                  .eq("estado", "aceptado");
+                const tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
+                if (tripContrato) {
+                  const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
+                  setTripContract({
+                    contratoId: tripContrato.id,
+                    choferEmpresaId: choferActivo.id,
+                    unidadId: asignacionActiva.unidad_id,
+                    routeProductId: asignacionActiva.producto_id,
+                    empresaNombre: tripContrato.empresas_transporte?.nombre,
+                  });
+                }
+              }
             }
           }
         }
