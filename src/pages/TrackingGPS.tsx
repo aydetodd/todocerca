@@ -765,7 +765,7 @@ const TrackingGPS = () => {
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  Sin tarjeta de crédito. Podrás ingresar códigos de descuento en la pasarela de pago.
+                  Pago seguro vía Stripe. Podrás ingresar códigos de descuento en la pasarela de pago.
                 </p>
               </CardContent>
             </Card>
