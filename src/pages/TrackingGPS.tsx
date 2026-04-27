@@ -379,7 +379,7 @@ const TrackingGPS = () => {
 
       toast({
         title: 'Redirigiendo...',
-        description: 'Completa el registro para tu prueba gratis de 7 días'
+        description: 'Completa el pago para activar tu suscripción'
       });
 
       const { data, error } = await supabase.functions.invoke('create-tracking-checkout', {
