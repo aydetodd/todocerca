@@ -25,6 +25,7 @@ import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
+import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
 type Verificacion = {
   id: string;
