@@ -73,11 +73,6 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?subscription=success`,
       cancel_url: `${req.headers.get("origin")}/dashboard?subscription=cancelled`,
-      // 7 días de prueba gratis sin tarjeta
-      payment_method_collection: "if_required",
-      subscription_data: {
-        trial_period_days: 7,
-      },
       metadata: {
         plan_type: planType || 'basico',
         user_id: user.id,
