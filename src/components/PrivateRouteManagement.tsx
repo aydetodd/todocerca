@@ -637,7 +637,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               1. Unidades {transportType === 'taxi' ? '/ Taxis' : '/ Autobuses'}
             </CardTitle>
             <CardDescription>
-              Cada unidad requiere una suscripción de $400 MXN/año. <strong>¡Prueba 7 días gratis sin tarjeta!</strong> Registra tus unidades con placas o No. económico.
+              Cada unidad requiere una suscripción de $400 MXN/año. Registra tus unidades con placas o No. económico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
