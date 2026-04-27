@@ -394,6 +394,7 @@ export default function PanelConcesionario() {
     }
     if (user) {
       fetchAll();
+      refreshSlotCount();
 
       // Handle Stripe Connect return
       const stripeParam = searchParams.get("stripe");
@@ -404,6 +405,20 @@ export default function PanelConcesionario() {
         syncStripeStatus().then(() => fetchAll());
       } else if (stripeParam === "refresh") {
         toast.info("Completa tu registro en Stripe para recibir pagos.");
+        setSearchParams({}, { replace: true });
+      }
+
+      // Handle private route (slot purchase) return
+      const slotParam = searchParams.get("private_route");
+      if (slotParam === "success") {
+        toast.success("✅ Slot activado. Ahora registra los datos de tu unidad.");
+        setSearchParams({}, { replace: true });
+        // Wait briefly for Stripe webhook then refresh slots and open form
+        setTimeout(() => {
+          refreshSlotCount().then(() => setShowAddUnit(true));
+        }, 1500);
+      } else if (slotParam === "cancelled") {
+        toast.info("Compra de slot cancelada.");
         setSearchParams({}, { replace: true });
       }
     }
