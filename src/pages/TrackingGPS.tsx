@@ -982,7 +982,7 @@ const TrackingGPS = () => {
                   </p>
                   <Button onClick={handleSubscribe} className="w-full">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Activar Suscripción (7 días gratis)
+                    Activar Suscripción ($400/año)
                   </Button>
                 </div>
               )}
