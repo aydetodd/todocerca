@@ -68,7 +68,6 @@ serve(async (req) => {
         quantity: quantity.toString()
       },
       allow_promotion_codes: true,
-      payment_method_collection: 'if_required',
     });
 
     return new Response(
