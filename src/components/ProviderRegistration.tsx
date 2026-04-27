@@ -504,9 +504,8 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <div className="text-center space-y-2">
             <h4 className="font-semibold">Plan Taxi / Transporte</h4>
-            <Badge variant="default" className="bg-green-600">🎉 7 días gratis</Badge>
             <div className="text-2xl font-bold text-primary">$200 MXN</div>
-            <p className="text-xs text-muted-foreground">/año (después del periodo de prueba)</p>
+            <p className="text-xs text-muted-foreground">/año</p>
             <Badge variant="secondary">Máximo 2 servicios</Badge>
             <p className="text-xs text-muted-foreground">Ideal para taxistas y rutas de transporte</p>
           </div>
