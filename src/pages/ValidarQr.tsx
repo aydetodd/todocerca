@@ -539,6 +539,11 @@ export default function ValidarQr() {
         unidadId={tripContract.unidadId}
         routeProductId={tripContract.routeProductId}
         empresaNombre={tripContract.empresaNombre}
+        origenLat={tripContract.origenLat ?? null}
+        origenLng={tripContract.origenLng ?? null}
+        destinoLat={tripContract.destinoLat ?? null}
+        destinoLng={tripContract.destinoLng ?? null}
+        radioM={tripContract.radioM ?? 150}
       />
     );
   }
