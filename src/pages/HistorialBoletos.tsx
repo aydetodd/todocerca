@@ -96,7 +96,6 @@ export default function HistorialBoletos() {
       query = query
         .eq("status", "active")
         .eq("is_transferred", false)
-        .is("transfer_returned_at", null)
         .order("generated_at", { ascending: false });
     } else if (filter === "used") {
       query = query.eq("status", "used").order("used_at", { ascending: false, nullsFirst: false });
