@@ -613,7 +613,7 @@ export default function ValidarQr() {
 
       {/* Top Half: Map with passenger counter overlay */}
       {showMap && (
-        <div className="shrink-0 h-[40vh] border-b border-border relative">
+        <div className="shrink-0 h-[32vh] border-b border-border relative">
           <DriverMiniMap routeProductId={assignedRouteId} />
           <div
             onClick={!showPersonalStats ? toggleTicketList : undefined}
@@ -628,10 +628,10 @@ export default function ValidarQr() {
       )}
 
       {/* Bottom Half: Continuous QR Scanner */}
-      <div className="flex-1 overflow-hidden flex flex-col p-3 gap-2 pb-28">
+      <div className="flex-1 overflow-hidden flex flex-col p-2 gap-2 pb-20">
         <Card className="flex-1 overflow-hidden flex flex-col">
-          <CardContent className="p-2 flex-1 flex flex-col gap-2">
-            <div className="flex items-center justify-between px-1">
+          <CardContent className="p-2 flex-1 flex flex-col gap-2 min-h-0">
+            <div className="flex items-center justify-between px-1 shrink-0">
               <span className="text-xs font-semibold text-foreground flex items-center gap-1">
                 <Camera className="h-3 w-3" /> Lector QR continuo
               </span>
@@ -642,11 +642,13 @@ export default function ValidarQr() {
                 </span>
               )}
             </div>
-            <div
-              id="qr-camera-reader"
-              ref={cameraContainerRef}
-              className="flex-1 w-full rounded-lg overflow-hidden bg-black/40 min-h-[180px]"
-            />
+            <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+              <div
+                id="qr-camera-reader"
+                ref={cameraContainerRef}
+                className="w-full h-full rounded-lg overflow-hidden bg-black/40 [&>video]:!h-full [&>video]:!w-full [&>video]:!object-cover"
+              />
+            </div>
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
