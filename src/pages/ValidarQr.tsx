@@ -358,28 +358,56 @@ export default function ValidarQr() {
     };
   }, []);
 
-  // Anti-doble-lectura: mismo token no se procesa dos veces seguidas en <3s
+  // Anti-doble-lectura:
+  //  - Mismo token: bloqueo amplio de 8s (el QR sigue en pantalla del pasajero).
+  //  - Cooldown global tras CUALQUIER lectura procesada: 2.5s para evitar ráfagas.
   const lastScanRef = useRef<{ token: string; at: number } | null>(null);
+  const lastProcessedAtRef = useRef<number>(0);
+  const validatingRef = useRef(false);
   const scanningRef = useRef(false);
 
   const startContinuousCamera = useCallback(async () => {
     if (scanningRef.current) return;
     scanningRef.current = true;
     try {
-      const scanner = new Html5Qrcode("qr-camera-reader");
+      const scanner = new Html5Qrcode("qr-camera-reader", { verbose: false } as any);
       html5QrRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
+        {
+          fps: 15,
+          qrbox: (vw: number, vh: number) => {
+            const min = Math.min(vw, vh);
+            const size = Math.floor(min * 0.7);
+            return { width: size, height: size };
+          },
+          aspectRatio: 1.0,
+          disableFlip: false,
+          // Usa BarcodeDetector nativo si está disponible (mucho más rápido y tolera brillo/desenfoque)
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        } as any,
         (decodedText) => {
           const now = Date.now();
+          // Bloquea si hay validación en curso
+          if (validatingRef.current) return;
+          // Cooldown global: 2.5s entre lecturas exitosas (cualquier token)
+          if (now - lastProcessedAtRef.current < 2500) return;
+          // Mismo token: ventana ampliada a 8s (pantalla del pasajero sigue mostrándolo)
           const last = lastScanRef.current;
-          if (last && last.token === decodedText && now - last.at < 3000) return;
+          if (last && last.token === decodedText && now - last.at < 8000) return;
           lastScanRef.current = { token: decodedText, at: now };
+          lastProcessedAtRef.current = now;
           handleValidateToken(decodedText);
         },
         () => {}
       );
+      // Intenta enfoque continuo y exposición automática para tolerar brillo de pantallas
+      try {
+        const track = (scanner as any).getRunningTrackCameraCapabilities?.();
+        if (track?.focusMode?.includes?.("continuous")) {
+          await scanner.applyVideoConstraints({ advanced: [{ focusMode: "continuous" } as any] } as any);
+        }
+      } catch {}
     } catch (err: any) {
       console.error("Camera error:", err);
       toast.error("No se pudo acceder a la cámara. Verifica permisos.");
