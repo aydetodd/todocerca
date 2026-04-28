@@ -358,40 +358,53 @@ export default function ValidarQr() {
     };
   }, []);
 
-  const openCamera = useCallback(async () => {
-    setCameraOpen(true);
-    setTimeout(async () => {
-      try {
-        const scanner = new Html5Qrcode("qr-camera-reader");
-        html5QrRef.current = scanner;
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            if (html5QrRef.current) {
-              html5QrRef.current.stop().catch(() => {});
-              html5QrRef.current = null;
-            }
-            setCameraOpen(false);
-            handleValidateToken(decodedText);
-          },
-          () => {}
-        );
-      } catch (err: any) {
-        console.error("Camera error:", err);
-        toast.error("No se pudo acceder a la cámara");
-        setCameraOpen(false);
-      }
-    }, 100);
+  // Anti-doble-lectura: mismo token no se procesa dos veces seguidas en <3s
+  const lastScanRef = useRef<{ token: string; at: number } | null>(null);
+  const scanningRef = useRef(false);
+
+  const startContinuousCamera = useCallback(async () => {
+    if (scanningRef.current) return;
+    scanningRef.current = true;
+    try {
+      const scanner = new Html5Qrcode("qr-camera-reader");
+      html5QrRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        (decodedText) => {
+          const now = Date.now();
+          const last = lastScanRef.current;
+          if (last && last.token === decodedText && now - last.at < 3000) return;
+          lastScanRef.current = { token: decodedText, at: now };
+          handleValidateToken(decodedText);
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      toast.error("No se pudo acceder a la cámara. Verifica permisos.");
+      scanningRef.current = false;
+    }
   }, []);
 
-  const closeCamera = useCallback(() => {
+  const stopContinuousCamera = useCallback(async () => {
     if (html5QrRef.current) {
-      html5QrRef.current.stop().catch(() => {});
+      try { await html5QrRef.current.stop(); } catch {}
+      try { html5QrRef.current.clear(); } catch {}
       html5QrRef.current = null;
     }
-    setCameraOpen(false);
+    scanningRef.current = false;
   }, []);
+
+  // Auto-start camera when component is ready (and not in trip-only mode)
+  useEffect(() => {
+    if (authLoading || !user) return;
+    const t = setTimeout(() => { startContinuousCamera(); }, 500);
+    return () => {
+      clearTimeout(t);
+      stopContinuousCamera();
+    };
+  }, [authLoading, user, startContinuousCamera, stopContinuousCamera]);
 
   const startFlashing = useCallback(() => {
     setFlashing(true);
@@ -598,26 +611,64 @@ export default function ValidarQr() {
         </div>
       </div>
 
-      {/* Top Half: Map */}
+      {/* Top Half: Map with passenger counter overlay */}
       {showMap && (
-        <div className="shrink-0 h-[40vh] border-b border-border">
+        <div className="shrink-0 h-[40vh] border-b border-border relative">
           <DriverMiniMap routeProductId={assignedRouteId} />
+          <div
+            onClick={!showPersonalStats ? toggleTicketList : undefined}
+            className={`absolute top-2 right-2 z-[1000] bg-card/95 backdrop-blur border border-border rounded-lg px-3 py-1.5 shadow-lg ${!showPersonalStats ? "cursor-pointer" : ""}`}
+          >
+            <p className="text-lg font-bold text-foreground leading-none text-center">
+              {showPersonalStats ? dailyPersonalCount : dailyCount}
+            </p>
+            <p className="text-[9px] text-muted-foreground text-center mt-0.5">Pasajeros hoy</p>
+          </div>
         </div>
       )}
 
-      {/* Bottom Half: Scanner - scrollable */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-28">
-        {/* Compact Daily Stats */}
-        <Card onClick={!showPersonalStats ? toggleTicketList : undefined} className={!showPersonalStats ? "cursor-pointer" : ""}>
-          <CardContent className="p-2 text-center">
-            <p className="text-2xl font-bold text-foreground">
-              {showPersonalStats ? dailyPersonalCount : dailyCount}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Pasajeros hoy</p>
+      {/* Bottom Half: Continuous QR Scanner */}
+      <div className="flex-1 overflow-hidden flex flex-col p-3 gap-2 pb-28">
+        <Card className="flex-1 overflow-hidden flex flex-col">
+          <CardContent className="p-2 flex-1 flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <Camera className="h-3 w-3" /> Lector QR continuo
+              </span>
+              {validating && (
+                <span className="text-[10px] text-primary flex items-center gap-1">
+                  <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
+                  Validando…
+                </span>
+              )}
+            </div>
+            <div
+              id="qr-camera-reader"
+              ref={cameraContainerRef}
+              className="flex-1 w-full rounded-lg overflow-hidden bg-black/40 min-h-[180px]"
+            />
+            <div className="flex gap-2">
+              <Input
+                ref={inputRef}
+                value={qrInput}
+                onChange={(e) => setQrInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isPersonalMode ? "Token empleado (manual)…" : "Token boleto (manual)…"}
+                className="font-mono text-sm h-9"
+                autoComplete="off"
+              />
+              <Button
+                onClick={() => handleValidateToken()}
+                disabled={!qrInput.trim() || validating}
+                size="sm"
+                className="px-3 h-9"
+              >
+                <QrCode className="h-4 w-4" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Ticket List */}
         {!showPersonalStats && showTicketList && (
           <Card>
             <CardContent className="p-3">
@@ -645,62 +696,6 @@ export default function ValidarQr() {
             </CardContent>
           </Card>
         )}
-
-        {/* Camera Scanner */}
-        {cameraOpen && (
-          <Card>
-            <CardContent className="p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground">📷 Escaneando...</span>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeCamera}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div id="qr-camera-reader" className="w-full rounded-lg overflow-hidden" />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* QR Input */}
-        <Card>
-          <CardContent className="p-3 space-y-2">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={qrInput}
-                onChange={(e) => setQrInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isPersonalMode ? "Token del empleado QR..." : "Token del boleto QR..."}
-                className="font-mono text-base"
-                autoComplete="off"
-                autoFocus
-              />
-              <Button
-                onClick={() => handleValidateToken()}
-                disabled={!qrInput.trim() || validating}
-                size="default"
-                className="px-3"
-              >
-                {validating ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                ) : (
-                  <QrCode className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                onClick={cameraOpen ? closeCamera : openCamera}
-                variant={cameraOpen ? "destructive" : "outline"}
-                size="default"
-                className="px-3"
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground text-center">
-              Lector QR, código manual o cámara 📷
-            </p>
-          </CardContent>
-        </Card>
 
         {/* Result Display */}
         {result && (
