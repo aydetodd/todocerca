@@ -449,8 +449,9 @@ export default function ValidarQr() {
 
   const handleValidateToken = async (directToken?: string) => {
     const token = (directToken || qrInput).trim();
-    if (!token || validating) return;
+    if (!token || validating || validatingRef.current) return;
 
+    validatingRef.current = true;
     setValidating(true);
     setResult(null);
     if (flashTimerRef.current) {
