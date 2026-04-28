@@ -626,25 +626,21 @@ export default function PanelConcesionario() {
       const todayStart = `${todayStr}T00:00:00-07:00`;
       const todayEnd = `${todayStr}T23:59:59-07:00`;
 
-      const { data } = await (supabase
+      const { data, error } = await (supabase
         .from("logs_validacion_qr") as any)
-        .select("qr_ticket_id, created_at, qr_tickets(token, unidad_uso_id)")
+        .select("qr_ticket_id, created_at, unidad_id, qr_tickets(token)")
         .eq("unidad_id", unidadId)
         .eq("resultado", "valid")
         .gte("created_at", todayStart)
         .lte("created_at", todayEnd)
         .order("created_at", { ascending: false });
 
-      const normalized = (data || []).filter((d: any) => d.unidad_id === unidadId || d.qr_tickets?.unidad_uso_id === unidadId);
+      if (error) console.error("Error fetching unit tickets:", error);
 
-      if (normalized.length > 0) {
-        setUnidadTickets(normalized.map((d: any) => ({
-          short_code: (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
-          time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
-        })));
-      } else {
-        setUnidadTickets([]);
-      }
+      setUnidadTickets((data || []).map((d: any) => ({
+        short_code: (d.qr_tickets?.token || d.qr_ticket_id || "").slice(-6).toUpperCase(),
+        time: new Date(d.created_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+      })));
     } catch (err) {
       console.error("Error loading unit tickets:", err);
     } finally {
