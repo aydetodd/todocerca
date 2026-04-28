@@ -36,7 +36,7 @@ export default function HistorialBoletos() {
   }, [user, filter]);
 
   const fetchTransferredTickets = async () => {
-    // 1) Currently transferred (pending)
+    // 1) Currently transferred (pending) — still out
     const { data: pending } = await supabase
       .from("qr_tickets")
       .select("*")
@@ -44,16 +44,7 @@ export default function HistorialBoletos() {
       .eq("status", "active")
       .eq("is_transferred", true);
 
-    // 2) Were transferred and returned (have transfer_returned_at)
-    const { data: returned } = await supabase
-      .from("qr_tickets")
-      .select("*")
-      .eq("user_id", user!.id)
-      .eq("status", "active")
-      .eq("is_transferred", false)
-      .not("transfer_returned_at", "is", null);
-
-    // 3) Were transferred and then used
+    // 2) Were transferred and then used by the recipient
     const { data: usedTransferred } = await supabase
       .from("qr_tickets")
       .select("*")
@@ -61,9 +52,10 @@ export default function HistorialBoletos() {
       .eq("status", "used")
       .not("transferred_to", "is", null);
 
-    // Deduplicate by id
+    // Note: Tickets returned (vencido y devuelto) are NOT shown here —
+    // they go back to "Activos" since they are available again.
     const map = new Map<string, any>();
-    [...(pending || []), ...(returned || []), ...(usedTransferred || [])].forEach(t => {
+    [...(pending || []), ...(usedTransferred || [])].forEach(t => {
       map.set(t.id, t);
     });
     return Array.from(map.values());
