@@ -77,13 +77,8 @@ export default function HistorialBoletos() {
       fetchTransferredTickets(),
     ]);
 
-    // Active count should exclude returned tickets (they show in transferred)
-    const returnedCount = transferredTickets.filter(
-      (t: any) => t.status === "active" && !t.is_transferred && t.transfer_returned_at
-    ).length;
-
     setCounts({
-      active: (activeRes.count ?? 0) - returnedCount,
+      active: activeRes.count ?? 0,
       used: usedRes.count ?? 0,
       transferred: transferredTickets.length,
     });
