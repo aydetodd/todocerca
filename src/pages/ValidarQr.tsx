@@ -524,6 +524,9 @@ export default function ValidarQr() {
       }
     } finally {
       setValidating(false);
+      validatingRef.current = false;
+      // Renueva el cooldown global al terminar (no contar el tiempo que tardó la red)
+      lastProcessedAtRef.current = Date.now();
       setQrInput("");
       setTimeout(() => inputRef.current?.focus(), 100);
     }
