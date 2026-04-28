@@ -358,40 +358,53 @@ export default function ValidarQr() {
     };
   }, []);
 
-  const openCamera = useCallback(async () => {
-    setCameraOpen(true);
-    setTimeout(async () => {
-      try {
-        const scanner = new Html5Qrcode("qr-camera-reader");
-        html5QrRef.current = scanner;
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            if (html5QrRef.current) {
-              html5QrRef.current.stop().catch(() => {});
-              html5QrRef.current = null;
-            }
-            setCameraOpen(false);
-            handleValidateToken(decodedText);
-          },
-          () => {}
-        );
-      } catch (err: any) {
-        console.error("Camera error:", err);
-        toast.error("No se pudo acceder a la cámara");
-        setCameraOpen(false);
-      }
-    }, 100);
+  // Anti-doble-lectura: mismo token no se procesa dos veces seguidas en <3s
+  const lastScanRef = useRef<{ token: string; at: number } | null>(null);
+  const scanningRef = useRef(false);
+
+  const startContinuousCamera = useCallback(async () => {
+    if (scanningRef.current) return;
+    scanningRef.current = true;
+    try {
+      const scanner = new Html5Qrcode("qr-camera-reader");
+      html5QrRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        (decodedText) => {
+          const now = Date.now();
+          const last = lastScanRef.current;
+          if (last && last.token === decodedText && now - last.at < 3000) return;
+          lastScanRef.current = { token: decodedText, at: now };
+          handleValidateToken(decodedText);
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      toast.error("No se pudo acceder a la cámara. Verifica permisos.");
+      scanningRef.current = false;
+    }
   }, []);
 
-  const closeCamera = useCallback(() => {
+  const stopContinuousCamera = useCallback(async () => {
     if (html5QrRef.current) {
-      html5QrRef.current.stop().catch(() => {});
+      try { await html5QrRef.current.stop(); } catch {}
+      try { html5QrRef.current.clear(); } catch {}
       html5QrRef.current = null;
     }
-    setCameraOpen(false);
+    scanningRef.current = false;
   }, []);
+
+  // Auto-start camera when component is ready (and not in trip-only mode)
+  useEffect(() => {
+    if (authLoading || !user) return;
+    const t = setTimeout(() => { startContinuousCamera(); }, 500);
+    return () => {
+      clearTimeout(t);
+      stopContinuousCamera();
+    };
+  }, [authLoading, user, startContinuousCamera, stopContinuousCamera]);
 
   const startFlashing = useCallback(() => {
     setFlashing(true);
