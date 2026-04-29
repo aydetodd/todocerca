@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
+import VerificationDocsUploader from "@/components/VerificationDocsUploader";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
@@ -975,7 +976,7 @@ export default function PanelConcesionario() {
   };
 
   const handleWhatsAppDocuments = () => {
-    const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
+    const phone = "526624124381"; // Admin TodoCerca WhatsApp
     const message = encodeURIComponent(
       `Hola, soy ${proveedor?.nombre_negocio || proveedor?.nombre || "concesionario"} y quiero enviar mis documentos para verificación:\n\n` +
       `- INE / Identificación Oficial\n` +
@@ -1447,12 +1448,25 @@ export default function PanelConcesionario() {
                   </>
                 ) : (
                   <div className="text-center space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Necesitas vincular tu cuenta bancaria para recibir pagos.
-                    </p>
-                    <Button onClick={handleStripeConnect} className="w-full">
-                      Configurar Stripe Connect
-                    </Button>
+                    {verificacion?.estado === "approved" ? (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Tu verificación está aprobada. Vincula tu cuenta bancaria (CLABE) para empezar a recibir pagos.
+                        </p>
+                        <Button onClick={handleStripeConnect} className="w-full">
+                          Configurar Stripe Connect
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3 text-left">
+                        <p className="text-sm font-medium text-amber-400 mb-1">
+                          ⏳ Verificación requerida
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Sube tus documentos en la sección de abajo y espera la aprobación del administrador antes de configurar tu cuenta bancaria.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -1511,38 +1525,15 @@ export default function PanelConcesionario() {
               </CardContent>
             </Card>
 
-            {/* Required Documents + WhatsApp */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileText className="h-4 w-4" /> Documentos Requeridos
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Envía estos documentos por WhatsApp al administrador
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 text-sm">
-                  {[
-                    "INE / Identificación Oficial",
-                    "Concesión IMTES",
-                    "RFC (Constancia de Situación Fiscal)",
-                    "Comprobante de Domicilio",
-                    "Tarjeta de Circulación (por unidad)",
-                    "Fotografías de unidades",
-                  ].map((doc, i) => (
-                    <div key={i} className="flex items-center gap-2 py-1">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground/50" />
-                      <span className="text-muted-foreground">{doc}</span>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={handleWhatsAppDocuments} className="w-full bg-green-600 hover:bg-green-700 text-white" size="sm">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Enviar documentos por WhatsApp
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Documentos: subir desde la app y/o por WhatsApp */}
+            {proveedor && (
+              <VerificationDocsUploader
+                proveedorId={proveedor.id}
+                proveedorNombre={proveedor.nombre || "Concesionario"}
+                verificacion={verificacion}
+                onVerificacionCreated={() => fetchAll()}
+              />
+            )}
           </TabsContent>
 
           {/* UNIDADES (solo lectura — registro y suscripción se hacen en "Mis Rutas de Transporte") */}

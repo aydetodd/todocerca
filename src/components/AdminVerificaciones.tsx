@@ -5,7 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ShieldCheck, CheckCircle2, XCircle, Loader2, ChevronDown, ChevronUp, Bus } from "lucide-react";
+import {
+  ShieldCheck, CheckCircle2, XCircle, Loader2, ChevronDown, ChevronUp, Bus,
+  FileText, Eye, DollarSign,
+} from "lucide-react";
+
+const DOC_LABELS: Record<string, string> = {
+  ine: "INE",
+  concesion: "Concesión IMTES",
+  rfc: "RFC",
+  domicilio: "Comprobante Domicilio",
+  tarjeta_circulacion: "Tarjeta Circulación",
+  fotos_unidades: "Fotos unidades",
+};
 
 type VerificacionAdmin = {
   id: string;
@@ -15,8 +27,11 @@ type VerificacionAdmin = {
   admin_notas: string | null;
   motivo_rechazo: string | null;
   concesionario_id: string;
+  documentos?: Record<string, string[]>;
+  metodo_envio?: string;
   proveedor_nombre?: string;
   proveedor_email?: string;
+  cuenta_conectada_id?: string | null;
   unidades?: Array<{
     id: string;
     numero_economico: string;
@@ -33,6 +48,7 @@ export default function AdminVerificaciones() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notas, setNotas] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
+  const [settling, setSettling] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVerificaciones();
@@ -42,12 +58,11 @@ export default function AdminVerificaciones() {
     try {
       const { data, error } = await (supabase
         .from("verificaciones_concesionario") as any)
-        .select("id, estado, created_at, total_unidades, admin_notas, motivo_rechazo, concesionario_id")
+        .select("id, estado, created_at, total_unidades, admin_notas, motivo_rechazo, concesionario_id, documentos, metodo_envio")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch proveedor info for each
       const enriched = await Promise.all(
         (data || []).map(async (v: any) => {
           const { data: prov } = await supabase
@@ -61,11 +76,18 @@ export default function AdminVerificaciones() {
             .select("id, numero_economico, placas, modelo, linea, estado_verificacion")
             .eq("verificacion_id", v.id);
 
+          const { data: cuenta } = await supabase
+            .from("cuentas_conectadas")
+            .select("id, pagos_habilitados, transferencias_habilitadas")
+            .eq("concesionario_id", v.concesionario_id)
+            .maybeSingle();
+
           return {
             ...v,
             proveedor_nombre: prov?.nombre || "—",
             proveedor_email: prov?.email || "—",
             unidades: unidades || [],
+            cuenta_conectada_id: cuenta?.pagos_habilitados && cuenta?.transferencias_habilitadas ? cuenta.id : null,
           };
         })
       );
@@ -106,6 +128,37 @@ export default function AdminVerificaciones() {
       toast.error("Error: " + err.message);
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const handleViewDoc = async (path: string) => {
+    const { data, error } = await supabase.storage
+      .from("verificacion-docs")
+      .createSignedUrl(path, 60 * 5);
+    if (error) {
+      toast.error("No se pudo abrir: " + error.message);
+      return;
+    }
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
+  const handleTriggerSettlement = async (cuentaId: string, freq: string) => {
+    setSettling(cuentaId);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-daily-settlements", {
+        body: { cuenta_id: cuentaId, frecuencia_liquidacion: freq },
+      });
+      if (error) throw error;
+      if (data?.processed > 0) {
+        const r = data.results?.[0];
+        toast.success(`Liquidación: ${r?.boletos} boletos · Neto $${r?.neto} (${r?.estado})`);
+      } else {
+        toast.info("Sin boletos pendientes en el periodo");
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSettling(null);
     }
   };
 
@@ -157,6 +210,8 @@ export default function AdminVerificaciones() {
       {verificaciones.map((v) => {
         const isExpanded = expandedId === v.id;
         const isPending = v.estado === "pending" || v.estado === "in_review";
+        const docs = v.documentos || {};
+        const docKeys = Object.keys(docs).filter((k) => (docs[k] || []).length > 0);
 
         return (
           <Card key={v.id} className="overflow-hidden">
@@ -166,9 +221,10 @@ export default function AdminVerificaciones() {
             >
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{v.proveedor_nombre}</p>
-                <p className="text-xs text-muted-foreground">{v.proveedor_email}</p>
+                <p className="text-xs text-muted-foreground truncate">{v.proveedor_email}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(v.created_at).toLocaleDateString("es-MX")} · {v.unidades?.length || 0} unidades
+                  {new Date(v.created_at).toLocaleDateString("es-MX")} · {v.unidades?.length || 0} unidades · {docKeys.length}/6 docs
+                  {v.metodo_envio === "whatsapp" && " · 📱 WhatsApp"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -179,9 +235,41 @@ export default function AdminVerificaciones() {
 
             {isExpanded && (
               <CardContent className="pt-0 space-y-3 border-t">
+                {/* Documentos */}
+                <div className="space-y-2 pt-3">
+                  <p className="text-sm font-medium flex items-center gap-1">
+                    <FileText className="h-4 w-4" /> Documentos subidos
+                  </p>
+                  {docKeys.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Sin documentos en la app. {v.metodo_envio === "whatsapp" && "Revisa tu WhatsApp."}
+                    </p>
+                  ) : (
+                    docKeys.map((k) => (
+                      <div key={k} className="space-y-1">
+                        <p className="text-xs font-medium text-foreground">
+                          {DOC_LABELS[k] || k} ({(docs[k] || []).length})
+                        </p>
+                        <div className="space-y-1 pl-2">
+                          {(docs[k] || []).map((path) => (
+                            <button
+                              key={path}
+                              onClick={() => handleViewDoc(path)}
+                              className="flex items-center gap-2 text-xs text-primary hover:underline w-full text-left"
+                            >
+                              <Eye className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{path.split("/").pop()}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
                 {/* Unidades */}
                 {v.unidades && v.unidades.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2 border-t">
                     <p className="text-sm font-medium flex items-center gap-1">
                       <Bus className="h-4 w-4" /> Unidades registradas
                     </p>
@@ -196,7 +284,6 @@ export default function AdminVerificaciones() {
                   </div>
                 )}
 
-                {/* Admin notes / rejection reason */}
                 {v.admin_notas && (
                   <p className="text-xs text-muted-foreground">
                     <strong>Notas admin:</strong> {v.admin_notas}
@@ -235,6 +322,31 @@ export default function AdminVerificaciones() {
                         {processing === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                         Rechazar
                       </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Trigger manual de liquidación */}
+                {v.estado === "approved" && v.cuenta_conectada_id && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-xs font-medium text-foreground">⚡ Disparar liquidación manual (admin)</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["daily", "weekly", "monthly"] as const).map((freq) => (
+                        <Button
+                          key={freq}
+                          size="sm"
+                          variant="outline"
+                          disabled={settling === v.cuenta_conectada_id}
+                          onClick={() => handleTriggerSettlement(v.cuenta_conectada_id!, freq)}
+                        >
+                          {settling === v.cuenta_conectada_id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <DollarSign className="h-3 w-3 mr-1" />
+                          )}
+                          {freq === "daily" ? "Día" : freq === "weekly" ? "Sem" : "Mes"}
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 )}
