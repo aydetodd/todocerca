@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
+import VerificationDocsUploader from "@/components/VerificationDocsUploader";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
@@ -975,7 +976,7 @@ export default function PanelConcesionario() {
   };
 
   const handleWhatsAppDocuments = () => {
-    const phone = "526621234567"; // TODO: Replace with admin's actual WhatsApp number
+    const phone = "526624124381"; // Admin TodoCerca WhatsApp
     const message = encodeURIComponent(
       `Hola, soy ${proveedor?.nombre_negocio || proveedor?.nombre || "concesionario"} y quiero enviar mis documentos para verificación:\n\n` +
       `- INE / Identificación Oficial\n` +
