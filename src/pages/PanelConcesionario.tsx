@@ -1448,12 +1448,25 @@ export default function PanelConcesionario() {
                   </>
                 ) : (
                   <div className="text-center space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Necesitas vincular tu cuenta bancaria para recibir pagos.
-                    </p>
-                    <Button onClick={handleStripeConnect} className="w-full">
-                      Configurar Stripe Connect
-                    </Button>
+                    {verificacion?.estado === "approved" ? (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Tu verificación está aprobada. Vincula tu cuenta bancaria (CLABE) para empezar a recibir pagos.
+                        </p>
+                        <Button onClick={handleStripeConnect} className="w-full">
+                          Configurar Stripe Connect
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3 text-left">
+                        <p className="text-sm font-medium text-amber-400 mb-1">
+                          ⏳ Verificación requerida
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Sube tus documentos en la sección de abajo y espera la aprobación del administrador antes de configurar tu cuenta bancaria.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
