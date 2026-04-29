@@ -3565,10 +3565,12 @@ export type Database = {
           concesionario_id: string
           created_at: string
           curp: string | null
+          documentos: Json | null
           estado: string
           fecha_revision: string | null
           fecha_solicitud: string
           id: string
+          metodo_envio: string | null
           motivo_rechazo: string | null
           razon_social: string | null
           rfc: string | null
@@ -3583,10 +3585,12 @@ export type Database = {
           concesionario_id: string
           created_at?: string
           curp?: string | null
+          documentos?: Json | null
           estado?: string
           fecha_revision?: string | null
           fecha_solicitud?: string
           id?: string
+          metodo_envio?: string | null
           motivo_rechazo?: string | null
           razon_social?: string | null
           rfc?: string | null
@@ -3601,10 +3605,12 @@ export type Database = {
           concesionario_id?: string
           created_at?: string
           curp?: string | null
+          documentos?: Json | null
           estado?: string
           fecha_revision?: string | null
           fecha_solicitud?: string
           id?: string
+          metodo_envio?: string | null
           motivo_rechazo?: string | null
           razon_social?: string | null
           rfc?: string | null
