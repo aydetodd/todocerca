@@ -975,8 +975,17 @@ export default function PanelConcesionario() {
     }
   };
 
-  const handleWhatsAppDocuments = () => {
-    const phone = "526624124381"; // Admin TodoCerca WhatsApp
+  const handleWhatsAppDocuments = async () => {
+    // Obtener teléfono del super-admin dinámicamente
+    let phone = "526624124381";
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("telefono")
+      .eq("consecutive_number", 1)
+      .maybeSingle();
+    if (adminProfile?.telefono) {
+      phone = adminProfile.telefono.replace(/[^0-9]/g, "");
+    }
     const message = encodeURIComponent(
       `Hola, soy ${proveedor?.nombre_negocio || proveedor?.nombre || "concesionario"} y quiero enviar mis documentos para verificación:\n\n` +
       `- INE / Identificación Oficial\n` +
