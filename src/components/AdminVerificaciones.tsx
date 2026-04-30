@@ -235,6 +235,24 @@ export default function AdminVerificaciones() {
 
             {isExpanded && (
               <CardContent className="pt-0 space-y-3 border-t">
+                {/* Aviso flujo WhatsApp */}
+                {(v.metodo_envio === "whatsapp" || docKeys.length === 0) && isPending && (
+                  <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                      📱 Flujo de aprobación por WhatsApp
+                    </p>
+                    <ol className="text-xs text-blue-900 dark:text-blue-100 space-y-1 list-decimal list-inside">
+                      <li>Revisa los documentos que el concesionario te envió a tu WhatsApp ({"+52 662 412 4381"}).</li>
+                      <li>Verifica que estén completos: INE, Concesión, RFC, Domicilio, Tarjeta circulación, Fotos.</li>
+                      <li>Si todo está bien, presiona <strong>Aprobar</strong> abajo (puedes anotar referencia del chat).</li>
+                      <li>Si falta algo, presiona <strong>Rechazar</strong> indicando qué documento solicitar.</li>
+                    </ol>
+                    <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-2 italic">
+                      Tras aprobar, el concesionario podrá conectar su cuenta Stripe y recibir liquidaciones automáticas.
+                    </p>
+                  </div>
+                )}
+
                 {/* Documentos */}
                 <div className="space-y-2 pt-3">
                   <p className="text-sm font-medium flex items-center gap-1">
@@ -242,7 +260,7 @@ export default function AdminVerificaciones() {
                   </p>
                   {docKeys.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic">
-                      Sin documentos en la app. {v.metodo_envio === "whatsapp" && "Revisa tu WhatsApp."}
+                      Sin documentos en la app. {v.metodo_envio === "whatsapp" ? "Revisa tu WhatsApp para ver los documentos." : "El concesionario aún no ha subido nada."}
                     </p>
                   ) : (
                     docKeys.map((k) => (
