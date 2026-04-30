@@ -1548,9 +1548,38 @@ export default function PanelConcesionario() {
                     )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Unidades registradas:</span>
-                      <span className="text-sm font-bold">{verificacion.total_unidades}</span>
+                      <span className="text-sm font-bold">{unidades.length}</span>
                     </div>
-                  </div>
+                    {(() => {
+                      const docCount = Object.values((verificacion.documentos || {}) as Record<string, string[]>)
+                        .reduce((acc, arr) => acc + (arr?.length || 0), 0);
+                      if (verificacion.estado === "approved") {
+                        return (
+                          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
+                            ✅ Tu verificación está aprobada. Puedes conectar tu cuenta Stripe y recibir liquidaciones.
+                          </div>
+                        );
+                      }
+                      if (verificacion.estado === "rejected") {
+                        return (
+                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+                            ❌ Verificación rechazada. Revisa el motivo y vuelve a subir tus documentos.
+                          </div>
+                        );
+                      }
+                      if (docCount > 0) {
+                        return (
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
+                            ⏳ <strong>{docCount} documento(s) enviado(s)</strong> — pendientes de verificar por el administrador. Te avisaremos en cuanto los apruebe.
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
+                          Sube tus documentos abajo para iniciar la verificación.
+                        </div>
+                      );
+                    })()}
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
