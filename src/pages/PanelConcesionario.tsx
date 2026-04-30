@@ -497,7 +497,7 @@ export default function PanelConcesionario() {
     // Fetch core data in parallel — independent error handling, never throws
     try {
       const [verifResult, cuentaResult] = await Promise.allSettled([
-        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("fecha_solicitud", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
+        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("created_at", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
         withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
       ]);
 
@@ -545,6 +545,12 @@ export default function PanelConcesionario() {
 
         if (empresaUnidades) {
           if (!isCurrentFetch()) return;
+          // Fallback: si la verificación maestra está aprobada, todas las unidades se consideran aprobadas
+          const masterEstado = verifData?.estado;
+          const fallbackPerUnit = masterEstado === "approved" ? "approved"
+            : masterEstado === "in_review" ? "in_review"
+            : masterEstado === "pending" ? "pending"
+            : null;
           setUnidades(empresaUnidades.map((u: any) => ({
             id: u.id,
             numero_economico: u.numero_economico || u.nombre,
@@ -552,7 +558,7 @@ export default function PanelConcesionario() {
             modelo: null,
             linea: null,
             descripcion: u.descripcion || null,
-            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || null,
+            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || fallbackPerUnit,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
