@@ -32,12 +32,27 @@ export default function VerificationDocsUploader({
   const [docs, setDocs] = useState<Record<string, string[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [adminPhone, setAdminPhone] = useState<string>(ADMIN_WHATSAPP_FALLBACK);
 
   useEffect(() => {
     if (verificacion?.documentos) {
       setDocs(verificacion.documentos as Record<string, string[]>);
     }
   }, [verificacion]);
+
+  useEffect(() => {
+    // Carga teléfono del super-admin (consecutive_number = 1) dinámicamente
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("telefono")
+        .eq("consecutive_number", 1)
+        .maybeSingle();
+      if (data?.telefono) {
+        setAdminPhone(data.telefono.replace(/[^0-9]/g, ""));
+      }
+    })();
+  }, []);
 
   const ensureVerification = async (): Promise<string | null> => {
     if (verificacion?.id) return verificacion.id;
