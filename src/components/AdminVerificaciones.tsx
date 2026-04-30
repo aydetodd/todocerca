@@ -122,7 +122,14 @@ export default function AdminVerificaciones() {
 
       if (error) throw error;
 
-      toast.success(newEstado === "approved" ? "Verificación aprobada" : "Verificación rechazada");
+      // Cascada: aprobar/rechazar todas las unidades vinculadas a esta verificación
+      const unitEstado = newEstado === "approved" ? "approved" : "rejected";
+      await (supabase
+        .from("detalles_verificacion_unidad") as any)
+        .update({ estado_verificacion: unitEstado })
+        .eq("verificacion_id", id);
+
+      toast.success(newEstado === "approved" ? "Verificación aprobada — concesionario notificado en tiempo real" : "Verificación rechazada");
       fetchVerificaciones();
     } catch (err: any) {
       toast.error("Error: " + err.message);

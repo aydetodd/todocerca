@@ -35,6 +35,8 @@ type Verificacion = {
   fecha_revision: string | null;
   admin_notas: string | null;
   total_unidades: number;
+  documentos?: Record<string, string[]> | null;
+  metodo_envio?: string | null;
 };
 
 type Liquidacion = {
@@ -448,6 +450,29 @@ export default function PanelConcesionario() {
     return () => { supabase.removeChannel(ch); };
   }, [proveedor?.id]);
 
+  // Realtime: refresh cuando admin aprueba/rechaza la verificación
+  useEffect(() => {
+    if (!proveedor?.id) return;
+    const ch = supabase
+      .channel("verificacion-concesionario-" + proveedor.id)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "verificaciones_concesionario",
+        filter: `concesionario_id=eq.${proveedor.id}`,
+      }, (payload: any) => {
+        const newEstado = payload?.new?.estado;
+        const oldEstado = payload?.old?.estado;
+        if (newEstado && newEstado !== oldEstado) {
+          if (newEstado === "approved") toast.success("✅ Tu verificación fue aprobada");
+          else if (newEstado === "rejected") toast.error("❌ Tu verificación fue rechazada");
+        }
+        fetchAll();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [proveedor?.id]);
+
   async function fetchAll() {
     if (!user?.id) {
       setLoading(false);
@@ -497,7 +522,7 @@ export default function PanelConcesionario() {
     // Fetch core data in parallel — independent error handling, never throws
     try {
       const [verifResult, cuentaResult] = await Promise.allSettled([
-        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("fecha_solicitud", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
+        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("created_at", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
         withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
       ]);
 
@@ -545,6 +570,12 @@ export default function PanelConcesionario() {
 
         if (empresaUnidades) {
           if (!isCurrentFetch()) return;
+          // Fallback: si la verificación maestra está aprobada, todas las unidades se consideran aprobadas
+          const masterEstado = verifData?.estado;
+          const fallbackPerUnit = masterEstado === "approved" ? "approved"
+            : masterEstado === "in_review" ? "in_review"
+            : masterEstado === "pending" ? "pending"
+            : null;
           setUnidades(empresaUnidades.map((u: any) => ({
             id: u.id,
             numero_economico: u.numero_economico || u.nombre,
@@ -552,7 +583,7 @@ export default function PanelConcesionario() {
             modelo: null,
             linea: null,
             descripcion: u.descripcion || null,
-            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || null,
+            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || fallbackPerUnit,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
@@ -1519,8 +1550,38 @@ export default function PanelConcesionario() {
                     )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Unidades registradas:</span>
-                      <span className="text-sm font-bold">{verificacion.total_unidades}</span>
+                      <span className="text-sm font-bold">{unidades.length}</span>
                     </div>
+                    {(() => {
+                      const docCount = Object.values((verificacion.documentos || {}) as Record<string, string[]>)
+                        .reduce((acc, arr) => acc + (arr?.length || 0), 0);
+                      if (verificacion.estado === "approved") {
+                        return (
+                          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
+                            ✅ Tu verificación está aprobada. Puedes conectar tu cuenta Stripe y recibir liquidaciones.
+                          </div>
+                        );
+                      }
+                      if (verificacion.estado === "rejected") {
+                        return (
+                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+                            ❌ Verificación rechazada. Revisa el motivo y vuelve a subir tus documentos.
+                          </div>
+                        );
+                      }
+                      if (docCount > 0) {
+                        return (
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
+                            ⏳ <strong>{docCount} documento(s) enviado(s)</strong> — pendientes de verificar por el administrador. Te avisaremos en cuanto los apruebe.
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
+                          Sube tus documentos abajo para iniciar la verificación.
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">

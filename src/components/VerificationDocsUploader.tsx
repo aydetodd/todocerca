@@ -58,6 +58,21 @@ export default function VerificationDocsUploader({
     if (verificacion?.id) return verificacion.id;
     setCreating(true);
     try {
+      // Reusar verificación existente (no aprobada/rechazada) del concesionario para evitar duplicados
+      const { data: existing } = await (supabase
+        .from("verificaciones_concesionario") as any)
+        .select("id")
+        .eq("concesionario_id", proveedorId)
+        .in("estado", ["pending", "in_review", "draft"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing?.id) {
+        onVerificacionCreated();
+        return existing.id;
+      }
+
       const { data, error } = await (supabase
         .from("verificaciones_concesionario") as any)
         .insert({
@@ -104,11 +119,19 @@ export default function VerificationDocsUploader({
       }
       setDocs(next);
 
+      // Bump a in_review automáticamente al subir el primer doc (si seguía en pending)
+      const nextEstado = (verificacion?.estado === "pending" || !verificacion?.estado) ? "in_review" : verificacion.estado;
       await (supabase.from("verificaciones_concesionario") as any)
-        .update({ documentos: next, metodo_envio: "app" })
+        .update({
+          documentos: next,
+          metodo_envio: "app",
+          estado: nextEstado,
+          fecha_solicitud: verificacion?.fecha_solicitud || new Date().toISOString(),
+        })
         .eq("id", verifId);
 
-      toast.success("Documento subido");
+      onVerificacionCreated();
+      toast.success("Documento subido — pendiente de revisión");
     } catch (err: any) {
       toast.error("Error al subir: " + err.message);
     } finally {
