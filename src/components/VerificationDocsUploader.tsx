@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Upload, CheckCircle2, FileText, MessageCircle, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
-const ADMIN_WHATSAPP = "526624124381";
+const ADMIN_WHATSAPP_FALLBACK = "526624124381";
 
 const DOC_TYPES: { key: string; label: string; multi?: boolean }[] = [
   { key: "ine", label: "INE / Identificación Oficial" },
@@ -32,12 +32,27 @@ export default function VerificationDocsUploader({
   const [docs, setDocs] = useState<Record<string, string[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [adminPhone, setAdminPhone] = useState<string>(ADMIN_WHATSAPP_FALLBACK);
 
   useEffect(() => {
     if (verificacion?.documentos) {
       setDocs(verificacion.documentos as Record<string, string[]>);
     }
   }, [verificacion]);
+
+  useEffect(() => {
+    // Carga teléfono del super-admin (consecutive_number = 1) dinámicamente
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("telefono")
+        .eq("consecutive_number", 1)
+        .maybeSingle();
+      if (data?.telefono) {
+        setAdminPhone(data.telefono.replace(/[^0-9]/g, ""));
+      }
+    })();
+  }, []);
 
   const ensureVerification = async (): Promise<string | null> => {
     if (verificacion?.id) return verificacion.id;
@@ -128,9 +143,9 @@ export default function VerificationDocsUploader({
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Hola, soy ${proveedorNombre} (concesionario en TodoCerca). Te envío mis documentos de verificación: INE, Concesión IMTES, RFC, Comprobante de Domicilio, Tarjeta de Circulación y fotos de unidades.`,
+      `Hola, soy ${proveedorNombre} (concesionario en TodoCerca, ID: ${proveedorId}). Te envío mis documentos de verificación: INE, Concesión IMTES, RFC, Comprobante de Domicilio, Tarjeta de Circulación y fotos de unidades.`,
     );
-    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${adminPhone}?text=${message}`, "_blank");
   };
 
   const isReadOnly = verificacion?.estado === "approved";
