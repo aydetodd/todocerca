@@ -143,9 +143,9 @@ export default function VerificationDocsUploader({
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Hola, soy ${proveedorNombre} (concesionario en TodoCerca). Te envío mis documentos de verificación: INE, Concesión IMTES, RFC, Comprobante de Domicilio, Tarjeta de Circulación y fotos de unidades.`,
+      `Hola, soy ${proveedorNombre} (concesionario en TodoCerca, ID: ${proveedorId}). Te envío mis documentos de verificación: INE, Concesión IMTES, RFC, Comprobante de Domicilio, Tarjeta de Circulación y fotos de unidades.`,
     );
-    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${adminPhone}?text=${message}`, "_blank");
   };
 
   const isReadOnly = verificacion?.estado === "approved";
