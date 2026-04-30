@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Upload, CheckCircle2, FileText, MessageCircle, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
-const ADMIN_WHATSAPP = "526624124381";
+const ADMIN_WHATSAPP_FALLBACK = "526624124381";
 
 const DOC_TYPES: { key: string; label: string; multi?: boolean }[] = [
   { key: "ine", label: "INE / Identificación Oficial" },
