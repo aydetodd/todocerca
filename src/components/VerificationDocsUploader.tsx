@@ -185,11 +185,28 @@ export default function VerificationDocsUploader({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-3">
+          {(() => {
+            const totalEnviados = Object.values(docs).reduce((s, arr) => s + (arr?.length || 0), 0);
+            if (totalEnviados === 0) return null;
+            return (
+              <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-2 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                  {totalEnviados} {totalEnviados === 1 ? "documento enviado" : "documentos enviados"} — pendientes de revisión por el administrador
+                </span>
+              </div>
+            );
+          })()}
           {DOC_TYPES.map((dt) => {
             const items = docs[dt.key] || [];
             const hasFile = items.length > 0;
             return (
-              <div key={dt.key} className="border border-border rounded-lg p-3 space-y-2">
+              <div
+                key={dt.key}
+                className={`border rounded-lg p-3 space-y-2 ${
+                  hasFile ? "border-green-500/50 bg-green-500/5" : "border-border"
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     {hasFile ? (
@@ -198,6 +215,11 @@ export default function VerificationDocsUploader({
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}
                     <span className="text-sm truncate">{dt.label}</span>
+                    {hasFile && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-700 dark:text-green-400 font-semibold shrink-0">
+                        ✓ ENVIADO
+                      </span>
+                    )}
                   </div>
                   {!isReadOnly && (
                     <label className="cursor-pointer">
@@ -212,13 +234,17 @@ export default function VerificationDocsUploader({
                           e.target.value = "";
                         }}
                       />
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary text-primary-foreground text-xs hover:opacity-90">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs hover:opacity-90 ${
+                        hasFile && !dt.multi
+                          ? "bg-secondary text-secondary-foreground border border-border"
+                          : "bg-primary text-primary-foreground"
+                      }`}>
                         {uploading === dt.key || (creating && !verificacion) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Upload className="h-3 w-3" />
                         )}
-                        {dt.multi && hasFile ? "Agregar" : "Subir"}
+                        {dt.multi && hasFile ? "Agregar otro" : hasFile ? "Reemplazar" : "Subir"}
                       </span>
                     </label>
                   )}
@@ -226,17 +252,20 @@ export default function VerificationDocsUploader({
                 {items.length > 0 && (
                   <div className="space-y-1 pl-6">
                     {items.map((path, i) => (
-                      <div key={path} className="flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate text-muted-foreground">
-                          {path.split("/").pop()}
-                        </span>
-                        <div className="flex items-center gap-1 shrink-0">
+                      <div key={path} className="flex items-center justify-between gap-2 text-xs bg-background/50 rounded px-2 py-1">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                          <span className="truncate text-foreground">
+                            {path.split("/").pop()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleView(path)}
-                            className="text-primary hover:underline"
-                            title="Ver"
+                            className="text-primary hover:underline inline-flex items-center gap-1"
+                            title="Ver documento enviado"
                           >
-                            <Eye className="h-3 w-3" />
+                            <Eye className="h-3 w-3" /> Ver
                           </button>
                           {!isReadOnly && (
                             <button
