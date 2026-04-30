@@ -1580,6 +1580,7 @@ export default function PanelConcesionario() {
                         </div>
                       );
                     })()}
+                  </div>
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
