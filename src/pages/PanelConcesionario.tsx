@@ -35,6 +35,8 @@ type Verificacion = {
   fecha_revision: string | null;
   admin_notas: string | null;
   total_unidades: number;
+  documentos?: Record<string, string[]> | null;
+  metodo_envio?: string | null;
 };
 
 type Liquidacion = {
