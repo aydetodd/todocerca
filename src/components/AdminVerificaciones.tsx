@@ -49,9 +49,18 @@ export default function AdminVerificaciones() {
   const [notas, setNotas] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
   const [settling, setSettling] = useState<string | null>(null);
+  const [adminPhone, setAdminPhone] = useState("+52 662 412 4381");
 
   useEffect(() => {
     fetchVerificaciones();
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("telefono")
+        .eq("consecutive_number", 1)
+        .maybeSingle();
+      if (data?.telefono) setAdminPhone(data.telefono);
+    })();
   }, []);
 
   const fetchVerificaciones = async () => {
@@ -256,7 +265,7 @@ export default function AdminVerificaciones() {
                       📱 Flujo de aprobación por WhatsApp
                     </p>
                     <ol className="text-xs text-blue-900 dark:text-blue-100 space-y-1 list-decimal list-inside">
-                      <li>Revisa los documentos que el concesionario te envió a tu WhatsApp ({"+52 662 412 4381"}).</li>
+                      <li>Revisa los documentos que el concesionario te envió a tu WhatsApp ({adminPhone}).</li>
                       <li>Verifica que estén completos: INE, Concesión, RFC, Domicilio, Tarjeta circulación, Fotos.</li>
                       <li>Si todo está bien, presiona <strong>Aprobar</strong> abajo (puedes anotar referencia del chat).</li>
                       <li>Si falta algo, presiona <strong>Rechazar</strong> indicando qué documento solicitar.</li>
