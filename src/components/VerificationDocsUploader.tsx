@@ -37,6 +37,8 @@ export default function VerificationDocsUploader({
   useEffect(() => {
     if (verificacion?.documentos) {
       setDocs(verificacion.documentos as Record<string, string[]>);
+    } else {
+      setDocs({});
     }
   }, [verificacion]);
 
@@ -111,27 +113,41 @@ export default function VerificationDocsUploader({
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
 
-      const next = { ...docs };
+      const { data: currentVerification, error: currentErr } = await (supabase
+        .from("verificaciones_concesionario") as any)
+        .select("documentos, estado, fecha_solicitud")
+        .eq("id", verifId)
+        .single();
+
+      if (currentErr) throw currentErr;
+
+      const currentDocs = ((currentVerification?.documentos as Record<string, string[]>) || docs || {});
+      const next = { ...currentDocs };
       if (multi) {
         next[docKey] = [...(next[docKey] || []), path];
       } else {
         next[docKey] = [path];
       }
-      setDocs(next);
 
-      // Bump a in_review automáticamente al subir el primer doc (si seguía en pending)
-      const nextEstado = (verificacion?.estado === "pending" || !verificacion?.estado) ? "in_review" : verificacion.estado;
-      await (supabase.from("verificaciones_concesionario") as any)
+      // La solicitud queda en revisión al recibir cualquier documento nuevo o reemplazado.
+      const nextEstado = currentVerification?.estado === "approved" ? "approved" : "in_review";
+      const { data: savedVerification, error: saveErr } = await (supabase.from("verificaciones_concesionario") as any)
         .update({
           documentos: next,
           metodo_envio: "app",
           estado: nextEstado,
-          fecha_solicitud: verificacion?.fecha_solicitud || new Date().toISOString(),
+          fecha_solicitud: currentVerification?.fecha_solicitud || verificacion?.fecha_solicitud || new Date().toISOString(),
         })
-        .eq("id", verifId);
+        .eq("id", verifId)
+        .select("documentos, estado")
+        .single();
+
+      if (saveErr) throw saveErr;
+
+      setDocs((savedVerification?.documentos as Record<string, string[]>) || next);
 
       onVerificacionCreated();
-      toast.success("Documento subido — pendiente de revisión");
+      toast.success("Documento enviado y guardado — pendiente de revisión");
     } catch (err: any) {
       toast.error("Error al subir: " + err.message);
     } finally {

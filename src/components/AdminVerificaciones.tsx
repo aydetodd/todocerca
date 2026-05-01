@@ -49,9 +49,18 @@ export default function AdminVerificaciones() {
   const [notas, setNotas] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
   const [settling, setSettling] = useState<string | null>(null);
+  const [adminPhone, setAdminPhone] = useState("+52 662 412 4381");
 
   useEffect(() => {
     fetchVerificaciones();
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("telefono")
+        .eq("consecutive_number", 1)
+        .maybeSingle();
+      if (data?.telefono) setAdminPhone(data.telefono);
+    })();
   }, []);
 
   const fetchVerificaciones = async () => {
@@ -71,10 +80,28 @@ export default function AdminVerificaciones() {
             .eq("id", v.concesionario_id)
             .single();
 
-          const { data: unidades } = await (supabase
+          const { data: unidadesDetalle } = await (supabase
             .from("detalles_verificacion_unidad") as any)
             .select("id, numero_economico, placas, modelo, linea, estado_verificacion")
             .eq("verificacion_id", v.id);
+
+          let unidades = unidadesDetalle || [];
+          if (unidades.length === 0) {
+            const { data: unidadesEmpresa } = await (supabase
+              .from("unidades_empresa") as any)
+              .select("id, numero_economico, nombre, placas, modelo, linea, is_verified")
+              .eq("proveedor_id", v.concesionario_id)
+              .neq("transport_type", "taxi");
+
+            unidades = (unidadesEmpresa || []).map((u: any) => ({
+              id: u.id,
+              numero_economico: u.numero_economico || u.nombre || "—",
+              placas: u.placas || "—",
+              modelo: u.modelo || null,
+              linea: u.linea || null,
+              estado_verificacion: v.estado === "approved" ? "approved" : u.is_verified ? "approved" : v.estado === "rejected" ? "rejected" : "pending",
+            }));
+          }
 
           const { data: cuenta } = await supabase
             .from("cuentas_conectadas")
@@ -115,19 +142,26 @@ export default function AdminVerificaciones() {
         }
       }
 
-      const { error } = await (supabase
+      const { data: saved, error } = await (supabase
         .from("verificaciones_concesionario") as any)
         .update(updateData)
-        .eq("id", id);
+        .eq("id", id)
+        .select("id, estado")
+        .single();
 
       if (error) throw error;
+      if (!saved || saved.estado !== newEstado) {
+        throw new Error("La aprobación no se guardó. Verifica que estés entrando con la cuenta admin maestra.");
+      }
 
       // Cascada: aprobar/rechazar todas las unidades vinculadas a esta verificación
       const unitEstado = newEstado === "approved" ? "approved" : "rejected";
-      await (supabase
+      const { error: unitError } = await (supabase
         .from("detalles_verificacion_unidad") as any)
         .update({ estado_verificacion: unitEstado })
         .eq("verificacion_id", id);
+
+      if (unitError) throw unitError;
 
       toast.success(newEstado === "approved" ? "Verificación aprobada — concesionario notificado en tiempo real" : "Verificación rechazada");
       fetchVerificaciones();
@@ -249,7 +283,7 @@ export default function AdminVerificaciones() {
                       📱 Flujo de aprobación por WhatsApp
                     </p>
                     <ol className="text-xs text-blue-900 dark:text-blue-100 space-y-1 list-decimal list-inside">
-                      <li>Revisa los documentos que el concesionario te envió a tu WhatsApp ({"+52 662 412 4381"}).</li>
+                      <li>Revisa los documentos que el concesionario te envió a tu WhatsApp ({adminPhone}).</li>
                       <li>Verifica que estén completos: INE, Concesión, RFC, Domicilio, Tarjeta circulación, Fotos.</li>
                       <li>Si todo está bien, presiona <strong>Aprobar</strong> abajo (puedes anotar referencia del chat).</li>
                       <li>Si falta algo, presiona <strong>Rechazar</strong> indicando qué documento solicitar.</li>
