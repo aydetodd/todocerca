@@ -115,19 +115,26 @@ export default function AdminVerificaciones() {
         }
       }
 
-      const { error } = await (supabase
+      const { data: saved, error } = await (supabase
         .from("verificaciones_concesionario") as any)
         .update(updateData)
-        .eq("id", id);
+        .eq("id", id)
+        .select("id, estado")
+        .single();
 
       if (error) throw error;
+      if (!saved || saved.estado !== newEstado) {
+        throw new Error("La aprobación no se guardó. Verifica que estés entrando con la cuenta admin maestra.");
+      }
 
       // Cascada: aprobar/rechazar todas las unidades vinculadas a esta verificación
       const unitEstado = newEstado === "approved" ? "approved" : "rejected";
-      await (supabase
+      const { error: unitError } = await (supabase
         .from("detalles_verificacion_unidad") as any)
         .update({ estado_verificacion: unitEstado })
         .eq("verificacion_id", id);
+
+      if (unitError) throw unitError;
 
       toast.success(newEstado === "approved" ? "Verificación aprobada — concesionario notificado en tiempo real" : "Verificación rechazada");
       fetchVerificaciones();
