@@ -80,10 +80,28 @@ export default function AdminVerificaciones() {
             .eq("id", v.concesionario_id)
             .single();
 
-          const { data: unidades } = await (supabase
+          const { data: unidadesDetalle } = await (supabase
             .from("detalles_verificacion_unidad") as any)
             .select("id, numero_economico, placas, modelo, linea, estado_verificacion")
             .eq("verificacion_id", v.id);
+
+          let unidades = unidadesDetalle || [];
+          if (unidades.length === 0) {
+            const { data: unidadesEmpresa } = await (supabase
+              .from("unidades_empresa") as any)
+              .select("id, numero_economico, nombre, placas, modelo, linea, is_verified")
+              .eq("proveedor_id", v.concesionario_id)
+              .neq("transport_type", "taxi");
+
+            unidades = (unidadesEmpresa || []).map((u: any) => ({
+              id: u.id,
+              numero_economico: u.numero_economico || u.nombre || "—",
+              placas: u.placas || "—",
+              modelo: u.modelo || null,
+              linea: u.linea || null,
+              estado_verificacion: v.estado === "approved" ? "approved" : u.is_verified ? "approved" : v.estado === "rejected" ? "rejected" : "pending",
+            }));
+          }
 
           const { data: cuenta } = await supabase
             .from("cuentas_conectadas")
