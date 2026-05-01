@@ -113,7 +113,16 @@ export default function VerificationDocsUploader({
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
 
-      const next = { ...docs };
+      const { data: currentVerification, error: currentErr } = await (supabase
+        .from("verificaciones_concesionario") as any)
+        .select("documentos, estado, fecha_solicitud")
+        .eq("id", verifId)
+        .single();
+
+      if (currentErr) throw currentErr;
+
+      const currentDocs = ((currentVerification?.documentos as Record<string, string[]>) || docs || {});
+      const next = { ...currentDocs };
       if (multi) {
         next[docKey] = [...(next[docKey] || []), path];
       } else {
@@ -121,13 +130,13 @@ export default function VerificationDocsUploader({
       }
 
       // La solicitud queda en revisión al recibir cualquier documento nuevo o reemplazado.
-      const nextEstado = verificacion?.estado === "approved" ? "approved" : "in_review";
+      const nextEstado = currentVerification?.estado === "approved" ? "approved" : "in_review";
       const { data: savedVerification, error: saveErr } = await (supabase.from("verificaciones_concesionario") as any)
         .update({
           documentos: next,
           metodo_envio: "app",
           estado: nextEstado,
-          fecha_solicitud: verificacion?.fecha_solicitud || new Date().toISOString(),
+          fecha_solicitud: currentVerification?.fecha_solicitud || verificacion?.fecha_solicitud || new Date().toISOString(),
         })
         .eq("id", verifId)
         .select("documentos, estado")
