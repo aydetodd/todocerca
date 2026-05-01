@@ -37,6 +37,8 @@ export default function VerificationDocsUploader({
   useEffect(() => {
     if (verificacion?.documentos) {
       setDocs(verificacion.documentos as Record<string, string[]>);
+    } else {
+      setDocs({});
     }
   }, [verificacion]);
 
@@ -117,21 +119,26 @@ export default function VerificationDocsUploader({
       } else {
         next[docKey] = [path];
       }
-      setDocs(next);
 
-      // Bump a in_review automáticamente al subir el primer doc (si seguía en pending)
-      const nextEstado = (verificacion?.estado === "pending" || !verificacion?.estado) ? "in_review" : verificacion.estado;
-      await (supabase.from("verificaciones_concesionario") as any)
+      // La solicitud queda en revisión al recibir cualquier documento nuevo o reemplazado.
+      const nextEstado = verificacion?.estado === "approved" ? "approved" : "in_review";
+      const { data: savedVerification, error: saveErr } = await (supabase.from("verificaciones_concesionario") as any)
         .update({
           documentos: next,
           metodo_envio: "app",
           estado: nextEstado,
           fecha_solicitud: verificacion?.fecha_solicitud || new Date().toISOString(),
         })
-        .eq("id", verifId);
+        .eq("id", verifId)
+        .select("documentos, estado")
+        .single();
+
+      if (saveErr) throw saveErr;
+
+      setDocs((savedVerification?.documentos as Record<string, string[]>) || next);
 
       onVerificacionCreated();
-      toast.success("Documento subido — pendiente de revisión");
+      toast.success("Documento enviado y guardado — pendiente de revisión");
     } catch (err: any) {
       toast.error("Error al subir: " + err.message);
     } finally {
