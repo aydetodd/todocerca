@@ -90,13 +90,21 @@ const Auth = () => {
       return;
     }
 
-    // Validar formato de email de recuperación si fue ingresado
-    if (!isLogin && recoveryEmail.trim()) {
+    // Email obligatorio en registro (es el único método de recuperación de contraseña)
+    if (!isLogin) {
+      if (!recoveryEmail.trim()) {
+        toast({
+          title: "Correo electrónico requerido",
+          description: "El correo es obligatorio para poder recuperar tu contraseña.",
+          variant: "destructive",
+        });
+        return;
+      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(recoveryEmail.trim())) {
         toast({
           title: "Email inválido",
-          description: "Ingresa un correo electrónico válido para recuperación",
+          description: "Ingresa un correo electrónico válido (ej. nombre@ejemplo.com)",
           variant: "destructive",
         });
         return;
