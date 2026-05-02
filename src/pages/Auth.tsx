@@ -653,8 +653,24 @@ const Auth = () => {
                       onChange={(e) => setNombre(e.target.value)}
                     />
                   </div>
-                </>
-              )}
+
+                  <div>
+                    <Label htmlFor="recoveryEmail">
+                      Correo electrónico de recuperación (recomendado)
+                    </Label>
+                    <Input
+                      id="recoveryEmail"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="tucorreo@ejemplo.com"
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Lo usaremos solo para ayudarte a recuperar tu contraseña si pierdes acceso a tu teléfono.
+                    </p>
+                  </div>
 
               <PhoneInput
                 id="telefono"
