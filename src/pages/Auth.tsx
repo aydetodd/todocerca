@@ -301,7 +301,10 @@ const Auth = () => {
           // Actualizar perfil (con timeout corto, no es crítico)
           try {
             await Promise.race([
-              supabase.from('profiles').update({ telefono }).eq('user_id', data.user.id),
+              supabase.from('profiles').update({
+                telefono,
+                ...(recoveryEmail.trim() ? { recovery_email: recoveryEmail.trim().toLowerCase() } : {}),
+              }).eq('user_id', data.user.id),
               new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
             ]);
           } catch (e) {
