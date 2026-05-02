@@ -2414,6 +2414,7 @@ export type Database = {
           phone_verified: boolean | null
           postal_code: string | null
           provider_type: Database["public"]["Enums"]["provider_type"] | null
+          recovery_email: string | null
           role: Database["public"]["Enums"]["user_role"]
           route_name: string | null
           tarifa_km: number | null
@@ -2440,6 +2441,7 @@ export type Database = {
           phone_verified?: boolean | null
           postal_code?: string | null
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
+          recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
           tarifa_km?: number | null
@@ -2466,6 +2468,7 @@ export type Database = {
           phone_verified?: boolean | null
           postal_code?: string | null
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
+          recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
           tarifa_km?: number | null

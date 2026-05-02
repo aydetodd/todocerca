@@ -21,6 +21,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   // Todos se registran como cliente, upgrade a proveedor desde perfil
@@ -87,6 +88,19 @@ const Auth = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Validar formato de email de recuperación si fue ingresado
+    if (!isLogin && recoveryEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(recoveryEmail.trim())) {
+        toast({
+          title: "Email inválido",
+          description: "Ingresa un correo electrónico válido para recuperación",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
     // Validar términos en registro
@@ -287,7 +301,10 @@ const Auth = () => {
           // Actualizar perfil (con timeout corto, no es crítico)
           try {
             await Promise.race([
-              supabase.from('profiles').update({ telefono }).eq('user_id', data.user.id),
+              supabase.from('profiles').update({
+                telefono,
+                ...(recoveryEmail.trim() ? { recovery_email: recoveryEmail.trim().toLowerCase() } : {}),
+              }).eq('user_id', data.user.id),
               new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
             ]);
           } catch (e) {
@@ -635,6 +652,24 @@ const Auth = () => {
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="recoveryEmail">
+                      Correo electrónico de recuperación (recomendado)
+                    </Label>
+                    <Input
+                      id="recoveryEmail"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="tucorreo@ejemplo.com"
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Lo usaremos solo para ayudarte a recuperar tu contraseña si pierdes acceso a tu teléfono.
+                    </p>
                   </div>
                 </>
               )}
