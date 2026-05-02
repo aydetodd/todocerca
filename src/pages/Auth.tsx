@@ -671,6 +671,8 @@ const Auth = () => {
                       Lo usaremos solo para ayudarte a recuperar tu contraseña si pierdes acceso a tu teléfono.
                     </p>
                   </div>
+                </>
+              )}
 
               <PhoneInput
                 id="telefono"
