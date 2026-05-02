@@ -21,6 +21,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   // Todos se registran como cliente, upgrade a proveedor desde perfil
