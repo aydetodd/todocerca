@@ -134,6 +134,7 @@ export default function AppWrapper() {
           <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
