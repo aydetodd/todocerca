@@ -16,6 +16,7 @@ import MainHome from "./pages/MainHome";
 import Panel from "./pages/Panel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
 import MapView from "./pages/MapView";
@@ -133,6 +134,7 @@ export default function AppWrapper() {
           <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
