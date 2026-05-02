@@ -664,7 +664,7 @@ const Auth = () => {
 
                   <div>
                     <Label htmlFor="recoveryEmail">
-                      Correo electrónico de recuperación (recomendado)
+                      Correo electrónico * <span className="text-xs font-normal text-muted-foreground">(para recuperar contraseña)</span>
                     </Label>
                     <Input
                       id="recoveryEmail"
@@ -674,9 +674,10 @@ const Auth = () => {
                       placeholder="tucorreo@ejemplo.com"
                       value={recoveryEmail}
                       onChange={(e) => setRecoveryEmail(e.target.value)}
+                      required
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Lo usaremos solo para ayudarte a recuperar tu contraseña si pierdes acceso a tu teléfono.
+                      Este correo se usará <strong>únicamente</strong> para enviarte un enlace de recuperación si olvidas tu contraseña. No enviaremos publicidad.
                     </p>
                   </div>
                 </>
