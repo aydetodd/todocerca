@@ -16,6 +16,7 @@ import MainHome from "./pages/MainHome";
 import Panel from "./pages/Panel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import DashboardMain from "./pages/DashboardMain";
 import MapView from "./pages/MapView";
