@@ -89,6 +89,19 @@ const Auth = () => {
       });
       return;
     }
+
+    // Validar formato de email de recuperación si fue ingresado
+    if (!isLogin && recoveryEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(recoveryEmail.trim())) {
+        toast({
+          title: "Email inválido",
+          description: "Ingresa un correo electrónico válido para recuperación",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     // Validar términos en registro
     if (!isLogin && (!acceptedTerms || !acceptedProhibitedContent)) {
