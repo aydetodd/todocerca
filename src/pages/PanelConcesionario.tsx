@@ -146,6 +146,7 @@ export default function PanelConcesionario() {
   const [contratoOrigen, setContratoOrigen] = useState<{ lat: number; lng: number } | null>(null);
   const [contratoDestino, setContratoDestino] = useState<{ lat: number; lng: number } | null>(null);
   const [contratoRadio, setContratoRadio] = useState<number>(150);
+  const [contratoEditandoId, setContratoEditandoId] = useState<string | null>(null);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
@@ -1098,6 +1099,32 @@ export default function PanelConcesionario() {
     setContratosEmpresa(data || []);
   }
 
+  const abrirEditarContrato = (c: any) => {
+    setEmpresaSeleccionada(c.empresas_transporte ? { id: c.empresa_id, nombre: c.empresas_transporte.nombre } : { id: c.empresa_id, nombre: "Empresa" });
+    setContratoEditandoId(c.id);
+    setContratoModeloCobro((c.modelo_cobro as any) || "por_persona");
+    setContratoTarifa(String(c.tarifa_por_persona ?? "15"));
+    setContratoFrecuencia(c.frecuencia_corte || "quincenal");
+    setContratoDescripcion(c.descripcion || "");
+    setContratoOrigen(c.origen_lat != null && c.origen_lng != null ? { lat: Number(c.origen_lat), lng: Number(c.origen_lng) } : null);
+    setContratoDestino(c.destino_lat != null && c.destino_lng != null ? { lat: Number(c.destino_lat), lng: Number(c.destino_lng) } : null);
+    setContratoRadio(Number(c.geocerca_radio_m) || 150);
+    const turnosBase = [
+      { turno: "Matutino", unidades: 1, selected: false },
+      { turno: "Vespertino", unidades: 1, selected: false },
+      { turno: "Nocturno", unidades: 1, selected: false },
+      { turno: "Mixto", unidades: 1, selected: false },
+    ];
+    if (Array.isArray(c.turnos)) {
+      c.turnos.forEach((t: any) => {
+        const idx = turnosBase.findIndex(x => x.turno === t.turno);
+        if (idx >= 0) turnosBase[idx] = { turno: t.turno, unidades: t.unidades || 1, selected: true };
+      });
+    }
+    setContratoTurnos(turnosBase);
+    setShowProponerContrato(true);
+  };
+
   const handleProponerContrato = async () => {
     if (!proveedor || !empresaSeleccionada) return;
     setSavingContrato(true);
@@ -1112,15 +1139,10 @@ export default function PanelConcesionario() {
       toast.error("Marca el origen y destino en el mapa para contar viajes automáticamente");
       return;
     }
-    const { error } = await supabase.from("contratos_transporte").insert({
-      concesionario_id: proveedor.id,
-      empresa_id: empresaSeleccionada.id,
+    const payload: any = {
       tarifa_por_persona: contratoModeloCobro === "por_viaje" ? 0 : (parseFloat(contratoTarifa) || 15),
       frecuencia_corte: contratoFrecuencia,
       descripcion: contratoDescripcion || descAuto,
-      estado: "pendiente",
-      iniciado_por: "concesionario",
-      is_active: false,
       turnos: turnosSeleccionados,
       modelo_cobro: contratoModeloCobro,
       origen_lat: contratoOrigen?.lat ?? null,
@@ -1128,14 +1150,28 @@ export default function PanelConcesionario() {
       destino_lat: contratoDestino?.lat ?? null,
       destino_lng: contratoDestino?.lng ?? null,
       geocerca_radio_m: contratoRadio,
-    } as any);
+    };
+    let error;
+    if (contratoEditandoId) {
+      ({ error } = await supabase.from("contratos_transporte").update(payload).eq("id", contratoEditandoId));
+    } else {
+      ({ error } = await supabase.from("contratos_transporte").insert({
+        ...payload,
+        concesionario_id: proveedor.id,
+        empresa_id: empresaSeleccionada.id,
+        estado: "pendiente",
+        iniciado_por: "concesionario",
+        is_active: false,
+      } as any));
+    }
     setSavingContrato(false);
     if (error) {
-      toast.error("Error al proponer contrato: " + error.message);
+      toast.error("Error: " + error.message);
     } else {
-      toast.success("Propuesta de contrato enviada");
+      toast.success(contratoEditandoId ? "Contrato actualizado" : "Propuesta de contrato enviada");
       setShowProponerContrato(false);
       setEmpresaSeleccionada(null);
+      setContratoEditandoId(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
       setContratoOrigen(null);
@@ -2152,21 +2188,37 @@ export default function PanelConcesionario() {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Tarifa: ${Number(c.tarifa_por_persona).toFixed(2)}/persona · {c.frecuencia_corte}
+                          {c.modelo_cobro === "por_viaje"
+                            ? `Cobro por viaje completo (sin QR) · ${c.frecuencia_corte}`
+                            : `Tarifa: $${Number(c.tarifa_por_persona).toFixed(2)}/persona · ${c.frecuencia_corte}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Desde {c.fecha_inicio} · Iniciado por: {c.iniciado_por}
                         </p>
-                        {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
-                          <div className="flex gap-2 mt-2">
-                            <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
-                              <XCircle className="h-3 w-3 mr-1" /> Rechazar
-                            </Button>
-                          </div>
+                        {c.modelo_cobro === "por_viaje" && (
+                          <p className="text-[11px] text-muted-foreground">
+                            📍 Geocercas: {c.origen_lat != null && c.destino_lat != null
+                              ? `Origen y destino configurados (radio ${c.geocerca_radio_m || 150} m)`
+                              : <span className="text-destructive">Falta configurar origen/destino</span>}
+                          </p>
                         )}
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {(c.estado === "aceptado" || c.estado === "pendiente") && (
+                            <Button size="sm" variant="outline" onClick={() => abrirEditarContrato(c)}>
+                              <FileText className="h-3 w-3 mr-1" /> Editar contrato
+                            </Button>
+                          )}
+                          {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
+                            <>
+                              <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
+                                <XCircle className="h-3 w-3 mr-1" /> Rechazar
+                              </Button>
+                            </>
+                          )}
+                        </div>
                         {c.estado === "aceptado" && user && proveedor && (
                           <>
                             <RecursosContrato contratoId={c.id} proveedorId={proveedor.id} rol="concesionario" userId={user.id} />
@@ -2186,16 +2238,16 @@ export default function PanelConcesionario() {
       </div>
 
       {/* Dialog: Proponer contrato */}
-      <Dialog open={showProponerContrato} onOpenChange={setShowProponerContrato}>
-        <DialogContent>
+      <Dialog open={showProponerContrato} onOpenChange={(o) => { setShowProponerContrato(o); if (!o) setContratoEditandoId(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Handshake className="h-5 w-5" /> Proponer contrato
+              <Handshake className="h-5 w-5" /> {contratoEditandoId ? "Editar contrato" : "Proponer contrato"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
+              {contratoEditandoId ? "Editando contrato con" : "Proponer contrato de transporte de personal a"} <strong>{empresaSeleccionada?.nombre}</strong>
             </p>
             <div>
               <label className="text-sm font-medium mb-1 block">Modelo de cobro</label>
@@ -2307,7 +2359,7 @@ export default function PanelConcesionario() {
               disabled={savingContrato || !contratoTurnos.some(t => t.selected)}
               className="w-full"
             >
-              {savingContrato ? "Enviando..." : "Enviar propuesta"}
+              {savingContrato ? "Guardando..." : (contratoEditandoId ? "Guardar cambios" : "Enviar propuesta")}
             </Button>
           </div>
         </DialogContent>
