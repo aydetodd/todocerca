@@ -2188,21 +2188,37 @@ export default function PanelConcesionario() {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Tarifa: ${Number(c.tarifa_por_persona).toFixed(2)}/persona · {c.frecuencia_corte}
+                          {c.modelo_cobro === "por_viaje"
+                            ? `Cobro por viaje completo (sin QR) · ${c.frecuencia_corte}`
+                            : `Tarifa: $${Number(c.tarifa_por_persona).toFixed(2)}/persona · ${c.frecuencia_corte}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Desde {c.fecha_inicio} · Iniciado por: {c.iniciado_por}
                         </p>
-                        {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
-                          <div className="flex gap-2 mt-2">
-                            <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
-                              <XCircle className="h-3 w-3 mr-1" /> Rechazar
-                            </Button>
-                          </div>
+                        {c.modelo_cobro === "por_viaje" && (
+                          <p className="text-[11px] text-muted-foreground">
+                            📍 Geocercas: {c.origen_lat != null && c.destino_lat != null
+                              ? `Origen y destino configurados (radio ${c.geocerca_radio_m || 150} m)`
+                              : <span className="text-destructive">Falta configurar origen/destino</span>}
+                          </p>
                         )}
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {(c.estado === "aceptado" || c.estado === "pendiente") && (
+                            <Button size="sm" variant="outline" onClick={() => abrirEditarContrato(c)}>
+                              <FileText className="h-3 w-3 mr-1" /> Editar contrato
+                            </Button>
+                          )}
+                          {c.estado === "pendiente" && c.iniciado_por === "empresa" && (
+                            <>
+                              <Button size="sm" variant="default" onClick={() => handleAceptarContrato(c.id)}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleRechazarContrato(c.id)}>
+                                <XCircle className="h-3 w-3 mr-1" /> Rechazar
+                              </Button>
+                            </>
+                          )}
+                        </div>
                         {c.estado === "aceptado" && user && proveedor && (
                           <>
                             <RecursosContrato contratoId={c.id} proveedorId={proveedor.id} rol="concesionario" userId={user.id} />
