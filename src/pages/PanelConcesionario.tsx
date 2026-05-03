@@ -1099,6 +1099,32 @@ export default function PanelConcesionario() {
     setContratosEmpresa(data || []);
   }
 
+  const abrirEditarContrato = (c: any) => {
+    setEmpresaSeleccionada(c.empresas_transporte ? { id: c.empresa_id, nombre: c.empresas_transporte.nombre } : { id: c.empresa_id, nombre: "Empresa" });
+    setContratoEditandoId(c.id);
+    setContratoModeloCobro((c.modelo_cobro as any) || "por_persona");
+    setContratoTarifa(String(c.tarifa_por_persona ?? "15"));
+    setContratoFrecuencia(c.frecuencia_corte || "quincenal");
+    setContratoDescripcion(c.descripcion || "");
+    setContratoOrigen(c.origen_lat != null && c.origen_lng != null ? { lat: Number(c.origen_lat), lng: Number(c.origen_lng) } : null);
+    setContratoDestino(c.destino_lat != null && c.destino_lng != null ? { lat: Number(c.destino_lat), lng: Number(c.destino_lng) } : null);
+    setContratoRadio(Number(c.geocerca_radio_m) || 150);
+    const turnosBase = [
+      { turno: "Matutino", unidades: 1, selected: false },
+      { turno: "Vespertino", unidades: 1, selected: false },
+      { turno: "Nocturno", unidades: 1, selected: false },
+      { turno: "Mixto", unidades: 1, selected: false },
+    ];
+    if (Array.isArray(c.turnos)) {
+      c.turnos.forEach((t: any) => {
+        const idx = turnosBase.findIndex(x => x.turno === t.turno);
+        if (idx >= 0) turnosBase[idx] = { turno: t.turno, unidades: t.unidades || 1, selected: true };
+      });
+    }
+    setContratoTurnos(turnosBase);
+    setShowProponerContrato(true);
+  };
+
   const handleProponerContrato = async () => {
     if (!proveedor || !empresaSeleccionada) return;
     setSavingContrato(true);
@@ -1113,15 +1139,10 @@ export default function PanelConcesionario() {
       toast.error("Marca el origen y destino en el mapa para contar viajes automáticamente");
       return;
     }
-    const { error } = await supabase.from("contratos_transporte").insert({
-      concesionario_id: proveedor.id,
-      empresa_id: empresaSeleccionada.id,
+    const payload: any = {
       tarifa_por_persona: contratoModeloCobro === "por_viaje" ? 0 : (parseFloat(contratoTarifa) || 15),
       frecuencia_corte: contratoFrecuencia,
       descripcion: contratoDescripcion || descAuto,
-      estado: "pendiente",
-      iniciado_por: "concesionario",
-      is_active: false,
       turnos: turnosSeleccionados,
       modelo_cobro: contratoModeloCobro,
       origen_lat: contratoOrigen?.lat ?? null,
@@ -1129,14 +1150,28 @@ export default function PanelConcesionario() {
       destino_lat: contratoDestino?.lat ?? null,
       destino_lng: contratoDestino?.lng ?? null,
       geocerca_radio_m: contratoRadio,
-    } as any);
+    };
+    let error;
+    if (contratoEditandoId) {
+      ({ error } = await supabase.from("contratos_transporte").update(payload).eq("id", contratoEditandoId));
+    } else {
+      ({ error } = await supabase.from("contratos_transporte").insert({
+        ...payload,
+        concesionario_id: proveedor.id,
+        empresa_id: empresaSeleccionada.id,
+        estado: "pendiente",
+        iniciado_por: "concesionario",
+        is_active: false,
+      } as any));
+    }
     setSavingContrato(false);
     if (error) {
-      toast.error("Error al proponer contrato: " + error.message);
+      toast.error("Error: " + error.message);
     } else {
-      toast.success("Propuesta de contrato enviada");
+      toast.success(contratoEditandoId ? "Contrato actualizado" : "Propuesta de contrato enviada");
       setShowProponerContrato(false);
       setEmpresaSeleccionada(null);
+      setContratoEditandoId(null);
       setContratoTarifa("15");
       setContratoDescripcion("");
       setContratoOrigen(null);
