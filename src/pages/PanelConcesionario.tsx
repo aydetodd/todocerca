@@ -2359,7 +2359,7 @@ export default function PanelConcesionario() {
               disabled={savingContrato || !contratoTurnos.some(t => t.selected)}
               className="w-full"
             >
-              {savingContrato ? "Enviando..." : "Enviar propuesta"}
+              {savingContrato ? "Guardando..." : (contratoEditandoId ? "Guardar cambios" : "Enviar propuesta")}
             </Button>
           </div>
         </DialogContent>
