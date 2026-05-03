@@ -2238,16 +2238,16 @@ export default function PanelConcesionario() {
       </div>
 
       {/* Dialog: Proponer contrato */}
-      <Dialog open={showProponerContrato} onOpenChange={setShowProponerContrato}>
-        <DialogContent>
+      <Dialog open={showProponerContrato} onOpenChange={(o) => { setShowProponerContrato(o); if (!o) setContratoEditandoId(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Handshake className="h-5 w-5" /> Proponer contrato
+              <Handshake className="h-5 w-5" /> {contratoEditandoId ? "Editar contrato" : "Proponer contrato"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Proponer contrato de transporte de personal a <strong>{empresaSeleccionada?.nombre}</strong>
+              {contratoEditandoId ? "Editando contrato con" : "Proponer contrato de transporte de personal a"} <strong>{empresaSeleccionada?.nombre}</strong>
             </p>
             <div>
               <label className="text-sm font-medium mb-1 block">Modelo de cobro</label>
