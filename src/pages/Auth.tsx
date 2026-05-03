@@ -389,6 +389,38 @@ const Auth = () => {
     setSkipAutoRedirect(false);
   };
 
+  // Web OTP API para auto-llenar el código (debe ir ANTES de cualquier early return)
+  useEffect(() => {
+    if (!showVerification) return;
+    if ('OTPCredential' in window) {
+      const abortController = new AbortController();
+      navigator.credentials.get({
+        // @ts-ignore - OTP credential type
+        otp: { transport: ['sms'] },
+        signal: abortController.signal,
+      }).then((otp: any) => {
+        if (otp?.code) {
+          console.log('📱 OTP auto-detected:', otp.code);
+          setVerificationCode(otp.code);
+          if (otp.code.length === 6) {
+            toast({ title: "Código detectado", description: "Verificando automáticamente..." });
+          }
+        }
+      }).catch((err) => {
+        console.log('OTP auto-detect not available:', err.name);
+      });
+      return () => abortController.abort();
+    }
+  }, [showVerification]);
+
+  // Auto-verificar cuando el código tiene 6 dígitos
+  useEffect(() => {
+    if (verificationCode.length === 6 && showVerification && !loading) {
+      handleVerifyCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verificationCode]);
+
   if (showPasswordRecovery) {
     return (
       <PasswordRecovery
@@ -439,45 +471,7 @@ const Auth = () => {
     }
   };
 
-  // Web OTP API para auto-llenar el código
-  useEffect(() => {
-    if (!showVerification) return;
 
-    // Verificar si el navegador soporta Web OTP API
-    if ('OTPCredential' in window) {
-      const abortController = new AbortController();
-      
-      navigator.credentials.get({
-        // @ts-ignore - OTP credential type
-        otp: { transport: ['sms'] },
-        signal: abortController.signal
-      }).then((otp: any) => {
-        if (otp?.code) {
-          console.log('📱 OTP auto-detected:', otp.code);
-          setVerificationCode(otp.code);
-          // Auto-verificar si tenemos 6 dígitos
-          if (otp.code.length === 6) {
-            toast({
-              title: "Código detectado",
-              description: "Verificando automáticamente...",
-            });
-          }
-        }
-      }).catch((err) => {
-        // Error silencioso - el usuario puede ingresar manualmente
-        console.log('OTP auto-detect not available:', err.name);
-      });
-
-      return () => abortController.abort();
-    }
-  }, [showVerification]);
-
-  // Auto-verificar cuando el código tiene 6 dígitos
-  useEffect(() => {
-    if (verificationCode.length === 6 && showVerification && !loading) {
-      handleVerifyCode();
-    }
-  }, [verificationCode]);
 
   const handleResendCode = async () => {
     setLoading(true);
