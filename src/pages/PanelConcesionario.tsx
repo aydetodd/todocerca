@@ -146,6 +146,7 @@ export default function PanelConcesionario() {
   const [contratoOrigen, setContratoOrigen] = useState<{ lat: number; lng: number } | null>(null);
   const [contratoDestino, setContratoDestino] = useState<{ lat: number; lng: number } | null>(null);
   const [contratoRadio, setContratoRadio] = useState<number>(150);
+  const [contratoEditandoId, setContratoEditandoId] = useState<string | null>(null);
 
   const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
     return new Promise((resolve, reject) => {
