@@ -69,7 +69,7 @@ async function parseKmz(file: File): Promise<ParsedTrace> {
   const entries = Object.values(zip.files).filter((f) => !f.dir);
   console.log('[routeTraceParser] KMZ contents:', entries.map((e) => e.name));
   // Prefer doc.kml at root, then any .kml
-  let kmlFile =
+  const kmlFile =
     entries.find((f) => /(^|\/)doc\.kml$/i.test(f.name)) ||
     entries.find((f) => f.name.toLowerCase().endsWith('.kml'));
   if (!kmlFile) throw new Error('El KMZ no contiene un archivo .kml interno');
