@@ -328,8 +328,8 @@ const Dashboard = () => {
 
       setProfile((prev: any) => ({ ...prev, role: 'proveedor', provider_type: null, route_name: null }));
       setUserSpecificData(proveedorData);
-      toast({ title: 'Concesionario registrado', description: 'Ya puedes registrar y suscribir tus unidades por $400 MXN al año.' });
-      navigate('/panel-concesionario');
+      toast({ title: 'Concesionario registrado', description: 'Elige el tipo de transporte (Pública, Foránea o Privada) para configurar tus rutas.' });
+      navigate('/mis-rutas');
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
