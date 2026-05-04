@@ -101,7 +101,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           if (f) handleFile(f);
         }}
       />
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <Button
           variant={hasTrace ? 'secondary' : 'outline'}
           size="sm"
@@ -119,21 +119,33 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           {hasTrace ? 'Reemplazar trazado' : 'Subir trazado'}
         </Button>
         {hasTrace && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive"
-            disabled={uploading}
-            onClick={() => setConfirmDelete(true)}
-            title="Quitar trazado"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          <>
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => navigate(`/mapa?producto=${productoId}`)}
+              title="Ver el trazado en el mapa"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Ver en mapa
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              disabled={uploading}
+              onClick={() => setConfirmDelete(true)}
+              title="Quitar trazado"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </>
         )}
       </div>
       {hasTrace && filename && (
-        <p className="text-[10px] text-muted-foreground mt-0.5 truncate ml-6">
-          📎 {filename}
+        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 truncate">
+          ✅ Trazado cargado: {filename}
         </p>
       )}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
