@@ -286,6 +286,17 @@ const Dashboard = () => {
       toast({ title: 'Error', description: 'Nombre y teléfono son obligatorios', variant: 'destructive' });
       return;
     }
+    // Validar teléfono: debe iniciar con prefijo país (+) y tener exactamente 10 dígitos nacionales para México
+    const tel = concesionarioForm.telefono.trim();
+    const nacional = tel.startsWith('+52') ? tel.slice(3).replace(/\D/g, '') : tel.replace(/\D/g, '');
+    if (tel.startsWith('+52') && nacional.length !== 10) {
+      toast({ title: 'Teléfono inválido', description: 'El teléfono debe tener exactamente 10 dígitos', variant: 'destructive' });
+      return;
+    }
+    if (nacional.length < 7) {
+      toast({ title: 'Teléfono inválido', description: 'Ingresa un teléfono válido con prefijo de país', variant: 'destructive' });
+      return;
+    }
 
     try {
       setRegistrandoConcesionario(true);
