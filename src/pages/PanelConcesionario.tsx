@@ -27,16 +27,7 @@ import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
-type Verificacion = {
-  id: string;
-  estado: string;
-  fecha_solicitud: string;
-  fecha_revision: string | null;
-  admin_notas: string | null;
-  total_unidades: number;
-  documentos?: Record<string, string[]> | null;
-  metodo_envio?: string | null;
-};
+// (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
 
 type Liquidacion = {
   id: string;
