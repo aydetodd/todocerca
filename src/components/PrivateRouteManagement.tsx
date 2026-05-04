@@ -658,21 +658,33 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           <CardContent className="space-y-3">
             {/* Subscription status */}
             {subscriptionStatus?.subscribed ? (
-              <div className="bg-muted/30 p-3 rounded-lg space-y-1">
+              <div className="bg-muted/30 p-3 rounded-lg space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">
-                    Suscripciones: {subscriptionStatus.quantity} · Registradas: {units.length}
-                  </p>
+                  <p className="text-sm font-medium">📦 Inventario de unidades</p>
                   <Badge variant="default">Activa</Badge>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Pagadas</p>
+                    <p className="text-lg font-bold text-foreground">{subscriptionStatus.quantity}</p>
+                  </div>
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Registradas</p>
+                    <p className="text-lg font-bold text-foreground">{units.length}</p>
+                  </div>
+                  <div className={`rounded p-2 ${availableSlots > 0 ? 'bg-primary/10' : 'bg-background'}`}>
+                    <p className="text-xs text-muted-foreground">Disponibles</p>
+                    <p className={`text-lg font-bold ${availableSlots > 0 ? 'text-primary' : 'text-foreground'}`}>{Math.max(0, availableSlots)}</p>
+                  </div>
                 </div>
                 {availableSlots > 0 && (
                   <p className="text-xs text-primary font-medium">
-                    ⚡ {availableSlots} unidad(es) pagadas sin registrar
+                    ⚡ Tienes {availableSlots} cupo(s) pagado(s) listos para registrar una unidad.
                   </p>
                 )}
                 {subscriptionStatus.subscription_end && (
                   <p className="text-xs text-muted-foreground">
-                    Vence: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
+                    Renovación: {new Date(subscriptionStatus.subscription_end).toLocaleDateString('es-MX')}
                   </p>
                 )}
               </div>
