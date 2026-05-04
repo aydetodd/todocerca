@@ -87,27 +87,9 @@ export default function MapView() {
     // If we have a token, fetch the private route info
     if (privateRouteToken) {
       const fetchPrivateRoute = async () => {
-        // Try reading the product directly (owner/chofer can read via RLS)
-        let { data: producto, error } = await supabase
-          .from('productos')
-          .select('id, nombre, proveedor_id, is_private, route_type, route_geojson, proveedores(user_id)')
-          .eq('invite_token', privateRouteToken)
-          .eq('is_private', true)
+        const { data: producto, error } = await (supabase as any)
+          .rpc('get_private_route_by_token', { _token: privateRouteToken })
           .maybeSingle();
-        
-        // If RLS blocks (passenger not yet invited), try via edge function
-        if (!producto) {
-          // Fallback: query without is_private filter to find any matching token
-          const { data: publicProduct } = await supabase
-            .from('productos')
-            .select('id, nombre, proveedor_id, route_type, route_geojson, proveedores(user_id)')
-            .eq('invite_token', privateRouteToken)
-            .maybeSingle();
-          
-          if (publicProduct) {
-            producto = { ...publicProduct, is_private: true } as any;
-          }
-        }
         
         if (!producto) {
           console.error('[MapView] Error fetching private route:', error);
@@ -119,7 +101,7 @@ export default function MapView() {
           return;
         }
         
-        setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
+        setPrivateRouteProviderId((producto as any).proveedor_user_id || null);
         setPrivateRouteName(producto.nombre);
         setPrivateRouteProductoId(producto.id);
         if ((producto as any).route_geojson) {
