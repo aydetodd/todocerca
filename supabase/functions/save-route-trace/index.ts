@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const { data: producto, error: productError } = await supabase
       .from("productos")
-      .select("id, nombre, proveedor_id, proveedores!inner(user_id)")
+      .select("id, nombre, proveedor_id, route_type, is_private, proveedores!inner(user_id)")
       .eq("id", productoId)
       .maybeSingle();
 
@@ -38,6 +38,9 @@ serve(async (req) => {
     if (!producto) throw new Error("No encontré esa ruta en la base de datos.");
     if ((producto.proveedores as { user_id?: string })?.user_id !== userData.user.id) {
       throw new Error("Esta ruta no pertenece a tu concesionario.");
+    }
+    if (producto.route_type !== "privada" && producto.is_private !== true) {
+      throw new Error("El trazado editable solo aplica para rutas privadas.");
     }
 
     const { error: updateError } = await supabase
