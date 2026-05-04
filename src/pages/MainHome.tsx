@@ -129,7 +129,8 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        {isConcesionario && (
+        {/* Panel Concesionario oculto temporalmente hasta terminar configuración de unidades */}
+        {false && isConcesionario && (
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
             onClick={() => navigate('/panel-concesionario')}
