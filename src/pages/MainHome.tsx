@@ -88,24 +88,6 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        {/* Panel Concesionario oculto temporalmente hasta terminar configuración de unidades */}
-        {false && isConcesionario && (
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
-            onClick={() => navigate('/panel-concesionario')}
-          >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="h-7 w-7 text-green-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Panel Concesionario</h3>
-                <p className="text-sm text-muted-foreground">Ingresos, liquidaciones y gestión</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {isEmpresaTransporte && (
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-orange-500/30"
