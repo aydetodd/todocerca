@@ -105,6 +105,16 @@ export function useProviderStatus() {
 
       if (error) throw error;
 
+      // Si el usuario pasa a OFFLINE, borrar su ubicación de los grupos de tracking
+      // para que su marcador desaparezca instantáneamente en los demás dispositivos
+      // (RLS permite que cada usuario elimine sus propias filas).
+      if (newStatus === 'offline') {
+        await supabase
+          .from('tracking_member_locations')
+          .delete()
+          .eq('user_id', userId);
+      }
+
       // Broadcast to ALL mounted instances immediately
       broadcastStatus(newStatus);
 
