@@ -576,6 +576,7 @@ export default function DriverProfilePanel() {
                         nombre: unitData.nombre,
                         descripcion: unitData.descripcion,
                         placas: unitData.placas,
+                        cobro_tipo: (unitData.cobro_tipo as 'por_viaje' | 'por_pasajero' | null) ?? null,
                       }
                     : null,
                 }
