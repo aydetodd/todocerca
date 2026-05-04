@@ -71,7 +71,7 @@ serve(async (req) => {
 
       const sessionConfig: any = {
         customer_email: user.email,
-        line_items: [{ price: priceId, quantity: 1 }],
+        line_items: [{ price: priceId, quantity }],
         mode: "subscription",
         success_url: successUrl,
         cancel_url: cancelUrl,
