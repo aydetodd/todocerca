@@ -1029,15 +1029,19 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 <Button
                   type="button"
                   variant={newUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                  className="justify-start gap-2"
                   onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_viaje' })}
                 >
+                  {newUnit.cobro_tipo === 'por_viaje' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   Por viaje
                 </Button>
                 <Button
                   type="button"
                   variant={newUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                  className="justify-start gap-2"
                   onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_pasajero' })}
                 >
+                  {newUnit.cobro_tipo === 'por_pasajero' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   Por pasajero
                 </Button>
               </div>
