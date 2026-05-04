@@ -35,12 +35,6 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {/* Panel chofer oculto temporalmente hasta terminar configuración */}
-        {/* <DriverProfilePanel /> */}
-        
-        {/* Protocolo 2: Taxi oculto - Viaje activo del pasajero */}
-        {/* <PassengerActiveTrip /> */}
-        
         {/* === Protocolo 1: Solo movilidad === */}
         {/* Protocolo 2: Taxi oculto */}
         {/* <Card 
