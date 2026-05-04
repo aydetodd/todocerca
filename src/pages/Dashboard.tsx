@@ -642,7 +642,7 @@ const Dashboard = () => {
                       <Label htmlFor="concesionario-nombre">Nombre del concesionario *</Label>
                       <Input
                         id="concesionario-nombre"
-                        placeholder="Ej: Transportes Villa"
+                        placeholder=""
                         value={concesionarioForm.nombre}
                         onChange={(e) => setConcesionarioForm(prev => ({ ...prev, nombre: e.target.value }))}
                       />
