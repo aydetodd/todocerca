@@ -450,7 +450,7 @@ export default function PanelConcesionario() {
     return () => { supabase.removeChannel(ch); };
   }, [proveedor?.id]);
 
-  // Realtime: refresh cuando admin aprueba/rechaza la verificación
+  
 
   async function fetchAll() {
     if (!user?.id) {
