@@ -869,7 +869,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               <div className="space-y-2">
                 {vehicles.map((vehicle) => (
                   <Card key={vehicle.id} className="border">
-                    <CardContent className="p-3">
+                    <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -879,6 +879,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           {vehicle.descripcion && (
                             <p className="text-xs text-muted-foreground mt-1 ml-6">
                               {vehicle.descripcion}
+                            </p>
+                          )}
+                          {transportType === 'privado' && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
+                            <p className="text-[11px] text-muted-foreground mt-1 ml-6">
+                              ✓ Inicio y final configurados (radio {vehicle.route_geofence_radius_m ?? 150} m)
                             </p>
                           )}
                         </div>
@@ -905,6 +910,49 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           </Button>
                         </div>
                       </div>
+
+                      {transportType === 'privado' && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-between"
+                            onClick={() => setEndpointsOpenFor(endpointsOpenFor === vehicle.id ? null : vehicle.id)}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Crosshair className="h-4 w-4" />
+                              {vehicle.route_origin_lat != null ? 'Editar inicio y final en el mapa' : 'Definir inicio y final en el mapa'}
+                            </span>
+                            {endpointsOpenFor === vehicle.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+
+                          {endpointsOpenFor === vehicle.id && (
+                            <div className="pt-2 border-t">
+                              <RouteEndpointsPicker
+                                productoId={vehicle.id}
+                                initial={{
+                                  origin: vehicle.route_origin_lat != null && vehicle.route_origin_lng != null
+                                    ? { lat: Number(vehicle.route_origin_lat), lng: Number(vehicle.route_origin_lng) } : null,
+                                  destination: vehicle.route_destination_lat != null && vehicle.route_destination_lng != null
+                                    ? { lat: Number(vehicle.route_destination_lat), lng: Number(vehicle.route_destination_lng) } : null,
+                                  radius: vehicle.route_geofence_radius_m ?? 150,
+                                }}
+                                onSaved={({ origin, destination, radius }) => {
+                                  setVehicles(prev => prev.map(v => v.id === vehicle.id ? {
+                                    ...v,
+                                    route_origin_lat: origin.lat,
+                                    route_origin_lng: origin.lng,
+                                    route_destination_lat: destination.lat,
+                                    route_destination_lng: destination.lng,
+                                    route_geofence_radius_m: radius,
+                                  } : v));
+                                }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
