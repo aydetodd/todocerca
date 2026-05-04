@@ -1,10 +1,11 @@
-import { useId, useState, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,35 +36,28 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    setLocalFilename(hasTrace ? filename || null : null);
+  }, [filename, hasTrace]);
+
   const saveTrace = async (fileName: string, geojson: any) => {
-    const payload = {
-      route_geojson: geojson,
-      route_trace_filename: fileName,
-      route_trace_updated_at: new Date().toISOString(),
-    } as any;
-
-    const direct = await supabase
-      .from('productos')
-      .update(payload)
-      .eq('id', productoId)
-      .select('id')
-      .maybeSingle();
-
-    if (!direct.error && direct.data?.id) return;
-
-    console.warn('[RouteTraceUploader] direct save failed, trying edge function:', direct.error?.message || 'sin filas actualizadas');
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session?.access_token) {
+      throw new Error('No hay sesión activa. Cierra y vuelve a iniciar sesión como concesionario.');
+    }
 
     const { data, error } = await supabase.functions.invoke('save-route-trace', {
+      headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
       body: { productoId, filename: fileName, geojson },
     });
 
     if (error) {
       const context = (error as { context?: Response }).context;
       const details = context ? await context.json().catch(() => null) : null;
-      throw new Error(details?.error || error.message || direct.error?.message || 'No se pudo guardar el trazado.');
+      throw new Error(details?.error || error.message || 'No se pudo guardar el trazado.');
     }
     if (!data?.success) {
-      throw new Error(data?.error || direct.error?.message || 'No se pudo guardar el trazado.');
+      throw new Error(data?.error || 'No se pudo guardar el trazado.');
     }
   };
 
@@ -127,28 +121,27 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
 
   return (
     <>
-      <input
-        id={inputId}
-        ref={inputRef}
-        type="file"
-        accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
-        className="sr-only"
-        disabled={uploading}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
       <div className="flex flex-wrap items-center gap-1">
-        <div className="relative inline-flex">
-          <Button
-            type="button"
-            variant={traceSaved ? 'secondary' : 'outline'}
-            size="sm"
+        <label
+          htmlFor={inputId}
+          className={cn(
+            buttonVariants({ variant: traceSaved ? 'secondary' : 'outline', size: 'sm' }),
+            uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+          )}
+          title="Subir trazado KML / KMZ / GPX / GeoJSON"
+        >
+          <input
+            id={inputId}
+            ref={inputRef}
+            type="file"
+            accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
+            className="sr-only"
             disabled={uploading}
-            className="pointer-events-none"
-            title="Subir trazado KML / KMZ / GPX / GeoJSON"
-          >
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+            }}
+          />
             {uploading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : traceSaved ? (
@@ -157,21 +150,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
               <Upload className="h-3 w-3 mr-1" />
             )}
             {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
-          </Button>
-          {!uploading && (
-            <input
-              aria-label="Subir trazado KML, KMZ, GPX o GeoJSON"
-              type="file"
-              accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-                e.currentTarget.value = '';
-              }}
-            />
-          )}
-        </div>
+        </label>
         {traceSaved && (
           <>
             <Button
