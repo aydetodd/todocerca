@@ -131,9 +131,15 @@ export function PhoneInput({
           className="flex-1 text-base font-semibold"
         />
       </div>
-      <p className="text-xs text-muted-foreground mt-1">
-        {selectedCountryData?.name}: {selectedCountryData?.digits} dígitos
-      </p>
+      {phoneNumber.length > 0 && phoneNumber.length < (selectedCountryData?.digits || 10) ? (
+        <p className="text-xs text-destructive mt-1">
+          {selectedCountryData?.name}: requiere {selectedCountryData?.digits} dígitos (llevas {phoneNumber.length})
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground mt-1">
+          {selectedCountryData?.name}: {selectedCountryData?.digits} dígitos
+        </p>
+      )}
     </div>
   );
 }
