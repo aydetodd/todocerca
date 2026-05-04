@@ -33,8 +33,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
 
   const handleFile = async (file: File) => {
     setUploading(true);
+    setLastError(null);
     try {
-      console.log('[RouteTraceUploader] file:', file.name, file.size);
+      console.log('[RouteTraceUploader] file:', file.name, file.size, file.type);
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('El archivo no debe pesar más de 10 MB');
       }
@@ -51,17 +52,19 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
         .select('id, route_trace_filename');
       if (error) throw error;
       if (!data || data.length === 0) {
-        throw new Error('No se pudo actualizar la ruta (permisos o ID). Verifica que seas el dueño.');
+        throw new Error('No se pudo guardar (RLS/permisos). Verifica que sea tu ruta.');
       }
       console.log('[RouteTraceUploader] update OK:', data);
       toast({
         title: '✅ Trazado guardado',
-        description: `${file.name} · ${parsed.lineCount} línea(s). Toca "Ver en mapa" para verlo.`,
+        description: `${file.name} · ${parsed.lineCount} línea(s).`,
       });
       onChanged?.();
     } catch (e: any) {
+      const msg = e?.message || String(e);
       console.error('[RouteTraceUploader] ERROR:', e);
-      toast({ title: 'Error al subir trazado', description: e.message || String(e), variant: 'destructive' });
+      setLastError(msg);
+      toast({ title: 'Error al subir trazado', description: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
