@@ -14,20 +14,36 @@ serve(async (req) => {
   try {
     const { phone } = await req.json();
     
-    if (!phone) {
-      throw new Error("Número de teléfono requerido");
+    if (!phone || typeof phone !== "string" || phone.length < 8 || phone.length > 20) {
+      throw new Error("Número de teléfono inválido");
     }
 
-    // Generar código de 6 dígitos
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    console.log("[SEND-RECOVERY-CODE] Generando código para:", phone);
-
-    // Guardar código en la base de datos
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Verificar que el teléfono existe en profiles antes de enviar SMS (evita abuso de SMS)
+    const normalized = phone.replace(/\D/g, "");
+    const { data: profileMatch } = await supabaseClient
+      .from("profiles")
+      .select("user_id")
+      .or(`telefono.eq.${phone},telefono.eq.${normalized},telefono.eq.+${normalized}`)
+      .limit(1)
+      .maybeSingle();
+
+    // Respuesta genérica para no permitir enumeración de números
+    if (!profileMatch) {
+      console.log("[SEND-RECOVERY-CODE] Phone not found, returning generic OK");
+      return new Response(
+        JSON.stringify({ success: true, message: "Si el número está registrado, recibirás un código." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Generar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("[SEND-RECOVERY-CODE] Generando código para teléfono registrado");
 
     const { error: dbError } = await supabaseClient
       .from("password_recovery_codes")
