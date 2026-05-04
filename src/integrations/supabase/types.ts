@@ -4048,6 +4048,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_chofer_by_invite_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          invite_token: string
+          is_active: boolean
+          nombre: string
+          proveedor_id: string
+          telefono: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -4102,6 +4113,26 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "sos_alerts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_tracking_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string | null
+          expires_at: string | null
+          group_id: string
+          id: string
+          invite_token: string | null
+          invited_by: string
+          nickname: string
+          phone_number: string | null
+          status: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tracking_invitations"
           isOneToOne: false
           isSetofReturn: true
         }
