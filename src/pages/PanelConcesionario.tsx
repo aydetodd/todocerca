@@ -412,7 +412,7 @@ export default function PanelConcesionario() {
         setSearchParams({}, { replace: true });
         // Wait briefly for Stripe webhook then refresh slots and open form
         setTimeout(() => {
-          refreshSlotCount().then(() => setShowAddUnit(true));
+          refreshSlotCount();
         }, 1500);
       } else if (slotParam === "cancelled") {
         toast.info("Compra de slot cancelada.");
