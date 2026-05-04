@@ -51,7 +51,11 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           geojson: parsed.geojson,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const context = (error as { context?: Response }).context;
+        const details = context ? await context.json().catch(() => null) : null;
+        throw new Error(details?.error || error.message);
+      }
       if (!data?.success) {
         throw new Error(data?.error || 'No se pudo guardar el trazado.');
       }
