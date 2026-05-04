@@ -1129,9 +1129,11 @@ export default function PanelConcesionario() {
                   <ClipboardList className="h-3 w-3 mr-1" /> Viajes
                 </TabsTrigger>
               )}
-              <TabsTrigger value="cobros" className="text-xs">
-                <DollarSign className="h-3 w-3 mr-1" /> Cobros
-              </TabsTrigger>
+              {mostrarCobros && (
+                <TabsTrigger value="cobros" className="text-xs">
+                  <DollarSign className="h-3 w-3 mr-1" /> Cobros
+                </TabsTrigger>
+              )}
               <TabsTrigger value="unidades" className="text-xs">
                 <Bus className="h-3 w-3 mr-1" /> Unidades
               </TabsTrigger>
