@@ -550,7 +550,7 @@ export default function PanelMaquiladora() {
             </div>
             <div>
               <Label>Email de contacto</Label>
-              <Input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="contacto@empresa.com" />
+              <Input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="" />
             </div>
             <div>
               <Label>Teléfono de contacto</Label>
