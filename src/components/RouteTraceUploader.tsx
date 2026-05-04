@@ -27,12 +27,14 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [localFilename, setLocalFilename] = useState<string | null>(filename || null);
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleFile = async (file: File) => {
+    setLocalFilename(file.name);
     setUploading(true);
     setLastError(null);
     try {
@@ -42,18 +44,20 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       }
       const parsed = await parseRouteTraceFile(file);
       console.log('[RouteTraceUploader] parsed lines:', parsed.lineCount, 'features:', parsed.geojson?.features?.length);
-      const { data, error } = await supabase
-        .from('productos')
-        .update({
-          route_geojson: parsed.geojson,
-          route_trace_filename: file.name,
-          route_trace_updated_at: new Date().toISOString(),
-        } as any)
-        .eq('id', productoId)
-        .select('id, route_trace_filename');
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error('No se pudo guardar (RLS/permisos). Verifica que sea tu ruta.');
+      const { data, error } = await supabase.functions.invoke('save-route-trace', {
+        body: {
+          productoId,
+          filename: file.name,
+          geojson: parsed.geojson,
+        },
+      });
+      if (error) {
+        const context = (error as { context?: Response }).context;
+        const details = context ? await context.json().catch(() => null) : null;
+        throw new Error(details?.error || error.message);
+      }
+      if (!data?.success) {
+        throw new Error(data?.error || 'No se pudo guardar el trazado.');
       }
       console.log('[RouteTraceUploader] update OK:', data);
       toast({
@@ -85,6 +89,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
         } as any)
         .eq('id', productoId);
       if (error) throw error;
+      setLocalFilename(null);
       toast({ title: 'Trazado eliminado' });
       onChanged?.();
     } catch (e: any) {
@@ -155,10 +160,10 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </>
         )}
       </div>
-      {hasTrace && filename && (
+      {(hasTrace || localFilename) && (
         <div className="mt-1 flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
           <FileCheck2 className="h-3 w-3 shrink-0" />
-          <span className="truncate">Trazado cargado: {filename}</span>
+          <span className="truncate">Trazado {hasTrace ? 'cargado' : 'seleccionado'}: {filename || localFilename}</span>
         </div>
       )}
       {lastError && (
