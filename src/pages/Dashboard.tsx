@@ -669,7 +669,7 @@ const Dashboard = () => {
                       <Label htmlFor="concesionario-descripcion">Descripción</Label>
                       <Textarea
                         id="concesionario-descripcion"
-                        placeholder="Servicio urbano, foráneo o privado"
+                        placeholder=""
                         value={concesionarioForm.descripcion}
                         onChange={(e) => setConcesionarioForm(prev => ({ ...prev, descripcion: e.target.value }))}
                         rows={2}
