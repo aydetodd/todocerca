@@ -256,25 +256,33 @@ export default function MapView() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: driver } = await supabase
+      const { data: drivers } = await supabase
         .from('choferes_empresa')
         .select('id')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
+        .eq('is_active', true);
 
-      if (!driver) return;
+      const driverIds = drivers?.map((driver) => driver.id) || [];
+      if (driverIds.length === 0) return;
 
       const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
-        .select('producto_id, productos(nombre)')
-        .eq('chofer_id', driver.id)
+        .select('producto_id, productos(nombre, route_geojson)')
+        .in('chofer_id', driverIds)
         .eq('fecha', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (assignment) {
         const routeName = (assignment.productos as any)?.nombre;
+        const routeGeoJSON = (assignment.productos as any)?.route_geojson;
+        if (routeGeoJSON) {
+          setActiveRouteGeoJSON(routeGeoJSON);
+          setActiveRouteOverlay(null);
+          return;
+        }
         const overlayId = routeNameToId(routeName);
         if (overlayId) {
           console.log(`[MapView] Auto-activating route overlay: ${overlayId} (from "${routeName}")`);
