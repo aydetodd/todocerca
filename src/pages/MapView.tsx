@@ -311,7 +311,7 @@ export default function MapView() {
 
     checkSubscription();
     checkDriverRoute();
-  }, [privateRouteToken, publicRouteProductoId, toast]);
+  }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
