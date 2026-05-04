@@ -79,7 +79,9 @@ async function parseKmz(file: File): Promise<ParsedTrace> {
 
 export async function parseRouteTraceFile(file: File): Promise<ParsedTrace> {
   const name = file.name.toLowerCase();
-  if (name.endsWith('.kmz')) return parseKmz(file);
+  const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  const looksLikeZip = header[0] === 0x50 && header[1] === 0x4b;
+  if (name.endsWith('.kmz') || looksLikeZip) return parseKmz(file);
   const text = await file.text();
   const looksLikeKml = /<\s*kml[\s>]/i.test(text) || /<\s*Document[\s>]/i.test(text);
   const looksLikeGpx = /<\s*gpx[\s>]/i.test(text);
