@@ -49,7 +49,6 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
-import PanelConcesionario from "./pages/PanelConcesionario";
 import PanelMaquiladora from "./pages/PanelMaquiladora";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
