@@ -1442,6 +1442,16 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     </Button>
                   </div>
                 )}
+                {(['urbana', 'foranea', 'privada'].includes((product as any).route_type)) && (
+                  <div className="mb-2">
+                    <RouteTraceUploader
+                      productoId={product.id}
+                      hasTrace={!!(product as any).route_geojson}
+                      filename={(product as any).route_trace_filename}
+                      onChanged={fetchProducts}
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-xs">
                   <span className={product.is_available ? 'text-green-600' : 'text-red-600'}>
                     {product.is_available ? '● Disponible' : '● No disponible'}
