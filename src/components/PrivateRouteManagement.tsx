@@ -872,6 +872,79 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         </Card>
       )}
 
+      {/* Dialog: ask how many unit slots to purchase */}
+      <Dialog open={isQuantityDialogOpen} onOpenChange={setIsQuantityDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              ¿Cuántas unidades vas a registrar?
+            </DialogTitle>
+            <DialogDescription>
+              Cada unidad cuesta <span className="font-bold text-primary">$400 MXN/año</span>. Paga por todas tus unidades en un solo cobro y luego registras los datos de cada una.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-12 w-12 text-2xl"
+                onClick={() => setSlotsToBuy((q) => Math.max(1, q - 1))}
+                disabled={slotsToBuy <= 1}
+              >
+                −
+              </Button>
+              <Input
+                type="number"
+                min={1}
+                max={500}
+                value={slotsToBuy}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  setSlotsToBuy(isNaN(v) ? 1 : Math.max(1, Math.min(500, v)));
+                }}
+                className="h-12 w-24 text-center text-2xl font-bold"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-12 w-12 text-2xl"
+                onClick={() => setSlotsToBuy((q) => Math.min(500, q + 1))}
+              >
+                +
+              </Button>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-4 text-center space-y-1">
+              <p className="text-xs text-muted-foreground">Total a pagar (anual)</p>
+              <p className="text-3xl font-bold text-primary">
+                ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {slotsToBuy} unidad{slotsToBuy > 1 ? 'es' : ''} × $400 MXN
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Después del pago tendrás <strong>{slotsToBuy}</strong> cupo{slotsToBuy > 1 ? 's' : ''} en tu inventario para ir registrando cada unidad (placas, número económico, etc.).
+            </p>
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={addingUnit}
+              onClick={() => handleBuySlots(slotsToBuy)}
+            >
+              {addingUnit ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirigiendo a Stripe...</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" /> Pagar ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN</>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog for adding a new unit */}
       <Dialog open={isUnitDialogOpen} onOpenChange={setIsUnitDialogOpen}>
         <DialogContent>
