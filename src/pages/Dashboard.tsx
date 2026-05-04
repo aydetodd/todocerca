@@ -29,7 +29,6 @@ import {
   Trash2,
 } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
-import PrivateRouteManagement from "@/components/PrivateRouteManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 import { OrdersManagement } from "@/components/OrdersManagement";
