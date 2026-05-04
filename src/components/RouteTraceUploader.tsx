@@ -121,28 +121,27 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
 
   return (
     <>
-      <input
-        id={inputId}
-        ref={inputRef}
-        type="file"
-        accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
-        className="sr-only"
-        disabled={uploading}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
       <div className="flex flex-wrap items-center gap-1">
-        <div className="relative inline-flex">
-          <Button
-            type="button"
-            variant={traceSaved ? 'secondary' : 'outline'}
-            size="sm"
+        <label
+          htmlFor={inputId}
+          className={cn(
+            buttonVariants({ variant: traceSaved ? 'secondary' : 'outline', size: 'sm' }),
+            uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+          )}
+          title="Subir trazado KML / KMZ / GPX / GeoJSON"
+        >
+          <input
+            id={inputId}
+            ref={inputRef}
+            type="file"
+            accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
+            className="sr-only"
             disabled={uploading}
-            className="pointer-events-none"
-            title="Subir trazado KML / KMZ / GPX / GeoJSON"
-          >
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+            }}
+          />
             {uploading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : traceSaved ? (
@@ -151,21 +150,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
               <Upload className="h-3 w-3 mr-1" />
             )}
             {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
-          </Button>
-          {!uploading && (
-            <input
-              aria-label="Subir trazado KML, KMZ, GPX o GeoJSON"
-              type="file"
-              accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-                e.currentTarget.value = '';
-              }}
-            />
-          )}
-        </div>
+        </label>
         {traceSaved && (
           <>
             <Button
