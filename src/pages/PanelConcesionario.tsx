@@ -1104,6 +1104,12 @@ export default function PanelConcesionario() {
           const soloPorViaje = contratosActivos.length > 0 &&
             contratosActivos.every((c: any) => c.modelo_cobro === "por_viaje");
 
+          // Stripe Connect (Cobros) solo aplica a transporte público o foráneo.
+          // Si el concesionario solo tiene unidades privadas (o ninguna), se oculta.
+          const mostrarCobros = unidades.some(
+            (u) => u.transport_type === "publico" || u.transport_type === "foraneo"
+          );
+
           return (
         <Tabs defaultValue={soloPorViaje ? "unidades" : "ingresos"} className="w-full">
           <div className="overflow-x-auto">
