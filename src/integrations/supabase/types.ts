@@ -4018,6 +4018,12 @@ export type Database = {
         Args: { p_contact_user_id: string; p_nickname?: string }
         Returns: boolean
       }
+      delete_private_route_trace: {
+        Args: { _producto_id: string }
+        Returns: {
+          id: string
+        }[]
+      }
       find_qr_ticket_by_short_code: {
         Args: { p_short_code: string }
         Returns: {
@@ -4106,6 +4112,16 @@ export type Database = {
           nivel2_nombre: string
           pais_id: string
           pais_nombre: string
+        }[]
+      }
+      get_private_route_by_token: {
+        Args: { _token: string }
+        Returns: {
+          id: string
+          nombre: string
+          proveedor_user_id: string
+          route_geojson: Json
+          route_type: string
         }[]
       }
       get_sos_by_token: {
@@ -4218,6 +4234,12 @@ export type Database = {
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
+      }
+      save_private_route_trace: {
+        Args: { _filename: string; _geojson: Json; _producto_id: string }
+        Returns: {
+          id: string
+        }[]
       }
     }
     Enums: {
