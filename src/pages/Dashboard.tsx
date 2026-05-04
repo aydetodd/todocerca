@@ -449,8 +449,8 @@ const Dashboard = () => {
             ¡Bienvenido, {profile?.nombre}!
           </h2>
           <p className="text-muted-foreground">
-            {isProvider
-              ? "Gestiona tu negocio desde el panel"
+              {isProvider
+              ? "Configura tus rutas y unidades de transporte"
               : "Gestiona tu cuenta y tus herramientas"}
           </p>
         </div>
@@ -628,11 +628,8 @@ const Dashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <Button onClick={() => navigate('/panel-concesionario')} className="w-full">
+                    <Button onClick={() => navigate('/mis-rutas')} className="w-full">
                       <Bus className="h-4 w-4 mr-2" />
-                      Abrir Panel Concesionario
-                    </Button>
-                    <Button onClick={() => navigate('/mis-rutas')} variant="outline" className="w-full">
                       Gestión de Rutas
                     </Button>
                   </CardContent>
