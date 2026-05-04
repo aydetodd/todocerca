@@ -11,7 +11,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image, Link, Copy } from 'lucide-react';
-import RouteTraceUploader from './RouteTraceUploader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA, getPaisPorCodigo } from '@/data/paises-hispanoamerica';
@@ -1440,16 +1439,6 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                       <Link className="h-3 w-3 mr-1" />
                       Copiar enlace de invitación
                     </Button>
-                  </div>
-                )}
-                {((product as any).route_type === 'privada' || (product as any).is_private) && (
-                  <div className="mb-2">
-                    <RouteTraceUploader
-                      productoId={product.id}
-                      hasTrace={!!(product as any).route_geojson}
-                      filename={(product as any).route_trace_filename}
-                      onChanged={fetchProducts}
-                    />
                   </div>
                 )}
                 <div className="flex items-center justify-between text-xs">
