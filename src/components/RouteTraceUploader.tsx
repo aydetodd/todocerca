@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CheckCircle2, Trash2, Eye } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
@@ -71,6 +71,10 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
     }
   };
 
+  const handleSelectFile = () => {
+    inputRef.current?.click();
+  };
+
   const handleRemove = async () => {
     setConfirmDelete(false);
     setUploading(true);
@@ -107,10 +111,15 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       />
       <div className="flex flex-wrap items-center gap-1">
         <Button
+          type="button"
           variant={hasTrace ? 'secondary' : 'outline'}
           size="sm"
           disabled={uploading}
-          onClick={() => inputRef.current?.click()}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            handleSelectFile();
+          }}
+          onClick={handleSelectFile}
           title="Subir trazado KML / KMZ / GPX / GeoJSON"
         >
           {uploading ? (
@@ -125,9 +134,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
         {hasTrace && (
           <>
             <Button
+              type="button"
               variant="default"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => navigate(`/mapa?producto=${productoId}`)}
               title="Ver el trazado en el mapa"
             >
@@ -135,6 +144,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
               Ver en mapa
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive"
@@ -148,9 +158,10 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
         )}
       </div>
       {hasTrace && filename && (
-        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 truncate">
-          ✅ Trazado cargado: {filename}
-        </p>
+        <div className="mt-1 flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
+          <FileCheck2 className="h-3 w-3 shrink-0" />
+          <span className="truncate">Trazado cargado: {filename}</span>
+        </div>
       )}
       {lastError && (
         <p className="text-[10px] text-destructive mt-1 break-words">
