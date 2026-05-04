@@ -41,24 +41,38 @@ function ensureLineString(fc: any): ParsedTrace {
   return { geojson: fc, lineCount: lines.length, pointCount };
 }
 
-async function parseKmlString(text: string): Promise<ParsedTrace> {
+function parseXmlOrThrow(text: string): Document {
   const dom = new DOMParser().parseFromString(text, 'text/xml');
+  const err = dom.getElementsByTagName('parsererror')[0];
+  if (err) {
+    console.error('[routeTraceParser] XML parse error:', err.textContent);
+    throw new Error('XML inválido dentro del archivo');
+  }
+  return dom;
+}
+
+async function parseKmlString(text: string): Promise<ParsedTrace> {
+  const dom = parseXmlOrThrow(text);
   const fc = kml(dom);
+  console.log('[routeTraceParser] KML features:', fc?.features?.length);
   return ensureLineString(fc);
 }
 
 async function parseGpxString(text: string): Promise<ParsedTrace> {
-  const dom = new DOMParser().parseFromString(text, 'text/xml');
+  const dom = parseXmlOrThrow(text);
   const fc = gpx(dom);
   return ensureLineString(fc);
 }
 
 async function parseKmz(file: File): Promise<ParsedTrace> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const kmlFile = Object.values(zip.files).find((f) =>
-    f.name.toLowerCase().endsWith('.kml')
-  );
-  if (!kmlFile) throw new Error('El KMZ no contiene archivo .kml');
+  const entries = Object.values(zip.files).filter((f) => !f.dir);
+  console.log('[routeTraceParser] KMZ contents:', entries.map((e) => e.name));
+  // Prefer doc.kml at root, then any .kml
+  let kmlFile =
+    entries.find((f) => /(^|\/)doc\.kml$/i.test(f.name)) ||
+    entries.find((f) => f.name.toLowerCase().endsWith('.kml'));
+  if (!kmlFile) throw new Error('El KMZ no contiene un archivo .kml interno');
   const text = await kmlFile.async('text');
   return parseKmlString(text);
 }
