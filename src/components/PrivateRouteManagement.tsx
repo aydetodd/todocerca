@@ -84,9 +84,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
   const [showDrivers, setShowDrivers] = useState(false);
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
-  const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '' });
+  const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
-  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '' });
+  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
   
   // Geography & route catalog state for public/foraneo routes
