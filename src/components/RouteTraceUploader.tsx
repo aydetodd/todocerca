@@ -98,7 +98,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       <input
         ref={inputRef}
         type="file"
-        accept=".kml,.kmz,.gpx,.geojson,.json"
+        accept="*/*"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
