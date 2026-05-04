@@ -46,10 +46,11 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email: user.email });
 
-    const { action, transportType, uiTransportType, returnTo } = await req.json().catch(() => ({ action: 'add', transportType: 'privada', uiTransportType: 'privado' }));
+    const { action, transportType, uiTransportType, returnTo, quantity: qtyRaw } = await req.json().catch(() => ({ action: 'add', transportType: 'privada', uiTransportType: 'privado' }));
     const routeType = transportType || 'privada';
     const priceId = ROUTE_PRICE_IDS[routeType] || ROUTE_PRICE_IDS.privada;
-    logStep("Action requested", { action, routeType, priceId, returnTo });
+    const quantity = Math.max(1, Math.min(500, parseInt(String(qtyRaw ?? 1), 10) || 1));
+    logStep("Action requested", { action, routeType, priceId, returnTo, quantity });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
