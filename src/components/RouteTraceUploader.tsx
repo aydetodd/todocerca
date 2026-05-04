@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CheckCircle2, Trash2 } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
