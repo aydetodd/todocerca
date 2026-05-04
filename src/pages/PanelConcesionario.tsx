@@ -66,6 +66,7 @@ type UnidadDetalle = {
   linea: string | null;
   descripcion: string | null;
   estado_verificacion: string | null;
+  transport_type: string | null;
 };
 
 type IngresoUnidad = {
@@ -510,7 +511,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type")
             .eq("proveedor_id", prov.id)
             .neq("transport_type", "taxi"),
           8000, "unidades empresa");
@@ -525,6 +526,7 @@ export default function PanelConcesionario() {
             linea: null,
             descripcion: u.descripcion || null,
             estado_verificacion: null,
+            transport_type: u.transport_type || null,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
@@ -1102,6 +1104,12 @@ export default function PanelConcesionario() {
           const soloPorViaje = contratosActivos.length > 0 &&
             contratosActivos.every((c: any) => c.modelo_cobro === "por_viaje");
 
+          // Stripe Connect (Cobros) solo aplica a transporte público o foráneo.
+          // Si el concesionario solo tiene unidades privadas (o ninguna), se oculta.
+          const mostrarCobros = unidades.some(
+            (u) => u.transport_type === "publico" || u.transport_type === "foraneo"
+          );
+
           return (
         <Tabs defaultValue={soloPorViaje ? "unidades" : "ingresos"} className="w-full">
           <div className="overflow-x-auto">
@@ -1121,9 +1129,11 @@ export default function PanelConcesionario() {
                   <ClipboardList className="h-3 w-3 mr-1" /> Viajes
                 </TabsTrigger>
               )}
-              <TabsTrigger value="cobros" className="text-xs">
-                <DollarSign className="h-3 w-3 mr-1" /> Cobros
-              </TabsTrigger>
+              {mostrarCobros && (
+                <TabsTrigger value="cobros" className="text-xs">
+                  <DollarSign className="h-3 w-3 mr-1" /> Cobros
+                </TabsTrigger>
+              )}
               <TabsTrigger value="unidades" className="text-xs">
                 <Bus className="h-3 w-3 mr-1" /> Unidades
               </TabsTrigger>
@@ -1255,7 +1265,8 @@ export default function PanelConcesionario() {
             </Card>
           </TabsContent>
 
-          {/* VERIFICACIÓN */}
+          {/* COBROS — Stripe Connect (solo público/foráneo) */}
+          {mostrarCobros && (
           <TabsContent value="cobros" className="space-y-4 mt-4">
             {/* Stripe Connect — sin requisito de verificación */}
             <Card>
@@ -1357,6 +1368,7 @@ export default function PanelConcesionario() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* UNIDADES (solo lectura — registro y suscripción se hacen en "Mis Rutas de Transporte") */}
           <TabsContent value="unidades" className="space-y-3 mt-4">
