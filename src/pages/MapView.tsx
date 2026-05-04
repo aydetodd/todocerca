@@ -41,6 +41,11 @@ export default function MapView() {
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
 
+  const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
+    const features = routes.flatMap((route) => route.route_geojson?.features || []);
+    return features.length > 0 ? { type: 'FeatureCollection', features } : null;
+  };
+
   // Route polyline overlay on the map (catalog OR concessionaire-uploaded)
   useRouteOverlay(leafletMapRef, activeRouteOverlay, activeRouteGeoJSON);
 
@@ -146,6 +151,19 @@ export default function MapView() {
           .single();
 
         if (proveedor) {
+          if (fleetMode) {
+            const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
+            const { data: tracedRoutes } = await supabase
+              .from('productos')
+              .select('route_geojson')
+              .eq('proveedor_id', proveedor.id)
+              .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada')
+              .not('route_geojson', 'is', null);
+
+            setActiveRouteGeoJSON(mergeRouteTraces((tracedRoutes || []) as Array<{ route_geojson: { features?: unknown[] } | null }>));
+            setActiveRouteOverlay(null);
+          }
+
           const { data: privateRoutes, count } = await supabase
             .from('productos')
             .select('id', { count: 'exact' })
