@@ -403,7 +403,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           nombre: editUnit.nombre.trim(),
           placas: editUnit.placas.trim() || null,
           descripcion: editUnit.descripcion.trim() || null,
-        })
+          cobro_tipo: editUnit.cobro_tipo || null,
+        } as any)
         .eq('id', unitId);
 
       if (error) throw error;
