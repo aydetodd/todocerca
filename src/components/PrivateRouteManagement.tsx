@@ -753,7 +753,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               className="h-8 w-8"
                               onClick={() => {
                                 setEditingUnitId(unit.id);
-                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '', descripcion: unit.descripcion || '' });
+                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '', descripcion: unit.descripcion || '', cobro_tipo: ((unit as any).cobro_tipo as any) || '' });
                               }}
                             >
                               <Pencil className="h-3 w-3" />
