@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Car, BarChart3, Ticket, Building2 } from 'lucide-react';
-
-import PassengerActiveTrip from '@/components/PassengerActiveTrip';
-import { SOSButton } from '@/components/SOSButton';
-import DriverProfilePanel from '@/components/DriverProfilePanel';
+import { Bus, Ticket, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -12,48 +8,12 @@ import { useState, useEffect } from 'react';
 export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isConcesionario, setIsConcesionario] = useState(false);
   const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      console.log('[MainHome] No user, skipping concesionario check');
       return;
     }
-    const checkConcesionario = async () => {
-      try {
-        console.log('[MainHome] Checking concesionario for user:', user.id);
-        const { data: prov, error: provError } = await supabase
-          .from('proveedores')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (provError) {
-          console.error('[MainHome] Error checking proveedor:', provError);
-          return;
-        }
-        
-        if (prov) {
-          const { count, error: unitError } = await supabase
-            .from('unidades_empresa')
-            .select('*', { count: 'exact', head: true })
-            .eq('proveedor_id', prov.id);
-          
-          if (unitError) {
-            console.error('[MainHome] Error checking unidades:', unitError);
-            return;
-          }
-          
-          console.log('[MainHome] Concesionario units count:', count);
-          setIsConcesionario((count ?? 0) > 0);
-        } else {
-          console.log('[MainHome] User is not a proveedor');
-        }
-      } catch (err) {
-        console.error('[MainHome] Concesionario check failed:', err);
-      }
-    };
     const checkEmpresaTransporte = async () => {
       const { count } = await supabase
         .from('empresas_transporte')
@@ -62,7 +22,6 @@ export default function MainHome() {
         .eq('is_active', true);
       setIsEmpresaTransporte((count ?? 0) > 0);
     };
-    checkConcesionario();
     checkEmpresaTransporte();
   }, [user]);
 
