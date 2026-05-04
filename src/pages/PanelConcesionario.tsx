@@ -66,6 +66,7 @@ type UnidadDetalle = {
   linea: string | null;
   descripcion: string | null;
   estado_verificacion: string | null;
+  transport_type: string | null;
 };
 
 type IngresoUnidad = {
