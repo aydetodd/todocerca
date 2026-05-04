@@ -1219,11 +1219,6 @@ export default function PanelConcesionario() {
               {proveedor?.nombre || "Gestión de transporte"}
             </p>
           </div>
-          {verificacion && (
-            <Badge className={estadoVerifColor(verificacion.estado)}>
-              {estadoVerifLabel(verificacion.estado)}
-            </Badge>
-          )}
         </div>
       </div>
 
