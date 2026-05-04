@@ -746,23 +746,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               type="button"
                               size="sm"
                               variant={editUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
-                              className="h-7 text-xs"
+                              className="h-9 text-xs justify-start gap-2"
                               onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_viaje' })}
                             >
+                              {editUnit.cobro_tipo === 'por_viaje' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                               Por viaje
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               variant={editUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
-                              className="h-7 text-xs"
+                              className="h-9 text-xs justify-start gap-2"
                               onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_pasajero' })}
                             >
+                              {editUnit.cobro_tipo === 'por_pasajero' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                               Por pasajero
                             </Button>
                           </div>
                           <div className="flex gap-1">
-                            <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleSaveUnit(unit.id)}>
+                            <Button size="sm" variant="default" className="h-7 text-xs" disabled={!editUnit.cobro_tipo} onClick={() => handleSaveUnit(unit.id)}>
                               Guardar
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingUnitId(null)}>
@@ -773,10 +775,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                       ) : (
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Bus className="h-4 w-4 text-amber-500 shrink-0" />
                               <h4 className="font-semibold text-sm">{formatUnitLabel(unit)}</h4>
                             </div>
+                            <Badge variant={unit.cobro_tipo ? 'secondary' : 'destructive'} className="mt-2 text-[11px]">
+                              {formatCobroTipo(unit.cobro_tipo)}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
