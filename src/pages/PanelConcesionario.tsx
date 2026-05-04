@@ -84,7 +84,7 @@ export default function PanelConcesionario() {
   const activeFetchIdRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [proveedor, setProveedor] = useState<any>(null);
-  const [verificacion, setVerificacion] = useState<Verificacion | null>(null);
+  
   const [unidades, setUnidades] = useState<UnidadDetalle[]>([]);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
