@@ -28,13 +28,46 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [localFilename, setLocalFilename] = useState<string | null>(filename || null);
+  const traceSaved = hasTrace || !!localFilename;
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const saveTrace = async (fileName: string, geojson: any) => {
+    const payload = {
+      route_geojson: geojson,
+      route_trace_filename: fileName,
+      route_trace_updated_at: new Date().toISOString(),
+    } as any;
+
+    const direct = await supabase
+      .from('productos')
+      .update(payload)
+      .eq('id', productoId)
+      .select('id')
+      .maybeSingle();
+
+    if (!direct.error && direct.data?.id) return;
+
+    console.warn('[RouteTraceUploader] direct save failed, trying edge function:', direct.error?.message || 'sin filas actualizadas');
+
+    const { data, error } = await supabase.functions.invoke('save-route-trace', {
+      body: { productoId, filename: fileName, geojson },
+    });
+
+    if (error) {
+      const context = (error as { context?: Response }).context;
+      const details = context ? await context.json().catch(() => null) : null;
+      throw new Error(details?.error || error.message || direct.error?.message || 'No se pudo guardar el trazado.');
+    }
+    if (!data?.success) {
+      throw new Error(data?.error || direct.error?.message || 'No se pudo guardar el trazado.');
+    }
+  };
+
   const handleFile = async (file: File) => {
-    setLocalFilename(file.name);
+    setLocalFilename(null);
     setUploading(true);
     setLastError(null);
     try {
@@ -44,22 +77,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       }
       const parsed = await parseRouteTraceFile(file);
       console.log('[RouteTraceUploader] parsed lines:', parsed.lineCount, 'features:', parsed.geojson?.features?.length);
-      const { data, error } = await supabase.functions.invoke('save-route-trace', {
-        body: {
-          productoId,
-          filename: file.name,
-          geojson: parsed.geojson,
-        },
-      });
-      if (error) {
-        const context = (error as { context?: Response }).context;
-        const details = context ? await context.json().catch(() => null) : null;
-        throw new Error(details?.error || error.message);
-      }
-      if (!data?.success) {
-        throw new Error(data?.error || 'No se pudo guardar el trazado.');
-      }
-      console.log('[RouteTraceUploader] update OK:', data);
+      await saveTrace(file.name, parsed.geojson);
+      setLocalFilename(file.name);
+      console.log('[RouteTraceUploader] update OK');
       toast({
         title: '✅ Trazado guardado',
         description: `${file.name} · ${parsed.lineCount} línea(s).`,
@@ -126,15 +146,15 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           >
             {uploading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
-            ) : hasTrace ? (
+            ) : traceSaved ? (
               <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
             ) : (
               <Upload className="h-3 w-3 mr-1" />
             )}
-            {uploading ? 'Procesando...' : hasTrace ? 'Reemplazar trazado' : 'Subir trazado'}
+            {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
           </label>
         </Button>
-        {hasTrace && (
+        {traceSaved && (
           <>
             <Button
               type="button"
@@ -160,10 +180,10 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </>
         )}
       </div>
-      {(hasTrace || localFilename) && (
+      {traceSaved && (
         <div className="mt-1 flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
           <FileCheck2 className="h-3 w-3 shrink-0" />
-          <span className="truncate">Trazado {hasTrace ? 'cargado' : 'seleccionado'}: {filename || localFilename}</span>
+          <span className="truncate">Trazado cargado: {filename || localFilename}</span>
         </div>
       )}
       {lastError && (

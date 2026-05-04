@@ -41,6 +41,11 @@ export default function MapView() {
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
 
+  const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
+    const features = routes.flatMap((route) => route.route_geojson?.features || []);
+    return features.length > 0 ? { type: 'FeatureCollection', features } : null;
+  };
+
   // Route polyline overlay on the map (catalog OR concessionaire-uploaded)
   useRouteOverlay(leafletMapRef, activeRouteOverlay, activeRouteGeoJSON);
 
@@ -146,6 +151,19 @@ export default function MapView() {
           .single();
 
         if (proveedor) {
+          if (fleetMode) {
+            const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
+            const { data: tracedRoutes } = await supabase
+              .from('productos')
+              .select('route_geojson')
+              .eq('proveedor_id', proveedor.id)
+              .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada')
+              .not('route_geojson', 'is', null);
+
+            setActiveRouteGeoJSON(mergeRouteTraces((tracedRoutes || []) as Array<{ route_geojson: { features?: unknown[] } | null }>));
+            setActiveRouteOverlay(null);
+          }
+
           const { data: privateRoutes, count } = await supabase
             .from('productos')
             .select('id', { count: 'exact' })
@@ -256,25 +274,33 @@ export default function MapView() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: driver } = await supabase
+      const { data: drivers } = await supabase
         .from('choferes_empresa')
         .select('id')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
+        .eq('is_active', true);
 
-      if (!driver) return;
+      const driverIds = drivers?.map((driver) => driver.id) || [];
+      if (driverIds.length === 0) return;
 
       const today = getHermosilloToday();
       const { data: assignment } = await supabase
         .from('asignaciones_chofer')
-        .select('producto_id, productos(nombre)')
-        .eq('chofer_id', driver.id)
+        .select('producto_id, productos(nombre, route_geojson)')
+        .in('chofer_id', driverIds)
         .eq('fecha', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (assignment) {
         const routeName = (assignment.productos as any)?.nombre;
+        const routeGeoJSON = (assignment.productos as any)?.route_geojson;
+        if (routeGeoJSON) {
+          setActiveRouteGeoJSON(routeGeoJSON);
+          setActiveRouteOverlay(null);
+          return;
+        }
         const overlayId = routeNameToId(routeName);
         if (overlayId) {
           console.log(`[MapView] Auto-activating route overlay: ${overlayId} (from "${routeName}")`);
@@ -285,7 +311,7 @@ export default function MapView() {
 
     checkSubscription();
     checkDriverRoute();
-  }, [privateRouteToken, publicRouteProductoId, toast]);
+  }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
