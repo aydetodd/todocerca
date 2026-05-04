@@ -286,6 +286,17 @@ const Dashboard = () => {
       toast({ title: 'Error', description: 'Nombre y teléfono son obligatorios', variant: 'destructive' });
       return;
     }
+    // Validar teléfono: debe iniciar con prefijo país (+) y tener exactamente 10 dígitos nacionales para México
+    const tel = concesionarioForm.telefono.trim();
+    const nacional = tel.startsWith('+52') ? tel.slice(3).replace(/\D/g, '') : tel.replace(/\D/g, '');
+    if (tel.startsWith('+52') && nacional.length !== 10) {
+      toast({ title: 'Teléfono inválido', description: 'El teléfono debe tener exactamente 10 dígitos', variant: 'destructive' });
+      return;
+    }
+    if (nacional.length < 7) {
+      toast({ title: 'Teléfono inválido', description: 'Ingresa un teléfono válido con prefijo de país', variant: 'destructive' });
+      return;
+    }
 
     try {
       setRegistrandoConcesionario(true);
@@ -642,7 +653,7 @@ const Dashboard = () => {
                       <Label htmlFor="concesionario-nombre">Nombre del concesionario *</Label>
                       <Input
                         id="concesionario-nombre"
-                        placeholder="Ej: Transportes Villa"
+                        placeholder=""
                         value={concesionarioForm.nombre}
                         onChange={(e) => setConcesionarioForm(prev => ({ ...prev, nombre: e.target.value }))}
                       />
@@ -660,7 +671,7 @@ const Dashboard = () => {
                       <Label htmlFor="concesionario-direccion">Dirección</Label>
                       <Input
                         id="concesionario-direccion"
-                        placeholder="Base, oficina o domicilio fiscal"
+                        placeholder=""
                         value={concesionarioForm.direccion}
                         onChange={(e) => setConcesionarioForm(prev => ({ ...prev, direccion: e.target.value }))}
                       />
@@ -669,7 +680,7 @@ const Dashboard = () => {
                       <Label htmlFor="concesionario-descripcion">Descripción</Label>
                       <Textarea
                         id="concesionario-descripcion"
-                        placeholder="Servicio urbano, foráneo o privado"
+                        placeholder=""
                         value={concesionarioForm.descripcion}
                         onChange={(e) => setConcesionarioForm(prev => ({ ...prev, descripcion: e.target.value }))}
                         rows={2}
