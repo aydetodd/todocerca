@@ -954,7 +954,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               Agregar Unidad
             </DialogTitle>
             <DialogDescription>
-              Tienes {availableSlots} slot(s) disponible(s). Registra los datos de tu unidad.
+              Tienes {availableSlots} cupo(s) disponible(s) en tu inventario. Registra los datos de esta unidad.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
