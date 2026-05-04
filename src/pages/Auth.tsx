@@ -244,8 +244,8 @@ const Auth = () => {
         // Check provider registration
         try {
           setSkipAutoRedirect(true);
-          const role = data.user?.user_metadata?.role;
-          const userId = data.user?.id;
+          const role = loginData?.user?.user_metadata?.role || currentUser?.user_metadata?.role;
+          const userId = loginData?.user?.id || currentUser?.id;
           if (role === 'proveedor' && userId) {
             const { data: existingProvider } = await supabase
               .from('proveedores')
