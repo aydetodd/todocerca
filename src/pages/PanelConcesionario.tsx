@@ -24,20 +24,10 @@ import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
-import VerificationDocsUploader from "@/components/VerificationDocsUploader";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
-type Verificacion = {
-  id: string;
-  estado: string;
-  fecha_solicitud: string;
-  fecha_revision: string | null;
-  admin_notas: string | null;
-  total_unidades: number;
-  documentos?: Record<string, string[]> | null;
-  metodo_envio?: string | null;
-};
+// (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
 
 type Liquidacion = {
   id: string;
@@ -94,7 +84,7 @@ export default function PanelConcesionario() {
   const activeFetchIdRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [proveedor, setProveedor] = useState<any>(null);
-  const [verificacion, setVerificacion] = useState<Verificacion | null>(null);
+  
   const [unidades, setUnidades] = useState<UnidadDetalle[]>([]);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
@@ -114,10 +104,7 @@ export default function PanelConcesionario() {
   const [unidadTickets, setUnidadTickets] = useState<{ short_code: string; time: string }[]>([]);
   const [loadingUnidadTickets, setLoadingUnidadTickets] = useState(false);
   
-  // Unit registration form
-  const [showAddUnit, setShowAddUnit] = useState(false);
-  const [newUnit, setNewUnit] = useState({ numero_economico: "", placas: "", modelo: "", linea: "" });
-  const [savingUnit, setSavingUnit] = useState(false);
+  
   const [slotsQuantity, setSlotsQuantity] = useState<number>(0);
   const [buyingSlot, setBuyingSlot] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -425,7 +412,7 @@ export default function PanelConcesionario() {
         setSearchParams({}, { replace: true });
         // Wait briefly for Stripe webhook then refresh slots and open form
         setTimeout(() => {
-          refreshSlotCount().then(() => setShowAddUnit(true));
+          refreshSlotCount();
         }, 1500);
       } else if (slotParam === "cancelled") {
         toast.info("Compra de slot cancelada.");
@@ -451,28 +438,7 @@ export default function PanelConcesionario() {
     return () => { supabase.removeChannel(ch); };
   }, [proveedor?.id]);
 
-  // Realtime: refresh cuando admin aprueba/rechaza la verificación
-  useEffect(() => {
-    if (!proveedor?.id) return;
-    const ch = supabase
-      .channel("verificacion-concesionario-" + proveedor.id)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "verificaciones_concesionario",
-        filter: `concesionario_id=eq.${proveedor.id}`,
-      }, (payload: any) => {
-        const newEstado = payload?.new?.estado;
-        const oldEstado = payload?.old?.estado;
-        if (newEstado && newEstado !== oldEstado) {
-          if (newEstado === "approved") toast.success("✅ Tu verificación fue aprobada");
-          else if (newEstado === "rejected") toast.error("❌ Tu verificación fue rechazada");
-        }
-        fetchAll();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [proveedor?.id]);
+  
 
   async function fetchAll() {
     if (!user?.id) {
@@ -522,29 +488,23 @@ export default function PanelConcesionario() {
 
     // Fetch core data in parallel — independent error handling, never throws
     try {
-      const [verifResult, cuentaResult] = await Promise.allSettled([
-        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("created_at", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
-        withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
-      ]);
-
-      verifData = verifResult.status === "fulfilled" ? (verifResult.value as any)?.data : null;
-      cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any)?.data : null;
-
-      if (verifResult.status === "rejected") console.error("[PanelConcesionario] verificación falló:", verifResult.reason);
-      if (cuentaResult.status === "rejected") console.error("[PanelConcesionario] cuenta conectada falló:", cuentaResult.reason);
+      const cuentaResult = await withTimeout(
+        supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(),
+        8000,
+        "cuenta conectada"
+      );
+      cuentaData = (cuentaResult as any)?.data ?? null;
     } catch (e: any) {
-      console.error("[PanelConcesionario] Error cargando verificación/cuenta:", e?.message);
+      console.error("[PanelConcesionario] Error cargando cuenta conectada:", e?.message);
     }
 
     try {
       if (!isCurrentFetch()) return;
 
-      if (verifData) setVerificacion(verifData as any);
       if (cuentaData) {
         setCuentaConectada(cuentaData);
         setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
       }
-
 
       // Load unidades from unidades_empresa (the actual registered units)
       try {
@@ -555,28 +515,8 @@ export default function PanelConcesionario() {
             .neq("transport_type", "taxi"),
           8000, "unidades empresa");
 
-        // Also load verification status if available
-        let verifMap: Record<string, string> = {};
-        if (verifData?.id) {
-          const { data: verifUnidades } = await withTimeout<any>(
-            supabase.from("detalles_verificacion_unidad")
-              .select("numero_economico, placas, estado_verificacion")
-              .eq("verificacion_id", verifData.id), 8000, "unidades verificación");
-          if (verifUnidades) {
-            for (const vu of verifUnidades) {
-              verifMap[`${vu.numero_economico}-${vu.placas}`] = vu.estado_verificacion || 'pending';
-            }
-          }
-        }
-
         if (empresaUnidades) {
           if (!isCurrentFetch()) return;
-          // Fallback: si la verificación maestra está aprobada, todas las unidades se consideran aprobadas
-          const masterEstado = verifData?.estado;
-          const fallbackPerUnit = masterEstado === "approved" ? "approved"
-            : masterEstado === "in_review" ? "in_review"
-            : masterEstado === "pending" ? "pending"
-            : null;
           setUnidades(empresaUnidades.map((u: any) => ({
             id: u.id,
             numero_economico: u.numero_economico || u.nombre,
@@ -584,7 +524,7 @@ export default function PanelConcesionario() {
             modelo: null,
             linea: null,
             descripcion: u.descripcion || null,
-            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || fallbackPerUnit,
+            estado_verificacion: null,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
@@ -841,104 +781,6 @@ export default function PanelConcesionario() {
     }
   };
 
-  const handleAddUnit = async () => {
-    if (!newUnit.numero_economico.trim() || !newUnit.placas.trim()) {
-      toast.error("Número económico y placas son obligatorios");
-      return;
-    }
-
-    // Verify there's a paid slot available
-    const availableSlots = slotsQuantity - unidades.length;
-    if (availableSlots <= 0) {
-      toast.error("No tienes slots disponibles. Compra un slot primero.");
-      return;
-    }
-
-    setSavingUnit(true);
-    try {
-      let verifId = verificacion?.id;
-
-      // Create verification request if none exists
-      if (!verifId) {
-        const { data: newVerif, error: verifError } = await (supabase
-          .from("verificaciones_concesionario") as any)
-          .insert({
-            concesionario_id: proveedor.id,
-            estado: "pending",
-            total_unidades: 0,
-          })
-          .select("id")
-          .single();
-
-        if (verifError) throw verifError;
-        verifId = newVerif.id;
-      }
-
-      // Insert unit detail
-      const { error: unitError } = await supabase
-        .from("detalles_verificacion_unidad")
-        .insert({
-          verificacion_id: verifId,
-          numero_economico: newUnit.numero_economico.trim().toUpperCase(),
-          placas: newUnit.placas.trim().toUpperCase(),
-          modelo: newUnit.modelo.trim() || null,
-          linea: newUnit.linea.trim() || null,
-          estado_verificacion: "pending",
-        });
-
-      if (unitError) throw unitError;
-
-      // Update total_unidades count
-      const { count } = await supabase
-        .from("detalles_verificacion_unidad")
-        .select("id", { count: "exact", head: true })
-        .eq("verificacion_id", verifId);
-
-      await (supabase
-        .from("verificaciones_concesionario") as any)
-        .update({ total_unidades: count || 0 })
-        .eq("id", verifId);
-
-      toast.success("Unidad registrada correctamente");
-      setNewUnit({ numero_economico: "", placas: "", modelo: "", linea: "" });
-      setShowAddUnit(false);
-      fetchAll();
-    } catch (err: any) {
-      toast.error(err.message || "Error al registrar unidad");
-    } finally {
-      setSavingUnit(false);
-    }
-  };
-
-  const handleDeleteUnit = async (unitId: string) => {
-    if (!confirm("¿Eliminar esta unidad?")) return;
-    try {
-      const { error } = await supabase
-        .from("detalles_verificacion_unidad")
-        .delete()
-        .eq("id", unitId);
-      if (error) throw error;
-
-      // Update count
-      if (verificacion?.id) {
-        const { count } = await supabase
-          .from("detalles_verificacion_unidad")
-          .select("id", { count: "exact", head: true })
-          .eq("verificacion_id", verificacion.id);
-
-        await (supabase
-          .from("verificaciones_concesionario") as any)
-          .update({ total_unidades: count || 0 })
-          .eq("id", verificacion.id);
-      }
-
-      toast.success("Unidad eliminada");
-      fetchAll();
-    } catch (err: any) {
-      toast.error(err.message || "Error al eliminar unidad");
-    }
-  };
-
   const handleDownloadCSVConcesionario = async () => {
     if (!proveedor) return;
     try {
@@ -1038,24 +880,6 @@ export default function PanelConcesionario() {
       </div>
     );
   }
-
-  const estadoVerifColor = (e?: string) => {
-    switch (e) {
-      case "approved": return "bg-green-600 text-white";
-      case "rejected": return "bg-destructive text-destructive-foreground";
-      case "in_review": return "bg-amber-500 text-white";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const estadoVerifLabel = (e?: string) => {
-    switch (e) {
-      case "approved": return "Aprobado";
-      case "rejected": return "Rechazado";
-      case "in_review": return "En Revisión";
-      default: return "Pendiente";
-    }
-  };
 
   const severidadColor = (s: string) => {
     switch (s) {
@@ -1220,11 +1044,6 @@ export default function PanelConcesionario() {
               {proveedor?.nombre || "Gestión de transporte"}
             </p>
           </div>
-          {verificacion && (
-            <Badge className={estadoVerifColor(verificacion.estado)}>
-              {estadoVerifLabel(verificacion.estado)}
-            </Badge>
-          )}
         </div>
       </div>
 
@@ -1302,8 +1121,8 @@ export default function PanelConcesionario() {
                   <ClipboardList className="h-3 w-3 mr-1" /> Viajes
                 </TabsTrigger>
               )}
-              <TabsTrigger value="verificacion" className="text-xs">
-                <ShieldCheck className="h-3 w-3 mr-1" /> Verif.
+              <TabsTrigger value="cobros" className="text-xs">
+                <DollarSign className="h-3 w-3 mr-1" /> Cobros
               </TabsTrigger>
               <TabsTrigger value="unidades" className="text-xs">
                 <Bus className="h-3 w-3 mr-1" /> Unidades
@@ -1437,13 +1256,16 @@ export default function PanelConcesionario() {
           </TabsContent>
 
           {/* VERIFICACIÓN */}
-          <TabsContent value="verificacion" className="space-y-4 mt-4">
-            {/* Stripe Connect */}
+          <TabsContent value="cobros" className="space-y-4 mt-4">
+            {/* Stripe Connect — sin requisito de verificación */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <DollarSign className="h-4 w-4" /> Cuenta Stripe Connect
                 </CardTitle>
+                <CardDescription className="text-xs">
+                  Vincula tu cuenta bancaria (CLABE) para recibir las liquidaciones de los boletos QR cobrados a tus pasajeros.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {cuentaConectada ? (
@@ -1451,14 +1273,14 @@ export default function PanelConcesionario() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Estado:</span>
                       <Badge className={
-                        cuentaConectada.pagos_habilitados 
-                          ? "bg-green-600 text-white" 
+                        cuentaConectada.pagos_habilitados
+                          ? "bg-green-600 text-white"
                           : cuentaConectada.estado_stripe === "onboarding"
                             ? "bg-blue-500 text-white"
                             : "bg-amber-500 text-white"
                       }>
-                        {cuentaConectada.pagos_habilitados 
-                          ? "✅ Activa — Lista para recibir pagos" 
+                        {cuentaConectada.pagos_habilitados
+                          ? "✅ Activa — Lista para recibir pagos"
                           : cuentaConectada.estado_stripe === "onboarding"
                             ? "🔄 En revisión por Stripe"
                             : "⏳ Pendiente de completar"}
@@ -1524,122 +1346,16 @@ export default function PanelConcesionario() {
                   </>
                 ) : (
                   <div className="text-center space-y-3">
-                    {verificacion?.estado === "approved" ? (
-                      <>
-                        <p className="text-sm text-muted-foreground">
-                          Tu verificación está aprobada. Vincula tu cuenta bancaria (CLABE) para empezar a recibir pagos.
-                        </p>
-                        <Button onClick={handleStripeConnect} className="w-full">
-                          Configurar Stripe Connect
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3 text-left">
-                        <p className="text-sm font-medium text-amber-400 mb-1">
-                          ⏳ Verificación requerida
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Sube tus documentos en la sección de abajo y espera la aprobación del administrador antes de configurar tu cuenta bancaria.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Verificación Status */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4" /> Estado de Verificación
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {verificacion ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Estado:</span>
-                      <Badge className={estadoVerifColor(verificacion.estado)}>
-                        {estadoVerifLabel(verificacion.estado)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Solicitud:</span>
-                      <span className="text-sm">
-                        {new Date(verificacion.fecha_solicitud).toLocaleDateString("es-MX")}
-                      </span>
-                    </div>
-                    {verificacion.fecha_revision && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Revisión:</span>
-                        <span className="text-sm">
-                          {new Date(verificacion.fecha_revision).toLocaleDateString("es-MX")}
-                        </span>
-                      </div>
-                    )}
-                    {verificacion.admin_notas && (
-                      <div className="bg-muted rounded-lg p-3 text-sm">
-                        <p className="font-medium text-foreground mb-1">Notas del administrador:</p>
-                        <p className="text-muted-foreground">{verificacion.admin_notas}</p>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Unidades registradas:</span>
-                      <span className="text-sm font-bold">{unidades.length}</span>
-                    </div>
-                    {(() => {
-                      const docCount = Object.values((verificacion.documentos || {}) as Record<string, string[]>)
-                        .reduce((acc, arr) => acc + (arr?.length || 0), 0);
-                      if (verificacion.estado === "approved") {
-                        return (
-                          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
-                            ✅ Tu verificación está aprobada. Puedes conectar tu cuenta Stripe y recibir liquidaciones.
-                          </div>
-                        );
-                      }
-                      if (verificacion.estado === "rejected") {
-                        return (
-                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
-                            ❌ Verificación rechazada. Revisa el motivo y vuelve a subir tus documentos.
-                          </div>
-                        );
-                      }
-                      if (docCount > 0) {
-                        return (
-                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
-                            ⏳ <strong>{docCount} documento(s) enviado(s)</strong> — pendientes de verificar por el administrador. Te avisaremos en cuanto los apruebe.
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                          Sube tus documentos abajo para iniciar la verificación.
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No hay solicitud de verificación</p>
-                    <p className="text-xs mt-1">
-                      Registra tus unidades y envía tus documentos para iniciar la verificación
+                    <p className="text-sm text-muted-foreground">
+                      Vincula tu cuenta bancaria (CLABE) para empezar a recibir las liquidaciones de boletos.
                     </p>
+                    <Button onClick={handleStripeConnect} className="w-full">
+                      Configurar Stripe Connect
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Documentos: subir desde la app y/o por WhatsApp */}
-            {proveedor && (
-              <VerificationDocsUploader
-                proveedorId={proveedor.id}
-                proveedorNombre={proveedor.nombre || "Concesionario"}
-                verificacion={verificacion}
-                onVerificacionCreated={() => fetchAll()}
-              />
-            )}
           </TabsContent>
 
           {/* UNIDADES (solo lectura — registro y suscripción se hacen en "Mis Rutas de Transporte") */}
@@ -1684,11 +1400,6 @@ export default function PanelConcesionario() {
                           {u.linea && ` • ${u.linea}`}
                           {u.modelo && ` ${u.modelo}`}
                         </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
-                          {estadoVerifLabel(u.estado_verificacion || undefined)}
-                        </Badge>
                       </div>
                     </div>
                   </CardContent>
