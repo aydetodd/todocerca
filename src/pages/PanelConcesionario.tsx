@@ -511,7 +511,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type")
             .eq("proveedor_id", prov.id)
             .neq("transport_type", "taxi"),
           8000, "unidades empresa");
@@ -526,6 +526,7 @@ export default function PanelConcesionario() {
             linea: null,
             descripcion: u.descripcion || null,
             estado_verificacion: null,
+            transport_type: u.transport_type || null,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
