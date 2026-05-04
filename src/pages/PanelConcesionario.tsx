@@ -451,27 +451,6 @@ export default function PanelConcesionario() {
   }, [proveedor?.id]);
 
   // Realtime: refresh cuando admin aprueba/rechaza la verificación
-  useEffect(() => {
-    if (!proveedor?.id) return;
-    const ch = supabase
-      .channel("verificacion-concesionario-" + proveedor.id)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "verificaciones_concesionario",
-        filter: `concesionario_id=eq.${proveedor.id}`,
-      }, (payload: any) => {
-        const newEstado = payload?.new?.estado;
-        const oldEstado = payload?.old?.estado;
-        if (newEstado && newEstado !== oldEstado) {
-          if (newEstado === "approved") toast.success("✅ Tu verificación fue aprobada");
-          else if (newEstado === "rejected") toast.error("❌ Tu verificación fue rechazada");
-        }
-        fetchAll();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [proveedor?.id]);
 
   async function fetchAll() {
     if (!user?.id) {
