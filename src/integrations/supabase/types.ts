@@ -2744,6 +2744,35 @@ export type Database = {
           },
         ]
       }
+      route_passenger_access: {
+        Row: {
+          claimed_at: string
+          id: string
+          producto_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          producto_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          producto_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_passenger_access_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ruta_invitaciones: {
         Row: {
           accepted_at: string | null

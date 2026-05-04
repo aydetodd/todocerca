@@ -87,15 +87,29 @@ export default function MapView() {
     // If we have a token, fetch the private route info
     if (privateRouteToken) {
       const fetchPrivateRoute = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast({
+            title: "Inicia sesión",
+            description: "Debes registrarte/iniciar sesión en todocerca.mx para ver esta ruta.",
+            variant: "destructive",
+          });
+          window.location.href = `/auth?redirect=${encodeURIComponent(`/mapa?type=ruta&token=${privateRouteToken}`)}`;
+          return;
+        }
+
         const { data: producto, error } = await (supabase as any)
           .rpc('get_private_route_by_token', { _token: privateRouteToken })
           .maybeSingle();
         
-        if (!producto) {
+        if (error || !producto) {
           console.error('[MapView] Error fetching private route:', error);
+          const msg = error?.message || '';
           toast({
-            title: "Enlace inválido",
-            description: "La ruta privada no existe o el enlace ha expirado",
+            title: msg.includes('reclamado') ? "Enlace ya usado" : "Enlace inválido",
+            description: msg.includes('reclamado')
+              ? "Este enlace personal ya fue vinculado a otra cuenta. Pide uno nuevo al concesionario."
+              : (msg || "La ruta privada no existe o el enlace ha expirado"),
             variant: "destructive",
           });
           return;
