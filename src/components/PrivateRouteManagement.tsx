@@ -888,17 +888,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          {transportType === 'privado' && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => sendWhatsAppInviteLink(vehicle)}
-                              title="Enviar enlace de pasajero por WhatsApp"
-                            >
-                              <Link className="h-3 w-3 mr-1" />
-                              4. Link Pasajeros
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -915,12 +904,12 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                         <>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full justify-between"
+                            variant={vehicle.route_origin_lat != null && vehicle.route_destination_lat != null ? "outline" : "default"}
+                            size="lg"
+                            className="w-full justify-between h-auto min-h-11 whitespace-normal text-left"
                             onClick={() => setEndpointsOpenFor(endpointsOpenFor === vehicle.id ? null : vehicle.id)}
                           >
-                            <span className="flex items-center gap-2">
+                            <span className="flex items-center gap-2 min-w-0">
                               <Crosshair className="h-4 w-4" />
                               {vehicle.route_origin_lat != null ? 'Editar inicio y final en el mapa' : 'Definir inicio y final en el mapa'}
                             </span>
@@ -947,10 +936,22 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                                     route_destination_lng: destination.lng,
                                     route_geofence_radius_m: radius,
                                   } : v));
+                                  setEndpointsOpenFor(null);
                                 }}
                               />
                             </div>
                           )}
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => sendWhatsAppInviteLink(vehicle)}
+                            title="Enviar enlace de pasajero por WhatsApp"
+                            className="w-full"
+                          >
+                            <Link className="h-3 w-3 mr-1" />
+                            4. Link Pasajeros
+                          </Button>
                         </>
                       )}
                     </CardContent>
