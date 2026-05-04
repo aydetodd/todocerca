@@ -4,6 +4,7 @@ import { Bus, Ticket, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import DriverProfilePanel from '@/components/DriverProfilePanel';
 
 export default function MainHome() {
   const navigate = useNavigate();
