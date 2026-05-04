@@ -42,6 +42,14 @@ const Auth = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
 
+  const phoneLoginEmails = (phone: string) => {
+    const digits = phone.replace(/\D/g, '');
+    const candidates = new Set<string>();
+    if (digits) candidates.add(`${digits}@todocerca.app`);
+    if (digits.startsWith('52') && digits.length > 10) candidates.add(`${digits.slice(2)}@todocerca.app`);
+    return Array.from(candidates);
+  };
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && user && !showProviderRegistration && !skipAutoRedirect) {
@@ -129,19 +137,24 @@ const Auth = () => {
     try {
       if (isLogin) {
         console.log('🔑 Attempting login with phone:', telefono);
-        
-        // Primero intentar login directo con el email generado
-        const emailToUse = `${telefono.replace(/\+/g, '')}@todocerca.app`;
-        console.log('📧 Trying direct login with:', emailToUse);
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: emailToUse,
-          password,
-        });
 
-        if (error) {
+        const loginEmails = phoneLoginEmails(telefono);
+        let loginData: any = null;
+        let loginError: any = null;
+        for (const emailToUse of loginEmails) {
+          console.log('📧 Trying direct login with:', emailToUse);
+          const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
+          if (!error) {
+            loginData = data;
+            loginError = null;
+            break;
+          }
+          loginError = error;
+        }
+
+        if (loginError) {
           // Si falla, intentar buscar el perfil por teléfono
-          if (error.message.includes('Invalid login credentials')) {
+          if (loginError.message.includes('Invalid login credentials')) {
             // Buscar perfil usando función flexible que normaliza teléfonos
             const { data: profileData, error: searchError } = await supabase
               .rpc('find_user_by_phone', { phone_param: telefono });
@@ -160,7 +173,7 @@ const Auth = () => {
               p_user_id: userProfile.user_id
             });
             
-            if (userData && userData !== emailToUse) {
+            if (userData && !loginEmails.includes(userData)) {
               // Reintentar con el email correcto
               const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
                 email: userData,
@@ -170,17 +183,18 @@ const Auth = () => {
               if (retryError) {
                 throw new Error('Teléfono o contraseña incorrectos');
               }
+              loginData = retryData;
             } else {
               throw new Error('Teléfono o contraseña incorrectos');
             }
           } else {
-            throw error;
+            throw loginError;
           }
         }
 
         // Si llegamos aquí, el login fue exitoso
         // Verificar si existe el perfil, si no, crearlo (fix para usuarios fantasma)
-        const currentUser = data?.user || (await supabase.auth.getUser()).data.user;
+        const currentUser = loginData?.user || (await supabase.auth.getUser()).data.user;
         
         if (currentUser) {
           const { data: existingProfile } = await supabase
