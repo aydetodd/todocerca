@@ -1442,7 +1442,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                     </Button>
                   </div>
                 )}
-                {(['urbana', 'foranea', 'privada'].includes((product as any).route_type)) && (
+                {((product as any).route_type === 'privada' || (product as any).is_private) && (
                   <div className="mb-2">
                     <RouteTraceUploader
                       productoId={product.id}
