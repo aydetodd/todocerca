@@ -605,7 +605,7 @@ const Dashboard = () => {
             )}
 
             {activeSection === "rutas_privadas" && (
-              isProvider ? (
+              (isProvider && userSpecificData?.id) ? (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
