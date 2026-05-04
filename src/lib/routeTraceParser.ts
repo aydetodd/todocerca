@@ -81,8 +81,12 @@ export async function parseRouteTraceFile(file: File): Promise<ParsedTrace> {
   const name = file.name.toLowerCase();
   if (name.endsWith('.kmz')) return parseKmz(file);
   const text = await file.text();
-  if (name.endsWith('.kml')) return parseKmlString(text);
-  if (name.endsWith('.gpx')) return parseGpxString(text);
+  const looksLikeKml = /<\s*kml[\s>]/i.test(text) || /<\s*Document[\s>]/i.test(text);
+  const looksLikeGpx = /<\s*gpx[\s>]/i.test(text);
+  if (name.endsWith('.kml') || name.endsWith('.xml') || looksLikeKml) {
+    return parseKmlString(text);
+  }
+  if (name.endsWith('.gpx') || looksLikeGpx) return parseGpxString(text);
   if (name.endsWith('.geojson') || name.endsWith('.json')) {
     let parsed: any;
     try {
