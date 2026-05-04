@@ -1009,7 +1009,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             </div>
             <Button
               onClick={handleAddUnit}
-              disabled={addingUnit || !newUnit.nombre.trim()}
+              disabled={addingUnit || !newUnit.nombre.trim() || !newUnit.cobro_tipo}
               className="w-full"
             >
               {addingUnit ? (
