@@ -36,12 +36,13 @@ export default function MapView() {
   const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
   const [activeRouteOverlay, setActiveRouteOverlay] = useState<string | null>(null);
+  const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
 
-  // Route polyline overlay on the map
-  useRouteOverlay(leafletMapRef, activeRouteOverlay);
+  // Route polyline overlay on the map (catalog OR concessionaire-uploaded)
+  useRouteOverlay(leafletMapRef, activeRouteOverlay, activeRouteGeoJSON);
 
   // GPS tracking ahora es global via GlobalProviderTracking
 
@@ -52,7 +53,7 @@ export default function MapView() {
       const fetchPublicRoute = async () => {
         const { data: producto } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, route_type, is_private, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, route_type, is_private, route_geojson, proveedores(user_id)')
           .eq('id', publicRouteProductoId)
           .maybeSingle();
         
@@ -63,6 +64,7 @@ export default function MapView() {
           const rt = (producto as any).route_type;
           setViewingRouteType(rt || 'urbana');
           setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
+          if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
         }
       };
       fetchPublicRoute();
@@ -74,7 +76,7 @@ export default function MapView() {
         // Try reading the product directly (owner/chofer can read via RLS)
         let { data: producto, error } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, is_private, route_type, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, is_private, route_type, route_geojson, proveedores(user_id)')
           .eq('invite_token', privateRouteToken)
           .eq('is_private', true)
           .maybeSingle();
@@ -84,7 +86,7 @@ export default function MapView() {
           // Fallback: query without is_private filter to find any matching token
           const { data: publicProduct } = await supabase
             .from('productos')
-            .select('id, nombre, proveedor_id, route_type, proveedores(user_id)')
+            .select('id, nombre, proveedor_id, route_type, route_geojson, proveedores(user_id)')
             .eq('invite_token', privateRouteToken)
             .maybeSingle();
           
@@ -106,6 +108,7 @@ export default function MapView() {
         setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
         setPrivateRouteName(producto.nombre);
         setPrivateRouteProductoId(producto.id);
+        if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
         
         const rt = (producto as any).route_type;
         setViewingRouteType(rt || 'privada');

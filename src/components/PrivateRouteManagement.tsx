@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
+import RouteTraceUploader from './RouteTraceUploader';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
@@ -874,6 +875,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               {vehicle.descripcion}
                             </p>
                           )}
+                          <div className="mt-2 ml-6">
+                            <RouteTraceUploader
+                              productoId={vehicle.id}
+                              hasTrace={!!vehicle.route_geojson}
+                              filename={vehicle.route_trace_filename}
+                              onChanged={fetchVehicles}
+                            />
+                          </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {transportType === 'privado' && (
