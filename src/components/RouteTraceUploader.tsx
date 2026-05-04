@@ -26,6 +26,7 @@ interface Props {
 export default function RouteTraceUploader({ productoId, hasTrace, filename, onChanged }: Props) {
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
