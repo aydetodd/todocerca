@@ -85,6 +85,7 @@ interface UnitInfo {
   nombre: string;
   descripcion: string | null;
   placas: string | null;
+  cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
 }
 
 interface TodayAssignment {
@@ -418,15 +419,28 @@ function SingleDriverPanel({
 
             {isActive && data.todayAssignment && (
               <>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
-                  onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
-                >
-                  <QrCode className="h-3 w-3 mr-1" />
-                  Cobrar
-                </Button>
+                {unitInfo?.cobro_tipo === 'por_viaje' ? (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="shrink-0 h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-700"
+                    onClick={handleInviteWhatsApp}
+                    title="Compartir mi ubicación en tiempo real con pasajeros"
+                  >
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Invitar pasajero
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
+                    onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
+                  >
+                    <QrCode className="h-3 w-3 mr-1" />
+                    Cobrar
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   className="shrink-0 h-8 px-2.5 text-xs"
@@ -542,7 +556,7 @@ export default function DriverProfilePanel() {
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas, cobro_tipo)')
             .eq('chofer_id', driver.id)
             .order('fecha', { ascending: false })
             .limit(1)
@@ -575,6 +589,7 @@ export default function DriverProfilePanel() {
                         nombre: unitData.nombre,
                         descripcion: unitData.descripcion,
                         placas: unitData.placas,
+                        cobro_tipo: (unitData.cobro_tipo as 'por_viaje' | 'por_pasajero' | null) ?? null,
                       }
                     : null,
                 }

@@ -4,6 +4,7 @@ import { Bus, Ticket, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import DriverProfilePanel from '@/components/DriverProfilePanel';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -35,6 +36,9 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
+        {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
+        <DriverProfilePanel />
+
         {/* === Protocolo 1: Solo movilidad === */}
         {/* Protocolo 2: Taxi oculto */}
         {/* <Card 
