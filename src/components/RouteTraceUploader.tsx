@@ -146,15 +146,15 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           >
             {uploading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
-            ) : hasTrace ? (
+            ) : traceSaved ? (
               <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
             ) : (
               <Upload className="h-3 w-3 mr-1" />
             )}
-            {uploading ? 'Procesando...' : hasTrace ? 'Reemplazar trazado' : 'Subir trazado'}
+            {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
           </label>
         </Button>
-        {hasTrace && (
+        {traceSaved && (
           <>
             <Button
               type="button"
@@ -180,10 +180,10 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </>
         )}
       </div>
-      {(hasTrace || localFilename) && (
+      {traceSaved && (
         <div className="mt-1 flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
           <FileCheck2 className="h-3 w-3 shrink-0" />
-          <span className="truncate">Trazado {hasTrace ? 'cargado' : 'seleccionado'}: {filename || localFilename}</span>
+          <span className="truncate">Trazado cargado: {filename || localFilename}</span>
         </div>
       )}
       {lastError && (
