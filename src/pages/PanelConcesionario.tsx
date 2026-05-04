@@ -24,7 +24,6 @@ import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csvExport";
 import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
-import VerificationDocsUploader from "@/components/VerificationDocsUploader";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 
