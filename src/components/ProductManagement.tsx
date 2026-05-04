@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Trash2, Save, X, AlertCircle, Image, Link, Copy } from 'lucide-react';
+import RouteTraceUploader from './RouteTraceUploader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA, getPaisPorCodigo } from '@/data/paises-hispanoamerica';
