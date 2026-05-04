@@ -108,6 +108,7 @@ export default function MapView() {
         setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
         setPrivateRouteName(producto.nombre);
         setPrivateRouteProductoId(producto.id);
+        if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
         
         const rt = (producto as any).route_type;
         setViewingRouteType(rt || 'privada');
