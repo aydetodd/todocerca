@@ -45,20 +45,14 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       throw new Error('No hay sesión activa. Cierra y vuelve a iniciar sesión como concesionario.');
     }
 
-    const { data: updated, error } = await supabase
-      .from('productos')
-      .update({
-        route_geojson: geojson,
-        route_trace_filename: fileName,
-        route_trace_updated_at: new Date().toISOString(),
-      } as any)
-      .eq('id', productoId)
-      .or('route_type.eq.privada,is_private.eq.true')
-      .select('id')
-      .maybeSingle();
+    const { data: updated, error } = await (supabase as any).rpc('save_private_route_trace', {
+      _producto_id: productoId,
+      _filename: fileName,
+      _geojson: geojson,
+    });
 
     if (error) throw error;
-    if (!updated) {
+    if (!updated || updated.length === 0) {
       throw new Error('No se guardó: esta ruta no aparece como privada o no pertenece a tu cuenta.');
     }
   };
@@ -109,14 +103,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
     setConfirmDelete(false);
     setUploading(true);
     try {
-      const { error } = await supabase
-        .from('productos')
-        .update({
-          route_geojson: null,
-          route_trace_filename: null,
-          route_trace_updated_at: null,
-        } as any)
-        .eq('id', productoId);
+      const { error } = await (supabase as any).rpc('delete_private_route_trace', {
+        _producto_id: productoId,
+      });
       if (error) throw error;
       setLocalFilename(null);
       toast({ title: 'Trazado eliminado' });
@@ -136,7 +125,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           ref={inputRef}
           type="file"
           accept=".kml,.kmz,.gpx,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/gpx+xml,application/geo+json,application/json,*/*"
-          className="hidden"
+          className="sr-only"
           disabled={uploading}
           onChange={(e) => {
             const f = e.target.files?.[0];
