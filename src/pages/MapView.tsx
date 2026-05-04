@@ -36,12 +36,13 @@ export default function MapView() {
   const [fleetMode, setFleetMode] = useState(fleetParam);
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
   const [activeRouteOverlay, setActiveRouteOverlay] = useState<string | null>(null);
+  const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
 
-  // Route polyline overlay on the map
-  useRouteOverlay(leafletMapRef, activeRouteOverlay);
+  // Route polyline overlay on the map (catalog OR concessionaire-uploaded)
+  useRouteOverlay(leafletMapRef, activeRouteOverlay, activeRouteGeoJSON);
 
   // GPS tracking ahora es global via GlobalProviderTracking
 
