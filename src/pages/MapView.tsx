@@ -53,7 +53,7 @@ export default function MapView() {
       const fetchPublicRoute = async () => {
         const { data: producto } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, route_type, is_private, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, route_type, is_private, route_geojson, proveedores(user_id)')
           .eq('id', publicRouteProductoId)
           .maybeSingle();
         
@@ -64,6 +64,7 @@ export default function MapView() {
           const rt = (producto as any).route_type;
           setViewingRouteType(rt || 'urbana');
           setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
+          if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
         }
       };
       fetchPublicRoute();
