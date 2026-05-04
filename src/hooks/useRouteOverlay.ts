@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
 interface RouteGeoJSON {
@@ -62,38 +62,48 @@ export function useRouteOverlay(
   routeId: string | null,
   inlineGeoJSON?: any | null
 ) {
-  const polylineRef = useRef<L.Polyline | null>(null);
+  const polylineRef = useRef<L.LayerGroup | null>(null);
   const currentKeyRef = useRef<string | null>(null);
+  const [mapReadyTick, setMapReadyTick] = useState(0);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) {
+      if (!routeId && !inlineGeoJSON) return;
+      const retry = window.setTimeout(() => setMapReadyTick((tick) => tick + 1), 150);
+      return () => window.clearTimeout(retry);
+    }
 
     const drawFromGeoJSON = (data: RouteGeoJSON, key: string) => {
-      const lineFeature = data.features.find(
+      const lineFeatures = data.features.filter(
         (f) => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString'
       );
-      if (!lineFeature) return;
+      if (lineFeatures.length === 0) return;
 
-      let coords: [number, number][] = [];
-      if (lineFeature.geometry.type === 'LineString') {
-        coords = (lineFeature.geometry.coordinates as number[][]).map(
-          ([lng, lat]) => [lat, lng] as [number, number]
-        );
-      } else {
-        const multi = lineFeature.geometry.coordinates as number[][][];
-        coords = multi.flat().map(([lng, lat]) => [lat, lng] as [number, number]);
-      }
+      const group = L.layerGroup().addTo(map);
+      const allLatLngs: L.LatLngExpression[] = [];
 
-      const polyline = L.polyline(coords, {
-        color: '#0066CC',
-        weight: 5,
-        opacity: 0.85,
-      }).addTo(map);
+      lineFeatures.forEach((lineFeature) => {
+        const segments = lineFeature.geometry.type === 'LineString'
+          ? [lineFeature.geometry.coordinates as number[][]]
+          : (lineFeature.geometry.coordinates as number[][][]);
 
-      polylineRef.current = polyline;
+        segments.forEach((segment) => {
+          const coords = segment.map(([lng, lat]) => [lat, lng] as [number, number]);
+          allLatLngs.push(...coords);
+          L.polyline(coords, {
+            color: '#0066CC',
+            weight: 5,
+            opacity: 0.9,
+          }).addTo(group);
+        });
+      });
+
+      polylineRef.current = group;
       currentKeyRef.current = key;
-      map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+      if (allLatLngs.length > 0) {
+        map.fitBounds(L.latLngBounds(allLatLngs), { padding: [40, 40] });
+      }
     };
 
     const newKey = inlineGeoJSON
@@ -136,5 +146,5 @@ export function useRouteOverlay(
     return () => {
       cancelled = true;
     };
-  }, [routeId, inlineGeoJSON, mapRef]);
+  }, [routeId, inlineGeoJSON, mapRef, mapReadyTick]);
 }
