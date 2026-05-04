@@ -812,7 +812,7 @@ const Dashboard = () => {
                         <Label htmlFor="empresa-nombre">Nombre de la empresa *</Label>
                         <Input
                           id="empresa-nombre"
-                          placeholder="Ej: Maquiladora ABC S.A. de C.V."
+                          placeholder=""
                           value={empresaForm.nombre}
                           onChange={(e) => setEmpresaForm(prev => ({ ...prev, nombre: e.target.value }))}
                         />
@@ -821,7 +821,7 @@ const Dashboard = () => {
                         <Label htmlFor="empresa-rfc">RFC (opcional)</Label>
                         <Input
                           id="empresa-rfc"
-                          placeholder="Ej: MAB123456ABC"
+                          placeholder=""
                           value={empresaForm.rfc}
                           onChange={(e) => setEmpresaForm(prev => ({ ...prev, rfc: e.target.value }))}
                         />
@@ -830,7 +830,7 @@ const Dashboard = () => {
                         <Label htmlFor="empresa-contacto">Nombre de contacto</Label>
                         <Input
                           id="empresa-contacto"
-                          placeholder="Nombre del responsable"
+                          placeholder=""
                           value={empresaForm.contacto_nombre}
                           onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_nombre: e.target.value }))}
                         />
@@ -848,7 +848,7 @@ const Dashboard = () => {
                         <Input
                           id="empresa-email"
                           type="email"
-                          placeholder="contacto@empresa.com"
+                          placeholder=""
                           value={empresaForm.contacto_email}
                           onChange={(e) => setEmpresaForm(prev => ({ ...prev, contacto_email: e.target.value }))}
                         />
