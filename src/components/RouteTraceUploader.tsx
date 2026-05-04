@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useId, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2 } from 'lucide-react';
@@ -27,6 +27,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -71,10 +72,6 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
     }
   };
 
-  const handleSelectFile = () => {
-    inputRef.current?.click();
-  };
-
   const handleRemove = async () => {
     setConfirmDelete(false);
     setUploading(true);
@@ -100,10 +97,12 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   return (
     <>
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept="*/*"
-        className="hidden"
+        className="sr-only"
+        disabled={uploading}
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) handleFile(f);
@@ -111,25 +110,24 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       />
       <div className="flex flex-wrap items-center gap-1">
         <Button
-          type="button"
+          asChild
           variant={hasTrace ? 'secondary' : 'outline'}
           size="sm"
-          disabled={uploading}
-          onPointerDown={(e) => {
-            e.preventDefault();
-            handleSelectFile();
-          }}
-          onClick={handleSelectFile}
-          title="Subir trazado KML / KMZ / GPX / GeoJSON"
         >
-          {uploading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : hasTrace ? (
-            <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
-          ) : (
-            <Upload className="h-3 w-3 mr-1" />
-          )}
-          {hasTrace ? 'Reemplazar trazado' : 'Subir trazado'}
+          <label
+            htmlFor={uploading ? undefined : inputId}
+            className={uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+            title="Subir trazado KML / KMZ / GPX / GeoJSON"
+          >
+            {uploading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : hasTrace ? (
+              <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
+            ) : (
+              <Upload className="h-3 w-3 mr-1" />
+            )}
+            {uploading ? 'Procesando...' : hasTrace ? 'Reemplazar trazado' : 'Subir trazado'}
+          </label>
         </Button>
         {hasTrace && (
           <>
