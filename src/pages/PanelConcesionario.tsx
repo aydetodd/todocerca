@@ -1576,11 +1576,6 @@ export default function PanelConcesionario() {
                           {u.modelo && ` ${u.modelo}`}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={estadoVerifColor(u.estado_verificacion || undefined)}>
-                          {estadoVerifLabel(u.estado_verificacion || undefined)}
-                        </Badge>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
