@@ -500,29 +500,23 @@ export default function PanelConcesionario() {
 
     // Fetch core data in parallel — independent error handling, never throws
     try {
-      const [verifResult, cuentaResult] = await Promise.allSettled([
-        withTimeout(supabase.from("verificaciones_concesionario").select("*").eq("concesionario_id", prov.id).order("created_at", { ascending: false }).limit(1).maybeSingle(), 8000, "verificación"),
-        withTimeout(supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(), 8000, "cuenta conectada"),
-      ]);
-
-      verifData = verifResult.status === "fulfilled" ? (verifResult.value as any)?.data : null;
-      cuentaData = cuentaResult.status === "fulfilled" ? (cuentaResult.value as any)?.data : null;
-
-      if (verifResult.status === "rejected") console.error("[PanelConcesionario] verificación falló:", verifResult.reason);
-      if (cuentaResult.status === "rejected") console.error("[PanelConcesionario] cuenta conectada falló:", cuentaResult.reason);
+      const cuentaResult = await withTimeout(
+        supabase.from("cuentas_conectadas").select("*").eq("concesionario_id", prov.id).maybeSingle(),
+        8000,
+        "cuenta conectada"
+      );
+      cuentaData = (cuentaResult as any)?.data ?? null;
     } catch (e: any) {
-      console.error("[PanelConcesionario] Error cargando verificación/cuenta:", e?.message);
+      console.error("[PanelConcesionario] Error cargando cuenta conectada:", e?.message);
     }
 
     try {
       if (!isCurrentFetch()) return;
 
-      if (verifData) setVerificacion(verifData as any);
       if (cuentaData) {
         setCuentaConectada(cuentaData);
         setFrecuenciaLiq((cuentaData as any).frecuencia_liquidacion || "daily");
       }
-
 
       // Load unidades from unidades_empresa (the actual registered units)
       try {
@@ -533,28 +527,8 @@ export default function PanelConcesionario() {
             .neq("transport_type", "taxi"),
           8000, "unidades empresa");
 
-        // Also load verification status if available
-        let verifMap: Record<string, string> = {};
-        if (verifData?.id) {
-          const { data: verifUnidades } = await withTimeout<any>(
-            supabase.from("detalles_verificacion_unidad")
-              .select("numero_economico, placas, estado_verificacion")
-              .eq("verificacion_id", verifData.id), 8000, "unidades verificación");
-          if (verifUnidades) {
-            for (const vu of verifUnidades) {
-              verifMap[`${vu.numero_economico}-${vu.placas}`] = vu.estado_verificacion || 'pending';
-            }
-          }
-        }
-
         if (empresaUnidades) {
           if (!isCurrentFetch()) return;
-          // Fallback: si la verificación maestra está aprobada, todas las unidades se consideran aprobadas
-          const masterEstado = verifData?.estado;
-          const fallbackPerUnit = masterEstado === "approved" ? "approved"
-            : masterEstado === "in_review" ? "in_review"
-            : masterEstado === "pending" ? "pending"
-            : null;
           setUnidades(empresaUnidades.map((u: any) => ({
             id: u.id,
             numero_economico: u.numero_economico || u.nombre,
@@ -562,7 +536,7 @@ export default function PanelConcesionario() {
             modelo: null,
             linea: null,
             descripcion: u.descripcion || null,
-            estado_verificacion: verifMap[`${u.numero_economico || u.nombre}-${u.placas}`] || fallbackPerUnit,
+            estado_verificacion: null,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
