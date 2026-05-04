@@ -1431,13 +1431,16 @@ export default function PanelConcesionario() {
           </TabsContent>
 
           {/* VERIFICACIÓN */}
-          <TabsContent value="verificacion" className="space-y-4 mt-4">
-            {/* Stripe Connect */}
+          <TabsContent value="cobros" className="space-y-4 mt-4">
+            {/* Stripe Connect — sin requisito de verificación */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <DollarSign className="h-4 w-4" /> Cuenta Stripe Connect
                 </CardTitle>
+                <CardDescription className="text-xs">
+                  Vincula tu cuenta bancaria (CLABE) para recibir las liquidaciones de los boletos QR cobrados a tus pasajeros.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {cuentaConectada ? (
@@ -1445,14 +1448,14 @@ export default function PanelConcesionario() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Estado:</span>
                       <Badge className={
-                        cuentaConectada.pagos_habilitados 
-                          ? "bg-green-600 text-white" 
+                        cuentaConectada.pagos_habilitados
+                          ? "bg-green-600 text-white"
                           : cuentaConectada.estado_stripe === "onboarding"
                             ? "bg-blue-500 text-white"
                             : "bg-amber-500 text-white"
                       }>
-                        {cuentaConectada.pagos_habilitados 
-                          ? "✅ Activa — Lista para recibir pagos" 
+                        {cuentaConectada.pagos_habilitados
+                          ? "✅ Activa — Lista para recibir pagos"
                           : cuentaConectada.estado_stripe === "onboarding"
                             ? "🔄 En revisión por Stripe"
                             : "⏳ Pendiente de completar"}
@@ -1518,122 +1521,16 @@ export default function PanelConcesionario() {
                   </>
                 ) : (
                   <div className="text-center space-y-3">
-                    {verificacion?.estado === "approved" ? (
-                      <>
-                        <p className="text-sm text-muted-foreground">
-                          Tu verificación está aprobada. Vincula tu cuenta bancaria (CLABE) para empezar a recibir pagos.
-                        </p>
-                        <Button onClick={handleStripeConnect} className="w-full">
-                          Configurar Stripe Connect
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3 text-left">
-                        <p className="text-sm font-medium text-amber-400 mb-1">
-                          ⏳ Verificación requerida
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Sube tus documentos en la sección de abajo y espera la aprobación del administrador antes de configurar tu cuenta bancaria.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Verificación Status */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4" /> Estado de Verificación
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {verificacion ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Estado:</span>
-                      <Badge className={estadoVerifColor(verificacion.estado)}>
-                        {estadoVerifLabel(verificacion.estado)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Solicitud:</span>
-                      <span className="text-sm">
-                        {new Date(verificacion.fecha_solicitud).toLocaleDateString("es-MX")}
-                      </span>
-                    </div>
-                    {verificacion.fecha_revision && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Revisión:</span>
-                        <span className="text-sm">
-                          {new Date(verificacion.fecha_revision).toLocaleDateString("es-MX")}
-                        </span>
-                      </div>
-                    )}
-                    {verificacion.admin_notas && (
-                      <div className="bg-muted rounded-lg p-3 text-sm">
-                        <p className="font-medium text-foreground mb-1">Notas del administrador:</p>
-                        <p className="text-muted-foreground">{verificacion.admin_notas}</p>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Unidades registradas:</span>
-                      <span className="text-sm font-bold">{unidades.length}</span>
-                    </div>
-                    {(() => {
-                      const docCount = Object.values((verificacion.documentos || {}) as Record<string, string[]>)
-                        .reduce((acc, arr) => acc + (arr?.length || 0), 0);
-                      if (verificacion.estado === "approved") {
-                        return (
-                          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
-                            ✅ Tu verificación está aprobada. Puedes conectar tu cuenta Stripe y recibir liquidaciones.
-                          </div>
-                        );
-                      }
-                      if (verificacion.estado === "rejected") {
-                        return (
-                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
-                            ❌ Verificación rechazada. Revisa el motivo y vuelve a subir tus documentos.
-                          </div>
-                        );
-                      }
-                      if (docCount > 0) {
-                        return (
-                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
-                            ⏳ <strong>{docCount} documento(s) enviado(s)</strong> — pendientes de verificar por el administrador. Te avisaremos en cuanto los apruebe.
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                          Sube tus documentos abajo para iniciar la verificación.
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No hay solicitud de verificación</p>
-                    <p className="text-xs mt-1">
-                      Registra tus unidades y envía tus documentos para iniciar la verificación
+                    <p className="text-sm text-muted-foreground">
+                      Vincula tu cuenta bancaria (CLABE) para empezar a recibir las liquidaciones de boletos.
                     </p>
+                    <Button onClick={handleStripeConnect} className="w-full">
+                      Configurar Stripe Connect
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Documentos: subir desde la app y/o por WhatsApp */}
-            {proveedor && (
-              <VerificationDocsUploader
-                proveedorId={proveedor.id}
-                proveedorNombre={proveedor.nombre || "Concesionario"}
-                verificacion={verificacion}
-                onVerificacionCreated={() => fetchAll()}
-              />
-            )}
           </TabsContent>
 
           {/* UNIDADES (solo lectura — registro y suscripción se hacen en "Mis Rutas de Transporte") */}
