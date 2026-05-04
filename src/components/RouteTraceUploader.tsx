@@ -26,14 +26,16 @@ interface Props {
 export default function RouteTraceUploader({ productoId, hasTrace, filename, onChanged }: Props) {
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleFile = async (file: File) => {
     setUploading(true);
+    setLastError(null);
     try {
-      console.log('[RouteTraceUploader] file:', file.name, file.size);
+      console.log('[RouteTraceUploader] file:', file.name, file.size, file.type);
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('El archivo no debe pesar más de 10 MB');
       }
@@ -50,17 +52,19 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
         .select('id, route_trace_filename');
       if (error) throw error;
       if (!data || data.length === 0) {
-        throw new Error('No se pudo actualizar la ruta (permisos o ID). Verifica que seas el dueño.');
+        throw new Error('No se pudo guardar (RLS/permisos). Verifica que sea tu ruta.');
       }
       console.log('[RouteTraceUploader] update OK:', data);
       toast({
         title: '✅ Trazado guardado',
-        description: `${file.name} · ${parsed.lineCount} línea(s). Toca "Ver en mapa" para verlo.`,
+        description: `${file.name} · ${parsed.lineCount} línea(s).`,
       });
       onChanged?.();
     } catch (e: any) {
+      const msg = e?.message || String(e);
       console.error('[RouteTraceUploader] ERROR:', e);
-      toast({ title: 'Error al subir trazado', description: e.message || String(e), variant: 'destructive' });
+      setLastError(msg);
+      toast({ title: 'Error al subir trazado', description: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -94,7 +98,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       <input
         ref={inputRef}
         type="file"
-        accept=".kml,.kmz,.gpx,.geojson,.json"
+        accept="*/*"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -146,6 +150,11 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
       {hasTrace && filename && (
         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 truncate">
           ✅ Trazado cargado: {filename}
+        </p>
+      )}
+      {lastError && (
+        <p className="text-[10px] text-destructive mt-1 break-words">
+          ⚠️ {lastError}
         </p>
       )}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
