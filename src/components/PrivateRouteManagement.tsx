@@ -98,6 +98,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [deleteVehicleId, setDeleteVehicleId] = useState<string | null>(null);
   const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
   const [showDrivers, setShowDrivers] = useState(false);
+  const [endpointsOpenFor, setEndpointsOpenFor] = useState<string | null>(null);
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
