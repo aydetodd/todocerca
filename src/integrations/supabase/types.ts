@@ -2331,6 +2331,9 @@ export type Database = {
           pais: string | null
           precio: number
           proveedor_id: string
+          route_geojson: Json | null
+          route_trace_filename: string | null
+          route_trace_updated_at: string | null
           route_type: string | null
           stock: number
           unit: string | null
@@ -2353,6 +2356,9 @@ export type Database = {
           pais?: string | null
           precio: number
           proveedor_id: string
+          route_geojson?: Json | null
+          route_trace_filename?: string | null
+          route_trace_updated_at?: string | null
           route_type?: string | null
           stock?: number
           unit?: string | null
@@ -2375,6 +2381,9 @@ export type Database = {
           pais?: string | null
           precio?: number
           proveedor_id?: string
+          route_geojson?: Json | null
+          route_trace_filename?: string | null
+          route_trace_updated_at?: string | null
           route_type?: string | null
           stock?: number
           unit?: string | null

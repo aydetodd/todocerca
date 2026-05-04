@@ -46,6 +46,8 @@ interface PrivateVehicle {
   invite_token: string;
   is_available: boolean;
   created_at: string;
+  route_geojson?: any;
+  route_trace_filename?: string | null;
 }
 
 interface Unit {
@@ -256,7 +258,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
       let query = supabase
         .from('productos')
-        .select('id, nombre, descripcion, invite_token, is_available, created_at')
+        .select('id, nombre, descripcion, invite_token, is_available, created_at, route_geojson, route_trace_filename')
         .eq('proveedor_id', proveedorId)
         .eq('route_type', routeType)
         .eq('is_mobile', true)
