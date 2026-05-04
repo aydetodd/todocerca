@@ -355,7 +355,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           placas: newUnit.placas.trim() || null,
           descripcion: newUnit.descripcion.trim() || null,
           transport_type: transportType,
-        });
+          cobro_tipo: newUnit.cobro_tipo || null,
+        } as any);
 
       if (error) throw error;
 
@@ -364,7 +365,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         description: `"${newUnit.nombre.trim()}" agregada a tu flota.`,
       });
       setIsUnitDialogOpen(false);
-      setNewUnit({ nombre: '', placas: '', descripcion: '' });
+      setNewUnit({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' });
       fetchUnits();
       checkSubscription();
     } catch (error: any) {
