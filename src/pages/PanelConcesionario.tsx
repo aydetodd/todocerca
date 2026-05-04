@@ -1368,6 +1368,7 @@ export default function PanelConcesionario() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* UNIDADES (solo lectura — registro y suscripción se hacen en "Mis Rutas de Transporte") */}
           <TabsContent value="unidades" className="space-y-3 mt-4">
