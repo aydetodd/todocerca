@@ -293,20 +293,28 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const availableSlots = (subscriptionStatus?.quantity || 0) - units.length;
   const hasAvailableSlot = availableSlots > 0;
 
-  // Go directly to Stripe when no slots available
+  // Open quantity dialog when no slots available; otherwise open the registration form
   const handleAddUnitClick = async () => {
     if (hasAvailableSlot) {
-      // Slot available — open form directly
       setIsUnitDialogOpen(true);
       return;
     }
+    setSlotsToBuy(1);
+    setIsQuantityDialogOpen(true);
+  };
 
-    // No slots — go to Stripe first
+  // Purchase N slots via Stripe (single subscription with quantity = N)
+  const handleBuySlots = async (qty: number) => {
     try {
       setAddingUnit(true);
       const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
-        body: { action: 'add', transportType: routeTypeMap2[transportType] || 'privada', uiTransportType: transportType }
+        body: {
+          action: 'add',
+          transportType: routeTypeMap2[transportType] || 'privada',
+          uiTransportType: transportType,
+          quantity: qty,
+        },
       });
 
       if (error) throw error;
@@ -315,8 +323,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         window.open(data.url, '_blank');
         toast({
           title: "Redirigiendo a Stripe",
-          description: "Completa el pago. Al volver podrás registrar tu unidad.",
+          description: `Pago por ${qty} unidad(es). Al volver podrás registrarlas.`,
         });
+        setIsQuantityDialogOpen(false);
       }
     } catch (error: any) {
       toast({
