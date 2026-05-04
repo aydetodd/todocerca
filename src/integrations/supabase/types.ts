@@ -2331,7 +2331,12 @@ export type Database = {
           pais: string | null
           precio: number
           proveedor_id: string
+          route_destination_lat: number | null
+          route_destination_lng: number | null
+          route_geofence_radius_m: number | null
           route_geojson: Json | null
+          route_origin_lat: number | null
+          route_origin_lng: number | null
           route_trace_filename: string | null
           route_trace_updated_at: string | null
           route_type: string | null
@@ -2356,7 +2361,12 @@ export type Database = {
           pais?: string | null
           precio: number
           proveedor_id: string
+          route_destination_lat?: number | null
+          route_destination_lng?: number | null
+          route_geofence_radius_m?: number | null
           route_geojson?: Json | null
+          route_origin_lat?: number | null
+          route_origin_lng?: number | null
           route_trace_filename?: string | null
           route_trace_updated_at?: string | null
           route_type?: string | null
@@ -2381,7 +2391,12 @@ export type Database = {
           pais?: string | null
           precio?: number
           proveedor_id?: string
+          route_destination_lat?: number | null
+          route_destination_lng?: number | null
+          route_geofence_radius_m?: number | null
           route_geojson?: Json | null
+          route_origin_lat?: number | null
+          route_origin_lng?: number | null
           route_trace_filename?: string | null
           route_trace_updated_at?: string | null
           route_type?: string | null
@@ -4266,6 +4281,19 @@ export type Database = {
       }
       save_private_route_trace: {
         Args: { _filename: string; _geojson: Json; _producto_id: string }
+        Returns: {
+          id: string
+        }[]
+      }
+      save_route_endpoints: {
+        Args: {
+          _destination_lat: number
+          _destination_lng: number
+          _origin_lat: number
+          _origin_lng: number
+          _producto_id: string
+          _radius_m: number
+        }
         Returns: {
           id: string
         }[]
