@@ -46,6 +46,8 @@ interface PrivateVehicle {
   invite_token: string;
   is_available: boolean;
   created_at: string;
+  route_geojson?: any;
+  route_trace_filename?: string | null;
 }
 
 interface Unit {
