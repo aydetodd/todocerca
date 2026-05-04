@@ -62,14 +62,23 @@ export default function MapView() {
           .eq('id', publicRouteProductoId)
           .maybeSingle();
         
-      if (producto) {
+        if (producto) {
           setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
           setPrivateRouteName(producto.nombre);
           setPrivateRouteProductoId(producto.id);
           const rt = (producto as any).route_type;
           setViewingRouteType(rt || 'urbana');
           setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
-          if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
+          if ((producto as any).route_geojson) {
+            setActiveRouteGeoJSON((producto as any).route_geojson);
+            setActiveRouteOverlay(null);
+          } else {
+            setActiveRouteGeoJSON(null);
+            toast({
+              title: 'Ruta sin trazado',
+              description: 'Todavía no hay archivo KML/KMZ guardado para esta ruta.',
+            });
+          }
         }
       };
       fetchPublicRoute();
@@ -113,7 +122,16 @@ export default function MapView() {
         setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
         setPrivateRouteName(producto.nombre);
         setPrivateRouteProductoId(producto.id);
-        if ((producto as any).route_geojson) setActiveRouteGeoJSON((producto as any).route_geojson);
+        if ((producto as any).route_geojson) {
+          setActiveRouteGeoJSON((producto as any).route_geojson);
+          setActiveRouteOverlay(null);
+        } else {
+          setActiveRouteGeoJSON(null);
+          toast({
+            title: 'Ruta sin trazado',
+            description: 'Todavía no hay archivo KML/KMZ guardado para esta ruta.',
+          });
+        }
         
         const rt = (producto as any).route_type;
         setViewingRouteType(rt || 'privada');
