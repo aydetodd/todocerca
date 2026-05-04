@@ -76,7 +76,7 @@ export default function MapView() {
         // Try reading the product directly (owner/chofer can read via RLS)
         let { data: producto, error } = await supabase
           .from('productos')
-          .select('id, nombre, proveedor_id, is_private, route_type, proveedores(user_id)')
+          .select('id, nombre, proveedor_id, is_private, route_type, route_geojson, proveedores(user_id)')
           .eq('invite_token', privateRouteToken)
           .eq('is_private', true)
           .maybeSingle();
@@ -86,7 +86,7 @@ export default function MapView() {
           // Fallback: query without is_private filter to find any matching token
           const { data: publicProduct } = await supabase
             .from('productos')
-            .select('id, nombre, proveedor_id, route_type, proveedores(user_id)')
+            .select('id, nombre, proveedor_id, route_type, route_geojson, proveedores(user_id)')
             .eq('invite_token', privateRouteToken)
             .maybeSingle();
           
