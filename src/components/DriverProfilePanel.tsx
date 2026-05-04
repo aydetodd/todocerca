@@ -419,15 +419,28 @@ function SingleDriverPanel({
 
             {isActive && data.todayAssignment && (
               <>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
-                  onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
-                >
-                  <QrCode className="h-3 w-3 mr-1" />
-                  Cobrar
-                </Button>
+                {unitInfo?.cobro_tipo === 'por_viaje' ? (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="shrink-0 h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-700"
+                    onClick={handleInviteWhatsApp}
+                    title="Compartir mi ubicación en tiempo real con pasajeros"
+                  >
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Invitar pasajero
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
+                    onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
+                  >
+                    <QrCode className="h-3 w-3 mr-1" />
+                    Cobrar
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   className="shrink-0 h-8 px-2.5 text-xs"
