@@ -1,0 +1,1 @@
+DELETE FROM public.proveedores WHERE id = 'f5d984b1-a810-4611-b975-c4f87bfa6e4a';
