@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
@@ -53,9 +53,16 @@ interface Unit {
   nombre: string;
   placas: string | null;
   descripcion: string | null;
+  cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
   is_active: boolean;
   created_at: string;
 }
+
+const formatCobroTipo = (value: Unit['cobro_tipo']) => {
+  if (value === 'por_viaje') return 'Cobra por viaje';
+  if (value === 'por_pasajero') return 'Cobra por pasajero';
+  return 'Sin tipo de cobro';
+};
 
 interface PrivateRouteManagementProps {
   proveedorId: string;
@@ -396,6 +403,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   const handleSaveUnit = async (unitId: string) => {
     if (!editUnit.nombre.trim()) return;
+    if (!editUnit.cobro_tipo) {
+      toast({ title: "Elige la modalidad de cobro", description: "Marca si esta unidad cobra por viaje o por pasajero.", variant: "destructive" });
+      return;
+    }
     try {
       const { error } = await supabase
         .from('unidades_empresa')
@@ -735,23 +746,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               type="button"
                               size="sm"
                               variant={editUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
-                              className="h-7 text-xs"
+                              className="h-9 text-xs justify-start gap-2"
                               onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_viaje' })}
                             >
+                              {editUnit.cobro_tipo === 'por_viaje' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                               Por viaje
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               variant={editUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
-                              className="h-7 text-xs"
+                              className="h-9 text-xs justify-start gap-2"
                               onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_pasajero' })}
                             >
+                              {editUnit.cobro_tipo === 'por_pasajero' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                               Por pasajero
                             </Button>
                           </div>
                           <div className="flex gap-1">
-                            <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleSaveUnit(unit.id)}>
+                            <Button size="sm" variant="default" className="h-7 text-xs" disabled={!editUnit.cobro_tipo} onClick={() => handleSaveUnit(unit.id)}>
                               Guardar
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingUnitId(null)}>
@@ -762,10 +775,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                       ) : (
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Bus className="h-4 w-4 text-amber-500 shrink-0" />
                               <h4 className="font-semibold text-sm">{formatUnitLabel(unit)}</h4>
                             </div>
+                            <Badge variant={unit.cobro_tipo ? 'secondary' : 'destructive'} className="mt-2 text-[11px]">
+                              {formatCobroTipo(unit.cobro_tipo)}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
@@ -1013,15 +1029,19 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 <Button
                   type="button"
                   variant={newUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                  className="justify-start gap-2"
                   onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_viaje' })}
                 >
+                  {newUnit.cobro_tipo === 'por_viaje' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   Por viaje
                 </Button>
                 <Button
                   type="button"
                   variant={newUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                  className="justify-start gap-2"
                   onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_pasajero' })}
                 >
+                  {newUnit.cobro_tipo === 'por_pasajero' ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   Por pasajero
                 </Button>
               </div>

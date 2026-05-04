@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Car, BarChart3, Ticket, Building2 } from 'lucide-react';
-
-import PassengerActiveTrip from '@/components/PassengerActiveTrip';
-import { SOSButton } from '@/components/SOSButton';
-import DriverProfilePanel from '@/components/DriverProfilePanel';
+import { Bus, Ticket, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -12,48 +8,12 @@ import { useState, useEffect } from 'react';
 export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isConcesionario, setIsConcesionario] = useState(false);
   const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      console.log('[MainHome] No user, skipping concesionario check');
       return;
     }
-    const checkConcesionario = async () => {
-      try {
-        console.log('[MainHome] Checking concesionario for user:', user.id);
-        const { data: prov, error: provError } = await supabase
-          .from('proveedores')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (provError) {
-          console.error('[MainHome] Error checking proveedor:', provError);
-          return;
-        }
-        
-        if (prov) {
-          const { count, error: unitError } = await supabase
-            .from('unidades_empresa')
-            .select('*', { count: 'exact', head: true })
-            .eq('proveedor_id', prov.id);
-          
-          if (unitError) {
-            console.error('[MainHome] Error checking unidades:', unitError);
-            return;
-          }
-          
-          console.log('[MainHome] Concesionario units count:', count);
-          setIsConcesionario((count ?? 0) > 0);
-        } else {
-          console.log('[MainHome] User is not a proveedor');
-        }
-      } catch (err) {
-        console.error('[MainHome] Concesionario check failed:', err);
-      }
-    };
     const checkEmpresaTransporte = async () => {
       const { count } = await supabase
         .from('empresas_transporte')
@@ -62,7 +22,6 @@ export default function MainHome() {
         .eq('is_active', true);
       setIsEmpresaTransporte((count ?? 0) > 0);
     };
-    checkConcesionario();
     checkEmpresaTransporte();
   }, [user]);
 
@@ -76,12 +35,6 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {/* Panel chofer oculto temporalmente hasta terminar configuración */}
-        {/* <DriverProfilePanel /> */}
-        
-        {/* Protocolo 2: Taxi oculto - Viaje activo del pasajero */}
-        {/* <PassengerActiveTrip /> */}
-        
         {/* === Protocolo 1: Solo movilidad === */}
         {/* Protocolo 2: Taxi oculto */}
         {/* <Card 
@@ -128,24 +81,6 @@ export default function MainHome() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Panel Concesionario oculto temporalmente hasta terminar configuración de unidades */}
-        {false && isConcesionario && (
-          <Card 
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
-            onClick={() => navigate('/panel-concesionario')}
-          >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="h-7 w-7 text-green-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Panel Concesionario</h3>
-                <p className="text-sm text-muted-foreground">Ingresos, liquidaciones y gestión</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {isEmpresaTransporte && (
           <Card 
