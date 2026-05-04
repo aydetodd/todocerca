@@ -1265,7 +1265,8 @@ export default function PanelConcesionario() {
             </Card>
           </TabsContent>
 
-          {/* VERIFICACIÓN */}
+          {/* COBROS — Stripe Connect (solo público/foráneo) */}
+          {mostrarCobros && (
           <TabsContent value="cobros" className="space-y-4 mt-4">
             {/* Stripe Connect — sin requisito de verificación */}
             <Card>
