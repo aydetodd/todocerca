@@ -403,6 +403,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   const handleSaveUnit = async (unitId: string) => {
     if (!editUnit.nombre.trim()) return;
+    if (!editUnit.cobro_tipo) {
+      toast({ title: "Elige la modalidad de cobro", description: "Marca si esta unidad cobra por viaje o por pasajero.", variant: "destructive" });
+      return;
+    }
     try {
       const { error } = await supabase
         .from('unidades_empresa')
