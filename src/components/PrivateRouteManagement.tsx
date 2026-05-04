@@ -784,9 +784,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               {addingUnit ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
               ) : hasAvailableSlot ? (
-                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad (slot disponible)</>
+                <><Plus className="h-4 w-4 mr-2" /> Registrar Unidad ({availableSlots} disponible{availableSlots > 1 ? 's' : ''})</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Añadir Unidad (<span className="line-through opacity-70 mx-1">$800</span> $400/año)</>
+                <><CreditCard className="h-4 w-4 mr-2" /> Comprar cupos para registrar unidades</>
               )}
             </Button>
           </CardContent>
