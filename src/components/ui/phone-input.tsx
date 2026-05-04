@@ -40,7 +40,7 @@ export function PhoneInput({
   onChange, 
   label = "Número de teléfono",
   required = false,
-  placeholder = "5512345678",
+  placeholder = "",
   id = "telefono"
 }: PhoneInputProps) {
   // Extract country code and phone number from value
