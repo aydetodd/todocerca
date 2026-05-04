@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
@@ -53,9 +53,16 @@ interface Unit {
   nombre: string;
   placas: string | null;
   descripcion: string | null;
+  cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
   is_active: boolean;
   created_at: string;
 }
+
+const formatCobroTipo = (value: Unit['cobro_tipo']) => {
+  if (value === 'por_viaje') return 'Cobra por viaje';
+  if (value === 'por_pasajero') return 'Cobra por pasajero';
+  return 'Sin tipo de cobro';
+};
 
 interface PrivateRouteManagementProps {
   proveedorId: string;
