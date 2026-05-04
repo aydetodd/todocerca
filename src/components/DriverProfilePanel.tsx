@@ -85,6 +85,7 @@ interface UnitInfo {
   nombre: string;
   descripcion: string | null;
   placas: string | null;
+  cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
 }
 
 interface TodayAssignment {
