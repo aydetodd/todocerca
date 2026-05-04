@@ -987,6 +987,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 placeholder="Ej: Mercedes-Benz Sprinter, 30 pasajeros"
               />
             </div>
+            <div>
+              <Label>Modalidad de cobro *</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant={newUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                  onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_viaje' })}
+                >
+                  Por viaje
+                </Button>
+                <Button
+                  type="button"
+                  variant={newUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                  onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_pasajero' })}
+                >
+                  Por pasajero
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Elige cómo cobrará esta unidad.</p>
+            </div>
             <Button
               onClick={handleAddUnit}
               disabled={addingUnit || !newUnit.nombre.trim()}
