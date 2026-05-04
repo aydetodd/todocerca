@@ -730,6 +730,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               className="h-8 text-sm"
                             />
                           </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={editUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                              className="h-7 text-xs"
+                              onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_viaje' })}
+                            >
+                              Por viaje
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={editUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                              className="h-7 text-xs"
+                              onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_pasajero' })}
+                            >
+                              Por pasajero
+                            </Button>
+                          </div>
                           <div className="flex gap-1">
                             <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleSaveUnit(unit.id)}>
                               Guardar
