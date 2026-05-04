@@ -55,7 +55,41 @@ async function parseKmlString(text: string): Promise<ParsedTrace> {
   const dom = parseXmlOrThrow(text);
   const fc = kml(dom);
   console.log('[routeTraceParser] KML features:', fc?.features?.length);
-  return ensureLineString(fc);
+  try {
+    return ensureLineString(fc);
+  } catch (error) {
+    const fallback = parseCoordinateBlocks(dom);
+    if (fallback) return fallback;
+    throw error;
+  }
+}
+
+function parseCoordinateBlocks(dom: Document): ParsedTrace | null {
+  const blocks = Array.from(dom.getElementsByTagName('coordinates'));
+  const features = blocks
+    .map((block) => {
+      const coords = (block.textContent || '')
+        .trim()
+        .split(/\s+/)
+        .map((tuple) => tuple.split(',').map(Number))
+        .filter((tuple) => tuple.length >= 2 && Number.isFinite(tuple[0]) && Number.isFinite(tuple[1]))
+        .map(([lng, lat]) => [lng, lat]);
+
+      if (coords.length < 2) return null;
+      return {
+        type: 'Feature',
+        properties: { parsedBy: 'coordinates-fallback' },
+        geometry: { type: 'LineString', coordinates: coords },
+      };
+    })
+    .filter(Boolean);
+
+  if (features.length === 0) return null;
+  return {
+    geojson: { type: 'FeatureCollection', features },
+    lineCount: features.length,
+    pointCount: 0,
+  };
 }
 
 async function parseGpxString(text: string): Promise<ParsedTrace> {
