@@ -28,30 +28,39 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [confirmDelete, setConfirmDelete] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleFile = async (file: File) => {
     setUploading(true);
     try {
+      console.log('[RouteTraceUploader] file:', file.name, file.size);
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('El archivo no debe pesar más de 10 MB');
       }
       const parsed = await parseRouteTraceFile(file);
-      const { error } = await supabase
+      console.log('[RouteTraceUploader] parsed lines:', parsed.lineCount, 'features:', parsed.geojson?.features?.length);
+      const { data, error } = await supabase
         .from('productos')
         .update({
           route_geojson: parsed.geojson,
           route_trace_filename: file.name,
           route_trace_updated_at: new Date().toISOString(),
         } as any)
-        .eq('id', productoId);
+        .eq('id', productoId)
+        .select('id, route_trace_filename');
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('No se pudo actualizar la ruta (permisos o ID). Verifica que seas el dueño.');
+      }
+      console.log('[RouteTraceUploader] update OK:', data);
       toast({
-        title: 'Trazado cargado',
-        description: `${parsed.lineCount} línea(s) detectadas. Ya se ve en azul en el mapa.`,
+        title: '✅ Trazado guardado',
+        description: `${file.name} · ${parsed.lineCount} línea(s). Toca "Ver en mapa" para verlo.`,
       });
       onChanged?.();
     } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      console.error('[RouteTraceUploader] ERROR:', e);
+      toast({ title: 'Error al subir trazado', description: e.message || String(e), variant: 'destructive' });
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
