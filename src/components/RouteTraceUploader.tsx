@@ -152,6 +152,11 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           ✅ Trazado cargado: {filename}
         </p>
       )}
+      {lastError && (
+        <p className="text-[10px] text-destructive mt-1 break-words">
+          ⚠️ {lastError}
+        </p>
+      )}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
