@@ -881,24 +881,6 @@ export default function PanelConcesionario() {
     );
   }
 
-  const estadoVerifColor = (e?: string) => {
-    switch (e) {
-      case "approved": return "bg-green-600 text-white";
-      case "rejected": return "bg-destructive text-destructive-foreground";
-      case "in_review": return "bg-amber-500 text-white";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const estadoVerifLabel = (e?: string) => {
-    switch (e) {
-      case "approved": return "Aprobado";
-      case "rejected": return "Rechazado";
-      case "in_review": return "En Revisión";
-      default: return "Pendiente";
-    }
-  };
-
   const severidadColor = (s: string) => {
     switch (s) {
       case "critical": return "bg-red-900 text-red-100";
