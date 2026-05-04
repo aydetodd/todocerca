@@ -1,0 +1,1 @@
+ALTER TABLE public.unidades_empresa ADD COLUMN IF NOT EXISTS cobro_tipo text CHECK (cobro_tipo IN ('por_viaje','por_pasajero'));

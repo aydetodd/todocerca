@@ -84,9 +84,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
   const [showDrivers, setShowDrivers] = useState(false);
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
-  const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '' });
+  const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
-  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '' });
+  const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
   
   // Geography & route catalog state for public/foraneo routes
@@ -355,7 +355,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           placas: newUnit.placas.trim() || null,
           descripcion: newUnit.descripcion.trim() || null,
           transport_type: transportType,
-        });
+          cobro_tipo: newUnit.cobro_tipo || null,
+        } as any);
 
       if (error) throw error;
 
@@ -364,7 +365,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         description: `"${newUnit.nombre.trim()}" agregada a tu flota.`,
       });
       setIsUnitDialogOpen(false);
-      setNewUnit({ nombre: '', placas: '', descripcion: '' });
+      setNewUnit({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' });
       fetchUnits();
       checkSubscription();
     } catch (error: any) {
@@ -402,7 +403,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           nombre: editUnit.nombre.trim(),
           placas: editUnit.placas.trim() || null,
           descripcion: editUnit.descripcion.trim() || null,
-        })
+          cobro_tipo: editUnit.cobro_tipo || null,
+        } as any)
         .eq('id', unitId);
 
       if (error) throw error;
@@ -728,6 +730,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               className="h-8 text-sm"
                             />
                           </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={editUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                              className="h-7 text-xs"
+                              onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_viaje' })}
+                            >
+                              Por viaje
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={editUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                              className="h-7 text-xs"
+                              onClick={() => setEditUnit({ ...editUnit, cobro_tipo: 'por_pasajero' })}
+                            >
+                              Por pasajero
+                            </Button>
+                          </div>
                           <div className="flex gap-1">
                             <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleSaveUnit(unit.id)}>
                               Guardar
@@ -752,7 +774,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               className="h-8 w-8"
                               onClick={() => {
                                 setEditingUnitId(unit.id);
-                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '', descripcion: unit.descripcion || '' });
+                                setEditUnit({ nombre: unit.nombre, placas: unit.placas || '', descripcion: unit.descripcion || '', cobro_tipo: ((unit as any).cobro_tipo as any) || '' });
                               }}
                             >
                               <Pencil className="h-3 w-3" />
@@ -985,9 +1007,29 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 placeholder="Ej: Mercedes-Benz Sprinter, 30 pasajeros"
               />
             </div>
+            <div>
+              <Label>Modalidad de cobro *</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant={newUnit.cobro_tipo === 'por_viaje' ? 'default' : 'outline'}
+                  onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_viaje' })}
+                >
+                  Por viaje
+                </Button>
+                <Button
+                  type="button"
+                  variant={newUnit.cobro_tipo === 'por_pasajero' ? 'default' : 'outline'}
+                  onClick={() => setNewUnit({ ...newUnit, cobro_tipo: 'por_pasajero' })}
+                >
+                  Por pasajero
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Elige cómo cobrará esta unidad.</p>
+            </div>
             <Button
               onClick={handleAddUnit}
-              disabled={addingUnit || !newUnit.nombre.trim()}
+              disabled={addingUnit || !newUnit.nombre.trim() || !newUnit.cobro_tipo}
               className="w-full"
             >
               {addingUnit ? (

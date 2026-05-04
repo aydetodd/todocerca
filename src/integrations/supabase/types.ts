@@ -3360,6 +3360,7 @@ export type Database = {
       unidades_empresa: {
         Row: {
           anio: number | null
+          cobro_tipo: string | null
           created_at: string
           descripcion: string | null
           id: string
@@ -3377,6 +3378,7 @@ export type Database = {
         }
         Insert: {
           anio?: number | null
+          cobro_tipo?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
@@ -3394,6 +3396,7 @@ export type Database = {
         }
         Update: {
           anio?: number | null
+          cobro_tipo?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string

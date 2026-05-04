@@ -76,8 +76,8 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {/* Panel de perfil de chofer (visible siempre para choferes autorizados) */}
-        <DriverProfilePanel />
+        {/* Panel chofer oculto temporalmente hasta terminar configuración */}
+        {/* <DriverProfilePanel /> */}
         
         {/* Protocolo 2: Taxi oculto - Viaje activo del pasajero */}
         {/* <PassengerActiveTrip /> */}
@@ -129,7 +129,8 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        {isConcesionario && (
+        {/* Panel Concesionario oculto temporalmente hasta terminar configuración de unidades */}
+        {false && isConcesionario && (
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-green-500/30"
             onClick={() => navigate('/panel-concesionario')}
