@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
 interface RouteGeoJSON {
@@ -64,10 +64,15 @@ export function useRouteOverlay(
 ) {
   const polylineRef = useRef<L.Polyline | null>(null);
   const currentKeyRef = useRef<string | null>(null);
+  const [mapReadyTick, setMapReadyTick] = useState(0);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) {
+      if (!routeId && !inlineGeoJSON) return;
+      const retry = window.setTimeout(() => setMapReadyTick((tick) => tick + 1), 150);
+      return () => window.clearTimeout(retry);
+    }
 
     const drawFromGeoJSON = (data: RouteGeoJSON, key: string) => {
       const lineFeature = data.features.find(
@@ -136,5 +141,5 @@ export function useRouteOverlay(
     return () => {
       cancelled = true;
     };
-  }, [routeId, inlineGeoJSON, mapRef]);
+  }, [routeId, inlineGeoJSON, mapRef, mapReadyTick]);
 }
