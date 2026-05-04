@@ -48,6 +48,11 @@ interface PrivateVehicle {
   created_at: string;
   route_geojson?: any;
   route_trace_filename?: string | null;
+  route_origin_lat?: number | null;
+  route_origin_lng?: number | null;
+  route_destination_lat?: number | null;
+  route_destination_lng?: number | null;
+  route_geofence_radius_m?: number | null;
 }
 
 interface Unit {
