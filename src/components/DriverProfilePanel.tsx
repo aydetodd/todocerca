@@ -543,7 +543,7 @@ export default function DriverProfilePanel() {
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas, cobro_tipo)')
             .eq('chofer_id', driver.id)
             .order('fecha', { ascending: false })
             .limit(1)
