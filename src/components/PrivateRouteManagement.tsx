@@ -78,6 +78,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [addingUnit, setAddingUnit] = useState(false);
   const [isRouteDialogOpen, setIsRouteDialogOpen] = useState(false);
   const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false);
+  const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
+  const [slotsToBuy, setSlotsToBuy] = useState<number>(1);
   const [deleteVehicleId, setDeleteVehicleId] = useState<string | null>(null);
   const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
   const [showDrivers, setShowDrivers] = useState(false);
