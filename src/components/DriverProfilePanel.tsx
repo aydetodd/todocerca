@@ -384,17 +384,25 @@ function SingleDriverPanel({
 
           {hasAssignment && data.todayAssignment && (() => {
             const assignedVehicle = data.vehicles.find(v => v.id === data.todayAssignment!.producto_id);
-            return assignedVehicle?.is_private ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleInviteWhatsApp}
-                className="shrink-0 h-8 px-2.5 text-xs"
-              >
-                <Share2 className="h-3 w-3 mr-1" />
-                Invitar
-              </Button>
-            ) : null;
+            if (!assignedVehicle?.is_private) return null;
+            return (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleInviteWhatsApp}
+                  className="h-8 px-2 text-xs"
+                >
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Invitar
+                </Button>
+                <RouteQRButton
+                  productoId={assignedVehicle.id}
+                  routeName={data.todayAssignment.vehicleName}
+                  initialToken={assignedVehicle.invite_token}
+                />
+              </div>
+            );
           })()}
         </div>
 
