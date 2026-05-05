@@ -42,6 +42,8 @@ export default function MapView() {
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
+  const { addFavorito, isFavorito } = useFavoritos();
+  const isRouteFav = privateRouteProductoId ? isFavorito('producto', privateRouteProductoId) : false;
 
   const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
     const features = routes.flatMap((route) => route.route_geojson?.features || []);
