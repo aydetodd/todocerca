@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation, Share2, Bus, Loader2, QrCode, Users } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
+import RouteQRModal from '@/components/RouteQRModal';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
@@ -171,6 +172,41 @@ function PassengerCountBadge({ choferId }: { choferId: string }) {
   );
 }
 
+function RouteQRButton({ productoId, routeName, initialToken }: { productoId: string; routeName: string; initialToken: string | null }) {
+  const [token, setToken] = useState<string | null>(initialToken);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  if (token) {
+    return <RouteQRModal routeName={routeName} inviteToken={token} />;
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={loading}
+      className="h-8 px-2 text-xs"
+      onClick={async () => {
+        setLoading(true);
+        const newToken = crypto.randomUUID();
+        const { error } = await supabase
+          .from('productos')
+          .update({ invite_token: newToken })
+          .eq('id', productoId);
+        setLoading(false);
+        if (error) {
+          toast({ title: 'Error', description: 'No se pudo generar el QR', variant: 'destructive' });
+          return;
+        }
+        setToken(newToken);
+      }}
+    >
+      <QrCode className="h-3 w-3 mr-1" />
+      QR
+    </Button>
+  );
+}
 function SingleDriverPanel({
   data,
   activeRouteName,
@@ -383,17 +419,25 @@ function SingleDriverPanel({
 
           {hasAssignment && data.todayAssignment && (() => {
             const assignedVehicle = data.vehicles.find(v => v.id === data.todayAssignment!.producto_id);
-            return assignedVehicle?.is_private ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleInviteWhatsApp}
-                className="shrink-0 h-8 px-2.5 text-xs"
-              >
-                <Share2 className="h-3 w-3 mr-1" />
-                Invitar
-              </Button>
-            ) : null;
+            if (!assignedVehicle?.is_private) return null;
+            return (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleInviteWhatsApp}
+                  className="h-8 px-2 text-xs"
+                >
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Invitar
+                </Button>
+                <RouteQRButton
+                  productoId={assignedVehicle.id}
+                  routeName={data.todayAssignment.vehicleName}
+                  initialToken={assignedVehicle.invite_token}
+                />
+              </div>
+            );
           })()}
         </div>
 

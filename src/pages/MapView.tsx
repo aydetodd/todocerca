@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { getHermosilloToday } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Users, Route } from 'lucide-react';
+import { Users, Route, Heart } from 'lucide-react';
+import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
 
@@ -41,6 +42,8 @@ export default function MapView() {
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
+  const { addFavorito, isFavorito } = useFavoritos();
+  const isRouteFav = privateRouteProductoId ? isFavorito('producto', privateRouteProductoId) : false;
 
   const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
     const features = routes.flatMap((route) => route.route_geojson?.features || []);
@@ -445,14 +448,32 @@ export default function MapView() {
         </div>
         
         {/* Route indicator — anchored bottom-left so it never overlaps top controls */}
-        {privateRouteName && !fleetMode && (
-          <div className="absolute bottom-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md flex flex-col max-w-[70vw]">
-            <span className="text-sm font-bold truncate">
-              Ruta: {privateRouteName}
-            </span>
-            <span className="text-xs text-muted-foreground truncate">
-              Ubicación de la ruta {routeTypeLabel}
-            </span>
+        {privateRouteName && !fleetMode && !asChofer && (
+          <div className="absolute bottom-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md flex flex-col gap-2 max-w-[80vw]">
+            <div className="flex flex-col">
+              <span className="text-sm font-bold truncate">
+                Ruta: {privateRouteName}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                Ubicación de la ruta {routeTypeLabel}
+              </span>
+            </div>
+            {privateRouteProductoId && !isRouteFav && (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-8 text-xs"
+                onClick={() => addFavorito('producto', privateRouteProductoId)}
+              >
+                <Heart className="h-3 w-3 mr-1" />
+                Guardar en favoritos
+              </Button>
+            )}
+            {privateRouteProductoId && isRouteFav && (
+              <span className="text-xs text-primary flex items-center gap-1">
+                <Heart className="h-3 w-3 fill-current" /> En tus favoritos
+              </span>
+            )}
           </div>
         )}
         {/* StatusControl removido aquí: el semáforo ya vive en el GlobalHeader para evitar duplicado */}
