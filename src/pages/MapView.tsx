@@ -444,24 +444,18 @@ export default function MapView() {
           </div>
         </div>
         
-        {/* Route indicator with favorite button */}
+        {/* Route indicator — anchored bottom-left so it never overlaps top controls */}
         {privateRouteName && !fleetMode && (
-          <div className={`absolute z-30 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md flex flex-col ${isFleetOwner ? 'top-14 left-4' : 'top-4 left-4'}`}>
-            <span className="text-sm font-bold">
+          <div className="absolute bottom-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md flex flex-col max-w-[70vw]">
+            <span className="text-sm font-bold truncate">
               Ruta: {privateRouteName}
             </span>
-            <span className="text-xs text-muted-foreground">
-              Mostrando ubicación de la ruta {routeTypeLabel}
+            <span className="text-xs text-muted-foreground truncate">
+              Ubicación de la ruta {routeTypeLabel}
             </span>
           </div>
         )}
-        
-        {/* Status Control overlay for providers on map */}
-        {isProvider && (
-          <div className="absolute top-4 right-4 z-30" style={{ top: privateRouteName && !fleetMode ? '60px' : '16px' }}>
-            <StatusControl />
-          </div>
-        )}
+        {/* StatusControl removido aquí: el semáforo ya vive en el GlobalHeader para evitar duplicado */}
       </div>
 
       {/* Messaging Panel (se abre desde el popup del mapa) */}
