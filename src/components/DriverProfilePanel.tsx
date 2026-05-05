@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation, Share2, Bus, Loader2, QrCode, Users } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
+import RouteQRModal from '@/components/RouteQRModal';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
