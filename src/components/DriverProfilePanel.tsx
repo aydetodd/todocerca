@@ -207,8 +207,7 @@ function RouteQRButton({ productoId, routeName, initialToken }: { productoId: st
     </Button>
   );
 }
-
-
+function SingleDriverPanel({
   data,
   activeRouteName,
   profileStatus,
