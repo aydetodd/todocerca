@@ -19,6 +19,7 @@ export default function MapView() {
   const filterType = searchParams.get('type') as 'taxi' | 'ruta' | null;
   const privateRouteToken = searchParams.get('token');
   const publicRouteProductoId = searchParams.get('producto');
+  const asChofer = searchParams.get('as') === 'chofer';
   const fleetParam = searchParams.get('fleet') === 'true';
   const fleetTypeParam = searchParams.get('fleetType') as 'publico' | 'foraneo' | 'privado' | 'taxi' | null;
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
@@ -381,8 +382,10 @@ export default function MapView() {
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalHeader title={
-        fleetMode 
-          ? `Mi Flota${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
+        asChofer
+          ? 'Mi ubicación como chofer'
+          : fleetMode 
+          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
           :
         filterType === 'taxi' ? 'Taxis Disponibles' : 
         filterType === 'ruta' ? 'Rutas de Transporte' : 
