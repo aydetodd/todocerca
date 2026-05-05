@@ -446,7 +446,7 @@ function SingleDriverPanel({
                   className="shrink-0 h-8 px-2.5 text-xs"
                   onClick={() => {
                     const productoId = data.todayAssignment!.producto_id;
-                    navigate(`/mapa?producto=${productoId}`);
+                    navigate(`/mapa?producto=${productoId}&as=chofer`);
                   }}
                 >
                   <Navigation className="h-3 w-3 mr-1" />
