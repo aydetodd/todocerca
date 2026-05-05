@@ -19,6 +19,7 @@ export default function MapView() {
   const filterType = searchParams.get('type') as 'taxi' | 'ruta' | null;
   const privateRouteToken = searchParams.get('token');
   const publicRouteProductoId = searchParams.get('producto');
+  const asChofer = searchParams.get('as') === 'chofer';
   const fleetParam = searchParams.get('fleet') === 'true';
   const fleetTypeParam = searchParams.get('fleetType') as 'publico' | 'foraneo' | 'privado' | 'taxi' | null;
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
