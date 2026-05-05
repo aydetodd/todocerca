@@ -172,7 +172,43 @@ function PassengerCountBadge({ choferId }: { choferId: string }) {
   );
 }
 
-function SingleDriverPanel({
+function RouteQRButton({ productoId, routeName, initialToken }: { productoId: string; routeName: string; initialToken: string | null }) {
+  const [token, setToken] = useState<string | null>(initialToken);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  if (token) {
+    return <RouteQRModal routeName={routeName} inviteToken={token} />;
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={loading}
+      className="h-8 px-2 text-xs"
+      onClick={async () => {
+        setLoading(true);
+        const newToken = crypto.randomUUID();
+        const { error } = await supabase
+          .from('productos')
+          .update({ invite_token: newToken })
+          .eq('id', productoId);
+        setLoading(false);
+        if (error) {
+          toast({ title: 'Error', description: 'No se pudo generar el QR', variant: 'destructive' });
+          return;
+        }
+        setToken(newToken);
+      }}
+    >
+      <QrCode className="h-3 w-3 mr-1" />
+      QR
+    </Button>
+  );
+}
+
+
   data,
   activeRouteName,
   profileStatus,
