@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { getHermosilloToday } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Users, Route } from 'lucide-react';
+import { Users, Route, Heart } from 'lucide-react';
+import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
 
