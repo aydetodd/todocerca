@@ -382,8 +382,10 @@ export default function MapView() {
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalHeader title={
-        fleetMode 
-          ? `Mi Flota${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
+        asChofer
+          ? 'Mi ubicación como chofer'
+          : fleetMode 
+          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
           :
         filterType === 'taxi' ? 'Taxis Disponibles' : 
         filterType === 'ruta' ? 'Rutas de Transporte' : 
