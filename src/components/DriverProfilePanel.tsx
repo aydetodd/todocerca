@@ -445,14 +445,8 @@ function SingleDriverPanel({
                   size="sm"
                   className="shrink-0 h-8 px-2.5 text-xs"
                   onClick={() => {
-                    const vehicle = data.vehicles.find(
-                      v => v.id === data.todayAssignment!.producto_id
-                    );
-                    if (vehicle?.invite_token) {
-                      navigate(`/mapa?token=${vehicle.invite_token}`);
-                    } else {
-                      navigate('/mapa?type=ruta');
-                    }
+                    const productoId = data.todayAssignment!.producto_id;
+                    navigate(`/mapa?producto=${productoId}`);
                   }}
                 >
                   <Navigation className="h-3 w-3 mr-1" />
