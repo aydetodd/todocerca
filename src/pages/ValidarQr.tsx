@@ -212,7 +212,7 @@ export default function ValidarQr() {
           if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
-              .select("route_type, is_private, proveedor_id")
+              .select("route_type, is_private, proveedor_id, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m")
               .eq("id", asignacionActiva.producto_id)
               .single();
             if (producto?.route_type === "privada" || (producto as any)?.is_private) {
@@ -230,17 +230,18 @@ export default function ValidarQr() {
                 const tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
                 if (tripContrato) {
                   const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
+                  const p: any = producto;
                   setTripContract({
                     contratoId: tripContrato.id,
                     choferEmpresaId: choferActivo.id,
                     unidadId: asignacionActiva.unidad_id,
                     routeProductId: asignacionActiva.producto_id,
                     empresaNombre: tripContrato.empresas_transporte?.nombre,
-                    origenLat: tripContrato.origen_lat,
-                    origenLng: tripContrato.origen_lng,
-                    destinoLat: tripContrato.destino_lat,
-                    destinoLng: tripContrato.destino_lng,
-                    radioM: tripContrato.geocerca_radio_m ?? 150,
+                    origenLat: tripContrato.origen_lat ?? p?.route_origin_lat ?? null,
+                    origenLng: tripContrato.origen_lng ?? p?.route_origin_lng ?? null,
+                    destinoLat: tripContrato.destino_lat ?? p?.route_destination_lat ?? null,
+                    destinoLng: tripContrato.destino_lng ?? p?.route_destination_lng ?? null,
+                    radioM: tripContrato.geocerca_radio_m ?? p?.route_geofence_radius_m ?? 150,
                   });
                 }
               }
