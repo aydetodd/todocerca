@@ -55,7 +55,7 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
     navigator.geolocation.watchPosition(
       (pos) => {
         const latlng: L.LatLngExpression = [pos.coords.latitude, pos.coords.longitude];
-        const busHtml = `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); font-size: 28px; line-height: 1;">🚌</div>`;
+        const busHtml = `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));"><svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="16" height="16" rx="2" fill="#FDB813" stroke="#1a1a1a" stroke-width="1.2"/><rect x="5.5" y="5" width="5.5" height="4" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><rect x="13" y="5" width="5.5" height="4" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><rect x="5.5" y="11" width="13" height="3" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><circle cx="8" cy="20" r="1.8" fill="#1a1a1a"/><circle cx="16" cy="20" r="1.8" fill="#1a1a1a"/></svg></div>`;
         if (posMarkerRef.current) {
           posMarkerRef.current.setLatLng(latlng);
         } else {
