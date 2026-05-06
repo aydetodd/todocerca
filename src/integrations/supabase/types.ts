@@ -3733,7 +3733,7 @@ export type Database = {
       viajes_realizados: {
         Row: {
           chofer_id: string
-          contrato_id: string
+          contrato_id: string | null
           created_at: string
           estado: string
           fecha: string
@@ -3746,12 +3746,13 @@ export type Database = {
           inicio_lng: number | null
           notas: string | null
           numero_viaje: number
+          producto_id: string | null
           unidad_id: string | null
           updated_at: string
         }
         Insert: {
           chofer_id: string
-          contrato_id: string
+          contrato_id?: string | null
           created_at?: string
           estado?: string
           fecha?: string
@@ -3764,12 +3765,13 @@ export type Database = {
           inicio_lng?: number | null
           notas?: string | null
           numero_viaje?: number
+          producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
         }
         Update: {
           chofer_id?: string
-          contrato_id?: string
+          contrato_id?: string | null
           created_at?: string
           estado?: string
           fecha?: string
@@ -3782,6 +3784,7 @@ export type Database = {
           inicio_lng?: number | null
           notas?: string | null
           numero_viaje?: number
+          producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
         }
@@ -3798,6 +3801,13 @@ export type Database = {
             columns: ["contrato_id"]
             isOneToOne: false
             referencedRelation: "contratos_transporte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viajes_realizados_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
             referencedColumns: ["id"]
           },
           {
