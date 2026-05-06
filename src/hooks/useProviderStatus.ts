@@ -109,12 +109,18 @@ export function useProviderStatus() {
       // para que su marcador desaparezca instantáneamente en los demás dispositivos
       // (RLS permite que cada usuario elimine sus propias filas).
       if (newStatus === 'offline') {
+        // Avisar al tracking local INMEDIATAMENTE para que detenga el polling
+        // antes de borrar la ubicación (evita que un upsert posterior la recree).
+        try { window.dispatchEvent(new CustomEvent('provider-status-offline')); } catch {}
         await Promise.all([
           supabase.from('tracking_member_locations').delete().eq('user_id', userId),
           // Borrar también la ubicación del proveedor para que su marcador
           // desaparezca instantáneamente del mapa en todos los dispositivos.
           supabase.from('proveedor_locations').delete().eq('user_id', userId),
         ]);
+      } else {
+        // Al volver a available/busy reactivar tracking
+        try { window.dispatchEvent(new CustomEvent('provider-status-active')); } catch {}
       }
 
       // Broadcast to ALL mounted instances immediately
