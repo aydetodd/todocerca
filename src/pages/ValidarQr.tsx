@@ -212,7 +212,7 @@ export default function ValidarQr() {
           if (asignacionActiva.producto_id) {
             const { data: producto } = await supabase
               .from("productos")
-              .select("route_type, is_private, proveedor_id")
+              .select("route_type, is_private, proveedor_id, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m")
               .eq("id", asignacionActiva.producto_id)
               .single();
             if (producto?.route_type === "privada" || (producto as any)?.is_private) {
