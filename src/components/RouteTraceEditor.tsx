@@ -134,6 +134,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       }
       polylineRef.current = null;
       markersGroupRef.current = null;
+      setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
