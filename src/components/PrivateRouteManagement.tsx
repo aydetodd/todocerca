@@ -55,6 +55,7 @@ interface PrivateVehicle {
   route_destination_lat?: number | null;
   route_destination_lng?: number | null;
   route_geofence_radius_m?: number | null;
+  route_group?: string | null;
 }
 
 interface Unit {
@@ -266,7 +267,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
       let query = supabase
         .from('productos')
-        .select('id, nombre, descripcion, invite_token, is_available, created_at, route_geojson, route_trace_filename, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m')
+        .select('id, nombre, descripcion, invite_token, is_available, created_at, route_geojson, route_trace_filename, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m, route_group')
         .eq('proveedor_id', proveedorId)
         .eq('route_type', routeType)
         .eq('is_mobile', true)
@@ -951,6 +952,43 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               filename={vehicle.route_trace_filename}
                               onChanged={() => fetchVehicles()}
                             />
+                          </div>
+
+                          <div className="pt-2 border-t">
+                            <Label htmlFor={`group-${vehicle.id}`} className="text-xs font-medium">
+                              Grupo / Clasificación
+                            </Label>
+                            <p className="text-[10px] text-muted-foreground mb-1">
+                              Etiqueta libre para agrupar rutas en el mapa de tu flota (ej: "Turno Mañana", "Maquila Ford", "Grupo 1").
+                            </p>
+                            <div className="flex gap-1">
+                              <Input
+                                id={`group-${vehicle.id}`}
+                                list={`groups-list-${proveedorId}`}
+                                defaultValue={vehicle.route_group || ''}
+                                placeholder="Sin grupo"
+                                className="h-8 text-xs"
+                                onBlur={async (e) => {
+                                  const val = e.target.value.trim() || null;
+                                  if (val === (vehicle.route_group || null)) return;
+                                  const { error } = await supabase
+                                    .from('productos')
+                                    .update({ route_group: val })
+                                    .eq('id', vehicle.id);
+                                  if (error) {
+                                    toast({ title: 'No se pudo guardar', description: error.message, variant: 'destructive' });
+                                  } else {
+                                    toast({ title: 'Grupo actualizado' });
+                                    fetchVehicles();
+                                  }
+                                }}
+                              />
+                            </div>
+                            <datalist id={`groups-list-${proveedorId}`}>
+                              {Array.from(new Set(vehicles.map(v => v.route_group).filter(Boolean))).map(g => (
+                                <option key={g!} value={g!} />
+                              ))}
+                            </datalist>
                           </div>
 
                           <Button

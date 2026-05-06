@@ -14,6 +14,7 @@ import { Users, Route, Heart } from 'lucide-react';
 import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
+import { FleetRouteFilter, type FleetRouteItem } from '@/components/FleetRouteFilter';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -39,14 +40,19 @@ export default function MapView() {
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
   const [activeRouteOverlay, setActiveRouteOverlay] = useState<string | null>(null);
   const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
+  const [fleetRoutes, setFleetRoutes] = useState<Array<FleetRouteItem & { route_geojson: any }>>([]);
+  const [visibleRouteIds, setVisibleRouteIds] = useState<Set<string>>(new Set());
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
   const { addFavorito, isFavorito } = useFavoritos();
   const isRouteFav = privateRouteProductoId ? isFavorito('producto', privateRouteProductoId) : false;
 
-  const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
-    const features = routes.flatMap((route) => route.route_geojson?.features || []);
+  const mergeRouteTraces = (routes: Array<{ id?: string; route_geojson: { features?: any[] } | null }>, allowedIds?: Set<string>) => {
+    const filtered = allowedIds
+      ? routes.filter((r) => r.id && allowedIds.has(r.id))
+      : routes;
+    const features = filtered.flatMap((route) => route.route_geojson?.features || []);
     return features.length > 0 ? { type: 'FeatureCollection', features } : null;
   };
 
@@ -173,12 +179,28 @@ export default function MapView() {
             const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
             const { data: tracedRoutes } = await supabase
               .from('productos')
-              .select('route_geojson')
+              .select('id, nombre, route_geojson, route_group')
               .eq('proveedor_id', proveedor.id)
               .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada')
               .not('route_geojson', 'is', null);
 
-            setActiveRouteGeoJSON(mergeRouteTraces((tracedRoutes || []) as Array<{ route_geojson: { features?: unknown[] } | null }>));
+            const items = (tracedRoutes || []).map((r: any) => {
+              const lineFeat = r.route_geojson?.features?.find(
+                (f: any) => f?.geometry?.type === 'LineString' || f?.geometry?.type === 'MultiLineString'
+              );
+              const color = lineFeat?.properties?.color || '#0066CC';
+              return {
+                id: r.id,
+                nombre: r.nombre,
+                route_group: r.route_group ?? null,
+                color,
+                route_geojson: r.route_geojson,
+              };
+            });
+            setFleetRoutes(items);
+            const allIds = new Set<string>(items.map((i) => i.id));
+            setVisibleRouteIds(allIds);
+            setActiveRouteGeoJSON(mergeRouteTraces(items, allIds));
             setActiveRouteOverlay(null);
           }
 
@@ -334,6 +356,12 @@ export default function MapView() {
     checkDriverRoute();
   }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
+  // Re-render fleet trace overlay when user toggles the filter
+  useEffect(() => {
+    if (!fleetMode || fleetRoutes.length === 0) return;
+    setActiveRouteGeoJSON(mergeRouteTraces(fleetRoutes, visibleRouteIds));
+  }, [visibleRouteIds, fleetRoutes, fleetMode]);
+
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
     setSelectedReceiverName(apodo);
@@ -464,6 +492,15 @@ export default function MapView() {
               </span>
             )}
           </div>
+        )}
+
+        {/* Fleet route filter (groups + colors) */}
+        {fleetMode && fleetRoutes.length > 0 && (
+          <FleetRouteFilter
+            routes={fleetRoutes}
+            visibleIds={visibleRouteIds}
+            onChange={setVisibleRouteIds}
+          />
         )}
         {/* StatusControl removido aquí: el semáforo ya vive en el GlobalHeader para evitar duplicado */}
       </div>

@@ -1,0 +1,2 @@
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS route_group text;
+CREATE INDEX IF NOT EXISTS idx_productos_route_group ON public.productos(proveedor_id, route_group) WHERE route_group IS NOT NULL;
