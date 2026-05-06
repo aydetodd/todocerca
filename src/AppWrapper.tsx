@@ -134,61 +134,62 @@ export default function AppWrapper() {
         {/* Sesión única por usuario (bloqueo duro) */}
         <SingleSessionGate />
         <NavigationBar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<MainHome />} />
-          <Route path="/panel" element={<Panel />} />
-          <Route path="/landing" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/mi-perfil" element={<MiPerfil />} />
-          <Route path="/mis-productos" element={<MisProductos />} />
-          <Route path="/mis-rutas" element={<MisRutas />} />
-          <Route path="/gestion-pedidos" element={<GestionPedidos />} />
-          <Route path="/mapa" element={<MapView />} />
-          <Route path="/tracking-gps" element={<TrackingGPS />} />
-          <Route path="/join-group" element={<JoinGroup />} />
-          <Route path="/gps-reports" element={<GpsReports />} />
-          {/* Rutas geográficas amigables para LATAM */}
-          <Route path="/gps/:paisCode" element={<GpsLocationPage />} />
-          <Route path="/gps/:paisCode/:nivel1Slug" element={<GpsLocationPage />} />
-          <Route path="/gps/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage />} />
-          <Route path="/transporte/:paisCode" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
-          <Route path="/transporte/:paisCode/:nivel1Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
-          <Route path="/transporte/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
-          <Route path="/search" element={<ProductSearch />} />
-          <Route path="/mensajes" element={<MessagesInbox />} />
-          <Route path="/agregar-contacto" element={<AddContact />} />
-          <Route path="/favoritos" element={<Favoritos />} />
-          <Route path="/donar" element={<Donar />} />
-          <Route path="/extraviados" element={<Extraviados />} />
-          <Route path="/votaciones" element={<Votaciones />} />
-          <Route path="/votaciones/crear" element={<CrearVotacion />} />
-          <Route path="/votaciones/:id" element={<VotacionDetalle />} />
-          <Route path="/sos/:token" element={<SOSView />} />
-          <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
-          <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
-          <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
-          {/* Wallet QR Boletos */}
-          <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
-          <Route path="/wallet/qr-boletos/comprar" element={<ComprarBoletos />} />
-          {/* GenerarQr route removed - QR codes generated automatically on purchase */}
-          <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
-          <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
-          <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
-          <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
-          <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
-          <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
-          {/* foráneo: pendiente */}
-          <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
-          <Route path="/tv" element={<TodoCercaTv />} />
-          <Route path="/privacidad" element={<Privacidad />} />
-          <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
-          <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<MainHome />} />
+            <Route path="/panel" element={<Panel />} />
+            <Route path="/landing" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/mi-perfil" element={<MiPerfil />} />
+            <Route path="/mis-productos" element={<MisProductos />} />
+            <Route path="/mis-rutas" element={<MisRutas />} />
+            <Route path="/gestion-pedidos" element={<GestionPedidos />} />
+            <Route path="/mapa" element={<MapView />} />
+            <Route path="/tracking-gps" element={<TrackingGPS />} />
+            <Route path="/join-group" element={<JoinGroup />} />
+            <Route path="/gps-reports" element={<GpsReports />} />
+            {/* Rutas geográficas amigables para LATAM */}
+            <Route path="/gps/:paisCode" element={<GpsLocationPage />} />
+            <Route path="/gps/:paisCode/:nivel1Slug" element={<GpsLocationPage />} />
+            <Route path="/gps/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage />} />
+            <Route path="/transporte/:paisCode" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
+            <Route path="/transporte/:paisCode/:nivel1Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
+            <Route path="/transporte/:paisCode/:nivel1Slug/:nivel2Slug" element={<GpsLocationPage basePath="/transporte" title="Rutas de Transporte" />} />
+            <Route path="/search" element={<ProductSearch />} />
+            <Route path="/mensajes" element={<MessagesInbox />} />
+            <Route path="/agregar-contacto" element={<AddContact />} />
+            <Route path="/favoritos" element={<Favoritos />} />
+            <Route path="/donar" element={<Donar />} />
+            <Route path="/extraviados" element={<Extraviados />} />
+            <Route path="/votaciones" element={<Votaciones />} />
+            <Route path="/votaciones/crear" element={<CrearVotacion />} />
+            <Route path="/votaciones/:id" element={<VotacionDetalle />} />
+            <Route path="/sos/:token" element={<SOSView />} />
+            <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
+            <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
+            <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
+            {/* Wallet QR Boletos */}
+            <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
+            <Route path="/wallet/qr-boletos/comprar" element={<ComprarBoletos />} />
+            <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
+            <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
+            <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
+            <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
+            <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
+            <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
+            {/* foráneo: pendiente */}
+            <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
+            <Route path="/tv" element={<TodoCercaTv />} />
+            <Route path="/privacidad" element={<Privacidad />} />
+            <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
+            <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
         <Toaster />
         <Sonner />
       </BrowserRouter>
