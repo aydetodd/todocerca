@@ -493,6 +493,15 @@ export default function MapView() {
             )}
           </div>
         )}
+
+        {/* Fleet route filter (groups + colors) */}
+        {fleetMode && fleetRoutes.length > 0 && (
+          <FleetRouteFilter
+            routes={fleetRoutes}
+            visibleIds={visibleRouteIds}
+            onChange={setVisibleRouteIds}
+          />
+        )}
         {/* StatusControl removido aquí: el semáforo ya vive en el GlobalHeader para evitar duplicado */}
       </div>
 
