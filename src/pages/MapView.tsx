@@ -464,15 +464,15 @@ export default function MapView() {
           </div>
         </div>
         
-        {/* Route indicator — anchored bottom-left so it never overlaps top controls */}
+        {/* Route indicator — pinned just under the header, narrow, right-aligned to leave zoom controls free */}
         {privateRouteName && !fleetMode && !asChofer && (
-          <div className="absolute top-4 left-4 right-4 z-[1000] bg-background/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-border flex flex-col gap-2 max-w-[calc(100vw-2rem)] sm:max-w-sm pointer-events-auto mt-16 sm:mt-0 sm:left-auto sm:right-4">
+          <div className="absolute top-1 right-2 z-[1000] bg-card border-b border-border shadow-md rounded-b-lg px-3 py-1.5 flex flex-col gap-1 max-w-[70vw] sm:max-w-xs pointer-events-auto">
             <div className="flex flex-col">
-              <span className="text-sm font-bold truncate">
+              <span className="text-xs font-bold truncate leading-tight">
                 Ruta: {privateRouteName}
               </span>
-              <span className="text-xs text-muted-foreground truncate">
-                Ubicación de la ruta {routeTypeLabel}
+              <span className="text-[10px] text-muted-foreground truncate leading-tight">
+                Ruta {routeTypeLabel}
               </span>
             </div>
             {privateRouteProductoId && !isRouteFav && (
