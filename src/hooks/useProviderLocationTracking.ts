@@ -263,6 +263,8 @@ export const useProviderLocationTracking = () => {
     return () => {
       mounted = false;
       clearInterval(checkInterval);
+      window.removeEventListener('provider-status-offline', onOfflineEvent);
+      window.removeEventListener('provider-status-active', onActiveEvent);
       stopTracking();
       supabase.removeChannel(channel);
     };
