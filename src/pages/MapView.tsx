@@ -288,7 +288,10 @@ export default function MapView() {
     };
 
     // Check if current user is a driver with today's assignment → auto-activate route overlay
+    // SKIP when viewing a specific route (producto/token in URL): the URL is the source of truth
+    // to prevent cross-contamination between rutas (e.g. mostrar L1 Manga al ver Ruta 300).
     const checkDriverRoute = async () => {
+      if (publicRouteProductoId || privateRouteToken || fleetMode) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
