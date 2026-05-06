@@ -466,7 +466,7 @@ export default function MapView() {
         
         {/* Route indicator — anchored bottom-left so it never overlaps top controls */}
         {privateRouteName && !fleetMode && !asChofer && (
-          <div className="absolute bottom-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md flex flex-col gap-2 max-w-[80vw]">
+          <div className="absolute left-4 right-4 z-30 bg-background/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-border flex flex-col gap-2 max-w-[calc(100vw-2rem)] sm:max-w-sm" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}>
             <div className="flex flex-col">
               <span className="text-sm font-bold truncate">
                 Ruta: {privateRouteName}
