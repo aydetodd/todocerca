@@ -115,9 +115,6 @@ export default function PanelConcesionarioPrivado() {
               <TabsTrigger value="por_pasajeros" className="text-xs">
                 <Users className="h-3 w-3 mr-1" /> Por Pasajeros
               </TabsTrigger>
-              <TabsTrigger value="reportes" className="text-xs">
-                <BarChart3 className="h-3 w-3 mr-1" /> Reportes
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -129,10 +126,10 @@ export default function PanelConcesionarioPrivado() {
                   <Route className="h-4 w-4" /> Servicios por viaje
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Conteo de viajes completados por unidad y chofer (sin QR de pasajero).
+                  Reporte de rutas privadas cobradas por viaje (sin QR de pasajero).
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 sm:px-6">
                 <ReporteViajes proveedorId={proveedor.id} />
               </CardContent>
             </Card>
@@ -155,22 +152,7 @@ export default function PanelConcesionarioPrivado() {
             </Card>
           </TabsContent>
 
-          {/* REPORTES consolidados */}
-          <TabsContent value="reportes" className="space-y-3 mt-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Reportes consolidados
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Filtra por periodo, unidad, chofer o ruta y exporta a CSV.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-2 sm:px-6">
-                <ConcesionarioReportes proveedorId={proveedor.id} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+        </Tabs>
 
         </Tabs>
       </main>
