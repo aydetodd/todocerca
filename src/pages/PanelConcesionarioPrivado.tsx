@@ -154,7 +154,6 @@ export default function PanelConcesionarioPrivado() {
 
         </Tabs>
 
-        </Tabs>
       </main>
     </div>
   );
