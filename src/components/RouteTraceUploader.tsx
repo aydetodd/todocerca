@@ -154,6 +154,17 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
             )}
             {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={uploading}
+          onClick={() => { setDrawMode(true); setEditorGeoJSON(null); setEditorOpen(true); }}
+          title="Dibujar el trazado a mano sobre el mapa"
+        >
+          <MapPin className="h-3 w-3 mr-1" />
+          Dibujar a mano
+        </Button>
         {traceSaved && (
           <>
             <Button
