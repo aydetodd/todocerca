@@ -99,6 +99,23 @@ export function useRouteOverlay(
         });
       });
 
+      // Render Point features (stops / Placemarks)
+      const pointFeatures = data.features.filter((f) => f.geometry.type === 'Point');
+      pointFeatures.forEach((pf) => {
+        const [lng, lat] = pf.geometry.coordinates as number[];
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const name = (pf.properties?.name as string) || 'Parada';
+        const icon = L.divIcon({
+          className: 'route-stop-marker',
+          html: `<div style="width:14px;height:14px;border-radius:50%;background:#0066CC;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        });
+        const marker = L.marker([lat, lng], { icon }).addTo(group);
+        marker.bindPopup(`<strong>🚏 ${name}</strong>`);
+        allLatLngs.push([lat, lng]);
+      });
+
       polylineRef.current = group;
       currentKeyRef.current = key;
       if (allLatLngs.length > 0) {

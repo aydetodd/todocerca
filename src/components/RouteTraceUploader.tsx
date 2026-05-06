@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2 } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+import RouteTraceEditor from './RouteTraceEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +31,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [statusText, setStatusText] = useState<string | null>(null);
   const [localFilename, setLocalFilename] = useState<string | null>(filename || null);
   const [inputKey, setInputKey] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorGeoJSON, setEditorGeoJSON] = useState<any>(null);
+  const [loadingEditor, setLoadingEditor] = useState(false);
   const traceSaved = hasTrace || !!localFilename;
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
@@ -163,6 +167,34 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingEditor}
+              onClick={async () => {
+                setLoadingEditor(true);
+                try {
+                  const { data, error } = await supabase
+                    .from('productos')
+                    .select('route_geojson')
+                    .eq('id', productoId)
+                    .maybeSingle();
+                  if (error) throw error;
+                  if (!data?.route_geojson) throw new Error('No hay trazado para editar.');
+                  setEditorGeoJSON(data.route_geojson);
+                  setEditorOpen(true);
+                } catch (e: any) {
+                  toast({ title: 'Error', description: e.message, variant: 'destructive' });
+                } finally {
+                  setLoadingEditor(false);
+                }
+              }}
+              title="Editar vértices del trazado"
+            >
+              {loadingEditor ? <Loader2 className="h-3 w-3 animate-spin" /> : <Pencil className="h-3 w-3 mr-1" />}
+              Editar
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive"
@@ -203,6 +235,19 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {editorGeoJSON && (
+        <RouteTraceEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          productoId={productoId}
+          filename={localFilename || filename}
+          geojson={editorGeoJSON}
+          onSaved={() => {
+            setEditorGeoJSON(null);
+            onChanged?.();
+          }}
+        />
+      )}
     </>
   );
 }
