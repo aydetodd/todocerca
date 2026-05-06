@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2 } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+import RouteTraceEditor from './RouteTraceEditor';
 import {
   AlertDialog,
   AlertDialogAction,
