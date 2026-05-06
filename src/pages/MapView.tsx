@@ -14,6 +14,7 @@ import { Users, Route, Heart } from 'lucide-react';
 import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
+import { FleetRouteFilter, type FleetRouteItem } from '@/components/FleetRouteFilter';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
