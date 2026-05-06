@@ -248,7 +248,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           features: [
             {
               type: 'Feature',
-              properties: { source: 'hand-drawn', createdAt: new Date().toISOString() },
+              properties: { source: 'hand-drawn', createdAt: new Date().toISOString(), color },
               geometry: { type: 'LineString', coordinates: newCoords },
             },
           ],
@@ -261,7 +261,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             return {
               ...f,
               geometry: { ...f.geometry, coordinates: newCoords },
-              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString() },
+              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString(), color },
             };
           }
           return f;
