@@ -312,7 +312,17 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
           </span>
         </div>
-        <div ref={mapElRef} className="flex-1 w-full" style={{ minHeight: 300 }} />
+        <div className="px-3 py-2 border-b bg-background flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <MapSearchBar onSelectLocation={(lat, lng) => goToCoords(lat, lng)} />
+          </div>
+          <Button size="sm" variant="outline" onClick={goToMyLocation} title="Centrar en mi ubicación">
+            <Locate className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="relative flex-1 w-full" style={{ minHeight: 300 }}>
+          <div ref={mapElRef} className="absolute inset-0 w-full h-full" />
+        </div>
         <DialogFooter className="px-4 pb-4 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving || coords.length < 2}>
