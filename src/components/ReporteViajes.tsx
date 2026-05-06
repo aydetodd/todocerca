@@ -111,6 +111,13 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
     const contratoIds = (contratos || []).map((c: any) => c.id);
     if (contratoIds.length === 0) { setViajes([]); setLoading(false); return; }
 
+    // Ampliamos 1 día atrás para capturar viajes en_curso iniciados antes de medianoche
+    const desdeMinus1 = (() => {
+      const d = new Date(desde + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() - 1);
+      return d.toISOString().slice(0, 10);
+    })();
+
     const { data, error } = await (supabase as any)
       .from("viajes_realizados")
       .select(`
@@ -119,13 +126,18 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
         unidades_empresa(numero_economico, placas)
       `)
       .in("contrato_id", contratoIds)
-      .gte("fecha", desde)
+      .gte("fecha", desdeMinus1)
       .lte("fecha", hasta)
       .order("fecha", { ascending: false })
       .order("numero_viaje", { ascending: false });
 
+    // Filtramos: dentro del rango, o en_curso aunque haya iniciado el día previo
+    const inRange = (v: any) =>
+      (v.fecha >= desde && v.fecha <= hasta) ||
+      (v.estado === "en_curso" && v.fecha >= desdeMinus1);
+
     if (error) { console.error(error); setViajes([]); }
-    else setViajes((data || []) as ViajeRow[]);
+    else setViajes(((data || []) as ViajeRow[]).filter(inRange));
     setLoading(false);
   }, [proveedorId, getRange]);
 
@@ -163,8 +175,10 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
   }), [enriched, filterUnidad, filterChofer, filterRuta]);
 
   const today = getHermosilloToday();
+  // Completados: cuentan en el día en que INICIÓ el viaje (aunque haya terminado pasada la medianoche)
   const completadosHoy = filtered.filter((v) => v.fecha === today && v.estado === "completado").length;
-  const enCursoHoy = filtered.filter((v) => v.fecha === today && v.estado === "en_curso").length;
+  // En curso: cualquier viaje abierto sin importar la fecha de inicio
+  const enCursoHoy = filtered.filter((v) => v.estado === "en_curso").length;
 
   // Desgloses
   const porUnidad = filtered.reduce<Record<string, { label: string; total: number }>>((acc, v) => {
