@@ -34,8 +34,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
   const [history, setHistory] = useState<[number, number][][]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [color, setColor] = useState<string>('#0066CC');
+  const colorRef = useRef<string>('#0066CC');
+  useEffect(() => { colorRef.current = color; }, [color]);
   const isDrawMode = !geojson;
   const { toast } = useToast();
+
+  const COLOR_PALETTE: { value: string; label: string }[] = [
+    { value: '#0066CC', label: 'Azul' },
+    { value: '#dc2626', label: 'Rojo' },
+    { value: '#16a34a', label: 'Verde' },
+    { value: '#f59e0b', label: 'Naranja' },
+    { value: '#a855f7', label: 'Morado' },
+    { value: '#ec4899', label: 'Rosa' },
+    { value: '#0891b2', label: 'Cian' },
+    { value: '#000000', label: 'Negro' },
+  ];
 
   // Keep refs in sync (so map handlers see latest values)
   useEffect(() => { coordsRef.current = coords; }, [coords]);
