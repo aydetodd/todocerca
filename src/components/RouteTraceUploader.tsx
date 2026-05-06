@@ -167,6 +167,34 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingEditor}
+              onClick={async () => {
+                setLoadingEditor(true);
+                try {
+                  const { data, error } = await supabase
+                    .from('productos')
+                    .select('route_geojson')
+                    .eq('id', productoId)
+                    .maybeSingle();
+                  if (error) throw error;
+                  if (!data?.route_geojson) throw new Error('No hay trazado para editar.');
+                  setEditorGeoJSON(data.route_geojson);
+                  setEditorOpen(true);
+                } catch (e: any) {
+                  toast({ title: 'Error', description: e.message, variant: 'destructive' });
+                } finally {
+                  setLoadingEditor(false);
+                }
+              }}
+              title="Editar vértices del trazado"
+            >
+              {loadingEditor ? <Loader2 className="h-3 w-3 animate-spin" /> : <Pencil className="h-3 w-3 mr-1" />}
+              Editar
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive"
