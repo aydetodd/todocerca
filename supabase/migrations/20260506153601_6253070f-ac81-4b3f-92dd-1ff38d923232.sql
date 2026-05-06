@@ -1,0 +1,1 @@
+ALTER TABLE public.viajes_realizados ALTER COLUMN contrato_id DROP NOT NULL; ALTER TABLE public.viajes_realizados ADD COLUMN IF NOT EXISTS producto_id uuid REFERENCES public.productos(id) ON DELETE CASCADE; CREATE INDEX IF NOT EXISTS idx_viajes_realizados_producto ON public.viajes_realizados(producto_id, fecha);

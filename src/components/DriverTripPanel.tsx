@@ -110,13 +110,17 @@ export function DriverTripPanel({
 
   const loadViajes = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("viajes_realizados")
       .select("*")
       .eq("chofer_id", choferEmpresaId)
-      .eq("contrato_id", contratoId)
-      .eq("fecha", todayStr)
-      .order("numero_viaje", { ascending: false });
+      .eq("fecha", todayStr);
+    if (routeProductId) {
+      query = query.eq("producto_id", routeProductId);
+    } else {
+      query = query.eq("contrato_id", contratoId);
+    }
+    const { data, error } = await query.order("numero_viaje", { ascending: false });
 
     if (error) {
       console.error("Error loading viajes:", error);
@@ -127,7 +131,7 @@ export function DriverTripPanel({
       setViajeActivo(list.find(v => v.estado === "en_curso") || null);
     }
     setLoading(false);
-  }, [choferEmpresaId, contratoId, todayStr]);
+  }, [choferEmpresaId, contratoId, routeProductId, todayStr]);
 
   useEffect(() => {
     loadViajes();
@@ -190,7 +194,8 @@ export function DriverTripPanel({
     try {
       const lastNum = viajesHoy[0]?.numero_viaje || 0;
       const { error } = await supabase.from("viajes_realizados").insert({
-        contrato_id: contratoId,
+        contrato_id: routeProductId ? null : contratoId,
+        producto_id: routeProductId,
         chofer_id: choferEmpresaId,
         unidad_id: unidadId,
         numero_viaje: lastNum + 1,

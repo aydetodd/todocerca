@@ -219,7 +219,11 @@ export default function ValidarQr() {
               setIsPrivateRoute(true);
               setScanMode("personal");
 
-              // Detect "por_viaje" contract for this concesionario
+              const p: any = producto;
+              const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
+
+              // Buscar contrato "por_viaje" si existe
+              let tripContrato: any = null;
               if (producto?.proveedor_id) {
                 const { data: contratos } = await (supabase as any)
                   .from("contratos_transporte")
@@ -227,23 +231,28 @@ export default function ValidarQr() {
                   .eq("concesionario_id", producto.proveedor_id)
                   .eq("is_active", true)
                   .eq("estado", "aceptado");
-                const tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
-                if (tripContrato) {
-                  const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
-                  const p: any = producto;
-                  setTripContract({
-                    contratoId: tripContrato.id,
-                    choferEmpresaId: choferActivo.id,
-                    unidadId: asignacionActiva.unidad_id,
-                    routeProductId: asignacionActiva.producto_id,
-                    empresaNombre: tripContrato.empresas_transporte?.nombre,
-                    origenLat: tripContrato.origen_lat ?? p?.route_origin_lat ?? null,
-                    origenLng: tripContrato.origen_lng ?? p?.route_origin_lng ?? null,
-                    destinoLat: tripContrato.destino_lat ?? p?.route_destination_lat ?? null,
-                    destinoLng: tripContrato.destino_lng ?? p?.route_destination_lng ?? null,
-                    radioM: tripContrato.geocerca_radio_m ?? p?.route_geofence_radius_m ?? 150,
-                  });
-                }
+                tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
+              }
+
+              // Si hay geocercas (en contrato o en la ruta), habilitar el panel de viajes
+              const origenLat = tripContrato?.origen_lat ?? p?.route_origin_lat ?? null;
+              const origenLng = tripContrato?.origen_lng ?? p?.route_origin_lng ?? null;
+              const destinoLat = tripContrato?.destino_lat ?? p?.route_destination_lat ?? null;
+              const destinoLng = tripContrato?.destino_lng ?? p?.route_destination_lng ?? null;
+
+              if (origenLat != null && destinoLat != null) {
+                setTripContract({
+                  contratoId: tripContrato?.id ?? asignacionActiva.producto_id, // fallback: usar producto_id como ref
+                  choferEmpresaId: choferActivo.id,
+                  unidadId: asignacionActiva.unidad_id,
+                  routeProductId: asignacionActiva.producto_id,
+                  empresaNombre: tripContrato?.empresas_transporte?.nombre,
+                  origenLat,
+                  origenLng,
+                  destinoLat,
+                  destinoLng,
+                  radioM: tripContrato?.geocerca_radio_m ?? p?.route_geofence_radius_m ?? 150,
+                });
               }
             }
           }
