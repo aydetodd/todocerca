@@ -266,6 +266,35 @@ function SingleDriverPanel({
 
         if (error) throw error;
 
+        // Garantizar que existe asignación con la fecha de hoy (Hermosillo) para que el mapa muestre al chofer
+        const today = getHermosilloToday();
+        const { data: todayRow } = await supabase
+          .from('asignaciones_chofer')
+          .select('id')
+          .eq('chofer_id', data.driver.id)
+          .eq('fecha', today)
+          .maybeSingle();
+
+        if (!todayRow) {
+          // Buscar unidad para clonar (tomamos la última conocida)
+          const { data: lastWithUnit } = await supabase
+            .from('asignaciones_chofer')
+            .select('unidad_id, asignado_por')
+            .eq('chofer_id', data.driver.id)
+            .not('unidad_id', 'is', null)
+            .order('fecha', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          await supabase.from('asignaciones_chofer').insert({
+            chofer_id: data.driver.id,
+            producto_id: data.todayAssignment.producto_id,
+            unidad_id: lastWithUnit?.unidad_id || null,
+            asignado_por: lastWithUnit?.asignado_por || user.id,
+            fecha: today,
+          });
+        }
+
         toast({
           title: '🟢 Ruta activada',
           description: `Ahora apareces en "${formatShortRouteName(data.todayAssignment.vehicleName)}"`,
@@ -326,11 +355,40 @@ function SingleDriverPanel({
         return;
       }
 
-      const { error } = await supabase
+      const today = getHermosilloToday();
+      // Upsert de asignación para HOY (no sobrescribir filas viejas)
+      const { data: todayRow } = await supabase
         .from('asignaciones_chofer')
-        .update({ producto_id: vehicleId })
-        .eq('id', data.todayAssignment.id);
-      if (error) throw error;
+        .select('id, unidad_id, asignado_por')
+        .eq('chofer_id', data.driver.id)
+        .eq('fecha', today)
+        .maybeSingle();
+
+      if (todayRow) {
+        const { error } = await supabase
+          .from('asignaciones_chofer')
+          .update({ producto_id: vehicleId })
+          .eq('id', todayRow.id);
+        if (error) throw error;
+      } else {
+        const { data: lastWithUnit } = await supabase
+          .from('asignaciones_chofer')
+          .select('unidad_id, asignado_por')
+          .eq('chofer_id', data.driver.id)
+          .not('unidad_id', 'is', null)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const { error } = await supabase.from('asignaciones_chofer').insert({
+          chofer_id: data.driver.id,
+          producto_id: vehicleId,
+          unidad_id: lastWithUnit?.unidad_id || null,
+          asignado_por: lastWithUnit?.asignado_por || user.id,
+          fecha: today,
+        });
+        if (error) throw error;
+      }
 
       const selectedVehicle = data.vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
