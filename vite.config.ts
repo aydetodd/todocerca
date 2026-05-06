@@ -3,8 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// Cache bust: 2025-12-14T22:25:00 - Force rebuild after StatusControl fix
-// https://vitejs.dev/config/
+// Cache bust: 2026-05-06 - Lazy routes + manual chunks
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -23,7 +22,25 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    force: true,
     include: ["react", "react-dom", "sonner", "react-router-dom"],
+  },
+  build: {
+    target: "es2020",
+    cssCodeSplit: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendors pesados separados → se cachean independientemente
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-leaflet": ["leaflet"],
+          "vendor-charts": ["recharts"],
+          "vendor-qr": ["qrcode", "html5-qrcode"],
+          "vendor-ui": ["sonner", "lucide-react"],
+        },
+      },
+    },
   },
 }));
