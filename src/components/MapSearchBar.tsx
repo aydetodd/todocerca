@@ -14,13 +14,15 @@ interface NominatimResult {
 
 interface MapSearchBarProps {
   onSelectLocation: (lat: number, lng: number, label: string) => void;
+  alwaysOpen?: boolean;
+  placeholder?: string;
 }
 
-export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
+export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, placeholder }: MapSearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(alwaysOpen);
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,10 +57,11 @@ export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
       );
       const data: NominatimResult[] = await response.json();
       setResults(data);
-      setShowResults(data.length > 0);
+      setShowResults(true);
     } catch (error) {
       console.error('Error searching Nominatim:', error);
       setResults([]);
+      setShowResults(true);
     } finally {
       setIsSearching(false);
     }
@@ -103,7 +106,7 @@ export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
   }
 
   return (
-    <div ref={containerRef} className="w-72 sm:w-80">
+    <div ref={containerRef} className={alwaysOpen ? 'w-full' : 'w-72 sm:w-80'}>
       <div className="relative">
         <div className="flex gap-1">
           <div className="relative flex-1">
@@ -111,9 +114,9 @@ export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
             <Input
               value={query}
               onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Buscar dirección o lugar..."
+              placeholder={placeholder || 'Buscar dirección, calle o lugar...'}
               className="pl-9 pr-8 h-10 bg-background/95 backdrop-blur-sm shadow-lg text-sm"
-              autoFocus
+              autoFocus={!alwaysOpen}
             />
             {query && (
               <button
@@ -124,17 +127,19 @@ export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
               </button>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setIsOpen(false);
-              handleClear();
-            }}
-            className="h-10 w-10 bg-background/90 shadow-lg backdrop-blur-sm shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {!alwaysOpen && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setIsOpen(false);
+                handleClear();
+              }}
+              className="h-10 w-10 bg-background/90 shadow-lg backdrop-blur-sm shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Loading indicator */}
