@@ -61,37 +61,64 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     setSelectedIdx(null);
   }, [open, geojson, isDrawMode, toast]);
 
-  // Init map
+  // Init map (wait one frame so the Dialog has measured the container)
   useEffect(() => {
-    if (!open || !mapElRef.current || mapRef.current) return;
-    const center = initialCenter || [29.0729, -110.9559];
-    const m = L.map(mapElRef.current, { zoomControl: true }).setView(center, 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 19,
-    }).addTo(m);
+    if (!open) return;
+    let cancelled = false;
+    let m: L.Map | null = null;
 
-    // In draw mode: clicking the map (not a marker/polyline) appends a vertex
-    m.on('click', (e: L.LeafletMouseEvent) => {
-      if (!isDrawMode) return;
-      const { lat, lng } = e.latlng;
-      pushHistory();
-      const next = [...coordsRef.current, [lat, lng] as [number, number]];
-      setCoords(next);
-      setSelectedIdx(next.length - 1);
-    });
+    const tryInit = (attempt = 0) => {
+      if (cancelled) return;
+      const el = mapElRef.current;
+      if (!el || el.clientWidth === 0 || el.clientHeight === 0) {
+        if (attempt < 30) return setTimeout(() => tryInit(attempt + 1), 100);
+        return;
+      }
+      if (mapRef.current) return;
+      const center = initialCenter || [29.0729, -110.9559];
+      m = L.map(el, { zoomControl: true }).setView(center, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(m);
 
-    mapRef.current = m;
-    setTimeout(() => m.invalidateSize(), 100);
+      m.on('click', (e: L.LeafletMouseEvent) => {
+        if (!isDrawMode) return;
+        const { lat, lng } = e.latlng;
+        pushHistory();
+        const next = [...coordsRef.current, [lat, lng] as [number, number]];
+        setCoords(next);
+        setSelectedIdx(next.length - 1);
+      });
 
-    // Try to center on the user's location for draw mode
-    if (isDrawMode && !initialCenter && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { try { m.setView([pos.coords.latitude, pos.coords.longitude], 15); } catch {} },
-        () => {},
-        { timeout: 5000, maximumAge: 60000 }
-      );
-    }
+      mapRef.current = m;
+      // Force a resize once the dialog finishes animating
+      requestAnimationFrame(() => m && m.invalidateSize());
+      setTimeout(() => m && m.invalidateSize(), 300);
+
+      // Center on the user's location for draw mode
+      if (isDrawMode && !initialCenter && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => { try { m && m.setView([pos.coords.latitude, pos.coords.longitude], 16); } catch {} },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      }
+    };
+
+    tryInit();
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      polylineRef.current = null;
+      markersGroupRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
     return () => {
       m.remove();
