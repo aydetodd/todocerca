@@ -333,9 +333,13 @@ export const useRealtimeLocations = () => {
         ? routeProductsForProvider.find(r => normalizeRouteName(r.nombre) === normalizedProfileRouteName) || null
         : null;
 
-      // Determine the specific route/product currently ACTIVE for this location
+      // Determine the specific route/product currently ACTIVE for this location.
+      // STRICT: para choferes privados SOLO se considera ruta activa si hay
+      // asignación real hoy (asignaciones_chofer). Nunca inferir por
+      // profile.route_name — eso causaba que choferes aparecieran en rutas
+      // que no estaban manejando (cruce de datos tipo "Tito/Luis").
       const specificProductoId = isPrivateDriver
-        ? (activeAssignment?.productoId || profileMatchedRouteProduct?.id || null)
+        ? (activeAssignment?.productoId || null)
         : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
 
       // Private/public route is determined by the exact active product
