@@ -65,31 +65,86 @@ async function parseKmlString(text: string): Promise<ParsedTrace> {
 }
 
 function parseCoordinateBlocks(dom: Document): ParsedTrace | null {
-  const blocks = Array.from(dom.getElementsByTagName('coordinates'));
-  const features = blocks
-    .map((block) => {
-      const coords = (block.textContent || '')
-        .trim()
-        .split(/\s+/)
-        .map((tuple) => tuple.split(',').map(Number))
-        .filter((tuple) => tuple.length >= 2 && Number.isFinite(tuple[0]) && Number.isFinite(tuple[1]))
-        .map(([lng, lat]) => [lng, lat]);
+  // Recolectar puntos en orden de aparición en el DOM, asociando el nombre del Placemark
+  const placemarks = Array.from(dom.getElementsByTagName('Placemark'));
+  const orderedPoints: Array<{ name: string; lng: number; lat: number }> = [];
+  const lineFeatures: any[] = [];
 
-      if (coords.length < 2) return null;
-      return {
+  const parseTuples = (raw: string): number[][] =>
+    raw
+      .trim()
+      .split(/\s+/)
+      .map((t) => t.split(',').map(Number))
+      .filter((t) => t.length >= 2 && Number.isFinite(t[0]) && Number.isFinite(t[1]))
+      .map(([lng, lat]) => [lng, lat]);
+
+  placemarks.forEach((pm, idx) => {
+    const nameEl = pm.getElementsByTagName('name')[0];
+    const name = nameEl?.textContent?.trim() || `Punto ${idx + 1}`;
+    const coordsEls = Array.from(pm.getElementsByTagName('coordinates'));
+    coordsEls.forEach((c) => {
+      const tuples = parseTuples(c.textContent || '');
+      if (tuples.length >= 2) {
+        lineFeatures.push({
+          type: 'Feature',
+          properties: { name, parsedBy: 'coordinates-fallback' },
+          geometry: { type: 'LineString', coordinates: tuples },
+        });
+      } else if (tuples.length === 1) {
+        orderedPoints.push({ name, lng: tuples[0][0], lat: tuples[0][1] });
+      }
+    });
+  });
+
+  // Si encontramos líneas explícitas, devolverlas
+  if (lineFeatures.length > 0) {
+    const features = [...lineFeatures];
+    if (orderedPoints.length > 0) {
+      orderedPoints.forEach((p) =>
+        features.push({
+          type: 'Feature',
+          properties: { name: p.name },
+          geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+        })
+      );
+    }
+    return {
+      geojson: { type: 'FeatureCollection', features },
+      lineCount: lineFeatures.length,
+      pointCount: orderedPoints.length,
+    };
+  }
+
+  // Si no hay líneas, pero sí >=2 puntos (caso Google My Maps con Placemarks Point),
+  // los unimos como una LineString sintetizada en su orden natural (Point 1, Point 2...)
+  if (orderedPoints.length >= 2) {
+    // Intentar ordenar numéricamente por nombre si todos llevan número (Point 1, Point 2...)
+    const numbered = orderedPoints
+      .map((p) => ({ ...p, n: parseInt((p.name.match(/\d+/) || ['0'])[0], 10) }))
+      .sort((a, b) => a.n - b.n);
+    const useNumbered = numbered.every((p) => p.n > 0);
+    const finalPoints = useNumbered ? numbered : orderedPoints;
+    const coords = finalPoints.map((p) => [p.lng, p.lat]);
+    const features: any[] = [
+      {
         type: 'Feature',
-        properties: { parsedBy: 'coordinates-fallback' },
+        properties: { synthesized: true, source: 'points-to-line' },
         geometry: { type: 'LineString', coordinates: coords },
-      };
-    })
-    .filter(Boolean);
+      },
+      ...finalPoints.map((p) => ({
+        type: 'Feature',
+        properties: { name: p.name },
+        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+      })),
+    ];
+    return {
+      geojson: { type: 'FeatureCollection', features },
+      lineCount: 1,
+      pointCount: finalPoints.length,
+    };
+  }
 
-  if (features.length === 0) return null;
-  return {
-    geojson: { type: 'FeatureCollection', features },
-    lineCount: features.length,
-    pointCount: 0,
-  };
+  return null;
 }
 
 async function parseGpxString(text: string): Promise<ParsedTrace> {
