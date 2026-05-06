@@ -949,9 +949,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               productoId={vehicle.id}
                               hasTrace={!!vehicle.route_geojson}
                               filename={vehicle.route_trace_filename}
-                              onChanged={() => {
-                                setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v } : v));
-                              }}
+                              onChanged={() => fetchVehicles()}
                             />
                           </div>
 
