@@ -175,8 +175,10 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
   }), [enriched, filterUnidad, filterChofer, filterRuta]);
 
   const today = getHermosilloToday();
+  // Completados: cuentan en el día en que INICIÓ el viaje (aunque haya terminado pasada la medianoche)
   const completadosHoy = filtered.filter((v) => v.fecha === today && v.estado === "completado").length;
-  const enCursoHoy = filtered.filter((v) => v.fecha === today && v.estado === "en_curso").length;
+  // En curso: cualquier viaje abierto sin importar la fecha de inicio
+  const enCursoHoy = filtered.filter((v) => v.estado === "en_curso").length;
 
   // Desgloses
   const porUnidad = filtered.reduce<Record<string, { label: string; total: number }>>((acc, v) => {
