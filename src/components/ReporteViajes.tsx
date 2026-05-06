@@ -120,10 +120,13 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
 
     const { desde, hasta } = getRange();
 
-    const { data: contratos } = await supabase
-      .from("contratos_transporte").select("id").eq("concesionario_id", proveedorId);
+    const [{ data: contratos }, { data: choferesProv }] = await Promise.all([
+      supabase.from("contratos_transporte").select("id").eq("concesionario_id", proveedorId),
+      supabase.from("choferes_empresa").select("id").eq("proveedor_id", proveedorId),
+    ]);
     const contratoIds = (contratos || []).map((c: any) => c.id);
-    if (contratoIds.length === 0) { setViajes([]); setLoading(false); return; }
+    const choferIds = (choferesProv || []).map((c: any) => c.id);
+    if (contratoIds.length === 0 && choferIds.length === 0) { setViajes([]); setLoading(false); return; }
 
     // Ampliamos 1 día atrás para capturar viajes en_curso iniciados antes de medianoche
     const desdeMinus1 = (() => {
@@ -132,6 +135,11 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
       return d.toISOString().slice(0, 10);
     })();
 
+    // Filtro OR: viajes vinculados al contrato del concesionario, o viajes de sus choferes
+    const orFilters: string[] = [];
+    if (contratoIds.length > 0) orFilters.push(`contrato_id.in.(${contratoIds.join(",")})`);
+    if (choferIds.length > 0) orFilters.push(`chofer_id.in.(${choferIds.join(",")})`);
+
     const { data, error } = await (supabase as any)
       .from("viajes_realizados")
       .select(`
@@ -139,7 +147,7 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
         choferes_empresa(nombre),
         unidades_empresa(numero_economico, placas)
       `)
-      .in("contrato_id", contratoIds)
+      .or(orFilters.join(","))
       .gte("fecha", desdeMinus1)
       .lte("fecha", hasta)
       .order("fecha", { ascending: false })
