@@ -356,6 +356,12 @@ export default function MapView() {
     checkDriverRoute();
   }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
+  // Re-render fleet trace overlay when user toggles the filter
+  useEffect(() => {
+    if (!fleetMode || fleetRoutes.length === 0) return;
+    setActiveRouteGeoJSON(mergeRouteTraces(fleetRoutes, visibleRouteIds));
+  }, [visibleRouteIds, fleetRoutes, fleetMode]);
+
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
     setSelectedReceiverName(apodo);
