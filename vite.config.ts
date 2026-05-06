@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
           "vendor-supabase": ["@supabase/supabase-js"],
           "vendor-leaflet": ["leaflet"],
           "vendor-charts": ["recharts"],
-          "vendor-qr": ["qrcode", "html5-qrcode"],
+          "vendor-qr": ["html5-qrcode"],
           "vendor-ui": ["sonner", "lucide-react"],
         },
       },
