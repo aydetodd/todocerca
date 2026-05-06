@@ -27,6 +27,7 @@ import {
   User,
   Briefcase,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
