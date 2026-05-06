@@ -93,8 +93,20 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     
     const initMap = (lat: number, lng: number) => {
-      const map = L.map('map', { attributionControl: false }).setView([lat, lng], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      const map = L.map('map', {
+        attributionControl: false,
+        preferCanvas: true,           // Render con canvas → mucho más rápido con muchos marcadores
+        zoomAnimation: true,
+        fadeAnimation: false,         // Menos repaints en móvil
+        markerZoomAnimation: false,   // Evita lag al hacer zoom con flotilla activa
+      }).setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        keepBuffer: 4,                // Pre-carga tiles fuera de viewport → pan más suave
+        updateWhenIdle: true,         // En móvil, espera a que termine el gesto para pedir tiles
+        updateWhenZooming: false,
+        crossOrigin: true,
+      }).addTo(map);
       mapRef.current = map;
     };
 
