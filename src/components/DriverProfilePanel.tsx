@@ -207,7 +207,135 @@ function RouteQRButton({ productoId, routeName, initialToken }: { productoId: st
     </Button>
   );
 }
-function SingleDriverPanel({
+
+// Distancia Haversine en metros
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371000;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function StartTripButton({ productoId, onClick }: { productoId: string; onClick: () => void }) {
+  const [geo, setGeo] = useState<{
+    origenLat: number | null;
+    origenLng: number | null;
+    destinoLat: number | null;
+    destinoLng: number | null;
+    radioM: number;
+  } | null>(null);
+  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [activeTrip, setActiveTrip] = useState(false);
+
+  // Cargar geocercas (de contrato o de ruta)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: producto } = await supabase
+        .from('productos')
+        .select('proveedor_id, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m')
+        .eq('id', productoId)
+        .maybeSingle();
+      if (!producto || cancelled) return;
+
+      let origenLat = (producto as any).route_origin_lat;
+      let origenLng = (producto as any).route_origin_lng;
+      let destinoLat = (producto as any).route_destination_lat;
+      let destinoLng = (producto as any).route_destination_lng;
+      let radioM = (producto as any).route_geofence_radius_m ?? 150;
+
+      if ((producto as any).proveedor_id) {
+        const { data: contratos } = await (supabase as any)
+          .from('contratos_transporte')
+          .select('origen_lat, origen_lng, destino_lat, destino_lng, geocerca_radio_m, modelo_cobro, is_active, estado')
+          .eq('concesionario_id', (producto as any).proveedor_id)
+          .eq('is_active', true)
+          .eq('estado', 'aceptado');
+        const trip = (contratos || []).find((c: any) => c.modelo_cobro === 'por_viaje');
+        if (trip) {
+          origenLat = trip.origen_lat ?? origenLat;
+          origenLng = trip.origen_lng ?? origenLng;
+          destinoLat = trip.destino_lat ?? destinoLat;
+          destinoLng = trip.destino_lng ?? destinoLng;
+          radioM = trip.geocerca_radio_m ?? radioM;
+        }
+      }
+
+      if (!cancelled) setGeo({ origenLat, origenLng, destinoLat, destinoLng, radioM: Math.max(radioM ?? 150, 30) });
+    })();
+    return () => { cancelled = true; };
+  }, [productoId]);
+
+  // Ver si ya hay un viaje en curso (para no exigir geocerca de inicio)
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      const today = getHermosilloToday();
+      const { data } = await supabase
+        .from('viajes_realizados')
+        .select('id')
+        .eq('producto_id', productoId)
+        .eq('fecha', today)
+        .eq('estado', 'en_curso')
+        .limit(1);
+      if (!cancelled) setActiveTrip((data || []).length > 0);
+    };
+    check();
+    const ch = supabase
+      .channel(`trip-btn-${productoId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes_realizados', filter: `producto_id=eq.${productoId}` }, check)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [productoId]);
+
+  // Watch GPS en tiempo real
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  const hasFences = geo && geo.origenLat != null && geo.origenLng != null && geo.destinoLat != null && geo.destinoLng != null;
+  const distStart = pos && geo?.origenLat != null && geo?.origenLng != null
+    ? distanceMeters(pos.lat, pos.lng, geo.origenLat, geo.origenLng) : null;
+  const distEnd = pos && geo?.destinoLat != null && geo?.destinoLng != null
+    ? distanceMeters(pos.lat, pos.lng, geo.destinoLat, geo.destinoLng) : null;
+  const nearestDist = activeTrip ? distEnd : (distStart != null && distEnd != null ? Math.min(distStart, distEnd) : (distStart ?? distEnd));
+  const inside = hasFences && nearestDist != null && nearestDist <= (geo!.radioM);
+
+  // Si no hay geocercas configuradas, dejar pasar (no bloquear)
+  const enabled = !hasFences ? true : !!inside;
+
+  let label = activeTrip ? 'Finalizar viaje' : 'Iniciar viaje';
+  if (hasFences && pos && !inside && nearestDist != null) {
+    label = `${activeTrip ? 'Acércate al final' : 'Fuera de geocerca'} (${Math.round(nearestDist)} m)`;
+  } else if (hasFences && !pos) {
+    label = 'Esperando GPS…';
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="default"
+      disabled={!enabled}
+      className={`shrink-0 h-8 px-2.5 text-xs ${enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+      onClick={onClick}
+      title={enabled ? 'Registrar inicio y fin de viaje' : 'Acércate a la geocerca para activar'}
+    >
+      {enabled ? <Navigation className="h-3 w-3 mr-1" /> : <MapPin className="h-3 w-3 mr-1" />}
+      {label}
+    </Button>
+  );
+}
+
   data,
   activeRouteName,
   profileStatus,
