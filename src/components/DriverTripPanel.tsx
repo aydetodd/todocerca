@@ -194,7 +194,8 @@ export function DriverTripPanel({
     try {
       const lastNum = viajesHoy[0]?.numero_viaje || 0;
       const { error } = await supabase.from("viajes_realizados").insert({
-        contrato_id: contratoId,
+        contrato_id: routeProductId ? null : contratoId,
+        producto_id: routeProductId,
         chofer_id: choferEmpresaId,
         unidad_id: unidadId,
         numero_viaje: lastNum + 1,
