@@ -633,7 +633,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       )}
 
 
-      {/* Tab switcher - Orden: Unidades → Choferes → Rutas (+ Link pasajeros) */}
+      {/* Tab switcher - Orden: Unidades → Rutas → Choferes */}
       <div className="flex gap-1">
         <Button
           variant={activeTab === 'units' ? 'default' : 'outline'}
@@ -644,20 +644,20 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           1. Unidades ({units.length})
         </Button>
         <Button
-          variant={activeTab === 'drivers' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('drivers')}
-          className="flex-1 text-xs px-2"
-        >
-          2. Choferes ({driversCount})
-        </Button>
-        <Button
           variant={activeTab === 'routes' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('routes')}
           className="flex-1 text-xs px-2"
         >
-          3. Rutas ({vehicles.length})
+          2. Rutas ({vehicles.length})
+        </Button>
+        <Button
+          variant={activeTab === 'drivers' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('drivers')}
+          className="flex-1 text-xs px-2"
+        >
+          3. Choferes ({driversCount})
         </Button>
       </div>
 
