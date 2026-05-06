@@ -464,11 +464,11 @@ export default function MapView() {
           </div>
         </div>
         
-        {/* Route indicator — pinned just under the header, narrow, right-aligned to leave zoom controls free */}
+        {/* Route indicator — full-width bar pinned under the header */}
         {privateRouteName && !fleetMode && !asChofer && (
-          <div className="absolute top-1 right-2 z-[1000] bg-card border-b border-border shadow-md rounded-b-lg px-3 py-1.5 flex flex-col gap-1 max-w-[70vw] sm:max-w-xs pointer-events-auto">
-            <div className="flex flex-col">
-              <span className="text-xs font-bold truncate leading-tight">
+          <div className="absolute top-0 left-0 right-0 z-[1000] bg-card border-b border-border shadow-md px-3 py-2 flex items-center justify-between gap-2 pointer-events-auto">
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs font-bold truncate leading-tight text-foreground">
                 Ruta: {privateRouteName}
               </span>
               <span className="text-[10px] text-muted-foreground truncate leading-tight">
@@ -479,7 +479,7 @@ export default function MapView() {
               <Button
                 size="sm"
                 variant="default"
-                className="h-7 text-[11px] px-2"
+                className="h-7 text-[11px] px-2 shrink-0"
                 onClick={() => addFavorito('producto', privateRouteProductoId)}
               >
                 <Heart className="h-3 w-3 mr-1" />
@@ -487,8 +487,8 @@ export default function MapView() {
               </Button>
             )}
             {privateRouteProductoId && isRouteFav && (
-              <span className="text-xs text-primary flex items-center gap-1">
-                <Heart className="h-3 w-3 fill-current" /> En tus favoritos
+              <span className="text-[11px] text-primary flex items-center gap-1 shrink-0">
+                <Heart className="h-3 w-3 fill-current" /> Favorito
               </span>
             )}
           </div>
