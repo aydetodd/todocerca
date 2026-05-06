@@ -40,14 +40,19 @@ export default function MapView() {
   const [fleetUnitCount, setFleetUnitCount] = useState(0);
   const [activeRouteOverlay, setActiveRouteOverlay] = useState<string | null>(null);
   const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
+  const [fleetRoutes, setFleetRoutes] = useState<Array<FleetRouteItem & { route_geojson: any }>>([]);
+  const [visibleRouteIds, setVisibleRouteIds] = useState<Set<string>>(new Set());
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
   const { addFavorito, isFavorito } = useFavoritos();
   const isRouteFav = privateRouteProductoId ? isFavorito('producto', privateRouteProductoId) : false;
 
-  const mergeRouteTraces = (routes: Array<{ route_geojson: { features?: unknown[] } | null }>) => {
-    const features = routes.flatMap((route) => route.route_geojson?.features || []);
+  const mergeRouteTraces = (routes: Array<{ id?: string; route_geojson: { features?: any[] } | null }>, allowedIds?: Set<string>) => {
+    const filtered = allowedIds
+      ? routes.filter((r) => r.id && allowedIds.has(r.id))
+      : routes;
+    const features = filtered.flatMap((route) => route.route_geojson?.features || []);
     return features.length > 0 ? { type: 'FeatureCollection', features } : null;
   };
 
