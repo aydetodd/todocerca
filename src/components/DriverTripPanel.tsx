@@ -74,8 +74,10 @@ export function DriverTripPanel({
   origenLng,
   destinoLat,
   destinoLng,
-  radioM = 150,
+  radioM: radioMProp = 150,
 }: DriverTripPanelProps) {
+  // Garantizar un radio mínimo usable (algunas rutas se guardaron con 50 m, demasiado estricto)
+  const radioM = Math.max(radioMProp ?? 150, 200);
   const [loading, setLoading] = useState(true);
   const [viajeActivo, setViajeActivo] = useState<Viaje | null>(null);
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
@@ -328,15 +330,24 @@ export function DriverTripPanel({
         {hasGeofences && (
           <div className="space-y-2">
             {!viajeActivo && (
-              <Button
-                size="lg"
-                className="w-full h-14 text-base"
-                disabled={!insideStart || inFlightRef.current}
-                onClick={confirmarInicio}
-              >
-                <Play className="h-5 w-5 mr-2" />
-                {insideStart ? `Confirmar inicio (${direccion})` : `Acércate al ${startLabel.toLowerCase()}`}
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  className="w-full h-14 text-base"
+                  disabled={!currentPos || inFlightRef.current}
+                  onClick={confirmarInicio}
+                >
+                  <Play className="h-5 w-5 mr-2" />
+                  {insideStart
+                    ? `Confirmar inicio (${direccion})`
+                    : `Iniciar viaje ahora${distStart != null ? ` (a ${Math.round(distStart)} m del ${startLabel.toLowerCase()})` : ""}`}
+                </Button>
+                {!insideStart && distStart != null && (
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Estás fuera de la geocerca, pero puedes iniciar el viaje manualmente.
+                  </p>
+                )}
+              </>
             )}
 
             {viajeActivo && (
@@ -344,11 +355,13 @@ export function DriverTripPanel({
                 size="lg"
                 variant="default"
                 className="w-full h-14 text-base"
-                disabled={!insideEnd || inFlightRef.current}
+                disabled={!currentPos || inFlightRef.current}
                 onClick={confirmarFin}
               >
                 <CheckCircle2 className="h-5 w-5 mr-2" />
-                {insideEnd ? `Confirmar llegada (${direccion})` : `Acércate al ${endLabel.toLowerCase()}`}
+                {insideEnd
+                  ? `Confirmar llegada (${direccion})`
+                  : `Finalizar viaje ahora${distEnd != null ? ` (a ${Math.round(distEnd)} m del ${endLabel.toLowerCase()})` : ""}`}
               </Button>
             )}
 
