@@ -55,15 +55,16 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
     navigator.geolocation.watchPosition(
       (pos) => {
         const latlng: L.LatLngExpression = [pos.coords.latitude, pos.coords.longitude];
+        const busHtml = `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); font-size: 28px; line-height: 1;">🚌</div>`;
         if (posMarkerRef.current) {
           posMarkerRef.current.setLatLng(latlng);
         } else {
           posMarkerRef.current = L.marker(latlng, {
             icon: L.divIcon({
               className: '',
-              html: '<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 6px rgba(0,0,0,.4)"></div>',
-              iconSize: [16, 16],
-              iconAnchor: [8, 8],
+              html: busHtml,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16],
             }),
           }).addTo(map);
         }
