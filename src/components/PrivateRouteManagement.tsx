@@ -55,6 +55,7 @@ interface PrivateVehicle {
   route_destination_lat?: number | null;
   route_destination_lng?: number | null;
   route_geofence_radius_m?: number | null;
+  route_group?: string | null;
 }
 
 interface Unit {
