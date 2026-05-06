@@ -631,6 +631,10 @@ const Dashboard = () => {
                       <Bus className="h-4 w-4 mr-2" />
                       Gestión de Rutas
                     </Button>
+                    <Button onClick={() => navigate('/panel-concesionario')} variant="secondary" className="w-full">
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Panel de Concesionario
+                    </Button>
                   </CardContent>
                 </Card>
               ) : (
