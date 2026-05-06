@@ -479,11 +479,11 @@ export default function MapView() {
               <Button
                 size="sm"
                 variant="default"
-                className="h-8 text-xs"
+                className="h-7 text-[11px] px-2"
                 onClick={() => addFavorito('producto', privateRouteProductoId)}
               >
                 <Heart className="h-3 w-3 mr-1" />
-                Guardar en favoritos
+                Favorito
               </Button>
             )}
             {privateRouteProductoId && isRouteFav && (
