@@ -1,5 +1,5 @@
-// AppWrapper v2025-01-27 - Global notifications for all pages
-import { useState, useEffect } from "react";
+// AppWrapper v2026-05-06 - Lazy loading + faster initial bundle
+import { useState, useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,51 +11,52 @@ import { useRegistrationNotifications } from "@/hooks/useRegistrationNotificatio
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useAuth } from "@/hooks/useAuth";
+
+// Páginas críticas (eager) — primer render instantáneo
 import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
-import Panel from "./pages/Panel";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import DashboardMain from "./pages/DashboardMain";
-import MapView from "./pages/MapView";
-import ProductSearch from "./pages/ProductSearch";
-
-import ProviderProfile from "./pages/ProviderProfile";
-import MiPerfil from "./pages/MiPerfil";
-import MisProductos from "./pages/MisProductos";
-import MisRutas from "./pages/MisRutas";
-import GestionPedidos from "./pages/GestionPedidos";
-import TrackingGPS from "./pages/TrackingGPS";
-import JoinGroup from "./pages/JoinGroup";
-import GpsReports from "./pages/GpsReports";
-import MessagesInbox from "./pages/MessagesInbox";
-import AddContact from "./pages/AddContact";
-import Favoritos from "./pages/Favoritos";
-import Donar from "./pages/Donar";
-import Extraviados from "./pages/Extraviados";
-import Votaciones from "./pages/Votaciones";
-import CrearVotacion from "./pages/CrearVotacion";
-import VotacionDetalle from "./pages/VotacionDetalle";
-import Privacidad from "./pages/Privacidad";
-import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
-import GpsLocationPage from "./pages/GpsLocationPage";
-import SOSView from "./pages/SOSView";
-import AcceptDriverInvite from "./pages/AcceptDriverInvite";
-import QrBoletos from "./pages/QrBoletos";
-import ComprarBoletos from "./pages/ComprarBoletos";
-// GenerarQr removed - QR codes are now generated automatically on purchase
-import HistorialBoletos from "./pages/HistorialBoletos";
-import ValidarQr from "./pages/ValidarQr";
-import PanelMaquiladora from "./pages/PanelMaquiladora";
-import PanelConcesionarioHub from "./pages/PanelConcesionarioHub";
-import PanelConcesionario from "./pages/PanelConcesionario";
-import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
-import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
-import SolicitudDescuento from "./pages/SolicitudDescuento";
-import TodoCercaTv from "./pages/TodoCercaTv";
+
+// Páginas secundarias (lazy) — se cargan bajo demanda
+const Panel = lazy(() => import("./pages/Panel"));
+const Index = lazy(() => import("./pages/Index"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MapView = lazy(() => import("./pages/MapView"));
+const ProductSearch = lazy(() => import("./pages/ProductSearch"));
+const ProviderProfile = lazy(() => import("./pages/ProviderProfile"));
+const MiPerfil = lazy(() => import("./pages/MiPerfil"));
+const MisProductos = lazy(() => import("./pages/MisProductos"));
+const MisRutas = lazy(() => import("./pages/MisRutas"));
+const GestionPedidos = lazy(() => import("./pages/GestionPedidos"));
+const TrackingGPS = lazy(() => import("./pages/TrackingGPS"));
+const JoinGroup = lazy(() => import("./pages/JoinGroup"));
+const GpsReports = lazy(() => import("./pages/GpsReports"));
+const MessagesInbox = lazy(() => import("./pages/MessagesInbox"));
+const AddContact = lazy(() => import("./pages/AddContact"));
+const Favoritos = lazy(() => import("./pages/Favoritos"));
+const Donar = lazy(() => import("./pages/Donar"));
+const Extraviados = lazy(() => import("./pages/Extraviados"));
+const Votaciones = lazy(() => import("./pages/Votaciones"));
+const CrearVotacion = lazy(() => import("./pages/CrearVotacion"));
+const VotacionDetalle = lazy(() => import("./pages/VotacionDetalle"));
+const Privacidad = lazy(() => import("./pages/Privacidad"));
+const EliminarCuenta = lazy(() => import("./pages/EliminarCuenta"));
+const GpsLocationPage = lazy(() => import("./pages/GpsLocationPage"));
+const SOSView = lazy(() => import("./pages/SOSView"));
+const AcceptDriverInvite = lazy(() => import("./pages/AcceptDriverInvite"));
+const QrBoletos = lazy(() => import("./pages/QrBoletos"));
+const ComprarBoletos = lazy(() => import("./pages/ComprarBoletos"));
+const HistorialBoletos = lazy(() => import("./pages/HistorialBoletos"));
+const ValidarQr = lazy(() => import("./pages/ValidarQr"));
+const PanelMaquiladora = lazy(() => import("./pages/PanelMaquiladora"));
+const PanelConcesionarioHub = lazy(() => import("./pages/PanelConcesionarioHub"));
+const PanelConcesionario = lazy(() => import("./pages/PanelConcesionario"));
+const PanelConcesionarioPrivado = lazy(() => import("./pages/PanelConcesionarioPrivado"));
+const AcceptEmployeeInvite = lazy(() => import("./pages/AcceptEmployeeInvite"));
+const SolicitudDescuento = lazy(() => import("./pages/SolicitudDescuento"));
+const TodoCercaTv = lazy(() => import("./pages/TodoCercaTv"));
 import { NavigationBar } from "@/components/NavigationBar";
 import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
