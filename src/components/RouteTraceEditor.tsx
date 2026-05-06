@@ -62,6 +62,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       setCoords([]);
       setHistory([]);
       setSelectedIdx(null);
+      setColor('#0066CC');
       return;
     }
     const line = geojson.features?.find((f: any) => f?.geometry?.type === 'LineString');
@@ -73,6 +74,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     setCoords(c);
     setHistory([]);
     setSelectedIdx(null);
+    setColor((line.properties?.color as string) || '#0066CC');
   }, [open, geojson, isDrawMode, toast]);
 
   // Init map (wait one frame so the Dialog has measured the container)
