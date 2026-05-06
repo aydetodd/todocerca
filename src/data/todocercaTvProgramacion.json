@@ -1,0 +1,1854 @@
+{
+  "lunes": [
+    {
+      "hora": "08:00",
+      "titulo": "Despierta con tu Barrio",
+      "zona": "Hermosillo",
+      "icono": "🌅",
+      "tags": [
+        "Noticias",
+        "Matutino"
+      ],
+      "descripcion": "Arranca tu día con las noticias más importantes de tu colonia. Clima local, estado del tráfico, eventos del día y buenas energías para comenzar la semana."
+    },
+    {
+      "hora": "08:30",
+      "titulo": "Titulares Locales",
+      "zona": "Estado",
+      "icono": "🗞️",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Resumen rápido de las 5 noticias más relevantes del estado. Información verificada y fuentes oficiales."
+    },
+    {
+      "hora": "09:00",
+      "titulo": "Mañana Activa",
+      "zona": "Obregón",
+      "icono": "🏃",
+      "tags": [
+        "Deportes",
+        "Salud"
+      ],
+      "descripcion": "15 minutos de rutina de ejercicio para todas las edades. Estiramientos y cardio suave."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales sonorenses paso a paso. Caldo de pollo con verduras y tortillas hechas a mano."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Entrevista Express",
+      "zona": "Guaymas",
+      "icono": "🎙️",
+      "tags": [
+        "Entrevista",
+        "Comunidad"
+      ],
+      "descripcion": "10 minutos con personajes destacados. Hoy: Directora de la nueva biblioteca municipal."
+    },
+    {
+      "hora": "10:30",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Descubre playas escondidas de San Carlos. Recorrido visual y tips de acceso."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Saber Popular",
+      "zona": "Todos",
+      "icono": "📚",
+      "tags": [
+        "Conocimiento",
+        "Historia"
+      ],
+      "descripcion": "Origen de la fiesta de primavera en Sonora. Historia y tradiciones locales."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados en el mercado municipal."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "El noticiero más completo. Noticias nacionales con enfoque local y reporte vial."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Semifinales torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Vecinos opinan sobre parque lineal."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta de tacos de carne asada."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Documental: El ferrocarril estatal que conectó Sonora. Archivos históricos y testimonios."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Prevención de dengue: tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Banda municipal ensaya para festival."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance real en puente norte."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Tecnología"
+      ],
+      "descripcion": "Tutorial: Cómo usar todocerca.mx para encontrar servicios cerca de ti."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados perros en clima caluroso."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Última Hora",
+      "zona": "Estado",
+      "icono": "📡",
+      "tags": [
+        "Noticias",
+        "Urgente"
+      ],
+      "descripcion": "Actualizaciones seguridad y clima."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Final femenil torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Noticias"
+      ],
+      "descripcion": "Cobertura especial en vivo. Entrevistas con autoridades y vecinos."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas muestran su obra."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Atardecer Cultural",
+      "zona": "Guaymas",
+      "icono": "🌆",
+      "tags": [
+        "Turismo",
+        "Cultura"
+      ],
+      "descripcion": "Recorrido fotográfico malecón."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto y compartido hoy."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Sesión acústica con artistas estatales. Ambiente relajado para terminar el día."
+    }
+  ],
+  "martes": [
+    {
+      "hora": "08:00",
+      "titulo": "Despierta con tu Barrio",
+      "zona": "Hermosillo",
+      "icono": "🌅",
+      "tags": [
+        "Noticias",
+        "Matutino"
+      ],
+      "descripcion": "Martes de mercado: Precios actualizados y ofertas de la semana. Clima y tráfico."
+    },
+    {
+      "hora": "08:30",
+      "titulo": "Titulares Locales",
+      "zona": "Estado",
+      "icono": "🗞️",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Avances en obras públicas, nuevas rutas de transporte y alertas de seguridad."
+    },
+    {
+      "hora": "09:00",
+      "titulo": "Franky's Friends",
+      "zona": "Obregón",
+      "icono": "🎮",
+      "tags": [
+        "Entretenimiento",
+        "Juvenil"
+      ],
+      "descripcion": "Reseñas de videojuegos, torneos locales de eSports y tips para gamers."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Se hizo la Machaca con el Wey",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Tacos de carne asada estilo Sonora: La marinada perfecta y el corte ideal."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Entrevista Express",
+      "zona": "Guaymas",
+      "icono": "🎙️",
+      "tags": [
+        "Entrevista",
+        "Emprendimiento"
+      ],
+      "descripcion": "Emprendedora del mes: Negocio de repostería artesanal y consejos para nuevos emprendedores."
+    },
+    {
+      "hora": "10:30",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas de San Carlos."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Saber Popular",
+      "zona": "Todos",
+      "icono": "📚",
+      "tags": [
+        "Conocimiento",
+        "Historia"
+      ],
+      "descripcion": "Origen de la fiesta de primavera en Sonora."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados en el mercado municipal."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Resultados del cabildo, políticas de reciclaje y pronóstico del clima."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Semifinales torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Vecinos opinan sobre parque lineal."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta de tacos de carne asada."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Documental: El ferrocarril estatal que conectó Sonora."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Prevención de dengue: tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Banda municipal ensaya para festival."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance real en puente norte."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Finanzas"
+      ],
+      "descripcion": "Educación financiera básica: Cómo crear tu primer presupuesto mensual."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados perros en clima caluroso."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Última Hora",
+      "zona": "Estado",
+      "icono": "📡",
+      "tags": [
+        "Noticias",
+        "Urgente"
+      ],
+      "descripcion": "Actualizaciones seguridad y clima."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Final femenil torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Comunidad"
+      ],
+      "descripcion": "Vivo desde la plaza: Reacción al nuevo reglamento de estacionamiento."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas muestran su obra."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Atardecer Cultural",
+      "zona": "Guaymas",
+      "icono": "🌆",
+      "tags": [
+        "Turismo",
+        "Cultura"
+      ],
+      "descripcion": "Recorrido fotográfico malecón."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto y compartido hoy."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Regional"
+      ],
+      "descripcion": "Noche de norteño: Grupo local interpreta clásicos del género."
+    }
+  ],
+  "miercoles": [
+    {
+      "hora": "08:00",
+      "titulo": "Despierta con tu Barrio",
+      "zona": "Hermosillo",
+      "icono": "🌅",
+      "tags": [
+        "Noticias",
+        "Matutino"
+      ],
+      "descripcion": "Miércoles de salud: Campaña de vacunación, horarios y tips de hidratación."
+    },
+    {
+      "hora": "08:30",
+      "titulo": "Titulares Locales",
+      "zona": "Estado",
+      "icono": "🗞️",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Avances en obras públicas."
+    },
+    {
+      "hora": "09:00",
+      "titulo": "Mañana Activa",
+      "zona": "Obregón",
+      "icono": "🧘",
+      "tags": [
+        "Deportes",
+        "Bienestar"
+      ],
+      "descripcion": "Yoga para principiantes: 20 minutos para mejorar flexibilidad y reducir estrés."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales sonorenses."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Entrevista Express",
+      "zona": "Guaymas",
+      "icono": "🎙️",
+      "tags": [
+        "Entrevista",
+        "Educación"
+      ],
+      "descripcion": "Rector universitario habla sobre becas 2026 y carreras con mayor demanda."
+    },
+    {
+      "hora": "10:30",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Saber Popular",
+      "zona": "Todos",
+      "icono": "📚",
+      "tags": [
+        "Conocimiento",
+        "Historia"
+      ],
+      "descripcion": "Historia y tradiciones locales."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Mitad de semana: Resumen de 3 días, infraestructura y agenda deportiva."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Opinión vecinal."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta gastronómica."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Archivos históricos."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Banda municipal."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance en obras."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Seguridad"
+      ],
+      "descripcion": "Seguridad digital: Cómo proteger tus cuentas de redes sociales."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados mascotas."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Última Hora",
+      "zona": "Estado",
+      "icono": "📡",
+      "tags": [
+        "Noticias",
+        "Urgente"
+      ],
+      "descripcion": "Actualizaciones."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Servicios"
+      ],
+      "descripcion": "Cobertura en vivo: Estado de las calles después de las lluvias."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Atardecer Cultural",
+      "zona": "Guaymas",
+      "icono": "🌆",
+      "tags": [
+        "Turismo",
+        "Cultura"
+      ],
+      "descripcion": "Recorrido fotográfico."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Acústico"
+      ],
+      "descripcion": "Sesión íntima: Cantautora local presenta su nuevo EP."
+    }
+  ],
+  "jueves": [
+    {
+      "hora": "08:00",
+      "titulo": "Despierta con tu Barrio",
+      "zona": "Hermosillo",
+      "icono": "🌅",
+      "tags": [
+        "Noticias",
+        "Matutino"
+      ],
+      "descripcion": "Jueves de cultura: Agenda de eventos para el fin de semana."
+    },
+    {
+      "hora": "08:30",
+      "titulo": "Titulares Locales",
+      "zona": "Estado",
+      "icono": "🗞️",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Avances en obras."
+    },
+    {
+      "hora": "09:00",
+      "titulo": "Mañana Activa",
+      "zona": "Obregón",
+      "icono": "🏃",
+      "tags": [
+        "Deportes",
+        "Fútbol"
+      ],
+      "descripcion": "Técnica de fútbol para niños: Control de balón y pases cortos."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Entrevista Express",
+      "zona": "Guaymas",
+      "icono": "🎙️",
+      "tags": [
+        "Entrevista",
+        "Turismo"
+      ],
+      "descripcion": "Director de Turismo presenta la campaña 'Verano en la Costa'."
+    },
+    {
+      "hora": "10:30",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Saber Popular",
+      "zona": "Todos",
+      "icono": "📚",
+      "tags": [
+        "Conocimiento",
+        "Historia"
+      ],
+      "descripcion": "Historia local."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Informe especial: Encuesta de satisfacción ciudadana."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Opinión vecinal."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta gastronómica."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Archivos históricos."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Banda municipal."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance en obras."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Legal"
+      ],
+      "descripcion": "Derechos del consumidor: Qué hacer si te venden un producto defectuoso."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados mascotas."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Última Hora",
+      "zona": "Estado",
+      "icono": "📡",
+      "tags": [
+        "Noticias",
+        "Urgente"
+      ],
+      "descripcion": "Actualizaciones."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Comunidad"
+      ],
+      "descripcion": "Vivo desde el parque lineal: Inauguración de zona de juegos."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Atardecer Cultural",
+      "zona": "Guaymas",
+      "icono": "🌆",
+      "tags": [
+        "Turismo",
+        "Cultura"
+      ],
+      "descripcion": "Recorrido fotográfico."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Pop"
+      ],
+      "descripcion": "Noche pop: Cover band interpreta éxitos de los 80s y 90s."
+    }
+  ],
+  "viernes": [
+    {
+      "hora": "08:00",
+      "titulo": "Despierta con tu Barrio",
+      "zona": "Hermosillo",
+      "icono": "🌅",
+      "tags": [
+        "Noticias",
+        "Matutino"
+      ],
+      "descripcion": "Viernes de planes: Las mejores opciones para el fin de semana."
+    },
+    {
+      "hora": "08:30",
+      "titulo": "Titulares Locales",
+      "zona": "Estado",
+      "icono": "🗞️",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Avances en obras."
+    },
+    {
+      "hora": "09:00",
+      "titulo": "Mañana Activa",
+      "zona": "Obregón",
+      "icono": "🏃",
+      "tags": [
+        "Deportes",
+        "Running"
+      ],
+      "descripcion": "Preparación para la carrera del domingo: Rutina y estiramientos."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Entrevista Express",
+      "zona": "Guaymas",
+      "icono": "🎙️",
+      "tags": [
+        "Entrevista",
+        "Deportes"
+      ],
+      "descripcion": "Entrenador del equipo local de basquet sobre la temporada y playoffs."
+    },
+    {
+      "hora": "10:30",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Saber Popular",
+      "zona": "Todos",
+      "icono": "📚",
+      "tags": [
+        "Conocimiento",
+        "Historia"
+      ],
+      "descripcion": "Historia local."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Edición especial de viernes: Resumen semanal y adelantos."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Opinión vecinal."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta gastronómica."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Archivos históricos."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Entretenimiento"
+      ],
+      "descripcion": "Banda municipal."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance en obras."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Hogar"
+      ],
+      "descripcion": "Reparaciones básicas: Cómo cambiar una llave de agua y reparar fugas."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados mascotas."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Última Hora",
+      "zona": "Estado",
+      "icono": "📡",
+      "tags": [
+        "Noticias",
+        "Urgente"
+      ],
+      "descripcion": "Actualizaciones."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Fiesta"
+      ],
+      "descripcion": "Viernes Cultural en vivo: Danzas tradicionales y feria del elote."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Viernes Cultural",
+      "zona": "Guaymas",
+      "icono": "🎉",
+      "tags": [
+        "Cultura",
+        "Especial"
+      ],
+      "descripcion": "Especial: Recorrido por los murales de la ciudad y arte urbano."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Fiesta"
+      ],
+      "descripcion": "¡Noche de fiesta! DJ local mezcla éxitos latinos y reggaetón."
+    }
+  ],
+  "sabado": [
+    {
+      "hora": "09:00",
+      "titulo": "Sábado Deportivo",
+      "zona": "Todos",
+      "icono": "⚽",
+      "tags": [
+        "Deportes",
+        "En Vivo"
+      ],
+      "descripcion": "Transmisión en vivo de la liga municipal. 3 partidos y comentarios."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Mercado Local",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio",
+        "Tradiciones"
+      ],
+      "descripcion": "Recorrido por el mercado municipal: Precios y antojitos."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Resumen semanal."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Sabor Regional",
+      "zona": "Hermosillo",
+      "icono": "🌮",
+      "tags": [
+        "Gastronomía",
+        "Turismo"
+      ],
+      "descripcion": "Ruta del taco: 3 taquerías legendarias y el veredicto del panel."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Opinión vecinal."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Archivos históricos."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Ritmos Locales",
+      "zona": "Obregón",
+      "icono": "🎵",
+      "tags": [
+        "Música",
+        "Festival"
+      ],
+      "descripcion": "Cobertura del Festival de Música Regional. 3 bandas en vivo."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance en obras."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Hogar"
+      ],
+      "descripcion": "Reparaciones básicas."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados mascotas."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Concurso",
+        "Entretenimiento"
+      ],
+      "descripcion": "Concurso de talento juvenil: Canto, baile y stand-up."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Fiesta"
+      ],
+      "descripcion": "Viernes Cultural."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Noche de Cine",
+      "zona": "Todos",
+      "icono": "🎬",
+      "tags": [
+        "Cine",
+        "Entretenimiento"
+      ],
+      "descripcion": "Cineclub: Cortometrajes de cineastas sonorenses y charla con directores."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Fiesta"
+      ],
+      "descripcion": "¡Noche de fiesta!"
+    }
+  ],
+  "domingo": [
+    {
+      "hora": "09:00",
+      "titulo": "Domingo Familiar",
+      "zona": "Todos",
+      "icono": "👨‍👧",
+      "tags": [
+        "Familia",
+        "Entretenimiento"
+      ],
+      "descripcion": "Programa para toda la familia: Manualidades, receta y trivia con premios."
+    },
+    {
+      "hora": "09:30",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Cultura",
+        "Gastronomía"
+      ],
+      "descripcion": "Recetas tradicionales."
+    },
+    {
+      "hora": "10:00",
+      "titulo": "Ruta del Día",
+      "zona": "Guaymas",
+      "icono": "🏞️",
+      "tags": [
+        "Turismo",
+        "Viajes"
+      ],
+      "descripcion": "Playas escondidas."
+    },
+    {
+      "hora": "11:00",
+      "titulo": "Turismo Local",
+      "zona": "Guaymas",
+      "icono": "🏖️",
+      "tags": [
+        "Turismo",
+        "Playa"
+      ],
+      "descripcion": "Guía de playas para hoy: Condiciones del mar y temperatura del agua."
+    },
+    {
+      "hora": "11:30",
+      "titulo": "Ofertas y Mercados",
+      "zona": "Hermosillo",
+      "icono": "🛒",
+      "tags": [
+        "Comercio"
+      ],
+      "descripcion": "Precios actualizados."
+    },
+    {
+      "hora": "12:00",
+      "titulo": "Noticiero Mediodía",
+      "zona": "Estado",
+      "icono": "📰",
+      "tags": [
+        "Noticias",
+        "Informativo"
+      ],
+      "descripcion": "Resumen semanal."
+    },
+    {
+      "hora": "12:30",
+      "titulo": "Fútbol Callejero",
+      "zona": "Nogales",
+      "icono": "⚽",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo interbarrios."
+    },
+    {
+      "hora": "13:00",
+      "titulo": "Cocina de la Abuela",
+      "zona": "Hermosillo",
+      "icono": "🍳",
+      "tags": [
+        "Gastronomía",
+        "Especial"
+      ],
+      "descripcion": "Especial dominical: Menú completo de domingo. Sopa, carne asada y postre."
+    },
+    {
+      "hora": "13:30",
+      "titulo": "Voces del Pueblo",
+      "zona": "Hermosillo",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Comunidad"
+      ],
+      "descripcion": "Opinión vecinal."
+    },
+    {
+      "hora": "14:00",
+      "titulo": "Historias de Mi Tierra",
+      "zona": "Todos",
+      "icono": "📖",
+      "tags": [
+        "Documental",
+        "Cultura"
+      ],
+      "descripcion": "Archivos históricos."
+    },
+    {
+      "hora": "14:30",
+      "titulo": "Salud Comunitaria",
+      "zona": "Guaymas",
+      "icono": "🏥",
+      "tags": [
+        "Salud",
+        "Servicios"
+      ],
+      "descripcion": "Tips oficiales."
+    },
+    {
+      "hora": "15:00",
+      "titulo": "Tarde Deportiva",
+      "zona": "Todos",
+      "icono": "⚽",
+      "tags": [
+        "Deportes",
+        "Resumen"
+      ],
+      "descripcion": "Resumen de la jornada deportiva: Goles, jugadas y tablas."
+    },
+    {
+      "hora": "15:30",
+      "titulo": "Obras y Progreso",
+      "zona": "Hermosillo",
+      "icono": "🏗️",
+      "tags": [
+        "Noticias",
+        "Infraestructura"
+      ],
+      "descripcion": "Avance en obras."
+    },
+    {
+      "hora": "16:00",
+      "titulo": "Aprende Rápido",
+      "zona": "Todos",
+      "icono": "🎓",
+      "tags": [
+        "Educación",
+        "Hogar"
+      ],
+      "descripcion": "Reparaciones básicas."
+    },
+    {
+      "hora": "16:30",
+      "titulo": "Mascotas en Casa",
+      "zona": "Hermosillo",
+      "icono": "🐾",
+      "tags": [
+        "Mascotas",
+        "Bienestar"
+      ],
+      "descripcion": "Cuidados mascotas."
+    },
+    {
+      "hora": "17:00",
+      "titulo": "Cultura y Tradiciones",
+      "zona": "Nogales",
+      "icono": "🎭",
+      "tags": [
+        "Cultura",
+        "Historia"
+      ],
+      "descripcion": "Documental: Historia de Nogales y su conexión con la frontera."
+    },
+    {
+      "hora": "17:30",
+      "titulo": "Basquet Barrio",
+      "zona": "Nogales",
+      "icono": "🏀",
+      "tags": [
+        "Deportes"
+      ],
+      "descripcion": "Torneo comunitario."
+    },
+    {
+      "hora": "18:00",
+      "titulo": "Reporte Ciudad",
+      "zona": "Hermosillo",
+      "icono": "🔴",
+      "tags": [
+        "En Vivo",
+        "Fiesta"
+      ],
+      "descripcion": "Viernes Cultural."
+    },
+    {
+      "hora": "18:30",
+      "titulo": "Talentos Emergentes",
+      "zona": "Guaymas",
+      "icono": "🎤",
+      "tags": [
+        "Entretenimiento",
+        "Cultura"
+      ],
+      "descripcion": "Jóvenes artistas."
+    },
+    {
+      "hora": "19:00",
+      "titulo": "Resumen Semanal",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Especial"
+      ],
+      "descripcion": "Lo mejor de la semana en 60 minutos. Los 10 momentos más compartidos."
+    },
+    {
+      "hora": "19:30",
+      "titulo": "Resumen del Día",
+      "zona": "Estado",
+      "icono": "📊",
+      "tags": [
+        "Noticias",
+        "Resumen"
+      ],
+      "descripcion": "Lo más visto."
+    },
+    {
+      "hora": "20:00",
+      "titulo": "Cierre Musical",
+      "zona": "Hermosillo",
+      "icono": "🌙",
+      "tags": [
+        "Música",
+        "Fiesta"
+      ],
+      "descripcion": "¡Noche de fiesta!"
+    }
+  ]
+}
