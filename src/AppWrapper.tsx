@@ -50,6 +50,9 @@ import ComprarBoletos from "./pages/ComprarBoletos";
 import HistorialBoletos from "./pages/HistorialBoletos";
 import ValidarQr from "./pages/ValidarQr";
 import PanelMaquiladora from "./pages/PanelMaquiladora";
+import PanelConcesionarioHub from "./pages/PanelConcesionarioHub";
+import PanelConcesionario from "./pages/PanelConcesionario";
+import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import { NavigationBar } from "@/components/NavigationBar";
@@ -171,7 +174,10 @@ export default function AppWrapper() {
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
           <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
-          <Route path="/panel-concesionario" element={<MisRutas />} />
+          <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
+          <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
+          <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
+          {/* foráneo: pendiente */}
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
