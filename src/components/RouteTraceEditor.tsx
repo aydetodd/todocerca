@@ -109,6 +109,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       });
 
       mapRef.current = m;
+      setMapReady(true);
       // Force a resize once the dialog finishes animating
       requestAnimationFrame(() => m && m.invalidateSize());
       setTimeout(() => m && m.invalidateSize(), 300);
