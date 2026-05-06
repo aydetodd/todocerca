@@ -31,6 +31,9 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [statusText, setStatusText] = useState<string | null>(null);
   const [localFilename, setLocalFilename] = useState<string | null>(filename || null);
   const [inputKey, setInputKey] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorGeoJSON, setEditorGeoJSON] = useState<any>(null);
+  const [loadingEditor, setLoadingEditor] = useState(false);
   const traceSaved = hasTrace || !!localFilename;
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
