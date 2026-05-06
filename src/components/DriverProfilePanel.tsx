@@ -662,16 +662,10 @@ function SingleDriverPanel({
                       <Share2 className="h-3 w-3 mr-1" />
                       Invitar
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
+                    <StartTripButton
+                      productoId={data.todayAssignment!.producto_id}
                       onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
-                      title="Registrar inicio y fin de viaje"
-                    >
-                      <Navigation className="h-3 w-3 mr-1" />
-                      Iniciar viaje
-                    </Button>
+                    />
                   </>
                 ) : (
                   <Button
