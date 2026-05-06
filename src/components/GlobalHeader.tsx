@@ -22,15 +22,15 @@ export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProp
         <div className="flex items-center gap-3">
           {children}
           {isProvider && (
-            <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-2 border border-border">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-background rounded-full px-2 py-1.5 sm:px-3 sm:py-2 border-2 border-foreground/30 shadow-md">
               <button
                 onClick={() => updateStatus('available')}
                 disabled={loading}
                 className={`
-                  w-10 h-10 rounded-full transition-all duration-200 border-2
+                  w-7 h-7 sm:w-9 sm:h-9 rounded-full transition-all duration-200 border-2
                   ${status === 'available'
-                    ? 'bg-green-500 border-green-300 shadow-[0_0_12px_rgba(34,197,94,0.9)] scale-110'
-                    : 'bg-green-950/40 border-green-900/50 hover:bg-green-900/60'
+                    ? 'bg-green-500 border-white shadow-[0_0_14px_rgba(34,197,94,1)] scale-110'
+                    : 'bg-green-600/70 border-green-200 hover:bg-green-500'
                   }
                 `}
                 aria-label="Disponible"
@@ -40,10 +40,10 @@ export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProp
                 onClick={() => updateStatus('busy')}
                 disabled={loading}
                 className={`
-                  w-10 h-10 rounded-full transition-all duration-200 border-2
+                  w-7 h-7 sm:w-9 sm:h-9 rounded-full transition-all duration-200 border-2
                   ${status === 'busy'
-                    ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_12px_rgba(234,179,8,0.9)] scale-110'
-                    : 'bg-yellow-950/40 border-yellow-900/50 hover:bg-yellow-900/60'
+                    ? 'bg-yellow-400 border-white shadow-[0_0_14px_rgba(234,179,8,1)] scale-110'
+                    : 'bg-yellow-500/70 border-yellow-200 hover:bg-yellow-400'
                   }
                 `}
                 aria-label="Ocupado"
@@ -53,10 +53,10 @@ export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProp
                 onClick={() => updateStatus('offline')}
                 disabled={loading}
                 className={`
-                  w-10 h-10 rounded-full transition-all duration-200 border-2
+                  w-7 h-7 sm:w-9 sm:h-9 rounded-full transition-all duration-200 border-2
                   ${status === 'offline'
-                    ? 'bg-red-500 border-red-300 shadow-[0_0_12px_rgba(239,68,68,0.9)] scale-110'
-                    : 'bg-red-950/40 border-red-900/50 hover:bg-red-900/60'
+                    ? 'bg-red-500 border-white shadow-[0_0_14px_rgba(239,68,68,1)] scale-110'
+                    : 'bg-red-600/70 border-red-200 hover:bg-red-500'
                   }
                 `}
                 aria-label="Desconectado"
