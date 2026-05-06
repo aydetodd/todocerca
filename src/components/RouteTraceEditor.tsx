@@ -100,12 +100,23 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       }).addTo(m);
 
       m.on('click', (e: L.LeafletMouseEvent) => {
-        if (!isDrawMode) return;
         const { lat, lng } = e.latlng;
-        pushHistory();
-        const next = [...coordsRef.current, [lat, lng] as [number, number]];
-        setCoords(next);
-        setSelectedIdx(next.length - 1);
+        if (isDrawMode) {
+          pushHistory();
+          const next = [...coordsRef.current, [lat, lng] as [number, number]];
+          setCoords(next);
+          setSelectedIdx(next.length - 1);
+        } else {
+          // Edit mode: tapping anywhere on the map inserts a new vertex
+          // on the nearest segment (easier than hitting the thin line).
+          if (coordsRef.current.length < 2) return;
+          const insertAt = findInsertIndex(coordsRef.current, [lat, lng]);
+          pushHistory();
+          const next = [...coordsRef.current];
+          next.splice(insertAt, 0, [lat, lng]);
+          setCoords(next);
+          setSelectedIdx(insertAt);
+        }
       });
 
       mapRef.current = m;
