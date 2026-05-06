@@ -235,6 +235,19 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {editorGeoJSON && (
+        <RouteTraceEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          productoId={productoId}
+          filename={localFilename || filename}
+          geojson={editorGeoJSON}
+          onSaved={() => {
+            setEditorGeoJSON(null);
+            onChanged?.();
+          }}
+        />
+      )}
     </>
   );
 }
