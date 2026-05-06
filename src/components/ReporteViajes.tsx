@@ -71,32 +71,46 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
   useEffect(() => {
     if (!proveedorId) return;
     (async () => {
-      const [uRes, cRes, contratosRes, prodRes] = await Promise.all([
+      const [uRes, cRes, prodRes] = await Promise.all([
         supabase.from("unidades_empresa").select("id, nombre, numero_economico, placas")
           .eq("proveedor_id", proveedorId).neq("transport_type", "taxi"),
         supabase.from("choferes_empresa").select("id, nombre, user_id")
           .eq("proveedor_id", proveedorId).eq("is_active", true),
-        supabase.from("contratos_transporte").select("id").eq("concesionario_id", proveedorId),
         supabase.from("productos").select("id, nombre")
           .eq("proveedor_id", proveedorId).eq("route_type", "privada").eq("is_private", true)
           .order("nombre"),
       ]);
 
-      setUnidades((uRes.data || []).map((u: any) => ({
-        id: u.id,
-        label: `${u.numero_economico || u.nombre || "Unidad"}${u.placas ? ` · ${u.placas}` : ""}`,
-      })));
-      setChoferes((cRes.data || []).map((c: any) => ({ id: c.id, nombre: c.nombre || "Chofer" })));
-      setRutas((prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" })));
+      const rutasPrivadas = (prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" }));
+      setRutas(rutasPrivadas);
+      const rutaPrivadaIds = rutasPrivadas.map((r) => r.id);
 
+      // Filtrar asignaciones SOLO de rutas privadas para evitar cruces con público
       const choferIds = (cRes.data || []).map((c: any) => c.id);
-      if (choferIds.length > 0) {
+      let asigFiltradas: any[] = [];
+      if (choferIds.length > 0 && rutaPrivadaIds.length > 0) {
         const { data: asigData } = await supabase
           .from("asignaciones_chofer")
           .select("chofer_id, unidad_id, producto_id, fecha")
-          .in("chofer_id", choferIds);
-        setAsignaciones(asigData || []);
+          .in("chofer_id", choferIds)
+          .in("producto_id", rutaPrivadaIds);
+        asigFiltradas = asigData || [];
       }
+      setAsignaciones(asigFiltradas);
+
+      // Sólo choferes y unidades que aparecen en asignaciones privadas
+      const choferIdsPrivados = new Set(asigFiltradas.map((a) => a.chofer_id));
+      const unidadIdsPrivadas = new Set(asigFiltradas.map((a) => a.unidad_id).filter(Boolean));
+
+      setUnidades((uRes.data || [])
+        .filter((u: any) => unidadIdsPrivadas.has(u.id))
+        .map((u: any) => ({
+          id: u.id,
+          label: `${u.numero_economico || u.nombre || "Unidad"}${u.placas ? ` · ${u.placas}` : ""}`,
+        })));
+      setChoferes((cRes.data || [])
+        .filter((c: any) => choferIdsPrivados.has(c.id))
+        .map((c: any) => ({ id: c.id, nombre: c.nombre || "Chofer" })));
     })();
   }, [proveedorId]);
 
