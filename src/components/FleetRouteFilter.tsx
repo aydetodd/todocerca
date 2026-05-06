@@ -56,7 +56,7 @@ export function FleetRouteFilter({ routes, visibleIds, onChange }: Props) {
   if (routes.length === 0) return null;
 
   return (
-    <Card className="absolute bottom-4 right-4 z-30 bg-background/95 backdrop-blur-sm shadow-xl max-w-[92vw] sm:max-w-md">
+    <Card className="absolute bottom-24 right-2 left-2 sm:left-auto sm:right-4 z-[1100] bg-background/95 backdrop-blur-sm shadow-xl sm:max-w-md">
       <div className="p-2 flex items-center gap-2 flex-wrap">
         <Button
           size="sm"
