@@ -248,15 +248,16 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {editorGeoJSON && (
+      {(editorGeoJSON || drawMode) && (
         <RouteTraceEditor
           open={editorOpen}
-          onOpenChange={setEditorOpen}
+          onOpenChange={(o) => { setEditorOpen(o); if (!o) { setDrawMode(false); setEditorGeoJSON(null); } }}
           productoId={productoId}
-          filename={localFilename || filename}
-          geojson={editorGeoJSON}
+          filename={drawMode ? 'trazado-a-mano.geojson' : (localFilename || filename)}
+          geojson={drawMode ? null : editorGeoJSON}
           onSaved={() => {
             setEditorGeoJSON(null);
+            setDrawMode(false);
             onChanged?.();
           }}
         />
