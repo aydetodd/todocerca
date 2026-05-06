@@ -118,9 +118,6 @@ export default function PanelConcesionarioPrivado() {
               <TabsTrigger value="reportes" className="text-xs">
                 <BarChart3 className="h-3 w-3 mr-1" /> Reportes
               </TabsTrigger>
-              <TabsTrigger value="flota" className="text-xs">
-                <ClipboardList className="h-3 w-3 mr-1" /> Choferes y Unidades
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -175,14 +172,6 @@ export default function PanelConcesionarioPrivado() {
             </Card>
           </TabsContent>
 
-          {/* CHOFERES Y UNIDADES (flota privada) */}
-          <TabsContent value="flota" className="space-y-3 mt-4">
-            <PrivateRouteManagement
-              proveedorId={proveedor.id}
-              businessName={proveedor.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
-              transportType="privado"
-            />
-          </TabsContent>
         </Tabs>
       </main>
     </div>
