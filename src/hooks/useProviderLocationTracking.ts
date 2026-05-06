@@ -219,6 +219,18 @@ export const useProviderLocationTracking = () => {
     // Iniciar tracking inmediatamente
     startTracking();
 
+    // Escuchar evento local instantáneo del semáforo (más rápido que realtime)
+    const onOfflineEvent = () => {
+      console.log('[GlobalTracking] 🔴 Evento offline recibido, deteniendo...');
+      stopTracking();
+    };
+    const onActiveEvent = () => {
+      console.log('[GlobalTracking] 🟢 Evento active recibido, iniciando...');
+      if (!isTrackingRef.current) startTracking();
+    };
+    window.addEventListener('provider-status-offline', onOfflineEvent);
+    window.addEventListener('provider-status-active', onActiveEvent);
+
     // Re-verificar cada 30 segundos en caso de que el estado cambie
     const checkInterval = setInterval(() => {
       if (!isTrackingRef.current) {
@@ -251,6 +263,8 @@ export const useProviderLocationTracking = () => {
     return () => {
       mounted = false;
       clearInterval(checkInterval);
+      window.removeEventListener('provider-status-offline', onOfflineEvent);
+      window.removeEventListener('provider-status-active', onActiveEvent);
       stopTracking();
       supabase.removeChannel(channel);
     };
