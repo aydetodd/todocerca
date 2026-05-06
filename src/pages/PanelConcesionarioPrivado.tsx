@@ -172,14 +172,6 @@ export default function PanelConcesionarioPrivado() {
             </Card>
           </TabsContent>
 
-          {/* CHOFERES Y UNIDADES (flota privada) */}
-          <TabsContent value="flota" className="space-y-3 mt-4">
-            <PrivateRouteManagement
-              proveedorId={proveedor.id}
-              businessName={proveedor.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
-              transportType="privado"
-            />
-          </TabsContent>
         </Tabs>
       </main>
     </div>
