@@ -334,17 +334,19 @@ export function DriverTripPanel({
                 <Button
                   size="lg"
                   className="w-full h-14 text-base"
-                  disabled={!currentPos || inFlightRef.current}
+                  disabled={!currentPos || !insideStart || inFlightRef.current}
                   onClick={confirmarInicio}
                 >
                   <Play className="h-5 w-5 mr-2" />
                   {insideStart
                     ? `Confirmar inicio (${direccion})`
-                    : `Iniciar viaje ahora${distStart != null ? ` (a ${Math.round(distStart)} m del ${startLabel.toLowerCase()})` : ""}`}
+                    : distStart != null
+                      ? `Acércate al ${startLabel.toLowerCase()} (faltan ${Math.round(distStart)} m)`
+                      : `Esperando ubicación…`}
                 </Button>
-                {!insideStart && distStart != null && (
+                {!insideStart && (
                   <p className="text-[11px] text-muted-foreground text-center">
-                    Estás fuera de la geocerca, pero puedes iniciar el viaje manualmente.
+                    El botón se activa solo cuando estás dentro de la geocerca de inicio (radio {radioM} m).
                   </p>
                 )}
               </>
@@ -355,13 +357,15 @@ export function DriverTripPanel({
                 size="lg"
                 variant="default"
                 className="w-full h-14 text-base"
-                disabled={!currentPos || inFlightRef.current}
+                disabled={!currentPos || !insideEnd || inFlightRef.current}
                 onClick={confirmarFin}
               >
                 <CheckCircle2 className="h-5 w-5 mr-2" />
                 {insideEnd
                   ? `Confirmar llegada (${direccion})`
-                  : `Finalizar viaje ahora${distEnd != null ? ` (a ${Math.round(distEnd)} m del ${endLabel.toLowerCase()})` : ""}`}
+                  : distEnd != null
+                    ? `Acércate al ${endLabel.toLowerCase()} (faltan ${Math.round(distEnd)} m)`
+                    : `Esperando ubicación…`}
               </Button>
             )}
 
