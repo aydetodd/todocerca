@@ -2335,6 +2335,7 @@ export type Database = {
           route_destination_lng: number | null
           route_geofence_radius_m: number | null
           route_geojson: Json | null
+          route_group: string | null
           route_origin_lat: number | null
           route_origin_lng: number | null
           route_trace_filename: string | null
@@ -2365,6 +2366,7 @@ export type Database = {
           route_destination_lng?: number | null
           route_geofence_radius_m?: number | null
           route_geojson?: Json | null
+          route_group?: string | null
           route_origin_lat?: number | null
           route_origin_lng?: number | null
           route_trace_filename?: string | null
@@ -2395,6 +2397,7 @@ export type Database = {
           route_destination_lng?: number | null
           route_geofence_radius_m?: number | null
           route_geojson?: Json | null
+          route_group?: string | null
           route_origin_lat?: number | null
           route_origin_lng?: number | null
           route_trace_filename?: string | null
