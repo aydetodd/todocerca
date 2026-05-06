@@ -266,7 +266,7 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="hoy">Hoy (12:01 am - 12:00 pm)</SelectItem>
+                <SelectItem value="hoy">Hoy (12:00 am - 11:59 pm)</SelectItem>
                 <SelectItem value="ayer">Ayer</SelectItem>
                 <SelectItem value="semana">Últimos 7 días</SelectItem>
                 <SelectItem value="mes">Últimos 30 días</SelectItem>
@@ -326,7 +326,7 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Calendar className="h-4 w-4" /> Hoy (12:01 am – 12:00 pm)
+            <Calendar className="h-4 w-4" /> Hoy (12:00 am – 11:59 pm)
           </CardTitle>
         </CardHeader>
         <CardContent>
