@@ -288,7 +288,10 @@ export default function MapView() {
     };
 
     // Check if current user is a driver with today's assignment → auto-activate route overlay
+    // SKIP when viewing a specific route (producto/token in URL): the URL is the source of truth
+    // to prevent cross-contamination between rutas (e.g. mostrar L1 Manga al ver Ruta 300).
     const checkDriverRoute = async () => {
+      if (publicRouteProductoId || privateRouteToken || fleetMode) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -427,22 +430,8 @@ export default function MapView() {
                 {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
               </Button>
             )}
-            {/* Route overlay toggle — always visible for testing */}
-            {!privateRouteToken && !fleetMode && (
-              <Button
-                variant={activeRouteOverlay ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveRouteOverlay(prev => prev ? null : 'L1_MANGA')}
-                className={`shadow-lg backdrop-blur-sm border-2 ${
-                  activeRouteOverlay 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white font-bold border-blue-400' 
-                    : 'bg-background/95 hover:bg-background text-foreground border-blue-300'
-                }`}
-              >
-                <Route className="h-4 w-4 mr-2" />
-                {activeRouteOverlay ? '🛣️ Ocultar Ruta L1' : '🛣️ Ver Ruta L1 Manga'}
-              </Button>
-            )}
+            {/* Removed hardcoded "Ver Ruta L1 Manga" test toggle — every route now uses its own
+                uploaded KML/KMZ via productos.route_geojson. */}
             <MapSearchBar onSelectLocation={handleSearchLocation} />
           </div>
         </div>
