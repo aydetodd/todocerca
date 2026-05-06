@@ -858,7 +858,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Route className="h-5 w-5" />
-              3. Rutas / Nomenclaturas
+              2. Rutas / Nomenclaturas
             </CardTitle>
             <CardDescription>
               Las rutas son lo más importante para los pasajeros. Registra todas las rutas que cubres (ilimitadas y sin costo).
