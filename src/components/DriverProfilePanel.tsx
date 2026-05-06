@@ -336,6 +336,7 @@ function StartTripButton({ productoId, onClick }: { productoId: string; onClick:
   );
 }
 
+function SingleDriverPanel({
   data,
   activeRouteName,
   profileStatus,
