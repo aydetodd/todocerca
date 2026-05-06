@@ -146,7 +146,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     if (markersGroupRef.current) { markersGroupRef.current.remove(); markersGroupRef.current = null; }
 
     if (coords.length >= 2) {
-      const poly = L.polyline(coords, { color: '#0066CC', weight: 5, opacity: 0.85 }).addTo(map);
+      const poly = L.polyline(coords, { color, weight: 5, opacity: 0.85 }).addTo(map);
       poly.on('click', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
         const { lat, lng } = e.latlng;
