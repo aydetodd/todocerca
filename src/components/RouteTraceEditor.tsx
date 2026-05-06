@@ -120,14 +120,6 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-    return () => {
-      m.remove();
-      mapRef.current = null;
-      polylineRef.current = null;
-      markersGroupRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   // Redraw polyline + markers whenever coords change
   useEffect(() => {
