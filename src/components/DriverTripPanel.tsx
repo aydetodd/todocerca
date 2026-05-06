@@ -161,7 +161,7 @@ export function DriverTripPanel({
         setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
       (err) => setGpsError(err.message || "Error al obtener ubicación"),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
