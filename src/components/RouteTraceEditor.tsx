@@ -165,11 +165,11 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       coords.forEach(([lat, lng], idx) => {
         const isSelected = idx === selectedIdx;
         const isEndpoint = idx === 0 || idx === coords.length - 1;
-        const color = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : '#0066CC';
+        const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
         const size = isSelected ? 16 : 12;
         const icon = L.divIcon({
           className: 'route-vertex-marker',
-          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:grab"></div>`,
+          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${markerColor};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:grab"></div>`,
           iconSize: [size, size],
           iconAnchor: [size / 2, size / 2],
         });
