@@ -3,9 +3,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Undo2, Trash2, MapPin } from 'lucide-react';
+import { Loader2, Save, Undo2, Trash2, Locate } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import MapSearchBar from '@/components/MapSearchBar';
 
 interface Props {
   open: boolean;
@@ -60,46 +61,65 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     setSelectedIdx(null);
   }, [open, geojson, isDrawMode, toast]);
 
-  // Init map
+  // Init map (wait one frame so the Dialog has measured the container)
   useEffect(() => {
-    if (!open || !mapElRef.current || mapRef.current) return;
-    const center = initialCenter || [29.0729, -110.9559];
-    const m = L.map(mapElRef.current, { zoomControl: true }).setView(center, 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 19,
-    }).addTo(m);
+    if (!open) return;
+    let cancelled = false;
+    let m: L.Map | null = null;
 
-    // In draw mode: clicking the map (not a marker/polyline) appends a vertex
-    m.on('click', (e: L.LeafletMouseEvent) => {
-      if (!isDrawMode) return;
-      const { lat, lng } = e.latlng;
-      pushHistory();
-      const next = [...coordsRef.current, [lat, lng] as [number, number]];
-      setCoords(next);
-      setSelectedIdx(next.length - 1);
-    });
+    const tryInit = (attempt = 0) => {
+      if (cancelled) return;
+      const el = mapElRef.current;
+      if (!el || el.clientWidth === 0 || el.clientHeight === 0) {
+        if (attempt < 30) return setTimeout(() => tryInit(attempt + 1), 100);
+        return;
+      }
+      if (mapRef.current) return;
+      const center = initialCenter || [29.0729, -110.9559];
+      m = L.map(el, { zoomControl: true }).setView(center, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(m);
 
-    mapRef.current = m;
-    setTimeout(() => m.invalidateSize(), 100);
+      m.on('click', (e: L.LeafletMouseEvent) => {
+        if (!isDrawMode) return;
+        const { lat, lng } = e.latlng;
+        pushHistory();
+        const next = [...coordsRef.current, [lat, lng] as [number, number]];
+        setCoords(next);
+        setSelectedIdx(next.length - 1);
+      });
 
-    // Try to center on the user's location for draw mode
-    if (isDrawMode && !initialCenter && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { try { m.setView([pos.coords.latitude, pos.coords.longitude], 15); } catch {} },
-        () => {},
-        { timeout: 5000, maximumAge: 60000 }
-      );
-    }
+      mapRef.current = m;
+      // Force a resize once the dialog finishes animating
+      requestAnimationFrame(() => m && m.invalidateSize());
+      setTimeout(() => m && m.invalidateSize(), 300);
+
+      // Center on the user's location for draw mode
+      if (isDrawMode && !initialCenter && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => { try { m && m.setView([pos.coords.latitude, pos.coords.longitude], 16); } catch {} },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      }
+    };
+
+    tryInit();
 
     return () => {
-      m.remove();
-      mapRef.current = null;
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
       polylineRef.current = null;
       markersGroupRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
 
   // Redraw polyline + markers whenever coords change
   useEffect(() => {
@@ -249,6 +269,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     }
   };
 
+  const goToMyLocation = () => {
+    if (!navigator.geolocation || !mapRef.current) {
+      toast({ title: 'Sin GPS', description: 'No se pudo obtener tu ubicación.', variant: 'destructive' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { try { mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 17); } catch {} },
+      () => toast({ title: 'Sin permiso', description: 'Permite el acceso a la ubicación.', variant: 'destructive' }),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  };
+
+  const goToCoords = (lat: number, lng: number) => {
+    try { mapRef.current?.setView([lat, lng], 17); } catch {}
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
@@ -276,7 +312,17 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
           </span>
         </div>
-        <div ref={mapElRef} className="flex-1 w-full" style={{ minHeight: 300 }} />
+        <div className="px-3 py-2 border-b bg-background flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <MapSearchBar onSelectLocation={(lat, lng) => goToCoords(lat, lng)} />
+          </div>
+          <Button size="sm" variant="outline" onClick={goToMyLocation} title="Centrar en mi ubicación">
+            <Locate className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="relative flex-1 w-full" style={{ minHeight: 300 }}>
+          <div ref={mapElRef} className="absolute inset-0 w-full h-full" />
+        </div>
         <DialogFooter className="px-4 pb-4 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving || coords.length < 2}>
