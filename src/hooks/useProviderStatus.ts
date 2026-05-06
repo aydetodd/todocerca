@@ -109,10 +109,12 @@ export function useProviderStatus() {
       // para que su marcador desaparezca instantáneamente en los demás dispositivos
       // (RLS permite que cada usuario elimine sus propias filas).
       if (newStatus === 'offline') {
-        await supabase
-          .from('tracking_member_locations')
-          .delete()
-          .eq('user_id', userId);
+        await Promise.all([
+          supabase.from('tracking_member_locations').delete().eq('user_id', userId),
+          // Borrar también la ubicación del proveedor para que su marcador
+          // desaparezca instantáneamente del mapa en todos los dispositivos.
+          supabase.from('proveedor_locations').delete().eq('user_id', userId),
+        ]);
       }
 
       // Broadcast to ALL mounted instances immediately
