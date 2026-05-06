@@ -269,6 +269,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     }
   };
 
+  const goToMyLocation = () => {
+    if (!navigator.geolocation || !mapRef.current) {
+      toast({ title: 'Sin GPS', description: 'No se pudo obtener tu ubicación.', variant: 'destructive' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { try { mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 17); } catch {} },
+      () => toast({ title: 'Sin permiso', description: 'Permite el acceso a la ubicación.', variant: 'destructive' }),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  };
+
+  const goToCoords = (lat: number, lng: number) => {
+    try { mapRef.current?.setView([lat, lng], 17); } catch {}
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
