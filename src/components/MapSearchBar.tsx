@@ -14,13 +14,15 @@ interface NominatimResult {
 
 interface MapSearchBarProps {
   onSelectLocation: (lat: number, lng: number, label: string) => void;
+  alwaysOpen?: boolean;
+  placeholder?: string;
 }
 
-export default function MapSearchBar({ onSelectLocation }: MapSearchBarProps) {
+export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, placeholder }: MapSearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(alwaysOpen);
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
