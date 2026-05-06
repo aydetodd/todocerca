@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, MapPin, Users, Plus, Minus, Trash2, CreditCard, Navigation, UserPlus, X, Map as MapIcon, Link, Copy, Check, Radio, ChevronDown } from 'lucide-react';
 import TrackingMap from '@/components/TrackingMap';
 import { StatusControl } from '@/components/StatusControl';
+import { useProviderStatus } from '@/hooks/useProviderStatus';
 import { GpsTrackerDetailCard } from '@/components/GpsTrackerDetailCard';
 import { LocationPermissionGuide } from '@/components/LocationPermissionGuide';
 import { useGpsTrackers } from '@/hooks/useGpsTrackers';
