@@ -943,6 +943,18 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             </div>
                           )}
 
+                          <div className="pt-2 border-t">
+                            <p className="text-xs font-medium mb-1">Trazado de la ruta (KML/KMZ/GPX/GeoJSON)</p>
+                            <RouteTraceUploader
+                              productoId={vehicle.id}
+                              hasTrace={!!vehicle.route_geojson}
+                              filename={vehicle.route_trace_filename}
+                              onChanged={() => {
+                                setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v } : v));
+                              }}
+                            />
+                          </div>
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -951,7 +963,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             className="w-full"
                           >
                             <Link className="h-3 w-3 mr-1" />
-                            4. Link Pasajeros
+                            Link Pasajeros
                           </Button>
                         </>
                       )}
