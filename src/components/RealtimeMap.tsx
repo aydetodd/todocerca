@@ -253,18 +253,31 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
       const previousState = markerStatesRef.current[location.user_id];
       
-      // Calculate heading for bus markers
+      // Calculate heading for bus markers — anti-jitter:
+      // 1) Solo actualizar si se movió una distancia significativa (~25m)
+      // 2) Solo girar si el nuevo rumbo difiere notablemente del actual (>35°),
+      //    así el camión sigue "de frente" y solo gira en vueltas reales o reversa.
       const prevPos = prevPositionsRef.current[location.user_id];
       let heading = headingsRef.current[location.user_id] ?? 0;
       if (prevPos) {
-        const dist = Math.abs(prevPos.lat - Number(location.latitude)) + Math.abs(prevPos.lng - Number(location.longitude));
-        // Only update heading if moved enough (avoid jitter from GPS noise)
-        if (dist > 0.00005) {
-          heading = calculateBearing(prevPos.lat, prevPos.lng, Number(location.latitude), Number(location.longitude));
-          headingsRef.current[location.user_id] = heading;
+        const newLat = Number(location.latitude);
+        const newLng = Number(location.longitude);
+        // Distancia aproximada en grados (~0.00025 ≈ 25m)
+        const dist = Math.hypot(prevPos.lat - newLat, prevPos.lng - newLng);
+        if (dist > 0.00025) {
+          const newHeading = calculateBearing(prevPos.lat, prevPos.lng, newLat, newLng);
+          // Diferencia angular mínima (0-180)
+          const diff = Math.abs(((newHeading - heading + 540) % 360) - 180);
+          if (headingsRef.current[location.user_id] === undefined || diff > 35) {
+            heading = newHeading;
+            headingsRef.current[location.user_id] = heading;
+          }
+          // Solo guardar prevPos cuando hubo movimiento real (mejor base para próximo bearing)
+          prevPositionsRef.current[location.user_id] = { lat: newLat, lng: newLng };
         }
+      } else {
+        prevPositionsRef.current[location.user_id] = { lat: Number(location.latitude), lng: Number(location.longitude) };
       }
-      prevPositionsRef.current[location.user_id] = { lat: Number(location.latitude), lng: Number(location.longitude) };
       
       // If marker exists and NO popup-relevant data changed, just update position smoothly
       if (existingMarker && previousState === compositeState) {
