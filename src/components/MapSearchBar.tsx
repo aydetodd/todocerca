@@ -57,10 +57,11 @@ export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, pla
       );
       const data: NominatimResult[] = await response.json();
       setResults(data);
-      setShowResults(data.length > 0);
+      setShowResults(true);
     } catch (error) {
       console.error('Error searching Nominatim:', error);
       setResults([]);
+      setShowResults(true);
     } finally {
       setIsSearching(false);
     }
