@@ -74,8 +74,10 @@ export function DriverTripPanel({
   origenLng,
   destinoLat,
   destinoLng,
-  radioM = 150,
+  radioM: radioMProp = 150,
 }: DriverTripPanelProps) {
+  // Garantizar un radio mínimo usable (algunas rutas se guardaron con 50 m, demasiado estricto)
+  const radioM = Math.max(radioMProp ?? 150, 200);
   const [loading, setLoading] = useState(true);
   const [viajeActivo, setViajeActivo] = useState<Viaje | null>(null);
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
