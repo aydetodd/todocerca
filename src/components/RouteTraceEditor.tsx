@@ -3,9 +3,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Undo2, Trash2, MapPin } from 'lucide-react';
+import { Loader2, Save, Undo2, Trash2, Locate } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import MapSearchBar from '@/components/MapSearchBar';
 
 interface Props {
   open: boolean;
