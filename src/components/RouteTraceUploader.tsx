@@ -192,6 +192,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
                     .maybeSingle();
                   if (error) throw error;
                   if (!data?.route_geojson) throw new Error('No hay trazado para editar.');
+                  setDrawMode(false);
                   setEditorGeoJSON(data.route_geojson);
                   setEditorOpen(true);
                 } catch (e: any) {
