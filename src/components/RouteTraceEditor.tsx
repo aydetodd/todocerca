@@ -34,8 +34,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
   const [history, setHistory] = useState<[number, number][][]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [color, setColor] = useState<string>('#0066CC');
+  const colorRef = useRef<string>('#0066CC');
+  useEffect(() => { colorRef.current = color; }, [color]);
   const isDrawMode = !geojson;
   const { toast } = useToast();
+
+  const COLOR_PALETTE: { value: string; label: string }[] = [
+    { value: '#0066CC', label: 'Azul' },
+    { value: '#dc2626', label: 'Rojo' },
+    { value: '#16a34a', label: 'Verde' },
+    { value: '#f59e0b', label: 'Naranja' },
+    { value: '#a855f7', label: 'Morado' },
+    { value: '#ec4899', label: 'Rosa' },
+    { value: '#0891b2', label: 'Cian' },
+    { value: '#000000', label: 'Negro' },
+  ];
 
   // Keep refs in sync (so map handlers see latest values)
   useEffect(() => { coordsRef.current = coords; }, [coords]);
@@ -48,6 +62,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       setCoords([]);
       setHistory([]);
       setSelectedIdx(null);
+      setColor('#0066CC');
       return;
     }
     const line = geojson.features?.find((f: any) => f?.geometry?.type === 'LineString');
@@ -59,6 +74,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     setCoords(c);
     setHistory([]);
     setSelectedIdx(null);
+    setColor((line.properties?.color as string) || '#0066CC');
   }, [open, geojson, isDrawMode, toast]);
 
   // Init map (wait one frame so the Dialog has measured the container)
@@ -130,7 +146,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     if (markersGroupRef.current) { markersGroupRef.current.remove(); markersGroupRef.current = null; }
 
     if (coords.length >= 2) {
-      const poly = L.polyline(coords, { color: '#0066CC', weight: 5, opacity: 0.85 }).addTo(map);
+      const poly = L.polyline(coords, { color, weight: 5, opacity: 0.85 }).addTo(map);
       poly.on('click', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
         const { lat, lng } = e.latlng;
@@ -149,11 +165,11 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       coords.forEach(([lat, lng], idx) => {
         const isSelected = idx === selectedIdx;
         const isEndpoint = idx === 0 || idx === coords.length - 1;
-        const color = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : '#0066CC';
+        const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
         const size = isSelected ? 16 : 12;
         const icon = L.divIcon({
           className: 'route-vertex-marker',
-          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:grab"></div>`,
+          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${markerColor};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:grab"></div>`,
           iconSize: [size, size],
           iconAnchor: [size / 2, size / 2],
         });
@@ -182,7 +198,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       try { map.fitBounds(polylineRef.current.getBounds(), { padding: [30, 30] }); } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coords, selectedIdx]);
+  }, [coords, selectedIdx, color]);
 
   const pushHistory = () => {
     setHistory((h) => [...h.slice(-49), coordsRef.current]);
@@ -232,7 +248,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           features: [
             {
               type: 'Feature',
-              properties: { source: 'hand-drawn', createdAt: new Date().toISOString() },
+              properties: { source: 'hand-drawn', createdAt: new Date().toISOString(), color },
               geometry: { type: 'LineString', coordinates: newCoords },
             },
           ],
@@ -245,7 +261,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             return {
               ...f,
               geometry: { ...f.geometry, coordinates: newCoords },
-              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString() },
+              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString(), color },
             };
           }
           return f;
@@ -311,6 +327,20 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           <span className="ml-auto text-[11px] text-muted-foreground">
             {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
           </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-background">
+          <span className="text-[11px] text-muted-foreground mr-1">Color de la ruta:</span>
+          {COLOR_PALETTE.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setColor(c.value)}
+              title={c.label}
+              aria-label={`Color ${c.label}`}
+              className={`h-6 w-6 rounded-full border-2 transition-transform ${color === c.value ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-white shadow'}`}
+              style={{ background: c.value }}
+            />
+          ))}
         </div>
         <div className="px-3 py-2 border-b bg-background flex items-center gap-2">
           <div className="flex-1 min-w-0">
