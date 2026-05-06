@@ -201,7 +201,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       try { map.fitBounds(polylineRef.current.getBounds(), { padding: [30, 30] }); } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coords, selectedIdx, color]);
+  }, [coords, selectedIdx, color, mapReady]);
 
   const pushHistory = () => {
     setHistory((h) => [...h.slice(-49), coordsRef.current]);
