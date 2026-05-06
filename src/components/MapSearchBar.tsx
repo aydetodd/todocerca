@@ -106,7 +106,7 @@ export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, pla
   }
 
   return (
-    <div ref={containerRef} className="w-72 sm:w-80">
+    <div ref={containerRef} className={alwaysOpen ? 'w-full' : 'w-72 sm:w-80'}>
       <div className="relative">
         <div className="flex gap-1">
           <div className="relative flex-1">
@@ -114,9 +114,9 @@ export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, pla
             <Input
               value={query}
               onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Buscar dirección o lugar..."
+              placeholder={placeholder || 'Buscar dirección, calle o lugar...'}
               className="pl-9 pr-8 h-10 bg-background/95 backdrop-blur-sm shadow-lg text-sm"
-              autoFocus
+              autoFocus={!alwaysOpen}
             />
             {query && (
               <button
@@ -127,17 +127,19 @@ export default function MapSearchBar({ onSelectLocation, alwaysOpen = false, pla
               </button>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setIsOpen(false);
-              handleClear();
-            }}
-            className="h-10 w-10 bg-background/90 shadow-lg backdrop-blur-sm shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {!alwaysOpen && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setIsOpen(false);
+                handleClear();
+              }}
+              className="h-10 w-10 bg-background/90 shadow-lg backdrop-blur-sm shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Loading indicator */}
