@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2, Pencil } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, Trash2, Eye, FileCheck2, Pencil, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
@@ -33,6 +33,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
   const [inputKey, setInputKey] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorGeoJSON, setEditorGeoJSON] = useState<any>(null);
+  const [drawMode, setDrawMode] = useState(false);
   const [loadingEditor, setLoadingEditor] = useState(false);
   const traceSaved = hasTrace || !!localFilename;
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -153,6 +154,17 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
             )}
             {uploading ? 'Procesando...' : traceSaved ? 'Reemplazar trazado' : 'Subir trazado'}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={uploading}
+          onClick={() => { setDrawMode(true); setEditorGeoJSON(null); setEditorOpen(true); }}
+          title="Dibujar el trazado a mano sobre el mapa"
+        >
+          <MapPin className="h-3 w-3 mr-1" />
+          Dibujar a mano
+        </Button>
         {traceSaved && (
           <>
             <Button
@@ -180,6 +192,7 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
                     .maybeSingle();
                   if (error) throw error;
                   if (!data?.route_geojson) throw new Error('No hay trazado para editar.');
+                  setDrawMode(false);
                   setEditorGeoJSON(data.route_geojson);
                   setEditorOpen(true);
                 } catch (e: any) {
@@ -235,15 +248,16 @@ export default function RouteTraceUploader({ productoId, hasTrace, filename, onC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {editorGeoJSON && (
+      {(editorGeoJSON || drawMode) && (
         <RouteTraceEditor
           open={editorOpen}
-          onOpenChange={setEditorOpen}
+          onOpenChange={(o) => { setEditorOpen(o); if (!o) { setDrawMode(false); setEditorGeoJSON(null); } }}
           productoId={productoId}
-          filename={localFilename || filename}
-          geojson={editorGeoJSON}
+          filename={drawMode ? 'trazado-a-mano.geojson' : (localFilename || filename)}
+          geojson={drawMode ? null : editorGeoJSON}
           onSaved={() => {
             setEditorGeoJSON(null);
+            setDrawMode(false);
             onChanged?.();
           }}
         />
