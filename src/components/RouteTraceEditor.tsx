@@ -34,6 +34,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
   const [history, setHistory] = useState<[number, number][][]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [color, setColor] = useState<string>('#0066CC');
   const colorRef = useRef<string>('#0066CC');
   useEffect(() => { colorRef.current = color; }, [color]);
@@ -108,6 +109,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       });
 
       mapRef.current = m;
+      setMapReady(true);
       // Force a resize once the dialog finishes animating
       requestAnimationFrame(() => m && m.invalidateSize());
       setTimeout(() => m && m.invalidateSize(), 300);
@@ -132,6 +134,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       }
       polylineRef.current = null;
       markersGroupRef.current = null;
+      setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -198,7 +201,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       try { map.fitBounds(polylineRef.current.getBounds(), { padding: [30, 30] }); } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coords, selectedIdx, color]);
+  }, [coords, selectedIdx, color, mapReady]);
 
   const pushHistory = () => {
     setHistory((h) => [...h.slice(-49), coordsRef.current]);
