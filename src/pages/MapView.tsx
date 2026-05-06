@@ -179,12 +179,28 @@ export default function MapView() {
             const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
             const { data: tracedRoutes } = await supabase
               .from('productos')
-              .select('route_geojson')
+              .select('id, nombre, route_geojson, route_group')
               .eq('proveedor_id', proveedor.id)
               .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada')
               .not('route_geojson', 'is', null);
 
-            setActiveRouteGeoJSON(mergeRouteTraces((tracedRoutes || []) as Array<{ route_geojson: { features?: unknown[] } | null }>));
+            const items = (tracedRoutes || []).map((r: any) => {
+              const lineFeat = r.route_geojson?.features?.find(
+                (f: any) => f?.geometry?.type === 'LineString' || f?.geometry?.type === 'MultiLineString'
+              );
+              const color = lineFeat?.properties?.color || '#0066CC';
+              return {
+                id: r.id,
+                nombre: r.nombre,
+                route_group: r.route_group ?? null,
+                color,
+                route_geojson: r.route_geojson,
+              };
+            });
+            setFleetRoutes(items);
+            const allIds = new Set<string>(items.map((i) => i.id));
+            setVisibleRouteIds(allIds);
+            setActiveRouteGeoJSON(mergeRouteTraces(items, allIds));
             setActiveRouteOverlay(null);
           }
 
