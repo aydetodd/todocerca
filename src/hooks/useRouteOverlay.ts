@@ -88,11 +88,12 @@ export function useRouteOverlay(
           ? [lineFeature.geometry.coordinates as number[][]]
           : (lineFeature.geometry.coordinates as number[][][]);
 
+        const lineColor = (lineFeature.properties?.color as string) || '#0066CC';
         segments.forEach((segment) => {
           const coords = segment.map(([lng, lat]) => [lat, lng] as [number, number]);
           allLatLngs.push(...coords);
           L.polyline(coords, {
-            color: '#0066CC',
+            color: lineColor,
             weight: 5,
             opacity: 0.9,
           }).addTo(group);
