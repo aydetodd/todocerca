@@ -35,6 +35,7 @@ import {
 import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
+import RouteTraceUploader from './RouteTraceUploader';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
@@ -633,7 +634,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       )}
 
 
-      {/* Tab switcher - Orden: Unidades → Choferes → Rutas (+ Link pasajeros) */}
+      {/* Tab switcher - Orden: Unidades → Rutas → Choferes */}
       <div className="flex gap-1">
         <Button
           variant={activeTab === 'units' ? 'default' : 'outline'}
@@ -644,20 +645,20 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           1. Unidades ({units.length})
         </Button>
         <Button
-          variant={activeTab === 'drivers' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('drivers')}
-          className="flex-1 text-xs px-2"
-        >
-          2. Choferes ({driversCount})
-        </Button>
-        <Button
           variant={activeTab === 'routes' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('routes')}
           className="flex-1 text-xs px-2"
         >
-          3. Rutas ({vehicles.length})
+          2. Rutas ({vehicles.length})
+        </Button>
+        <Button
+          variant={activeTab === 'drivers' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('drivers')}
+          className="flex-1 text-xs px-2"
+        >
+          3. Choferes ({driversCount})
         </Button>
       </div>
 
@@ -858,7 +859,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Route className="h-5 w-5" />
-              3. Rutas / Nomenclaturas
+              2. Rutas / Nomenclaturas
             </CardTitle>
             <CardDescription>
               Las rutas son lo más importante para los pasajeros. Registra todas las rutas que cubres (ilimitadas y sin costo).
@@ -942,6 +943,18 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             </div>
                           )}
 
+                          <div className="pt-2 border-t">
+                            <p className="text-xs font-medium mb-1">Trazado de la ruta (KML/KMZ/GPX/GeoJSON)</p>
+                            <RouteTraceUploader
+                              productoId={vehicle.id}
+                              hasTrace={!!vehicle.route_geojson}
+                              filename={vehicle.route_trace_filename}
+                              onChanged={() => {
+                                setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v } : v));
+                              }}
+                            />
+                          </div>
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -950,7 +963,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             className="w-full"
                           >
                             <Link className="h-3 w-3 mr-1" />
-                            4. Link Pasajeros
+                            Link Pasajeros
                           </Button>
                         </>
                       )}
