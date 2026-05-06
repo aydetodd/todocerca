@@ -118,9 +118,6 @@ export default function PanelConcesionarioPrivado() {
               <TabsTrigger value="reportes" className="text-xs">
                 <BarChart3 className="h-3 w-3 mr-1" /> Reportes
               </TabsTrigger>
-              <TabsTrigger value="flota" className="text-xs">
-                <ClipboardList className="h-3 w-3 mr-1" /> Choferes y Unidades
-              </TabsTrigger>
             </TabsList>
           </div>
 
