@@ -323,7 +323,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           <DialogDescription className="text-xs">
             {isDrawMode
               ? 'Toca el mapa para ir poniendo los puntos de tu ruta en orden. Verde = inicio/fin. Arrastra los puntos para ajustarlos.'
-              : 'Arrastra los puntos azules para moverlos. Toca la línea para insertar un punto. Verde = inicio/fin · Rojo = seleccionado.'}
+              : 'Toca el mapa (o la línea) para insertar un punto y poder doblar tramos rectos. Arrastra los puntos azules para moverlos. Verde = inicio/fin · Rojo = seleccionado.'}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-y bg-muted/40">
