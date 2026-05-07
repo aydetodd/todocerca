@@ -291,7 +291,13 @@ export function DriverTripPanel({
 
       {/* Mapa */}
       <div className="shrink-0 h-[35vh] border-b border-border">
-        <DriverMiniMap routeProductId={routeProductId} />
+        <DriverMiniMap
+          routeProductId={routeProductId}
+          origenLat={origenLat}
+          origenLng={origenLng}
+          destinoLat={destinoLat}
+          destinoLng={destinoLng}
+        />
       </div>
 
       {/* Contenido */}
