@@ -103,8 +103,11 @@ export function DriverTripPanel({
   const startLng = direccion === "ida" ? origenLng : destinoLng;
   const endLat = direccion === "ida" ? destinoLat : origenLat;
   const endLng = direccion === "ida" ? destinoLng : origenLng;
-  const startLabel = direccion === "ida" ? "Inicio" : "Final (regreso desde aquí)";
-  const endLabel = direccion === "ida" ? "Final" : "Inicio (regreso a aquí)";
+  // A = punto donde se recoge al personal (origen del contrato)
+  // B = punto donde se deja al personal (destino del contrato)
+  // En "ida" se va de A → B; en "vuelta" se regresa de B → A.
+  const startLabel = direccion === "ida" ? "Punto A (recoger)" : "Punto B (regreso desde aquí)";
+  const endLabel = direccion === "ida" ? "Punto B (dejar)" : "Punto A (regreso a aquí)";
 
   // Persistir dirección
   useEffect(() => {
