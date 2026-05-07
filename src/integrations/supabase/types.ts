@@ -142,6 +142,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "audit_log_verificacion_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "audit_log_verificacion_verificacion_id_fkey"
             columns: ["verificacion_id"]
             isOneToOne: false
@@ -272,6 +279,13 @@ export type Database = {
             referencedRelation: "proveedores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "choferes_empresa_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       citas: {
@@ -326,6 +340,13 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "citas_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -480,6 +501,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contratos_transporte_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contratos_transporte_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -617,6 +645,13 @@ export type Database = {
             columns: ["concesionario_id"]
             isOneToOne: true
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cuentas_conectadas_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: true
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -763,6 +798,13 @@ export type Database = {
             columns: ["concesionario_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_concesionario_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
           {
@@ -923,6 +965,13 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favoritos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -1590,6 +1639,13 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horarios_proveedor_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -2260,6 +2316,13 @@ export type Database = {
             referencedRelation: "proveedores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pedidos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       phone_verification_codes: {
@@ -2420,6 +2483,13 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -3476,6 +3546,13 @@ export type Database = {
             referencedRelation: "proveedores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "unidades_empresa_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_contacts: {
@@ -3687,6 +3764,13 @@ export type Database = {
             columns: ["concesionario_id"]
             isOneToOne: false
             referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verificaciones_concesionario_concesionario_id_fkey"
+            columns: ["concesionario_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -4077,7 +4161,110 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      listing_comments_publico: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          listing_id: string | null
+          message: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          listing_id?: string | null
+          message?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          listing_id?: string | null
+          message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_comments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proveedores_publico: {
+        Row: {
+          business_address: string | null
+          codigo_postal: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          latitude: number | null
+          longitude: number | null
+          nombre: string | null
+        }
+        Insert: {
+          business_address?: string | null
+          codigo_postal?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nombre?: string | null
+        }
+        Update: {
+          business_address?: string | null
+          codigo_postal?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nombre?: string | null
+        }
+        Relationships: []
+      }
+      votos_creador: {
+        Row: {
+          fecha_voto: string | null
+          id: string | null
+          observacion: string | null
+          opcion_id: string | null
+          user_id: string | null
+          votacion_id: string | null
+        }
+        Insert: {
+          fecha_voto?: string | null
+          id?: string | null
+          observacion?: string | null
+          opcion_id?: string | null
+          user_id?: string | null
+          votacion_id?: string | null
+        }
+        Update: {
+          fecha_voto?: string | null
+          id?: string | null
+          observacion?: string | null
+          opcion_id?: string | null
+          user_id?: string | null
+          votacion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votos_opcion_id_fkey"
+            columns: ["opcion_id"]
+            isOneToOne: false
+            referencedRelation: "votacion_opciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votos_votacion_id_fkey"
+            columns: ["votacion_id"]
+            isOneToOne: false
+            referencedRelation: "votaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_bidirectional_contact: {
