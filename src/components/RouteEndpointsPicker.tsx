@@ -179,7 +179,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
           min={50}
           max={1000}
           value={radius}
-          onChange={(e) => setRadius(Math.max(50, Math.min(1000, parseInt(e.target.value) || 150)))}
+          onChange={(e) => setRadius(Math.max(50, Math.min(1000, parseInt(e.target.value) || 50)))}
           className="h-8 w-24"
         />
         <span className="text-[11px] text-muted-foreground">Geocerca de detección.</span>
