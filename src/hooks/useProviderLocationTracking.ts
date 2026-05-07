@@ -19,12 +19,12 @@ export const useProviderLocationTracking = () => {
 
   useEffect(() => {
     let mounted = true;
-    const UPDATE_INTERVAL = 8000; // 8 segundos entre polls
+    const UPDATE_INTERVAL = 2000; // 2 segundos para web
 
     const updateLocation = async (latitude: number, longitude: number) => {
       const now = Date.now();
-      // Throttle entre updates, pero NO bloquear el primero tras (re)iniciar
-      if (lastUpdateRef.current !== 0 && now - lastUpdateRef.current < 4000) return;
+      // Evitar actualizaciones muy frecuentes
+      if (now - lastUpdateRef.current < 1000) return;
       lastUpdateRef.current = now;
 
       try {
@@ -75,7 +75,6 @@ export const useProviderLocationTracking = () => {
 
       watcherIdRef.current = null;
       isTrackingRef.current = false;
-      lastUpdateRef.current = 0; // permitir update inmediato al reactivar
       setIsActive(false);
     };
 
@@ -220,18 +219,6 @@ export const useProviderLocationTracking = () => {
     // Iniciar tracking inmediatamente
     startTracking();
 
-    // Escuchar evento local instantáneo del semáforo (más rápido que realtime)
-    const onOfflineEvent = () => {
-      console.log('[GlobalTracking] 🔴 Evento offline recibido, deteniendo...');
-      stopTracking();
-    };
-    const onActiveEvent = () => {
-      console.log('[GlobalTracking] 🟢 Evento active recibido, iniciando...');
-      if (!isTrackingRef.current) startTracking();
-    };
-    window.addEventListener('provider-status-offline', onOfflineEvent);
-    window.addEventListener('provider-status-active', onActiveEvent);
-
     // Re-verificar cada 30 segundos en caso de que el estado cambie
     const checkInterval = setInterval(() => {
       if (!isTrackingRef.current) {
@@ -264,8 +251,6 @@ export const useProviderLocationTracking = () => {
     return () => {
       mounted = false;
       clearInterval(checkInterval);
-      window.removeEventListener('provider-status-offline', onOfflineEvent);
-      window.removeEventListener('provider-status-active', onActiveEvent);
       stopTracking();
       supabase.removeChannel(channel);
     };

@@ -1,71 +1,31 @@
 import { useProviderStatus } from '@/hooks/useProviderStatus';
 
-const STATUS_LABEL: Record<string, string> = {
-  available: 'Disponible',
-  busy: 'Ocupado',
-  offline: 'Fuera de servicio',
-};
-
-/**
- * Semáforo GRANDE (versión original) para Dashboard, Panel, MapView,
- * ProductSearch y TrackingGPS. Mismo hook compartido useProviderStatus
- * para sincronización en tiempo real entre todas las instancias.
- */
 export const StatusControl = () => {
   const { status, loading, updateStatus } = useProviderStatus();
-  const current = status ?? 'available';
+
+  const buttons = [
+    { key: 'available' as const, color: 'bg-green-500', glow: 'shadow-[0_0_20px_6px_rgba(34,197,94,0.9)]', border: 'border-green-300', dim: 'bg-green-900/30 border-green-800/40' },
+    { key: 'busy' as const, color: 'bg-yellow-400', glow: 'shadow-[0_0_20px_6px_rgba(234,179,8,0.9)]', border: 'border-yellow-200', dim: 'bg-yellow-900/30 border-yellow-800/40' },
+    { key: 'offline' as const, color: 'bg-red-500', glow: 'shadow-[0_0_20px_6px_rgba(239,68,68,0.9)]', border: 'border-red-300', dim: 'bg-red-900/30 border-red-800/40' },
+  ] as const;
 
   return (
-    <div className="w-full">
-      <div className="bg-muted/40 rounded-2xl px-6 py-4 flex items-center justify-center gap-6">
+    <div className="flex flex-row gap-3 bg-gray-900/95 rounded-2xl p-3 shadow-2xl border border-gray-700 backdrop-blur-md">
+      {buttons.map(({ key, color, glow, border, dim }) => (
         <button
-          onClick={() => updateStatus('available')}
+          key={key}
+          onClick={() => updateStatus(key)}
           disabled={loading}
-          aria-label="Disponible"
-          title="Disponible"
-          className={`w-14 h-14 rounded-full transition-all duration-200 border-2 ${
-            current === 'available'
-              ? 'bg-green-500 border-white shadow-[0_0_22px_rgba(34,197,94,0.95)] scale-110'
-              : 'bg-green-700/40 border-green-300/40 hover:bg-green-500/70'
-          }`}
+          className={`
+            w-12 h-12 rounded-full transition-all duration-300 ease-in-out border-2
+            ${status === key
+              ? `${color} ${border} ${glow} scale-110`
+              : `${dim} hover:opacity-70`
+            }
+          `}
+          aria-label={key}
         />
-        <button
-          onClick={() => updateStatus('busy')}
-          disabled={loading}
-          aria-label="Ocupado"
-          title="Ocupado"
-          className={`w-14 h-14 rounded-full transition-all duration-200 border-2 ${
-            current === 'busy'
-              ? 'bg-yellow-400 border-white shadow-[0_0_22px_rgba(234,179,8,0.95)] scale-110'
-              : 'bg-yellow-600/40 border-yellow-300/40 hover:bg-yellow-400/70'
-          }`}
-        />
-        <button
-          onClick={() => updateStatus('offline')}
-          disabled={loading}
-          aria-label="Fuera de servicio"
-          title="Fuera de servicio"
-          className={`w-14 h-14 rounded-full transition-all duration-200 border-2 ${
-            current === 'offline'
-              ? 'bg-red-500 border-white shadow-[0_0_22px_rgba(239,68,68,0.95)] scale-110'
-              : 'bg-red-700/40 border-red-300/40 hover:bg-red-500/70'
-          }`}
-        />
-      </div>
-      <div className="mt-2 text-sm text-muted-foreground text-center">
-        Estado actual:{' '}
-        <span
-          className={
-            current === 'available'
-              ? 'text-green-500 font-semibold'
-              : current === 'busy'
-              ? 'text-yellow-500 font-semibold'
-              : 'text-red-500 font-semibold'
-          }
-        >
-          {STATUS_LABEL[current]}
-        </span>
-      </div>
+      ))}
     </div>
   );
 };

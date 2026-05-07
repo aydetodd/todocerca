@@ -464,31 +464,31 @@ export default function MapView() {
           </div>
         </div>
         
-        {/* Route indicator — full-width bar pinned under the header */}
+        {/* Route indicator — anchored bottom-left so it never overlaps top controls */}
         {privateRouteName && !fleetMode && !asChofer && (
-          <div className="absolute top-0 left-0 right-0 z-[1000] bg-card border-b border-border shadow-md px-3 py-2 flex items-center justify-between gap-2 pointer-events-auto">
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-bold truncate leading-tight text-foreground">
+          <div className="absolute bottom-4 left-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md flex flex-col gap-2 max-w-[80vw]">
+            <div className="flex flex-col">
+              <span className="text-sm font-bold truncate">
                 Ruta: {privateRouteName}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate leading-tight">
-                Ruta {routeTypeLabel}
+              <span className="text-xs text-muted-foreground truncate">
+                Ubicación de la ruta {routeTypeLabel}
               </span>
             </div>
             {privateRouteProductoId && !isRouteFav && (
               <Button
                 size="sm"
                 variant="default"
-                className="h-7 text-[11px] px-2 shrink-0"
+                className="h-8 text-xs"
                 onClick={() => addFavorito('producto', privateRouteProductoId)}
               >
                 <Heart className="h-3 w-3 mr-1" />
-                Favorito
+                Guardar en favoritos
               </Button>
             )}
             {privateRouteProductoId && isRouteFav && (
-              <span className="text-[11px] text-primary flex items-center gap-1 shrink-0">
-                <Heart className="h-3 w-3 fill-current" /> Favorito
+              <span className="text-xs text-primary flex items-center gap-1">
+                <Heart className="h-3 w-3 fill-current" /> En tus favoritos
               </span>
             )}
           </div>

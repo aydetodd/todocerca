@@ -93,20 +93,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     
     const initMap = (lat: number, lng: number) => {
-      const map = L.map('map', {
-        attributionControl: false,
-        preferCanvas: true,           // Render con canvas → mucho más rápido con muchos marcadores
-        zoomAnimation: true,
-        fadeAnimation: false,         // Menos repaints en móvil
-        markerZoomAnimation: false,   // Evita lag al hacer zoom con flotilla activa
-      }).setView([lat, lng], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        keepBuffer: 4,                // Pre-carga tiles fuera de viewport → pan más suave
-        updateWhenIdle: true,         // En móvil, espera a que termine el gesto para pedir tiles
-        updateWhenZooming: false,
-        crossOrigin: true,
-      }).addTo(map);
+      const map = L.map('map', { attributionControl: false }).setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
       mapRef.current = map;
     };
 
@@ -173,11 +161,11 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
       filteredLocations = locations.filter(loc => {
-        const hasTodayAssignment = !!loc.all_assignments?.some(a => a.productoId === privateRouteProductoId);
-        if (loc.is_private_driver) return hasTodayAssignment;
-        return loc.route_producto_id === privateRouteProductoId || hasTodayAssignment;
+        if (loc.route_producto_id === privateRouteProductoId) return true;
+        // Extra safety for driver rows: validate against today's assignments
+        return !!loc.all_assignments?.some(a => a.productoId === privateRouteProductoId);
       });
-      console.log('🔒 [Map] Filtering by ACTIVE route producto_id (strict):', privateRouteProductoId, '→', filteredLocations.length);
+      console.log('🔒 [Map] Filtering by ACTIVE route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);

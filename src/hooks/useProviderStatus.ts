@@ -95,22 +95,8 @@ export function useProviderStatus() {
   const updateStatus = useCallback(async (newStatus: UserStatus) => {
     if (loading || !userId) return;
 
-    // 1) UI INSTANTÁNEA: broadcast + evento local antes de tocar la red
-    broadcastStatus(newStatus);
-    try {
-      window.dispatchEvent(new CustomEvent(
-        newStatus === 'offline' ? 'provider-status-offline' : 'provider-status-active'
-      ));
-    } catch {}
-
-    // 2) Si pasa a offline, borrar ubicación YA (en paralelo, sin esperar update de profile)
-    //    para que el marcador desaparezca al instante en todos los dispositivos.
-    if (newStatus === 'offline') {
-      supabase.from('proveedor_locations').delete().eq('user_id', userId).then(() => {});
-      supabase.from('tracking_member_locations').delete().eq('user_id', userId).then(() => {});
-    }
-
     setLoading(true);
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -118,6 +104,19 @@ export function useProviderStatus() {
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      // Si el usuario pasa a OFFLINE, borrar su ubicación de los grupos de tracking
+      // para que su marcador desaparezca instantáneamente en los demás dispositivos
+      // (RLS permite que cada usuario elimine sus propias filas).
+      if (newStatus === 'offline') {
+        await supabase
+          .from('tracking_member_locations')
+          .delete()
+          .eq('user_id', userId);
+      }
+
+      // Broadcast to ALL mounted instances immediately
+      broadcastStatus(newStatus);
 
       const statusText = newStatus === 'offline'
         ? '🔴 Fuera de servicio'
@@ -128,7 +127,7 @@ export function useProviderStatus() {
       toast({
         title: "Estado actualizado",
         description: statusText,
-        duration: 2000,
+        duration: 3000,
       });
     } catch (error: any) {
       toast({

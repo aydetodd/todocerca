@@ -387,30 +387,6 @@ Paleta: Azul marino profundo con acentos brillantes
   }
 }
 
-/* Make Leaflet zoom controls clearly visible against any map background */
-.leaflet-bar a,
-.leaflet-bar a:hover {
-  background-color: hsl(var(--card)) !important;
-  color: hsl(var(--foreground)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  font-weight: 700 !important;
-  font-size: 20px !important;
-  width: 34px !important;
-  height: 34px !important;
-  line-height: 32px !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important;
-}
-.leaflet-bar a:hover {
-  background-color: hsl(var(--accent)) !important;
-}
-.leaflet-bar a.leaflet-disabled {
-  opacity: 0.6 !important;
-}
-/* Push zoom controls below the route header bar so they don't get covered */
-.leaflet-top.leaflet-left {
-  top: 56px !important;
-}
-
 /* Fix Leaflet divIcon markers not showing due to Tailwind CSS resets */
 .leaflet-marker-icon {
   overflow: visible !important;
