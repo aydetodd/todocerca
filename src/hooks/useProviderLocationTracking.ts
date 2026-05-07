@@ -75,6 +75,7 @@ export const useProviderLocationTracking = () => {
 
       watcherIdRef.current = null;
       isTrackingRef.current = false;
+      lastUpdateRef.current = 0; // permitir update inmediato al reactivar
       setIsActive(false);
     };
 
