@@ -95,8 +95,22 @@ export function useProviderStatus() {
   const updateStatus = useCallback(async (newStatus: UserStatus) => {
     if (loading || !userId) return;
 
-    setLoading(true);
+    // 1) UI INSTANTÁNEA: broadcast + evento local antes de tocar la red
+    broadcastStatus(newStatus);
+    try {
+      window.dispatchEvent(new CustomEvent(
+        newStatus === 'offline' ? 'provider-status-offline' : 'provider-status-active'
+      ));
+    } catch {}
 
+    // 2) Si pasa a offline, borrar ubicación YA (en paralelo, sin esperar update de profile)
+    //    para que el marcador desaparezca al instante en todos los dispositivos.
+    if (newStatus === 'offline') {
+      supabase.from('proveedor_locations').delete().eq('user_id', userId).then(() => {});
+      supabase.from('tracking_member_locations').delete().eq('user_id', userId).then(() => {});
+    }
+
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('profiles')
@@ -104,27 +118,6 @@ export function useProviderStatus() {
         .eq('user_id', userId);
 
       if (error) throw error;
-
-      // Si el usuario pasa a OFFLINE, borrar su ubicación de los grupos de tracking
-      // para que su marcador desaparezca instantáneamente en los demás dispositivos
-      // (RLS permite que cada usuario elimine sus propias filas).
-      if (newStatus === 'offline') {
-        // Avisar al tracking local INMEDIATAMENTE para que detenga el polling
-        // antes de borrar la ubicación (evita que un upsert posterior la recree).
-        try { window.dispatchEvent(new CustomEvent('provider-status-offline')); } catch {}
-        await Promise.all([
-          supabase.from('tracking_member_locations').delete().eq('user_id', userId),
-          // Borrar también la ubicación del proveedor para que su marcador
-          // desaparezca instantáneamente del mapa en todos los dispositivos.
-          supabase.from('proveedor_locations').delete().eq('user_id', userId),
-        ]);
-      } else {
-        // Al volver a available/busy reactivar tracking
-        try { window.dispatchEvent(new CustomEvent('provider-status-active')); } catch {}
-      }
-
-      // Broadcast to ALL mounted instances immediately
-      broadcastStatus(newStatus);
 
       const statusText = newStatus === 'offline'
         ? '🔴 Fuera de servicio'
@@ -135,7 +128,7 @@ export function useProviderStatus() {
       toast({
         title: "Estado actualizado",
         description: statusText,
-        duration: 3000,
+        duration: 2000,
       });
     } catch (error: any) {
       toast({
