@@ -33,7 +33,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const [mode, setMode] = useState<Mode>(initial.origin ? (initial.destination ? "origen" : "destino") : "origen");
   const [origin, setOrigin] = useState<Coord | null>(initial.origin);
   const [destination, setDestination] = useState<Coord | null>(initial.destination);
-  const [radius, setRadius] = useState<number>(initial.radius || 150);
+  const [radius, setRadius] = useState<number>(initial.radius || 50);
   const [saving, setSaving] = useState(false);
 
   // Init map
