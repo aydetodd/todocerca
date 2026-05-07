@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
+import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
+import { Button } from '@/components/ui/button';
+import { Maximize2, Minimize2 } from 'lucide-react';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,21 +21,29 @@ interface DriverMiniMapProps {
 export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const routeLayerRef = useRef<L.GeoJSON | null>(null);
   const posMarkerRef = useRef<L.Marker | null>(null);
   const initRef = useRef(false);
   const [routeName, setRouteName] = useState<string | null>(null);
+  const [inlineGeoJSON, setInlineGeoJSON] = useState<any | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Load route name
+  // Load route info (name + uploaded geojson trace)
   useEffect(() => {
-    if (!routeProductId) return;
+    if (!routeProductId) {
+      setRouteName(null);
+      setInlineGeoJSON(null);
+      return;
+    }
     supabase
       .from('productos')
-      .select('nombre')
+      .select('nombre, route_geojson')
       .eq('id', routeProductId)
       .single()
       .then(({ data }) => {
-        if (data) setRouteName(data.nombre);
+        if (data) {
+          setRouteName(data.nombre);
+          setInlineGeoJSON((data as any).route_geojson || null);
+        }
       });
   }, [routeProductId]);
 
@@ -52,7 +63,7 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
     mapRef.current = map;
 
     // Add current position
-    navigator.geolocation.watchPosition(
+    const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const latlng: L.LatLngExpression = [pos.coords.latitude, pos.coords.longitude];
         const busBodyColor = '#FDB813';
@@ -110,72 +121,48 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
     );
 
     return () => {
+      navigator.geolocation.clearWatch(watchId);
       map.remove();
+      mapRef.current = null;
+      posMarkerRef.current = null;
       initRef.current = false;
     };
   }, []);
 
-  // Load route GeoJSON overlay
+  // Recalcular tamaño cuando cambia fullscreen
   useEffect(() => {
-    if (!mapRef.current || !routeName) return;
+    if (mapRef.current) {
+      setTimeout(() => mapRef.current?.invalidateSize(), 250);
+    }
+  }, [isFullscreen]);
 
-    const ROUTE_NAME_MAP: Record<string, string> = {
-      'Línea 1 - Manga': 'L1_MANGA',
-      'L1 Manga': 'L1_MANGA',
-      'Línea 1 Manga': 'L1_MANGA',
-      'Ruta 1 - La manga': 'L1_MANGA',
-      'Ruta 1 - La Manga': 'L1_MANGA',
-      'Línea 1 - Blvd-200': 'L1_BLVD_200',
-      'Línea 1 Blvd-200': 'L1_BLVD_200',
-      'Línea 1 - Blvd. - 200': 'L1_BLVD_200',
-      'Línea 1 - Blvd. 200': 'L1_BLVD_200',
-      'L1 Blvd-200': 'L1_BLVD_200',
-      'Ruta 1 - Blvd-200': 'L1_BLVD_200',
-      'Ruta 1 Blvd-200': 'L1_BLVD_200',
-      'Línea 17 - Bachoco': 'L17_BACHOCO',
-      'L17 Bachoco': 'L17_BACHOCO',
-      'Línea 17 Bachoco': 'L17_BACHOCO',
-      'Ruta 17 - Bachoco': 'L17_BACHOCO',
-      'Ruta 17 Bachoco': 'L17_BACHOCO',
-    };
-
-    const routeId = ROUTE_NAME_MAP[routeName];
-    if (!routeId) return;
-
-    const filePath = `/data/rutas/${routeId}.geojson`;
-    fetch(filePath)
-      .then((r) => r.json())
-      .then((geojson) => {
-        if (!mapRef.current) return;
-        if (routeLayerRef.current) {
-          mapRef.current.removeLayer(routeLayerRef.current);
-        }
-
-        const lineFeatures = {
-          ...geojson,
-          features: Array.isArray(geojson.features)
-            ? geojson.features.filter((feature: any) => feature?.geometry?.type === 'LineString')
-            : [],
-        };
-
-        routeLayerRef.current = L.geoJSON(lineFeatures, {
-          style: { color: '#2563eb', weight: 4, opacity: 0.8 },
-        }).addTo(mapRef.current);
-
-        if (!routeLayerRef.current.getLayers().length) return;
-        mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [20, 20] });
-      })
-      .catch(() => {});
-  }, [routeName]);
+  // Renderizar trazado de la ruta (uploaded o catálogo conocido)
+  const knownRouteId = routeNameToId(routeName);
+  useRouteOverlay(mapRef, inlineGeoJSON ? null : knownRouteId, inlineGeoJSON);
 
   return (
-    <div className="relative w-full h-full">
+    <div
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-[9999] bg-background'
+          : 'relative w-full h-full'
+      }
+    >
       <div ref={containerRef} className="w-full h-full" />
       {routeName && (
-        <div className="absolute top-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-md">
-          <span className="text-xs font-semibold text-foreground">🚌 {routeName}</span>
+        <div className="absolute top-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-md max-w-[70%]">
+          <span className="text-xs font-semibold text-foreground truncate block">🚌 {routeName}</span>
         </div>
       )}
+      <Button
+        size="icon"
+        variant="secondary"
+        className="absolute top-2 right-2 z-[1000] h-9 w-9 shadow-md bg-card/95 backdrop-blur-sm"
+        onClick={() => setIsFullscreen((v) => !v)}
+        aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+      >
+        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+      </Button>
     </div>
   );
 }
