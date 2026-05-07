@@ -27,7 +27,7 @@ export default function MainHome() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-40">
       {/* Header simple */}
       <header className="bg-primary/5 border-b border-border">
         <div className="container mx-auto px-4 py-4">
