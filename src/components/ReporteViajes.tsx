@@ -370,47 +370,87 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
         </Card>
       )}
 
-      {!loading && filtered.length > 0 && (
-        <>
+      {!loading && filtered.length > 0 && (() => {
+        // Agrupado: Ruta → Unidad → Chofer → viajes
+        type Bucket = {
+          rutaId: string; rutaLabel: string;
+          unidadId: string; unidadLabel: string;
+          choferId: string; choferLabel: string;
+          viajes: typeof filtered;
+        };
+        const groups = new Map<string, Bucket>();
+        filtered.forEach((v) => {
+          const rId = v.producto_id_resolved || "sin-ruta";
+          const uId = v.unidad_id || "sin-unidad";
+          const cId = v.chofer_id || "sin-chofer";
+          const key = `${rId}|${uId}|${cId}`;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              rutaId: rId, rutaLabel: getRutaLabel(v),
+              unidadId: uId, unidadLabel: getUnidadLabel(v),
+              choferId: cId, choferLabel: getChoferLabel(v),
+              viajes: [] as any,
+            });
+          }
+          (groups.get(key)!.viajes as any).push(v);
+        });
+        const buckets = Array.from(groups.values()).sort((a, b) =>
+          a.rutaLabel.localeCompare(b.rutaLabel) || a.unidadLabel.localeCompare(b.unidadLabel)
+        );
+
+        return (
           <Card>
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm">Desglose por unidad, chofer y ruta</CardTitle>
+              <CardTitle className="text-sm">Detalle de viajes</CardTitle>
               <Button size="sm" variant="outline" onClick={handleExport}>
                 <Download className="h-3 w-3 mr-1" /> CSV
               </Button>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold mb-1">Por unidad</p>
-                {Object.entries(porUnidad).map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
-                    <span>{v.label}</span>
-                    <Badge variant="outline">{v.total} viajes</Badge>
+            <CardContent className="space-y-4">
+              {buckets.map((b) => {
+                const completados = b.viajes.filter((v) => v.estado === "completado").length;
+                return (
+                  <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
+                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
+                        <Badge variant="outline" className="shrink-0 text-[10px]">{completados} viajes</Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {b.unidadLabel} · {b.choferLabel}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {b.viajes.map((v) => {
+                        const sentido = v.direccion || "—";
+                        const enCurso = v.estado === "en_curso";
+                        const flagManual = v.inicio_manual || v.fin_manual;
+                        return (
+                          <div key={v.id} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-semibold">#{v.numero_viaje}</span>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
+                              {flagManual && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>
+                              )}
+                              {enCurso && (
+                                <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
+                              )}
+                            </div>
+                            <span className="text-muted-foreground shrink-0 tabular-nums">
+                              {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div>
-                <p className="text-xs font-semibold mb-1">Por chofer</p>
-                {Object.entries(porChofer).map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
-                    <span>{v.label}</span>
-                    <Badge variant="outline">{v.total} viajes</Badge>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p className="text-xs font-semibold mb-1">Por ruta</p>
-                {Object.entries(porRuta).map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0">
-                    <span>{v.label}</span>
-                    <Badge variant="outline">{v.total} viajes</Badge>
-                  </div>
-                ))}
-              </div>
+                );
+              })}
             </CardContent>
           </Card>
-        </>
-      )}
+        );
+      })()}
     </div>
   );
 }
