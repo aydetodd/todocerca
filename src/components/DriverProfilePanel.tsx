@@ -316,7 +316,7 @@ function StartTripButton({ productoId, onClick }: { productoId: string; onClick:
 
   let label = activeTrip ? 'Finalizar viaje' : 'Iniciar viaje';
   if (hasFences && pos && !inside && nearestDist != null) {
-    label = `${activeTrip ? 'Acércate al final' : 'Fuera de geocerca'} (${Math.round(nearestDist)} m)`;
+    label = `${activeTrip ? 'Acércate al final' : 'Geocerca a'} ${Math.round(nearestDist)} m`;
   } else if (hasFences && !pos) {
     label = 'Esperando GPS…';
   }
@@ -652,16 +652,6 @@ function SingleDriverPanel({
               <>
                 {unitInfo?.cobro_tipo === 'por_viaje' ? (
                   <>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="shrink-0 h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-700"
-                      onClick={handleInviteWhatsApp}
-                      title="Compartir mi ubicación en tiempo real con pasajeros"
-                    >
-                      <Share2 className="h-3 w-3 mr-1" />
-                      Invitar
-                    </Button>
                     <StartTripButton
                       productoId={data.todayAssignment!.producto_id}
                       onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
