@@ -16,9 +16,31 @@ L.Icon.Default.mergeOptions({
 
 interface DriverMiniMapProps {
   routeProductId?: string | null;
+  origenLat?: number | null;
+  origenLng?: number | null;
+  destinoLat?: number | null;
+  destinoLng?: number | null;
 }
 
-export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
+function abMarkerIcon(letter: 'A' | 'B') {
+  const color = letter === 'A' ? '#16A34A' : '#DC2626';
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));">
+        <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 2 C8 2 2 8 2 17 C2 28 17 42 17 42 C17 42 32 28 32 17 C32 8 26 2 17 2 Z"
+                fill="${color}" stroke="#ffffff" stroke-width="2"/>
+          <text x="17" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold"
+                fill="#ffffff" text-anchor="middle">${letter}</text>
+        </svg>
+      </div>`,
+    iconSize: [34, 44],
+    iconAnchor: [17, 42],
+  });
+}
+
+export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat, destinoLng }: DriverMiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const posMarkerRef = useRef<L.Marker | null>(null);
@@ -140,6 +162,31 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
   const knownRouteId = routeNameToId(routeName);
   useRouteOverlay(mapRef, inlineGeoJSON ? null : knownRouteId, inlineGeoJSON);
 
+  // Marcadores A (recoger) y B (dejar)
+  const markerARef = useRef<L.Marker | null>(null);
+  const markerBRef = useRef<L.Marker | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (markerARef.current) { map.removeLayer(markerARef.current); markerARef.current = null; }
+    if (markerBRef.current) { map.removeLayer(markerBRef.current); markerBRef.current = null; }
+    if (origenLat != null && origenLng != null) {
+      markerARef.current = L.marker([origenLat, origenLng], { icon: abMarkerIcon('A') })
+        .addTo(map)
+        .bindTooltip('A · Recoger personal', { direction: 'top', offset: [0, -38] });
+    }
+    if (destinoLat != null && destinoLng != null) {
+      markerBRef.current = L.marker([destinoLat, destinoLng], { icon: abMarkerIcon('B') })
+        .addTo(map)
+        .bindTooltip('B · Dejar personal', { direction: 'top', offset: [0, -38] });
+    }
+    // Encajar la vista si hay ambos
+    if (origenLat != null && origenLng != null && destinoLat != null && destinoLng != null) {
+      const bounds = L.latLngBounds([[origenLat, origenLng], [destinoLat, destinoLng]]);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+  }, [origenLat, origenLng, destinoLat, destinoLng]);
+
   return (
     <div
       className={
@@ -154,6 +201,10 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
           <span className="text-xs font-semibold text-foreground truncate block">🚌 {routeName}</span>
         </div>
       )}
+      <div className="absolute bottom-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md flex items-center gap-2 text-[10px] text-foreground">
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#16A34A] text-white text-[8px] font-bold leading-3 text-center">A</span> Recoger</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#DC2626] text-white text-[8px] font-bold leading-3 text-center">B</span> Dejar</span>
+      </div>
       <Button
         size="icon"
         variant="secondary"
