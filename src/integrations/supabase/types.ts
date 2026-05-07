@@ -3735,15 +3735,18 @@ export type Database = {
           chofer_id: string
           contrato_id: string | null
           created_at: string
+          direccion: string | null
           estado: string
           fecha: string
           fin_at: string | null
           fin_lat: number | null
           fin_lng: number | null
+          fin_manual: boolean
           id: string
           inicio_at: string | null
           inicio_lat: number | null
           inicio_lng: number | null
+          inicio_manual: boolean
           notas: string | null
           numero_viaje: number
           producto_id: string | null
@@ -3754,15 +3757,18 @@ export type Database = {
           chofer_id: string
           contrato_id?: string | null
           created_at?: string
+          direccion?: string | null
           estado?: string
           fecha?: string
           fin_at?: string | null
           fin_lat?: number | null
           fin_lng?: number | null
+          fin_manual?: boolean
           id?: string
           inicio_at?: string | null
           inicio_lat?: number | null
           inicio_lng?: number | null
+          inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
           producto_id?: string | null
@@ -3773,15 +3779,18 @@ export type Database = {
           chofer_id?: string
           contrato_id?: string | null
           created_at?: string
+          direccion?: string | null
           estado?: string
           fecha?: string
           fin_at?: string | null
           fin_lat?: number | null
           fin_lng?: number | null
+          fin_manual?: boolean
           id?: string
           inicio_at?: string | null
           inicio_lat?: number | null
           inicio_lng?: number | null
+          inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
           producto_id?: string | null

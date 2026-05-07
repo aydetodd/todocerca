@@ -33,7 +33,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const [mode, setMode] = useState<Mode>(initial.origin ? (initial.destination ? "origen" : "destino") : "origen");
   const [origin, setOrigin] = useState<Coord | null>(initial.origin);
   const [destination, setDestination] = useState<Coord | null>(initial.destination);
-  const [radius, setRadius] = useState<number>(initial.radius || 150);
+  const [radius, setRadius] = useState<number>(initial.radius || 50);
   const [saving, setSaving] = useState(false);
 
   // Init map
@@ -179,7 +179,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
           min={50}
           max={1000}
           value={radius}
-          onChange={(e) => setRadius(Math.max(50, Math.min(1000, parseInt(e.target.value) || 150)))}
+          onChange={(e) => setRadius(Math.max(50, Math.min(1000, parseInt(e.target.value) || 50)))}
           className="h-8 w-24"
         />
         <span className="text-[11px] text-muted-foreground">Geocerca de detección.</span>

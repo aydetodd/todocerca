@@ -4,9 +4,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
 import { DriverMiniMap } from "@/components/DriverMiniMap";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Building2, Loader2, AlertCircle, Radar, Flag, Play, CheckCircle2, RotateCcw } from "lucide-react";
+import {
+  MapPin,
+  Building2,
+  Loader2,
+  AlertCircle,
+  Radar,
+  Flag,
+  Play,
+  CheckCircle2,
+  WifiOff,
+} from "lucide-react";
 import { getHermosilloToday } from "@/lib/utils";
 
 interface DriverTripPanelProps {
@@ -22,6 +42,8 @@ interface DriverTripPanelProps {
   radioM?: number;
 }
 
+type Direccion = "AB" | "BA";
+
 type Viaje = {
   id: string;
   numero_viaje: number;
@@ -30,9 +52,11 @@ type Viaje = {
   inicio_lat: number | null;
   inicio_lng: number | null;
   fin_at: string | null;
+  direccion: Direccion | null;
+  inicio_manual: boolean | null;
+  fin_manual: boolean | null;
 };
 
-// Haversine en metros
 function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
   const toRad = (x: number) => (x * Math.PI) / 180;
@@ -44,7 +68,6 @@ function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) 
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-// Vibración + beep ligero para alertas dentro de la geocerca
 function alertBeepVibrate() {
   try {
     if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
@@ -61,9 +84,6 @@ function alertBeepVibrate() {
   } catch {}
 }
 
-const DIR_KEY = (choferId: string, contratoId: string) =>
-  `tc_trip_dir_${choferId}_${contratoId}_${getHermosilloToday()}`;
-
 export function DriverTripPanel({
   choferEmpresaId,
   contratoId,
@@ -74,45 +94,32 @@ export function DriverTripPanel({
   origenLng,
   destinoLat,
   destinoLng,
-  radioM: radioMProp = 150,
+  radioM: radioMProp = 50,
 }: DriverTripPanelProps) {
-  // Respetar el radio configurado por el concesionario (no inflarlo).
-  // Solo aplicamos un mínimo defensivo de 30 m por precisión típica del GPS.
-  const radioM = Math.max(radioMProp ?? 150, 30);
+  // Radio configurado por el concesionario; mínimo defensivo de 30 m por precisión GPS típica.
+  const radioM = Math.max(radioMProp ?? 50, 30);
   const [loading, setLoading] = useState(true);
   const [viajeActivo, setViajeActivo] = useState<Viaje | null>(null);
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
   const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  // Dirección del próximo viaje: 'ida' usa origen→destino, 'vuelta' invierte.
-  const [direccion, setDireccion] = useState<"ida" | "vuelta">(() => {
-    try {
-      const v = localStorage.getItem(DIR_KEY(choferEmpresaId, contratoId));
-      return v === "vuelta" ? "vuelta" : "ida";
-    } catch { return "ida"; }
-  });
+  // Diálogo para elegir dirección AB / BA antes de iniciar
+  const [askDir, setAskDir] = useState(false);
+  // Diálogo de inicio/fin manual (sin GPS o fuera de geocerca)
+  const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
+  const [manualEndOpen, setManualEndOpen] = useState(false);
   const inFlightRef = useRef(false);
-  const alertedStartRef = useRef(false);
-  const alertedEndRef = useRef(false);
 
   const todayStr = getHermosilloToday();
-  const hasGeofences = origenLat != null && origenLng != null && destinoLat != null && destinoLng != null;
+  const hasGeofences =
+    origenLat != null && origenLng != null && destinoLat != null && destinoLng != null;
 
-  // Punto de salida y llegada efectivos según la dirección
-  const startLat = direccion === "ida" ? origenLat : destinoLat;
-  const startLng = direccion === "ida" ? origenLng : destinoLng;
-  const endLat = direccion === "ida" ? destinoLat : origenLat;
-  const endLng = direccion === "ida" ? destinoLng : origenLng;
-  // A = punto donde se recoge al personal (origen del contrato)
-  // B = punto donde se deja al personal (destino del contrato)
-  // En "ida" se va de A → B; en "vuelta" se regresa de B → A.
-  const startLabel = direccion === "ida" ? "Punto A (recoger)" : "Punto B (regreso desde aquí)";
-  const endLabel = direccion === "ida" ? "Punto B (dejar)" : "Punto A (regreso a aquí)";
-
-  // Persistir dirección
-  useEffect(() => {
-    try { localStorage.setItem(DIR_KEY(choferEmpresaId, contratoId), direccion); } catch {}
-  }, [direccion, choferEmpresaId, contratoId]);
+  // Para un viaje activo: A=origen, B=destino. Si direccion=AB → start=A, end=B. Si BA → start=B, end=A.
+  const dirActiva: Direccion | null = (viajeActivo?.direccion as Direccion) ?? null;
+  const startLat = dirActiva === "BA" ? destinoLat : origenLat;
+  const startLng = dirActiva === "BA" ? destinoLng : origenLng;
+  const endLat = dirActiva === "BA" ? origenLat : destinoLat;
+  const endLng = dirActiva === "BA" ? origenLng : destinoLng;
 
   const loadViajes = useCallback(async () => {
     setLoading(true);
@@ -132,7 +139,7 @@ export function DriverTripPanel({
       console.error("Error loading viajes:", error);
       toast.error("No se pudieron cargar los viajes");
     } else {
-      const list = (data || []) as Viaje[];
+      const list = (data || []) as unknown as Viaje[];
       setViajesHoy(list);
       setViajeActivo(list.find(v => v.estado === "en_curso") || null);
     }
@@ -152,7 +159,6 @@ export function DriverTripPanel({
     return () => { supabase.removeChannel(ch); };
   }, [choferEmpresaId, loadViajes]);
 
-  // Watch GPS continuamente
   useEffect(() => {
     if (!navigator.geolocation) {
       setGpsError("GPS no disponible en este dispositivo");
@@ -169,33 +175,34 @@ export function DriverTripPanel({
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Distancias y banderas
-  const distStart = currentPos && startLat != null && startLng != null
-    ? distanceMeters(currentPos.lat, currentPos.lng, startLat, startLng) : null;
+  // Distancias a A y B (antes de iniciar) y a end (durante viaje)
+  const distA = currentPos && origenLat != null && origenLng != null
+    ? distanceMeters(currentPos.lat, currentPos.lng, origenLat, origenLng) : null;
+  const distB = currentPos && destinoLat != null && destinoLng != null
+    ? distanceMeters(currentPos.lat, currentPos.lng, destinoLat, destinoLng) : null;
+  const insideA = distA != null && distA <= radioM;
+  const insideB = distB != null && distB <= radioM;
+
   const distEnd = currentPos && endLat != null && endLng != null
     ? distanceMeters(currentPos.lat, currentPos.lng, endLat, endLng) : null;
-  const insideStart = distStart != null && distStart <= radioM;
   const insideEnd = distEnd != null && distEnd <= radioM;
 
-  // Avisos sonoros al entrar/salir de las geocercas
+  // Aviso al llegar al final del viaje activo
+  const alertedEndRef = useRef(false);
   useEffect(() => {
-    if (!viajeActivo && insideStart && !alertedStartRef.current) {
-      alertedStartRef.current = true;
-      alertBeepVibrate();
-      toast.info(`📍 Estás dentro del límite del ${direccion === "ida" ? "inicio" : "final"}. Confirma para iniciar el viaje.`, { duration: 6000 });
-    }
-    if (!insideStart) alertedStartRef.current = false;
-
     if (viajeActivo && insideEnd && !alertedEndRef.current) {
       alertedEndRef.current = true;
       alertBeepVibrate();
-      toast.info(`🏁 Has llegado al ${direccion === "ida" ? "final" : "inicio"}. Confirma para contar el viaje.`, { duration: 6000 });
+      toast.info(`🏁 Llegaste al punto ${dirActiva === "BA" ? "A" : "B"}. Confirma para cerrar el viaje.`, { duration: 6000 });
     }
     if (!insideEnd) alertedEndRef.current = false;
-  }, [insideStart, insideEnd, viajeActivo, direccion]);
+  }, [insideEnd, viajeActivo, dirActiva]);
 
-  const confirmarInicio = async () => {
-    if (inFlightRef.current || !currentPos) return;
+  const insertViaje = async (
+    direccion: Direccion,
+    opts: { lat: number | null; lng: number | null; manual: boolean }
+  ) => {
+    if (inFlightRef.current) return;
     inFlightRef.current = true;
     try {
       const lastNum = viajesHoy[0]?.numero_viaje || 0;
@@ -206,13 +213,17 @@ export function DriverTripPanel({
         unidad_id: unidadId,
         numero_viaje: lastNum + 1,
         fecha: todayStr,
-        inicio_lat: currentPos.lat,
-        inicio_lng: currentPos.lng,
+        inicio_lat: opts.lat,
+        inicio_lng: opts.lng,
         inicio_at: new Date().toISOString(),
         estado: "en_curso",
-      });
+        direccion,
+        inicio_manual: opts.manual,
+      } as any);
       if (error) throw error;
-      toast.success(`🚐 Viaje #${lastNum + 1} iniciado (${direccion})`);
+      toast.success(
+        `🚐 Viaje #${lastNum + 1} iniciado (${direccion}${opts.manual ? " · manual" : ""})`
+      );
     } catch (err: any) {
       toast.error(err.message || "Error al iniciar viaje");
     } finally {
@@ -220,8 +231,39 @@ export function DriverTripPanel({
     }
   };
 
-  const confirmarFin = async () => {
+  // Confirma inicio con GPS (validando geocerca correcta según AB/BA)
+  const confirmarInicioGPS = async (dir: Direccion) => {
+    if (!currentPos) {
+      toast.error("Esperando ubicación GPS…");
+      return;
+    }
+    const okGeo = dir === "AB" ? insideA : insideB;
+    if (!okGeo) {
+      toast.error(
+        dir === "AB"
+          ? `Para iniciar AB debes estar dentro del Punto A (faltan ${distA != null ? Math.round(distA) + " m" : "—"}).`
+          : `Para iniciar BA debes estar dentro del Punto B (faltan ${distB != null ? Math.round(distB) + " m" : "—"}).`
+      );
+      return;
+    }
+    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: false });
+  };
+
+  // Inicio manual (sin GPS o fuera de geocerca): el chofer declara desde dónde sale
+  const confirmarInicioManual = async (dir: Direccion) => {
+    setManualStartDir(null);
+    setAskDir(false);
+    await insertViaje(dir, { lat: null, lng: null, manual: true });
+  };
+
+  const confirmarFinGPS = async () => {
     if (!viajeActivo || inFlightRef.current || !currentPos) return;
+    if (!insideEnd) {
+      toast.error(
+        `Aún no llegas al punto ${dirActiva === "BA" ? "A" : "B"} (faltan ${distEnd != null ? Math.round(distEnd) + " m" : "—"}).`
+      );
+      return;
+    }
     inFlightRef.current = true;
     try {
       const { error } = await supabase
@@ -231,12 +273,11 @@ export function DriverTripPanel({
           fin_lng: currentPos.lng,
           fin_at: new Date().toISOString(),
           estado: "completado",
-        })
+          fin_manual: false,
+        } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
-      toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${direccion}) contabilizado`);
-      // Invertir dirección automáticamente para el regreso
-      setDireccion(d => (d === "ida" ? "vuelta" : "ida"));
+      toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) contabilizado`);
     } catch (err: any) {
       toast.error(err.message || "Error al finalizar viaje");
     } finally {
@@ -244,28 +285,58 @@ export function DriverTripPanel({
     }
   };
 
-  const completados = viajesHoy.filter(v => v.estado === "completado").length;
+  const confirmarFinManual = async () => {
+    if (!viajeActivo || inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      const { error } = await supabase
+        .from("viajes_realizados")
+        .update({
+          fin_lat: null,
+          fin_lng: null,
+          fin_at: new Date().toISOString(),
+          estado: "completado",
+          fin_manual: true,
+        } as any)
+        .eq("id", viajeActivo.id);
+      if (error) throw error;
+      toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado manualmente`);
+      setManualEndOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Error al cerrar viaje");
+    } finally {
+      setTimeout(() => { inFlightRef.current = false; }, 1500);
+    }
+  };
 
-  // Texto de estado
+  const completados = viajesHoy.filter(v => v.estado === "completado").length;
+  const noGPS = !!gpsError || !currentPos;
+
+  // Texto de estado superior
   let statusLabel = "Esperando GPS…";
   let statusColor = "text-muted-foreground";
   if (gpsError) {
-    statusLabel = `GPS: ${gpsError}`;
+    statusLabel = `Sin señal GPS — puedes registrar el viaje manualmente`;
     statusColor = "text-destructive";
   } else if (!hasGeofences) {
-    statusLabel = "El concesionario no ha definido geocercas en el contrato";
+    statusLabel = "El concesionario no ha definido los puntos A y B en el contrato";
     statusColor = "text-destructive";
   } else if (currentPos) {
     if (viajeActivo) {
       statusLabel = insideEnd
-        ? `🏁 Dentro del ${endLabel.toLowerCase()} — confirma fin del viaje`
-        : `🏁 Faltan ${Math.round(distEnd!)} m para el ${endLabel.toLowerCase()}`;
+        ? `🏁 Dentro del punto ${dirActiva === "BA" ? "A" : "B"} — confirma fin del viaje`
+        : `🏁 Faltan ${Math.round(distEnd!)} m al punto ${dirActiva === "BA" ? "A" : "B"}`;
       statusColor = insideEnd ? "text-primary" : "text-muted-foreground";
+    } else if (insideA) {
+      statusLabel = `📍 Dentro del Punto A — listo para iniciar AB`;
+      statusColor = "text-primary";
+    } else if (insideB) {
+      statusLabel = `📍 Dentro del Punto B — listo para iniciar BA`;
+      statusColor = "text-primary";
     } else {
-      statusLabel = insideStart
-        ? `📍 Dentro del ${startLabel.toLowerCase()} — confirma inicio del viaje`
-        : `📍 Estás a ${Math.round(distStart!)} m del ${startLabel.toLowerCase()}`;
-      statusColor = insideStart ? "text-primary" : "text-muted-foreground";
+      const cercaA = distA != null ? `${Math.round(distA)} m a A` : "—";
+      const cercaB = distB != null ? `${Math.round(distB)} m a B` : "—";
+      statusLabel = `Fuera de geocercas (${cercaA} · ${cercaB})`;
     }
   }
 
@@ -283,9 +354,12 @@ export function DriverTripPanel({
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs gap-1">
-            <Radar className="h-3 w-3" /> {direccion === "ida" ? "Ida" : "Vuelta"}
-          </Badge>
+          {viajeActivo && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Radar className="h-3 w-3" /> {dirActiva}
+              {viajeActivo.inicio_manual ? " · manual" : ""}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -315,14 +389,14 @@ export function DriverTripPanel({
                 {viajeActivo ? `#${viajeActivo.numero_viaje}` : "—"}
               </p>
               <p className="text-[10px] text-muted-foreground">
-                {viajeActivo ? `En curso (${direccion})` : `Sin viaje activo`}
+                {viajeActivo ? `En curso (${dirActiva})` : `Sin viaje activo`}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Estado de geocerca */}
-        <Card className={(viajeActivo && insideEnd) || (!viajeActivo && insideStart) ? "border-primary/40 bg-primary/5" : ""}>
+        {/* Estado */}
+        <Card className={(viajeActivo && insideEnd) || (!viajeActivo && (insideA || insideB)) ? "border-primary/40 bg-primary/5" : ""}>
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2">
               <MapPin className={`h-4 w-4 ${statusColor}`} />
@@ -330,66 +404,53 @@ export function DriverTripPanel({
             </div>
             {hasGeofences && (
               <p className="text-[11px] text-muted-foreground pl-6">
-                Radio configurado: {radioM} m. Dirección actual: <strong>{direccion === "ida" ? "Ida (origen → destino)" : "Vuelta (destino → origen)"}</strong>.
+                Radio configurado por el concesionario: <strong>{radioM} m</strong>.
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Botones de confirmación */}
-        {hasGeofences && (
+        {/* Botones según estado */}
+        {hasGeofences && !viajeActivo && (
           <div className="space-y-2">
-            {!viajeActivo && (
-              <>
-                <Button
-                  size="lg"
-                  className="w-full h-14 text-base"
-                  disabled={!currentPos || !insideStart || inFlightRef.current}
-                  onClick={confirmarInicio}
-                >
-                  <Play className="h-5 w-5 mr-2" />
-                  {insideStart
-                    ? `Confirmar inicio (${direccion})`
-                    : distStart != null
-                      ? `Acércate al ${startLabel.toLowerCase()} (faltan ${Math.round(distStart)} m)`
-                      : `Esperando ubicación…`}
-                </Button>
-                {!insideStart && (
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    El botón se activa solo cuando estás dentro de la geocerca de inicio (radio {radioM} m).
-                  </p>
-                )}
-              </>
-            )}
+            <Button
+              size="lg"
+              className="w-full h-14 text-base"
+              onClick={() => setAskDir(true)}
+            >
+              <Play className="h-5 w-5 mr-2" />
+              Iniciar nuevo viaje
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Te preguntaremos si es <strong>AB</strong> (de A hacia B) o <strong>BA</strong> (de B hacia A).
+            </p>
+          </div>
+        )}
 
-            {viajeActivo && (
-              <Button
-                size="lg"
-                variant="default"
-                className="w-full h-14 text-base"
-                disabled={!currentPos || !insideEnd || inFlightRef.current}
-                onClick={confirmarFin}
-              >
-                <CheckCircle2 className="h-5 w-5 mr-2" />
-                {insideEnd
-                  ? `Confirmar llegada (${direccion})`
-                  : distEnd != null
-                    ? `Acércate al ${endLabel.toLowerCase()} (faltan ${Math.round(distEnd)} m)`
-                    : `Esperando ubicación…`}
-              </Button>
-            )}
-
-            {!viajeActivo && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => setDireccion(d => (d === "ida" ? "vuelta" : "ida"))}
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Cambiar dirección manualmente (ahora: {direccion})
-              </Button>
-            )}
+        {hasGeofences && viajeActivo && (
+          <div className="space-y-2">
+            <Button
+              size="lg"
+              className="w-full h-14 text-base"
+              disabled={!currentPos || !insideEnd || inFlightRef.current}
+              onClick={confirmarFinGPS}
+            >
+              <CheckCircle2 className="h-5 w-5 mr-2" />
+              {insideEnd
+                ? `Confirmar llegada (${dirActiva})`
+                : currentPos && distEnd != null
+                  ? `Acércate al punto ${dirActiva === "BA" ? "A" : "B"} (faltan ${Math.round(distEnd)} m)`
+                  : `Esperando ubicación…`}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => setManualEndOpen(true)}
+            >
+              <WifiOff className="h-4 w-4 mr-2" />
+              Cerrar viaje manualmente (sin GPS)
+            </Button>
           </div>
         )}
 
@@ -398,7 +459,7 @@ export function DriverTripPanel({
             <CardContent className="p-3 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               <p className="text-xs text-foreground">
-                Pide al concesionario que abra el contrato y marque en el mapa el inicio y el final de la ruta.
+                Pide al concesionario que abra el contrato y marque en el mapa el Punto A (inicio) y el Punto B (centro de trabajo).
               </p>
             </CardContent>
           </Card>
@@ -420,7 +481,13 @@ export function DriverTripPanel({
               <div className="space-y-1.5">
                 {viajesHoy.map(v => (
                   <div key={v.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0">
-                    <span className="font-medium">Viaje #{v.numero_viaje}</span>
+                    <span className="font-medium">
+                      Viaje #{v.numero_viaje}
+                      {v.direccion && <span className="ml-2 text-muted-foreground">({v.direccion})</span>}
+                      {(v.inicio_manual || v.fin_manual) && (
+                        <Badge variant="outline" className="ml-2 text-[9px] py-0">manual</Badge>
+                      )}
+                    </span>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">
                         {v.inicio_at ? new Date(v.inicio_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : "—"}
@@ -437,6 +504,107 @@ export function DriverTripPanel({
           </Card>
         )}
       </div>
+
+      {/* Diálogo: elegir dirección AB / BA */}
+      <AlertDialog open={askDir} onOpenChange={setAskDir}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Qué viaje vas a iniciar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>AB</strong>: sales del Punto A hacia el Punto B (centro de trabajo).<br />
+              <strong>BA</strong>: sales del Punto B hacia el Punto A (regreso para repartir personal).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant={insideA ? "default" : "outline"}
+              onClick={() => {
+                if (noGPS) { setAskDir(false); setManualStartDir("AB"); return; }
+                if (!insideA) { setAskDir(false); setManualStartDir("AB"); return; }
+                confirmarInicioGPS("AB").then(() => setAskDir(false));
+              }}
+            >
+              <span className="text-lg font-bold">AB</span>
+              <span className="text-[10px] opacity-80">A → B</span>
+              {!noGPS && (
+                <span className="text-[10px] opacity-80">
+                  {insideA ? "✓ Dentro de A" : distA != null ? `${Math.round(distA)} m a A` : "—"}
+                </span>
+              )}
+            </Button>
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant={insideB ? "default" : "outline"}
+              onClick={() => {
+                if (noGPS) { setAskDir(false); setManualStartDir("BA"); return; }
+                if (!insideB) { setAskDir(false); setManualStartDir("BA"); return; }
+                confirmarInicioGPS("BA").then(() => setAskDir(false));
+              }}
+            >
+              <span className="text-lg font-bold">BA</span>
+              <span className="text-[10px] opacity-80">B → A</span>
+              {!noGPS && (
+                <span className="text-[10px] opacity-80">
+                  {insideB ? "✓ Dentro de B" : distB != null ? `${Math.round(distB)} m a B` : "—"}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo: confirmar inicio manual (sin GPS o fuera de geocerca) */}
+      <AlertDialog open={!!manualStartDir} onOpenChange={(o) => !o && setManualStartDir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <WifiOff className="h-4 w-4" /> Iniciar viaje {manualStartDir} sin verificación GPS
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {gpsError
+                ? "No tenemos señal GPS en este momento."
+                : "Estás fuera de la geocerca, pero puedes declarar el inicio del viaje."}
+              <br />
+              Quedará registrado como <strong>manual</strong> en el reporte. Confirma que estás físicamente en el
+              Punto <strong>{manualStartDir === "AB" ? "A (inicio de ruta)" : "B (centro de trabajo)"}</strong> y vas a salir hacia
+              el Punto <strong>{manualStartDir === "AB" ? "B" : "A"}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => manualStartDir && confirmarInicioManual(manualStartDir)}>
+              Sí, registrar inicio manual
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo: cerrar viaje manualmente */}
+      <AlertDialog open={manualEndOpen} onOpenChange={setManualEndOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <WifiOff className="h-4 w-4" /> Cerrar viaje sin verificación GPS
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirma que ya llegaste al Punto <strong>{dirActiva === "BA" ? "A" : "B"}</strong>. El cierre quedará marcado
+              como <strong>manual</strong> en el reporte del concesionario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarFinManual}>Sí, cerrar manualmente</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

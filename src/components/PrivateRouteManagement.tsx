@@ -884,7 +884,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           )}
                           {transportType === 'privado' && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
                             <p className="text-[11px] text-muted-foreground mt-1 ml-6">
-                              ✓ Inicio y final configurados (radio {vehicle.route_geofence_radius_m ?? 150} m)
+                              ✓ Inicio y final configurados (radio {vehicle.route_geofence_radius_m ?? 50} m)
                             </p>
                           )}
                         </div>
@@ -926,7 +926,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                                     ? { lat: Number(vehicle.route_origin_lat), lng: Number(vehicle.route_origin_lng) } : null,
                                   destination: vehicle.route_destination_lat != null && vehicle.route_destination_lng != null
                                     ? { lat: Number(vehicle.route_destination_lat), lng: Number(vehicle.route_destination_lng) } : null,
-                                  radius: vehicle.route_geofence_radius_m ?? 150,
+                                  radius: vehicle.route_geofence_radius_m ?? 50,
                                 }}
                                 onSaved={({ origin, destination, radius }) => {
                                   setVehicles(prev => prev.map(v => v.id === vehicle.id ? {
