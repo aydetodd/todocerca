@@ -99,8 +99,8 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
             icon: L.divIcon({
               className: '',
               html: busHtml,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
+              iconSize: [32, 52],
+              iconAnchor: [16, 26],
             }),
           }).addTo(map);
         }
