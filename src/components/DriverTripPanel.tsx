@@ -603,19 +603,22 @@ export function DriverTripPanel({
 
       {/* Diálogo: cerrar viaje manualmente */}
       <AlertDialog open={manualEndOpen} onOpenChange={setManualEndOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <WifiOff className="h-4 w-4" /> Cerrar viaje sin verificación GPS
+            <AlertDialogTitle className="flex items-center gap-2 text-base">
+              <WifiOff className="h-4 w-4 shrink-0" />
+              <span>Cerrar viaje sin verificación de geocerca</span>
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Confirma que ya llegaste al Punto <strong>{dirActiva === "BA" ? "A" : "B"}</strong>. El cierre quedará marcado
-              como <strong>manual</strong> en el reporte del concesionario.
+            <AlertDialogDescription className="text-sm space-y-2">
+              <span className="block">Confirma que ya llegaste al Punto <strong>{dirActiva === "BA" ? "A" : "B"}</strong>.</span>
+              <span className="block">Al confirmar, el sistema intentará capturar tu ubicación actual:</span>
+              <span className="block">• Si <strong>obtiene coordenadas</strong>, el cierre se marcará <strong>con GPS</strong>.</span>
+              <span className="block">• Si <strong>no hay señal GPS</strong>, quedará como <strong>manual</strong> en el reporte del concesionario.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarFinManual}>Sí, cerrar manualmente</AlertDialogAction>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction onClick={confirmarFinManual} className="w-full">Sí, cerrar viaje</AlertDialogAction>
+            <AlertDialogCancel className="w-full mt-0">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
