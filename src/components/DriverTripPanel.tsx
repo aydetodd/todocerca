@@ -289,18 +289,27 @@ export function DriverTripPanel({
     if (!viajeActivo || inFlightRef.current) return;
     inFlightRef.current = true;
     try {
+      // Intentar capturar coordenadas en el momento del cierre.
+      // Si hay coordenadas → sí había GPS (fin_manual=false). Si no → realmente sin GPS (fin_manual=true).
+      const lat = currentPos?.lat ?? null;
+      const lng = currentPos?.lng ?? null;
+      const huboGPS = lat != null && lng != null;
       const { error } = await supabase
         .from("viajes_realizados")
         .update({
-          fin_lat: null,
-          fin_lng: null,
+          fin_lat: lat,
+          fin_lng: lng,
           fin_at: new Date().toISOString(),
           estado: "completado",
-          fin_manual: true,
+          fin_manual: !huboGPS,
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
-      toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado manualmente`);
+      toast.success(
+        huboGPS
+          ? `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado con GPS`
+          : `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado sin GPS (manual)`
+      );
       setManualEndOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Error al cerrar viaje");
@@ -594,19 +603,22 @@ export function DriverTripPanel({
 
       {/* Diálogo: cerrar viaje manualmente */}
       <AlertDialog open={manualEndOpen} onOpenChange={setManualEndOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <WifiOff className="h-4 w-4" /> Cerrar viaje sin verificación GPS
+            <AlertDialogTitle className="flex items-center gap-2 text-base">
+              <WifiOff className="h-4 w-4 shrink-0" />
+              <span>Cerrar viaje sin verificación de geocerca</span>
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Confirma que ya llegaste al Punto <strong>{dirActiva === "BA" ? "A" : "B"}</strong>. El cierre quedará marcado
-              como <strong>manual</strong> en el reporte del concesionario.
+            <AlertDialogDescription className="text-sm space-y-2">
+              <span className="block">Confirma que ya llegaste al Punto <strong>{dirActiva === "BA" ? "A" : "B"}</strong>.</span>
+              <span className="block">Al confirmar, el sistema intentará capturar tu ubicación actual:</span>
+              <span className="block">• Si <strong>obtiene coordenadas</strong>, el cierre se marcará <strong>con GPS</strong>.</span>
+              <span className="block">• Si <strong>no hay señal GPS</strong>, quedará como <strong>manual</strong> en el reporte del concesionario.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarFinManual}>Sí, cerrar manualmente</AlertDialogAction>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction onClick={confirmarFinManual} className="w-full">Sí, cerrar viaje</AlertDialogAction>
+            <AlertDialogCancel className="w-full mt-0">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
