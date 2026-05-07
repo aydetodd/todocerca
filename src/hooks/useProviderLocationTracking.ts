@@ -19,12 +19,12 @@ export const useProviderLocationTracking = () => {
 
   useEffect(() => {
     let mounted = true;
-    const UPDATE_INTERVAL = 10000; // 10 segundos para web (reduce carga)
+    const UPDATE_INTERVAL = 8000; // 8 segundos entre polls
 
     const updateLocation = async (latitude: number, longitude: number) => {
       const now = Date.now();
-      // Evitar actualizaciones muy frecuentes
-      if (now - lastUpdateRef.current < 5000) return;
+      // Throttle entre updates, pero NO bloquear el primero tras (re)iniciar
+      if (lastUpdateRef.current !== 0 && now - lastUpdateRef.current < 4000) return;
       lastUpdateRef.current = now;
 
       try {
