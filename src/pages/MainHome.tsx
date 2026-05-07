@@ -95,9 +95,9 @@ export default function MainHome() {
               <Radio className="h-7 w-7 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
                 TodoCerca TV
-                <span className="text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded animate-pulse">EN VIVO</span>
+                <span className="text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded">PRÓXIMAMENTE</span>
               </h3>
               <p className="text-sm text-muted-foreground">Guía de programación comunitaria</p>
             </div>
