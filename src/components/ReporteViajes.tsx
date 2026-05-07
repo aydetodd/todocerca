@@ -149,8 +149,10 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
       .from("viajes_realizados")
       .select(`
         id, fecha, numero_viaje, estado, inicio_at, fin_at, chofer_id, unidad_id, contrato_id,
+        producto_id, direccion, inicio_manual, fin_manual,
         choferes_empresa(nombre),
-        unidades_empresa(numero_economico, placas)
+        unidades_empresa(numero_economico, placas),
+        productos(nombre)
       `)
       .or(orFilters.join(","))
       .gte("fecha", desdeMinus1)
