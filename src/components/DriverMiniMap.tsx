@@ -55,7 +55,43 @@ export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
     navigator.geolocation.watchPosition(
       (pos) => {
         const latlng: L.LatLngExpression = [pos.coords.latitude, pos.coords.longitude];
-        const busHtml = `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));"><svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="16" height="16" rx="2" fill="#FDB813" stroke="#1a1a1a" stroke-width="1.2"/><rect x="5.5" y="5" width="5.5" height="4" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><rect x="13" y="5" width="5.5" height="4" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><rect x="5.5" y="11" width="13" height="3" fill="#87CEEB" stroke="#1a1a1a" stroke-width="0.6"/><circle cx="8" cy="20" r="1.8" fill="#1a1a1a"/><circle cx="16" cy="20" r="1.8" fill="#1a1a1a"/></svg></div>`;
+        const busBodyColor = '#FDB813';
+        const busStrokeColor = '#D4960A';
+        const labelTruncated = 'PRIV';
+        const textColor = '#FFFFFF';
+        const busHtml = `
+          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+            <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+              <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+              <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+              <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+              <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+              <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+              <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
+              <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+              <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+              <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+              <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+              <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+              <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">${labelTruncated}</text>
+            </svg>
+          </div>`;
         if (posMarkerRef.current) {
           posMarkerRef.current.setLatLng(latlng);
         } else {
