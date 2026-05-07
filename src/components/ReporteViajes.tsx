@@ -24,8 +24,13 @@ type ViajeRow = {
   chofer_id: string;
   unidad_id: string | null;
   contrato_id: string;
+  producto_id: string | null;
+  direccion: string | null;
+  inicio_manual: boolean | null;
+  fin_manual: boolean | null;
   choferes_empresa?: { nombre?: string | null } | null;
   unidades_empresa?: { numero_economico?: string | null; placas?: string | null } | null;
+  productos?: { nombre?: string | null } | null;
 };
 
 export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
