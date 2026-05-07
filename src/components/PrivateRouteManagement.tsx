@@ -987,8 +987,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             </p>
                             <RouteTraceUploader
                               productoId={vehicle.id}
-                              currentFilename={vehicle.route_trace_filename || null}
-                              onUploaded={() => fetchVehicles()}
+                              hasTrace={!!vehicle.route_geojson}
+                              filename={vehicle.route_trace_filename || null}
+                              onChanged={() => fetchVehicles()}
                             />
                           </div>
 
