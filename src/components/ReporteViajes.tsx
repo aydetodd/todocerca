@@ -183,8 +183,10 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
     return () => { supabase.removeChannel(ch); };
   }, [load, proveedorId]);
 
-  // Helper: resolver producto_id (ruta) de un viaje vía asignaciones (chofer + fecha más cercana <= fecha)
+  // Resolver ruta: usar SIEMPRE el producto_id del propio viaje (datos reales),
+  // y solo si está vacío caer al fallback de asignaciones del chofer.
   const resolveProductoId = useCallback((v: ViajeRow): string | null => {
+    if (v.producto_id) return v.producto_id;
     const candidates = asignaciones
       .filter((a) => a.chofer_id === v.chofer_id && a.fecha <= v.fecha)
       .sort((a, b) => (b.fecha > a.fecha ? 1 : -1));
@@ -193,40 +195,19 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
 
   const enriched = useMemo(() => viajes.map((v) => ({
     ...v,
-    producto_id: resolveProductoId(v),
+    producto_id_resolved: resolveProductoId(v),
   })), [viajes, resolveProductoId]);
 
   const filtered = useMemo(() => enriched.filter((v) => {
     if (filterUnidad !== "all" && v.unidad_id !== filterUnidad) return false;
     if (filterChofer !== "all" && v.chofer_id !== filterChofer) return false;
-    if (filterRuta !== "all" && v.producto_id !== filterRuta) return false;
+    if (filterRuta !== "all" && v.producto_id_resolved !== filterRuta) return false;
     return true;
   }), [enriched, filterUnidad, filterChofer, filterRuta]);
 
   const today = getHermosilloToday();
-  // Completados: cuentan en el día en que INICIÓ el viaje (aunque haya terminado pasada la medianoche)
   const completadosHoy = filtered.filter((v) => v.fecha === today && v.estado === "completado").length;
-  // En curso: cualquier viaje abierto sin importar la fecha de inicio
   const enCursoHoy = filtered.filter((v) => v.estado === "en_curso").length;
-
-  // Desgloses
-  const porUnidad = filtered.reduce<Record<string, { label: string; total: number }>>((acc, v) => {
-    const key = v.unidad_id || "sin";
-    const label = v.unidades_empresa?.numero_economico
-      ? `Eco. ${v.unidades_empresa.numero_economico}`
-      : v.unidades_empresa?.placas || "Sin unidad";
-    if (!acc[key]) acc[key] = { label, total: 0 };
-    if (v.estado === "completado") acc[key].total++;
-    return acc;
-  }, {});
-
-  const porChofer = filtered.reduce<Record<string, { label: string; total: number }>>((acc, v) => {
-    const key = v.chofer_id;
-    const label = v.choferes_empresa?.nombre || "Chofer";
-    if (!acc[key]) acc[key] = { label, total: 0 };
-    if (v.estado === "completado") acc[key].total++;
-    return acc;
-  }, {});
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -234,29 +215,41 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
     return m;
   }, [rutas]);
 
-  const porRuta = filtered.reduce<Record<string, { label: string; total: number }>>((acc, v) => {
-    const key = v.producto_id || "sin";
-    const label = v.producto_id ? (rutasMap[v.producto_id] || "Ruta") : "Sin ruta";
-    if (!acc[key]) acc[key] = { label, total: 0 };
-    if (v.estado === "completado") acc[key].total++;
-    return acc;
-  }, {});
+  const getRutaLabel = (v: typeof filtered[number]) => {
+    if (v.productos?.nombre) return v.productos.nombre.trim();
+    if (v.producto_id_resolved && rutasMap[v.producto_id_resolved]) return rutasMap[v.producto_id_resolved].trim();
+    return "Sin ruta";
+  };
+  const getUnidadLabel = (v: typeof filtered[number]) =>
+    v.unidades_empresa?.numero_economico
+      ? `Eco. ${v.unidades_empresa.numero_economico}`
+      : v.unidades_empresa?.placas || "Sin unidad";
+  const getChoferLabel = (v: typeof filtered[number]) =>
+    v.choferes_empresa?.nombre || "Chofer";
+
+  const fmtTime = (iso: string | null) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Hermosillo" });
+  };
 
   const handleExport = () => {
     const rows = filtered.map((v) => [
       v.fecha,
       String(v.numero_viaje),
+      v.direccion || "",
       v.estado,
       v.unidades_empresa?.numero_economico || "",
       v.unidades_empresa?.placas || "",
       v.choferes_empresa?.nombre || "",
-      v.producto_id ? (rutasMap[v.producto_id] || "") : "",
+      getRutaLabel(v),
       v.inicio_at || "",
       v.fin_at || "",
+      v.inicio_manual ? "Manual" : "GPS",
+      v.fin_manual ? "Manual" : "GPS",
     ]);
     downloadCSV(
       `reporte-viajes-${getRange().desde}_a_${getRange().hasta}.csv`,
-      ["Fecha", "Viaje #", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin"],
+      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src"],
       rows
     );
   };
