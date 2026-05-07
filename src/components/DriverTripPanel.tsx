@@ -289,18 +289,27 @@ export function DriverTripPanel({
     if (!viajeActivo || inFlightRef.current) return;
     inFlightRef.current = true;
     try {
+      // Intentar capturar coordenadas en el momento del cierre.
+      // Si hay coordenadas → sí había GPS (fin_manual=false). Si no → realmente sin GPS (fin_manual=true).
+      const lat = currentPos?.lat ?? null;
+      const lng = currentPos?.lng ?? null;
+      const huboGPS = lat != null && lng != null;
       const { error } = await supabase
         .from("viajes_realizados")
         .update({
-          fin_lat: null,
-          fin_lng: null,
+          fin_lat: lat,
+          fin_lng: lng,
           fin_at: new Date().toISOString(),
           estado: "completado",
-          fin_manual: true,
+          fin_manual: !huboGPS,
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
-      toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado manualmente`);
+      toast.success(
+        huboGPS
+          ? `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado con GPS`
+          : `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado sin GPS (manual)`
+      );
       setManualEndOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Error al cerrar viaje");
