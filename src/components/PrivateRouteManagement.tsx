@@ -983,7 +983,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           <div className="pt-2 border-t">
                             <Label className="text-xs font-medium">Trazado de la ruta</Label>
                             <p className="text-[10px] text-muted-foreground mb-2">
-                              Dibuja el recorrido a mano sobre el mapa, o sube un archivo KML/KMZ/GPX/GeoJSON.
+                              Dibuja el recorrido a mano sobre el mapa.
                             </p>
                             <RouteTraceUploader
                               productoId={vehicle.id}
