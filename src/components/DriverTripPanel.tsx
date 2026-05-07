@@ -421,9 +421,6 @@ export function DriverTripPanel({
               <Play className="h-5 w-5 mr-2" />
               Iniciar nuevo viaje
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center">
-              Te preguntaremos si es <strong>AB</strong> (de A hacia B) o <strong>BA</strong> (de B hacia A).
-            </p>
           </div>
         )}
 
@@ -510,10 +507,6 @@ export function DriverTripPanel({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Qué viaje vas a iniciar?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>AB</strong>: sales del Punto A hacia el Punto B (centro de trabajo).<br />
-              <strong>BA</strong>: sales del Punto B hacia el Punto A (regreso para repartir personal).
-            </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="grid grid-cols-2 gap-3 py-2">
