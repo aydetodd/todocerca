@@ -944,16 +944,6 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           )}
 
                           <div className="pt-2 border-t">
-                            <p className="text-xs font-medium mb-1">Trazado de la ruta (KML/KMZ/GPX/GeoJSON)</p>
-                            <RouteTraceUploader
-                              productoId={vehicle.id}
-                              hasTrace={!!vehicle.route_geojson}
-                              filename={vehicle.route_trace_filename}
-                              onChanged={() => fetchVehicles()}
-                            />
-                          </div>
-
-                          <div className="pt-2 border-t">
                             <Label htmlFor={`group-${vehicle.id}`} className="text-xs font-medium">
                               Grupo / Clasificación
                             </Label>
