@@ -980,6 +980,19 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             </datalist>
                           </div>
 
+                          <div className="pt-2 border-t">
+                            <Label className="text-xs font-medium">Trazado de la ruta</Label>
+                            <p className="text-[10px] text-muted-foreground mb-2">
+                              Dibuja el recorrido a mano sobre el mapa, o sube un archivo KML/KMZ/GPX/GeoJSON.
+                            </p>
+                            <RouteTraceUploader
+                              productoId={vehicle.id}
+                              hasTrace={!!vehicle.route_geojson}
+                              filename={vehicle.route_trace_filename || null}
+                              onChanged={() => fetchVehicles()}
+                            />
+                          </div>
+
                           <Button
                             variant="outline"
                             size="sm"
