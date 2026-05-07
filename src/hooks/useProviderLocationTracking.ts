@@ -19,12 +19,12 @@ export const useProviderLocationTracking = () => {
 
   useEffect(() => {
     let mounted = true;
-    const UPDATE_INTERVAL = 2000; // 2 segundos para web
+    const UPDATE_INTERVAL = 10000; // 10 segundos para web (reduce carga)
 
     const updateLocation = async (latitude: number, longitude: number) => {
       const now = Date.now();
       // Evitar actualizaciones muy frecuentes
-      if (now - lastUpdateRef.current < 1000) return;
+      if (now - lastUpdateRef.current < 5000) return;
       lastUpdateRef.current = now;
 
       try {
