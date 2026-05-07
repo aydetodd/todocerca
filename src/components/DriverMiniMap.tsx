@@ -173,12 +173,12 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
     if (origenLat != null && origenLng != null) {
       markerARef.current = L.marker([origenLat, origenLng], { icon: abMarkerIcon('A') })
         .addTo(map)
-        .bindTooltip('A · Recoger personal', { direction: 'top', offset: [0, -38] });
+        .bindTooltip('A · Inicio de ruta', { direction: 'top', offset: [0, -38] });
     }
     if (destinoLat != null && destinoLng != null) {
       markerBRef.current = L.marker([destinoLat, destinoLng], { icon: abMarkerIcon('B') })
         .addTo(map)
-        .bindTooltip('B · Dejar personal', { direction: 'top', offset: [0, -38] });
+        .bindTooltip('B · Centro de trabajo', { direction: 'top', offset: [0, -38] });
     }
     // Encajar la vista si hay ambos
     if (origenLat != null && origenLng != null && destinoLat != null && destinoLng != null) {
@@ -202,8 +202,8 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
         </div>
       )}
       <div className="absolute bottom-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md flex items-center gap-2 text-[10px] text-foreground">
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#16A34A] text-white text-[8px] font-bold leading-3 text-center">A</span> Recoger</span>
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#DC2626] text-white text-[8px] font-bold leading-3 text-center">B</span> Dejar</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#16A34A] text-white text-[8px] font-bold leading-3 text-center">A</span> Inicio de ruta</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#DC2626] text-white text-[8px] font-bold leading-3 text-center">B</span> Centro de trabajo</span>
       </div>
       <Button
         size="icon"
