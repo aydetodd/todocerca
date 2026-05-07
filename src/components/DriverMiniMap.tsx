@@ -162,6 +162,31 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
   const knownRouteId = routeNameToId(routeName);
   useRouteOverlay(mapRef, inlineGeoJSON ? null : knownRouteId, inlineGeoJSON);
 
+  // Marcadores A (recoger) y B (dejar)
+  const markerARef = useRef<L.Marker | null>(null);
+  const markerBRef = useRef<L.Marker | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (markerARef.current) { map.removeLayer(markerARef.current); markerARef.current = null; }
+    if (markerBRef.current) { map.removeLayer(markerBRef.current); markerBRef.current = null; }
+    if (origenLat != null && origenLng != null) {
+      markerARef.current = L.marker([origenLat, origenLng], { icon: abMarkerIcon('A') })
+        .addTo(map)
+        .bindTooltip('A · Recoger personal', { direction: 'top', offset: [0, -38] });
+    }
+    if (destinoLat != null && destinoLng != null) {
+      markerBRef.current = L.marker([destinoLat, destinoLng], { icon: abMarkerIcon('B') })
+        .addTo(map)
+        .bindTooltip('B · Dejar personal', { direction: 'top', offset: [0, -38] });
+    }
+    // Encajar la vista si hay ambos
+    if (origenLat != null && origenLng != null && destinoLat != null && destinoLng != null) {
+      const bounds = L.latLngBounds([[origenLat, origenLng], [destinoLat, destinoLng]]);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+  }, [origenLat, origenLng, destinoLat, destinoLng]);
+
   return (
     <div
       className={
@@ -176,6 +201,10 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
           <span className="text-xs font-semibold text-foreground truncate block">🚌 {routeName}</span>
         </div>
       )}
+      <div className="absolute bottom-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md flex items-center gap-2 text-[10px] text-foreground">
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#16A34A] text-white text-[8px] font-bold leading-3 text-center">A</span> Recoger</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#DC2626] text-white text-[8px] font-bold leading-3 text-center">B</span> Dejar</span>
+      </div>
       <Button
         size="icon"
         variant="secondary"
