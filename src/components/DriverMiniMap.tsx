@@ -16,9 +16,31 @@ L.Icon.Default.mergeOptions({
 
 interface DriverMiniMapProps {
   routeProductId?: string | null;
+  origenLat?: number | null;
+  origenLng?: number | null;
+  destinoLat?: number | null;
+  destinoLng?: number | null;
 }
 
-export function DriverMiniMap({ routeProductId }: DriverMiniMapProps) {
+function abMarkerIcon(letter: 'A' | 'B') {
+  const color = letter === 'A' ? '#16A34A' : '#DC2626';
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));">
+        <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 2 C8 2 2 8 2 17 C2 28 17 42 17 42 C17 42 32 28 32 17 C32 8 26 2 17 2 Z"
+                fill="${color}" stroke="#ffffff" stroke-width="2"/>
+          <text x="17" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold"
+                fill="#ffffff" text-anchor="middle">${letter}</text>
+        </svg>
+      </div>`,
+    iconSize: [34, 44],
+    iconAnchor: [17, 42],
+  });
+}
+
+export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat, destinoLng }: DriverMiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const posMarkerRef = useRef<L.Marker | null>(null);
