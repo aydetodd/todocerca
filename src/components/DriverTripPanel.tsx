@@ -516,7 +516,13 @@ export function DriverTripPanel({
               variant={insideA ? "default" : "outline"}
               onClick={() => {
                 if (noGPS) { setAskDir(false); setManualStartDir("AB"); return; }
-                if (!insideA) { setAskDir(false); setManualStartDir("AB"); return; }
+                if (!insideA) {
+                  toast.error(
+                    `Estás a ${distA != null ? Math.round(distA) + " m" : "—"} de distancia. Acércate a ${radioM} m del Punto A para iniciar tu viaje AB.`,
+                    { duration: 5000 }
+                  );
+                  return;
+                }
                 confirmarInicioGPS("AB").then(() => setAskDir(false));
               }}
             >
@@ -534,7 +540,13 @@ export function DriverTripPanel({
               variant={insideB ? "default" : "outline"}
               onClick={() => {
                 if (noGPS) { setAskDir(false); setManualStartDir("BA"); return; }
-                if (!insideB) { setAskDir(false); setManualStartDir("BA"); return; }
+                if (!insideB) {
+                  toast.error(
+                    `Estás a ${distB != null ? Math.round(distB) + " m" : "—"} de distancia. Acércate a ${radioM} m del Punto B para iniciar tu viaje BA.`,
+                    { duration: 5000 }
+                  );
+                  return;
+                }
                 confirmarInicioGPS("BA").then(() => setAskDir(false));
               }}
             >
