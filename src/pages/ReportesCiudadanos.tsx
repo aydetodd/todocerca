@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair } from 'lucide-react';
+import { ArrowLeft, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,13 +18,15 @@ import { useAuth } from '@/hooks/useAuth';
 type Category = 'bache' | 'fuga_agua' | 'fuga_drenaje' | 'alumbrado' | 'basura' | 'semaforo';
 
 const CATEGORIES: Record<Category, { label: string; color: string; emoji: string; Icon: any }> = {
-  bache:        { label: 'Bache',              color: '#78350f', emoji: '🕳️', Icon: Construction },
-  fuga_agua:    { label: 'Fuga de agua',       color: '#0284c7', emoji: '💧', Icon: Droplet },
-  fuga_drenaje: { label: 'Fuga de drenaje',    color: '#7c2d12', emoji: '🚽', Icon: Droplet },
-  alumbrado:    { label: 'Alumbrado público',  color: '#ca8a04', emoji: '💡', Icon: Lightbulb },
-  basura:       { label: 'Basura / escombro',  color: '#15803d', emoji: '🗑️', Icon: Trash2 },
-  semaforo:     { label: 'Semáforo dañado',    color: '#7e22ce', emoji: '🚦', Icon: TrafficCone },
+  bache:        { label: 'Baches',             color: '#dc2626', emoji: '🕳️', Icon: Construction },
+  fuga_agua:    { label: 'Fuga de agua',       color: '#2563eb', emoji: '💧', Icon: Droplet },
+  fuga_drenaje: { label: 'Fuga de drenaje',    color: '#111827', emoji: '🚽', Icon: Droplet },
+  alumbrado:    { label: 'Alumbrado',          color: '#eab308', emoji: '💡', Icon: Lightbulb },
+  basura:       { label: 'Basura',             color: '#6b7280', emoji: '🗑️', Icon: Trash2 },
+  semaforo:     { label: 'Semáforo',           color: '#16a34a', emoji: '🚦', Icon: TrafficCone },
 };
+
+const CATEGORY_KEYS = Object.keys(CATEGORIES) as Category[];
 
 // ============ Iconos Leaflet ============
 function makeIcon(emoji: string, color: string) {
@@ -89,6 +91,20 @@ export default function ReportesCiudadanos() {
   const [closureReopen, setClosureReopen] = useState('');
   const [showClosureSave, setShowClosureSave] = useState(false);
   const [savingClosure, setSavingClosure] = useState(false);
+
+  // Filtros visibles
+  const [visibleCategories, setVisibleCategories] = useState<Set<Category>>(new Set(CATEGORY_KEYS));
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const toggleCategory = (k: Category) => {
+    setVisibleCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+  const setAll = (on: boolean) => setVisibleCategories(on ? new Set(CATEGORY_KEYS) : new Set());
+  const onlyOne = (k: Category) => setVisibleCategories(new Set([k]));
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -270,7 +286,7 @@ export default function ReportesCiudadanos() {
     if (!layer) return;
     layer.clearLayers();
 
-    reports.forEach((r) => {
+    reports.filter((r) => visibleCategories.has(r.category)).forEach((r) => {
       const category = CATEGORIES[r.category];
       const marker = L.marker([r.lat, r.lng], { icon: ICONS[r.category] });
       const popup = document.createElement('div');
@@ -323,7 +339,7 @@ export default function ReportesCiudadanos() {
 
       marker.bindPopup(popup).addTo(layer);
     });
-  }, [reports, myVotes, isAdmin]);
+  }, [reports, myVotes, isAdmin, visibleCategories]);
 
   useEffect(() => {
     const layer = closuresLayerRef.current;
@@ -395,15 +411,6 @@ export default function ReportesCiudadanos() {
             <Badge variant="outline" className="text-[10px]">Admin</Badge>
           )}
         </div>
-        {/* Leyenda compacta */}
-        <div className="flex gap-1 px-3 pb-2 overflow-x-auto">
-          {(Object.entries(CATEGORIES) as [Category, typeof CATEGORIES[Category]][]).map(([k, v]) => (
-            <div key={k} className="flex items-center gap-1 shrink-0 text-[10px] px-2 py-0.5 rounded-full border" style={{ borderColor: v.color }}>
-              <span>{v.emoji}</span>
-              <span>{v.label}</span>
-            </div>
-          ))}
-        </div>
       </header>
 
       {/* Mapa */}
@@ -421,7 +428,7 @@ export default function ReportesCiudadanos() {
         )}
 
         {/* Controles inferiores */}
-        <div className="absolute bottom-4 left-0 right-0 z-[500] flex flex-col items-center gap-2 px-4">
+        <div className="absolute bottom-24 left-0 right-0 z-[500] flex flex-col items-center gap-2 px-4">
           {reportMode ? (
             <Card className="w-full max-w-md p-3 shadow-xl">
               <p className="text-xs text-center mb-2 font-medium">Centra la mira sobre el incidente</p>
@@ -459,16 +466,78 @@ export default function ReportesCiudadanos() {
               </div>
             </Card>
           ) : (
-            <div className="flex gap-2 flex-wrap justify-center">
-              <Button size="lg" className="shadow-xl rounded-full" onClick={() => setReportMode(true)}>
-                <Plus className="h-5 w-5 mr-1" /> Reportar incidente
-              </Button>
-              {isAdmin && (
-                <Button size="lg" variant="destructive" className="shadow-xl rounded-full" onClick={() => setClosureMode(true)}>
-                  <Construction className="h-5 w-5 mr-1" /> Tramo cerrado
+            <>
+              {/* Panel filtros */}
+              <Card className="w-full max-w-md shadow-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((o) => !o)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Filter className="h-3.5 w-3.5" />
+                    Filtrar reportes ({visibleCategories.size}/{CATEGORY_KEYS.length})
+                  </span>
+                  {filterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </button>
+                {filterOpen && (
+                  <div className="px-3 pb-3 space-y-2 border-t">
+                    <div className="flex gap-1.5 pt-2">
+                      <Button size="sm" variant="secondary" className="h-7 text-[11px] px-2" onClick={() => setAll(true)}>
+                        Todas
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" onClick={() => setAll(false)}>
+                        Ninguna
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {CATEGORY_KEYS.map((k) => {
+                        const v = CATEGORIES[k];
+                        const checked = visibleCategories.has(k);
+                        return (
+                          <div key={k} className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleCategory(k)}
+                              className={`flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[11px] transition ${
+                                checked ? 'bg-accent' : 'opacity-50'
+                              }`}
+                            >
+                              <span
+                                className="w-4 h-4 rounded flex items-center justify-center shrink-0"
+                                style={{ background: v.color, color: 'white' }}
+                              >
+                                {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                              </span>
+                              <span className="truncate">{v.label}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onlyOne(k)}
+                              title="Solo este"
+                              className="text-[9px] px-1.5 py-1 rounded border text-muted-foreground hover:bg-accent"
+                            >
+                              solo
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Button size="lg" className="shadow-xl rounded-full" onClick={() => setReportMode(true)}>
+                  <Plus className="h-5 w-5 mr-1" /> Reportar incidente
                 </Button>
-              )}
-            </div>
+                {isAdmin && (
+                  <Button size="lg" variant="destructive" className="shadow-xl rounded-full" onClick={() => setClosureMode(true)}>
+                    <Construction className="h-5 w-5 mr-1" /> Tramo cerrado
+                  </Button>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
