@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const destMarkerRef = useRef<L.Marker | null>(null);
   const destCircleRef = useRef<L.Circle | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const lastViewRef = useRef<{ center: L.LatLngExpression; zoom: number } | null>(null);
 
   const [mode, setMode] = useState<Mode>(initial.origin ? (initial.destination ? "origen" : "destino") : "origen");
   const [origin, setOrigin] = useState<Coord | null>(initial.origin);
@@ -47,12 +49,13 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   useEffect(() => {
     if (!mapContainer) return;
     if ((mapContainer as any)._leaflet_id) delete (mapContainer as any)._leaflet_id;
-    const startCenter: L.LatLngExpression = origin
+    const startCenter: L.LatLngExpression = lastViewRef.current?.center || (origin
       ? [origin.lat, origin.lng]
       : destination
       ? [destination.lat, destination.lng]
-      : [29.0729, -110.9559];
-    const map = L.map(mapContainer, { center: startCenter, zoom: origin || destination ? 14 : 12, attributionControl: false });
+      : [29.0729, -110.9559]);
+    const startZoom = lastViewRef.current?.zoom || (origin || destination ? 14 : 12);
+    const map = L.map(mapContainer, { center: startCenter, zoom: startZoom, attributionControl: false });
     const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, crossOrigin: true }).addTo(map);
     mapRef.current = map;
     tileLayerRef.current = tileLayer;
@@ -70,6 +73,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
 
     return () => {
       window.clearTimeout(timer);
+      lastViewRef.current = { center: map.getCenter(), zoom: map.getZoom() };
       map.remove();
       if (mapRef.current === map) mapRef.current = null;
       tileLayerRef.current = null;
@@ -137,7 +141,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
 
     draw(origin, originMarkerRef, originCircleRef, "#16a34a", "🚏");
     draw(destination, destMarkerRef, destCircleRef, "#2563eb", "🏁");
-  }, [origin, destination, radius]);
+  }, [origin, destination, radius, mapReadyId]);
 
   const fixHere = () => {
     const map = mapRef.current;
