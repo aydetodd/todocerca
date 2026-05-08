@@ -170,7 +170,11 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
           className="absolute top-2 right-2 z-[500] h-8 w-8 shadow-lg"
           onClick={() => {
             setExpanded((v) => !v);
-            setTimeout(() => mapRef.current?.invalidateSize(), 50);
+            const m = mapRef.current;
+            if (!m) return;
+            setTimeout(() => m.invalidateSize(true), 100);
+            setTimeout(() => m.invalidateSize(true), 350);
+            setTimeout(() => m.invalidateSize(true), 700);
           }}
           title={expanded ? "Reducir mapa" : "Expandir mapa"}
         >
