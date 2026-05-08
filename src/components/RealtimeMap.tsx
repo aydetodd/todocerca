@@ -764,7 +764,9 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           `;
         } else {
           // PASSENGER VIEW: simple popup — just route name and status, no internal details
-          const displayRouteName = routeLabel || privateRouteNameProp || apodo || 'Ruta';
+          // Si estamos viendo una ruta específica, forzar ese nombre (evita mostrar otra ruta del chofer)
+          const isRouteViewMode = !!(privateRouteProductoId && !(fleetUserIds && fleetUserIds.length > 0));
+          const displayRouteName = (isRouteViewMode && privateRouteNameProp) ? privateRouteNameProp : (routeLabel || privateRouteNameProp || apodo || 'Ruta');
           const statusLabel = estado === 'available' ? 'Disponible' : estado === 'busy' ? 'En servicio' : 'Fuera de línea';
           popupContent = `
             <div style="background:${cardBg};color:${cardFg};padding:14px;min-width:220px;border-radius:10px;position:relative;">
