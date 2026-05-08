@@ -392,6 +392,90 @@ export type Database = {
           },
         ]
       }
+      citizen_report_votes: {
+        Row: {
+          created_at: string
+          id: string
+          report_id: string
+          user_id: string
+          vote_type: Database["public"]["Enums"]["citizen_vote_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id: string
+          user_id: string
+          vote_type: Database["public"]["Enums"]["citizen_vote_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string
+          user_id?: string
+          vote_type?: Database["public"]["Enums"]["citizen_vote_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citizen_report_votes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "citizen_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "citizen_report_votes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "citizen_reports_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      citizen_reports: {
+        Row: {
+          category: Database["public"]["Enums"]["citizen_report_category"]
+          confirm_count: number
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          note: string | null
+          phone_last4: string
+          resolve_count: number
+          status: Database["public"]["Enums"]["citizen_report_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["citizen_report_category"]
+          confirm_count?: number
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          note?: string | null
+          phone_last4: string
+          resolve_count?: number
+          status?: Database["public"]["Enums"]["citizen_report_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["citizen_report_category"]
+          confirm_count?: number
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          note?: string | null
+          phone_last4?: string
+          resolve_count?: number
+          status?: Database["public"]["Enums"]["citizen_report_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           codigo_postal: string | null
@@ -2832,6 +2916,42 @@ export type Database = {
           },
         ]
       }
+      road_closures: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          polyline: Json
+          reason: string | null
+          reopen_estimated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          polyline: Json
+          reason?: string | null
+          reopen_estimated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          polyline?: Json
+          reason?: string | null
+          reopen_estimated_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       route_passenger_access: {
         Row: {
           claimed_at: string
@@ -4161,6 +4281,51 @@ export type Database = {
       }
     }
     Views: {
+      citizen_reports_public: {
+        Row: {
+          category:
+            | Database["public"]["Enums"]["citizen_report_category"]
+            | null
+          confirm_count: number | null
+          created_at: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          note: string | null
+          phone_last4: string | null
+          resolve_count: number | null
+          status: Database["public"]["Enums"]["citizen_report_status"] | null
+        }
+        Insert: {
+          category?:
+            | Database["public"]["Enums"]["citizen_report_category"]
+            | null
+          confirm_count?: number | null
+          created_at?: string | null
+          id?: string | null
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          phone_last4?: string | null
+          resolve_count?: number | null
+          status?: Database["public"]["Enums"]["citizen_report_status"] | null
+        }
+        Update: {
+          category?:
+            | Database["public"]["Enums"]["citizen_report_category"]
+            | null
+          confirm_count?: number | null
+          created_at?: string | null
+          id?: string | null
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          phone_last4?: string | null
+          resolve_count?: number | null
+          status?: Database["public"]["Enums"]["citizen_report_status"] | null
+        }
+        Relationships: []
+      }
       listing_comments_publico: {
         Row: {
           created_at: string | null
@@ -4511,6 +4676,15 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       availability_status: "disponible" | "ocupado" | "no_disponible"
+      citizen_report_category:
+        | "bache"
+        | "fuga_agua"
+        | "fuga_drenaje"
+        | "alumbrado"
+        | "basura"
+        | "semaforo"
+      citizen_report_status: "active" | "resolved" | "hidden"
+      citizen_vote_type: "confirm" | "resolve"
       provider_type: "taxi" | "ruta"
       subscription_status: "activa" | "vencida" | "pendiente"
       user_role: "admin" | "cliente" | "proveedor"
@@ -4645,6 +4819,16 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       availability_status: ["disponible", "ocupado", "no_disponible"],
+      citizen_report_category: [
+        "bache",
+        "fuga_agua",
+        "fuga_drenaje",
+        "alumbrado",
+        "basura",
+        "semaforo",
+      ],
+      citizen_report_status: ["active", "resolved", "hidden"],
+      citizen_vote_type: ["confirm", "resolve"],
       provider_type: ["taxi", "ruta"],
       subscription_status: ["activa", "vencida", "pendiente"],
       user_role: ["admin", "cliente", "proveedor"],
