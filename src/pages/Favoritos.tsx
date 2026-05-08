@@ -170,7 +170,7 @@ export default function Favoritos() {
                       favorito={fav}
                       privada={false}
                       onOpen={() =>
-                        navigate(`/search?category=rutas&overrideRoute=${fav.producto!.id}`)
+                        navigate(`/mapa?type=ruta&producto=${fav.producto!.id}`)
                       }
                       onRemove={() => removeFavorito(fav.id)}
                     />
