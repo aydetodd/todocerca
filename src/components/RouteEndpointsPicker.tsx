@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const originCircleRef = useRef<L.Circle | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
   const destCircleRef = useRef<L.Circle | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   const [mode, setMode] = useState<Mode>(initial.origin ? (initial.destination ? "origen" : "destino") : "origen");
   const [origin, setOrigin] = useState<Coord | null>(initial.origin);
@@ -36,25 +38,74 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const [radius, setRadius] = useState<number>(initial.radius || 50);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
+  const [mapReadyId, setMapReadyId] = useState(0);
+
+  const setMapContainerRef = useCallback((node: HTMLDivElement | null) => {
+    setMapContainer(node);
+  }, []);
 
   // Init map
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!mapContainer) return;
+    if ((mapContainer as any)._leaflet_id) delete (mapContainer as any)._leaflet_id;
     const startCenter: L.LatLngExpression = origin
       ? [origin.lat, origin.lng]
       : destination
       ? [destination.lat, destination.lng]
       : [29.0729, -110.9559];
-    const map = L.map(containerRef.current, { center: startCenter, zoom: origin || destination ? 14 : 12, attributionControl: false });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+    const map = L.map(mapContainer, { center: startCenter, zoom: origin || destination ? 14 : 12, attributionControl: false });
+    const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, crossOrigin: true }).addTo(map);
     mapRef.current = map;
+    tileLayerRef.current = tileLayer;
+    setMapReadyId((v) => v + 1);
+
+    const refresh = () => {
+      map.invalidateSize(false);
+      tileLayer.redraw();
+    };
+    requestAnimationFrame(() => {
+      refresh();
+      requestAnimationFrame(refresh);
+    });
+    const timer = window.setTimeout(refresh, 300);
 
     return () => {
+      window.clearTimeout(timer);
       map.remove();
-      mapRef.current = null;
+      if (mapRef.current === map) mapRef.current = null;
+      tileLayerRef.current = null;
+      originMarkerRef.current = null;
+      originCircleRef.current = null;
+      destMarkerRef.current = null;
+      destCircleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mapContainer]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const refresh = () => {
+      map.invalidateSize(false);
+      tileLayerRef.current?.redraw();
+    };
+    requestAnimationFrame(() => {
+      refresh();
+      requestAnimationFrame(refresh);
+    });
+    const timers = [150, 400, 800].map((delay) => window.setTimeout(refresh, delay));
+    return () => timers.forEach(window.clearTimeout);
+  }, [expanded, mapReadyId]);
 
   // Draw markers
   useEffect(() => {
