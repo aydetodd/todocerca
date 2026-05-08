@@ -234,13 +234,26 @@ export default function ValidarQr() {
                 tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
               }
 
-              // Si hay geocercas (en contrato o en la ruta), habilitar el panel de viajes
+              // Revisar si la unidad asignada cobra "por viaje"
+              let unidadCobroTipo: string | null = null;
+              if (asignacionActiva.unidad_id) {
+                const { data: unidad } = await (supabase as any)
+                  .from("unidades_empresa")
+                  .select("cobro_tipo")
+                  .eq("id", asignacionActiva.unidad_id)
+                  .maybeSingle();
+                unidadCobroTipo = unidad?.cobro_tipo ?? null;
+              }
+
+              // Geocercas opcionales (contrato o ruta). Si no hay, el panel permite inicio/fin manual.
               const origenLat = tripContrato?.origen_lat ?? p?.route_origin_lat ?? null;
               const origenLng = tripContrato?.origen_lng ?? p?.route_origin_lng ?? null;
               const destinoLat = tripContrato?.destino_lat ?? p?.route_destination_lat ?? null;
               const destinoLng = tripContrato?.destino_lng ?? p?.route_destination_lng ?? null;
 
-              if (origenLat != null && destinoLat != null) {
+              const esPorViaje = !!tripContrato || unidadCobroTipo === "por_viaje";
+
+              if (esPorViaje) {
                 setTripContract({
                   contratoId: tripContrato?.id ?? asignacionActiva.producto_id, // fallback: usar producto_id como ref
                   choferEmpresaId: choferActivo.id,
