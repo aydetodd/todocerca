@@ -428,7 +428,7 @@ export default function ReportesCiudadanos() {
         )}
 
         {/* Controles inferiores */}
-        <div className="absolute bottom-4 left-0 right-0 z-[500] flex flex-col items-center gap-2 px-4">
+        <div className="absolute bottom-24 left-0 right-0 z-[500] flex flex-col items-center gap-2 px-4">
           {reportMode ? (
             <Card className="w-full max-w-md p-3 shadow-xl">
               <p className="text-xs text-center mb-2 font-medium">Centra la mira sobre el incidente</p>
