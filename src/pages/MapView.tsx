@@ -73,21 +73,29 @@ export default function MapView() {
           .maybeSingle();
         
         if (producto) {
-          setPrivateRouteProviderId((producto.proveedores as any)?.user_id || null);
+          const rt = (producto as any).route_type;
+          const isPublicRoute = rt === 'urbana' || rt === 'foranea' || (!rt && !(producto as any).is_private);
+          // Para rutas PÚBLICAS no filtrar por proveedor (múltiples concesionarios sirven la misma ruta)
+          // Para rutas privadas sí restringir al proveedor dueño
+          setPrivateRouteProviderId(isPublicRoute ? null : ((producto.proveedores as any)?.user_id || null));
           setPrivateRouteName(producto.nombre);
           setPrivateRouteProductoId(producto.id);
-          const rt = (producto as any).route_type;
           setViewingRouteType(rt || 'urbana');
           setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
           if ((producto as any).route_geojson) {
             setActiveRouteGeoJSON((producto as any).route_geojson);
             setActiveRouteOverlay(null);
           } else {
+            // Fallback: trazado estático del catálogo (KML público) por nombre de ruta
+            const overlayId = routeNameToId(producto.nombre);
             setActiveRouteGeoJSON(null);
-            toast({
-              title: 'Ruta sin trazado',
-              description: 'Todavía no hay archivo KML/KMZ guardado para esta ruta.',
-            });
+            setActiveRouteOverlay(overlayId);
+            if (!overlayId) {
+              toast({
+                title: 'Ruta sin trazado',
+                description: 'Todavía no hay archivo KML/KMZ guardado para esta ruta.',
+              });
+            }
           }
         }
       };
