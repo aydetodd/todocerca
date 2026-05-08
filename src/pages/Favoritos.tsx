@@ -26,7 +26,7 @@ export default function Favoritos() {
     [favoritos]
   );
 
-  // Verificar acceso vigente para rutas privadas
+  // Verificar acceso vigente para rutas privadas (pasajero vinculado o dueño concesionario)
   useEffect(() => {
     const privadas = rutas.filter((r) => r.producto?.is_private || r.producto?.route_type === 'privada');
     if (privadas.length === 0 || !userId) {
@@ -35,20 +35,36 @@ export default function Favoritos() {
     }
 
     const ids = privadas.map((r) => r.producto!.id);
-    supabase
-      .from('route_passenger_access')
-      .select('producto_id')
-      .eq('user_id', userId)
-      .in('producto_id', ids)
-      .then(({ data }) => {
-        const accessible = new Set<string>(
-          rutas
-            .filter((r) => !r.producto!.is_private && r.producto!.route_type !== 'privada')
-            .map((r) => r.producto!.id)
-        );
-        (data || []).forEach((row: any) => accessible.add(row.producto_id));
-        setAccessibleRouteIds(accessible);
+    const proveedorIds = Array.from(
+      new Set(privadas.map((r) => r.producto!.proveedor_id).filter(Boolean))
+    );
+
+    Promise.all([
+      supabase
+        .from('route_passenger_access')
+        .select('producto_id')
+        .eq('user_id', userId)
+        .in('producto_id', ids),
+      supabase
+        .from('proveedores')
+        .select('id')
+        .eq('user_id', userId)
+        .in('id', proveedorIds),
+    ]).then(([accessRes, ownerRes]) => {
+      const accessible = new Set<string>(
+        rutas
+          .filter((r) => !r.producto!.is_private && r.producto!.route_type !== 'privada')
+          .map((r) => r.producto!.id)
+      );
+      (accessRes.data || []).forEach((row: any) => accessible.add(row.producto_id));
+      const ownedProvIds = new Set((ownerRes.data || []).map((r: any) => r.id));
+      privadas.forEach((r) => {
+        if (ownedProvIds.has(r.producto!.proveedor_id)) {
+          accessible.add(r.producto!.id);
+        }
       });
+      setAccessibleRouteIds(accessible);
+    });
   }, [rutas, userId]);
 
   const visibles = rutas.filter((r) => accessibleRouteIds.has(r.producto!.id));
