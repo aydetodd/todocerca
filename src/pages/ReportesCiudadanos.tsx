@@ -411,15 +411,6 @@ export default function ReportesCiudadanos() {
             <Badge variant="outline" className="text-[10px]">Admin</Badge>
           )}
         </div>
-        {/* Leyenda compacta */}
-        <div className="flex gap-1 px-3 pb-2 overflow-x-auto">
-          {(Object.entries(CATEGORIES) as [Category, typeof CATEGORIES[Category]][]).map(([k, v]) => (
-            <div key={k} className="flex items-center gap-1 shrink-0 text-[10px] px-2 py-0.5 rounded-full border" style={{ borderColor: v.color }}>
-              <span>{v.emoji}</span>
-              <span>{v.label}</span>
-            </div>
-          ))}
-        </div>
       </header>
 
       {/* Mapa */}
