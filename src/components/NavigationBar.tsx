@@ -65,6 +65,16 @@ export const NavigationBar = () => {
         </Button>
         
         <Button
+          variant={isActive('/favoritos') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/favoritos')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+        >
+          <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
+          <span className="text-[10px]">Favoritos</span>
+        </Button>
+
+        <Button
           variant="ghost"
           size="sm"
           onClick={handleShare}
