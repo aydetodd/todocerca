@@ -267,13 +267,19 @@ export default function ReportesCiudadanos() {
       </header>
 
       {/* Mapa */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative" style={{ minHeight: 300 }}>
         <MapContainer
           center={center}
           zoom={14}
-          className="h-full w-full"
+          style={{ height: '100%', width: '100%', background: '#0f172a' }}
           attributionControl={false}
-          ref={(m) => { if (m) mapRef.current = m; }}
+          ref={(m) => {
+            if (m && mapRef.current !== m) {
+              mapRef.current = m;
+              setTimeout(() => m.invalidateSize(), 100);
+              setTimeout(() => m.invalidateSize(), 500);
+            }
+          }}
         >
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapRecenter center={center} />
