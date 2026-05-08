@@ -181,8 +181,11 @@ export function useFavoritos() {
 
   const isFavorito = (tipo: FavoritoTipo, itemId: string): boolean => {
     return favoritos.some(f => {
+      // 'ruta' y 'producto' comparten unique constraint (user_id, producto_id) → tratarlos como equivalentes por producto_id
+      if (tipo === 'producto' || tipo === 'ruta') {
+        return (f.tipo === 'producto' || f.tipo === 'ruta') && f.producto_id === itemId;
+      }
       if (f.tipo !== tipo) return false;
-      if (tipo === 'producto' || tipo === 'ruta') return f.producto_id === itemId;
       if (tipo === 'proveedor') return f.proveedor_id === itemId;
       if (tipo === 'listing') return f.listing_id === itemId;
       return false;
@@ -191,8 +194,10 @@ export function useFavoritos() {
 
   const getFavoritoId = (tipo: FavoritoTipo, itemId: string): string | null => {
     const fav = favoritos.find(f => {
+      if (tipo === 'producto' || tipo === 'ruta') {
+        return (f.tipo === 'producto' || f.tipo === 'ruta') && f.producto_id === itemId;
+      }
       if (f.tipo !== tipo) return false;
-      if (tipo === 'producto' || tipo === 'ruta') return f.producto_id === itemId;
       if (tipo === 'proveedor') return f.proveedor_id === itemId;
       if (tipo === 'listing') return f.listing_id === itemId;
       return false;

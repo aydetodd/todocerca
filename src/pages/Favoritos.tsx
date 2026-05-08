@@ -14,14 +14,19 @@ export default function Favoritos() {
   const { favoritos, loading, userId, removeFavorito } = useFavoritos();
   const [accessibleRouteIds, setAccessibleRouteIds] = useState<Set<string>>(new Set());
 
-  // Solo rutas (tipo='ruta') con producto cargado y que NO sean taxi
+  // Rutas favoritas: incluir tanto tipo='ruta' como tipo='producto' cuyo producto sea una ruta de transporte
   const rutas = useMemo(
     () =>
       favoritos.filter(
         (f) =>
-          f.tipo === 'ruta' &&
+          (f.tipo === 'ruta' || f.tipo === 'producto') &&
           f.producto &&
-          f.producto.route_type !== 'taxi'
+          f.producto.route_type !== 'taxi' &&
+          (f.tipo === 'ruta' ||
+            f.producto.route_type === 'urbana' ||
+            f.producto.route_type === 'foranea' ||
+            f.producto.route_type === 'privada' ||
+            f.producto.is_private === true)
       ),
     [favoritos]
   );
