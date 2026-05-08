@@ -18,13 +18,15 @@ import { useAuth } from '@/hooks/useAuth';
 type Category = 'bache' | 'fuga_agua' | 'fuga_drenaje' | 'alumbrado' | 'basura' | 'semaforo';
 
 const CATEGORIES: Record<Category, { label: string; color: string; emoji: string; Icon: any }> = {
-  bache:        { label: 'Bache',              color: '#78350f', emoji: '🕳️', Icon: Construction },
-  fuga_agua:    { label: 'Fuga de agua',       color: '#0284c7', emoji: '💧', Icon: Droplet },
-  fuga_drenaje: { label: 'Fuga de drenaje',    color: '#7c2d12', emoji: '🚽', Icon: Droplet },
-  alumbrado:    { label: 'Alumbrado público',  color: '#ca8a04', emoji: '💡', Icon: Lightbulb },
-  basura:       { label: 'Basura / escombro',  color: '#15803d', emoji: '🗑️', Icon: Trash2 },
-  semaforo:     { label: 'Semáforo dañado',    color: '#7e22ce', emoji: '🚦', Icon: TrafficCone },
+  bache:        { label: 'Baches',             color: '#dc2626', emoji: '🕳️', Icon: Construction },
+  fuga_agua:    { label: 'Fuga de agua',       color: '#2563eb', emoji: '💧', Icon: Droplet },
+  fuga_drenaje: { label: 'Fuga de drenaje',    color: '#111827', emoji: '🚽', Icon: Droplet },
+  alumbrado:    { label: 'Alumbrado',          color: '#eab308', emoji: '💡', Icon: Lightbulb },
+  basura:       { label: 'Basura',             color: '#6b7280', emoji: '🗑️', Icon: Trash2 },
+  semaforo:     { label: 'Semáforo',           color: '#16a34a', emoji: '🚦', Icon: TrafficCone },
 };
+
+const CATEGORY_KEYS = Object.keys(CATEGORIES) as Category[];
 
 // ============ Iconos Leaflet ============
 function makeIcon(emoji: string, color: string) {
