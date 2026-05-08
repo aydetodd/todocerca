@@ -135,6 +135,48 @@ export default function ReportesCiudadanos() {
     return () => { supabase.removeChannel(ch); };
   }, [user?.id]);
 
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || mapRef.current) return;
+
+    if ((container as any)._leaflet_id) delete (container as any)._leaflet_id;
+    const map = L.map(container, { attributionControl: false }).setView(center, 14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      crossOrigin: true,
+    }).addTo(map);
+    reportsLayerRef.current = L.layerGroup().addTo(map);
+    closuresLayerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 500);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      reportsLayerRef.current = null;
+      closuresLayerRef.current = null;
+      draftClosureLayerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setView(center, map.getZoom());
+    setTimeout(() => map.invalidateSize(), 50);
+  }, [center]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onClick = (e: L.LeafletMouseEvent) => {
+      if (closureMode) setClosurePoints((p) => [...p, [e.latlng.lat, e.latlng.lng]]);
+    };
+    map.on('click', onClick);
+    return () => { map.off('click', onClick); };
+  }, [closureMode]);
+
   // ====== Acciones ======
   const handleSaveReport = async () => {
     if (!reportPos || !user) return;
