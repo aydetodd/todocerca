@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ interface Props {
 type Mode = "origen" | "destino";
 
 export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const originMarkerRef = useRef<L.Marker | null>(null);
   const originCircleRef = useRef<L.Circle | null>(null);
@@ -255,8 +253,6 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
       <Button type="button" onClick={handleSave} disabled={saving || !origin || !destination} className="w-full">
         {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : <><Save className="h-4 w-4 mr-2" /> Guardar inicio y final</>}
       </Button>
-
-      {expanded && mapContainer && createPortal(mapContainer, document.querySelector(`[data-route-map-expanded="${productoId}"]`) || document.body)}
     </div>
   );
 }
