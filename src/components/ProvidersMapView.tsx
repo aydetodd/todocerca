@@ -183,7 +183,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       if (data) {
         const set = new Set<string>();
         data.forEach((f: any) => {
-          if (f.producto_id) set.add(`producto:${f.producto_id}`);
+          if (f.tipo === 'ruta' && f.producto_id) set.add(`ruta:${f.producto_id}`);
+          else if (f.producto_id) set.add(`producto:${f.producto_id}`);
           if (f.proveedor_id) set.add(`proveedor:${f.proveedor_id}`);
           if (f.listing_id) set.add(`listing:${f.listing_id}`);
         });
