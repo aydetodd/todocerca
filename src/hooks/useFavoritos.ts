@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export type FavoritoTipo = 'producto' | 'proveedor' | 'listing' | 'ruta';
+
 export interface Favorito {
   id: string;
   user_id: string;
-  tipo: 'producto' | 'proveedor' | 'listing';
+  tipo: FavoritoTipo;
   producto_id: string | null;
   proveedor_id: string | null;
   listing_id: string | null;
@@ -24,6 +26,9 @@ export interface Favorito {
     invite_token: string | null;
     is_private: boolean | null;
     category_id: string | null;
+    route_type: string | null;
+    ciudad: string | null;
+    estado: string | null;
   };
   proveedor?: {
     id: string;
@@ -56,7 +61,8 @@ export function useFavoritos() {
   useEffect(() => {
     if (userId) {
       fetchFavoritos();
-      subscribeToChanges();
+      const cleanup = subscribeToChanges();
+      return cleanup;
     }
   }, [userId]);
 
@@ -74,7 +80,7 @@ export function useFavoritos() {
         .from('favoritos')
         .select(`
           *,
-          producto:productos(id, nombre, descripcion, precio, stock, unit, proveedor_id, invite_token, is_private, category_id),
+          producto:productos(id, nombre, descripcion, precio, stock, unit, proveedor_id, invite_token, is_private, category_id, route_type, ciudad, estado),
           proveedor:proveedores(id, nombre, telefono, latitude, longitude, user_id),
           listing:listings(id, title, description, latitude, longitude, is_active, expires_at)
         `)
@@ -113,7 +119,7 @@ export function useFavoritos() {
   };
 
   const addFavorito = async (
-    tipo: 'producto' | 'proveedor' | 'listing',
+    tipo: FavoritoTipo,
     itemId: string,
     precioActual?: number,
     stockActual?: number
@@ -131,7 +137,7 @@ export function useFavoritos() {
         stock_guardado: stockActual || null
       };
 
-      if (tipo === 'producto') insertData.producto_id = itemId;
+      if (tipo === 'producto' || tipo === 'ruta') insertData.producto_id = itemId;
       if (tipo === 'proveedor') insertData.proveedor_id = itemId;
       if (tipo === 'listing') insertData.listing_id = itemId;
 
@@ -173,18 +179,20 @@ export function useFavoritos() {
     }
   };
 
-  const isFavorito = (tipo: 'producto' | 'proveedor' | 'listing', itemId: string): boolean => {
+  const isFavorito = (tipo: FavoritoTipo, itemId: string): boolean => {
     return favoritos.some(f => {
-      if (tipo === 'producto') return f.producto_id === itemId;
+      if (f.tipo !== tipo) return false;
+      if (tipo === 'producto' || tipo === 'ruta') return f.producto_id === itemId;
       if (tipo === 'proveedor') return f.proveedor_id === itemId;
       if (tipo === 'listing') return f.listing_id === itemId;
       return false;
     });
   };
 
-  const getFavoritoId = (tipo: 'producto' | 'proveedor' | 'listing', itemId: string): string | null => {
+  const getFavoritoId = (tipo: FavoritoTipo, itemId: string): string | null => {
     const fav = favoritos.find(f => {
-      if (tipo === 'producto') return f.producto_id === itemId;
+      if (f.tipo !== tipo) return false;
+      if (tipo === 'producto' || tipo === 'ruta') return f.producto_id === itemId;
       if (tipo === 'proveedor') return f.proveedor_id === itemId;
       if (tipo === 'listing') return f.listing_id === itemId;
       return false;
