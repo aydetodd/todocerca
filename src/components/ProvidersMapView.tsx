@@ -454,10 +454,9 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         ? provider.productos
             .map(
               (producto) => `
-        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;">${producto.nombre}</div>
-          <div style="font-size: 0.85rem; margin-bottom: 4px;"><strong>$${Number(producto.precio).toFixed(2)}</strong></div>
-          ${producto.descripcion ? `<div style="font-size: 0.8rem; color: #6b7280; line-height: 1.2;">${producto.descripcion}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 0;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>
+          <span style="font-weight:700;font-size:0.95rem;color:#fafafa;">${producto.nombre}</span>
         </div>
       `
             )
