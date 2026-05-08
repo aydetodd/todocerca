@@ -258,7 +258,9 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         routeLabel = privateRouteNameProp || '';
       }
 
-      const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}`;
+      // Include route view context so popup regenerates when entering/leaving a specific-route view
+      const routeViewKey = `${privateRouteProductoId || ''}|${privateRouteNameProp || ''}|${viewingRouteType || ''}|${(fleetUserIds || []).join(',')}`;
+      const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}|${routeViewKey}`;
       const previousState = markerStatesRef.current[location.user_id];
       
       // Calculate heading for bus markers — anti-jitter:
