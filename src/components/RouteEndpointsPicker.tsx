@@ -205,10 +205,10 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
         Mueve el mapa para que el centro quede sobre el punto de {mode === "origen" ? "inicio (🚏)" : "final (🏁)"} y presiona "Fijar aquí".
       </p>
 
-      <div className={expanded ? "fixed inset-0 z-[2000] bg-background p-3 flex flex-col gap-2" : "relative"}>
-        <div ref={containerRef} className={expanded ? "flex-1 w-full rounded-md border border-border overflow-hidden" : "w-full h-72 rounded-md border border-border overflow-hidden"} />
+      <div className={expanded ? "fixed inset-0 z-[2000] bg-background p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] flex flex-col gap-2" : "relative"}>
+        <div ref={setMapContainerRef} className={expanded ? "min-h-0 flex-1 w-full rounded-md border border-border overflow-hidden" : "w-full h-72 rounded-md border border-border overflow-hidden"} />
         {/* Crosshair overlay */}
-        <div className="pointer-events-none absolute inset-0 z-[400] flex items-center justify-center">
+        <div className={expanded ? "pointer-events-none absolute left-3 right-3 top-3 bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] z-[400] flex items-center justify-center" : "pointer-events-none absolute inset-0 z-[400] flex items-center justify-center"}>
           <div className="absolute left-0 right-0 top-1/2 -translate-y-px h-px bg-foreground/70" />
           <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-px bg-foreground/70" />
           <div className="h-3 w-3 rounded-full border-2 border-foreground bg-background/80 shadow" />
@@ -221,11 +221,6 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
           className="absolute top-2 right-2 z-[500] h-8 w-8 shadow-lg"
           onClick={() => {
             setExpanded((v) => !v);
-            const m = mapRef.current;
-            if (!m) return;
-            setTimeout(() => m.invalidateSize(true), 100);
-            setTimeout(() => m.invalidateSize(true), 350);
-            setTimeout(() => m.invalidateSize(true), 700);
           }}
           title={expanded ? "Reducir mapa" : "Expandir mapa"}
         >
@@ -260,6 +255,8 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
       <Button type="button" onClick={handleSave} disabled={saving || !origin || !destination} className="w-full">
         {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : <><Save className="h-4 w-4 mr-2" /> Guardar inicio y final</>}
       </Button>
+
+      {expanded && mapContainer && createPortal(mapContainer, document.querySelector(`[data-route-map-expanded="${productoId}"]`) || document.body)}
     </div>
   );
 }
