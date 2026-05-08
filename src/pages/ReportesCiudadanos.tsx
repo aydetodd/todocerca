@@ -466,16 +466,78 @@ export default function ReportesCiudadanos() {
               </div>
             </Card>
           ) : (
-            <div className="flex gap-2 flex-wrap justify-center">
-              <Button size="lg" className="shadow-xl rounded-full" onClick={() => setReportMode(true)}>
-                <Plus className="h-5 w-5 mr-1" /> Reportar incidente
-              </Button>
-              {isAdmin && (
-                <Button size="lg" variant="destructive" className="shadow-xl rounded-full" onClick={() => setClosureMode(true)}>
-                  <Construction className="h-5 w-5 mr-1" /> Tramo cerrado
+            <>
+              {/* Panel filtros */}
+              <Card className="w-full max-w-md shadow-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((o) => !o)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Filter className="h-3.5 w-3.5" />
+                    Filtrar reportes ({visibleCategories.size}/{CATEGORY_KEYS.length})
+                  </span>
+                  {filterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </button>
+                {filterOpen && (
+                  <div className="px-3 pb-3 space-y-2 border-t">
+                    <div className="flex gap-1.5 pt-2">
+                      <Button size="sm" variant="secondary" className="h-7 text-[11px] px-2" onClick={() => setAll(true)}>
+                        Todas
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" onClick={() => setAll(false)}>
+                        Ninguna
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {CATEGORY_KEYS.map((k) => {
+                        const v = CATEGORIES[k];
+                        const checked = visibleCategories.has(k);
+                        return (
+                          <div key={k} className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleCategory(k)}
+                              className={`flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[11px] transition ${
+                                checked ? 'bg-accent' : 'opacity-50'
+                              }`}
+                            >
+                              <span
+                                className="w-4 h-4 rounded flex items-center justify-center shrink-0"
+                                style={{ background: v.color, color: 'white' }}
+                              >
+                                {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                              </span>
+                              <span className="truncate">{v.label}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onlyOne(k)}
+                              title="Solo este"
+                              className="text-[9px] px-1.5 py-1 rounded border text-muted-foreground hover:bg-accent"
+                            >
+                              solo
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Button size="lg" className="shadow-xl rounded-full" onClick={() => setReportMode(true)}>
+                  <Plus className="h-5 w-5 mr-1" /> Reportar incidente
                 </Button>
-              )}
-            </div>
+                {isAdmin && (
+                  <Button size="lg" variant="destructive" className="shadow-xl rounded-full" onClick={() => setClosureMode(true)}>
+                    <Construction className="h-5 w-5 mr-1" /> Tramo cerrado
+                  </Button>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
