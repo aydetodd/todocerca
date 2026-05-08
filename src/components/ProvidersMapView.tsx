@@ -183,7 +183,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       if (data) {
         const set = new Set<string>();
         data.forEach((f: any) => {
-          if (f.producto_id) set.add(`producto:${f.producto_id}`);
+          if (f.tipo === 'ruta' && f.producto_id) set.add(`ruta:${f.producto_id}`);
+          else if (f.producto_id) set.add(`producto:${f.producto_id}`);
           if (f.proveedor_id) set.add(`proveedor:${f.proveedor_id}`);
           if (f.listing_id) set.add(`listing:${f.listing_id}`);
         });
@@ -480,7 +481,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       const favBtnStyle = `position:absolute;top:8px;right:28px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;z-index:10;`;
       // For routes, save as producto; for others, save as proveedor
       const firstProduct = provider.productos[0];
-      const favTipo = isRouteSearch && firstProduct?.id ? 'producto' : 'proveedor';
+      const favTipo = isRouteSearch && firstProduct?.id ? 'ruta' : 'proveedor';
       const favItemId = isRouteSearch && firstProduct?.id ? firstProduct.id : provider.id;
       const isFav = userFavoritosRef.current.has(`${favTipo}:${favItemId}`);
       const heartFill = isFav ? '#ef4444' : 'none';
@@ -632,11 +633,12 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       if (!user) {
         return;
       }
-      const filterCol = tipo === 'producto' ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
+      const filterCol = (tipo === 'producto' || tipo === 'ruta') ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
       const { data: existing } = await supabase
         .from('favoritos')
         .select('id')
         .eq('user_id', user.id)
+        .eq('tipo', tipo)
         .eq(filterCol, itemId)
         .maybeSingle();
       if (existing) {
@@ -648,7 +650,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         return;
       }
       const insertData: any = { user_id: user.id, tipo };
-      if (tipo === 'producto') insertData.producto_id = itemId;
+      if (tipo === 'producto' || tipo === 'ruta') insertData.producto_id = itemId;
       if (tipo === 'proveedor') insertData.proveedor_id = itemId;
       if (tipo === 'listing') insertData.listing_id = itemId;
       const { error } = await supabase.from('favoritos').insert(insertData);
