@@ -213,9 +213,9 @@ function RutaCard({
           {privada ? <Lock className="h-5 w-5" /> : <Bus className="h-5 w-5" />}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold truncate">{p.nombre}</h3>
-            <Badge variant="outline" className="text-[10px] shrink-0">
+          <div className="flex items-start gap-2 flex-wrap">
+            <h3 className="font-semibold break-words flex-1 min-w-0">{p.nombre}</h3>
+            <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
               {tipoLabel}
             </Badge>
           </div>
