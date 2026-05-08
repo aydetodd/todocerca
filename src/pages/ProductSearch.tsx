@@ -994,22 +994,41 @@ const ProductSearch = () => {
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
-                        {availableRoutes.map((route) => (
-                          <Badge
-                            key={route.nombre}
-                            variant={selectedRoute === route.nombre ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                            onClick={() => {
-                              const newRoute = selectedRoute === route.nombre ? null : route.nombre;
-                              setSelectedRoute(newRoute);
-                              if (newRoute) {
-                                setTimeout(() => handleSearch(undefined, newRoute), 50);
-                              }
-                            }}
-                          >
-                            {route.nombre}
-                          </Badge>
-                        ))}
+                        {availableRoutes.map((route) => {
+                          const fav = route.producto_id ? isFavorito('ruta', route.producto_id) : false;
+                          const favId = route.producto_id ? getFavoritoId('ruta', route.producto_id) : null;
+                          return (
+                            <div key={route.nombre} className="flex items-center gap-1">
+                              <Badge
+                                variant={selectedRoute === route.nombre ? "default" : "outline"}
+                                className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center flex-1"
+                                onClick={() => {
+                                  const newRoute = selectedRoute === route.nombre ? null : route.nombre;
+                                  setSelectedRoute(newRoute);
+                                  if (newRoute) {
+                                    setTimeout(() => handleSearch(undefined, newRoute), 50);
+                                  }
+                                }}
+                              >
+                                {route.nombre}
+                              </Badge>
+                              {route.producto_id && (
+                                <button
+                                  type="button"
+                                  aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (fav && favId) removeFavorito(favId);
+                                    else addFavorito('ruta', route.producto_id!);
+                                  }}
+                                  className="p-1 rounded hover:bg-muted shrink-0"
+                                >
+                                  <Heart className={cn('h-4 w-4', fav ? 'fill-red-500 text-red-500' : 'text-muted-foreground')} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>
