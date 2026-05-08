@@ -56,6 +56,7 @@ import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
+import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import { NavigationBar } from "@/components/NavigationBar";
 import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
@@ -181,6 +182,7 @@ export default function AppWrapper() {
           {/* foráneo: pendiente */}
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/tv" element={<TodoCercaTv />} />
+          <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />

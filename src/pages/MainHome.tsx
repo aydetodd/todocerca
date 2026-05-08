@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Ticket, Building2, Radio } from 'lucide-react';
+import { Bus, Ticket, Building2, Radio, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -82,6 +82,21 @@ export default function MainHome() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg">QR Boleto Digital</h3>
               <p className="text-sm text-muted-foreground">Compra y usa boletos de transporte</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-red-500/30"
+          onClick={() => navigate('/reportes-ciudadanos')}
+        >
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="h-7 w-7 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Reportes Ciudadanos</h3>
+              <p className="text-sm text-muted-foreground">Reporta baches, fugas, alumbrado y más</p>
             </div>
           </CardContent>
         </Card>
