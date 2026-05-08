@@ -92,6 +92,20 @@ export default function ReportesCiudadanos() {
   const [showClosureSave, setShowClosureSave] = useState(false);
   const [savingClosure, setSavingClosure] = useState(false);
 
+  // Filtros visibles
+  const [visibleCategories, setVisibleCategories] = useState<Set<Category>>(new Set(CATEGORY_KEYS));
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const toggleCategory = (k: Category) => {
+    setVisibleCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+  const setAll = (on: boolean) => setVisibleCategories(on ? new Set(CATEGORY_KEYS) : new Set());
+  const onlyOne = (k: Category) => setVisibleCategories(new Set([k]));
+
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const reportsLayerRef = useRef<L.LayerGroup | null>(null);
