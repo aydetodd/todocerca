@@ -94,6 +94,7 @@ const ProductSearch = () => {
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
   const [gpsApplied, setGpsApplied] = useState(false);
+  const { isFavorito, getFavoritoId, addFavorito, removeFavorito } = useFavoritos();
 
   const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
