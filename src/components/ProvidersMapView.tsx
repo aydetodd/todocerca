@@ -633,11 +633,12 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       if (!user) {
         return;
       }
-      const filterCol = tipo === 'producto' ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
+      const filterCol = (tipo === 'producto' || tipo === 'ruta') ? 'producto_id' : tipo === 'proveedor' ? 'proveedor_id' : 'listing_id';
       const { data: existing } = await supabase
         .from('favoritos')
         .select('id')
         .eq('user_id', user.id)
+        .eq('tipo', tipo)
         .eq(filterCol, itemId)
         .maybeSingle();
       if (existing) {
@@ -649,7 +650,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         return;
       }
       const insertData: any = { user_id: user.id, tipo };
-      if (tipo === 'producto') insertData.producto_id = itemId;
+      if (tipo === 'producto' || tipo === 'ruta') insertData.producto_id = itemId;
       if (tipo === 'proveedor') insertData.proveedor_id = itemId;
       if (tipo === 'listing') insertData.listing_id = itemId;
       const { error } = await supabase.from('favoritos').insert(insertData);
