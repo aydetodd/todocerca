@@ -480,7 +480,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       const favBtnStyle = `position:absolute;top:8px;right:28px;padding:4px;border-radius:50%;border:none;background:transparent;cursor:pointer;z-index:10;`;
       // For routes, save as producto; for others, save as proveedor
       const firstProduct = provider.productos[0];
-      const favTipo = isRouteSearch && firstProduct?.id ? 'producto' : 'proveedor';
+      const favTipo = isRouteSearch && firstProduct?.id ? 'ruta' : 'proveedor';
       const favItemId = isRouteSearch && firstProduct?.id ? firstProduct.id : provider.id;
       const isFav = userFavoritosRef.current.has(`${favTipo}:${favItemId}`);
       const heartFill = isFav ? '#ef4444' : 'none';
