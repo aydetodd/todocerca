@@ -1,39 +1,76 @@
-## Objetivo
+## Reportes Ciudadanos en el mapa
 
-Eliminar el flujo de "verificación de documentos" del concesionario. Originalmente fue diseñado para taxistas (regulación municipal). Para concesionarios con transporte privado, foráneo o público, basta con que paguen su suscripción anual a TodoCerca y queden habilitados para registrar choferes, unidades y rutas. Los contratos de servicio los manejan ellos directamente con sus clientes.
+Nueva pestaña **"Reportes ciudadanos"** donde cualquier usuario autenticado coloca un pin sobre incidentes urbanos, y el admin (consecutive_number = 1) marca tramos de calles cerradas con líneas rojas.
 
-## Cambios en `src/pages/PanelConcesionario.tsx`
+### Funcionalidad para usuarios
 
-1. **Eliminar la pestaña "Verif." (`TabsTrigger value="verificacion"`)** y su `TabsContent` completo (líneas ~1305–1640), incluyendo:
-   - Tarjeta "Estado de Verificación".
-   - Lógica/UI que bloquea Stripe Connect detrás de `verificacion?.estado === "approved"`.
-   - Importación y uso de `VerificationDocsUploader`.
-2. **Mover la tarjeta "Cuenta Stripe Connect"** a una pestaña existente (p. ej. la pestaña "Pagos/Liquidaciones" o una nueva mini-tab "Cobros") y desbloquearla incondicionalmente: el botón "Configurar Stripe Connect" se muestra siempre que el concesionario tenga suscripción activa, sin requerir verificación previa.
-3. **Eliminar fetch / realtime de `verificaciones_concesionario` y `detalles_verificacion_unidad`** dentro del panel (consultas en líneas ~458, 526, 562, 859–932). Quitar el estado `verificacion`, `setVerificacion` y los badges asociados en el header (líneas ~1223–1227).
-4. **Quitar el badge "Verif. pendiente/aprobada"** del header del panel y del listado de unidades. Las unidades quedan activas en cuanto se registran y se cubre la suscripción.
+- Botón flotante **"Reportar"** en el mapa de la ciudad.
+- 6 categorías con icono y color propio:
+  1. 🕳️ Bache
+  2. 💧 Fuga de agua potable
+  3. 🚽 Fuga de drenaje
+  4. 💡 Alumbrado público
+  5. 🗑️ Basura / escombro
+  6. 🚦 Semáforo dañado
+- Al tocar "Reportar": el mapa muestra una mira central, el usuario fija la ubicación, elige categoría y opcionalmente escribe una nota corta (máx. 200 caracteres).
+- El pin se guarda con: fecha de reporte y los **últimos 4 dígitos del teléfono** del reportante (visibles públicamente como `••••1234`). El user_id queda guardado pero **nunca se expone**.
+- Tap en un pin: muestra categoría, fecha, dígitos, nota, y dos botones:
+  - **"Sigue ahí"** (+1 confirmación)
+  - **"Ya se resolvió"** (+1 voto de resolución)
+- Cuando "ya se resolvió" alcanza **3 votos**, el pin se oculta automáticamente.
+- Un usuario solo puede votar una vez por reporte.
 
-## Cambios en otros componentes
+### Funcionalidad para administrador (consecutive_number = 1)
 
-5. **`src/components/AdminVerificaciones.tsx`**: dejar de mostrarlo en el menú admin para concesionarios no-taxi. Dado que el Protocolo 2 ya oculta taxis, en la práctica este panel queda sin uso. Acciones:
-   - Mantener el componente para el caso futuro de taxistas (oculto por Protocolo 2 hoy), pero **remover su entrada del menú principal de admin** (`Dashboard.tsx` / `Panel.tsx` — confirmar ubicación al implementar).
-6. **`src/components/VerificationDocsUploader.tsx`**: dejar de importarlo desde `PanelConcesionario`. No se elimina el archivo (puede reutilizarse para taxis si se reactivan).
+- Modo **"Tramo cerrado"**: toca varios puntos en el mapa para trazar una polilínea libre, ingresa nombre/motivo y fecha estimada de reapertura.
+- Los tramos se dibujan en **rojo grueso** sobre el mapa para todos los usuarios.
+- Admin puede:
+  - Editar/eliminar cualquier reporte ciudadano o tramo.
+  - Marcar manualmente reportes como resueltos.
+  - Ver lista con filtros por categoría/fecha.
 
-## Base de datos
+### Visibilidad
 
-7. **No se borran tablas** (`verificaciones_concesionario`, `detalles_verificacion_unidad`, bucket `verificacion-docs`) para preservar histórico y compatibilidad futura con taxis.
-8. **Trigger `sync_concesionario_verification_status`**: ya marca `unidades_empresa.is_verified = true` cuando la verificación es aprobada y excluye taxis. Como ya no usaremos verificaciones, agregar **migración** que ponga `is_verified = true` por defecto en `unidades_empresa` para todas las unidades **no taxi**:
-   - `ALTER TABLE unidades_empresa ALTER COLUMN is_verified SET DEFAULT true;`
-   - `UPDATE unidades_empresa SET is_verified = true WHERE COALESCE(transport_type,'') <> 'taxi';`
-   Así cualquier UI/policy que dependa de `is_verified` deja de bloquear concesionarios privados.
+- Pines y tramos visibles para todos los usuarios autenticados.
+- Reportante anónimo (solo últimos 4 dígitos del teléfono).
+- Admin ve todo + datos de moderación.
 
-## Flujo resultante para el concesionario
+---
 
-1. Se registra como concesionario.
-2. Paga la suscripción anual ($400 MXN/unidad) desde "Mis Rutas de Transporte".
-3. Registra choferes, unidades y rutas (pública / foránea / privada).
-4. Configura Stripe Connect cuando quiera empezar a cobrar boletos QR (opcional, sin verificación previa).
-5. Para rutas privadas, firma sus propios contratos directamente con la empresa cliente desde "Empresas → Mis Contratos".
+### Detalles técnicos
 
-## Memoria a actualizar
+**Tablas nuevas (Supabase)**
 
-- Sustituir `mem://transporte/verificacion-estricta-concesionarios` por una nota que diga: "Verificación documental aplica únicamente a taxistas (actualmente ocultos por Protocolo 2). Concesionarios privados/foráneos/públicos quedan habilitados al pagar la suscripción anual; no requieren verificación manual."
+- `citizen_reports`
+  - `category` (enum: bache, fuga_agua, fuga_drenaje, alumbrado, basura, semaforo)
+  - `lat`, `lng`, `note`, `phone_last4`, `user_id`, `status` (active/resolved/hidden)
+  - `confirm_count`, `resolve_count`
+- `citizen_report_votes` — `report_id`, `user_id`, `vote_type` (confirm/resolve), unique(report_id, user_id)
+- `road_closures` — `name`, `reason`, `polyline` (jsonb array de [lat,lng]), `reopen_estimated_at`, `created_by`, `is_active`
+
+**Vista pública** `citizen_reports_public` con `security_invoker=on` que excluye `user_id` (solo expone `phone_last4`). RLS en la tabla base con `USING (false)` para SELECT directo, garantizando privacidad del teléfono completo y user_id.
+
+**RLS**
+- `citizen_reports`: INSERT autenticados (user_id = auth.uid()); UPDATE/DELETE solo `is_admin()` o autor; SELECT denegado (vía vista).
+- `citizen_report_votes`: INSERT autenticado, único por usuario.
+- `road_closures`: SELECT autenticados; INSERT/UPDATE/DELETE solo `is_admin()`.
+
+**Trigger**: al insertar voto `resolve`, incrementar contador y si llega a 3 → `status = 'hidden'`.
+
+**Frontend**
+- Nueva ruta `/reportes-ciudadanos` enlazada desde el mapa principal y el navbar.
+- Componente `CitizenReportsLayer` que se monta en `RealtimeMap` para pintar pines (por categoría) y polilíneas rojas.
+- Componente `ReportPinModal` (categoría + nota + confirmar ubicación con mira central, similar a `RouteEndpointsPicker`).
+- Componente `AdminRoadClosureEditor` con modo polilínea libre (clicks consecutivos, doble-click para cerrar).
+- Realtime: suscripción a ambas tablas para sync en vivo.
+
+**Privacidad**: `phone_last4` se calcula en el cliente al insertar (`telefono.slice(-4)`) y se valida server-side por trigger antes del INSERT.
+
+### Fuera de alcance (versión 1)
+
+- Fotos adjuntas al reporte (se puede agregar después con bucket `citizen-reports`).
+- Notificaciones push a vecinos cercanos.
+- Dashboard de estadísticas para admin (gráficas, exportación CSV).
+- Integración con dependencias municipales.
+
+¿Lo apruebo y comenzamos?
