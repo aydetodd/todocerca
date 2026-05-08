@@ -241,8 +241,9 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       let driverLabel = location.driver_name || '';
       let empresaLabel = location.empresa_name || '';
 
-      // Resolve assignment details only when it matches the exact route being viewed
-      if (privateRouteProductoId && location.route_producto_id === privateRouteProductoId && location.all_assignments?.length) {
+      // When viewing a specific route, prefer the assignment that matches that route
+      // (a single user_id can have multiple chofer entries / assignments today).
+      if (privateRouteProductoId && location.all_assignments?.length) {
         const match = location.all_assignments.find(a => a.productoId === privateRouteProductoId);
         if (match) {
           routeLabel = match.routeName;
