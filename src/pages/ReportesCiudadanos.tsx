@@ -131,8 +131,8 @@ export default function ReportesCiudadanos() {
   const loadData = async () => {
     const [{ data: r }, { data: c }, votesRes] = await Promise.all([
       supabase.from('citizen_reports_public' as any).select('*').eq('status', 'active').order('created_at', { ascending: false }),
-      supabase.from('road_closures').select('*').eq('is_active', true),
-      user ? supabase.from('citizen_report_votes').select('report_id, vote_type').eq('user_id', user.id) : Promise.resolve({ data: [] }),
+      supabase.from('road_closures' as any).select('*').eq('is_active', true),
+      user ? supabase.from('citizen_report_votes' as any).select('report_id, vote_type').eq('user_id', user.id) : Promise.resolve({ data: [] }),
     ]);
     setReports((r as any) || []);
     setClosures(((c as any) || []).map((x: any) => ({ ...x, polyline: x.polyline as [number, number][] })));
@@ -155,7 +155,7 @@ export default function ReportesCiudadanos() {
   const handleSaveReport = async () => {
     if (!reportPos || !user) return;
     setSavingReport(true);
-    const { error } = await supabase.from('citizen_reports').insert({
+    const { error } = await supabase.from('citizen_reports' as any).insert({
       user_id: user.id,
       category: reportCategory,
       lat: reportPos[0],
@@ -181,7 +181,7 @@ export default function ReportesCiudadanos() {
       toast.info('Ya votaste en este reporte');
       return;
     }
-    const { error } = await supabase.from('citizen_report_votes').insert({
+    const { error } = await supabase.from('citizen_report_votes' as any).insert({
       report_id: reportId,
       user_id: user.id,
       vote_type: type,
@@ -196,7 +196,7 @@ export default function ReportesCiudadanos() {
 
   const handleDeleteReport = async (id: string) => {
     if (!confirm('¿Eliminar este reporte?')) return;
-    const { error } = await supabase.from('citizen_reports').delete().eq('id', id);
+    const { error } = await supabase.from('citizen_reports' as any).delete().eq('id', id);
     if (error) toast.error('No se pudo eliminar');
     else { toast.success('Reporte eliminado'); loadData(); }
   };
@@ -207,7 +207,7 @@ export default function ReportesCiudadanos() {
       return;
     }
     setSavingClosure(true);
-    const { error } = await supabase.from('road_closures').insert({
+    const { error } = await supabase.from('road_closures' as any).insert({
       name: closureName.trim(),
       reason: closureReason.trim() || null,
       polyline: closurePoints as any,
@@ -231,7 +231,7 @@ export default function ReportesCiudadanos() {
 
   const handleDeleteClosure = async (id: string) => {
     if (!confirm('¿Eliminar este tramo cerrado?')) return;
-    const { error } = await supabase.from('road_closures').delete().eq('id', id);
+    const { error } = await supabase.from('road_closures' as any).delete().eq('id', id);
     if (error) toast.error('No se pudo eliminar');
     else { toast.success('Tramo eliminado'); loadData(); }
   };
