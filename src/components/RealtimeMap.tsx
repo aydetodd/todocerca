@@ -591,7 +591,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         // even for the route owner — full details only in fleet mode or general map view
         const isRouteViewMode = !!(privateRouteProductoId && !(fleetUserIds && fleetUserIds.length > 0));
         
-        if (isBus && isRouteViewMode) {
+        if ((isBus || isViewingRoute) && isRouteViewMode) {
           // Simplified passenger-style popup for route viewing mode
           // En modo "ver ruta específica" SIEMPRE forzar el nombre de la ruta consultada,
           // no el de la asignación interna del chofer (puede tener otra ruta paralela).
@@ -706,7 +706,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
             </div>
           `;
         }
-      } else if (isBus) {
+      } else if (isBus || isViewingRoute) {
         // Bus/route popup
         // Determine if viewer is fleet owner (fleet mode active) — only then show internal details
         const isFleetMode = !!(fleetUserIds && fleetUserIds.length > 0);
