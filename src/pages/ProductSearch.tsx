@@ -58,6 +58,7 @@ type MapProvider = {
 interface AvailableRoute {
   nombre: string;
   count: number;
+  producto_id?: string;
 }
 
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
