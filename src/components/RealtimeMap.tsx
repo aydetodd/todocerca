@@ -160,21 +160,20 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
+      const targetName = (privateRouteNameProp || '').trim().toLowerCase();
+      const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea';
       filteredLocations = locations.filter(loc => {
         if (loc.route_producto_id === privateRouteProductoId) return true;
-        // Extra safety for driver rows: validate against today's assignments
-        return !!loc.all_assignments?.some(a => a.productoId === privateRouteProductoId);
+        if (loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)) return true;
+        // Para rutas PUBLICAS: aceptar unidades de cualquier concesionario sirviendo el MISMO nombre de ruta
+        if (isPublicView && targetName) {
+          const currentName = (loc.profiles?.route_name || '').trim().toLowerCase();
+          if (currentName && currentName === targetName) return true;
+          if (loc.all_assignments?.some(a => (a.routeName || '').trim().toLowerCase() === targetName)) return true;
+        }
+        return false;
       });
-      console.log('🔒 [Map] Filtering by ACTIVE route producto_id:', privateRouteProductoId, '→', filteredLocations.length, 'units');
-    } else if (privateRouteUserId) {
-      filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
-      console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);
-    } else if (filterType === 'taxi') {
-      filteredLocations = locations.filter(loc => loc.is_taxi === true);
-      console.log('🚕 [Map] Filtering to show only taxis:', filteredLocations.length);
-    } else if (filterType === 'ruta') {
-      filteredLocations = locations.filter(loc => loc.is_bus === true);
-      console.log('🚌 [Map] Filtering to show only rutas:', filteredLocations.length);
+      console.log('[Map] Filtering by route', { isPublicView, targetName, total: filteredLocations.length });
     }
 
     console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
