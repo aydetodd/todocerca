@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, MapPin, AlertTriangle, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair } from 'lucide-react';
+import { ArrowLeft, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -65,25 +64,6 @@ interface RoadClosure {
   is_active: boolean;
 }
 
-// ============ Helper: re-center ============
-function MapRecenter({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center[0], center[1]]);
-  return null;
-}
-
-// Captura clicks para modo "tramo cerrado"
-function ClickCapture({ onClick, enabled }: { onClick: (lat: number, lng: number) => void; enabled: boolean }) {
-  useMapEvents({
-    click(e) {
-      if (enabled) onClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
 // ============ Página ============
 export default function ReportesCiudadanos() {
   const navigate = useNavigate();
@@ -110,7 +90,11 @@ export default function ReportesCiudadanos() {
   const [showClosureSave, setShowClosureSave] = useState(false);
   const [savingClosure, setSavingClosure] = useState(false);
 
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const reportsLayerRef = useRef<L.LayerGroup | null>(null);
+  const closuresLayerRef = useRef<L.LayerGroup | null>(null);
+  const draftClosureLayerRef = useRef<L.Polyline | null>(null);
 
   // Detect admin + GPS center
   useEffect(() => {
@@ -150,6 +134,48 @@ export default function ReportesCiudadanos() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user?.id]);
+
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || mapRef.current) return;
+
+    if ((container as any)._leaflet_id) delete (container as any)._leaflet_id;
+    const map = L.map(container, { attributionControl: false }).setView(center, 14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      crossOrigin: true,
+    }).addTo(map);
+    reportsLayerRef.current = L.layerGroup().addTo(map);
+    closuresLayerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 500);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      reportsLayerRef.current = null;
+      closuresLayerRef.current = null;
+      draftClosureLayerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setView(center, map.getZoom());
+    setTimeout(() => map.invalidateSize(), 50);
+  }, [center]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onClick = (e: L.LeafletMouseEvent) => {
+      if (closureMode) setClosurePoints((p) => [...p, [e.latlng.lat, e.latlng.lng]]);
+    };
+    map.on('click', onClick);
+    return () => { map.off('click', onClick); };
+  }, [closureMode]);
 
   // ====== Acciones ======
   const handleSaveReport = async () => {
@@ -239,6 +265,120 @@ export default function ReportesCiudadanos() {
   // ====== Render ======
   const fmtDate = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
+  useEffect(() => {
+    const layer = reportsLayerRef.current;
+    if (!layer) return;
+    layer.clearLayers();
+
+    reports.forEach((r) => {
+      const category = CATEGORIES[r.category];
+      const marker = L.marker([r.lat, r.lng], { icon: ICONS[r.category] });
+      const popup = document.createElement('div');
+      popup.className = 'space-y-2 min-w-[200px]';
+
+      const title = document.createElement('div');
+      title.className = 'font-semibold flex items-center gap-1';
+      title.textContent = `${category.emoji} ${category.label}`;
+      popup.appendChild(title);
+
+      if (r.note) {
+        const note = document.createElement('p');
+        note.className = 'text-xs';
+        note.textContent = r.note;
+        popup.appendChild(note);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'text-[10px] text-muted-foreground';
+      meta.textContent = `${fmtDate(r.created_at)} · ••••${r.phone_last4}`;
+      popup.appendChild(meta);
+
+      const counts = document.createElement('div');
+      counts.className = 'text-[10px]';
+      counts.textContent = `✋ ${r.confirm_count}   ✓ ${r.resolve_count}/3`;
+      popup.appendChild(counts);
+
+      if (!myVotes[r.id]) {
+        const actions = document.createElement('div');
+        actions.className = 'flex gap-1';
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'px-2 py-1 rounded border text-[11px]';
+        confirmBtn.textContent = 'Sigue ahí';
+        confirmBtn.onclick = () => handleVote(r.id, 'confirm');
+        const resolveBtn = document.createElement('button');
+        resolveBtn.className = 'px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]';
+        resolveBtn.textContent = 'Ya se resolvió';
+        resolveBtn.onclick = () => handleVote(r.id, 'resolve');
+        actions.append(confirmBtn, resolveBtn);
+        popup.appendChild(actions);
+      }
+
+      if (isAdmin) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.textContent = 'Eliminar (Admin)';
+        deleteBtn.onclick = () => handleDeleteReport(r.id);
+        popup.appendChild(deleteBtn);
+      }
+
+      marker.bindPopup(popup).addTo(layer);
+    });
+  }, [reports, myVotes, isAdmin]);
+
+  useEffect(() => {
+    const layer = closuresLayerRef.current;
+    if (!layer) return;
+    layer.clearLayers();
+
+    closures.forEach((c) => {
+      const line = L.polyline(c.polyline, { color: '#dc2626', weight: 6, opacity: 0.85 });
+      const popup = document.createElement('div');
+      popup.className = 'space-y-1 min-w-[180px]';
+
+      const title = document.createElement('div');
+      title.className = 'font-semibold';
+      title.style.color = '#dc2626';
+      title.textContent = `🚧 ${c.name}`;
+      popup.appendChild(title);
+
+      if (c.reason) {
+        const reason = document.createElement('p');
+        reason.className = 'text-xs';
+        reason.textContent = c.reason;
+        popup.appendChild(reason);
+      }
+
+      if (c.reopen_estimated_at) {
+        const reopen = document.createElement('p');
+        reopen.className = 'text-[10px] text-muted-foreground';
+        reopen.textContent = `Reapertura estimada: ${c.reopen_estimated_at}`;
+        popup.appendChild(reopen);
+      }
+
+      if (isAdmin) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.textContent = 'Eliminar (Admin)';
+        deleteBtn.onclick = () => handleDeleteClosure(c.id);
+        popup.appendChild(deleteBtn);
+      }
+
+      line.bindPopup(popup).addTo(layer);
+    });
+  }, [closures, isAdmin]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (draftClosureLayerRef.current) {
+      draftClosureLayerRef.current.remove();
+      draftClosureLayerRef.current = null;
+    }
+    if (closureMode && closurePoints.length > 0) {
+      draftClosureLayerRef.current = L.polyline(closurePoints, { color: '#dc2626', weight: 5, opacity: 0.6, dashArray: '8 6' }).addTo(map);
+    }
+  }, [closureMode, closurePoints]);
+
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
@@ -268,89 +408,7 @@ export default function ReportesCiudadanos() {
 
       {/* Mapa */}
       <div className="flex-1 relative" style={{ minHeight: 300 }}>
-        <MapContainer
-          center={center}
-          zoom={14}
-          style={{ height: '100%', width: '100%', background: '#0f172a' }}
-          attributionControl={false}
-          ref={(m) => {
-            if (m && mapRef.current !== m) {
-              mapRef.current = m;
-              setTimeout(() => m.invalidateSize(), 100);
-              setTimeout(() => m.invalidateSize(), 500);
-            }
-          }}
-        >
-          <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <MapRecenter center={center} />
-          <ClickCapture
-            enabled={closureMode}
-            onClick={(lat, lng) => setClosurePoints((p) => [...p, [lat, lng]])}
-          />
-
-          {/* Pines de reportes */}
-          {reports.map((r) => (
-            <Marker key={r.id} position={[r.lat, r.lng]} icon={ICONS[r.category]}>
-              <Popup>
-                <div className="space-y-2 min-w-[200px]">
-                  <div className="font-semibold flex items-center gap-1">
-                    {CATEGORIES[r.category].emoji} {CATEGORIES[r.category].label}
-                  </div>
-                  {r.note && <p className="text-xs">{r.note}</p>}
-                  <div className="text-[10px] text-muted-foreground">
-                    {fmtDate(r.created_at)} · ••••{r.phone_last4}
-                  </div>
-                  <div className="flex gap-1 flex-wrap">
-                    <Badge variant="secondary" className="text-[10px]">✋ {r.confirm_count}</Badge>
-                    <Badge variant="secondary" className="text-[10px]">✓ {r.resolve_count}/3</Badge>
-                  </div>
-                  {!myVotes[r.id] ? (
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px]" onClick={() => handleVote(r.id, 'confirm')}>
-                        Sigue ahí
-                      </Button>
-                      <Button size="sm" className="flex-1 h-7 text-[11px]" onClick={() => handleVote(r.id, 'resolve')}>
-                        Ya se resolvió
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground">Ya votaste: {myVotes[r.id] === 'confirm' ? 'Sigue ahí' : 'Resuelto'}</p>
-                  )}
-                  {isAdmin && (
-                    <Button size="sm" variant="destructive" className="w-full h-7 text-[11px]" onClick={() => handleDeleteReport(r.id)}>
-                      Eliminar (Admin)
-                    </Button>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Tramos cerrados */}
-          {closures.map((c) => (
-            <Polyline key={c.id} positions={c.polyline} pathOptions={{ color: '#dc2626', weight: 6, opacity: 0.85 }}>
-              <Popup>
-                <div className="space-y-1 min-w-[180px]">
-                  <div className="font-semibold text-red-600">🚧 {c.name}</div>
-                  {c.reason && <p className="text-xs">{c.reason}</p>}
-                  {c.reopen_estimated_at && (
-                    <p className="text-[10px] text-muted-foreground">Reapertura estimada: {c.reopen_estimated_at}</p>
-                  )}
-                  {isAdmin && (
-                    <Button size="sm" variant="destructive" className="w-full h-7 text-[11px]" onClick={() => handleDeleteClosure(c.id)}>
-                      Eliminar (Admin)
-                    </Button>
-                  )}
-                </div>
-              </Popup>
-            </Polyline>
-          ))}
-
-          {/* Polilínea en construcción */}
-          {closureMode && closurePoints.length > 0 && (
-            <Polyline positions={closurePoints} pathOptions={{ color: '#dc2626', weight: 5, opacity: 0.6, dashArray: '8 6' }} />
-          )}
-        </MapContainer>
+        <div ref={mapContainerRef} className="h-full w-full" style={{ background: '#0f172a' }} />
 
         {/* Mira central para reportar */}
         {reportMode && (
