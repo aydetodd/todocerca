@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Share2, LayoutGrid, MessageCircle } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
