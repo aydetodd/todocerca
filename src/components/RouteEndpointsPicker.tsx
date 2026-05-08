@@ -35,6 +35,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const [destination, setDestination] = useState<Coord | null>(initial.destination);
   const [radius, setRadius] = useState<number>(initial.radius || 50);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Init map
   useEffect(() => {
