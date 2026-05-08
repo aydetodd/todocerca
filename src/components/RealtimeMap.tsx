@@ -174,6 +174,15 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         return false;
       });
       console.log('[Map] Filtering by route', { isPublicView, targetName, total: filteredLocations.length });
+    } else if (privateRouteUserId) {
+      filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
+      console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);
+    } else if (filterType === 'taxi') {
+      filteredLocations = locations.filter(loc => loc.is_taxi === true);
+      console.log('🚕 [Map] Filtering to show only taxis:', filteredLocations.length);
+    } else if (filterType === 'ruta') {
+      filteredLocations = locations.filter(loc => loc.is_bus === true);
+      console.log('🚌 [Map] Filtering to show only rutas:', filteredLocations.length);
     }
 
     console.log('🗺️ [Map] Updating', filteredLocations.length, 'markers (initial load done)');
