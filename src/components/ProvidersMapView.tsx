@@ -489,13 +489,12 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
       const popupContent = isRouteSearch
         ? `
-        <div style="padding: 12px; min-width: 250px; position: relative;">
-          ${providerFavBtn}
-          <h3 style="font-weight: 700; font-size: 1.05rem; margin-bottom: 12px; padding-right: 30px;">Rutas de Transporte</h3>
+        <div style="background:#273547;color:#fafafa;padding:14px;min-width:240px;border-radius:10px;position:relative;">
+          <p style="font-size:12px;color:#3b82f6;font-weight:600;margin:0 0 6px 0;padding-right:20px;">Rutas de Transporte</p>
           ${
             provider.productos.length > 0
-              ? `<div style="max-height: 260px; overflow-y: auto;">${productsList}</div>`
-              : `<p style="font-size: 0.875rem; color: #6b7280;">Sin rutas disponibles</p>`
+              ? `<div style="max-height:260px;overflow-y:auto;">${productsList}</div>`
+              : `<p style="font-size:0.875rem;color:#bfbfbf;">Sin rutas disponibles</p>`
           }
         </div>
       `
