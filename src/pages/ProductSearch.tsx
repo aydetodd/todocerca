@@ -28,6 +28,8 @@ import { useHispanoamerica } from "@/hooks/useHispanoamerica";
 
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCity } from "@/hooks/useCurrentCity";
+import { useFavoritos } from "@/hooks/useFavoritos";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -58,6 +60,7 @@ type MapProvider = {
 interface AvailableRoute {
   nombre: string;
   count: number;
+  producto_id?: string;
 }
 
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
@@ -91,6 +94,7 @@ const ProductSearch = () => {
   // Auto-detect current city via GPS
   const { location: gpsLocation, loading: gpsLoading } = useCurrentCity();
   const [gpsApplied, setGpsApplied] = useState(false);
+  const { isFavorito, getFavoritoId, addFavorito, removeFavorito } = useFavoritos();
 
   const [availableRoutes, setAvailableRoutes] = useState<AvailableRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
@@ -305,7 +309,7 @@ const ProductSearch = () => {
 
         let query = supabase
           .from("productos")
-          .select("nombre")
+          .select("id, nombre")
           .eq("category_id", rutasCategory.id)
           .eq("is_available", true)
           .gte("stock", 1)
@@ -332,16 +336,21 @@ const ProductSearch = () => {
           return;
         }
 
-        // Group routes and count them
-        const routeCountMap = new Map<string, number>();
+        // Group routes by name, keep first producto_id and count
+        const routeMap = new Map<string, { count: number; producto_id: string }>();
         (data || []).forEach((producto: any) => {
           const routeName = producto.nombre;
-          routeCountMap.set(routeName, (routeCountMap.get(routeName) || 0) + 1);
+          const existing = routeMap.get(routeName);
+          if (existing) {
+            existing.count += 1;
+          } else {
+            routeMap.set(routeName, { count: 1, producto_id: producto.id });
+          }
         });
 
         // Convert to array and sort
-        const routes: AvailableRoute[] = Array.from(routeCountMap.entries())
-          .map(([nombre, count]) => ({ nombre, count }))
+        const routes: AvailableRoute[] = Array.from(routeMap.entries())
+          .map(([nombre, { count, producto_id }]) => ({ nombre, count, producto_id }))
           .sort((a, b) => {
             // Extract route number for natural sorting
             const numA = parseInt(a.nombre.match(/\d+/)?.[0] || "0");
@@ -985,22 +994,41 @@ const ProductSearch = () => {
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
-                        {availableRoutes.map((route) => (
-                          <Badge
-                            key={route.nombre}
-                            variant={selectedRoute === route.nombre ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center"
-                            onClick={() => {
-                              const newRoute = selectedRoute === route.nombre ? null : route.nombre;
-                              setSelectedRoute(newRoute);
-                              if (newRoute) {
-                                setTimeout(() => handleSearch(undefined, newRoute), 50);
-                              }
-                            }}
-                          >
-                            {route.nombre}
-                          </Badge>
-                        ))}
+                        {availableRoutes.map((route) => {
+                          const fav = route.producto_id ? isFavorito('ruta', route.producto_id) : false;
+                          const favId = route.producto_id ? getFavoritoId('ruta', route.producto_id) : null;
+                          return (
+                            <div key={route.nombre} className="flex items-center gap-1">
+                              <Badge
+                                variant={selectedRoute === route.nombre ? "default" : "outline"}
+                                className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5 text-center justify-center flex-1"
+                                onClick={() => {
+                                  const newRoute = selectedRoute === route.nombre ? null : route.nombre;
+                                  setSelectedRoute(newRoute);
+                                  if (newRoute) {
+                                    setTimeout(() => handleSearch(undefined, newRoute), 50);
+                                  }
+                                }}
+                              >
+                                {route.nombre}
+                              </Badge>
+                              {route.producto_id && (
+                                <button
+                                  type="button"
+                                  aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (fav && favId) removeFavorito(favId);
+                                    else addFavorito('ruta', route.producto_id!);
+                                  }}
+                                  className="p-1 rounded hover:bg-muted shrink-0"
+                                >
+                                  <Heart className={cn('h-4 w-4', fav ? 'fill-red-500 text-red-500' : 'text-muted-foreground')} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>
