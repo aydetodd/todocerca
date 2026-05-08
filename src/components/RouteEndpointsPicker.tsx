@@ -45,8 +45,8 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
       : destination
       ? [destination.lat, destination.lng]
       : [29.0729, -110.9559];
-    const map = L.map(containerRef.current, { center: startCenter, zoom: origin || destination ? 14 : 12 });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OSM" }).addTo(map);
+    const map = L.map(containerRef.current, { center: startCenter, zoom: origin || destination ? 14 : 12, attributionControl: false });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
     return () => {
