@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ArrowLeft, MapPin, AlertTriangle, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair } from 'lucide-react';
@@ -65,25 +64,6 @@ interface RoadClosure {
   is_active: boolean;
 }
 
-// ============ Helper: re-center ============
-function MapRecenter({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center[0], center[1]]);
-  return null;
-}
-
-// Captura clicks para modo "tramo cerrado"
-function ClickCapture({ onClick, enabled }: { onClick: (lat: number, lng: number) => void; enabled: boolean }) {
-  useMapEvents({
-    click(e) {
-      if (enabled) onClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
 // ============ Página ============
 export default function ReportesCiudadanos() {
   const navigate = useNavigate();
@@ -110,7 +90,11 @@ export default function ReportesCiudadanos() {
   const [showClosureSave, setShowClosureSave] = useState(false);
   const [savingClosure, setSavingClosure] = useState(false);
 
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const reportsLayerRef = useRef<L.LayerGroup | null>(null);
+  const closuresLayerRef = useRef<L.LayerGroup | null>(null);
+  const draftClosureLayerRef = useRef<L.Polyline | null>(null);
 
   // Detect admin + GPS center
   useEffect(() => {
