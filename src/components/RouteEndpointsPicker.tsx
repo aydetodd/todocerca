@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Flag, Crosshair, Loader2, Save } from "lucide-react";
+import { MapPin, Flag, Crosshair, Loader2, Save, Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -35,6 +35,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
   const [destination, setDestination] = useState<Coord | null>(initial.destination);
   const [radius, setRadius] = useState<number>(initial.radius || 50);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Init map
   useEffect(() => {
@@ -44,8 +45,8 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
       : destination
       ? [destination.lat, destination.lng]
       : [29.0729, -110.9559];
-    const map = L.map(containerRef.current, { center: startCenter, zoom: origin || destination ? 14 : 12 });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OSM" }).addTo(map);
+    const map = L.map(containerRef.current, { center: startCenter, zoom: origin || destination ? 14 : 12, attributionControl: false });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
     return () => {
@@ -153,17 +154,33 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
         Mueve el mapa para que el centro quede sobre el punto de {mode === "origen" ? "inicio (🚏)" : "final (🏁)"} y presiona "Fijar aquí".
       </p>
 
-      <div className="relative">
-        <div ref={containerRef} className="w-full h-72 rounded-md border border-border overflow-hidden" />
+      <div className={expanded ? "fixed inset-0 z-[2000] bg-background p-3 flex flex-col gap-2" : "relative"}>
+        <div ref={containerRef} className={expanded ? "flex-1 w-full rounded-md border border-border overflow-hidden" : "w-full h-72 rounded-md border border-border overflow-hidden"} />
         {/* Crosshair overlay */}
         <div className="pointer-events-none absolute inset-0 z-[400] flex items-center justify-center">
-          {/* horizontal line */}
           <div className="absolute left-0 right-0 top-1/2 -translate-y-px h-px bg-foreground/70" />
-          {/* vertical line */}
           <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-px bg-foreground/70" />
-          {/* center dot */}
           <div className="h-3 w-3 rounded-full border-2 border-foreground bg-background/80 shadow" />
         </div>
+        {/* Expand/Collapse button */}
+        <Button
+          type="button"
+          size="icon"
+          variant="secondary"
+          className="absolute top-2 right-2 z-[500] h-8 w-8 shadow-lg"
+          onClick={() => {
+            setExpanded((v) => !v);
+            setTimeout(() => mapRef.current?.invalidateSize(), 50);
+          }}
+          title={expanded ? "Reducir mapa" : "Expandir mapa"}
+        >
+          {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+        {expanded && (
+          <Button type="button" onClick={fixHere} className="w-full">
+            Fijar aquí ({mode === "origen" ? "Inicio" : "Final"})
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
