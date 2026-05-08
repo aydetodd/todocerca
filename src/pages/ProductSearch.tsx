@@ -28,6 +28,8 @@ import { useHispanoamerica } from "@/hooks/useHispanoamerica";
 
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCity } from "@/hooks/useCurrentCity";
+import { useFavoritos } from "@/hooks/useFavoritos";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
