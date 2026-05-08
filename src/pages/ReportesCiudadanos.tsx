@@ -339,7 +339,7 @@ export default function ReportesCiudadanos() {
 
       marker.bindPopup(popup).addTo(layer);
     });
-  }, [reports, myVotes, isAdmin]);
+  }, [reports, myVotes, isAdmin, visibleCategories]);
 
   useEffect(() => {
     const layer = closuresLayerRef.current;
