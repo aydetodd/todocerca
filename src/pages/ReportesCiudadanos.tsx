@@ -286,7 +286,7 @@ export default function ReportesCiudadanos() {
     if (!layer) return;
     layer.clearLayers();
 
-    reports.forEach((r) => {
+    reports.filter((r) => visibleCategories.has(r.category)).forEach((r) => {
       const category = CATEGORIES[r.category];
       const marker = L.marker([r.lat, r.lng], { icon: ICONS[r.category] });
       const popup = document.createElement('div');
