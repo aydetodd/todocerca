@@ -139,6 +139,15 @@ export default function ReportesCiudadanos() {
     }
   }, [user]);
 
+  // Default city filter to user's current city (one-time)
+  useEffect(() => {
+    if (cityFilterInitialized) return;
+    if (myLocation?.ciudad) {
+      setCityFilter(myLocation.ciudad);
+      setCityFilterInitialized(true);
+    }
+  }, [myLocation, cityFilterInitialized]);
+
   // Cargar datos
   const loadData = async () => {
     const [{ data: r }, { data: c }, votesRes] = await Promise.all([
