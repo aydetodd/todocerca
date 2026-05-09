@@ -349,10 +349,6 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
               Limpiar todo
             </Button>
           )}
-          <span className="ml-auto text-[11px] text-muted-foreground">
-            {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
-          </span>
-        </div>
           <Button size="sm" variant="outline" onClick={() => { setMapExpanded((v) => !v); setTimeout(() => mapRef.current?.invalidateSize(), 200); }} title={mapExpanded ? 'Reducir mapa' : 'Expandir mapa'}>
             {mapExpanded ? <Minimize2 className="h-3 w-3 mr-1" /> : <Maximize2 className="h-3 w-3 mr-1" />}
             {mapExpanded ? 'Reducir' : 'Expandir'}
