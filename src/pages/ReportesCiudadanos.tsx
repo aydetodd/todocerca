@@ -425,6 +425,19 @@ export default function ReportesCiudadanos() {
         popup.appendChild(reason);
       }
 
+      // Coordenadas con link a Google Maps (primer punto del tramo)
+      if (c.polyline && c.polyline.length > 0) {
+        const [lat, lng] = c.polyline[0];
+        const coordsLink = document.createElement('a');
+        coordsLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+        coordsLink.target = '_blank';
+        coordsLink.rel = 'noopener noreferrer';
+        coordsLink.className = 'text-[10px] underline block';
+        coordsLink.style.color = '#93c5fd';
+        coordsLink.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (ver en Google Maps)`;
+        popup.appendChild(coordsLink);
+      }
+
       if (c.reopen_estimated_at) {
         const reopen = document.createElement('p');
         reopen.className = 'text-[10px]';
