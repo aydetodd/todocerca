@@ -94,9 +94,8 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       }
       if (mapRef.current) return;
       const center = initialCenter || [29.0729, -110.9559];
-      m = L.map(el, { zoomControl: true }).setView(center, 13);
+      m = L.map(el, { zoomControl: true, attributionControl: false }).setView(center, 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
         maxZoom: 19,
       }).addTo(m);
 
