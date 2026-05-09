@@ -434,6 +434,7 @@ export type Database = {
       citizen_reports: {
         Row: {
           category: Database["public"]["Enums"]["citizen_report_category"]
+          city: string | null
           confirm_count: number
           created_at: string
           id: string
@@ -442,12 +443,14 @@ export type Database = {
           note: string | null
           phone_last4: string
           resolve_count: number
+          resolved_at: string | null
           status: Database["public"]["Enums"]["citizen_report_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           category: Database["public"]["Enums"]["citizen_report_category"]
+          city?: string | null
           confirm_count?: number
           created_at?: string
           id?: string
@@ -456,12 +459,14 @@ export type Database = {
           note?: string | null
           phone_last4: string
           resolve_count?: number
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["citizen_report_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           category?: Database["public"]["Enums"]["citizen_report_category"]
+          city?: string | null
           confirm_count?: number
           created_at?: string
           id?: string
@@ -470,6 +475,7 @@ export type Database = {
           note?: string | null
           phone_last4?: string
           resolve_count?: number
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["citizen_report_status"]
           updated_at?: string
           user_id?: string
@@ -4286,6 +4292,7 @@ export type Database = {
           category:
             | Database["public"]["Enums"]["citizen_report_category"]
             | null
+          city: string | null
           confirm_count: number | null
           created_at: string | null
           id: string | null
@@ -4294,12 +4301,14 @@ export type Database = {
           note: string | null
           phone_last4: string | null
           resolve_count: number | null
+          resolved_at: string | null
           status: Database["public"]["Enums"]["citizen_report_status"] | null
         }
         Insert: {
           category?:
             | Database["public"]["Enums"]["citizen_report_category"]
             | null
+          city?: string | null
           confirm_count?: number | null
           created_at?: string | null
           id?: string | null
@@ -4308,12 +4317,14 @@ export type Database = {
           note?: string | null
           phone_last4?: string | null
           resolve_count?: number | null
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["citizen_report_status"] | null
         }
         Update: {
           category?:
             | Database["public"]["Enums"]["citizen_report_category"]
             | null
+          city?: string | null
           confirm_count?: number | null
           created_at?: string | null
           id?: string | null
@@ -4322,6 +4333,7 @@ export type Database = {
           note?: string | null
           phone_last4?: string | null
           resolve_count?: number | null
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["citizen_report_status"] | null
         }
         Relationships: []

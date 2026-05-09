@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { ArrowLeft, Droplet, Trash2, Lightbulb, TrafficCone, Construction, Plus, X, Check, Crosshair, ChevronDown, ChevronUp, Filter, MapPin, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,9 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentCity } from '@/hooks/useCurrentCity';
 
 // ============ Categorías ============
 type Category = 'bache' | 'fuga_agua' | 'fuga_drenaje' | 'alumbrado' | 'basura' | 'semaforo';
@@ -54,6 +56,8 @@ interface Report {
   status: string;
   confirm_count: number;
   resolve_count: number;
+  city: string | null;
+  resolved_at: string | null;
   created_at: string;
 }
 
@@ -70,11 +74,19 @@ interface RoadClosure {
 export default function ReportesCiudadanos() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { location: myLocation } = useCurrentCity();
   const [center, setCenter] = useState<[number, number]>([29.0729, -110.9559]); // Hermosillo default
   const [reports, setReports] = useState<Report[]>([]);
   const [closures, setClosures] = useState<RoadClosure[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [myVotes, setMyVotes] = useState<Record<string, 'confirm' | 'resolve'>>({});
+
+  // Filtro por ciudad/municipio
+  const [cityFilter, setCityFilter] = useState<string>(''); // '' = Todas
+  const [cityFilterInitialized, setCityFilterInitialized] = useState(false);
+
+  // Listado por categoría
+  const [listingCategory, setListingCategory] = useState<Category | null>(null);
 
   // Reportar
   const [reportMode, setReportMode] = useState(false);
@@ -126,6 +138,15 @@ export default function ReportesCiudadanos() {
       );
     }
   }, [user]);
+
+  // Default city filter to user's current city (one-time)
+  useEffect(() => {
+    if (cityFilterInitialized) return;
+    if (myLocation?.ciudad) {
+      setCityFilter(myLocation.ciudad);
+      setCityFilterInitialized(true);
+    }
+  }, [myLocation, cityFilterInitialized]);
 
   // Cargar datos
   const loadData = async () => {
@@ -197,6 +218,19 @@ export default function ReportesCiudadanos() {
   const handleSaveReport = async () => {
     if (!reportPos || !user) return;
     setSavingReport(true);
+
+    // Reverse-geocode para guardar el municipio del incidente
+    let city: string | null = null;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${reportPos[0]}&lon=${reportPos[1]}&zoom=10&addressdetails=1`,
+        { headers: { 'Accept-Language': 'es' } }
+      );
+      const j = await res.json();
+      const a = j.address || {};
+      city = a.city || a.town || a.municipality || a.county || a.village || null;
+    } catch {}
+
     const { error } = await supabase.from('citizen_reports' as any).insert({
       user_id: user.id,
       category: reportCategory,
@@ -204,6 +238,7 @@ export default function ReportesCiudadanos() {
       lng: reportPos[1],
       note: reportNote.trim() || null,
       phone_last4: '0000', // El trigger lo sobreescribe
+      city,
     });
     setSavingReport(false);
     if (error) {
@@ -281,36 +316,56 @@ export default function ReportesCiudadanos() {
   // ====== Render ======
   const fmtDate = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
+  // Lista de ciudades disponibles (de los reportes existentes)
+  const availableCities = (() => {
+    const set = new Set<string>();
+    reports.forEach((r) => { if (r.city) set.add(r.city); });
+    if (myLocation?.ciudad) set.add(myLocation.ciudad);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  })();
+
+  // Reportes filtrados (categoría + ciudad)
+  const filteredReports = reports.filter((r) => {
+    if (!visibleCategories.has(r.category)) return false;
+    if (cityFilter && (r.city || '').toLowerCase() !== cityFilter.toLowerCase()) return false;
+    return true;
+  });
+
   useEffect(() => {
     const layer = reportsLayerRef.current;
     if (!layer) return;
     layer.clearLayers();
 
-    reports.filter((r) => visibleCategories.has(r.category)).forEach((r) => {
+    filteredReports.forEach((r) => {
       const category = CATEGORIES[r.category];
       const marker = L.marker([r.lat, r.lng], { icon: ICONS[r.category] });
       const popup = document.createElement('div');
-      popup.className = 'space-y-2 min-w-[200px]';
+      popup.className = 'space-y-2 min-w-[200px] p-3 rounded-lg';
+      popup.style.background = '#1e293b';
+      popup.style.color = '#f1f5f9';
 
       const title = document.createElement('div');
-      title.className = 'font-semibold flex items-center gap-1';
+      title.className = 'font-semibold flex items-center gap-1 text-sm';
       title.textContent = `${category.emoji} ${category.label}`;
       popup.appendChild(title);
 
       if (r.note) {
         const note = document.createElement('p');
         note.className = 'text-xs';
+        note.style.color = '#cbd5e1';
         note.textContent = r.note;
         popup.appendChild(note);
       }
 
       const meta = document.createElement('div');
-      meta.className = 'text-[10px] text-muted-foreground';
-      meta.textContent = `${fmtDate(r.created_at)} · ••••${r.phone_last4}`;
+      meta.className = 'text-[10px]';
+      meta.style.color = '#94a3b8';
+      meta.textContent = `${fmtDate(r.created_at)} · ••••${r.phone_last4}${r.city ? ' · ' + r.city : ''}`;
       popup.appendChild(meta);
 
       const counts = document.createElement('div');
       counts.className = 'text-[10px]';
+      counts.style.color = '#cbd5e1';
       counts.textContent = `✋ ${r.confirm_count}   ✓ ${r.resolve_count}/3`;
       popup.appendChild(counts);
 
@@ -318,11 +373,13 @@ export default function ReportesCiudadanos() {
         const actions = document.createElement('div');
         actions.className = 'flex gap-1';
         const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'px-2 py-1 rounded border text-[11px]';
+        confirmBtn.className = 'px-2 py-1 rounded text-[11px]';
+        confirmBtn.style.cssText = 'border:1px solid #475569;color:#f1f5f9;background:transparent;';
         confirmBtn.textContent = 'Sigue ahí';
         confirmBtn.onclick = () => handleVote(r.id, 'confirm');
         const resolveBtn = document.createElement('button');
-        resolveBtn.className = 'px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]';
+        resolveBtn.className = 'px-2 py-1 rounded text-[11px]';
+        resolveBtn.style.cssText = 'background:#3b82f6;color:white;';
         resolveBtn.textContent = 'Ya se resolvió';
         resolveBtn.onclick = () => handleVote(r.id, 'resolve');
         actions.append(confirmBtn, resolveBtn);
@@ -331,15 +388,16 @@ export default function ReportesCiudadanos() {
 
       if (isAdmin) {
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.className = 'w-full px-2 py-1 rounded text-[11px]';
+        deleteBtn.style.cssText = 'background:#dc2626;color:white;';
         deleteBtn.textContent = 'Eliminar (Admin)';
         deleteBtn.onclick = () => handleDeleteReport(r.id);
         popup.appendChild(deleteBtn);
       }
 
-      marker.bindPopup(popup).addTo(layer);
+      marker.bindPopup(popup, { className: 'custom-popup-dark' }).addTo(layer);
     });
-  }, [reports, myVotes, isAdmin, visibleCategories]);
+  }, [reports, myVotes, isAdmin, visibleCategories, cityFilter]);
 
   useEffect(() => {
     const layer = closuresLayerRef.current;
@@ -349,37 +407,42 @@ export default function ReportesCiudadanos() {
     closures.forEach((c) => {
       const line = L.polyline(c.polyline, { color: '#dc2626', weight: 6, opacity: 0.85 });
       const popup = document.createElement('div');
-      popup.className = 'space-y-1 min-w-[180px]';
+      popup.className = 'space-y-1 min-w-[180px] p-3 rounded-lg';
+      popup.style.background = '#1e293b';
+      popup.style.color = '#f1f5f9';
 
       const title = document.createElement('div');
-      title.className = 'font-semibold';
-      title.style.color = '#dc2626';
+      title.className = 'font-semibold text-sm';
+      title.style.color = '#fca5a5';
       title.textContent = `🚧 ${c.name}`;
       popup.appendChild(title);
 
       if (c.reason) {
         const reason = document.createElement('p');
         reason.className = 'text-xs';
+        reason.style.color = '#cbd5e1';
         reason.textContent = c.reason;
         popup.appendChild(reason);
       }
 
       if (c.reopen_estimated_at) {
         const reopen = document.createElement('p');
-        reopen.className = 'text-[10px] text-muted-foreground';
+        reopen.className = 'text-[10px]';
+        reopen.style.color = '#94a3b8';
         reopen.textContent = `Reapertura estimada: ${c.reopen_estimated_at}`;
         popup.appendChild(reopen);
       }
 
       if (isAdmin) {
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.className = 'w-full px-2 py-1 rounded text-[11px]';
+        deleteBtn.style.cssText = 'background:#dc2626;color:white;';
         deleteBtn.textContent = 'Eliminar (Admin)';
         deleteBtn.onclick = () => handleDeleteClosure(c.id);
         popup.appendChild(deleteBtn);
       }
 
-      line.bindPopup(popup).addTo(layer);
+      line.bindPopup(popup, { className: 'custom-popup-dark' }).addTo(layer);
     });
   }, [closures, isAdmin]);
 
@@ -482,7 +545,32 @@ export default function ReportesCiudadanos() {
                 </button>
                 {filterOpen && (
                   <div className="px-3 pb-3 space-y-2 border-t">
-                    <div className="flex gap-1.5 pt-2">
+                    {/* Filtro por ciudad */}
+                    <div className="pt-2">
+                      <Label className="text-[10px] flex items-center gap-1 mb-1">
+                        <MapPin className="h-3 w-3" /> Ciudad / Municipio
+                      </Label>
+                      <Select value={cityFilter || '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger className="h-8 text-[11px]">
+                          <SelectValue placeholder="Todas las ciudades" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[2000]">
+                          <SelectItem value="__all__">Todas las ciudades</SelectItem>
+                          {myLocation?.ciudad && (
+                            <SelectItem value={myLocation.ciudad}>
+                              📍 {myLocation.ciudad} (mi ciudad)
+                            </SelectItem>
+                          )}
+                          {availableCities
+                            .filter((c) => c !== myLocation?.ciudad)
+                            .map((c) => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-1.5 pt-1">
                       <Button size="sm" variant="secondary" className="h-7 text-[11px] px-2" onClick={() => setAll(true)}>
                         Todas
                       </Button>
@@ -490,7 +578,7 @@ export default function ReportesCiudadanos() {
                         Ninguna
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 gap-1.5">
                       {CATEGORY_KEYS.map((k) => {
                         const v = CATEGORIES[k];
                         const checked = visibleCategories.has(k);
@@ -513,11 +601,11 @@ export default function ReportesCiudadanos() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => onlyOne(k)}
-                              title="Solo este"
-                              className="text-[9px] px-1.5 py-1 rounded border text-muted-foreground hover:bg-accent"
+                              onClick={() => setListingCategory(k)}
+                              title="Ver listado"
+                              className="text-[10px] px-2 py-1 rounded border text-muted-foreground hover:bg-accent flex items-center gap-1"
                             >
-                              solo
+                              <List className="h-3 w-3" /> listado
                             </button>
                           </div>
                         );
@@ -611,6 +699,85 @@ export default function ReportesCiudadanos() {
             <Button onClick={handleSaveClosure} disabled={savingClosure}>
               {savingClosure ? 'Guardando...' : 'Guardar tramo'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: listado por categoría */}
+      <Dialog open={!!listingCategory} onOpenChange={(o) => !o && setListingCategory(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {listingCategory && (
+                <>
+                  <span>{CATEGORIES[listingCategory].emoji}</span>
+                  Listado: {CATEGORIES[listingCategory].label}
+                  {cityFilter && <Badge variant="outline" className="text-[10px]">{cityFilter}</Badge>}
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto -mx-6 px-6">
+            {(() => {
+              if (!listingCategory) return null;
+              const list = reports.filter(
+                (r) =>
+                  r.category === listingCategory &&
+                  (!cityFilter || (r.city || '').toLowerCase() === cityFilter.toLowerCase())
+              );
+              if (list.length === 0) {
+                return <p className="text-sm text-muted-foreground text-center py-8">Sin reportes en esta categoría.</p>;
+              }
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-background border-b">
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-2 pr-2 font-medium">Fecha</th>
+                        <th className="py-2 pr-2 font-medium">Coordenadas</th>
+                        <th className="py-2 pr-2 font-medium">Tel.</th>
+                        <th className="py-2 pr-2 font-medium">Resuelto</th>
+                        <th className="py-2 pr-2 font-medium">Fecha resuelto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((r) => {
+                        const resolved = r.status === 'hidden' || !!r.resolved_at;
+                        return (
+                          <tr key={r.id} className="border-b last:border-0 hover:bg-accent/30">
+                            <td className="py-2 pr-2 whitespace-nowrap">{fmtDate(r.created_at)}</td>
+                            <td className="py-2 pr-2 font-mono text-[10px]">
+                              <a
+                                href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {r.lat.toFixed(5)}, {r.lng.toFixed(5)}
+                              </a>
+                            </td>
+                            <td className="py-2 pr-2">••••{r.phone_last4}</td>
+                            <td className="py-2 pr-2">
+                              {resolved ? (
+                                <Badge className="bg-green-600 hover:bg-green-600 text-[10px]">Sí</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">No</Badge>
+                              )}
+                            </td>
+                            <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">
+                              {r.resolved_at ? fmtDate(r.resolved_at) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setListingCategory(null)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
