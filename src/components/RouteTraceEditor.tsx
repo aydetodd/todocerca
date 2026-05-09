@@ -35,6 +35,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [color, setColor] = useState<string>('#0066CC');
   const colorRef = useRef<string>('#0066CC');
   useEffect(() => { colorRef.current = color; }, [color]);
