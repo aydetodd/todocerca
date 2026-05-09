@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentCity } from '@/hooks/useCurrentCity';
+import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 
 // ============ Categorías ============
 type Category = 'bache' | 'fuga_agua' | 'fuga_drenaje' | 'alumbrado' | 'basura' | 'semaforo';
@@ -75,15 +76,18 @@ export default function ReportesCiudadanos() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { location: myLocation } = useCurrentCity();
+  const { getPaises, getNivel1, getNivel2 } = useHispanoamerica();
   const [center, setCenter] = useState<[number, number]>([29.0729, -110.9559]); // Hermosillo default
   const [reports, setReports] = useState<Report[]>([]);
   const [closures, setClosures] = useState<RoadClosure[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [myVotes, setMyVotes] = useState<Record<string, 'confirm' | 'resolve'>>({});
 
-  // Filtro por ciudad/municipio
-  const [cityFilter, setCityFilter] = useState<string>(''); // '' = Todas
-  const [cityFilterInitialized, setCityFilterInitialized] = useState(false);
+  // Filtro jerárquico País → Estado → Municipio
+  const [countryFilter, setCountryFilter] = useState<string>('MX'); // ISO code
+  const [stateFilter, setStateFilter] = useState<string>(''); // nombre nivel1
+  const [cityFilter, setCityFilter] = useState<string>(''); // '' = Todas (municipio)
+  const [geoInitialized, setGeoInitialized] = useState(false);
 
   // Listado por categoría
   const [listingCategory, setListingCategory] = useState<Category | null>(null);
@@ -139,14 +143,16 @@ export default function ReportesCiudadanos() {
     }
   }, [user]);
 
-  // Default city filter to user's current city (one-time)
+  // Default geo filter to user's current country/state/city (one-time)
   useEffect(() => {
-    if (cityFilterInitialized) return;
-    if (myLocation?.ciudad) {
-      setCityFilter(myLocation.ciudad);
-      setCityFilterInitialized(true);
+    if (geoInitialized) return;
+    if (myLocation?.pais) {
+      setCountryFilter(myLocation.pais);
+      if (myLocation.estado) setStateFilter(myLocation.estado);
+      if (myLocation.ciudad) setCityFilter(myLocation.ciudad);
+      setGeoInitialized(true);
     }
-  }, [myLocation, cityFilterInitialized]);
+  }, [myLocation, geoInitialized]);
 
   // Cargar datos
   const loadData = async () => {
@@ -316,13 +322,7 @@ export default function ReportesCiudadanos() {
   // ====== Render ======
   const fmtDate = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
-  // Lista de ciudades disponibles (de los reportes existentes)
-  const availableCities = (() => {
-    const set = new Set<string>();
-    reports.forEach((r) => { if (r.city) set.add(r.city); });
-    if (myLocation?.ciudad) set.add(myLocation.ciudad);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
-  })();
+  // (lista de ciudades obsoleta — ahora usamos selector jerárquico)
 
   // Reportes filtrados (categoría + ciudad)
   const filteredReports = reports.filter((r) => {
@@ -423,6 +423,19 @@ export default function ReportesCiudadanos() {
         reason.style.color = '#cbd5e1';
         reason.textContent = c.reason;
         popup.appendChild(reason);
+      }
+
+      // Coordenadas con link a Google Maps (primer punto del tramo)
+      if (c.polyline && c.polyline.length > 0) {
+        const [lat, lng] = c.polyline[0];
+        const coordsLink = document.createElement('a');
+        coordsLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+        coordsLink.target = '_blank';
+        coordsLink.rel = 'noopener noreferrer';
+        coordsLink.className = 'text-[10px] underline block';
+        coordsLink.style.color = '#93c5fd';
+        coordsLink.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (ver en Google Maps)`;
+        popup.appendChild(coordsLink);
       }
 
       if (c.reopen_estimated_at) {
@@ -545,29 +558,65 @@ export default function ReportesCiudadanos() {
                 </button>
                 {filterOpen && (
                   <div className="px-3 pb-3 space-y-2 border-t">
-                    {/* Filtro por ciudad */}
-                    <div className="pt-2">
-                      <Label className="text-[10px] flex items-center gap-1 mb-1">
-                        <MapPin className="h-3 w-3" /> Ciudad / Municipio
+                    {/* Filtro jerárquico País → Estado → Municipio */}
+                    <div className="pt-2 space-y-2">
+                      <Label className="text-[10px] flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Ubicación
                       </Label>
-                      <Select value={cityFilter || '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? '' : v)}>
-                        <SelectTrigger className="h-8 text-[11px]">
-                          <SelectValue placeholder="Todas las ciudades" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[2000]">
-                          <SelectItem value="__all__">Todas las ciudades</SelectItem>
-                          {myLocation?.ciudad && (
-                            <SelectItem value={myLocation.ciudad}>
-                              📍 {myLocation.ciudad} (mi ciudad)
-                            </SelectItem>
-                          )}
-                          {availableCities
-                            .filter((c) => c !== myLocation?.ciudad)
-                            .map((c) => (
+                      <div className="grid grid-cols-1 gap-1.5">
+                        <Select
+                          value={countryFilter}
+                          onValueChange={(v) => { setCountryFilter(v); setStateFilter(''); setCityFilter(''); }}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]"><SelectValue placeholder="País" /></SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            {getPaises().map((p) => (
+                              <SelectItem key={p.codigo} value={p.codigo}>{p.bandera} {p.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={stateFilter || '__all_states__'}
+                          onValueChange={(v) => { setStateFilter(v === '__all_states__' ? '' : v); setCityFilter(''); }}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]"><SelectValue placeholder="Estado / Provincia" /></SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            <SelectItem value="__all_states__">Todos los estados</SelectItem>
+                            {getNivel1(countryFilter).map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={cityFilter || '__all_cities__'}
+                          onValueChange={(v) => setCityFilter(v === '__all_cities__' ? '' : v)}
+                          disabled={!stateFilter}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]">
+                            <SelectValue placeholder={stateFilter ? 'Municipio / Ciudad' : 'Selecciona un estado'} />
+                          </SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            <SelectItem value="__all_cities__">Todas las ciudades</SelectItem>
+                            {stateFilter && getNivel2(countryFilter, stateFilter).map((c) => (
                               <SelectItem key={c} value={c}>{c}</SelectItem>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {myLocation?.ciudad && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] w-full"
+                          onClick={() => {
+                            setCountryFilter(myLocation.pais || 'MX');
+                            setStateFilter(myLocation.estado || '');
+                            setCityFilter(myLocation.ciudad || '');
+                          }}
+                        >
+                          📍 Volver a mi ciudad ({myLocation.ciudad})
+                        </Button>
+                      )}
                     </div>
 
                     <div className="flex gap-1.5 pt-1">
