@@ -322,13 +322,7 @@ export default function ReportesCiudadanos() {
   // ====== Render ======
   const fmtDate = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
-  // Lista de ciudades disponibles (de los reportes existentes)
-  const availableCities = (() => {
-    const set = new Set<string>();
-    reports.forEach((r) => { if (r.city) set.add(r.city); });
-    if (myLocation?.ciudad) set.add(myLocation.ciudad);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
-  })();
+  // (lista de ciudades obsoleta — ahora usamos selector jerárquico)
 
   // Reportes filtrados (categoría + ciudad)
   const filteredReports = reports.filter((r) => {
