@@ -545,7 +545,32 @@ export default function ReportesCiudadanos() {
                 </button>
                 {filterOpen && (
                   <div className="px-3 pb-3 space-y-2 border-t">
-                    <div className="flex gap-1.5 pt-2">
+                    {/* Filtro por ciudad */}
+                    <div className="pt-2">
+                      <Label className="text-[10px] flex items-center gap-1 mb-1">
+                        <MapPin className="h-3 w-3" /> Ciudad / Municipio
+                      </Label>
+                      <Select value={cityFilter || '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger className="h-8 text-[11px]">
+                          <SelectValue placeholder="Todas las ciudades" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[2000]">
+                          <SelectItem value="__all__">Todas las ciudades</SelectItem>
+                          {myLocation?.ciudad && (
+                            <SelectItem value={myLocation.ciudad}>
+                              📍 {myLocation.ciudad} (mi ciudad)
+                            </SelectItem>
+                          )}
+                          {availableCities
+                            .filter((c) => c !== myLocation?.ciudad)
+                            .map((c) => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-1.5 pt-1">
                       <Button size="sm" variant="secondary" className="h-7 text-[11px] px-2" onClick={() => setAll(true)}>
                         Todas
                       </Button>
@@ -553,7 +578,7 @@ export default function ReportesCiudadanos() {
                         Ninguna
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 gap-1.5">
                       {CATEGORY_KEYS.map((k) => {
                         const v = CATEGORIES[k];
                         const checked = visibleCategories.has(k);
@@ -576,11 +601,11 @@ export default function ReportesCiudadanos() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => onlyOne(k)}
-                              title="Solo este"
-                              className="text-[9px] px-1.5 py-1 rounded border text-muted-foreground hover:bg-accent"
+                              onClick={() => setListingCategory(k)}
+                              title="Ver listado"
+                              className="text-[10px] px-2 py-1 rounded border text-muted-foreground hover:bg-accent flex items-center gap-1"
                             >
-                              solo
+                              <List className="h-3 w-3" /> listado
                             </button>
                           </div>
                         );
