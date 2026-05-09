@@ -551,29 +551,65 @@ export default function ReportesCiudadanos() {
                 </button>
                 {filterOpen && (
                   <div className="px-3 pb-3 space-y-2 border-t">
-                    {/* Filtro por ciudad */}
-                    <div className="pt-2">
-                      <Label className="text-[10px] flex items-center gap-1 mb-1">
-                        <MapPin className="h-3 w-3" /> Ciudad / Municipio
+                    {/* Filtro jerárquico País → Estado → Municipio */}
+                    <div className="pt-2 space-y-2">
+                      <Label className="text-[10px] flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Ubicación
                       </Label>
-                      <Select value={cityFilter || '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? '' : v)}>
-                        <SelectTrigger className="h-8 text-[11px]">
-                          <SelectValue placeholder="Todas las ciudades" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[2000]">
-                          <SelectItem value="__all__">Todas las ciudades</SelectItem>
-                          {myLocation?.ciudad && (
-                            <SelectItem value={myLocation.ciudad}>
-                              📍 {myLocation.ciudad} (mi ciudad)
-                            </SelectItem>
-                          )}
-                          {availableCities
-                            .filter((c) => c !== myLocation?.ciudad)
-                            .map((c) => (
+                      <div className="grid grid-cols-1 gap-1.5">
+                        <Select
+                          value={countryFilter}
+                          onValueChange={(v) => { setCountryFilter(v); setStateFilter(''); setCityFilter(''); }}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]"><SelectValue placeholder="País" /></SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            {getPaises().map((p) => (
+                              <SelectItem key={p.codigo} value={p.codigo}>{p.bandera} {p.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={stateFilter || '__all_states__'}
+                          onValueChange={(v) => { setStateFilter(v === '__all_states__' ? '' : v); setCityFilter(''); }}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]"><SelectValue placeholder="Estado / Provincia" /></SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            <SelectItem value="__all_states__">Todos los estados</SelectItem>
+                            {getNivel1(countryFilter).map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={cityFilter || '__all_cities__'}
+                          onValueChange={(v) => setCityFilter(v === '__all_cities__' ? '' : v)}
+                          disabled={!stateFilter}
+                        >
+                          <SelectTrigger className="h-8 text-[11px]">
+                            <SelectValue placeholder={stateFilter ? 'Municipio / Ciudad' : 'Selecciona un estado'} />
+                          </SelectTrigger>
+                          <SelectContent className="z-[2000] max-h-72">
+                            <SelectItem value="__all_cities__">Todas las ciudades</SelectItem>
+                            {stateFilter && getNivel2(countryFilter, stateFilter).map((c) => (
                               <SelectItem key={c} value={c}>{c}</SelectItem>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {myLocation?.ciudad && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] w-full"
+                          onClick={() => {
+                            setCountryFilter(myLocation.pais || 'MX');
+                            setStateFilter(myLocation.estado || '');
+                            setCityFilter(myLocation.ciudad || '');
+                          }}
+                        >
+                          📍 Volver a mi ciudad ({myLocation.ciudad})
+                        </Button>
+                      )}
                     </div>
 
                     <div className="flex gap-1.5 pt-1">
