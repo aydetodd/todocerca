@@ -218,6 +218,19 @@ export default function ReportesCiudadanos() {
   const handleSaveReport = async () => {
     if (!reportPos || !user) return;
     setSavingReport(true);
+
+    // Reverse-geocode para guardar el municipio del incidente
+    let city: string | null = null;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${reportPos[0]}&lon=${reportPos[1]}&zoom=10&addressdetails=1`,
+        { headers: { 'Accept-Language': 'es' } }
+      );
+      const j = await res.json();
+      const a = j.address || {};
+      city = a.city || a.town || a.municipality || a.county || a.village || null;
+    } catch {}
+
     const { error } = await supabase.from('citizen_reports' as any).insert({
       user_id: user.id,
       category: reportCategory,
@@ -225,6 +238,7 @@ export default function ReportesCiudadanos() {
       lng: reportPos[1],
       note: reportNote.trim() || null,
       phone_last4: '0000', // El trigger lo sobreescribe
+      city,
     });
     setSavingReport(false);
     if (error) {
