@@ -353,32 +353,44 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-background">
-          <span className="text-[11px] text-muted-foreground mr-1">Color de la ruta:</span>
-          {COLOR_PALETTE.map((c) => (
-            <button
-              key={c.value}
-              type="button"
-              onClick={() => setColor(c.value)}
-              title={c.label}
-              aria-label={`Color ${c.label}`}
-              className={`h-6 w-6 rounded-full border-2 transition-transform ${color === c.value ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-white shadow'}`}
-              style={{ background: c.value }}
-            />
-          ))}
-        </div>
-        <div className="px-3 py-2 border-b bg-background flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <MapSearchBar
-              alwaysOpen
-              placeholder="Ej: Blvd Solidaridad 123, Hermosillo"
-              onSelectLocation={(lat, lng) => goToCoords(lat, lng)}
-            />
-          </div>
-          <Button size="sm" variant="outline" onClick={goToMyLocation} title="Centrar en mi ubicación">
-            <Locate className="h-4 w-4" />
+          <Button size="sm" variant="outline" onClick={() => { setMapExpanded((v) => !v); setTimeout(() => mapRef.current?.invalidateSize(), 200); }} title={mapExpanded ? 'Reducir mapa' : 'Expandir mapa'}>
+            {mapExpanded ? <Minimize2 className="h-3 w-3 mr-1" /> : <Maximize2 className="h-3 w-3 mr-1" />}
+            {mapExpanded ? 'Reducir' : 'Expandir'}
           </Button>
+          <span className="ml-auto text-[11px] text-muted-foreground">
+            {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
+          </span>
         </div>
+        {!mapExpanded && (
+          <>
+            <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-background">
+              <span className="text-[11px] text-muted-foreground mr-1">Color de la ruta:</span>
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value)}
+                  title={c.label}
+                  aria-label={`Color ${c.label}`}
+                  className={`h-6 w-6 rounded-full border-2 transition-transform ${color === c.value ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-white shadow'}`}
+                  style={{ background: c.value }}
+                />
+              ))}
+            </div>
+            <div className="px-3 py-2 border-b bg-background flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <MapSearchBar
+                  alwaysOpen
+                  placeholder="Ej: Blvd Solidaridad 123, Hermosillo"
+                  onSelectLocation={(lat, lng) => goToCoords(lat, lng)}
+                />
+              </div>
+              <Button size="sm" variant="outline" onClick={goToMyLocation} title="Centrar en mi ubicación">
+                <Locate className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
         <div className="relative flex-1 w-full" style={{ minHeight: 300 }}>
           <div ref={mapElRef} className="absolute inset-0 w-full h-full" />
         </div>
