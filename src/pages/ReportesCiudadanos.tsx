@@ -702,6 +702,85 @@ export default function ReportesCiudadanos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: listado por categoría */}
+      <Dialog open={!!listingCategory} onOpenChange={(o) => !o && setListingCategory(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {listingCategory && (
+                <>
+                  <span>{CATEGORIES[listingCategory].emoji}</span>
+                  Listado: {CATEGORIES[listingCategory].label}
+                  {cityFilter && <Badge variant="outline" className="text-[10px]">{cityFilter}</Badge>}
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto -mx-6 px-6">
+            {(() => {
+              if (!listingCategory) return null;
+              const list = reports.filter(
+                (r) =>
+                  r.category === listingCategory &&
+                  (!cityFilter || (r.city || '').toLowerCase() === cityFilter.toLowerCase())
+              );
+              if (list.length === 0) {
+                return <p className="text-sm text-muted-foreground text-center py-8">Sin reportes en esta categoría.</p>;
+              }
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-background border-b">
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-2 pr-2 font-medium">Fecha</th>
+                        <th className="py-2 pr-2 font-medium">Coordenadas</th>
+                        <th className="py-2 pr-2 font-medium">Tel.</th>
+                        <th className="py-2 pr-2 font-medium">Resuelto</th>
+                        <th className="py-2 pr-2 font-medium">Fecha resuelto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((r) => {
+                        const resolved = r.status === 'hidden' || !!r.resolved_at;
+                        return (
+                          <tr key={r.id} className="border-b last:border-0 hover:bg-accent/30">
+                            <td className="py-2 pr-2 whitespace-nowrap">{fmtDate(r.created_at)}</td>
+                            <td className="py-2 pr-2 font-mono text-[10px]">
+                              <a
+                                href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {r.lat.toFixed(5)}, {r.lng.toFixed(5)}
+                              </a>
+                            </td>
+                            <td className="py-2 pr-2">••••{r.phone_last4}</td>
+                            <td className="py-2 pr-2">
+                              {resolved ? (
+                                <Badge className="bg-green-600 hover:bg-green-600 text-[10px]">Sí</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">No</Badge>
+                              )}
+                            </td>
+                            <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">
+                              {r.resolved_at ? fmtDate(r.resolved_at) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setListingCategory(null)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
