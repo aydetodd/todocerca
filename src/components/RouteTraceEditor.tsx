@@ -349,10 +349,6 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
               Limpiar todo
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => { setMapExpanded((v) => !v); setTimeout(() => mapRef.current?.invalidateSize(), 200); }} title={mapExpanded ? 'Reducir mapa' : 'Expandir mapa'}>
-            {mapExpanded ? <Minimize2 className="h-3 w-3 mr-1" /> : <Maximize2 className="h-3 w-3 mr-1" />}
-            {mapExpanded ? 'Reducir' : 'Expandir'}
-          </Button>
           <span className="ml-auto text-[11px] text-muted-foreground">
             {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
           </span>
@@ -389,6 +385,16 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
         )}
         <div className="relative flex-1 w-full" style={{ minHeight: 300 }}>
           <div ref={mapElRef} className="absolute inset-0 w-full h-full" />
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="absolute top-2 right-2 z-[500] h-8 w-8 shadow-lg"
+            onClick={() => { setMapExpanded((v) => !v); setTimeout(() => mapRef.current?.invalidateSize(), 200); }}
+            title={mapExpanded ? 'Reducir mapa' : 'Expandir mapa'}
+          >
+            {mapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
         </div>
         <DialogFooter className="px-4 pb-4 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
