@@ -56,6 +56,8 @@ interface Report {
   status: string;
   confirm_count: number;
   resolve_count: number;
+  city: string | null;
+  resolved_at: string | null;
   created_at: string;
 }
 
