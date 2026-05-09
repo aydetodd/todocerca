@@ -316,36 +316,56 @@ export default function ReportesCiudadanos() {
   // ====== Render ======
   const fmtDate = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
+  // Lista de ciudades disponibles (de los reportes existentes)
+  const availableCities = (() => {
+    const set = new Set<string>();
+    reports.forEach((r) => { if (r.city) set.add(r.city); });
+    if (myLocation?.ciudad) set.add(myLocation.ciudad);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  })();
+
+  // Reportes filtrados (categoría + ciudad)
+  const filteredReports = reports.filter((r) => {
+    if (!visibleCategories.has(r.category)) return false;
+    if (cityFilter && (r.city || '').toLowerCase() !== cityFilter.toLowerCase()) return false;
+    return true;
+  });
+
   useEffect(() => {
     const layer = reportsLayerRef.current;
     if (!layer) return;
     layer.clearLayers();
 
-    reports.filter((r) => visibleCategories.has(r.category)).forEach((r) => {
+    filteredReports.forEach((r) => {
       const category = CATEGORIES[r.category];
       const marker = L.marker([r.lat, r.lng], { icon: ICONS[r.category] });
       const popup = document.createElement('div');
-      popup.className = 'space-y-2 min-w-[200px]';
+      popup.className = 'space-y-2 min-w-[200px] p-3 rounded-lg';
+      popup.style.background = '#1e293b';
+      popup.style.color = '#f1f5f9';
 
       const title = document.createElement('div');
-      title.className = 'font-semibold flex items-center gap-1';
+      title.className = 'font-semibold flex items-center gap-1 text-sm';
       title.textContent = `${category.emoji} ${category.label}`;
       popup.appendChild(title);
 
       if (r.note) {
         const note = document.createElement('p');
         note.className = 'text-xs';
+        note.style.color = '#cbd5e1';
         note.textContent = r.note;
         popup.appendChild(note);
       }
 
       const meta = document.createElement('div');
-      meta.className = 'text-[10px] text-muted-foreground';
-      meta.textContent = `${fmtDate(r.created_at)} · ••••${r.phone_last4}`;
+      meta.className = 'text-[10px]';
+      meta.style.color = '#94a3b8';
+      meta.textContent = `${fmtDate(r.created_at)} · ••••${r.phone_last4}${r.city ? ' · ' + r.city : ''}`;
       popup.appendChild(meta);
 
       const counts = document.createElement('div');
       counts.className = 'text-[10px]';
+      counts.style.color = '#cbd5e1';
       counts.textContent = `✋ ${r.confirm_count}   ✓ ${r.resolve_count}/3`;
       popup.appendChild(counts);
 
@@ -353,11 +373,13 @@ export default function ReportesCiudadanos() {
         const actions = document.createElement('div');
         actions.className = 'flex gap-1';
         const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'px-2 py-1 rounded border text-[11px]';
+        confirmBtn.className = 'px-2 py-1 rounded text-[11px]';
+        confirmBtn.style.cssText = 'border:1px solid #475569;color:#f1f5f9;background:transparent;';
         confirmBtn.textContent = 'Sigue ahí';
         confirmBtn.onclick = () => handleVote(r.id, 'confirm');
         const resolveBtn = document.createElement('button');
-        resolveBtn.className = 'px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]';
+        resolveBtn.className = 'px-2 py-1 rounded text-[11px]';
+        resolveBtn.style.cssText = 'background:#3b82f6;color:white;';
         resolveBtn.textContent = 'Ya se resolvió';
         resolveBtn.onclick = () => handleVote(r.id, 'resolve');
         actions.append(confirmBtn, resolveBtn);
@@ -366,15 +388,16 @@ export default function ReportesCiudadanos() {
 
       if (isAdmin) {
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.className = 'w-full px-2 py-1 rounded text-[11px]';
+        deleteBtn.style.cssText = 'background:#dc2626;color:white;';
         deleteBtn.textContent = 'Eliminar (Admin)';
         deleteBtn.onclick = () => handleDeleteReport(r.id);
         popup.appendChild(deleteBtn);
       }
 
-      marker.bindPopup(popup).addTo(layer);
+      marker.bindPopup(popup, { className: 'custom-popup-dark' }).addTo(layer);
     });
-  }, [reports, myVotes, isAdmin, visibleCategories]);
+  }, [reports, myVotes, isAdmin, visibleCategories, cityFilter]);
 
   useEffect(() => {
     const layer = closuresLayerRef.current;
@@ -384,37 +407,42 @@ export default function ReportesCiudadanos() {
     closures.forEach((c) => {
       const line = L.polyline(c.polyline, { color: '#dc2626', weight: 6, opacity: 0.85 });
       const popup = document.createElement('div');
-      popup.className = 'space-y-1 min-w-[180px]';
+      popup.className = 'space-y-1 min-w-[180px] p-3 rounded-lg';
+      popup.style.background = '#1e293b';
+      popup.style.color = '#f1f5f9';
 
       const title = document.createElement('div');
-      title.className = 'font-semibold';
-      title.style.color = '#dc2626';
+      title.className = 'font-semibold text-sm';
+      title.style.color = '#fca5a5';
       title.textContent = `🚧 ${c.name}`;
       popup.appendChild(title);
 
       if (c.reason) {
         const reason = document.createElement('p');
         reason.className = 'text-xs';
+        reason.style.color = '#cbd5e1';
         reason.textContent = c.reason;
         popup.appendChild(reason);
       }
 
       if (c.reopen_estimated_at) {
         const reopen = document.createElement('p');
-        reopen.className = 'text-[10px] text-muted-foreground';
+        reopen.className = 'text-[10px]';
+        reopen.style.color = '#94a3b8';
         reopen.textContent = `Reapertura estimada: ${c.reopen_estimated_at}`;
         popup.appendChild(reopen);
       }
 
       if (isAdmin) {
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'w-full px-2 py-1 rounded bg-destructive text-destructive-foreground text-[11px]';
+        deleteBtn.className = 'w-full px-2 py-1 rounded text-[11px]';
+        deleteBtn.style.cssText = 'background:#dc2626;color:white;';
         deleteBtn.textContent = 'Eliminar (Admin)';
         deleteBtn.onclick = () => handleDeleteClosure(c.id);
         popup.appendChild(deleteBtn);
       }
 
-      line.bindPopup(popup).addTo(layer);
+      line.bindPopup(popup, { className: 'custom-popup-dark' }).addTo(layer);
     });
   }, [closures, isAdmin]);
 
