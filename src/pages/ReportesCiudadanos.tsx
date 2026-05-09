@@ -143,14 +143,16 @@ export default function ReportesCiudadanos() {
     }
   }, [user]);
 
-  // Default city filter to user's current city (one-time)
+  // Default geo filter to user's current country/state/city (one-time)
   useEffect(() => {
-    if (cityFilterInitialized) return;
-    if (myLocation?.ciudad) {
-      setCityFilter(myLocation.ciudad);
-      setCityFilterInitialized(true);
+    if (geoInitialized) return;
+    if (myLocation?.pais) {
+      setCountryFilter(myLocation.pais);
+      if (myLocation.estado) setStateFilter(myLocation.estado);
+      if (myLocation.ciudad) setCityFilter(myLocation.ciudad);
+      setGeoInitialized(true);
     }
-  }, [myLocation, cityFilterInitialized]);
+  }, [myLocation, geoInitialized]);
 
   // Cargar datos
   const loadData = async () => {
