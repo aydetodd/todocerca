@@ -74,11 +74,19 @@ interface RoadClosure {
 export default function ReportesCiudadanos() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { location: myLocation } = useCurrentCity();
   const [center, setCenter] = useState<[number, number]>([29.0729, -110.9559]); // Hermosillo default
   const [reports, setReports] = useState<Report[]>([]);
   const [closures, setClosures] = useState<RoadClosure[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [myVotes, setMyVotes] = useState<Record<string, 'confirm' | 'resolve'>>({});
+
+  // Filtro por ciudad/municipio
+  const [cityFilter, setCityFilter] = useState<string>(''); // '' = Todas
+  const [cityFilterInitialized, setCityFilterInitialized] = useState(false);
+
+  // Listado por categoría
+  const [listingCategory, setListingCategory] = useState<Category | null>(null);
 
   // Reportar
   const [reportMode, setReportMode] = useState(false);
