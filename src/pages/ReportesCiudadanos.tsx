@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentCity } from '@/hooks/useCurrentCity';
+import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 
 // ============ Categorías ============
 type Category = 'bache' | 'fuga_agua' | 'fuga_drenaje' | 'alumbrado' | 'basura' | 'semaforo';
