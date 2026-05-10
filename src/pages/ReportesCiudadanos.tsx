@@ -329,6 +329,8 @@ export default function ReportesCiudadanos() {
   const filteredReports = reports.filter((r) => {
     if (!visibleCategories.has(r.category)) return false;
     if (cityFilter && (r.city || '').toLowerCase() !== cityFilter.toLowerCase()) return false;
+    // En el mapa solo se muestran activos; los resueltos aparecen en el listado
+    if (r.status !== 'active') return false;
     return true;
   });
 
