@@ -442,7 +442,8 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
                               )}
                             </div>
-                            <span className="text-muted-foreground shrink-0 tabular-nums">
+                            <span className="text-muted-foreground shrink-0 tabular-nums text-right">
+                              <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
                               {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                             </span>
                           </div>
