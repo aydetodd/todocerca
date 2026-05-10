@@ -157,7 +157,7 @@ export default function ReportesCiudadanos() {
   // Cargar datos
   const loadData = async () => {
     const [{ data: r }, { data: c }, votesRes] = await Promise.all([
-      supabase.from('citizen_reports_public' as any).select('*').eq('status', 'active').order('created_at', { ascending: false }),
+      supabase.from('citizen_reports_public' as any).select('*').order('created_at', { ascending: false }),
       supabase.from('road_closures' as any).select('*').eq('is_active', true),
       user ? supabase.from('citizen_report_votes' as any).select('report_id, vote_type').eq('user_id', user.id) : Promise.resolve({ data: [] }),
     ]);
