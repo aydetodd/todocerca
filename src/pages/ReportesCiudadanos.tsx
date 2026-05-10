@@ -234,7 +234,8 @@ export default function ReportesCiudadanos() {
       );
       const j = await res.json();
       const a = j.address || {};
-      city = a.city || a.town || a.municipality || a.county || a.village || null;
+      // Priorizar municipio (que coincide con el selector jerárquico) sobre la localidad
+      city = a.municipality || a.county || a.city || a.town || a.village || null;
     } catch {}
 
     const { error } = await supabase.from('citizen_reports' as any).insert({
