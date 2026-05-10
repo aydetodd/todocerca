@@ -232,6 +232,11 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
     return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Hermosillo" });
   };
 
+  const fmtDate = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", timeZone: "America/Hermosillo" });
+  };
+
   const handleExport = () => {
     const rows = filtered.map((v) => [
       v.fecha,
