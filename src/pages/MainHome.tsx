@@ -96,6 +96,7 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
+        {isAdmin && (
         <Card
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-red-500/30"
           onClick={() => navigate('/reportes-ciudadanos')}
