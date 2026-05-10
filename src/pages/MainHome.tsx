@@ -129,7 +129,7 @@ export default function MainHome() {
             </div>
           </CardContent>
         </Card>
-        )}
+        </>)}
 
         {isEmpresaTransporte && (
           <Card 
