@@ -232,6 +232,11 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
     return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Hermosillo" });
   };
 
+  const fmtDate = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", timeZone: "America/Hermosillo" });
+  };
+
   const handleExport = () => {
     const rows = filtered.map((v) => [
       v.fecha,
@@ -437,7 +442,8 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
                               )}
                             </div>
-                            <span className="text-muted-foreground shrink-0 tabular-nums">
+                            <span className="text-muted-foreground shrink-0 tabular-nums text-right">
+                              <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
                               {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                             </span>
                           </div>
