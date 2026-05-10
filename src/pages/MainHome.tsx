@@ -10,6 +10,7 @@ export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -23,7 +24,16 @@ export default function MainHome() {
         .eq('is_active', true);
       setIsEmpresaTransporte((count ?? 0) > 0);
     };
+    const checkAdmin = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('consecutive_number')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setIsAdmin(data?.consecutive_number === 1);
+    };
     checkEmpresaTransporte();
+    checkAdmin();
   }, [user]);
 
   return (
@@ -86,6 +96,7 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
+        {isAdmin && (<>
         <Card
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-red-500/30"
           onClick={() => navigate('/reportes-ciudadanos')}
@@ -118,6 +129,7 @@ export default function MainHome() {
             </div>
           </CardContent>
         </Card>
+        </>)}
 
         {isEmpresaTransporte && (
           <Card 
