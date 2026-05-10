@@ -869,13 +869,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             {vehicles.length > 0 && (
               <div className="space-y-2">
                 {vehicles.map((vehicle) => (
-                  <Card key={vehicle.id} className="border">
+                  <Card key={vehicle.id} className="border-2 border-white/40">
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-primary shrink-0" />
-                            <h4 className="font-semibold text-sm">{vehicle.nombre}</h4>
+                            <MapPin className="h-5 w-5 text-primary shrink-0" />
+                            <h4 className="font-semibold text-base md:text-lg">{vehicle.nombre}</h4>
                           </div>
                           {vehicle.descripcion && (
                             <p className="text-xs text-muted-foreground mt-1 ml-6">
