@@ -160,16 +160,22 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
-      const targetName = (privateRouteNameProp || '').trim().toLowerCase();
+      const normalizeName = (n: string | null | undefined) =>
+        (n || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '');
+      const targetName = normalizeName(privateRouteNameProp);
       const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea';
       filteredLocations = locations.filter(loc => {
         if (loc.route_producto_id === privateRouteProductoId) return true;
         if (loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)) return true;
         // Para rutas PUBLICAS: aceptar unidades de cualquier concesionario sirviendo el MISMO nombre de ruta
         if (isPublicView && targetName) {
-          const currentName = (loc.profiles?.route_name || '').trim().toLowerCase();
+          const currentName = normalizeName(loc.profiles?.route_name);
           if (currentName && currentName === targetName) return true;
-          if (loc.all_assignments?.some(a => (a.routeName || '').trim().toLowerCase() === targetName)) return true;
+          if (loc.all_assignments?.some(a => normalizeName(a.routeName) === targetName)) return true;
         }
         return false;
       });
