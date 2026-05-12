@@ -508,11 +508,14 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const fetchLocationsOnly = useCallback(async () => {
     if (!isMounted.current) return;
     
-    const { data: locationsData } = await supabase
+    const [{ data: locationsData }, publicRouteUnits] = await Promise.all([
+      supabase
       .from('proveedor_locations')
-      .select('user_id, latitude, longitude, updated_at');
+      .select('user_id, latitude, longitude, updated_at'),
+      fetchPublicRouteLiveUnits(),
+    ]);
     
-    if (!locationsData?.length) return;
+    if (!locationsData?.length && publicRouteUnits.length === 0) return;
     
     let hasChanges = false;
     
@@ -528,11 +531,17 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
         }
       }
     }
+
+    for (const routeUnit of publicRouteUnits) {
+      const existing = locationsMapRef.current.get(routeUnit.user_id);
+      locationsMapRef.current.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
+      hasChanges = true;
+    }
     
     if (hasChanges && isMounted.current) {
       setLocations(Array.from(locationsMapRef.current.values()));
     }
-  }, []);
+  }, [fetchPublicRouteLiveUnits]);
 
   useEffect(() => {
     isMounted.current = true;
