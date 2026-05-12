@@ -160,7 +160,13 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     }
     // If viewing a specific route, show ONLY units currently assigned to that exact route
     else if (privateRouteProductoId) {
-      const targetName = (privateRouteNameProp || '').trim().toLowerCase();
+      const normalizeName = (n: string | null | undefined) =>
+        (n || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '');
+      const targetName = normalizeName(privateRouteNameProp);
       const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea';
       filteredLocations = locations.filter(loc => {
         if (loc.route_producto_id === privateRouteProductoId) return true;
