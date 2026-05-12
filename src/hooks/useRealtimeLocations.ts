@@ -348,7 +348,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     const normalizeRouteName = (name: string | null | undefined) => name?.trim().toLowerCase() || '';
     const newLocationsMap = new Map<string, ProveedorLocation>();
 
-    for (const loc of locationsData) {
+    for (const loc of locationsData || []) {
       const profile = activeProfiles.find(p => p.user_id === loc.user_id);
       if (!profile) continue;
 
