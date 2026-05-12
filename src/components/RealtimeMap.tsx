@@ -54,7 +54,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   const prevPositionsRef = useRef<{ [key: string]: { lat: number; lng: number } }>({});
   const headingsRef = useRef<{ [key: string]: number }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations();
+  const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations(privateRouteProductoId, viewingRouteType);
   
   // Favoritos feature temporarily disabled
   

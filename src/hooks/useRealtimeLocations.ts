@@ -47,7 +47,7 @@ export interface ProveedorLocation {
   all_route_producto_ids?: string[];
 }
 
-export const useRealtimeLocations = () => {
+export const useRealtimeLocations = (publicRouteProductoId?: string | null, viewingRouteType?: string | null) => {
   const [locations, setLocations] = useState<ProveedorLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
@@ -55,14 +55,66 @@ export const useRealtimeLocations = () => {
   const isMounted = useRef(true);
   const locationsMapRef = useRef<Map<string, ProveedorLocation>>(new Map());
 
+  const fetchPublicRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
+    const isPublicRouteView = !!publicRouteProductoId && (viewingRouteType === 'urbana' || viewingRouteType === 'foranea');
+    if (!isPublicRouteView) return [];
+
+    const { data, error } = await (supabase as any).rpc('get_public_route_live_units', {
+      _producto_id: publicRouteProductoId,
+    });
+
+    if (error || !data) {
+      console.error('[fetchPublicRouteLiveUnits] Error:', error);
+      return [];
+    }
+
+    return (data || []).map((row: any) => ({
+      id: row.user_id,
+      user_id: row.user_id,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      updated_at: row.updated_at,
+      profiles: {
+        apodo: row.apodo,
+        estado: row.estado as 'available' | 'busy' | 'offline',
+        telefono: null,
+        provider_type: (row.provider_type as 'taxi' | 'ruta' | null) || 'ruta',
+        route_name: row.route_name,
+        tarifa_km: 15,
+      },
+      is_taxi: false,
+      is_bus: true,
+      is_private_driver: false,
+      is_private_route: false,
+      route_type: row.route_type,
+      route_producto_id: row.route_producto_id,
+      proveedor_id: row.proveedor_id,
+      empresa_name: row.empresa_name,
+      unit_name: row.unit_name,
+      unit_placas: row.unit_placas,
+      unit_descripcion: row.unit_descripcion,
+      driver_name: row.driver_name,
+      all_assignments: [{
+        routeName: row.route_name || 'Ruta',
+        productoId: row.route_producto_id,
+        unitName: row.unit_name,
+        unitPlacas: row.unit_placas,
+        unitDescripcion: row.unit_descripcion,
+        driverName: row.driver_name,
+        empresaName: row.empresa_name,
+      }],
+      all_route_producto_ids: [row.route_producto_id],
+    }));
+  }, [publicRouteProductoId, viewingRouteType]);
+
   // Carga inicial completa (con productos, etc.)
   const fetchFullData = useCallback(async () => {
     if (!isMounted.current) return;
     
     console.log('🔄 [fetchFullData] Carga completa iniciando...');
     
-    // Phase 1: Fetch profiles + categories in parallel (no dependencies)
-    const [profilesResult, taxiCatResult, rutaCatResult] = await Promise.all([
+    // Phase 1: Fetch profiles + categories + public route live units in parallel (no dependencies)
+    const [profilesResult, taxiCatResult, rutaCatResult, publicRouteUnits] = await Promise.all([
       supabase.from('profiles')
         .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
         .eq('role', 'proveedor')
@@ -75,12 +127,13 @@ export const useRealtimeLocations = () => {
         .select('id')
         .ilike('name', '%rutas de transporte%')
         .maybeSingle(),
+      fetchPublicRouteLiveUnits(),
     ]);
 
     const activeProfiles = profilesResult.data;
     if (profilesResult.error || !activeProfiles?.length) {
       console.log('⚠️ No hay proveedores activos');
-      setLocations([]);
+      setLocations(publicRouteUnits);
       setLoading(false);
       setInitialLoadDone(true);
       return;
@@ -102,7 +155,7 @@ export const useRealtimeLocations = () => {
 
     const locationsData = locResult.data;
     if (locResult.error || !locationsData?.length) {
-      setLocations([]);
+      setLocations(publicRouteUnits);
       setLoading(false);
       setInitialLoadDone(true);
       return;
@@ -295,7 +348,7 @@ export const useRealtimeLocations = () => {
     const normalizeRouteName = (name: string | null | undefined) => name?.trim().toLowerCase() || '';
     const newLocationsMap = new Map<string, ProveedorLocation>();
 
-    for (const loc of locationsData) {
+    for (const loc of locationsData || []) {
       const profile = activeProfiles.find(p => p.user_id === loc.user_id);
       if (!profile) continue;
 
@@ -419,6 +472,11 @@ export const useRealtimeLocations = () => {
       newLocationsMap.set(loc.user_id, location);
     }
 
+    publicRouteUnits.forEach((routeUnit) => {
+      const existing = newLocationsMap.get(routeUnit.user_id);
+      newLocationsMap.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
+    });
+
     locationsMapRef.current = newLocationsMap;
     
     if (isMounted.current) {
@@ -428,7 +486,7 @@ export const useRealtimeLocations = () => {
     }
     
     console.log(`✅ [fetchFullData] ${newLocationsMap.size} proveedores cargados`);
-  }, []);
+  }, [fetchPublicRouteLiveUnits]);
 
   // Actualización rápida SOLO de coordenadas (para movimiento fluido)
   const updateLocationOnly = useCallback((userId: string, lat: number, lng: number) => {
@@ -450,11 +508,14 @@ export const useRealtimeLocations = () => {
   const fetchLocationsOnly = useCallback(async () => {
     if (!isMounted.current) return;
     
-    const { data: locationsData } = await supabase
+    const [{ data: locationsData }, publicRouteUnits] = await Promise.all([
+      supabase
       .from('proveedor_locations')
-      .select('user_id, latitude, longitude, updated_at');
+      .select('user_id, latitude, longitude, updated_at'),
+      fetchPublicRouteLiveUnits(),
+    ]);
     
-    if (!locationsData?.length) return;
+    if (!locationsData?.length && publicRouteUnits.length === 0) return;
     
     let hasChanges = false;
     
@@ -470,11 +531,17 @@ export const useRealtimeLocations = () => {
         }
       }
     }
+
+    for (const routeUnit of publicRouteUnits) {
+      const existing = locationsMapRef.current.get(routeUnit.user_id);
+      locationsMapRef.current.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
+      hasChanges = true;
+    }
     
     if (hasChanges && isMounted.current) {
       setLocations(Array.from(locationsMapRef.current.values()));
     }
-  }, []);
+  }, [fetchPublicRouteLiveUnits]);
 
   useEffect(() => {
     isMounted.current = true;
