@@ -4554,6 +4554,27 @@ export type Database = {
           route_type: string
         }[]
       }
+      get_public_route_live_units: {
+        Args: { _producto_id: string }
+        Returns: {
+          apodo: string
+          driver_name: string
+          empresa_name: string
+          estado: string
+          latitude: number
+          longitude: number
+          proveedor_id: string
+          provider_type: string
+          route_name: string
+          route_producto_id: string
+          route_type: string
+          unit_descripcion: string
+          unit_name: string
+          unit_placas: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_sos_by_token: {
         Args: { p_token: string }
         Returns: {
