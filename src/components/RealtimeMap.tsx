@@ -173,9 +173,9 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
         if (loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)) return true;
         // Para rutas PUBLICAS: aceptar unidades de cualquier concesionario sirviendo el MISMO nombre de ruta
         if (isPublicView && targetName) {
-          const currentName = (loc.profiles?.route_name || '').trim().toLowerCase();
+          const currentName = normalizeName(loc.profiles?.route_name);
           if (currentName && currentName === targetName) return true;
-          if (loc.all_assignments?.some(a => (a.routeName || '').trim().toLowerCase() === targetName)) return true;
+          if (loc.all_assignments?.some(a => normalizeName(a.routeName) === targetName)) return true;
         }
         return false;
       });
