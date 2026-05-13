@@ -45,6 +45,9 @@ interface ProvidersMapProps {
   onOpenChat?: (providerId: string, providerName: string) => void;
   vehicleFilter?: 'all' | 'taxi' | 'ruta';
   routeOverlayId?: string | null;
+  routeProductoId?: string | null;
+  routeName?: string | null;
+  routeType?: string | null;
 }
 
 import { getTaxiSvg, getTaxiColorByStatus, TAXI_COLORS } from '@/lib/vehicleIcons';
@@ -149,7 +152,7 @@ const createBusIcon = (routeName: string, rotation: number = 0, routeType?: stri
   });
 };
 
-function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverlayId = null }: ProvidersMapProps) {
+function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverlayId = null, routeProductoId = null, routeName = null, routeType = null }: ProvidersMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -201,7 +204,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
   useRouteOverlay(mapRef, mapReady ? (routeOverlayId ?? null) : null);
 
   // Get real-time locations - don't block on loading if we have static coordinates
-  const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations();
+  const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations(routeProductoId, routeType);
 
   console.log('🗺️ ProvidersMap - proveedores recibidos:', providers.length);
   console.log('📍 ProvidersMap - ubicaciones en tiempo real:', realtimeLocations.length, 'loading:', realtimeLoading);
