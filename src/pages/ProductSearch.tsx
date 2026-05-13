@@ -101,6 +101,10 @@ const ProductSearch = () => {
   const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [selectedRouteType, setSelectedRouteType] = useState<RouteTypeFilter>(null);
   const [privateRouteLink, setPrivateRouteLink] = useState<string>('');
+  const selectedRouteProductoId = useMemo(
+    () => availableRoutes.find((route) => route.nombre === selectedRoute)?.producto_id || null,
+    [availableRoutes, selectedRoute]
+  );
 
   // State for "Profesiones y oficios" subcategories
   const [availableProfesiones, setAvailableProfesiones] = useState<AvailableRoute[]>([]);
@@ -1136,6 +1140,9 @@ const ProductSearch = () => {
                     vehicleFilter={vehicleFilter}
                     onOpenChat={handleOpenChat}
                     routeOverlayId={isRutasCategory && selectedRoute ? routeNameToId(selectedRoute) : null}
+                    routeProductoId={isRutasCategory ? selectedRouteProductoId : null}
+                    routeName={isRutasCategory ? selectedRoute : null}
+                    routeType={selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'publico' ? 'urbana' : null}
                   />
                 </div>
               </section>
