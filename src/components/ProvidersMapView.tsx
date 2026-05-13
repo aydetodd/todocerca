@@ -211,16 +211,70 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
   
   // Merge provider data with real-time locations - ONLY show providers with realtime data to get correct status
   const providersWithRealtimeLocation = React.useMemo(() => {
-    return providers
+    const normalizeName = (name: string | null | undefined) =>
+      (name || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+
+    const buildProviderFromRealtime = (realtimeLocation: typeof realtimeLocations[number], baseProvider?: Provider | null) => {
+      const status = realtimeLocation.profiles?.estado || 'offline';
+      if (status === 'offline') return null;
+
+      const matchedAssignment = routeProductoId
+        ? realtimeLocation.all_assignments?.find(a => a.productoId === routeProductoId)
+        : null;
+      const activeProductId = matchedAssignment?.productoId || realtimeLocation.route_producto_id || routeProductoId || '';
+      const resolvedRouteName = matchedAssignment?.routeName || realtimeLocation.profiles?.route_name || routeName || 'Ruta';
+      const productForMap =
+        baseProvider?.productos.find(p => p.id === activeProductId) ||
+        baseProvider?.productos[0] ||
+        {
+          id: activeProductId,
+          nombre: resolvedRouteName,
+          precio: 0,
+          descripcion: '',
+          stock: 1,
+          unit: 'viaje',
+          categoria: 'Rutas de Transporte',
+        };
+
+      return {
+        ...(baseProvider || {
+          id: realtimeLocation.proveedor_id || realtimeLocation.user_id,
+          business_name: realtimeLocation.empresa_name || realtimeLocation.profiles?.apodo || 'Unidad en ruta',
+          business_address: '',
+          business_phone: realtimeLocation.profiles?.telefono || null,
+          user_id: realtimeLocation.user_id,
+          productos: [productForMap],
+        }),
+        productos: [productForMap],
+        latitude: realtimeLocation.latitude,
+        longitude: realtimeLocation.longitude,
+        user_id: realtimeLocation.user_id,
+        _realtimeStatus: status,
+        _providerType: realtimeLocation.profiles?.provider_type || 'ruta',
+        _routeName: resolvedRouteName,
+        _isBus: true,
+        _isTaxi: false,
+        _tarifaKm: realtimeLocation.profiles?.tarifa_km || 15,
+        _routeType: realtimeLocation.route_type || routeType || null,
+        _isPrivateRoute: realtimeLocation.is_private_route || false,
+        _routeProductoId: activeProductId || null,
+      };
+    };
+
+    const byUserId = new Map(providers.map(provider => [provider.user_id, provider]));
+    const mappedProviders = providers
       .map(provider => {
         // First check if there's realtime location data with status
         const realtimeLocation = realtimeLocations.find(loc => loc.user_id === provider.user_id);
         
         if (realtimeLocation) {
-          // Use the status from realtime data - this is the source of truth
           const status = realtimeLocation.profiles?.estado || 'offline';
           const providerType = realtimeLocation.profiles?.provider_type || null;
-          const routeName = realtimeLocation.profiles?.route_name || null;
+          const currentRouteName = realtimeLocation.profiles?.route_name || null;
           
           console.log(`🔄 Proveedor ${provider.business_name}: realtime status=${status}, type=${providerType}`);
           
@@ -265,8 +319,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
           }
 
           const resolvedRouteName = vehicleFilter === 'ruta'
-            ? (filteredProducts[0]?.nombre || routeName)
-            : routeName;
+            ? (filteredProducts[0]?.nombre || currentRouteName)
+            : currentRouteName;
 
           return {
             ...provider,
@@ -290,7 +344,24 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         return null;
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
-  }, [providers, realtimeLocations]);
+
+    if (vehicleFilter !== 'ruta' || !routeProductoId) return mappedProviders;
+
+    const targetName = normalizeName(routeName);
+    const routeUnits = realtimeLocations
+      .filter((loc) => {
+        if (loc.route_producto_id === routeProductoId) return true;
+        if (loc.all_assignments?.some(a => a.productoId === routeProductoId)) return true;
+        if (!targetName) return false;
+        if (normalizeName(loc.profiles?.route_name) === targetName) return true;
+        return !!loc.all_assignments?.some(a => normalizeName(a.routeName) === targetName);
+      })
+      .filter((loc) => !mappedProviders.some(provider => provider.user_id === loc.user_id))
+      .map((loc) => buildProviderFromRealtime(loc, byUserId.get(loc.user_id) || null))
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
+    return [...mappedProviders, ...routeUnits];
+  }, [providers, realtimeLocations, vehicleFilter, routeProductoId, routeName, routeType]);
   
   // Filter providers with valid coordinates and apply vehicle filter
   const validProviders = React.useMemo(() => {
