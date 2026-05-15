@@ -55,16 +55,16 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const isMounted = useRef(true);
   const locationsMapRef = useRef<Map<string, ProveedorLocation>>(new Map());
 
-  const fetchPublicRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
-    const isPublicRouteView = !!publicRouteProductoId && (viewingRouteType === 'urbana' || viewingRouteType === 'foranea');
-    if (!isPublicRouteView) return [];
+  const fetchRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
+    const isRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada'].includes(viewingRouteType || '');
+    if (!isRouteView) return [];
 
-    const { data, error } = await (supabase as any).rpc('get_public_route_live_units', {
+    const { data, error } = await (supabase as any).rpc('get_route_live_units', {
       _producto_id: publicRouteProductoId,
     });
 
     if (error || !data) {
-      console.error('[fetchPublicRouteLiveUnits] Error:', error);
+      console.error('[fetchRouteLiveUnits] Error:', error);
       return [];
     }
 
@@ -113,8 +113,8 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     
     console.log('🔄 [fetchFullData] Carga completa iniciando...');
     
-    // Phase 1: Fetch profiles + categories + public route live units in parallel (no dependencies)
-    const [profilesResult, taxiCatResult, rutaCatResult, publicRouteUnits] = await Promise.all([
+    // Phase 1: Fetch profiles + categories + route live units in parallel (no dependencies)
+    const [profilesResult, taxiCatResult, rutaCatResult, routeUnits] = await Promise.all([
       supabase.from('profiles')
         .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
         .eq('role', 'proveedor')
@@ -127,13 +127,13 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
         .select('id')
         .ilike('name', '%rutas de transporte%')
         .maybeSingle(),
-      fetchPublicRouteLiveUnits(),
+      fetchRouteLiveUnits(),
     ]);
 
     const activeProfiles = profilesResult.data;
     if (profilesResult.error || !activeProfiles?.length) {
       console.log('⚠️ No hay proveedores activos');
-      setLocations(publicRouteUnits);
+      setLocations(routeUnits);
       setLoading(false);
       setInitialLoadDone(true);
       return;
@@ -155,7 +155,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
 
     const locationsData = locResult.data;
     if (locResult.error || !locationsData?.length) {
-      setLocations(publicRouteUnits);
+      setLocations(routeUnits);
       setLoading(false);
       setInitialLoadDone(true);
       return;
@@ -472,7 +472,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
       newLocationsMap.set(loc.user_id, location);
     }
 
-    publicRouteUnits.forEach((routeUnit) => {
+    routeUnits.forEach((routeUnit) => {
       const existing = newLocationsMap.get(routeUnit.user_id);
       newLocationsMap.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
     });
@@ -486,7 +486,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     }
     
     console.log(`✅ [fetchFullData] ${newLocationsMap.size} proveedores cargados`);
-  }, [fetchPublicRouteLiveUnits]);
+  }, [fetchRouteLiveUnits]);
 
   // Actualización rápida SOLO de coordenadas (para movimiento fluido)
   const updateLocationOnly = useCallback((userId: string, lat: number, lng: number) => {
@@ -508,14 +508,14 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const fetchLocationsOnly = useCallback(async () => {
     if (!isMounted.current) return;
     
-    const [{ data: locationsData }, publicRouteUnits] = await Promise.all([
+    const [{ data: locationsData }, routeUnits] = await Promise.all([
       supabase
       .from('proveedor_locations')
       .select('user_id, latitude, longitude, updated_at'),
-      fetchPublicRouteLiveUnits(),
+      fetchRouteLiveUnits(),
     ]);
     
-    if (!locationsData?.length && publicRouteUnits.length === 0) return;
+    if (!locationsData?.length && routeUnits.length === 0) return;
     
     let hasChanges = false;
     
@@ -532,7 +532,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
       }
     }
 
-    for (const routeUnit of publicRouteUnits) {
+    for (const routeUnit of routeUnits) {
       const existing = locationsMapRef.current.get(routeUnit.user_id);
       locationsMapRef.current.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
       hasChanges = true;
@@ -541,7 +541,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     if (hasChanges && isMounted.current) {
       setLocations(Array.from(locationsMapRef.current.values()));
     }
-  }, [fetchPublicRouteLiveUnits]);
+  }, [fetchRouteLiveUnits]);
 
   useEffect(() => {
     isMounted.current = true;
