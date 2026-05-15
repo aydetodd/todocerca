@@ -53,6 +53,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
   const prevPositionsRef = useRef<{ [key: string]: { lat: number; lng: number } }>({});
   const headingsRef = useRef<{ [key: string]: number }>({});
+  const [mapReady, setMapReady] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { locations, loading, initialLoadDone, updateLocation } = useRealtimeLocations(privateRouteProductoId, viewingRouteType);
   
@@ -77,10 +78,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       try {
         mapRef.current.getContainer();
         console.log('🗺️ Map already initialized, skipping');
+        setMapReady(true);
         return;
       } catch {
         // Map container was removed, reset ref
         mapRef.current = null;
+        setMapReady(false);
       }
     }
 
@@ -96,6 +99,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const map = L.map('map', { attributionControl: false }).setView([lat, lng], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
       mapRef.current = map;
+      setMapReady(true);
     };
 
     // Try to get user's current location
@@ -112,6 +116,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        setMapReady(false);
       }
     };
   }, []);
@@ -141,7 +146,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
   // Update markers - SOLO cuando initialLoadDone sea true
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapReady) return;
     
     // No mostrar markers hasta que la carga inicial esté lista
     if (!initialLoadDone) {
@@ -878,7 +883,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
-  }, [locations, currentUserId, initialLoadDone, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType]);
+  }, [locations, currentUserId, initialLoadDone, mapReady, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType]);
 
   // Add global functions for popup buttons
   useEffect(() => {
