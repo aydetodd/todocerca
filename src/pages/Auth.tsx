@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, User, RefreshCw, Eye, EyeOff } from "lucide-react";
@@ -39,8 +39,17 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const redirectParam = searchParams.get('redirect') || searchParams.get('returnTo');
+    const isSafeInternalPath = redirectParam?.startsWith('/') && !redirectParam.startsWith('//');
+    if (redirectParam && isSafeInternalPath) {
+      localStorage.setItem('redirectAfterLogin', redirectParam);
+    }
+  }, [searchParams]);
 
   const phoneLoginEmails = (phone: string) => {
     const digits = phone.replace(/\D/g, '');
