@@ -972,13 +972,13 @@ const ProductSearch = () => {
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} en {searchCiudad}, {searchEstado}:
+                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con unidades disponibles en {searchCiudad}, {searchEstado}:
                     </p>
                     {loadingRoutes ? (
                       <p className="text-sm text-muted-foreground">Cargando rutas...</p>
                     ) : availableRoutes.length === 0 ? (
                       <p className="text-sm text-destructive">
-                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} registradas en esta ubicación.
+                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con chofer y unidad disponibles en esta ubicación.
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
