@@ -4575,6 +4575,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_public_routes_with_live_units: {
+        Args: { _ciudad?: string; _estado?: string; _route_type?: string }
+        Returns: {
+          id: string
+          nombre: string
+          unit_count: number
+        }[]
+      }
       get_route_live_units: {
         Args: { _producto_id: string }
         Returns: {
