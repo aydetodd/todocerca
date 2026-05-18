@@ -311,28 +311,12 @@ const ProductSearch = () => {
           return;
         }
 
-        let query = supabase
-          .from("productos")
-          .select("id, nombre")
-          .eq("category_id", rutasCategory.id)
-          .eq("is_available", true)
-          .gte("stock", 1)
-          .eq("is_private", false);
-
-        // Filter by route type
-        if (selectedRouteType === 'publico') {
-          query = query.or('route_type.eq.urbana,route_type.is.null');
-        } else if (selectedRouteType === 'foraneo') {
-          query = query.eq('route_type', 'foranea');
-        }
-
-        // Location filters
-        if (searchEstado) query = query.eq("estado", searchEstado);
-        if (searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE) {
-          query = query.eq("ciudad", searchCiudad);
-        }
-
-        const { data, error } = await query;
+        const rpcRouteType = selectedRouteType === 'foraneo' ? 'foranea' : 'urbana';
+        const { data, error } = await (supabase as any).rpc('get_public_routes_with_live_units', {
+          _estado: searchEstado || null,
+          _ciudad: searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE ? searchCiudad : null,
+          _route_type: rpcRouteType,
+        });
 
         if (error) {
           console.error("[ProductSearch] Error fetching routes:", error);
@@ -340,15 +324,15 @@ const ProductSearch = () => {
           return;
         }
 
-        // Group routes by name, keep first producto_id and count
+        // Group routes by name, keep first producto_id and real live unit count
         const routeMap = new Map<string, { count: number; producto_id: string }>();
         (data || []).forEach((producto: any) => {
           const routeName = producto.nombre;
           const existing = routeMap.get(routeName);
           if (existing) {
-            existing.count += 1;
+            existing.count += Number(producto.unit_count || 1);
           } else {
-            routeMap.set(routeName, { count: 1, producto_id: producto.id });
+            routeMap.set(routeName, { count: Number(producto.unit_count || 1), producto_id: producto.id });
           }
         });
 
@@ -988,13 +972,13 @@ const ProductSearch = () => {
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} en {searchCiudad}, {searchEstado}:
+                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con unidades disponibles en {searchCiudad}, {searchEstado}:
                     </p>
                     {loadingRoutes ? (
                       <p className="text-sm text-muted-foreground">Cargando rutas...</p>
                     ) : availableRoutes.length === 0 ? (
                       <p className="text-sm text-destructive">
-                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} registradas en esta ubicación.
+                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con chofer y unidad disponibles en esta ubicación.
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">

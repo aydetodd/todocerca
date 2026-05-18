@@ -131,6 +131,18 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     ]);
 
     const activeProfiles = profilesResult.data;
+    const isSpecificRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada'].includes(viewingRouteType || '');
+
+    // En vista de una ruta específica, la única fuente válida son las unidades reales
+    // devueltas por get_route_live_units. No mezclar ubicaciones genéricas de proveedores,
+    // porque eso crea "unidades fantasma" sobre rutas del catálogo.
+    if (isSpecificRouteView) {
+      setLocations(routeUnits);
+      setLoading(false);
+      setInitialLoadDone(true);
+      return;
+    }
+
     if (profilesResult.error || !activeProfiles?.length) {
       console.log('⚠️ No hay proveedores activos');
       setLocations(routeUnits);
