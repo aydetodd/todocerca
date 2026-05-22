@@ -53,6 +53,7 @@ import PanelMaquiladora from "./pages/PanelMaquiladora";
 import PanelConcesionarioHub from "./pages/PanelConcesionarioHub";
 import PanelConcesionario from "./pages/PanelConcesionario";
 import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
+import PanelConcesionarioForaneo from "./pages/PanelConcesionarioForaneo";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
@@ -179,7 +180,7 @@ export default function AppWrapper() {
           <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
           <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
           <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
-          {/* foráneo: pendiente */}
+          <Route path="/panel-concesionario/foraneo" element={<PanelConcesionarioForaneo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/tv" element={<TodoCercaTv />} />
           <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />

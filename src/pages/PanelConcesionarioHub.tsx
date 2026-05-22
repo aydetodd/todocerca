@@ -29,11 +29,11 @@ const OPTIONS: PanelOption[] = [
   {
     key: 'foraneo',
     label: 'Concesionario Foráneo',
-    description: 'Próximamente. Aún no disponible para acceso.',
+    description: 'Rutas foráneas con GPS público, geocercas A/B y reportes por viaje.',
     icon: Truck,
-    color: 'text-muted-foreground',
-    bgColor: 'bg-muted',
-    disabled: true,
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-100',
+    to: '/panel-concesionario/foraneo',
   },
   {
     key: 'privado',

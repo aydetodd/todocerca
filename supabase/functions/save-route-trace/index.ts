@@ -39,8 +39,8 @@ serve(async (req) => {
     if ((producto.proveedores as { user_id?: string })?.user_id !== userData.user.id) {
       throw new Error("Esta ruta no pertenece a tu concesionario.");
     }
-    if (producto.route_type !== "privada" && producto.is_private !== true) {
-      throw new Error("El trazado editable solo aplica para rutas privadas.");
+    if (producto.route_type !== "privada" && producto.route_type !== "foranea" && producto.is_private !== true) {
+      throw new Error("El trazado editable solo aplica para rutas privadas o foráneas.");
     }
 
     const { error: updateError } = await supabase
