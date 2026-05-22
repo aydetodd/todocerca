@@ -53,6 +53,7 @@ import PanelMaquiladora from "./pages/PanelMaquiladora";
 import PanelConcesionarioHub from "./pages/PanelConcesionarioHub";
 import PanelConcesionario from "./pages/PanelConcesionario";
 import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
+import PanelConcesionarioForaneo from "./pages/PanelConcesionarioForaneo";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
