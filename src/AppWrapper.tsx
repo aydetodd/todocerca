@@ -180,7 +180,7 @@ export default function AppWrapper() {
           <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
           <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
           <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
-          {/* foráneo: pendiente */}
+          <Route path="/panel-concesionario/foraneo" element={<PanelConcesionarioForaneo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/tv" element={<TodoCercaTv />} />
           <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
