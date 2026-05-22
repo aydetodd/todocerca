@@ -882,7 +882,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               {vehicle.descripcion}
                             </p>
                           )}
-                          {transportType === 'privado' && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
+                          {(transportType === 'privado' || transportType === 'foraneo') && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
                             <p className="text-[11px] text-muted-foreground mt-1 ml-6">
                               ✓ Inicio y final configurados (radio {vehicle.route_geofence_radius_m ?? 50} m)
                             </p>
