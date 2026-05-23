@@ -84,13 +84,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
         supabase.from("choferes_empresa").select("id, nombre, user_id")
           .eq("proveedor_id", proveedorId).eq("is_active", true),
         supabase.from("productos").select("id, nombre")
-          .eq("proveedor_id", proveedorId).eq("route_type", "privada").eq("is_private", true)
+          .eq("proveedor_id", proveedorId)
+          .eq("route_type", routeFilterType)
+          .eq("is_private", routeFilterType === 'privada')
           .order("nombre"),
       ]);
 
-      const rutasPrivadas = (prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" }));
-      setRutas(rutasPrivadas);
-      const rutaPrivadaIds = rutasPrivadas.map((r) => r.id);
+      const rutasFiltradas = (prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" }));
+      setRutas(rutasFiltradas);
+      const rutaIdsFiltrados = rutasFiltradas.map((r) => r.id);
 
       // Filtrar asignaciones SOLO de rutas privadas para evitar cruces con público
       const choferIds = (cRes.data || []).map((c: any) => c.id);
