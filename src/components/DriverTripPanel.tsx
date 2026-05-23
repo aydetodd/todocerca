@@ -97,6 +97,7 @@ export function DriverTripPanel({
   destinoLat,
   destinoLng,
   radioM: radioMProp = 50,
+  autoMode = false,
 }: DriverTripPanelProps) {
   // Radio configurado por el concesionario; mínimo defensivo de 30 m por precisión GPS típica.
   const radioM = Math.max(radioMProp ?? 50, 30);
@@ -111,6 +112,16 @@ export function DriverTripPanel({
   const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
   const [manualEndOpen, setManualEndOpen] = useState(false);
   const inFlightRef = useRef(false);
+  // ---- Modo automático (foráneas) ----
+  // jornadaActiva persiste entre recargas del navegador.
+  const jornadaKey = `jornada_activa_${choferEmpresaId}`;
+  const [jornadaActiva, setJornadaActiva] = useState<boolean>(() => {
+    try { return localStorage.getItem(jornadaKey) === "1"; } catch { return false; }
+  });
+  // Última geocerca de la que se "auto-cerró" un viaje (para arrancar el siguiente al salir)
+  const lastClosedFenceRef = useRef<"A" | "B" | null>(null);
+  // Anti-rebote por geocerca (60 s)
+  const lastAutoActionAtRef = useRef<number>(0);
 
   const todayStr = getHermosilloToday();
   const hasGeofences =
