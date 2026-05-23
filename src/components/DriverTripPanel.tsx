@@ -486,45 +486,133 @@ export function DriverTripPanel({
         </Card>
 
         {/* Botones según estado */}
-        {hasGeofences && !viajeActivo && (
+        {autoMode ? (
           <div className="space-y-2">
-            <Button
-              size="lg"
-              className="w-full h-14 text-base"
-              onClick={() => setAskDir(true)}
-            >
-              <Play className="h-5 w-5 mr-2" />
-              Iniciar nuevo viaje
-            </Button>
+            {/* Iniciar jornada (primer viaje) */}
+            {!jornadaActiva && !viajeActivo && hasGeofences && (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full h-14 text-base"
+                  disabled={!currentPos || inFlightRef.current}
+                  onClick={async () => {
+                    if (!currentPos) { toast.error("Esperando GPS…"); return; }
+                    // Dirección automática:
+                    // - dentro de A → AB
+                    // - dentro de B → BA
+                    // - fuera → hacia la geocerca más LEJANA (la que está más cerca probablemente fue origen)
+                    let dir: Direccion;
+                    if (insideA) dir = "AB";
+                    else if (insideB) dir = "BA";
+                    else {
+                      const dA = distA ?? Infinity;
+                      const dB = distB ?? Infinity;
+                      dir = dA <= dB ? "AB" : "BA"; // si A está más cerca, vamos hacia B
+                    }
+                    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: !(insideA || insideB) });
+                    try { localStorage.setItem(jornadaKey, "1"); } catch {}
+                    setJornadaActiva(true);
+                    lastClosedFenceRef.current = null;
+                    lastAutoActionAtRef.current = Date.now();
+                  }}
+                >
+                  <Play className="h-5 w-5 mr-2" />
+                  Iniciar jornada
+                </Button>
+                <p className="text-[11px] text-center text-muted-foreground">
+                  Después del primer viaje, los siguientes se cuentan solos al entrar a cada geocerca.
+                </p>
+              </>
+            )}
+
+            {/* Jornada activa: estado y botón para finalizarla */}
+            {jornadaActiva && (
+              <Button
+                size="lg"
+                variant="destructive"
+                className="w-full h-14 text-base"
+                disabled={inFlightRef.current}
+                onClick={async () => {
+                  if (viajeActivo) {
+                    // cerrar el viaje activo con GPS si hay, si no manual
+                    const lat = currentPos?.lat ?? null;
+                    const lng = currentPos?.lng ?? null;
+                    inFlightRef.current = true;
+                    try {
+                      await supabase
+                        .from("viajes_realizados")
+                        .update({
+                          fin_lat: lat, fin_lng: lng,
+                          fin_at: new Date().toISOString(),
+                          estado: "completado",
+                          fin_manual: lat == null,
+                        } as any)
+                        .eq("id", viajeActivo.id);
+                    } finally {
+                      setTimeout(() => { inFlightRef.current = false; }, 1000);
+                    }
+                  }
+                  try { localStorage.removeItem(jornadaKey); } catch {}
+                  setJornadaActiva(false);
+                  lastClosedFenceRef.current = null;
+                  toast.success("🏁 Jornada finalizada");
+                }}
+              >
+                <Flag className="h-5 w-5 mr-2" />
+                Finalizar jornada
+              </Button>
+            )}
+
+            {!hasGeofences && (
+              <p className="text-xs text-center text-destructive">
+                Pide al concesionario marcar el Punto A y el Punto B en la ruta.
+              </p>
+            )}
           </div>
+        ) : (
+          <>
+            {hasGeofences && !viajeActivo && (
+              <div className="space-y-2">
+                <Button
+                  size="lg"
+                  className="w-full h-14 text-base"
+                  onClick={() => setAskDir(true)}
+                >
+                  <Play className="h-5 w-5 mr-2" />
+                  Iniciar nuevo viaje
+                </Button>
+              </div>
+            )}
+
+            {hasGeofences && viajeActivo && (
+              <div className="space-y-2">
+                <Button
+                  size="lg"
+                  className="w-full h-14 text-base"
+                  disabled={!currentPos || !insideEnd || inFlightRef.current}
+                  onClick={confirmarFinGPS}
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  {insideEnd
+                    ? `Confirmar llegada (${dirActiva})`
+                    : currentPos && distEnd != null
+                      ? `Acércate al punto ${dirActiva === "BA" ? "A" : "B"} (faltan ${Math.round(distEnd)} m)`
+                      : `Esperando ubicación…`}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setManualEndOpen(true)}
+                >
+                  <WifiOff className="h-4 w-4 mr-2" />
+                  Cerrar viaje manualmente (sin GPS)
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
-        {hasGeofences && viajeActivo && (
-          <div className="space-y-2">
-            <Button
-              size="lg"
-              className="w-full h-14 text-base"
-              disabled={!currentPos || !insideEnd || inFlightRef.current}
-              onClick={confirmarFinGPS}
-            >
-              <CheckCircle2 className="h-5 w-5 mr-2" />
-              {insideEnd
-                ? `Confirmar llegada (${dirActiva})`
-                : currentPos && distEnd != null
-                  ? `Acércate al punto ${dirActiva === "BA" ? "A" : "B"} (faltan ${Math.round(distEnd)} m)`
-                  : `Esperando ubicación…`}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => setManualEndOpen(true)}
-            >
-              <WifiOff className="h-4 w-4 mr-2" />
-              Cerrar viaje manualmente (sin GPS)
-            </Button>
-          </div>
-        )}
 
         {!hasGeofences && (
           <Card className="border-destructive/40 bg-destructive/5">
