@@ -626,6 +626,7 @@ export default function ValidarQr() {
         destinoLat={tripContract.destinoLat ?? null}
         destinoLng={tripContract.destinoLng ?? null}
         radioM={tripContract.radioM ?? 150}
+        autoMode={tripContract.autoMode ?? false}
       />
     );
   }
