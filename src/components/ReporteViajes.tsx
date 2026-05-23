@@ -35,7 +35,7 @@ type ViajeRow = {
   productos?: { nombre?: string | null } | null;
 };
 
-export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
+export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>("hoy");
   const [customStart, setCustomStart] = useState("");
