@@ -1,76 +1,58 @@
-## Reportes Ciudadanos en el mapa
+## Qué vamos a hacer
 
-Nueva pestaña **"Reportes ciudadanos"** donde cualquier usuario autenticado coloca un pin sobre incidentes urbanos, y el admin (consecutive_number = 1) marca tramos de calles cerradas con líneas rojas.
+Hoy las rutas **privadas** (maquiladoras) ya tienen detección por geocercas A/B, pero cada viaje exige que el chofer presione "Confirmar llegada". Para **rutas foráneas** queremos que sea casi sin tocar la pantalla:
 
-### Funcionalidad para usuarios
+1. El chofer presiona **una sola vez** "Iniciar jornada":
+   - Si está dentro de A → cuenta el viaje hacia B.
+   - Si está dentro de B → cuenta el viaje hacia A.
+   - Si está a la mitad del camino → graba sus coordenadas como inicio y el próximo punto al que llegue (A o B) será el fin de ese viaje.
+2. A partir de ahí, **automático**:
+   - Al **entrar** a la geocerca opuesta → cierra el viaje activo (fin GPS).
+   - Al **salir** de esa misma geocerca → arranca el siguiente viaje (inverso).
+   - Así todo el día (A↔B↔A…) sin tocar nada.
+3. El último viaje queda **en curso** hasta que el chofer presione **"Finalizar jornada"**.
+4. Si se olvida, un proceso a **las 00:00 (Hermosillo)** cierra automáticamente cualquier viaje en curso sin contarlo como nuevo (estado `cerrado_medianoche`).
 
-- Botón flotante **"Reportar"** en el mapa de la ciudad.
-- 6 categorías con icono y color propio:
-  1. 🕳️ Bache
-  2. 💧 Fuga de agua potable
-  3. 🚽 Fuga de drenaje
-  4. 💡 Alumbrado público
-  5. 🗑️ Basura / escombro
-  6. 🚦 Semáforo dañado
-- Al tocar "Reportar": el mapa muestra una mira central, el usuario fija la ubicación, elige categoría y opcionalmente escribe una nota corta (máx. 200 caracteres).
-- El pin se guarda con: fecha de reporte y los **últimos 4 dígitos del teléfono** del reportante (visibles públicamente como `••••1234`). El user_id queda guardado pero **nunca se expone**.
-- Tap en un pin: muestra categoría, fecha, dígitos, nota, y dos botones:
-  - **"Sigue ahí"** (+1 confirmación)
-  - **"Ya se resolvió"** (+1 voto de resolución)
-- Cuando "ya se resolvió" alcanza **3 votos**, el pin se oculta automáticamente.
-- Un usuario solo puede votar una vez por reporte.
-
-### Funcionalidad para administrador (consecutive_number = 1)
-
-- Modo **"Tramo cerrado"**: toca varios puntos en el mapa para trazar una polilínea libre, ingresa nombre/motivo y fecha estimada de reapertura.
-- Los tramos se dibujan en **rojo grueso** sobre el mapa para todos los usuarios.
-- Admin puede:
-  - Editar/eliminar cualquier reporte ciudadano o tramo.
-  - Marcar manualmente reportes como resueltos.
-  - Ver lista con filtros por categoría/fecha.
-
-### Visibilidad
-
-- Pines y tramos visibles para todos los usuarios autenticados.
-- Reportante anónimo (solo últimos 4 dígitos del teléfono).
-- Admin ve todo + datos de moderación.
+Las rutas **privadas no cambian** (siguen con confirmación manual viaje por viaje, como hoy).
 
 ---
 
-### Detalles técnicos
+## Detalle técnico
 
-**Tablas nuevas (Supabase)**
+### Backend (migración)
 
-- `citizen_reports`
-  - `category` (enum: bache, fuga_agua, fuga_drenaje, alumbrado, basura, semaforo)
-  - `lat`, `lng`, `note`, `phone_last4`, `user_id`, `status` (active/resolved/hidden)
-  - `confirm_count`, `resolve_count`
-- `citizen_report_votes` — `report_id`, `user_id`, `vote_type` (confirm/resolve), unique(report_id, user_id)
-- `road_closures` — `name`, `reason`, `polyline` (jsonb array de [lat,lng]), `reopen_estimated_at`, `created_by`, `is_active`
+- En `viajes_realizados`: ya existen `inicio_manual`/`fin_manual`/`direccion`. Agregar valor permitido `cerrado_medianoche` para `estado` (es un check virtual, no constraint duro).
+- Edge Function nueva **`close-overnight-trips`**:
+  - Lista todos los `viajes_realizados` con `estado='en_curso'` cuyo `fecha < hoy_hermosillo`.
+  - Los cierra con `fin_at = '23:59' del día de inicio`, `fin_manual = true`, `estado = 'cerrado_medianoche'`.
+- `pg_cron` cada día a las **07:05 UTC** (= 00:05 Hermosillo) invoca esa función.
 
-**Vista pública** `citizen_reports_public` con `security_invoker=on` que excluye `user_id` (solo expone `phone_last4`). RLS en la tabla base con `USING (false)` para SELECT directo, garantizando privacidad del teléfono completo y user_id.
+### Frontend
 
-**RLS**
-- `citizen_reports`: INSERT autenticados (user_id = auth.uid()); UPDATE/DELETE solo `is_admin()` o autor; SELECT denegado (vía vista).
-- `citizen_report_votes`: INSERT autenticado, único por usuario.
-- `road_closures`: SELECT autenticados; INSERT/UPDATE/DELETE solo `is_admin()`.
+- **`DriverTripPanel`** acepta nuevo prop `autoMode?: boolean`.
+  - `false` (default, privadas) → comportamiento actual.
+  - `true` (foráneas):
+    - Botón único grande: **"Iniciar jornada"** / **"Finalizar jornada"**.
+    - Lógica `useEffect` que escucha cambios de `currentPos`:
+      - Si **hay viaje activo** y entra a la geocerca destino → llama `confirmarFinGPS()` automáticamente (con cooldown anti-rebote de 60 s).
+      - Si **acaba de cerrar** un viaje (registro de `lastClosedAt`) y **sale** de la geocerca → llama `insertViaje(opuesto, GPS)` automáticamente.
+    - "Iniciar jornada" detecta dentro de A/B/medio y resuelve dirección con coordenadas reales.
 
-**Trigger**: al insertar voto `resolve`, incrementar contador y si llega a 3 → `status = 'hidden'`.
+- **`ValidarQr`**: además de privadas, si la asignación es a una ruta `foranea` con `route_origin_*` y `route_destination_*` configurados, mostrar `DriverTripPanel` en modo `autoMode`.
 
-**Frontend**
-- Nueva ruta `/reportes-ciudadanos` enlazada desde el mapa principal y el navbar.
-- Componente `CitizenReportsLayer` que se monta en `RealtimeMap` para pintar pines (por categoría) y polilíneas rojas.
-- Componente `ReportPinModal` (categoría + nota + confirmar ubicación con mira central, similar a `RouteEndpointsPicker`).
-- Componente `AdminRoadClosureEditor` con modo polilínea libre (clicks consecutivos, doble-click para cerrar).
-- Realtime: suscripción a ambas tablas para sync en vivo.
+- **`ReporteViajes`** acepta prop `routeFilterType: 'privada' | 'foranea'` (default privada) → cambia el filtro de `productos` y mantiene aislamiento estricto entre tipos.
 
-**Privacidad**: `phone_last4` se calcula en el cliente al insertar (`telefono.slice(-4)`) y se valida server-side por trigger antes del INSERT.
+- **`PanelConcesionarioForaneo`** pasa `routeFilterType='foranea'` a `ReporteViajes`.
 
-### Fuera de alcance (versión 1)
+### Memoria a guardar
+Actualizar `mem://transporte/viajes-automaticos-geocercas` con la regla: foránea = auto; privada = manual; cierre a medianoche por cron.
 
-- Fotos adjuntas al reporte (se puede agregar después con bucket `citizen-reports`).
-- Notificaciones push a vecinos cercanos.
-- Dashboard de estadísticas para admin (gráficas, exportación CSV).
-- Integración con dependencias municipales.
+---
 
-¿Lo apruebo y comenzamos?
+## Notas operativas para ti
+
+- **Créditos**: la detección corre en el celular del chófer (no consume servidor extra). Solo cron de medianoche (~1 lectura/día). Sin gasto adicional notable.
+- **Sin "cuatrapeos"**: usamos Realtime de Supabase para que el reporte del concesionario se actualice en vivo cada vez que el chofer entra/sale de geocerca.
+- **Requisito**: el concesionario debe haber marcado A y B en la pestaña "Unidades / Choferes / Rutas" del panel foráneo (botón "Geocercas A/B" en la ruta). Si no, el panel del chofer le pide hacerlo antes.
+
+¿Lo construyo así?

@@ -124,6 +124,7 @@ export default function ValidarQr() {
     destinoLat?: number | null;
     destinoLng?: number | null;
     radioM?: number;
+    autoMode?: boolean;
   } | null>(null);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
@@ -215,12 +216,14 @@ export default function ValidarQr() {
               .select("route_type, is_private, proveedor_id, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m")
               .eq("id", asignacionActiva.producto_id)
               .single();
-            if (producto?.route_type === "privada" || (producto as any)?.is_private) {
+            const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
+            const p: any = producto;
+            const isForanea = producto?.route_type === "foranea" && !producto?.is_private;
+            const isPrivada = producto?.route_type === "privada" || producto?.is_private;
+
+            if (isPrivada) {
               setIsPrivateRoute(true);
               setScanMode("personal");
-
-              const p: any = producto;
-              const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
 
               // Buscar contrato "por_viaje" si existe
               let tripContrato: any = null;
@@ -234,7 +237,6 @@ export default function ValidarQr() {
                 tripContrato = (contratos || []).find((c: any) => c.modelo_cobro === "por_viaje");
               }
 
-              // Revisar si la unidad asignada cobra "por viaje"
               let unidadCobroTipo: string | null = null;
               if (asignacionActiva.unidad_id) {
                 const { data: unidad } = await (supabase as any)
@@ -245,29 +247,41 @@ export default function ValidarQr() {
                 unidadCobroTipo = unidad?.cobro_tipo ?? null;
               }
 
-              // Geocercas opcionales (contrato o ruta). Si no hay, el panel permite inicio/fin manual.
               const origenLat = tripContrato?.origen_lat ?? p?.route_origin_lat ?? null;
               const origenLng = tripContrato?.origen_lng ?? p?.route_origin_lng ?? null;
               const destinoLat = tripContrato?.destino_lat ?? p?.route_destination_lat ?? null;
               const destinoLng = tripContrato?.destino_lng ?? p?.route_destination_lng ?? null;
-
               const esPorViaje = !!tripContrato || unidadCobroTipo === "por_viaje";
 
               if (esPorViaje) {
                 setTripContract({
-                  contratoId: tripContrato?.id ?? asignacionActiva.producto_id, // fallback: usar producto_id como ref
+                  contratoId: tripContrato?.id ?? asignacionActiva.producto_id,
                   choferEmpresaId: choferActivo.id,
                   unidadId: asignacionActiva.unidad_id,
                   routeProductId: asignacionActiva.producto_id,
                   empresaNombre: tripContrato?.empresas_transporte?.nombre,
-                  origenLat,
-                  origenLng,
-                  destinoLat,
-                  destinoLng,
+                  origenLat, origenLng, destinoLat, destinoLng,
                   radioM: tripContrato?.geocerca_radio_m ?? p?.route_geofence_radius_m ?? 150,
+                  autoMode: false,
                 });
               }
+            } else if (isForanea && p?.route_origin_lat != null && p?.route_destination_lat != null) {
+              // Foránea con geocercas A/B configuradas → panel de viajes en modo AUTOMÁTICO
+              setTripContract({
+                contratoId: asignacionActiva.producto_id,
+                choferEmpresaId: choferActivo.id,
+                unidadId: asignacionActiva.unidad_id,
+                routeProductId: asignacionActiva.producto_id,
+                empresaNombre: "Ruta foránea",
+                origenLat: p.route_origin_lat,
+                origenLng: p.route_origin_lng,
+                destinoLat: p.route_destination_lat,
+                destinoLng: p.route_destination_lng,
+                radioM: p.route_geofence_radius_m ?? 150,
+                autoMode: true,
+              });
             }
+
           }
         }
       }
@@ -612,6 +626,7 @@ export default function ValidarQr() {
         destinoLat={tripContract.destinoLat ?? null}
         destinoLng={tripContract.destinoLng ?? null}
         radioM={tripContract.radioM ?? 150}
+        autoMode={tripContract.autoMode ?? false}
       />
     );
   }

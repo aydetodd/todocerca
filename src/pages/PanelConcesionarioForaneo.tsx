@@ -128,7 +128,7 @@ export default function PanelConcesionarioForaneo() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-2 sm:px-6">
-                <ReporteViajes proveedorId={proveedor.id} />
+                <ReporteViajes proveedorId={proveedor.id} routeFilterType="foranea" />
               </CardContent>
             </Card>
           </TabsContent>

@@ -10,6 +10,8 @@ import { downloadCSV } from "@/lib/csvExport";
 
 interface ReporteViajesProps {
   proveedorId?: string;
+  /** 'privada' (default) o 'foranea' — define qué tipo de rutas se incluyen y aísla el reporte. */
+  routeFilterType?: 'privada' | 'foranea';
 }
 
 type Periodo = "hoy" | "ayer" | "semana" | "mes" | "custom";
@@ -33,7 +35,7 @@ type ViajeRow = {
   productos?: { nombre?: string | null } | null;
 };
 
-export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
+export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>("hoy");
   const [customStart, setCustomStart] = useState("");
@@ -82,23 +84,25 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
         supabase.from("choferes_empresa").select("id, nombre, user_id")
           .eq("proveedor_id", proveedorId).eq("is_active", true),
         supabase.from("productos").select("id, nombre")
-          .eq("proveedor_id", proveedorId).eq("route_type", "privada").eq("is_private", true)
+          .eq("proveedor_id", proveedorId)
+          .eq("route_type", routeFilterType)
+          .eq("is_private", routeFilterType === 'privada')
           .order("nombre"),
       ]);
 
-      const rutasPrivadas = (prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" }));
-      setRutas(rutasPrivadas);
-      const rutaPrivadaIds = rutasPrivadas.map((r) => r.id);
+      const rutasFiltradas = (prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre || "Sin nombre" }));
+      setRutas(rutasFiltradas);
+      const rutaIdsFiltrados = rutasFiltradas.map((r) => r.id);
 
       // Filtrar asignaciones SOLO de rutas privadas para evitar cruces con público
       const choferIds = (cRes.data || []).map((c: any) => c.id);
       let asigFiltradas: any[] = [];
-      if (choferIds.length > 0 && rutaPrivadaIds.length > 0) {
+      if (choferIds.length > 0 && rutaIdsFiltrados.length > 0) {
         const { data: asigData } = await supabase
           .from("asignaciones_chofer")
           .select("chofer_id, unidad_id, producto_id, fecha")
           .in("chofer_id", choferIds)
-          .in("producto_id", rutaPrivadaIds);
+          .in("producto_id", rutaIdsFiltrados);
         asigFiltradas = asigData || [];
       }
       setAsignaciones(asigFiltradas);
@@ -117,7 +121,7 @@ export function ReporteViajes({ proveedorId }: ReporteViajesProps) {
         .filter((c: any) => choferIdsPrivados.has(c.id))
         .map((c: any) => ({ id: c.id, nombre: c.nombre || "Chofer" })));
     })();
-  }, [proveedorId]);
+  }, [proveedorId, routeFilterType]);
 
   const load = useCallback(async () => {
     if (!proveedorId) return;
