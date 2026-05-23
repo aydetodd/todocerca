@@ -10,6 +10,8 @@ import { downloadCSV } from "@/lib/csvExport";
 
 interface ReporteViajesProps {
   proveedorId?: string;
+  /** 'privada' (default) o 'foranea' — define qué tipo de rutas se incluyen y aísla el reporte. */
+  routeFilterType?: 'privada' | 'foranea';
 }
 
 type Periodo = "hoy" | "ayer" | "semana" | "mes" | "custom";
