@@ -97,12 +97,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       // Filtrar asignaciones SOLO de rutas privadas para evitar cruces con público
       const choferIds = (cRes.data || []).map((c: any) => c.id);
       let asigFiltradas: any[] = [];
-      if (choferIds.length > 0 && rutaPrivadaIds.length > 0) {
+      if (choferIds.length > 0 && rutaIdsFiltrados.length > 0) {
         const { data: asigData } = await supabase
           .from("asignaciones_chofer")
           .select("chofer_id, unidad_id, producto_id, fecha")
           .in("chofer_id", choferIds)
-          .in("producto_id", rutaPrivadaIds);
+          .in("producto_id", rutaIdsFiltrados);
         asigFiltradas = asigData || [];
       }
       setAsignaciones(asigFiltradas);
