@@ -40,6 +40,8 @@ interface DriverTripPanelProps {
   destinoLat?: number | null;
   destinoLng?: number | null;
   radioM?: number;
+  /** Si es true, los viajes posteriores al primero se cuentan automáticamente al entrar/salir de las geocercas. Solo para rutas foráneas. */
+  autoMode?: boolean;
 }
 
 type Direccion = "AB" | "BA";
