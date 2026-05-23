@@ -206,10 +206,63 @@ export function DriverTripPanel({
     if (viajeActivo && insideEnd && !alertedEndRef.current) {
       alertedEndRef.current = true;
       alertBeepVibrate();
-      toast.info(`🏁 Llegaste al punto ${dirActiva === "BA" ? "A" : "B"}. Confirma para cerrar el viaje.`, { duration: 6000 });
+      const msg = autoMode
+        ? `🏁 Llegada al punto ${dirActiva === "BA" ? "A" : "B"} detectada. Viaje cerrándose automáticamente.`
+        : `🏁 Llegaste al punto ${dirActiva === "BA" ? "A" : "B"}. Confirma para cerrar el viaje.`;
+      toast.info(msg, { duration: 6000 });
     }
     if (!insideEnd) alertedEndRef.current = false;
-  }, [insideEnd, viajeActivo, dirActiva]);
+  }, [insideEnd, viajeActivo, dirActiva, autoMode]);
+
+  // ---- AUTO MODE: cierre y arranque automático por geocerca ----
+  // Cierra automáticamente el viaje activo al entrar a la geocerca destino.
+  useEffect(() => {
+    if (!autoMode || !jornadaActiva) return;
+    if (!viajeActivo || !insideEnd || !currentPos || inFlightRef.current) return;
+    const now = Date.now();
+    if (now - lastAutoActionAtRef.current < 60_000) return; // anti-rebote 60 s
+    lastAutoActionAtRef.current = now;
+    // Marcar la geocerca recién alcanzada para arrancar el siguiente al salir
+    lastClosedFenceRef.current = dirActiva === "BA" ? "A" : "B";
+    (async () => {
+      inFlightRef.current = true;
+      try {
+        const { error } = await supabase
+          .from("viajes_realizados")
+          .update({
+            fin_lat: currentPos.lat,
+            fin_lng: currentPos.lng,
+            fin_at: new Date().toISOString(),
+            estado: "completado",
+            fin_manual: false,
+          } as any)
+          .eq("id", viajeActivo.id);
+        if (error) throw error;
+        toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente`);
+      } catch (err: any) {
+        toast.error(err.message || "Error cerrando viaje auto");
+      } finally {
+        setTimeout(() => { inFlightRef.current = false; }, 1500);
+      }
+    })();
+  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva]);
+
+  // Arranca automáticamente el siguiente viaje al SALIR de la geocerca recién alcanzada.
+  useEffect(() => {
+    if (!autoMode || !jornadaActiva) return;
+    if (viajeActivo || inFlightRef.current || !currentPos) return;
+    const lastFence = lastClosedFenceRef.current;
+    if (!lastFence) return;
+    const stillInside = lastFence === "A" ? insideA : insideB;
+    if (stillInside) return; // espera a que salga
+    const now = Date.now();
+    if (now - lastAutoActionAtRef.current < 60_000) return;
+    lastAutoActionAtRef.current = now;
+    const nextDir: Direccion = lastFence === "A" ? "AB" : "BA";
+    lastClosedFenceRef.current = null;
+    insertViaje(nextDir, { lat: currentPos.lat, lng: currentPos.lng, manual: false });
+  }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB]);
+
 
   const insertViaje = async (
     direccion: Direccion,
