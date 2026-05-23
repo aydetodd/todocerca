@@ -3943,6 +3943,7 @@ export type Database = {
       viajes_realizados: {
         Row: {
           chofer_id: string
+          closed_overnight: boolean
           contrato_id: string | null
           created_at: string
           direccion: string | null
@@ -3965,6 +3966,7 @@ export type Database = {
         }
         Insert: {
           chofer_id: string
+          closed_overnight?: boolean
           contrato_id?: string | null
           created_at?: string
           direccion?: string | null
@@ -3987,6 +3989,7 @@ export type Database = {
         }
         Update: {
           chofer_id?: string
+          closed_overnight?: boolean
           contrato_id?: string | null
           created_at?: string
           direccion?: string | null
