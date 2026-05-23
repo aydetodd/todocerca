@@ -124,6 +124,7 @@ export default function ValidarQr() {
     destinoLat?: number | null;
     destinoLng?: number | null;
     radioM?: number;
+    autoMode?: boolean;
   } | null>(null);
   const [showTicketList, setShowTicketList] = useState(false);
   const [dailyTickets, setDailyTickets] = useState<{ short_code: string; time: string }[]>([]);
