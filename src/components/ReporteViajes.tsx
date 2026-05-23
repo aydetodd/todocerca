@@ -121,7 +121,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
         .filter((c: any) => choferIdsPrivados.has(c.id))
         .map((c: any) => ({ id: c.id, nombre: c.nombre || "Chofer" })));
     })();
-  }, [proveedorId]);
+  }, [proveedorId, routeFilterType]);
 
   const load = useCallback(async () => {
     if (!proveedorId) return;
