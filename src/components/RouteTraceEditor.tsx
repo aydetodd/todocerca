@@ -101,18 +101,21 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 
       m.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
-        if (isDrawMode) {
+        const current = coordsRef.current;
+        if (isDrawMode && current.length < 2) {
+          // Primero coloca A y luego B (append).
           pushHistory();
-          const next = [...coordsRef.current, [lat, lng] as [number, number]];
+          const next = [...current, [lat, lng] as [number, number]];
           setCoords(next);
           setSelectedIdx(next.length - 1);
         } else {
-          // Edit mode: tapping anywhere on the map inserts a new vertex
-          // on the nearest segment (easier than hitting the thin line).
-          if (coordsRef.current.length < 2) return;
-          const insertAt = findInsertIndex(coordsRef.current, [lat, lng]);
+          // Ya hay A y B (o estamos en modo edición): cada tap inserta
+          // un vértice en el segmento más cercano al punto tocado,
+          // para poder ir formando las vueltas del camión.
+          if (current.length < 2) return;
+          const insertAt = findInsertIndex(current, [lat, lng]);
           pushHistory();
-          const next = [...coordsRef.current];
+          const next = [...current];
           next.splice(insertAt, 0, [lat, lng]);
           setCoords(next);
           setSelectedIdx(insertAt);
@@ -409,14 +412,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 }
 
 function findInsertIndex(coords: [number, number][], point: [number, number]): number {
+  // Distancia perpendicular del punto al segmento (no al punto medio),
+  // para que insertar vértices entre A y B respete realmente el segmento más cercano.
   let bestIdx = 1;
   let bestDist = Infinity;
+  const [px, py] = point;
   for (let i = 0; i < coords.length - 1; i++) {
-    const a = coords[i];
-    const b = coords[i + 1];
-    const mx = (a[0] + b[0]) / 2;
-    const my = (a[1] + b[1]) / 2;
-    const d = (mx - point[0]) ** 2 + (my - point[1]) ** 2;
+    const [ax, ay] = coords[i];
+    const [bx, by] = coords[i + 1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1e-12;
+    let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+    const d = (cx - px) ** 2 + (cy - py) ** 2;
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i + 1;
