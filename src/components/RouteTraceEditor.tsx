@@ -412,14 +412,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 }
 
 function findInsertIndex(coords: [number, number][], point: [number, number]): number {
+  // Distancia perpendicular del punto al segmento (no al punto medio),
+  // para que insertar vértices entre A y B respete realmente el segmento más cercano.
   let bestIdx = 1;
   let bestDist = Infinity;
+  const [px, py] = point;
   for (let i = 0; i < coords.length - 1; i++) {
-    const a = coords[i];
-    const b = coords[i + 1];
-    const mx = (a[0] + b[0]) / 2;
-    const my = (a[1] + b[1]) / 2;
-    const d = (mx - point[0]) ** 2 + (my - point[1]) ** 2;
+    const [ax, ay] = coords[i];
+    const [bx, by] = coords[i + 1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1e-12;
+    let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+    const d = (cx - px) ** 2 + (cy - py) ** 2;
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i + 1;
