@@ -101,18 +101,21 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 
       m.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
-        if (isDrawMode) {
+        const current = coordsRef.current;
+        if (isDrawMode && current.length < 2) {
+          // Primero coloca A y luego B (append).
           pushHistory();
-          const next = [...coordsRef.current, [lat, lng] as [number, number]];
+          const next = [...current, [lat, lng] as [number, number]];
           setCoords(next);
           setSelectedIdx(next.length - 1);
         } else {
-          // Edit mode: tapping anywhere on the map inserts a new vertex
-          // on the nearest segment (easier than hitting the thin line).
-          if (coordsRef.current.length < 2) return;
-          const insertAt = findInsertIndex(coordsRef.current, [lat, lng]);
+          // Ya hay A y B (o estamos en modo edición): cada tap inserta
+          // un vértice en el segmento más cercano al punto tocado,
+          // para poder ir formando las vueltas del camión.
+          if (current.length < 2) return;
+          const insertAt = findInsertIndex(current, [lat, lng]);
           pushHistory();
-          const next = [...coordsRef.current];
+          const next = [...current];
           next.splice(insertAt, 0, [lat, lng]);
           setCoords(next);
           setSelectedIdx(insertAt);
