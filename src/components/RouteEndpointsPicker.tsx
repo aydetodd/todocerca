@@ -71,6 +71,19 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
     });
     const timer = window.setTimeout(refresh, 300);
 
+    // Si no hay puntos fijados ni vista previa, intentar centrar en la ubicación del usuario
+    if (!lastViewRef.current && !origin && !destination && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (mapRef.current === map) {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+          }
+        },
+        () => { /* silencioso: queda en el centro por defecto */ },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+      );
+    }
+
     return () => {
       window.clearTimeout(timer);
       lastViewRef.current = { center: map.getCenter(), zoom: map.getZoom() };
@@ -84,6 +97,7 @@ export function RouteEndpointsPicker({ productoId, initial, onSaved }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapContainer]);
+
 
   useEffect(() => {
     if (!expanded) return;
