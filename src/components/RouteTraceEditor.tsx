@@ -179,22 +179,12 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 
     if (coords.length > 0) {
       const group = L.layerGroup().addTo(map);
-      // Línea limpia: solo renderizamos marcadores para los extremos (A/B) y el vértice seleccionado.
-      // Para editar/insertar otros puntos, el usuario toca la línea (inserta vértice) o lo selecciona.
-      const visibleIndices = new Set<number>();
-      visibleIndices.add(0);
-      if (coords.length > 1) visibleIndices.add(coords.length - 1);
-      if (selectedIdx != null && selectedIdx >= 0 && selectedIdx < coords.length) {
-        visibleIndices.add(selectedIdx);
-      }
-
       coords.forEach(([lat, lng], idx) => {
-        if (!visibleIndices.has(idx)) return;
         const isSelected = idx === selectedIdx;
         const isEndpoint = idx === 0 || idx === coords.length - 1;
         const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
         const label = idx === 0 ? 'A' : idx === coords.length - 1 ? 'B' : '';
-        const size = isSelected ? 18 : 22;
+        const size = isEndpoint ? 22 : isSelected ? 18 : 14;
         const icon = L.divIcon({
           className: 'route-vertex-marker',
           html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${markerColor};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:11px;cursor:grab">${label}</div>`,
@@ -208,6 +198,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           const ll = e.target.getLatLng();
           const next = [...coordsRef.current];
           next[idx] = [ll.lat, ll.lng];
+          coordsRef.current = next;
           if (polylineRef.current) polylineRef.current.setLatLngs(next);
         });
         marker.on('dragend', (e: any) => {
