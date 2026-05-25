@@ -496,27 +496,8 @@ export function DriverTripPanel({
                 <Button
                   size="lg"
                   className="w-full h-14 text-base"
-                  disabled={!currentPos || inFlightRef.current}
-                  onClick={async () => {
-                    if (!currentPos) { toast.error("Esperando GPS…"); return; }
-                    // Dirección automática:
-                    // - dentro de A → AB
-                    // - dentro de B → BA
-                    // - fuera → hacia la geocerca más LEJANA (la que está más cerca probablemente fue origen)
-                    let dir: Direccion;
-                    if (insideA) dir = "AB";
-                    else if (insideB) dir = "BA";
-                    else {
-                      const dA = distA ?? Infinity;
-                      const dB = distB ?? Infinity;
-                      dir = dA <= dB ? "AB" : "BA"; // si A está más cerca, vamos hacia B
-                    }
-                    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: !(insideA || insideB) });
-                    try { localStorage.setItem(jornadaKey, "1"); } catch {}
-                    setJornadaActiva(true);
-                    lastClosedFenceRef.current = null;
-                    lastAutoActionAtRef.current = Date.now();
-                  }}
+                  disabled={inFlightRef.current}
+                  onClick={() => setAskStartPoint(true)}
                 >
                   <Play className="h-5 w-5 mr-2" />
                   Iniciar jornada
