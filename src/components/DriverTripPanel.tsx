@@ -266,6 +266,43 @@ export function DriverTripPanel({
   }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB]);
 
 
+  // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A", "B" o "actual"
+  const startJornadaFrom = async (origin: "A" | "B" | "actual") => {
+    let dir: Direccion;
+    let lat: number | null = null;
+    let lng: number | null = null;
+    let manual = false;
+
+    if (origin === "A") {
+      dir = "AB";
+      lat = origenLat ?? null;
+      lng = origenLng ?? null;
+      // si el GPS confirma que está dentro de A, no es manual
+      manual = !insideA;
+    } else if (origin === "B") {
+      dir = "BA";
+      lat = destinoLat ?? null;
+      lng = destinoLng ?? null;
+      manual = !insideB;
+    } else {
+      // intermedio: usar coordenadas actuales y elegir la geocerca más lejana como destino
+      if (!currentPos) { toast.error("Esperando GPS para usar tu ubicación actual…"); return; }
+      lat = currentPos.lat;
+      lng = currentPos.lng;
+      const dA = distA ?? Infinity;
+      const dB = distB ?? Infinity;
+      dir = dA <= dB ? "BA" : "AB"; // ir hacia la más lejana
+      manual = true; // origen intermedio siempre se considera manual
+    }
+
+    await insertViaje(dir, { lat, lng, manual });
+    try { localStorage.setItem(jornadaKey, "1"); } catch {}
+    setJornadaActiva(true);
+    lastClosedFenceRef.current = null;
+    lastAutoActionAtRef.current = Date.now();
+    setAskStartPoint(false);
+  };
+
   const insertViaje = async (
     direccion: Direccion,
     opts: { lat: number | null; lng: number | null; manual: boolean }
