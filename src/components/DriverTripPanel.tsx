@@ -796,6 +796,74 @@ export function DriverTripPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Diálogo: punto de inicio de jornada (auto mode) */}
+      <AlertDialog open={askStartPoint} onOpenChange={setAskStartPoint}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desde dónde inicias tu jornada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Elige tu punto de partida. A partir del próximo viaje, todo se cuenta solo al entrar a cada geocerca.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid grid-cols-1 gap-2 py-2">
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant={insideA ? "default" : "outline"}
+              disabled={inFlightRef.current}
+              onClick={() => startJornadaFrom("A")}
+            >
+              <MapPin className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Punto A → voy a B</span>
+                <span className="text-[11px] opacity-80">
+                  {insideA ? "✓ Estás dentro de A" : distA != null ? `Estás a ${Math.round(distA)} m de A (manual)` : "Sin GPS (manual)"}
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant={insideB ? "default" : "outline"}
+              disabled={inFlightRef.current}
+              onClick={() => startJornadaFrom("B")}
+            >
+              <MapPin className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Punto B → voy a A</span>
+                <span className="text-[11px] opacity-80">
+                  {insideB ? "✓ Estás dentro de B" : distB != null ? `Estás a ${Math.round(distB)} m de B (manual)` : "Sin GPS (manual)"}
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFrom("actual")}
+            >
+              <Radar className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Mi ubicación actual</span>
+                <span className="text-[11px] opacity-80">
+                  {currentPos
+                    ? `Se graba aquí y el próximo punto (A o B) cierra el viaje`
+                    : "Esperando GPS…"}
+                </span>
+              </div>
+            </Button>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
