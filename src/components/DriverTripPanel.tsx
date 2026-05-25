@@ -108,6 +108,8 @@ export function DriverTripPanel({
   const [gpsError, setGpsError] = useState<string | null>(null);
   // Diálogo para elegir dirección AB / BA antes de iniciar
   const [askDir, setAskDir] = useState(false);
+  // Diálogo para elegir punto de partida al iniciar jornada (auto mode)
+  const [askStartPoint, setAskStartPoint] = useState(false);
   // Diálogo de inicio/fin manual (sin GPS o fuera de geocerca)
   const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
   const [manualEndOpen, setManualEndOpen] = useState(false);
@@ -263,6 +265,43 @@ export function DriverTripPanel({
     insertViaje(nextDir, { lat: currentPos.lat, lng: currentPos.lng, manual: false });
   }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB]);
 
+
+  // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A", "B" o "actual"
+  const startJornadaFrom = async (origin: "A" | "B" | "actual") => {
+    let dir: Direccion;
+    let lat: number | null = null;
+    let lng: number | null = null;
+    let manual = false;
+
+    if (origin === "A") {
+      dir = "AB";
+      lat = origenLat ?? null;
+      lng = origenLng ?? null;
+      // si el GPS confirma que está dentro de A, no es manual
+      manual = !insideA;
+    } else if (origin === "B") {
+      dir = "BA";
+      lat = destinoLat ?? null;
+      lng = destinoLng ?? null;
+      manual = !insideB;
+    } else {
+      // intermedio: usar coordenadas actuales y elegir la geocerca más lejana como destino
+      if (!currentPos) { toast.error("Esperando GPS para usar tu ubicación actual…"); return; }
+      lat = currentPos.lat;
+      lng = currentPos.lng;
+      const dA = distA ?? Infinity;
+      const dB = distB ?? Infinity;
+      dir = dA <= dB ? "BA" : "AB"; // ir hacia la más lejana
+      manual = true; // origen intermedio siempre se considera manual
+    }
+
+    await insertViaje(dir, { lat, lng, manual });
+    try { localStorage.setItem(jornadaKey, "1"); } catch {}
+    setJornadaActiva(true);
+    lastClosedFenceRef.current = null;
+    lastAutoActionAtRef.current = Date.now();
+    setAskStartPoint(false);
+  };
 
   const insertViaje = async (
     direccion: Direccion,
@@ -494,27 +533,8 @@ export function DriverTripPanel({
                 <Button
                   size="lg"
                   className="w-full h-14 text-base"
-                  disabled={!currentPos || inFlightRef.current}
-                  onClick={async () => {
-                    if (!currentPos) { toast.error("Esperando GPS…"); return; }
-                    // Dirección automática:
-                    // - dentro de A → AB
-                    // - dentro de B → BA
-                    // - fuera → hacia la geocerca más LEJANA (la que está más cerca probablemente fue origen)
-                    let dir: Direccion;
-                    if (insideA) dir = "AB";
-                    else if (insideB) dir = "BA";
-                    else {
-                      const dA = distA ?? Infinity;
-                      const dB = distB ?? Infinity;
-                      dir = dA <= dB ? "AB" : "BA"; // si A está más cerca, vamos hacia B
-                    }
-                    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: !(insideA || insideB) });
-                    try { localStorage.setItem(jornadaKey, "1"); } catch {}
-                    setJornadaActiva(true);
-                    lastClosedFenceRef.current = null;
-                    lastAutoActionAtRef.current = Date.now();
-                  }}
+                  disabled={inFlightRef.current}
+                  onClick={() => setAskStartPoint(true)}
                 >
                   <Play className="h-5 w-5 mr-2" />
                   Iniciar jornada
@@ -773,6 +793,74 @@ export function DriverTripPanel({
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
             <AlertDialogAction onClick={confirmarFinManual} className="w-full">Sí, cerrar viaje</AlertDialogAction>
             <AlertDialogCancel className="w-full mt-0">Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo: punto de inicio de jornada (auto mode) */}
+      <AlertDialog open={askStartPoint} onOpenChange={setAskStartPoint}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desde dónde inicias tu jornada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Elige tu punto de partida. A partir del próximo viaje, todo se cuenta solo al entrar a cada geocerca.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid grid-cols-1 gap-2 py-2">
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant={insideA ? "default" : "outline"}
+              disabled={inFlightRef.current}
+              onClick={() => startJornadaFrom("A")}
+            >
+              <MapPin className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Punto A → voy a B</span>
+                <span className="text-[11px] opacity-80">
+                  {insideA ? "✓ Estás dentro de A" : distA != null ? `Estás a ${Math.round(distA)} m de A (manual)` : "Sin GPS (manual)"}
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant={insideB ? "default" : "outline"}
+              disabled={inFlightRef.current}
+              onClick={() => startJornadaFrom("B")}
+            >
+              <MapPin className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Punto B → voy a A</span>
+                <span className="text-[11px] opacity-80">
+                  {insideB ? "✓ Estás dentro de B" : distB != null ? `Estás a ${Math.round(distB)} m de B (manual)` : "Sin GPS (manual)"}
+                </span>
+              </div>
+            </Button>
+
+            <Button
+              size="lg"
+              className="h-16 justify-start"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFrom("actual")}
+            >
+              <Radar className="h-5 w-5 mr-3" />
+              <div className="flex flex-col items-start">
+                <span className="text-base font-bold">Mi ubicación actual</span>
+                <span className="text-[11px] opacity-80">
+                  {currentPos
+                    ? `Se graba aquí y el próximo punto (A o B) cierra el viaje`
+                    : "Esperando GPS…"}
+                </span>
+              </div>
+            </Button>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
