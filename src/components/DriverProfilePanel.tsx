@@ -311,13 +311,14 @@ function StartTripButton({ productoId, onClick }: { productoId: string; onClick:
   const nearestDist = activeTrip ? distEnd : (distStart != null && distEnd != null ? Math.min(distStart, distEnd) : (distStart ?? distEnd));
   const inside = hasFences && nearestDist != null && nearestDist <= (geo!.radioM);
 
-  // Si no hay geocercas configuradas, dejar pasar (no bloquear)
-  const enabled = !hasFences ? true : !!inside;
+  // El botón siempre está activo: el chofer puede iniciar la jornada desde A, B o desde su ubicación
+  // intermedia. La pantalla de viajes le pregunta de dónde sale.
+  const enabled = true;
 
   let label = activeTrip ? 'Finalizar viaje' : 'Iniciar viaje';
-  if (hasFences && pos && !inside && nearestDist != null) {
-    label = `${activeTrip ? 'Acércate al final' : 'Geocerca a'} ${Math.round(nearestDist)} m`;
-  } else if (hasFences && !pos) {
+  if (activeTrip && hasFences && pos && !inside && nearestDist != null) {
+    label = `Acércate al final ${Math.round(nearestDist)} m`;
+  } else if (activeTrip && hasFences && !pos) {
     label = 'Esperando GPS…';
   }
 
