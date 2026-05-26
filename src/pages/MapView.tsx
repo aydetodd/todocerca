@@ -189,22 +189,38 @@ export default function MapView() {
               .from('productos')
               .select('id, nombre, route_geojson, route_group')
               .eq('proveedor_id', proveedor.id)
-              .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada')
-              .not('route_geojson', 'is', null);
+              .eq('route_type', routeTypeMap[fleetTypeParam || 'privado'] || 'privada');
 
-            const items = (tracedRoutes || []).map((r: any) => {
-              const lineFeat = r.route_geojson?.features?.find(
-                (f: any) => f?.geometry?.type === 'LineString' || f?.geometry?.type === 'MultiLineString'
-              );
-              const color = lineFeat?.properties?.color || '#0066CC';
-              return {
-                id: r.id,
-                nombre: r.nombre,
-                route_group: r.route_group ?? null,
-                color,
-                route_geojson: r.route_geojson,
-              };
-            });
+            // Para rutas sin route_geojson, intentar trazado de catálogo (KML estático) por nombre
+            const itemsRaw = await Promise.all(
+              (tracedRoutes || []).map(async (r: any) => {
+                let geo = r.route_geojson;
+                if (!geo) {
+                  const catalogId = routeNameToId(r.nombre);
+                  if (catalogId) {
+                    try {
+                      const resp = await fetch(`/data/rutas/${catalogId}.geojson`);
+                      if (resp.ok) geo = await resp.json();
+                    } catch (e) {
+                      console.warn('[MapView] No se pudo cargar catálogo', catalogId, e);
+                    }
+                  }
+                }
+                if (!geo) return null;
+                const lineFeat = geo?.features?.find(
+                  (f: any) => f?.geometry?.type === 'LineString' || f?.geometry?.type === 'MultiLineString'
+                );
+                const color = lineFeat?.properties?.color || '#0066CC';
+                return {
+                  id: r.id,
+                  nombre: r.nombre,
+                  route_group: r.route_group ?? null,
+                  color,
+                  route_geojson: geo,
+                };
+              })
+            );
+            const items = itemsRaw.filter(Boolean) as Array<FleetRouteItem & { route_geojson: any }>;
             setFleetRoutes(items);
             const allIds = new Set<string>(items.map((i) => i.id));
             setVisibleRouteIds(allIds);
