@@ -157,8 +157,10 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     // Filter locations based on filterType
     let filteredLocations = locations;
     
-    // Fleet mode: show ALL units belonging to this fleet (owner + their drivers by user_id)
-    if (fleetUserIds && fleetUserIds.length > 0) {
+    // Fleet mode: show ONLY units belonging to this fleet (filtered by transport type).
+    // Si el array existe pero está vacío, mostrar 0 unidades (no caer a "ver todo"),
+    // así evitamos que aparezca una unidad foránea cuando se entra a "Mi Flota - Público".
+    if (fleetUserIds !== undefined) {
       const fleetSet = new Set(fleetUserIds);
       filteredLocations = locations.filter(loc => fleetSet.has(loc.user_id));
       console.log('🏢 [Map] Fleet mode — user_ids:', fleetUserIds.length, '→', filteredLocations.length, 'units visible');
