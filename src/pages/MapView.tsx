@@ -267,7 +267,13 @@ export default function MapView() {
               driverUserIds = drivers?.map(d => d.user_id).filter(Boolean) as string[] || [];
             }
             
-            const allFleetUserIds = [user.id, ...driverUserIds.filter(id => id !== user.id)];
+            // Cuando hay filtro por tipo de transporte (publico/foraneo/privado/taxi),
+            // NO incluir automáticamente al dueño: su ubicación personal no pertenece a
+            // ningún tipo en particular y provocaba que apareciera la ruta de OTRO tipo
+            // (ej. una unidad foránea con su ruta foránea aparecía en el mapa "Público").
+            const allFleetUserIds = fleetTypeParam
+              ? driverUserIds
+              : [user.id, ...driverUserIds.filter(id => id !== user.id)];
             setFleetUserIds(allFleetUserIds);
             setFleetUnitCount(allFleetUserIds.length);
           }
