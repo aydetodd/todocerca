@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin } from 'lucide-react';
+import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
 
@@ -657,6 +657,16 @@ function SingleDriverPanel({
                       productoId={data.todayAssignment!.producto_id}
                       onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
                     />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0 h-8 px-2.5 text-xs"
+                      onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}&view=1`)}
+                      title="Ver mapa del viaje AB-BA"
+                    >
+                      <MapIcon className="h-3 w-3 mr-1" />
+                      Ver viaje
+                    </Button>
                   </>
                 ) : (
                   <Button
