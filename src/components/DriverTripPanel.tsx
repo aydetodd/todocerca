@@ -219,13 +219,18 @@ export function DriverTripPanel({
   // ---- AUTO MODE: cierre y arranque automático por geocerca ----
   // Cierra automáticamente el viaje activo al entrar a la geocerca destino.
   useEffect(() => {
-    if (!autoMode || !jornadaActiva) return;
+    if (!autoMode) return;
     if (!viajeActivo || !insideEnd || !currentPos || inFlightRef.current) return;
     const now = Date.now();
     if (now - lastAutoActionAtRef.current < 60_000) return; // anti-rebote 60 s
     lastAutoActionAtRef.current = now;
     // Marcar la geocerca recién alcanzada para arrancar el siguiente al salir
     lastClosedFenceRef.current = dirActiva === "BA" ? "A" : "B";
+    // Asegurar jornada activa cuando el cierre ocurre por geocerca
+    if (!jornadaActiva) {
+      try { localStorage.setItem(jornadaKey, "1"); } catch {}
+      setJornadaActiva(true);
+    }
     (async () => {
       inFlightRef.current = true;
       try {
@@ -240,14 +245,14 @@ export function DriverTripPanel({
           } as any)
           .eq("id", viajeActivo.id);
         if (error) throw error;
-        toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente`);
+        toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente al llegar al punto ${dirActiva === "BA" ? "A" : "B"}`);
       } catch (err: any) {
         toast.error(err.message || "Error cerrando viaje auto");
       } finally {
         setTimeout(() => { inFlightRef.current = false; }, 1500);
       }
     })();
-  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva]);
+  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva, jornadaKey]);
 
   // Arranca automáticamente el siguiente viaje al SALIR de la geocerca recién alcanzada.
   useEffect(() => {
