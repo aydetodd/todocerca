@@ -657,6 +657,16 @@ function SingleDriverPanel({
                       productoId={data.todayAssignment!.producto_id}
                       onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
                     />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0 h-8 px-2.5 text-xs"
+                      onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}&view=1`)}
+                      title="Ver mapa del viaje AB-BA"
+                    >
+                      <MapIcon className="h-3 w-3 mr-1" />
+                      Ver viaje
+                    </Button>
                   </>
                 ) : (
                   <Button
