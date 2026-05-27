@@ -629,28 +629,34 @@ function SingleDriverPanel({
           })()}
         </div>
 
-        {/* Row 2: Route selector + Cobrar + Ubicación */}
+        {/* Row 2: Route selector (full width) */}
         {hasAssignment && (
-          <div className="flex items-center gap-2">
-            <Select
-              value={currentRouteId}
-              onValueChange={handleSelectRoute}
-              disabled={assigning}
-            >
-              <SelectTrigger className="flex-1 h-8 text-xs">
-                <SelectValue placeholder="Seleccionar ruta..." />
-              </SelectTrigger>
-              <SelectContent>
-                {data.vehicles.map(v => (
-                  <SelectItem key={v.id} value={v.id} className="text-xs">
-                    {v.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Select
+                value={currentRouteId}
+                onValueChange={handleSelectRoute}
+                disabled={assigning}
+              >
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="Seleccionar ruta..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.vehicles.map(v => (
+                    <SelectItem key={v.id} value={v.id} className="text-xs">
+                      {v.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {assigning && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+              )}
+            </div>
 
+            {/* Row 3: Action buttons grid (2 columns to avoid overflow) */}
             {isActive && data.todayAssignment && (
-              <>
+              <div className="grid grid-cols-2 gap-2">
                 {unitInfo?.cobro_tipo === 'por_viaje' ? (
                   <>
                     <StartTripButton
@@ -660,7 +666,7 @@ function SingleDriverPanel({
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="shrink-0 h-8 px-2.5 text-xs"
+                      className="h-8 px-2 text-xs w-full"
                       onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}&view=1`)}
                       title="Ver mapa del viaje AB-BA"
                     >
@@ -672,7 +678,7 @@ function SingleDriverPanel({
                   <Button
                     size="sm"
                     variant="default"
-                    className="shrink-0 h-8 px-2.5 text-xs bg-green-600 hover:bg-green-700"
+                    className="h-8 px-2 text-xs w-full bg-green-600 hover:bg-green-700 col-span-2"
                     onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
                   >
                     <QrCode className="h-3 w-3 mr-1" />
@@ -681,7 +687,7 @@ function SingleDriverPanel({
                 )}
                 <Button
                   size="sm"
-                  className="shrink-0 h-8 px-2.5 text-xs"
+                  className="h-8 px-2 text-xs w-full col-span-2"
                   onClick={() => {
                     const productoId = data.todayAssignment!.producto_id;
                     navigate(`/mapa?producto=${productoId}&as=chofer`);
@@ -690,14 +696,11 @@ function SingleDriverPanel({
                   <Navigation className="h-3 w-3 mr-1" />
                   Ubicación
                 </Button>
-              </>
-            )}
-
-            {assigning && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+              </div>
             )}
           </div>
         )}
+
       </CardContent>
     </Card>
   );
