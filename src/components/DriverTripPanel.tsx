@@ -258,7 +258,7 @@ export function DriverTripPanel({
     lastClosedFenceRef.current = dirActiva === "BA" ? "A" : "B";
     // Asegurar jornada activa cuando el cierre ocurre por geocerca
     if (!jornadaActiva) {
-      try { localStorage.setItem(jornadaKey, "1"); } catch {}
+      try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
       setJornadaActiva(true);
     }
     (async () => {
