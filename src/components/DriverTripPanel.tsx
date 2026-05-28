@@ -117,9 +117,39 @@ export function DriverTripPanel({
   // ---- Modo automático (foráneas) ----
   // jornadaActiva persiste entre recargas del navegador.
   const jornadaKey = `jornada_activa_${choferEmpresaId}`;
+  const jornadaDateKey = `jornada_activa_date_${choferEmpresaId}`;
   const [jornadaActiva, setJornadaActiva] = useState<boolean>(() => {
-    try { return localStorage.getItem(jornadaKey) === "1"; } catch { return false; }
+    try {
+      const flag = localStorage.getItem(jornadaKey) === "1";
+      if (!flag) return false;
+      // Auto-finalizar si la fecha guardada no es hoy (Hermosillo) → cierre 11:59pm
+      const savedDate = localStorage.getItem(jornadaDateKey);
+      const today = getHermosilloToday();
+      if (savedDate && savedDate !== today) {
+        localStorage.removeItem(jornadaKey);
+        localStorage.removeItem(jornadaDateKey);
+        return false;
+      }
+      return true;
+    } catch { return false; }
   });
+
+  // Auto-finalizar jornada al cambiar de día (chequeo cada minuto)
+  useEffect(() => {
+    if (!jornadaActiva) return;
+    const interval = setInterval(() => {
+      const savedDate = localStorage.getItem(jornadaDateKey);
+      const today = getHermosilloToday();
+      if (savedDate && savedDate !== today) {
+        try {
+          localStorage.removeItem(jornadaKey);
+          localStorage.removeItem(jornadaDateKey);
+        } catch {}
+        setJornadaActiva(false);
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [jornadaActiva, jornadaKey, jornadaDateKey]);
   // Última geocerca de la que se "auto-cerró" un viaje (para arrancar el siguiente al salir)
   const lastClosedFenceRef = useRef<"A" | "B" | null>(null);
   // Anti-rebote por geocerca (60 s)
