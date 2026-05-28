@@ -654,48 +654,43 @@ function SingleDriverPanel({
               )}
             </div>
 
-            {/* Row 3: Action buttons grid (2 columns to avoid overflow) */}
+            {/* Row 3: Action buttons (2 columns: Ver viaje + Ubicación) */}
             {isActive && data.todayAssignment && (
-              <div className="grid grid-cols-2 gap-2">
-                {unitInfo?.cobro_tipo === 'por_viaje' ? (
-                  <>
-                    <StartTripButton
-                      productoId={data.todayAssignment!.producto_id}
-                      onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
-                    />
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 px-2 text-xs w-full"
-                      onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}&view=1`)}
-                      title="Ver mapa del viaje AB-BA"
-                    >
-                      <MapIcon className="h-3 w-3 mr-1" />
-                      Ver viaje
-                    </Button>
-                  </>
-                ) : (
+              <div className="space-y-2">
+                {unitInfo?.cobro_tipo !== 'por_viaje' && (
                   <Button
                     size="sm"
                     variant="default"
-                    className="h-8 px-2 text-xs w-full bg-green-600 hover:bg-green-700 col-span-2"
+                    className="h-8 px-2 text-xs w-full bg-green-600 hover:bg-green-700"
                     onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}`)}
                   >
                     <QrCode className="h-3 w-3 mr-1" />
                     Cobrar
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  className="h-8 px-2 text-xs w-full col-span-2"
-                  onClick={() => {
-                    const productoId = data.todayAssignment!.producto_id;
-                    navigate(`/mapa?producto=${productoId}&as=chofer`);
-                  }}
-                >
-                  <Navigation className="h-3 w-3 mr-1" />
-                  Ubicación
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 px-2 text-xs w-full"
+                    onClick={() => navigate(`/wallet/qr-boletos/validar?chofer=${data.driver.id}&view=1`)}
+                    title="Ver mapa del viaje AB-BA"
+                  >
+                    <MapIcon className="h-3 w-3 mr-1" />
+                    Ver viaje
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 px-2 text-xs w-full"
+                    onClick={() => {
+                      const productoId = data.todayAssignment!.producto_id;
+                      navigate(`/mapa?producto=${productoId}&as=chofer`);
+                    }}
+                  >
+                    <Navigation className="h-3 w-3 mr-1" />
+                    Ubicación
+                  </Button>
+                </div>
               </div>
             )}
           </div>
