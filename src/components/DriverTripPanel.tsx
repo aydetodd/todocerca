@@ -607,7 +607,7 @@ export function DriverTripPanel({
                       setTimeout(() => { inFlightRef.current = false; }, 1000);
                     }
                   }
-                  try { localStorage.removeItem(jornadaKey); } catch {}
+                  try { localStorage.removeItem(jornadaKey); localStorage.removeItem(jornadaDateKey); } catch {}
                   setJornadaActiva(false);
                   lastClosedFenceRef.current = null;
                   toast.success("🏁 Jornada finalizada");
