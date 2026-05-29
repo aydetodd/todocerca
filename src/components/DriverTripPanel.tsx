@@ -439,6 +439,7 @@ export function DriverTripPanel({
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
+      await loadViajes();
       toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) contabilizado`);
     } catch (err: any) {
       toast.error(err.message || "Error al finalizar viaje");
