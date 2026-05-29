@@ -468,6 +468,7 @@ export function DriverTripPanel({
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
+      await loadViajes();
       toast.success(
         huboGPS
           ? `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado con GPS`
