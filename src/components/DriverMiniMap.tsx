@@ -201,10 +201,6 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
           <span className="text-xs font-semibold text-foreground truncate block">🚌 {routeName}</span>
         </div>
       )}
-      <div className="absolute bottom-2 left-2 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md flex items-center gap-2 text-[10px] text-foreground">
-        <span className="flex items-center gap-1"><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#16A34A] text-white text-[9px] font-bold">A</span></span>
-        <span className="flex items-center gap-1"><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#DC2626] text-white text-[9px] font-bold">B</span></span>
-      </div>
       <Button
         size="icon"
         variant="secondary"
