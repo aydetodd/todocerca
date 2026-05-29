@@ -200,8 +200,28 @@ export function DriverTripPanel({
         { event: "*", schema: "public", table: "viajes_realizados", filter: `chofer_id=eq.${choferEmpresaId}` },
         () => loadViajes()
       )
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        console.log(`[DriverTripPanel] realtime status: ${status}`);
+      });
+
+    // Polling de respaldo cada 10 s mientras la pestaña está visible.
+    // Garantiza que el panel refleje el inicio/cierre automático aun si
+    // realtime se cae (red móvil intermitente, segundo plano, etc.).
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") loadViajes();
+    }, 10_000);
+
+    // Refrescar al volver a la pestaña/app (foreground).
+    const onVis = () => {
+      if (document.visibilityState === "visible") loadViajes();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [choferEmpresaId, loadViajes]);
 
   useEffect(() => {
@@ -275,6 +295,7 @@ export function DriverTripPanel({
           } as any)
           .eq("id", viajeActivo.id);
         if (error) throw error;
+        await loadViajes();
         toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente al llegar al punto ${dirActiva === "BA" ? "A" : "B"}`);
       } catch (err: any) {
         toast.error(err.message || "Error cerrando viaje auto");
@@ -361,6 +382,7 @@ export function DriverTripPanel({
         inicio_manual: opts.manual,
       } as any);
       if (error) throw error;
+      await loadViajes();
       toast.success(
         `🚐 Viaje #${lastNum + 1} iniciado (${direccion}${opts.manual ? " · manual" : ""})`
       );
@@ -417,6 +439,7 @@ export function DriverTripPanel({
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
+      await loadViajes();
       toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) contabilizado`);
     } catch (err: any) {
       toast.error(err.message || "Error al finalizar viaje");
@@ -445,6 +468,7 @@ export function DriverTripPanel({
         } as any)
         .eq("id", viajeActivo.id);
       if (error) throw error;
+      await loadViajes();
       toast.success(
         huboGPS
           ? `✅ Viaje #${viajeActivo.numero_viaje} (${dirActiva}) cerrado con GPS`
