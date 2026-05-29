@@ -382,6 +382,7 @@ export function DriverTripPanel({
         inicio_manual: opts.manual,
       } as any);
       if (error) throw error;
+      await loadViajes();
       toast.success(
         `🚐 Viaje #${lastNum + 1} iniciado (${direccion}${opts.manual ? " · manual" : ""})`
       );
