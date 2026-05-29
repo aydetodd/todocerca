@@ -295,6 +295,7 @@ export function DriverTripPanel({
           } as any)
           .eq("id", viajeActivo.id);
         if (error) throw error;
+        await loadViajes();
         toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente al llegar al punto ${dirActiva === "BA" ? "A" : "B"}`);
       } catch (err: any) {
         toast.error(err.message || "Error cerrando viaje auto");
