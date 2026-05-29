@@ -493,22 +493,71 @@ export function DriverTripPanel({
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="shrink-0 bg-card border-b border-border px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <BackButton />
-            <div>
-              <h1 className="text-sm font-bold text-foreground">Viajes con confirmación</h1>
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-foreground truncate">Viajes con confirmación</h1>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Building2 className="h-3 w-3" /> {empresaNombre || "Contrato privado"}
               </p>
             </div>
           </div>
-          {viajeActivo && (
-            <Badge variant="outline" className="text-xs gap-1">
-              <Radar className="h-3 w-3" /> {dirActiva}
-              {viajeActivo.inicio_manual ? " · manual" : ""}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {viajeActivo && (
+              <Badge variant="outline" className="text-xs gap-1">
+                <Radar className="h-3 w-3" /> {dirActiva}
+                {viajeActivo.inicio_manual ? " · m" : ""}
+              </Badge>
+            )}
+            {autoMode && hasGeofences && !jornadaActiva && !viajeActivo && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-3 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                disabled={inFlightRef.current}
+                onClick={() => setAskStartPoint(true)}
+              >
+                <Play className="h-3.5 w-3.5 mr-1" />
+                Iniciar jornada
+              </Button>
+            )}
+            {autoMode && jornadaActiva && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-3 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                disabled={inFlightRef.current}
+                onClick={async () => {
+                  if (viajeActivo) {
+                    const lat = currentPos?.lat ?? null;
+                    const lng = currentPos?.lng ?? null;
+                    inFlightRef.current = true;
+                    try {
+                      await supabase
+                        .from("viajes_realizados")
+                        .update({
+                          fin_lat: lat, fin_lng: lng,
+                          fin_at: new Date().toISOString(),
+                          estado: "completado",
+                          fin_manual: lat == null,
+                        } as any)
+                        .eq("id", viajeActivo.id);
+                    } finally {
+                      setTimeout(() => { inFlightRef.current = false; }, 1000);
+                    }
+                  }
+                  try { localStorage.removeItem(jornadaKey); localStorage.removeItem(jornadaDateKey); } catch {}
+                  setJornadaActiva(false);
+                  lastClosedFenceRef.current = null;
+                  toast.success("🏁 Jornada finalizada");
+                }}
+              >
+                <Flag className="h-3.5 w-3.5 mr-1" />
+                Finalizar jornada
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -562,62 +611,11 @@ export function DriverTripPanel({
         {/* Botones según estado */}
         {autoMode ? (
           <div className="space-y-2">
-            {/* Iniciar jornada (primer viaje) */}
             {!jornadaActiva && !viajeActivo && hasGeofences && (
-              <>
-                <Button
-                  size="lg"
-                  className="w-full h-14 text-base"
-                  disabled={inFlightRef.current}
-                  onClick={() => setAskStartPoint(true)}
-                >
-                  <Play className="h-5 w-5 mr-2" />
-                  Iniciar jornada
-                </Button>
-                <p className="text-[11px] text-center text-muted-foreground">
-                  Después del primer viaje, los siguientes se cuentan solos al entrar a cada geocerca.
-                </p>
-              </>
+              <p className="text-[11px] text-center text-muted-foreground">
+                Inicia la jornada desde el botón en la esquina superior derecha. Después del primer viaje, los siguientes se cuentan solos.
+              </p>
             )}
-
-            {/* Jornada activa: estado y botón para finalizarla */}
-            {jornadaActiva && (
-              <Button
-                size="lg"
-                variant="destructive"
-                className="w-full h-14 text-base"
-                disabled={inFlightRef.current}
-                onClick={async () => {
-                  if (viajeActivo) {
-                    // cerrar el viaje activo con GPS si hay, si no manual
-                    const lat = currentPos?.lat ?? null;
-                    const lng = currentPos?.lng ?? null;
-                    inFlightRef.current = true;
-                    try {
-                      await supabase
-                        .from("viajes_realizados")
-                        .update({
-                          fin_lat: lat, fin_lng: lng,
-                          fin_at: new Date().toISOString(),
-                          estado: "completado",
-                          fin_manual: lat == null,
-                        } as any)
-                        .eq("id", viajeActivo.id);
-                    } finally {
-                      setTimeout(() => { inFlightRef.current = false; }, 1000);
-                    }
-                  }
-                  try { localStorage.removeItem(jornadaKey); localStorage.removeItem(jornadaDateKey); } catch {}
-                  setJornadaActiva(false);
-                  lastClosedFenceRef.current = null;
-                  toast.success("🏁 Jornada finalizada");
-                }}
-              >
-                <Flag className="h-5 w-5 mr-2" />
-                Finalizar jornada
-              </Button>
-            )}
-
             {!hasGeofences && (
               <p className="text-xs text-center text-destructive">
                 Pide al concesionario marcar el Punto A y el Punto B en la ruta.
@@ -625,6 +623,7 @@ export function DriverTripPanel({
             )}
           </div>
         ) : (
+
           <>
             {hasGeofences && !viajeActivo && (
               <div className="space-y-2">
