@@ -21,10 +21,26 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, CheckCircle2, Clock, XCircle } from 'lucide-react';
-import RouteTraceUploader from './RouteTraceUploader';
-import { RouteEndpointsPicker } from './RouteEndpointsPicker';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+
+function extractEndpoints(geojson: any): { origin: { lat: number; lng: number } | null; destination: { lat: number; lng: number } | null } {
+  try {
+    const line = geojson?.features?.find((f: any) =>
+      f?.geometry?.type === 'LineString' || f?.geometry?.type === 'MultiLineString'
+    );
+    if (!line) return { origin: null, destination: null };
+    let coords: number[][] = [];
+    if (line.geometry.type === 'LineString') coords = line.geometry.coordinates;
+    else coords = line.geometry.coordinates.flat();
+    if (coords.length < 2) return { origin: null, destination: null };
+    const [oLng, oLat] = coords[0];
+    const [dLng, dLat] = coords[coords.length - 1];
+    return { origin: { lat: oLat, lng: oLng }, destination: { lat: dLat, lng: dLng } };
+  } catch {
+    return { origin: null, destination: null };
+  }
+}
 
 interface Maestra {
   id: string;
