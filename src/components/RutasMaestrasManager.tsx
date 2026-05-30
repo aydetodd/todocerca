@@ -370,16 +370,30 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
               )}
             </div>
 
-            <RouteEndpointsPicker
-              origin={propOrigin}
-              destination={propDest}
-              radiusM={propRadius}
-              onChange={(o, d, r) => {
-                setPropOrigin(o);
-                setPropDest(d);
-                setPropRadius(r);
-              }}
-            />
+            {propOrigin && propDest && (
+              <div className="rounded-md border bg-muted/50 p-2 space-y-2 text-xs">
+                <div>
+                  <strong>Geocerca A (origen):</strong> {propOrigin.lat.toFixed(5)}, {propOrigin.lng.toFixed(5)}
+                </div>
+                <div>
+                  <strong>Geocerca B (destino):</strong> {propDest.lat.toFixed(5)}, {propDest.lng.toFixed(5)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Radio (m):</Label>
+                  <Input
+                    type="number"
+                    min={50}
+                    max={1000}
+                    value={propRadius}
+                    onChange={(e) => setPropRadius(Math.max(50, Math.min(1000, parseInt(e.target.value || '150', 10))))}
+                    className="h-8 w-24"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Tomado automáticamente de los extremos del trazado. El administrador podrá ajustarlo al aprobar.
+                </p>
+              </div>
+            )}
 
             <Button
               onClick={handlePropose}
