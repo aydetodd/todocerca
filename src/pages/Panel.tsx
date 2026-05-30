@@ -33,6 +33,7 @@ import UserRegistryReport from '@/components/UserRegistryReport';
 import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
+import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import ProviderRegistration from '@/components/ProviderRegistration';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
@@ -409,6 +410,11 @@ export default function Panel() {
                     {/* Gestión de descuentos sociales */}
                     <div className="pt-3 border-t">
                       <AdminDescuentos />
+                    </div>
+
+                    {/* Rutas foráneas maestras */}
+                    <div className="pt-3 border-t">
+                      <AdminRutasMaestras />
                     </div>
                   </>
                 )}

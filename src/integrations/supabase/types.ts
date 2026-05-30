@@ -2494,6 +2494,7 @@ export type Database = {
           route_trace_filename: string | null
           route_trace_updated_at: string | null
           route_type: string | null
+          ruta_maestra_id: string | null
           stock: number
           unit: string | null
           updated_at: string
@@ -2525,6 +2526,7 @@ export type Database = {
           route_trace_filename?: string | null
           route_trace_updated_at?: string | null
           route_type?: string | null
+          ruta_maestra_id?: string | null
           stock?: number
           unit?: string | null
           updated_at?: string
@@ -2556,6 +2558,7 @@ export type Database = {
           route_trace_filename?: string | null
           route_trace_updated_at?: string | null
           route_type?: string | null
+          ruta_maestra_id?: string | null
           stock?: number
           unit?: string | null
           updated_at?: string
@@ -2580,6 +2583,13 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_ruta_maestra_id_fkey"
+            columns: ["ruta_maestra_id"]
+            isOneToOne: false
+            referencedRelation: "rutas_foraneas_maestras"
             referencedColumns: ["id"]
           },
         ]
@@ -3066,6 +3076,66 @@ export type Database = {
           nombre_ruta?: string | null
           pais?: string | null
           tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rutas_foraneas_maestras: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by_proveedor_id: string | null
+          created_by_user_id: string
+          estado: string
+          id: string
+          nombre: string
+          nombre_normalizado: string
+          rechazo_motivo: string | null
+          route_destination_lat: number | null
+          route_destination_lng: number | null
+          route_geofence_radius_m: number
+          route_geojson: Json
+          route_origin_lat: number | null
+          route_origin_lng: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by_proveedor_id?: string | null
+          created_by_user_id: string
+          estado?: string
+          id?: string
+          nombre: string
+          nombre_normalizado: string
+          rechazo_motivo?: string | null
+          route_destination_lat?: number | null
+          route_destination_lng?: number | null
+          route_geofence_radius_m?: number
+          route_geojson: Json
+          route_origin_lat?: number | null
+          route_origin_lng?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by_proveedor_id?: string | null
+          created_by_user_id?: string
+          estado?: string
+          id?: string
+          nombre?: string
+          nombre_normalizado?: string
+          rechazo_motivo?: string | null
+          route_destination_lat?: number | null
+          route_destination_lng?: number | null
+          route_geofence_radius_m?: number
+          route_geojson?: Json
+          route_origin_lat?: number | null
+          route_origin_lng?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -4451,6 +4521,62 @@ export type Database = {
         Args: { p_contact_user_id: string; p_nickname?: string }
         Returns: boolean
       }
+      admin_approve_ruta_maestra: {
+        Args: { _id: string; _nombre_final?: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by_proveedor_id: string | null
+          created_by_user_id: string
+          estado: string
+          id: string
+          nombre: string
+          nombre_normalizado: string
+          rechazo_motivo: string | null
+          route_destination_lat: number | null
+          route_destination_lng: number | null
+          route_geofence_radius_m: number
+          route_geojson: Json
+          route_origin_lat: number | null
+          route_origin_lng: number | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rutas_foraneas_maestras"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_reject_ruta_maestra: {
+        Args: { _id: string; _motivo: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by_proveedor_id: string | null
+          created_by_user_id: string
+          estado: string
+          id: string
+          nombre: string
+          nombre_normalizado: string
+          rechazo_motivo: string | null
+          route_destination_lat: number | null
+          route_destination_lng: number | null
+          route_geofence_radius_m: number
+          route_geojson: Json
+          route_origin_lat: number | null
+          route_origin_lng: number | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rutas_foraneas_maestras"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_private_route_trace: {
         Args: { _producto_id: string }
         Returns: {
@@ -4713,7 +4839,12 @@ export type Database = {
         Args: { _user_id: string; _votacion_id: string }
         Returns: boolean
       }
+      link_producto_to_ruta_maestra: {
+        Args: { _maestra_id: string; _producto_id: string }
+        Returns: string
+      }
       normalize_phone: { Args: { phone: string }; Returns: string }
+      normalize_route_name: { Args: { _nombre: string }; Returns: string }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
@@ -4736,6 +4867,10 @@ export type Database = {
         Returns: {
           id: string
         }[]
+      }
+      unlink_producto_from_ruta_maestra: {
+        Args: { _producto_id: string }
+        Returns: string
       }
     }
     Enums: {

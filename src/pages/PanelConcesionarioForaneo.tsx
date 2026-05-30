@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ReporteViajes } from '@/components/ReporteViajes';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
+import RutasMaestrasManager from '@/components/RutasMaestrasManager';
 
 export default function PanelConcesionarioForaneo() {
   const { user, loading: authLoading } = useAuth();
@@ -111,6 +112,9 @@ export default function PanelConcesionarioForaneo() {
               <TabsTrigger value="reportes" className="text-xs">
                 <Route className="h-3 w-3 mr-1" /> Reportes por Viaje
               </TabsTrigger>
+              <TabsTrigger value="catalogo" className="text-xs">
+                <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
+              </TabsTrigger>
               <TabsTrigger value="gestion" className="text-xs">
                 <Settings className="h-3 w-3 mr-1" /> Unidades / Choferes / Rutas
               </TabsTrigger>
@@ -132,6 +136,12 @@ export default function PanelConcesionarioForaneo() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="catalogo" className="space-y-3 mt-4">
+            <RutasMaestrasManager proveedorId={proveedor.id} />
+          </TabsContent>
+
+
 
           <TabsContent value="gestion" className="space-y-3 mt-4">
             <PrivateRouteManagement
