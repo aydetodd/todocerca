@@ -461,15 +461,17 @@ export default function ValidarQr() {
     scanningRef.current = false;
   }, []);
 
-  // Auto-start camera when component is ready (and not in trip-only mode)
+  // Auto-start camera when component is ready (and not in trip-only mode).
+  // En rutas foráneas / por_viaje (tripContract) NO se necesita cámara, solo GPS.
   useEffect(() => {
     if (authLoading || !user) return;
+    if (tripContract) return; // por_viaje: sin escáner
     const t = setTimeout(() => { startContinuousCamera(); }, 500);
     return () => {
       clearTimeout(t);
       stopContinuousCamera();
     };
-  }, [authLoading, user, startContinuousCamera, stopContinuousCamera]);
+  }, [authLoading, user, tripContract, startContinuousCamera, stopContinuousCamera]);
 
   const startFlashing = useCallback(() => {
     setFlashing(true);
