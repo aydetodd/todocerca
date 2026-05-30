@@ -538,7 +538,7 @@ export function DriverTripPanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-3 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                className="h-8 px-3 text-xs border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
                 disabled={inFlightRef.current}
                 onClick={() => setAskStartPoint(true)}
               >
@@ -550,7 +550,7 @@ export function DriverTripPanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-3 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                className="h-8 px-3 text-xs border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400"
                 disabled={inFlightRef.current}
                 onClick={async () => {
                   if (viajeActivo) {
