@@ -137,6 +137,12 @@ export default function PanelConcesionarioForaneo() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="catalogo" className="space-y-3 mt-4">
+            <RutasMaestrasManager proveedorId={proveedor.id} />
+          </TabsContent>
+
+
+
           <TabsContent value="gestion" className="space-y-3 mt-4">
             <PrivateRouteManagement
               proveedorId={proveedor.id}
