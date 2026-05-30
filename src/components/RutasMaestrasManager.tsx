@@ -149,8 +149,14 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
     try {
       const parsed = await parseRouteTraceFile(file);
       setPropGeojson(parsed.geojson);
-      setPropFilename(parsed.filename);
-      toast({ title: 'Trazado leído', description: parsed.filename });
+      setPropFilename(file.name);
+      const { origin, destination } = extractEndpoints(parsed.geojson);
+      if (origin) setPropOrigin(origin);
+      if (destination) setPropDest(destination);
+      toast({
+        title: 'Trazado leído',
+        description: `${file.name} — origen y destino tomados de los extremos del trazado.`,
+      });
     } catch (e: any) {
       toast({ title: 'No se pudo leer el archivo', description: e.message, variant: 'destructive' });
     }
