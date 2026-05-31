@@ -147,7 +147,7 @@ export default function PanelConcesionarioPrivado() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-2 sm:px-6">
-                <ConcesionarioReportes proveedorId={proveedor.id} />
+                <ConcesionarioReportes proveedorId={proveedor.id} transportType="privado" />
               </CardContent>
             </Card>
           </TabsContent>

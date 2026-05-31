@@ -14,7 +14,14 @@ import { toast } from "sonner";
 
 interface Props {
   proveedorId: string;
+  transportType?: 'publico' | 'foraneo' | 'privado';
 }
+
+const ROUTE_TYPE_BY_TRANSPORT: Record<string, string> = {
+  publico: 'urbana',
+  foraneo: 'foranea',
+  privado: 'privada',
+};
 
 type PeriodOption = "hoy" | "ayer" | "semana" | "semana_ant" | "mes" | "mes_ant" | "custom";
 
@@ -79,7 +86,7 @@ function getRange(period: PeriodOption, customStart?: string, customEnd?: string
   }
 }
 
-export default function ConcesionarioReportes({ proveedorId }: Props) {
+export default function ConcesionarioReportes({ proveedorId, transportType }: Props) {
   const [period, setPeriod] = useState<PeriodOption>("hoy");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -123,26 +130,33 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
   }, [period, filterUnidad, filterChofer, filterRuta]);
 
   const loadCatalogs = async () => {
-    const [uRes, cRes, rutasRes] = await Promise.all([
-      supabase
-        .from("unidades_empresa")
-        .select("id, nombre, numero_economico, placas")
-        .eq("proveedor_id", proveedorId)
-        .neq("transport_type", "taxi"),
-      supabase
-        .from("choferes_empresa")
-        .select("id, nombre, user_id, created_at")
-        .eq("proveedor_id", proveedorId)
-        .eq("is_active", true),
-      supabase
-        .from("productos")
-        .select("id, nombre")
-        .eq("proveedor_id", proveedorId)
-        .eq("is_available", true)
-        .eq("is_mobile", true)
-        .neq("route_type", "taxi")
-        .order("nombre"),
-    ]);
+    const routeTypeFilter = transportType ? ROUTE_TYPE_BY_TRANSPORT[transportType] : null;
+
+    let uQuery = supabase
+      .from("unidades_empresa")
+      .select("id, nombre, numero_economico, placas, transport_type")
+      .eq("proveedor_id", proveedorId)
+      .neq("transport_type", "taxi");
+    if (transportType) uQuery = uQuery.eq("transport_type", transportType);
+
+    let cQuery = supabase
+      .from("choferes_empresa")
+      .select("id, nombre, user_id, created_at, transport_type")
+      .eq("proveedor_id", proveedorId)
+      .eq("is_active", true);
+    if (transportType) cQuery = cQuery.eq("transport_type", transportType);
+
+    let rQuery = supabase
+      .from("productos")
+      .select("id, nombre, route_type")
+      .eq("proveedor_id", proveedorId)
+      .eq("is_available", true)
+      .eq("is_mobile", true)
+      .neq("route_type", "taxi")
+      .order("nombre");
+    if (routeTypeFilter) rQuery = rQuery.eq("route_type", routeTypeFilter);
+
+    const [uRes, cRes, rutasRes] = await Promise.all([uQuery, cQuery, rQuery]);
 
     const units = (uRes.data || []).map((u: any) => ({
       id: u.id,
@@ -239,6 +253,12 @@ export default function ConcesionarioReportes({ proveedorId }: Props) {
       const filteredLogs = normalizedLogs.filter((log: any) => {
         if (filterChofer !== "all" && log.effectiveChoferId !== filterChofer) return false;
         if (filterRuta !== "all" && log.effectiveProductoId !== filterRuta) return false;
+        // Strict transport-type isolation: keep only logs whose unit or route belongs to this panel's catalog
+        if (transportType) {
+          const unitOk = log.effectiveUnidadId && unitIds.includes(log.effectiveUnidadId);
+          const routeOk = log.effectiveProductoId && (rutasOverride || rutas).some((r) => r.id === log.effectiveProductoId);
+          if (!unitOk && !routeOk) return false;
+        }
         return true;
       });
 

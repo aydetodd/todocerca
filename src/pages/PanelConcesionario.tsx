@@ -1836,7 +1836,7 @@ export default function PanelConcesionario() {
 
           {/* REPORTES */}
           <TabsContent value="reportes" className="space-y-4 mt-4">
-            {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} />}
+            {proveedor && <ConcesionarioReportes proveedorId={proveedor.id} transportType="publico" />}
           </TabsContent>
 
           {/* EMPRESAS / CONTRATOS */}
