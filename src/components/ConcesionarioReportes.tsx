@@ -130,26 +130,33 @@ export default function ConcesionarioReportes({ proveedorId, transportType }: Pr
   }, [period, filterUnidad, filterChofer, filterRuta]);
 
   const loadCatalogs = async () => {
-    const [uRes, cRes, rutasRes] = await Promise.all([
-      supabase
-        .from("unidades_empresa")
-        .select("id, nombre, numero_economico, placas")
-        .eq("proveedor_id", proveedorId)
-        .neq("transport_type", "taxi"),
-      supabase
-        .from("choferes_empresa")
-        .select("id, nombre, user_id, created_at")
-        .eq("proveedor_id", proveedorId)
-        .eq("is_active", true),
-      supabase
-        .from("productos")
-        .select("id, nombre")
-        .eq("proveedor_id", proveedorId)
-        .eq("is_available", true)
-        .eq("is_mobile", true)
-        .neq("route_type", "taxi")
-        .order("nombre"),
-    ]);
+    const routeTypeFilter = transportType ? ROUTE_TYPE_BY_TRANSPORT[transportType] : null;
+
+    let uQuery = supabase
+      .from("unidades_empresa")
+      .select("id, nombre, numero_economico, placas, transport_type")
+      .eq("proveedor_id", proveedorId)
+      .neq("transport_type", "taxi");
+    if (transportType) uQuery = uQuery.eq("transport_type", transportType);
+
+    let cQuery = supabase
+      .from("choferes_empresa")
+      .select("id, nombre, user_id, created_at, transport_type")
+      .eq("proveedor_id", proveedorId)
+      .eq("is_active", true);
+    if (transportType) cQuery = cQuery.eq("transport_type", transportType);
+
+    let rQuery = supabase
+      .from("productos")
+      .select("id, nombre, route_type")
+      .eq("proveedor_id", proveedorId)
+      .eq("is_available", true)
+      .eq("is_mobile", true)
+      .neq("route_type", "taxi")
+      .order("nombre");
+    if (routeTypeFilter) rQuery = rQuery.eq("route_type", routeTypeFilter);
+
+    const [uRes, cRes, rutasRes] = await Promise.all([uQuery, cQuery, rQuery]);
 
     const units = (uRes.data || []).map((u: any) => ({
       id: u.id,
