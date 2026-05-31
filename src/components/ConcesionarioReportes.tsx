@@ -253,6 +253,12 @@ export default function ConcesionarioReportes({ proveedorId, transportType }: Pr
       const filteredLogs = normalizedLogs.filter((log: any) => {
         if (filterChofer !== "all" && log.effectiveChoferId !== filterChofer) return false;
         if (filterRuta !== "all" && log.effectiveProductoId !== filterRuta) return false;
+        // Strict transport-type isolation: keep only logs whose unit or route belongs to this panel's catalog
+        if (transportType) {
+          const unitOk = log.effectiveUnidadId && unitIds.includes(log.effectiveUnidadId);
+          const routeOk = log.effectiveProductoId && (rutasOverride || rutas).some((r) => r.id === log.effectiveProductoId);
+          if (!unitOk && !routeOk) return false;
+        }
         return true;
       });
 
