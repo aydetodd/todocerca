@@ -14,7 +14,14 @@ import { toast } from "sonner";
 
 interface Props {
   proveedorId: string;
+  transportType?: 'publico' | 'foraneo' | 'privado';
 }
+
+const ROUTE_TYPE_BY_TRANSPORT: Record<string, string> = {
+  publico: 'urbana',
+  foraneo: 'foranea',
+  privado: 'privada',
+};
 
 type PeriodOption = "hoy" | "ayer" | "semana" | "semana_ant" | "mes" | "mes_ant" | "custom";
 
