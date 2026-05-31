@@ -277,26 +277,25 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const compositeState = `${estado}|${routeLabel}|${unitLabel}|${unitPlacas}|${unitDescripcion}|${driverLabel}|${empresaLabel}|${routeViewKey}`;
       const previousState = markerStatesRef.current[location.user_id];
       
-      // Calculate heading for bus markers — anti-jitter:
-      // 1) Solo actualizar si se movió una distancia significativa (~25m)
-      // 2) Solo girar si el nuevo rumbo difiere notablemente del actual (>35°),
-      //    así el camión sigue "de frente" y solo gira en vueltas reales o reversa.
+      // Heading del camión: siempre "de frente" hacia donde se mueve.
+      // Cada vez que avanza ~10 m, recalcular el rumbo respecto al punto anterior
+      // ("el segundo anterior iba para allá, ahora sigo para allá"). La rotación
+      // visual se suaviza con la transición CSS de 0.8s, así nunca camina de lado.
       const prevPos = prevPositionsRef.current[location.user_id];
       let heading = headingsRef.current[location.user_id] ?? 0;
       if (prevPos) {
         const newLat = Number(location.latitude);
         const newLng = Number(location.longitude);
-        // Distancia aproximada en grados (~0.00025 ≈ 25m)
+        // ~0.0001° ≈ 10 m
         const dist = Math.hypot(prevPos.lat - newLat, prevPos.lng - newLng);
-        if (dist > 0.00025) {
+        if (dist > 0.0001) {
           const newHeading = calculateBearing(prevPos.lat, prevPos.lng, newLat, newLng);
-          // Diferencia angular mínima (0-180)
           const diff = Math.abs(((newHeading - heading + 540) % 360) - 180);
-          if (headingsRef.current[location.user_id] === undefined || diff > 35) {
+          // Actualizar si es el primer rumbo o si cambió más de 5° (ignora micro-jitter de GPS)
+          if (headingsRef.current[location.user_id] === undefined || diff > 5) {
             heading = newHeading;
             headingsRef.current[location.user_id] = heading;
           }
-          // Solo guardar prevPos cuando hubo movimiento real (mejor base para próximo bearing)
           prevPositionsRef.current[location.user_id] = { lat: newLat, lng: newLng };
         }
       } else {
