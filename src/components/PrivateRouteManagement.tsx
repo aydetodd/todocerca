@@ -105,7 +105,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
-  const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
+  const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers' | 'catalogo'>('units');
   
   // Geography & route catalog state for public/foraneo routes
   const [selectedPais, setSelectedPais] = useState('MX');
