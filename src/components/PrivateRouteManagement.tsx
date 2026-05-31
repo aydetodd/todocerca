@@ -39,6 +39,7 @@ import RouteTraceUploader from './RouteTraceUploader';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
+import RutasMaestrasManager from './RutasMaestrasManager';
 
 
 interface PrivateVehicle {
@@ -105,7 +106,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
-  const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers'>('units');
+  const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers' | 'catalogo'>('units');
   
   // Geography & route catalog state for public/foraneo routes
   const [selectedPais, setSelectedPais] = useState('MX');
@@ -660,7 +661,21 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         >
           3. Choferes ({driversCount})
         </Button>
+        {transportType === 'foraneo' && (
+          <Button
+            variant={activeTab === 'catalogo' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('catalogo')}
+            className="flex-1 text-xs px-2"
+          >
+            4. Catálogo
+          </Button>
+        )}
       </div>
+
+      {activeTab === 'catalogo' && transportType === 'foraneo' && (
+        <RutasMaestrasManager proveedorId={proveedorId} />
+      )}
 
       {/* === UNITS TAB (subscription billing unit) === */}
       {activeTab === 'units' && (
