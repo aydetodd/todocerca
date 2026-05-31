@@ -86,7 +86,7 @@ function getRange(period: PeriodOption, customStart?: string, customEnd?: string
   }
 }
 
-export default function ConcesionarioReportes({ proveedorId }: Props) {
+export default function ConcesionarioReportes({ proveedorId, transportType }: Props) {
   const [period, setPeriod] = useState<PeriodOption>("hoy");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
