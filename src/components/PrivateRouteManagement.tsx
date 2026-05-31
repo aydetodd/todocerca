@@ -39,6 +39,7 @@ import RouteTraceUploader from './RouteTraceUploader';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
+import RutasMaestrasManager from './RutasMaestrasManager';
 
 
 interface PrivateVehicle {
