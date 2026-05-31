@@ -660,7 +660,21 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         >
           3. Choferes ({driversCount})
         </Button>
+        {transportType === 'foraneo' && (
+          <Button
+            variant={activeTab === 'catalogo' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('catalogo')}
+            className="flex-1 text-xs px-2"
+          >
+            4. Catálogo
+          </Button>
+        )}
       </div>
+
+      {activeTab === 'catalogo' && transportType === 'foraneo' && (
+        <RutasMaestrasManager proveedorId={proveedorId} />
+      )}
 
       {/* === UNITS TAB (subscription billing unit) === */}
       {activeTab === 'units' && (
