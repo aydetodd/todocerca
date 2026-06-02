@@ -110,6 +110,8 @@ export function DriverTripPanel({
   const [askDir, setAskDir] = useState(false);
   // Diálogo para elegir punto de partida al iniciar jornada (auto mode)
   const [askStartPoint, setAskStartPoint] = useState(false);
+  // Si inicia desde medio camino, primero debe elegir dónde termina ese primer viaje.
+  const [askIntermediateEndPoint, setAskIntermediateEndPoint] = useState(false);
   // Diálogo de inicio/fin manual (sin GPS o fuera de geocerca)
   const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
   const [manualEndOpen, setManualEndOpen] = useState(false);
@@ -322,8 +324,8 @@ export function DriverTripPanel({
   }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB]);
 
 
-  // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A", "B" o "actual"
-  const startJornadaFrom = async (origin: "A" | "B" | "actual") => {
+  // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A" o "B"
+  const startJornadaFrom = async (origin: "A" | "B") => {
     let dir: Direccion;
     let lat: number | null = null;
     let lng: number | null = null;
@@ -340,15 +342,6 @@ export function DriverTripPanel({
       lat = destinoLat ?? null;
       lng = destinoLng ?? null;
       manual = !insideB;
-    } else {
-      // intermedio: usar coordenadas actuales y elegir la geocerca más lejana como destino
-      if (!currentPos) { toast.error("Esperando GPS para usar tu ubicación actual…"); return; }
-      lat = currentPos.lat;
-      lng = currentPos.lng;
-      const dA = distA ?? Infinity;
-      const dB = distB ?? Infinity;
-      dir = dA <= dB ? "BA" : "AB"; // ir hacia la más lejana
-      manual = true; // origen intermedio siempre se considera manual
     }
 
     await insertViaje(dir, { lat, lng, manual });
@@ -356,6 +349,21 @@ export function DriverTripPanel({
     setJornadaActiva(true);
     lastClosedFenceRef.current = null;
     lastAutoActionAtRef.current = Date.now();
+    setAskStartPoint(false);
+  };
+
+  const startJornadaFromCurrentTo = async (endPoint: "A" | "B") => {
+    if (!currentPos) {
+      toast.error("Esperando GPS para usar tu ubicación actual…");
+      return;
+    }
+    const dir: Direccion = endPoint === "A" ? "BA" : "AB";
+    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
+    try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
+    setJornadaActiva(true);
+    lastClosedFenceRef.current = null;
+    lastAutoActionAtRef.current = Date.now();
+    setAskIntermediateEndPoint(false);
     setAskStartPoint(false);
   };
 
@@ -903,7 +911,7 @@ export function DriverTripPanel({
               className="h-16 justify-start"
               variant="outline"
               disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFrom("actual")}
+              onClick={() => setAskIntermediateEndPoint(true)}
             >
               <Radar className="h-5 w-5 mr-3" />
               <div className="flex flex-col items-start">
@@ -914,6 +922,45 @@ export function DriverTripPanel({
                     : "Esperando GPS…"}
                 </span>
               </div>
+            </Button>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo: primer viaje desde punto intermedio */}
+      <AlertDialog open={askIntermediateEndPoint} onOpenChange={setAskIntermediateEndPoint}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dónde termina este primer viaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Como empiezas desde medio camino, elige manualmente si vas a cerrar al llegar al Punto A o al Punto B.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFromCurrentTo("A")}
+            >
+              <span className="text-lg font-bold">Termina en A</span>
+              <span className="text-[10px] opacity-80">Actual → A</span>
+            </Button>
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFromCurrentTo("B")}
+            >
+              <span className="text-lg font-bold">Termina en B</span>
+              <span className="text-[10px] opacity-80">Actual → B</span>
             </Button>
           </div>
 
