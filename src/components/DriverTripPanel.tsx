@@ -911,7 +911,7 @@ export function DriverTripPanel({
               className="h-16 justify-start"
               variant="outline"
               disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFrom("actual")}
+              onClick={() => setAskIntermediateEndPoint(true)}
             >
               <Radar className="h-5 w-5 mr-3" />
               <div className="flex flex-col items-start">
@@ -922,6 +922,45 @@ export function DriverTripPanel({
                     : "Esperando GPS…"}
                 </span>
               </div>
+            </Button>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo: primer viaje desde punto intermedio */}
+      <AlertDialog open={askIntermediateEndPoint} onOpenChange={setAskIntermediateEndPoint}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dónde termina este primer viaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Como empiezas desde medio camino, elige manualmente si vas a cerrar al llegar al Punto A o al Punto B.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFromCurrentTo("A")}
+            >
+              <span className="text-lg font-bold">Termina en A</span>
+              <span className="text-[10px] opacity-80">Actual → A</span>
+            </Button>
+            <Button
+              size="lg"
+              className="h-20 flex flex-col"
+              variant="outline"
+              disabled={!currentPos || inFlightRef.current}
+              onClick={() => startJornadaFromCurrentTo("B")}
+            >
+              <span className="text-lg font-bold">Termina en B</span>
+              <span className="text-[10px] opacity-80">Actual → B</span>
             </Button>
           </div>
 
