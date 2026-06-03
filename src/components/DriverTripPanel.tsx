@@ -231,9 +231,22 @@ export function DriverTripPanel({
     } else {
       const list = (data || []) as unknown as Viaje[];
       setViajesHoy(list);
-      setViajeActivo(list.find(v => v.estado === "en_curso") || null);
+      const activo = list.find(v => v.estado === "en_curso") || null;
+      setViajeActivo(activo);
+      // Si no hay viaje activo y no tenemos memoria de la última geocerca,
+      // inferirla del último viaje completado de hoy para que el auto-mode
+      // pueda arrancar el siguiente al salir de esa geocerca (sobrevive a recargas).
+      if (!activo && !lastClosedFenceRef.current) {
+        const lastCompleted = list.find(v => v.estado === "completado" && v.direccion);
+        if (lastCompleted) {
+          // BA cierra en A; AB cierra en B.
+          const fence: "A" | "B" = lastCompleted.direccion === "BA" ? "A" : "B";
+          setLastClosedFence(fence);
+        }
+      }
     }
     setLoading(false);
+
   }, [choferEmpresaId, contratoId, routeProductId, todayStr]);
 
   useEffect(() => {
