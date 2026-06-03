@@ -361,7 +361,7 @@ export function DriverTripPanel({
         setTimeout(() => { inFlightRef.current = false; }, 1500);
       }
     })();
-  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva, jornadaKey]);
+  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva, jornadaKey, jornadaDateKey, setLastActionAt, setLastClosedFence]);
 
   // Arranca automáticamente el siguiente viaje al SALIR de la geocerca recién alcanzada.
   useEffect(() => {
