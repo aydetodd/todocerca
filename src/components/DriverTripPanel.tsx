@@ -331,9 +331,9 @@ export function DriverTripPanel({
     if (!viajeActivo || !insideEnd || !currentPos || inFlightRef.current) return;
     const now = Date.now();
     if (now - lastAutoActionAtRef.current < 60_000) return; // anti-rebote 60 s
-    lastAutoActionAtRef.current = now;
+    setLastActionAt(now);
     // Marcar la geocerca recién alcanzada para arrancar el siguiente al salir
-    lastClosedFenceRef.current = dirActiva === "BA" ? "A" : "B";
+    setLastClosedFence(dirActiva === "BA" ? "A" : "B");
     // Asegurar jornada activa cuando el cierre ocurre por geocerca
     if (!jornadaActiva) {
       try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
