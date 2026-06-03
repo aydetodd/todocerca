@@ -635,9 +635,16 @@ export function DriverTripPanel({
                       setTimeout(() => { inFlightRef.current = false; }, 1000);
                     }
                   }
-                  try { localStorage.removeItem(jornadaKey); localStorage.removeItem(jornadaDateKey); } catch {}
+                  try {
+                    localStorage.removeItem(jornadaKey);
+                    localStorage.removeItem(jornadaDateKey);
+                    localStorage.removeItem(lastFenceKey);
+                    localStorage.removeItem(lastFenceDateKey);
+                    localStorage.removeItem(lastActionAtKey);
+                  } catch {}
                   setJornadaActiva(false);
-                  lastClosedFenceRef.current = null;
+                  setLastClosedFence(null);
+                  setLastActionAt(0);
                   toast.success("🏁 Jornada finalizada");
                 }}
               >
