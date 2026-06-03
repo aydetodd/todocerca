@@ -417,8 +417,8 @@ export function DriverTripPanel({
     await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
     try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
     setJornadaActiva(true);
-    lastClosedFenceRef.current = null;
-    lastAutoActionAtRef.current = Date.now();
+    setLastClosedFence(null);
+    setLastActionAt(Date.now());
     setAskIntermediateEndPoint(false);
     setAskStartPoint(false);
   };
