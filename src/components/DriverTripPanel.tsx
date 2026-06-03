@@ -247,7 +247,7 @@ export function DriverTripPanel({
     }
     setLoading(false);
 
-  }, [choferEmpresaId, contratoId, routeProductId, todayStr]);
+  }, [choferEmpresaId, contratoId, routeProductId, todayStr, setLastClosedFence]);
 
   useEffect(() => {
     loadViajes();
