@@ -120,23 +120,30 @@ export function DriverTripPanel({
   // jornadaActiva persiste entre recargas del navegador.
   const jornadaKey = `jornada_activa_${choferEmpresaId}`;
   const jornadaDateKey = `jornada_activa_date_${choferEmpresaId}`;
+  // Claves persistentes para el "siguiente paso" del auto-mode.
+  // Sin esto, al recargar/segundo plano se pierde el ref y los viajes
+  // intermedios no se cuentan hasta cerrar uno manualmente.
+  const lastFenceKey = `jornada_last_fence_${choferEmpresaId}`;
+  const lastFenceDateKey = `jornada_last_fence_date_${choferEmpresaId}`;
+  const lastActionAtKey = `jornada_last_action_at_${choferEmpresaId}`;
   const [jornadaActiva, setJornadaActiva] = useState<boolean>(() => {
     try {
       const flag = localStorage.getItem(jornadaKey) === "1";
       if (!flag) return false;
-      // Auto-finalizar si la fecha guardada no es hoy (Hermosillo) → cierre 11:59pm
       const savedDate = localStorage.getItem(jornadaDateKey);
       const today = getHermosilloToday();
       if (savedDate && savedDate !== today) {
         localStorage.removeItem(jornadaKey);
         localStorage.removeItem(jornadaDateKey);
+        localStorage.removeItem(lastFenceKey);
+        localStorage.removeItem(lastFenceDateKey);
+        localStorage.removeItem(lastActionAtKey);
         return false;
       }
       return true;
     } catch { return false; }
   });
 
-  // Auto-finalizar jornada al cambiar de día (chequeo cada minuto)
   useEffect(() => {
     if (!jornadaActiva) return;
     const interval = setInterval(() => {
@@ -146,16 +153,52 @@ export function DriverTripPanel({
         try {
           localStorage.removeItem(jornadaKey);
           localStorage.removeItem(jornadaDateKey);
+          localStorage.removeItem(lastFenceKey);
+          localStorage.removeItem(lastFenceDateKey);
+          localStorage.removeItem(lastActionAtKey);
         } catch {}
         setJornadaActiva(false);
       }
     }, 60_000);
     return () => clearInterval(interval);
-  }, [jornadaActiva, jornadaKey, jornadaDateKey]);
-  // Última geocerca de la que se "auto-cerró" un viaje (para arrancar el siguiente al salir)
+  }, [jornadaActiva, jornadaKey, jornadaDateKey, lastFenceKey, lastFenceDateKey, lastActionAtKey]);
+
+  // Última geocerca recién cerrada (persistido para sobrevivir recargas).
   const lastClosedFenceRef = useRef<"A" | "B" | null>(null);
-  // Anti-rebote por geocerca (60 s)
+  // Anti-rebote por geocerca (60 s). También persistido.
   const lastAutoActionAtRef = useRef<number>(0);
+
+  // Hidratar refs desde localStorage al montar (solo si la fecha guardada es hoy).
+  useEffect(() => {
+    try {
+      const today = getHermosilloToday();
+      const fenceDate = localStorage.getItem(lastFenceDateKey);
+      if (fenceDate === today) {
+        const f = localStorage.getItem(lastFenceKey);
+        if (f === "A" || f === "B") lastClosedFenceRef.current = f;
+        const t = parseInt(localStorage.getItem(lastActionAtKey) || "0", 10);
+        if (!isNaN(t)) lastAutoActionAtRef.current = t;
+      }
+    } catch {}
+  }, [lastFenceKey, lastFenceDateKey, lastActionAtKey]);
+
+  const setLastClosedFence = useCallback((fence: "A" | "B" | null) => {
+    lastClosedFenceRef.current = fence;
+    try {
+      if (fence) {
+        localStorage.setItem(lastFenceKey, fence);
+        localStorage.setItem(lastFenceDateKey, getHermosilloToday());
+      } else {
+        localStorage.removeItem(lastFenceKey);
+        localStorage.removeItem(lastFenceDateKey);
+      }
+    } catch {}
+  }, [lastFenceKey, lastFenceDateKey]);
+
+  const setLastActionAt = useCallback((ts: number) => {
+    lastAutoActionAtRef.current = ts;
+    try { localStorage.setItem(lastActionAtKey, String(ts)); } catch {}
+  }, [lastActionAtKey]);
 
   const todayStr = getHermosilloToday();
   const hasGeofences =
