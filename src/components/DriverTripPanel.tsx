@@ -373,11 +373,11 @@ export function DriverTripPanel({
     if (stillInside) return; // espera a que salga
     const now = Date.now();
     if (now - lastAutoActionAtRef.current < 60_000) return;
-    lastAutoActionAtRef.current = now;
+    setLastActionAt(now);
     const nextDir: Direccion = lastFence === "A" ? "AB" : "BA";
-    lastClosedFenceRef.current = null;
+    setLastClosedFence(null);
     insertViaje(nextDir, { lat: currentPos.lat, lng: currentPos.lng, manual: false });
-  }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB]);
+  }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB, setLastActionAt, setLastClosedFence]);
 
 
   // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A" o "B"
