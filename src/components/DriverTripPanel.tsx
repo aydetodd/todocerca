@@ -1016,32 +1016,23 @@ export function DriverTripPanel({
       <AlertDialog open={askIntermediateEndPoint} onOpenChange={setAskIntermediateEndPoint}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Dónde termina este primer viaje?</AlertDialogTitle>
+            <AlertDialogTitle>Iniciar desde tu ubicación actual</AlertDialogTitle>
             <AlertDialogDescription>
-              Como empiezas desde medio camino, elige manualmente si vas a cerrar al llegar al Punto A o al Punto B.
+              Se grabará el viaje desde aquí <strong>sin asignarle dirección aún</strong>.
+              La app detectará automáticamente si terminas en el <strong>Punto A</strong> o en el <strong>Punto B</strong>
+              y le pondrá el nombre correcto (AB o BA) al cerrar.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="py-2">
             <Button
               size="lg"
-              className="h-20 flex flex-col"
-              variant="outline"
+              className="h-16 w-full"
               disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFromCurrentTo("A")}
+              onClick={() => startJornadaFromIntermediate()}
             >
-              <span className="text-lg font-bold">Termina en A</span>
-              <span className="text-[10px] opacity-80">Actual → A</span>
-            </Button>
-            <Button
-              size="lg"
-              className="h-20 flex flex-col"
-              variant="outline"
-              disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFromCurrentTo("B")}
-            >
-              <span className="text-lg font-bold">Termina en B</span>
-              <span className="text-[10px] opacity-80">Actual → B</span>
+              <Radar className="h-5 w-5 mr-2" />
+              <span className="text-base font-bold">Iniciar viaje aquí</span>
             </Button>
           </div>
 
@@ -1050,6 +1041,7 @@ export function DriverTripPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }
