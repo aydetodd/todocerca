@@ -408,13 +408,14 @@ export function DriverTripPanel({
     setAskStartPoint(false);
   };
 
-  const startJornadaFromCurrentTo = async (endPoint: "A" | "B") => {
+  // Inicia un viaje desde un punto intermedio SIN definir dirección.
+  // La dirección (AB/BA) se decidirá automáticamente cuando el GPS entre a la geocerca A o B.
+  const startJornadaFromIntermediate = async () => {
     if (!currentPos) {
       toast.error("Esperando GPS para usar tu ubicación actual…");
       return;
     }
-    const dir: Direccion = endPoint === "A" ? "BA" : "AB";
-    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
+    await insertViaje(null, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
     try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
     setJornadaActiva(true);
     setLastClosedFence(null);
@@ -424,7 +425,7 @@ export function DriverTripPanel({
   };
 
   const insertViaje = async (
-    direccion: Direccion,
+    direccion: Direccion | null,
     opts: { lat: number | null; lng: number | null; manual: boolean }
   ) => {
     if (inFlightRef.current) return;
@@ -447,8 +448,9 @@ export function DriverTripPanel({
       } as any);
       if (error) throw error;
       await loadViajes();
+      const label = direccion ?? "sin dirección (se define al llegar a A o B)";
       toast.success(
-        `🚐 Viaje #${lastNum + 1} iniciado (${direccion}${opts.manual ? " · manual" : ""})`
+        `🚐 Viaje #${lastNum + 1} iniciado (${label}${opts.manual ? " · manual" : ""})`
       );
     } catch (err: any) {
       toast.error(err.message || "Error al iniciar viaje");
@@ -456,6 +458,7 @@ export function DriverTripPanel({
       setTimeout(() => { inFlightRef.current = false; }, 1500);
     }
   };
+
 
   // Confirma inicio con GPS (validando geocerca correcta según AB/BA)
   const confirmarInicioGPS = async (dir: Direccion) => {
