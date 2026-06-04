@@ -326,15 +326,28 @@ export function DriverTripPanel({
 
   // ---- AUTO MODE: cierre y arranque automático por geocerca ----
   // Cierra automáticamente el viaje activo al entrar a la geocerca destino.
+  // Si el viaje inició desde un punto intermedio (direccion = null), también se cierra
+  // al llegar a CUALQUIER geocerca (A o B) y se le asigna la dirección correspondiente.
   useEffect(() => {
     if (!autoMode) return;
-    if (!viajeActivo || !insideEnd || !currentPos || inFlightRef.current) return;
+    if (!viajeActivo || !currentPos || inFlightRef.current) return;
+
+    // Determinar si llegó a una geocerca válida para cerrar
+    let arrivedFence: "A" | "B" | null = null;
+    let resolvedDir: Direccion | null = dirActiva;
+    if (dirActiva) {
+      if (insideEnd) arrivedFence = dirActiva === "BA" ? "A" : "B";
+    } else {
+      // Viaje sin dirección: se cierra al llegar a A o B y se asigna la dirección.
+      if (insideA) { arrivedFence = "A"; resolvedDir = "BA"; }
+      else if (insideB) { arrivedFence = "B"; resolvedDir = "AB"; }
+    }
+    if (!arrivedFence) return;
+
     const now = Date.now();
     if (now - lastAutoActionAtRef.current < 60_000) return; // anti-rebote 60 s
     setLastActionAt(now);
-    // Marcar la geocerca recién alcanzada para arrancar el siguiente al salir
-    setLastClosedFence(dirActiva === "BA" ? "A" : "B");
-    // Asegurar jornada activa cuando el cierre ocurre por geocerca
+    setLastClosedFence(arrivedFence);
     if (!jornadaActiva) {
       try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
       setJornadaActiva(true);
@@ -350,18 +363,20 @@ export function DriverTripPanel({
             fin_at: new Date().toISOString(),
             estado: "completado",
             fin_manual: false,
+            direccion: resolvedDir,
           } as any)
           .eq("id", viajeActivo.id);
         if (error) throw error;
         await loadViajes();
-        toast.success(`✅ Viaje #${viajeActivo.numero_viaje} cerrado automáticamente al llegar al punto ${dirActiva === "BA" ? "A" : "B"}`);
+        toast.success(`✅ Viaje #${viajeActivo.numero_viaje} (${resolvedDir}) cerrado automáticamente al llegar al punto ${arrivedFence}`);
       } catch (err: any) {
         toast.error(err.message || "Error cerrando viaje auto");
       } finally {
         setTimeout(() => { inFlightRef.current = false; }, 1500);
       }
     })();
-  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, currentPos, dirActiva, jornadaKey, jornadaDateKey, setLastActionAt, setLastClosedFence]);
+  }, [autoMode, jornadaActiva, viajeActivo, insideEnd, insideA, insideB, currentPos, dirActiva, jornadaKey, jornadaDateKey, setLastActionAt, setLastClosedFence]);
+
 
   // Arranca automáticamente el siguiente viaje al SALIR de la geocerca recién alcanzada.
   useEffect(() => {
@@ -408,13 +423,14 @@ export function DriverTripPanel({
     setAskStartPoint(false);
   };
 
-  const startJornadaFromCurrentTo = async (endPoint: "A" | "B") => {
+  // Inicia un viaje desde un punto intermedio SIN definir dirección.
+  // La dirección (AB/BA) se decidirá automáticamente cuando el GPS entre a la geocerca A o B.
+  const startJornadaFromIntermediate = async () => {
     if (!currentPos) {
       toast.error("Esperando GPS para usar tu ubicación actual…");
       return;
     }
-    const dir: Direccion = endPoint === "A" ? "BA" : "AB";
-    await insertViaje(dir, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
+    await insertViaje(null, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
     try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
     setJornadaActiva(true);
     setLastClosedFence(null);
@@ -424,7 +440,7 @@ export function DriverTripPanel({
   };
 
   const insertViaje = async (
-    direccion: Direccion,
+    direccion: Direccion | null,
     opts: { lat: number | null; lng: number | null; manual: boolean }
   ) => {
     if (inFlightRef.current) return;
@@ -447,8 +463,9 @@ export function DriverTripPanel({
       } as any);
       if (error) throw error;
       await loadViajes();
+      const label = direccion ?? "sin dirección (se define al llegar a A o B)";
       toast.success(
-        `🚐 Viaje #${lastNum + 1} iniciado (${direccion}${opts.manual ? " · manual" : ""})`
+        `🚐 Viaje #${lastNum + 1} iniciado (${label}${opts.manual ? " · manual" : ""})`
       );
     } catch (err: any) {
       toast.error(err.message || "Error al iniciar viaje");
@@ -456,6 +473,7 @@ export function DriverTripPanel({
       setTimeout(() => { inFlightRef.current = false; }, 1500);
     }
   };
+
 
   // Confirma inicio con GPS (validando geocerca correcta según AB/BA)
   const confirmarInicioGPS = async (dir: Direccion) => {
@@ -998,32 +1016,23 @@ export function DriverTripPanel({
       <AlertDialog open={askIntermediateEndPoint} onOpenChange={setAskIntermediateEndPoint}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Dónde termina este primer viaje?</AlertDialogTitle>
+            <AlertDialogTitle>Iniciar desde tu ubicación actual</AlertDialogTitle>
             <AlertDialogDescription>
-              Como empiezas desde medio camino, elige manualmente si vas a cerrar al llegar al Punto A o al Punto B.
+              Se grabará el viaje desde aquí <strong>sin asignarle dirección aún</strong>.
+              La app detectará automáticamente si terminas en el <strong>Punto A</strong> o en el <strong>Punto B</strong>
+              y le pondrá el nombre correcto (AB o BA) al cerrar.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="py-2">
             <Button
               size="lg"
-              className="h-20 flex flex-col"
-              variant="outline"
+              className="h-16 w-full"
               disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFromCurrentTo("A")}
+              onClick={() => startJornadaFromIntermediate()}
             >
-              <span className="text-lg font-bold">Termina en A</span>
-              <span className="text-[10px] opacity-80">Actual → A</span>
-            </Button>
-            <Button
-              size="lg"
-              className="h-20 flex flex-col"
-              variant="outline"
-              disabled={!currentPos || inFlightRef.current}
-              onClick={() => startJornadaFromCurrentTo("B")}
-            >
-              <span className="text-lg font-bold">Termina en B</span>
-              <span className="text-[10px] opacity-80">Actual → B</span>
+              <Radar className="h-5 w-5 mr-2" />
+              <span className="text-base font-bold">Iniciar viaje aquí</span>
             </Button>
           </div>
 
@@ -1032,6 +1041,7 @@ export function DriverTripPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }
