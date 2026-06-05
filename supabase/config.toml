@@ -119,3 +119,6 @@ verify_jwt = false
 
 [functions.save-route-trace]
 verify_jwt = false
+
+[functions.esp32-conteo-pasajeros]
+verify_jwt = false

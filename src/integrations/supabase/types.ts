@@ -515,6 +515,54 @@ export type Database = {
         }
         Relationships: []
       }
+      conteo_pasajeros_eventos: {
+        Row: {
+          created_at: string
+          esp32_mac: string
+          evento: string
+          id: string
+          ocurrido_en: string
+          puerta: string
+          unidad_id: string | null
+          viaje_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          esp32_mac: string
+          evento: string
+          id?: string
+          ocurrido_en?: string
+          puerta: string
+          unidad_id?: string | null
+          viaje_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          esp32_mac?: string
+          evento?: string
+          id?: string
+          ocurrido_en?: string
+          puerta?: string
+          unidad_id?: string | null
+          viaje_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteo_pasajeros_eventos_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_pasajeros_eventos_viaje_id_fkey"
+            columns: ["viaje_id"]
+            isOneToOne: false
+            referencedRelation: "viajes_realizados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos_transporte: {
         Row: {
           concesionario_id: string
@@ -3685,6 +3733,8 @@ export type Database = {
           cobro_tipo: string | null
           created_at: string
           descripcion: string | null
+          esp32_mac: string | null
+          esp32_secret: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
@@ -3703,6 +3753,8 @@ export type Database = {
           cobro_tipo?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_mac?: string | null
+          esp32_secret?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -3721,6 +3773,8 @@ export type Database = {
           cobro_tipo?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_mac?: string | null
+          esp32_secret?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -4030,6 +4084,9 @@ export type Database = {
           inicio_manual: boolean
           notas: string | null
           numero_viaje: number
+          pasajeros_a_bordo: number
+          pasajeros_bajados: number
+          pasajeros_subidos: number
           producto_id: string | null
           unidad_id: string | null
           updated_at: string
@@ -4053,6 +4110,9 @@ export type Database = {
           inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
+          pasajeros_a_bordo?: number
+          pasajeros_bajados?: number
+          pasajeros_subidos?: number
           producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
@@ -4076,6 +4136,9 @@ export type Database = {
           inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
+          pasajeros_a_bordo?: number
+          pasajeros_bajados?: number
+          pasajeros_subidos?: number
           producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
