@@ -3731,6 +3731,9 @@ export type Database = {
         Row: {
           anio: number | null
           cobro_tipo: string | null
+          conteo_subscription_end: string | null
+          conteo_subscription_id: string | null
+          conteo_subscription_status: string | null
           created_at: string
           descripcion: string | null
           esp32_mac: string | null
@@ -3751,6 +3754,9 @@ export type Database = {
         Insert: {
           anio?: number | null
           cobro_tipo?: string | null
+          conteo_subscription_end?: string | null
+          conteo_subscription_id?: string | null
+          conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
           esp32_mac?: string | null
@@ -3771,6 +3777,9 @@ export type Database = {
         Update: {
           anio?: number | null
           cobro_tipo?: string | null
+          conteo_subscription_end?: string | null
+          conteo_subscription_id?: string | null
+          conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
           esp32_mac?: string | null

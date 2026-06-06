@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp, Cpu, Sparkles } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
@@ -69,6 +69,8 @@ interface Unit {
   is_active: boolean;
   created_at: string;
   esp32_mac?: string | null;
+  conteo_subscription_status?: string | null;
+  conteo_subscription_end?: string | null;
 }
 
 const formatCobroTipo = (value: Unit['cobro_tipo']) => {
@@ -459,6 +461,48 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     }
   };
 
+  const handleActivateConteo = async (unitId: string, unitNombre: string) => {
+    try {
+      const ok = window.confirm(
+        `Conteo Inteligente para "${unitNombre}"\n\n` +
+        `• $500 MXN al año por esta unidad\n` +
+        `• Procesa eventos del sensor ESP32\n` +
+        `• Panel del chofer en tiempo real\n` +
+        `• Reportes y mapa de paradas reales\n\n` +
+        `¿Continuar al pago?`
+      );
+      if (!ok) return;
+      const { data, error } = await supabase.functions.invoke('create-conteo-checkout', {
+        body: { unit_id: unitId },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || 'No se pudo iniciar el pago', variant: "destructive" });
+    }
+  };
+
+  // Sync Conteo Inteligente subscriptions on mount and after checkout
+  useEffect(() => {
+    const sync = async () => {
+      try {
+        await supabase.functions.invoke('check-conteo-subscription');
+        fetchUnits();
+      } catch (e) {
+        console.warn('check-conteo-subscription failed', e);
+      }
+    };
+    sync();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('conteo_success') === 'true') {
+      toast({ title: "✅ Conteo Inteligente activado", description: "La unidad ya está habilitada." });
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [proveedorId]);
+
   const handleCreateRoute = async () => {
     // Validation based on transport type
     if (transportType === 'publico') {
@@ -811,21 +855,38 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                                   <Cpu className="h-3 w-3" /> ESP32
                                 </Badge>
                               )}
+                              {unit.conteo_subscription_status === 'active' && (
+                                <Badge className="text-[10px] gap-1 bg-emerald-600 hover:bg-emerald-600">
+                                  <Sparkles className="h-3 w-3" /> Conteo
+                                </Badge>
+                              )}
                             </div>
                             <Badge variant={unit.cobro_tipo ? 'secondary' : 'destructive'} className="mt-2 text-[11px]">
                               {formatCobroTipo(unit.cobro_tipo)}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              title="Vincular ESP32 contador de pasajeros"
-                              onClick={() => setEsp32UnitId(unit.id)}
-                            >
-                              <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
-                            </Button>
+                            {unit.conteo_subscription_status !== 'active' ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                title="Activar Conteo Inteligente ($500/año)"
+                                onClick={() => handleActivateConteo(unit.id, unit.nombre)}
+                              >
+                                <Sparkles className="h-3 w-3 text-emerald-600" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                title="Vincular ESP32 contador de pasajeros"
+                                onClick={() => setEsp32UnitId(unit.id)}
+                              >
+                                <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
