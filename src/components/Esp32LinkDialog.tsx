@@ -164,10 +164,69 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
           <div className="space-y-4">
             <Alert>
               <AlertDescription className="text-xs">
-                Al encender el ESP32 por primera vez, su MAC aparece en el monitor serial.
-                Cópiala y pégala aquí. El secreto se genera automáticamente.
+                Programa el ESP32 con el SSID y contraseña de abajo. El chofer solo crea un hotspot
+                con ese nombre y contraseña en su teléfono y el módulo se conecta solo.
               </AlertDescription>
             </Alert>
+
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="text-xs font-semibold text-primary">
+                📶 Hotspot del chofer (entrégalo en la tarjeta de suscripción)
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Nombre del hotspot (SSID)</Label>
+                <div className="flex gap-1">
+                  <Input
+                    value={wifiSsid}
+                    onChange={(e) => setWifiSsid(e.target.value)}
+                    placeholder="Ej: TodoCerca_142"
+                    className="font-mono text-sm"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                  {wifiSsid && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copy(wifiSsid, 'SSID')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Contraseña del hotspot</Label>
+                <div className="flex gap-1">
+                  <Input
+                    value={wifiPassword}
+                    onChange={(e) => setWifiPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    className="font-mono text-sm"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                  {wifiPassword && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copy(wifiPassword, 'Contraseña')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Banda 2.4 GHz obligatoria. Cambia el código del ESP32 antes de entregarlo y anota
+                  estos datos en la etiqueta que le das al concesionario.
+                </p>
+              </div>
+            </div>
+
 
             <div className="space-y-1">
               <Label className="text-xs">MAC del ESP32</Label>
