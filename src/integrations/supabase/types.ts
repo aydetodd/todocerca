@@ -3738,6 +3738,8 @@ export type Database = {
           descripcion: string | null
           esp32_mac: string | null
           esp32_secret: string | null
+          esp32_wifi_password: string | null
+          esp32_wifi_ssid: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
@@ -3761,6 +3763,8 @@ export type Database = {
           descripcion?: string | null
           esp32_mac?: string | null
           esp32_secret?: string | null
+          esp32_wifi_password?: string | null
+          esp32_wifi_ssid?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -3784,6 +3788,8 @@ export type Database = {
           descripcion?: string | null
           esp32_mac?: string | null
           esp32_secret?: string | null
+          esp32_wifi_password?: string | null
+          esp32_wifi_ssid?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
