@@ -736,10 +736,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             </CardTitle>
             <CardDescription>
               Cada unidad requiere una suscripción de{' '}
-              <span className="line-through text-muted-foreground">$800 MXN/año</span>{' '}
-              <span className="font-bold text-primary">$400 MXN/año</span>{' '}
-              <span className="inline-block px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold align-middle">PROMOCIÓN</span>
+              <span className="font-bold text-primary">$400 MXN/año</span>
               . Registra tus unidades con placas o No. económico.
+
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
