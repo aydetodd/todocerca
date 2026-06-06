@@ -3,7 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, MapPin, Maximize2, Minimize2 } from 'lucide-react';
 
 interface Props {
   unidadId: string;
