@@ -260,13 +260,17 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       v.fin_at || "",
       v.inicio_manual ? "Manual" : "GPS",
       v.fin_manual ? "Manual" : "GPS",
+      String(v.pasajeros_subidos ?? 0),
+      String(v.pasajeros_bajados ?? 0),
+      String(v.pasajeros_a_bordo ?? 0),
     ]);
     downloadCSV(
       `reporte-viajes-${getRange().desde}_a_${getRange().hasta}.csv`,
-      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src"],
+      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo"],
       rows
     );
   };
+
 
   return (
     <div className="space-y-3">
