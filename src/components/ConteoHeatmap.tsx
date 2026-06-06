@@ -30,6 +30,7 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   const [loading, setLoading] = useState(true);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [routeBounds, setRouteBounds] = useState<[number, number][] | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Cargar centro de ruta (origen/destino + geojson) de la unidad
   useEffect(() => {
