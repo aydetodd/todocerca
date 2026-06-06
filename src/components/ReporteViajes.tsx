@@ -30,10 +30,14 @@ type ViajeRow = {
   direccion: string | null;
   inicio_manual: boolean | null;
   fin_manual: boolean | null;
+  pasajeros_subidos?: number | null;
+  pasajeros_bajados?: number | null;
+  pasajeros_a_bordo?: number | null;
   choferes_empresa?: { nombre?: string | null } | null;
   unidades_empresa?: { numero_economico?: string | null; placas?: string | null } | null;
   productos?: { nombre?: string | null } | null;
 };
+
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
