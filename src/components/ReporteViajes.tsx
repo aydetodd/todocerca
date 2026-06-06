@@ -217,6 +217,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const today = getHermosilloToday();
   const completadosHoy = filtered.filter((v) => v.fecha === today && v.estado === "completado").length;
   const enCursoHoy = filtered.filter((v) => v.estado === "en_curso").length;
+  const totalSubidos = filtered.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
+  const totalBajados = filtered.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
+  const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
