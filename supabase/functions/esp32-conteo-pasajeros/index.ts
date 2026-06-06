@@ -140,6 +140,79 @@ Deno.serve(async (req) => {
       ocurrido_en: ocurridoEn,
     });
 
+    // 5.b) Detección de anomalía: si en los últimos 30 min hubo >=10 eventos
+    // y TODOS son de la misma puerta, el otro sensor está mudo (tapado/dañado).
+    try {
+      const desde = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: recientes } = await supabase
+        .from("conteo_pasajeros_eventos")
+        .select("puerta")
+        .eq("unidad_id", unidad.id)
+        .gte("ocurrido_en", desde);
+
+      const total = recientes?.length ?? 0;
+      if (total >= 10) {
+        const frente = recientes!.filter((r: any) => r.puerta === "frente").length;
+        const atras = recientes!.filter((r: any) => r.puerta === "atras").length;
+        const puertaMuda = frente === 0 ? "atras" : atras === 0 ? "frente" : null;
+
+        if (puertaMuda) {
+          const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { data: ultimaAlerta } = await supabase
+            .from("conteo_pasajeros_alertas")
+            .select("id")
+            .eq("unidad_id", unidad.id)
+            .gte("created_at", haceUnaHora)
+            .limit(1)
+            .maybeSingle();
+
+          if (!ultimaAlerta) {
+            const { data: prov } = await supabase
+              .from("proveedores")
+              .select("user_id")
+              .eq("id", unidad.proveedor_id)
+              .maybeSingle();
+
+            const { data: uInfo } = await supabase
+              .from("unidades_empresa")
+              .select("nombre, placas")
+              .eq("id", unidad.id)
+              .maybeSingle();
+
+            const nombreUnidad = (uInfo as any)?.nombre || (uInfo as any)?.placas || "tu unidad";
+            const puertaActiva = puertaMuda === "frente" ? "atrás" : "frente";
+            const puertaMudaTxt = puertaMuda === "frente" ? "frente" : "atrás";
+
+            const mensaje =
+              `⚠️ Posible falla de sensor en ${nombreUnidad}.\n\n` +
+              `En los últimos 30 minutos se registraron ${total} pases, pero TODOS por la puerta de ${puertaActiva}. ` +
+              `El sensor de la puerta de ${puertaMudaTxt} podría estar tapado, obstruido o dañado.\n\n` +
+              `Pídele al chofer que revise y limpie el sensor infrarrojo de esa puerta.`;
+
+            const systemUserId = "00000000-0000-0000-0000-000000000001";
+            if (prov?.user_id) {
+              await supabase.from("messages").insert({
+                sender_id: systemUserId,
+                receiver_id: prov.user_id,
+                message: mensaje,
+                is_panic: false,
+                is_read: false,
+              });
+            }
+
+            await supabase.from("conteo_pasajeros_alertas").insert({
+              unidad_id: unidad.id,
+              proveedor_id: unidad.proveedor_id,
+              puerta_muda: puertaMuda,
+              eventos_ventana: total,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("anomaly_check_failed", String(e));
+    }
+
     // 6) Actualizar contadores del viaje activo
     if (viaje) {
       const subidos = (viaje.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);

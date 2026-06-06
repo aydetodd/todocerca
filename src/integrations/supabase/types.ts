@@ -515,6 +515,55 @@ export type Database = {
         }
         Relationships: []
       }
+      conteo_pasajeros_alertas: {
+        Row: {
+          created_at: string
+          eventos_ventana: number
+          id: string
+          proveedor_id: string
+          puerta_muda: string
+          unidad_id: string
+        }
+        Insert: {
+          created_at?: string
+          eventos_ventana?: number
+          id?: string
+          proveedor_id: string
+          puerta_muda: string
+          unidad_id: string
+        }
+        Update: {
+          created_at?: string
+          eventos_ventana?: number
+          id?: string
+          proveedor_id?: string
+          puerta_muda?: string
+          unidad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteo_pasajeros_alertas_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_pasajeros_alertas_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteo_pasajeros_alertas_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteo_pasajeros_eventos: {
         Row: {
           created_at: string
