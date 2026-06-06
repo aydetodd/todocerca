@@ -108,7 +108,8 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     };
   }, [unidadId, days]);
 
-  // Inicializar mapa una vez
+  // Inicializar mapa en el contenedor visible actual.
+  // Al entrar/salir de pantalla completa el contenedor cambia, así que Leaflet debe recrearse.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
@@ -126,13 +127,14 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
+    setTimeout(() => map.invalidateSize(), 120);
 
     return () => {
       map.remove();
       mapRef.current = null;
       layerRef.current = null;
     };
-  }, []);
+  }, [fullscreen]);
 
   // Render puntos + fallback de encuadre con la ruta de la unidad
   useEffect(() => {
@@ -162,7 +164,7 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       const b = L.latLngBounds(routeBounds);
       map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
     }
-  }, [eventos, routeBounds]);
+  }, [eventos, routeBounds, fullscreen]);
 
   // Recalcular tamaño al alternar pantalla completa
   useEffect(() => {
