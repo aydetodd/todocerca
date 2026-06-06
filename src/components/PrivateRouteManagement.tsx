@@ -806,6 +806,11 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             <div className="flex items-center gap-2 flex-wrap">
                               <Bus className="h-4 w-4 text-amber-500 shrink-0" />
                               <h4 className="font-semibold text-sm">{formatUnitLabel(unit)}</h4>
+                              {unit.esp32_mac && (
+                                <Badge variant="outline" className="text-[10px] gap-1">
+                                  <Cpu className="h-3 w-3" /> ESP32
+                                </Badge>
+                              )}
                             </div>
                             <Badge variant={unit.cobro_tipo ? 'secondary' : 'destructive'} className="mt-2 text-[11px]">
                               {formatCobroTipo(unit.cobro_tipo)}
@@ -813,6 +818,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Vincular ESP32 contador de pasajeros"
+                              onClick={() => setEsp32UnitId(unit.id)}
+                            >
+                              <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
+                            </Button>
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
