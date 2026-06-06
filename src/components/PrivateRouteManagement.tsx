@@ -879,15 +879,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                                 <Sparkles className="h-3 w-3 text-emerald-600" />
                               </Button>
                             ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                title="Vincular ESP32 contador de pasajeros"
-                                onClick={() => setEsp32UnitId(unit.id)}
-                              >
-                                <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Vincular ESP32 contador de pasajeros"
+                                  onClick={() => setEsp32UnitId(unit.id)}
+                                >
+                                  <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Mapa de calor - conteo de pasajeros"
+                                  onClick={() => setHeatmapUnitId(unit.id)}
+                                >
+                                  <Flame className="h-3 w-3 text-orange-500" />
+                                </Button>
+                              </>
                             )}
                             <Button
                               variant="ghost"
