@@ -163,8 +163,64 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     }
   }, [eventos, routeBounds]);
 
+  // Recalcular tamaño al alternar pantalla completa
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    return () => clearTimeout(t);
+  }, [fullscreen]);
+
+  // Bloquear scroll del body en fullscreen
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [fullscreen]);
+
   const subidas = eventos.filter((e) => e.evento === 'sube').length;
   const bajadas = eventos.filter((e) => e.evento === 'baja').length;
+
+  const mapHeightClass = fullscreen ? 'h-[100dvh]' : 'h-[320px]';
+
+  const content = (
+    <div className="relative" style={{ touchAction: 'none' }}>
+      <div
+        ref={containerRef}
+        className={`w-full ${mapHeightClass} ${fullscreen ? '' : 'rounded-b-lg'} overflow-hidden`}
+        style={{ touchAction: 'none' }}
+      />
+      <Button
+        type="button"
+        size="icon"
+        variant="secondary"
+        onClick={() => setFullscreen((v) => !v)}
+        className="absolute top-2 right-2 z-[1000] h-9 w-9 shadow-md"
+        aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+      >
+        {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+      </Button>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {!loading && eventos.length === 0 && (
+        <div className="absolute bottom-2 left-2 right-12 bg-background/85 text-[11px] text-muted-foreground px-3 py-2 rounded-md text-center pointer-events-none">
+          Aún no hay eventos con ubicación. El mapa muestra la ruta asignada.
+        </div>
+      )}
+    </div>
+  );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-background">
+        {content}
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -183,22 +239,7 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
           <span>Últimos {days} días</span>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="relative">
-          <div ref={containerRef} className="w-full h-[320px] rounded-b-lg overflow-hidden" />
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          {!loading && eventos.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 text-xs text-muted-foreground px-4 text-center">
-              Aún no hay eventos con ubicación. Necesitas un ESP32 con GPS opcional, o que el
-              chofer comparta ubicación al subir/bajar pasajeros.
-            </div>
-          )}
-        </div>
-      </CardContent>
+      <CardContent className="p-0">{content}</CardContent>
     </Card>
   );
 }
