@@ -1447,6 +1447,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         unitName={units.find(u => u.id === esp32UnitId)?.nombre}
         onSaved={fetchUnits}
       />
+
+      <Dialog open={!!heatmapUnitId} onOpenChange={(open) => { if (!open) setHeatmapUnitId(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              Mapa de calor - Conteo de pasajeros
+            </DialogTitle>
+            <DialogDescription>
+              Verde: dónde sube gente. Rojo: dónde baja gente. Últimos 7 días.
+            </DialogDescription>
+          </DialogHeader>
+          {heatmapUnitId && (
+            <ConteoHeatmap
+              unidadId={heatmapUnitId}
+              unidadNombre={units.find(u => u.id === heatmapUnitId)?.nombre}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
