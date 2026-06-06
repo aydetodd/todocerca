@@ -95,7 +95,12 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
     try {
       const { error } = await supabase
         .from('unidades_empresa')
-        .update({ esp32_mac: normalized, esp32_secret: finalSecret })
+        .update({
+          esp32_mac: normalized,
+          esp32_secret: finalSecret,
+          esp32_wifi_ssid: wifiSsid.trim() || null,
+          esp32_wifi_password: wifiPassword.trim() || null,
+        } as any)
         .eq('id', unitId);
       if (error) throw error;
       setMac(normalized);
