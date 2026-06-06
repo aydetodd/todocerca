@@ -20,6 +20,11 @@ interface Evento {
   evento: 'sube' | 'baja';
 }
 
+type ConteoEventoRow = { lat: number | null; lng: number | null; evento: string | null };
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 /**
  * Mapa con puntos verdes (subidas) y rojos (bajadas).
  * Muestra dónde la gente realmente aborda y desciende.
@@ -57,23 +62,25 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       if (typeof prod.route_destination_lat === 'number' && typeof prod.route_destination_lng === 'number')
         pts.push([prod.route_destination_lat, prod.route_destination_lng]);
       try {
-        const gj: any = prod.route_geojson;
+        const gj = prod.route_geojson as unknown;
         if (gj) {
           const coords: [number, number][] = [];
-          const walk = (g: any) => {
+          const walk = (g: unknown) => {
             if (!g) return;
             if (Array.isArray(g) && g.length >= 2 && typeof g[0] === 'number' && typeof g[1] === 'number') {
               coords.push([g[1], g[0]]); return;
             }
             if (Array.isArray(g)) g.forEach(walk);
-            else if (g.coordinates) walk(g.coordinates);
-            else if (g.geometry) walk(g.geometry);
-            else if (g.features) g.features.forEach(walk);
+            else if (isObject(g) && 'coordinates' in g) walk(g.coordinates);
+            else if (isObject(g) && 'geometry' in g) walk(g.geometry);
+            else if (isObject(g) && Array.isArray(g.features)) g.features.forEach(walk);
           };
           walk(gj);
           if (coords.length) pts.push(...coords);
         }
-      } catch {}
+      } catch (error) {
+        console.warn('No se pudo leer el trazo de la ruta', error);
+      }
       if (!cancel && pts.length) setRouteBounds(pts);
     })();
     return () => { cancel = true; };
@@ -95,10 +102,15 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
         .limit(2000);
       if (cancel) return;
       if (!error && data) {
+        const rows = data as ConteoEventoRow[];
         setEventos(
-          data
-            .filter((d: any) => typeof d.lat === 'number' && typeof d.lng === 'number')
-            .map((d: any) => ({ lat: d.lat, lng: d.lng, evento: d.evento })),
+          rows
+            .filter((d): d is { lat: number; lng: number; evento: 'sube' | 'baja' } =>
+              typeof d.lat === 'number' &&
+              typeof d.lng === 'number' &&
+              (d.evento === 'sube' || d.evento === 'baja'),
+            )
+            .map((d) => ({ lat: d.lat, lng: d.lng, evento: d.evento })),
         );
       }
       setLoading(false);
@@ -108,7 +120,8 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     };
   }, [unidadId, days]);
 
-  // Inicializar mapa una vez
+  // Inicializar mapa en el contenedor visible actual.
+  // Al entrar/salir de pantalla completa el contenedor cambia, así que Leaflet debe recrearse.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
@@ -126,13 +139,14 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
+    setTimeout(() => map.invalidateSize(), 120);
 
     return () => {
       map.remove();
       mapRef.current = null;
       layerRef.current = null;
     };
-  }, []);
+  }, [fullscreen]);
 
   // Render puntos + fallback de encuadre con la ruta de la unidad
   useEffect(() => {
@@ -162,7 +176,7 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       const b = L.latLngBounds(routeBounds);
       map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
     }
-  }, [eventos, routeBounds]);
+  }, [eventos, routeBounds, fullscreen]);
 
   // Recalcular tamaño al alternar pantalla completa
   useEffect(() => {
