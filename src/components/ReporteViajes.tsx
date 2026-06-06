@@ -158,6 +158,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       .select(`
         id, fecha, numero_viaje, estado, inicio_at, fin_at, chofer_id, unidad_id, contrato_id,
         producto_id, direccion, inicio_manual, fin_manual,
+        pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo,
         choferes_empresa(nombre),
         unidades_empresa(numero_economico, placas),
         productos(nombre)
