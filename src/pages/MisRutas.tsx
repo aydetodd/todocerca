@@ -26,7 +26,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: Bus,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
-    price: '$400 MXN/unidad/año',
+    price: '$800 MXN/unidad/año',
   },
   foraneo: {
     label: 'Transporte Foráneo',
@@ -34,7 +34,7 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: Truck,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-100',
-    price: '$400 MXN/unidad/año',
+    price: '$800 MXN/unidad/año',
   },
   privado: {
     label: 'Transporte Privado',
@@ -42,17 +42,9 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     icon: CarFront,
     color: 'text-amber-600',
     bgColor: 'bg-amber-100',
-    price: '$400 MXN/unidad/año',
+    price: '$800 MXN/unidad/año',
   },
   // Protocolo 2: Taxi oculto
-  // taxi: {
-  //   label: 'Taxi',
-  //   description: 'Unidades de taxi visibles en el mapa público',
-  //   icon: Car,
-  //   color: 'text-yellow-600',
-  //   bgColor: 'bg-yellow-100',
-  //   price: '$400 MXN/unidad/año',
-  // },
 };
 
 export default function MisRutas() {
