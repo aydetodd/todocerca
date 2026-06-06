@@ -779,9 +779,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
                   <span className="font-medium">Suscripción requerida:</span>{' '}
-                  <span className="line-through text-muted-foreground">$800</span>{' '}
-                  <span className="font-bold text-primary">$400 MXN/año</span> por unidad{' '}
-                  <span className="inline-block px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold">PROMO</span>. Pago seguro vía Stripe.
+                  <span className="font-bold text-primary">$400 MXN/año</span> por unidad. Pago seguro vía Stripe.
+
                 </AlertDescription>
               </Alert>
             )}
