@@ -826,6 +826,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             >
                               <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
                             </Button>
+                            <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
