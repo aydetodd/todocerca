@@ -115,6 +115,13 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       zoom: 12,
       zoomControl: true,
       attributionControl: false,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true,
+      tap: true,
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     mapRef.current = map;
