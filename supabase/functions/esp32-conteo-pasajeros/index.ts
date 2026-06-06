@@ -1,15 +1,27 @@
 // Edge function que recibe eventos del ESP32 con sensores infrarrojos.
-// Autenticación: MAC del dispositivo + secreto compartido guardado en unidades_empresa.
-// Body esperado:
-// { "mac": "AA:BB:CC:DD:EE:FF", "secret": "xxxxx", "evento": "sube"|"baja", "puerta": "frente"|"atras" }
+// Autenticación: MAC del dispositivo + (token MD5 con timestamp) o secreto plano (legacy).
+// Body nuevo (recomendado):
+//   { "mac": "AA:BB:CC:DD:EE:FF", "timestamp": 123456, "token": "md5(secret+timestamp)", "evento": "sube"|"baja", "puerta": "frente"|"atras" }
+// Body legacy:
+//   { "mac": "...", "secret": "...", "evento": "...", "puerta": "..." }
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { createHash } from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// Ventana de validez del timestamp del ESP32 (5 min). El ESP32 manda millis() desde boot,
+// así que no comparamos contra "ahora" — solo evitamos reusar tokens repetidos (cache simple).
+const TOKEN_CACHE = new Map<string, number>();
+const TOKEN_TTL_MS = 5 * 60 * 1000;
+
+function md5(s: string) {
+  return createHash("md5").update(s).digest("hex");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -19,17 +31,17 @@ Deno.serve(async (req) => {
     if (!body) return json({ error: "invalid_body" }, 400);
 
     const mac = String(body.mac ?? "").trim().toLowerCase();
-    const secret = String(body.secret ?? "");
     const evento = String(body.evento ?? "");
     const puerta = String(body.puerta ?? "");
     const lat = typeof body.lat === "number" ? body.lat : null;
     const lng = typeof body.lng === "number" ? body.lng : null;
+
     const ocurridoEnRaw = body.ocurrido_en ? new Date(body.ocurrido_en) : null;
     const ocurridoEn = ocurridoEnRaw && !isNaN(ocurridoEnRaw.getTime())
       ? ocurridoEnRaw.toISOString()
       : new Date().toISOString();
 
-    if (!mac || !secret) return json({ error: "missing_credentials" }, 400);
+    if (!mac) return json({ error: "missing_mac" }, 400);
     if (!["sube", "baja"].includes(evento)) return json({ error: "invalid_evento" }, 400);
     if (!["frente", "atras"].includes(puerta)) return json({ error: "invalid_puerta" }, 400);
 
@@ -38,7 +50,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1) Localizar unidad por MAC y validar secreto
+    // 1) Localizar unidad por MAC
     const { data: unidad, error: uErr } = await supabase
       .from("unidades_empresa")
       .select("id, proveedor_id, esp32_secret, is_active")
@@ -48,11 +60,40 @@ Deno.serve(async (req) => {
     if (uErr) return json({ error: "db_error", detail: uErr.message }, 500);
     if (!unidad) return json({ error: "unit_not_found" }, 404);
     if (!unidad.is_active) return json({ error: "unit_inactive" }, 403);
-    if (!unidad.esp32_secret || unidad.esp32_secret !== secret) {
-      return json({ error: "bad_secret" }, 401);
+    if (!unidad.esp32_secret) return json({ error: "no_secret_configured" }, 401);
+
+    // 2) Autenticación: token MD5 nuevo o secret plano legacy
+    const incomingToken = typeof body.token === "string" ? body.token.toLowerCase() : null;
+    const incomingTs = typeof body.timestamp === "number" ? body.timestamp : null;
+    const incomingSecret = typeof body.secret === "string" ? body.secret : null;
+
+    let authed = false;
+    if (incomingToken && incomingTs !== null) {
+      // Modo seguro: token = md5(secret + timestamp)
+      const expected = md5(`${unidad.esp32_secret}${incomingTs}`).toLowerCase();
+      if (expected === incomingToken) {
+        // Anti-replay: rechazar el mismo (mac+token) si ya lo vimos
+        const cacheKey = `${mac}:${incomingToken}`;
+        const seenAt = TOKEN_CACHE.get(cacheKey);
+        if (seenAt && Date.now() - seenAt < TOKEN_TTL_MS) {
+          return json({ error: "replay" }, 401);
+        }
+        TOKEN_CACHE.set(cacheKey, Date.now());
+        // Limpieza ocasional
+        if (TOKEN_CACHE.size > 500) {
+          const cutoff = Date.now() - TOKEN_TTL_MS;
+          for (const [k, t] of TOKEN_CACHE) if (t < cutoff) TOKEN_CACHE.delete(k);
+        }
+        authed = true;
+      }
+    } else if (incomingSecret && incomingSecret === unidad.esp32_secret) {
+      // Modo legacy
+      authed = true;
     }
 
-    // 2) Buscar viaje en curso de esa unidad (el más reciente)
+    if (!authed) return json({ error: "bad_credentials" }, 401);
+
+    // 3) Buscar viaje en curso de esa unidad
     const { data: viaje } = await supabase
       .from("viajes_realizados")
       .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_id")
@@ -62,8 +103,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // 2.5) Si el ESP32 no mandó coordenadas, sacamos las del teléfono del chofer.
-    //      Así el mapa de calor sale gratis aunque el ESP32 no tenga GPS.
+    // 4) Si el ESP32 no mandó coordenadas, sacarlas del teléfono del chofer
     let finalLat = lat;
     let finalLng = lng;
     if ((finalLat === null || finalLng === null) && viaje?.chofer_id) {
@@ -88,8 +128,7 @@ Deno.serve(async (req) => {
       }
     }
 
-
-    // 3) Insertar evento en la bitácora (aunque no haya viaje activo)
+    // 5) Bitácora
     await supabase.from("conteo_pasajeros_eventos").insert({
       viaje_id: viaje?.id ?? null,
       unidad_id: unidad.id,
@@ -101,8 +140,7 @@ Deno.serve(async (req) => {
       ocurrido_en: ocurridoEn,
     });
 
-
-    // 4) Actualizar contadores del viaje activo
+    // 6) Actualizar contadores del viaje activo
     if (viaje) {
       const subidos = (viaje.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);
       const bajados = (viaje.pasajeros_bajados ?? 0) + (evento === "baja" ? 1 : 0);
