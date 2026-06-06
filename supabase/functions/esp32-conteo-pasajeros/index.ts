@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
       esp32_mac: mac,
       puerta,
       evento,
+      lat,
+      lng,
+      ocurrido_en: ocurridoEn,
     });
 
     // 4) Actualizar contadores del viaje activo
