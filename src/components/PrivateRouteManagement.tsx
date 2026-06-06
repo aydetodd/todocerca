@@ -1365,6 +1365,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Esp32LinkDialog
+        open={!!esp32UnitId}
+        onOpenChange={(open) => { if (!open) setEsp32UnitId(null); }}
+        unitId={esp32UnitId}
+        unitName={units.find(u => u.id === esp32UnitId)?.nombre}
+        onSaved={fetchUnits}
+      />
     </div>
   );
 }
