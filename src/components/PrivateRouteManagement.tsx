@@ -736,7 +736,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             </CardTitle>
             <CardDescription>
               Cada unidad requiere una suscripción de{' '}
-              <span className="font-bold text-primary">$400 MXN/año</span>
+              <span className="font-bold text-primary">$800 MXN/año</span>
               . Registra tus unidades con placas o No. económico.
 
             </CardDescription>
@@ -779,7 +779,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
                   <span className="font-medium">Suscripción requerida:</span>{' '}
-                  <span className="font-bold text-primary">$400 MXN/año</span> por unidad. Pago seguro vía Stripe.
+                  <span className="font-bold text-primary">$800 MXN/año</span> por unidad. Pago seguro vía Stripe.
 
                 </AlertDescription>
               </Alert>
@@ -1100,7 +1100,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               ¿Cuántas unidades vas a registrar?
             </DialogTitle>
             <DialogDescription>
-              Cada unidad cuesta <span className="font-bold text-primary">$400 MXN/año</span>. Paga por todas tus unidades en un solo cobro y luego registras los datos de cada una.
+              Cada unidad cuesta <span className="font-bold text-primary">$800 MXN/año</span>. Paga por todas tus unidades en un solo cobro y luego registras los datos de cada una.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1139,10 +1139,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             <div className="bg-muted/40 rounded-lg p-4 text-center space-y-1">
               <p className="text-xs text-muted-foreground">Total a pagar (anual)</p>
               <p className="text-3xl font-bold text-primary">
-                ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN
+                ${(slotsToBuy * 800).toLocaleString('es-MX')} MXN
               </p>
               <p className="text-xs text-muted-foreground">
-                {slotsToBuy} unidad{slotsToBuy > 1 ? 'es' : ''} × $400 MXN
+                {slotsToBuy} unidad{slotsToBuy > 1 ? 'es' : ''} × $800 MXN
               </p>
             </div>
             <p className="text-xs text-muted-foreground text-center">
@@ -1157,7 +1157,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               {addingUnit ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirigiendo a Stripe...</>
               ) : (
-                <><CreditCard className="h-4 w-4 mr-2" /> Pagar ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN</>
+                <><CreditCard className="h-4 w-4 mr-2" /> Pagar ${(slotsToBuy * 800).toLocaleString('es-MX')} MXN</>
               )}
             </Button>
           </div>
