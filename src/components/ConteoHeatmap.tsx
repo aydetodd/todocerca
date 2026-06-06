@@ -125,28 +125,35 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     };
   }, []);
 
-  // Render puntos
+  // Render puntos + fallback de encuadre con la ruta de la unidad
   useEffect(() => {
     const map = mapRef.current;
     const layer = layerRef.current;
     if (!map || !layer) return;
     layer.clearLayers();
-    if (eventos.length === 0) return;
 
-    eventos.forEach((e) => {
-      const color = e.evento === 'sube' ? '#16A34A' : '#DC2626';
-      L.circleMarker([e.lat, e.lng], {
-        radius: 6,
-        color,
-        fillColor: color,
-        fillOpacity: 0.55,
-        weight: 1,
-      }).addTo(layer);
-    });
+    if (eventos.length > 0) {
+      eventos.forEach((e) => {
+        const color = e.evento === 'sube' ? '#16A34A' : '#DC2626';
+        L.circleMarker([e.lat, e.lng], {
+          radius: 6,
+          color,
+          fillColor: color,
+          fillOpacity: 0.55,
+          weight: 1,
+        }).addTo(layer);
+      });
+      const bounds = L.latLngBounds(eventos.map((e) => [e.lat, e.lng] as [number, number]));
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+      return;
+    }
 
-    const bounds = L.latLngBounds(eventos.map((e) => [e.lat, e.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
-  }, [eventos]);
+    // Sin eventos: centrar en la ruta asignada de la unidad
+    if (routeBounds && routeBounds.length) {
+      const b = L.latLngBounds(routeBounds);
+      map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+    }
+  }, [eventos, routeBounds]);
 
   const subidas = eventos.filter((e) => e.evento === 'sube').length;
   const bajadas = eventos.filter((e) => e.evento === 'baja').length;
