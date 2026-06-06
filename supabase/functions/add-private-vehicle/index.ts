@@ -12,11 +12,13 @@ const logStep = (step: string, details?: any) => {
   console.log(`[ADD-PRIVATE-VEHICLE] ${step}${detailsStr}`);
 };
 
+// Precio normal unificado: $800 MXN/año por unidad de transporte
+const UNIT_PRICE_ID = 'price_1TfBaTGyH05pxWZzTJVSuY0Z';
 const ROUTE_PRICE_IDS: Record<string, string> = {
-  privada: 'price_1T6hoDGyH05pxWZz9L9u4VYu',   // $400 MXN/año (TEST)
-  urbana: 'price_1T6ho4GyH05pxWZzs1s8FH9P',     // $400 MXN/año (TEST)
-  foranea: 'price_1T6hoBGyH05pxWZzYLgaARpX',     // $400 MXN/año (TEST)
-  taxi: 'price_1T6hoCGyH05pxWZz0k0CgJfb',        // $400 MXN/año (TEST)
+  privada: UNIT_PRICE_ID,
+  urbana: UNIT_PRICE_ID,
+  foranea: UNIT_PRICE_ID,
+  taxi: UNIT_PRICE_ID,
 };
 
 serve(async (req) => {
