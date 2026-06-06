@@ -57,6 +57,9 @@ type Viaje = {
   direccion: Direccion | null;
   inicio_manual: boolean | null;
   fin_manual: boolean | null;
+  pasajeros_subidos?: number | null;
+  pasajeros_bajados?: number | null;
+  pasajeros_a_bordo?: number | null;
 };
 
 function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
