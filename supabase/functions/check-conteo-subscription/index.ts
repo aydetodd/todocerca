@@ -51,14 +51,13 @@ serve(async (req) => {
 
     log('Suscripciones encontradas', { count: subs.data.length });
 
-    const activeByUnit = new Map<string, { id: string; end: string }>();
+    const activeByUnit = new Map<string, { id: string; end: string | null }>();
     for (const sub of subs.data) {
       const unitId = sub.metadata?.unit_id;
       if (!unitId) continue;
-      activeByUnit.set(unitId, {
-        id: sub.id,
-        end: new Date(sub.current_period_end * 1000).toISOString(),
-      });
+      const periodEnd = (sub as any).current_period_end ?? sub.items?.data?.[0]?.current_period_end ?? null;
+      const endIso = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
+      activeByUnit.set(unitId, { id: sub.id, end: endIso });
     }
 
     // Resolver proveedor_id desde user_id
