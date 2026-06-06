@@ -521,6 +521,8 @@ export type Database = {
           esp32_mac: string
           evento: string
           id: string
+          lat: number | null
+          lng: number | null
           ocurrido_en: string
           puerta: string
           unidad_id: string | null
@@ -531,6 +533,8 @@ export type Database = {
           esp32_mac: string
           evento: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           ocurrido_en?: string
           puerta: string
           unidad_id?: string | null
@@ -541,6 +545,8 @@ export type Database = {
           esp32_mac?: string
           evento?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           ocurrido_en?: string
           puerta?: string
           unidad_id?: string | null
