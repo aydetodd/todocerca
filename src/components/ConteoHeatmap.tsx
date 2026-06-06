@@ -83,7 +83,10 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       } catch (error) {
         console.warn('No se pudo leer el trazo de la ruta', error);
       }
-      if (!cancel && pts.length) setRouteBounds(pts);
+      if (!cancel) {
+        if (prod.route_geojson) setRouteGeoJSON(prod.route_geojson);
+        if (pts.length) setRouteBounds(pts);
+      }
     })();
     return () => { cancel = true; };
   }, [unidadId]);
