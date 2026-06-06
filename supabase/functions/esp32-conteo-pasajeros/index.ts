@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       : new Date().toISOString();
 
     if (!mac) return json({ error: "missing_mac" }, 400);
-    if (!["sube", "baja"].includes(evento)) return json({ error: "invalid_evento" }, 400);
+    if (!["sube", "baja", "falla_sensor"].includes(evento)) return json({ error: "invalid_evento" }, 400);
     if (!["frente", "atras"].includes(puerta)) return json({ error: "invalid_puerta" }, 400);
 
     const supabase = createClient(
