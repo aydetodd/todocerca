@@ -69,6 +69,8 @@ interface Unit {
   is_active: boolean;
   created_at: string;
   esp32_mac?: string | null;
+  conteo_subscription_status?: string | null;
+  conteo_subscription_end?: string | null;
 }
 
 const formatCobroTipo = (value: Unit['cobro_tipo']) => {
