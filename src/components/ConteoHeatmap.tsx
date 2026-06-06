@@ -28,6 +28,53 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   const layerRef = useRef<L.LayerGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [routeBounds, setRouteBounds] = useState<[number, number][] | null>(null);
+
+  // Cargar centro de ruta (origen/destino + geojson) de la unidad
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { data: asig } = await supabase
+        .from('asignaciones_chofer')
+        .select('producto_id')
+        .eq('unidad_id', unidadId)
+        .order('fecha', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancel || !asig?.producto_id) return;
+      const { data: prod } = await supabase
+        .from('productos')
+        .select('route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geojson')
+        .eq('id', asig.producto_id)
+        .maybeSingle();
+      if (cancel || !prod) return;
+      const pts: [number, number][] = [];
+      if (typeof prod.route_origin_lat === 'number' && typeof prod.route_origin_lng === 'number')
+        pts.push([prod.route_origin_lat, prod.route_origin_lng]);
+      if (typeof prod.route_destination_lat === 'number' && typeof prod.route_destination_lng === 'number')
+        pts.push([prod.route_destination_lat, prod.route_destination_lng]);
+      try {
+        const gj: any = prod.route_geojson;
+        if (gj) {
+          const coords: [number, number][] = [];
+          const walk = (g: any) => {
+            if (!g) return;
+            if (Array.isArray(g) && g.length >= 2 && typeof g[0] === 'number' && typeof g[1] === 'number') {
+              coords.push([g[1], g[0]]); return;
+            }
+            if (Array.isArray(g)) g.forEach(walk);
+            else if (g.coordinates) walk(g.coordinates);
+            else if (g.geometry) walk(g.geometry);
+            else if (g.features) g.features.forEach(walk);
+          };
+          walk(gj);
+          if (coords.length) pts.push(...coords);
+        }
+      } catch {}
+      if (!cancel && pts.length) setRouteBounds(pts);
+    })();
+    return () => { cancel = true; };
+  }, [unidadId]);
 
   // Cargar eventos con coordenadas
   useEffect(() => {
