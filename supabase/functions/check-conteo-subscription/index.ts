@@ -61,11 +61,19 @@ serve(async (req) => {
       });
     }
 
+    // Resolver proveedor_id desde user_id
+    const { data: prov } = await admin
+      .from('proveedores')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     // Traer todas las unidades del proveedor
     const { data: units } = await admin
       .from('unidades_empresa')
       .select('id, nombre, conteo_subscription_id, conteo_subscription_status, conteo_subscription_end')
-      .eq('proveedor_id', user.id);
+      .eq('proveedor_id', prov?.id ?? user.id);
+
 
     const result: any[] = [];
     for (const u of units ?? []) {
