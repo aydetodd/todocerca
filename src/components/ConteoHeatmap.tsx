@@ -216,10 +216,11 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   );
 
   if (fullscreen) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-background">
+    return createPortal(
+      <div className="fixed inset-0 z-[100000] bg-background">
         {content}
-      </div>
+      </div>,
+      document.body,
     );
   }
 
