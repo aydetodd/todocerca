@@ -364,18 +364,34 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-3 rounded-lg bg-primary/10 text-center">
-                <p className="text-2xl font-bold text-primary">{completadosHoy}</p>
-                <p className="text-[10px] text-muted-foreground">Completados</p>
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 rounded-lg bg-primary/10 text-center">
+                  <p className="text-2xl font-bold text-primary">{completadosHoy}</p>
+                  <p className="text-[10px] text-muted-foreground">Completados</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/40 text-center">
+                  <p className="text-2xl font-bold text-foreground">{enCursoHoy}</p>
+                  <p className="text-[10px] text-muted-foreground">En curso</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40 text-center">
+                  <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
+                  <p className="text-[10px] text-muted-foreground">Registros</p>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-secondary/40 text-center">
-                <p className="text-2xl font-bold text-foreground">{enCursoHoy}</p>
-                <p className="text-[10px] text-muted-foreground">En curso</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/40 text-center">
-                <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
-                <p className="text-[10px] text-muted-foreground">Registros</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 rounded-lg bg-emerald-500/10 text-center">
+                  <p className="text-2xl font-bold text-emerald-600">↑{totalSubidos}</p>
+                  <p className="text-[10px] text-muted-foreground">Pasajeros subieron</p>
+                </div>
+                <div className="p-3 rounded-lg bg-amber-500/10 text-center">
+                  <p className="text-2xl font-bold text-amber-600">↓{totalBajados}</p>
+                  <p className="text-[10px] text-muted-foreground">Bajaron</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-500/10 text-center">
+                  <p className="text-2xl font-bold text-blue-600">{totalABordo}</p>
+                  <p className="text-[10px] text-muted-foreground">A bordo</p>
+                </div>
               </div>
             </div>
           )}
