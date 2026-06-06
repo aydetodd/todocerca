@@ -22,6 +22,12 @@ Deno.serve(async (req) => {
     const secret = String(body.secret ?? "");
     const evento = String(body.evento ?? "");
     const puerta = String(body.puerta ?? "");
+    const lat = typeof body.lat === "number" ? body.lat : null;
+    const lng = typeof body.lng === "number" ? body.lng : null;
+    const ocurridoEnRaw = body.ocurrido_en ? new Date(body.ocurrido_en) : null;
+    const ocurridoEn = ocurridoEnRaw && !isNaN(ocurridoEnRaw.getTime())
+      ? ocurridoEnRaw.toISOString()
+      : new Date().toISOString();
 
     if (!mac || !secret) return json({ error: "missing_credentials" }, 400);
     if (!["sube", "baja"].includes(evento)) return json({ error: "invalid_evento" }, 400);
