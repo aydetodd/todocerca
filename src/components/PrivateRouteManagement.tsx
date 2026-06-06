@@ -474,19 +474,21 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         `¿Continuar al pago?`
       );
       if (!ok) return;
+      const returnTo = window.location.pathname + window.location.search;
       const { data, error } = await supabase.functions.invoke('create-conteo-checkout', {
-        body: { unit_id: unitId },
+        body: { unit_id: unitId, returnTo },
       });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
+        toast({ title: "Pago abierto en otra pestaña", description: "Cuando termines vuelve aquí y la unidad se activará automáticamente." });
       }
     } catch (error: any) {
       toast({ title: "Error", description: error.message || 'No se pudo iniciar el pago', variant: "destructive" });
     }
   };
 
-  // Sync Conteo Inteligente subscriptions on mount and after checkout
+  // Sync Conteo Inteligente subscriptions on mount, on tab focus, and after checkout
   useEffect(() => {
     const sync = async () => {
       try {
@@ -500,9 +502,27 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     const params = new URLSearchParams(window.location.search);
     if (params.get('conteo_success') === 'true') {
       toast({ title: "✅ Conteo Inteligente activado", description: "La unidad ya está habilitada." });
+      // Poll a few times in case Stripe sub isn't visible yet
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        await sync();
+        if (attempts >= 5) clearInterval(poll);
+      }, 2000);
       // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('conteo_success');
+      url.searchParams.delete('unit_id');
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
     }
+    // Re-sync when user returns to the tab (after paying in another tab)
+    const onFocus = () => { sync(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, [proveedorId]);
 
   const handleCreateRoute = async () => {
@@ -736,7 +756,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             </CardTitle>
             <CardDescription>
               Cada unidad requiere una suscripción de{' '}
-              <span className="font-bold text-primary">$400 MXN/año</span>
+              <span className="font-bold text-primary">$800 MXN/año</span>
               . Registra tus unidades con placas o No. económico.
 
             </CardDescription>
@@ -779,7 +799,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
                   <span className="font-medium">Suscripción requerida:</span>{' '}
-                  <span className="font-bold text-primary">$400 MXN/año</span> por unidad. Pago seguro vía Stripe.
+                  <span className="font-bold text-primary">$800 MXN/año</span> por unidad. Pago seguro vía Stripe.
 
                 </AlertDescription>
               </Alert>
@@ -1100,7 +1120,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               ¿Cuántas unidades vas a registrar?
             </DialogTitle>
             <DialogDescription>
-              Cada unidad cuesta <span className="font-bold text-primary">$400 MXN/año</span>. Paga por todas tus unidades en un solo cobro y luego registras los datos de cada una.
+              Cada unidad cuesta <span className="font-bold text-primary">$800 MXN/año</span>. Paga por todas tus unidades en un solo cobro y luego registras los datos de cada una.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1139,10 +1159,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             <div className="bg-muted/40 rounded-lg p-4 text-center space-y-1">
               <p className="text-xs text-muted-foreground">Total a pagar (anual)</p>
               <p className="text-3xl font-bold text-primary">
-                ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN
+                ${(slotsToBuy * 800).toLocaleString('es-MX')} MXN
               </p>
               <p className="text-xs text-muted-foreground">
-                {slotsToBuy} unidad{slotsToBuy > 1 ? 'es' : ''} × $400 MXN
+                {slotsToBuy} unidad{slotsToBuy > 1 ? 'es' : ''} × $800 MXN
               </p>
             </div>
             <p className="text-xs text-muted-foreground text-center">
@@ -1157,7 +1177,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
               {addingUnit ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirigiendo a Stripe...</>
               ) : (
-                <><CreditCard className="h-4 w-4 mr-2" /> Pagar ${(slotsToBuy * 400).toLocaleString('es-MX')} MXN</>
+                <><CreditCard className="h-4 w-4 mr-2" /> Pagar ${(slotsToBuy * 800).toLocaleString('es-MX')} MXN</>
               )}
             </Button>
           </div>

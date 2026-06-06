@@ -624,7 +624,7 @@ const Dashboard = () => {
                       Transporte
                     </CardTitle>
                     <CardDescription>
-                      Gestiona tus unidades, rutas y suscripciones ($400 MXN/año por unidad)
+                      Gestiona tus unidades, rutas y suscripciones ($800 MXN/año por unidad)
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -646,7 +646,7 @@ const Dashboard = () => {
                       Registrarme como Concesionario de Transporte
                     </CardTitle>
                     <CardDescription>
-                      Registra tu concesionaria para dar de alta unidades. Cada unidad se suscribe por $400 MXN al año.
+                      Registra tu concesionaria para dar de alta unidades. Cada unidad se suscribe por $800 MXN al año.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

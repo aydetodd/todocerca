@@ -37,6 +37,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const unit_id: string | undefined = body?.unit_id;
+    const returnTo: string | undefined = body?.returnTo;
     if (!unit_id || typeof unit_id !== 'string') {
       throw new Error('unit_id requerido');
     }
@@ -79,8 +80,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: CONTEO_PRICE_ID, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/panel-concesionario?conteo_success=true&unit_id=${unit_id}`,
-      cancel_url: `${req.headers.get('origin')}/panel-concesionario?conteo_cancelled=true`,
+      success_url: `${req.headers.get('origin')}${returnTo || '/panel-concesionario'}${(returnTo || '').includes('?') ? '&' : '?'}conteo_success=true&unit_id=${unit_id}`,
+      cancel_url: `${req.headers.get('origin')}${returnTo || '/panel-concesionario'}${(returnTo || '').includes('?') ? '&' : '?'}conteo_cancelled=true`,
       metadata: {
         user_id: user.id,
         product_type: 'conteo_inteligente',

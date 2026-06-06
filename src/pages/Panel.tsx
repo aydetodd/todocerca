@@ -305,7 +305,7 @@ export default function Panel() {
                 </div>
               )}
               
-              {/* Registro como Concesionario de Transporte ($400 MXN/año por unidad) */}
+              {/* Registro como Concesionario de Transporte ($800 MXN/año por unidad) */}
               {!isProvider && !showProviderForm && (
                 <div className="pt-4 border-t">
                   <Button
@@ -317,7 +317,7 @@ export default function Panel() {
                     Registrarme como Concesionario de Transporte
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Suscripción anual de $400 MXN por cada unidad registrada
+                    Suscripción anual de $800 MXN por cada unidad registrada
                   </p>
                 </div>
               )}
