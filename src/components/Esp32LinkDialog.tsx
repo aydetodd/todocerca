@@ -42,6 +42,8 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
   const [saving, setSaving] = useState(false);
   const [mac, setMac] = useState('');
   const [secret, setSecret] = useState('');
+  const [wifiSsid, setWifiSsid] = useState('');
+  const [wifiPassword, setWifiPassword] = useState('');
   const [hasSavedMac, setHasSavedMac] = useState(false);
 
   useEffect(() => {
@@ -51,13 +53,15 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
       try {
         const { data, error } = await supabase
           .from('unidades_empresa')
-          .select('esp32_mac, esp32_secret')
+          .select('esp32_mac, esp32_secret, esp32_wifi_ssid, esp32_wifi_password')
           .eq('id', unitId)
           .maybeSingle();
         if (error) throw error;
-        setMac((data?.esp32_mac as string) || '');
-        setSecret((data?.esp32_secret as string) || '');
-        setHasSavedMac(!!data?.esp32_mac);
+        setMac(((data as any)?.esp32_mac as string) || '');
+        setSecret(((data as any)?.esp32_secret as string) || '');
+        setWifiSsid(((data as any)?.esp32_wifi_ssid as string) || '');
+        setWifiPassword(((data as any)?.esp32_wifi_password as string) || '');
+        setHasSavedMac(!!(data as any)?.esp32_mac);
       } catch (e: any) {
         toast({ title: 'Error', description: e.message, variant: 'destructive' });
       } finally {
