@@ -55,12 +55,32 @@ Deno.serve(async (req) => {
     // 2) Buscar viaje en curso de esa unidad (el más reciente)
     const { data: viaje } = await supabase
       .from("viajes_realizados")
-      .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo")
+      .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_user_id")
       .eq("unidad_id", unidad.id)
       .eq("estado", "en_curso")
       .order("inicio_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
+
+    // 2.5) Si el ESP32 no mandó coordenadas, intentamos sacar las del teléfono del chofer.
+    //      Así el mapa de calor sale gratis aunque el ESP32 no tenga GPS.
+    let finalLat = lat;
+    let finalLng = lng;
+    if ((finalLat === null || finalLng === null) && viaje?.chofer_user_id) {
+      const { data: loc } = await supabase
+        .from("proveedor_locations")
+        .select("latitude, longitude, updated_at")
+        .eq("user_id", viaje.chofer_user_id)
+        .maybeSingle();
+      // Solo usamos si la ubicación es fresca (< 2 min)
+      if (loc?.latitude && loc?.longitude && loc.updated_at) {
+        const ageMs = Date.now() - new Date(loc.updated_at).getTime();
+        if (ageMs < 2 * 60 * 1000) {
+          finalLat = loc.latitude;
+          finalLng = loc.longitude;
+        }
+      }
+    }
 
     // 3) Insertar evento en la bitácora (aunque no haya viaje activo)
     await supabase.from("conteo_pasajeros_eventos").insert({
@@ -69,10 +89,11 @@ Deno.serve(async (req) => {
       esp32_mac: mac,
       puerta,
       evento,
-      lat,
-      lng,
+      lat: finalLat,
+      lng: finalLng,
       ocurrido_en: ocurridoEn,
     });
+
 
     // 4) Actualizar contadores del viaje activo
     if (viaje) {
