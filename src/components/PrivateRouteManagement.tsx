@@ -68,6 +68,7 @@ interface Unit {
   cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
   is_active: boolean;
   created_at: string;
+  esp32_mac?: string | null;
 }
 
 const formatCobroTipo = (value: Unit['cobro_tipo']) => {
