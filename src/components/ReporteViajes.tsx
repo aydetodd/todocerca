@@ -30,10 +30,14 @@ type ViajeRow = {
   direccion: string | null;
   inicio_manual: boolean | null;
   fin_manual: boolean | null;
+  pasajeros_subidos?: number | null;
+  pasajeros_bajados?: number | null;
+  pasajeros_a_bordo?: number | null;
   choferes_empresa?: { nombre?: string | null } | null;
   unidades_empresa?: { numero_economico?: string | null; placas?: string | null } | null;
   productos?: { nombre?: string | null } | null;
 };
+
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
@@ -154,6 +158,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       .select(`
         id, fecha, numero_viaje, estado, inicio_at, fin_at, chofer_id, unidad_id, contrato_id,
         producto_id, direccion, inicio_manual, fin_manual,
+        pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo,
         choferes_empresa(nombre),
         unidades_empresa(numero_economico, placas),
         productos(nombre)
@@ -255,13 +260,17 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       v.fin_at || "",
       v.inicio_manual ? "Manual" : "GPS",
       v.fin_manual ? "Manual" : "GPS",
+      String(v.pasajeros_subidos ?? 0),
+      String(v.pasajeros_bajados ?? 0),
+      String(v.pasajeros_a_bordo ?? 0),
     ]);
     downloadCSV(
       `reporte-viajes-${getRange().desde}_a_${getRange().hasta}.csv`,
-      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src"],
+      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo"],
       rows
     );
   };
+
 
   return (
     <div className="space-y-3">
@@ -418,12 +427,20 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
             <CardContent className="space-y-4">
               {buckets.map((b) => {
                 const completados = b.viajes.filter((v) => v.estado === "completado").length;
+                const totalSuben = b.viajes.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
                 return (
                   <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
                     <div className="bg-muted/40 px-3 py-2 flex flex-col gap-0.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
-                        <Badge variant="outline" className="shrink-0 text-[10px]">{completados} viajes</Badge>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge variant="outline" className="text-[10px]">{completados} viajes</Badge>
+                          {totalSuben > 0 && (
+                            <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">
+                              {totalSuben} pasajeros
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {b.unidadLabel} · {b.choferLabel}
@@ -434,9 +451,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                         const sentido = v.direccion || "—";
                         const enCurso = v.estado === "en_curso";
                         const flagManual = v.inicio_manual || v.fin_manual;
+                        const sub = v.pasajeros_subidos ?? 0;
+                        const baj = v.pasajeros_bajados ?? 0;
+                        const abordo = v.pasajeros_a_bordo ?? 0;
                         return (
                           <div key={v.id} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
                               <span className="font-semibold">#{v.numero_viaje}</span>
                               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
                               {flagManual && (
@@ -444,6 +464,11 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                               )}
                               {enCurso && (
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
+                              )}
+                              {(sub > 0 || baj > 0 || abordo > 0) && (
+                                <span className="text-[10px] text-emerald-700 font-medium">
+                                  ↑{sub} ↓{baj}{enCurso ? ` · ${abordo} a bordo` : ""}
+                                </span>
                               )}
                             </div>
                             <span className="text-muted-foreground shrink-0 tabular-nums text-right">
@@ -457,6 +482,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   </div>
                 );
               })}
+
             </CardContent>
           </Card>
         );
