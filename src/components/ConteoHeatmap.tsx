@@ -36,6 +36,8 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   const [loading, setLoading] = useState(true);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [routeBounds, setRouteBounds] = useState<[number, number][] | null>(null);
+  const [routeGeoJSON, setRouteGeoJSON] = useState<unknown>(null);
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
   // Cargar centro de ruta (origen/destino + geojson) de la unidad
@@ -81,7 +83,10 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       } catch (error) {
         console.warn('No se pudo leer el trazo de la ruta', error);
       }
-      if (!cancel && pts.length) setRouteBounds(pts);
+      if (!cancel) {
+        if (prod.route_geojson) setRouteGeoJSON(prod.route_geojson);
+        if (pts.length) setRouteBounds(pts);
+      }
     })();
     return () => { cancel = true; };
   }, [unidadId]);
@@ -148,33 +153,68 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     };
   }, [fullscreen]);
 
-  // Render puntos + fallback de encuadre con la ruta de la unidad
+  // Dibujar el trazado de la ruta (polyline azul) debajo de los puntos
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+    if (!routeGeoJSON) return;
+    try {
+      const group = L.layerGroup().addTo(map);
+      const drawCoords = (segment: number[][]) => {
+        const coords = segment
+          .filter((c) => Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number')
+          .map(([lng, lat]) => [lat, lng] as [number, number]);
+        if (coords.length >= 2) {
+          L.polyline(coords, { color: '#2563EB', weight: 5, opacity: 0.85 }).addTo(group);
+        }
+      };
+      const walk = (g: unknown) => {
+        if (!g) return;
+        if (isObject(g) && Array.isArray(g.features)) { g.features.forEach(walk); return; }
+        if (isObject(g) && 'geometry' in g) { walk(g.geometry); return; }
+        if (isObject(g) && 'type' in g && 'coordinates' in g) {
+          const type = g.type;
+          const coords = g.coordinates as unknown;
+          if (type === 'LineString' && Array.isArray(coords)) drawCoords(coords as number[][]);
+          else if (type === 'MultiLineString' && Array.isArray(coords)) (coords as number[][][]).forEach(drawCoords);
+        }
+      };
+      walk(routeGeoJSON);
+      routeLayerRef.current = group;
+    } catch (e) {
+      console.warn('No se pudo dibujar el trazado', e);
+    }
+  }, [routeGeoJSON, fullscreen]);
+
+  // Render puntos + encuadre
   useEffect(() => {
     const map = mapRef.current;
     const layer = layerRef.current;
     if (!map || !layer) return;
     layer.clearLayers();
 
-    if (eventos.length > 0) {
-      eventos.forEach((e) => {
-        const color = e.evento === 'sube' ? '#16A34A' : '#DC2626';
-        L.circleMarker([e.lat, e.lng], {
-          radius: 6,
-          color,
-          fillColor: color,
-          fillOpacity: 0.55,
-          weight: 1,
-        }).addTo(layer);
-      });
-      const bounds = L.latLngBounds(eventos.map((e) => [e.lat, e.lng] as [number, number]));
-      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
-      return;
-    }
+    eventos.forEach((e) => {
+      const color = e.evento === 'sube' ? '#16A34A' : '#DC2626';
+      L.circleMarker([e.lat, e.lng], {
+        radius: 6,
+        color,
+        fillColor: color,
+        fillOpacity: 0.7,
+        weight: 1,
+      }).addTo(layer);
+    });
 
-    // Sin eventos: centrar en la ruta asignada de la unidad
+    // Encuadre: preferir la ruta si existe (para verla completa con los puntos encima)
     if (routeBounds && routeBounds.length) {
       const b = L.latLngBounds(routeBounds);
-      map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+      map.fitBounds(b, { padding: [30, 30], maxZoom: 15 });
+    } else if (eventos.length > 0) {
+      const bounds = L.latLngBounds(eventos.map((e) => [e.lat, e.lng] as [number, number]));
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
     }
   }, [eventos, routeBounds, fullscreen]);
 
