@@ -112,6 +112,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [esp32UnitId, setEsp32UnitId] = useState<string | null>(null);
+  const [heatmapUnitId, setHeatmapUnitId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers' | 'catalogo'>('units');
   
   // Geography & route catalog state for public/foraneo routes
