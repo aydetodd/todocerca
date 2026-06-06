@@ -224,8 +224,8 @@ const TrackingGPS = () => {
             if (error) throw error;
 
             if (data?.subscribed) {
-              trackGPSSubscription('completed', 400);
-              trackConversion('gps_subscription', 400);
+              trackGPSSubscription('completed', 800);
+              trackConversion('gps_subscription', 800);
               
               toast({
                 title: '¡Pago confirmado!',
@@ -743,7 +743,7 @@ const TrackingGPS = () => {
                   <CardTitle className="text-2xl">Tracking GPS Familiar</CardTitle>
                 </div>
                 <CardDescription>
-                  Rastrea hasta 5 dispositivos en tiempo real por solo $400 MXN/año.
+                  Rastrea hasta 5 dispositivos en tiempo real por solo $800 MXN/año.
                   Después del pago, elegirás el nombre de tu grupo.
                 </CardDescription>
               </CardHeader>
@@ -755,13 +755,13 @@ const TrackingGPS = () => {
                     <li>✓ Ubicación en tiempo real</li>
                     <li>✓ Privacidad total (solo tu grupo)</li>
                     <li>✓ Sin publicidad</li>
-                    <li>✓ <strong>$400 MXN/año</strong></li>
+                    <li>✓ <strong>$800 MXN/año</strong></li>
                   </ul>
                 </div>
                 
                 <Button onClick={handleStartSubscription} className="w-full" size="lg">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Activar Suscripción ($400/año)
+                  Activar Suscripción ($800/año)
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
@@ -982,7 +982,7 @@ const TrackingGPS = () => {
                   </p>
                   <Button onClick={handleSubscribe} className="w-full">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Activar Suscripción ($400/año)
+                    Activar Suscripción ($800/año)
                   </Button>
                 </div>
               )}
