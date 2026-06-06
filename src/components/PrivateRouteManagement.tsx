@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp, Cpu, Sparkles } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp, Cpu, Sparkles, Flame } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
@@ -41,6 +41,7 @@ import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
 import RutasMaestrasManager from './RutasMaestrasManager';
 import Esp32LinkDialog from './Esp32LinkDialog';
+import ConteoHeatmap from './ConteoHeatmap';
 
 
 interface PrivateVehicle {
@@ -111,6 +112,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [esp32UnitId, setEsp32UnitId] = useState<string | null>(null);
+  const [heatmapUnitId, setHeatmapUnitId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers' | 'catalogo'>('units');
   
   // Geography & route catalog state for public/foraneo routes
@@ -877,15 +879,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                                 <Sparkles className="h-3 w-3 text-emerald-600" />
                               </Button>
                             ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                title="Vincular ESP32 contador de pasajeros"
-                                onClick={() => setEsp32UnitId(unit.id)}
-                              >
-                                <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Vincular ESP32 contador de pasajeros"
+                                  onClick={() => setEsp32UnitId(unit.id)}
+                                >
+                                  <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Mapa de calor - conteo de pasajeros"
+                                  onClick={() => setHeatmapUnitId(unit.id)}
+                                >
+                                  <Flame className="h-3 w-3 text-orange-500" />
+                                </Button>
+                              </>
                             )}
                             <Button
                               variant="ghost"
@@ -1434,6 +1447,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         unitName={units.find(u => u.id === esp32UnitId)?.nombre}
         onSaved={fetchUnits}
       />
+
+      <Dialog open={!!heatmapUnitId} onOpenChange={(open) => { if (!open) setHeatmapUnitId(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              Mapa de calor - Conteo de pasajeros
+            </DialogTitle>
+            <DialogDescription>
+              Verde: dónde sube gente. Rojo: dónde baja gente. Últimos 7 días.
+            </DialogDescription>
+          </DialogHeader>
+          {heatmapUnitId && (
+            <ConteoHeatmap
+              unidadId={heatmapUnitId}
+              unidadNombre={units.find(u => u.id === heatmapUnitId)?.nombre}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
