@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       : new Date().toISOString();
 
     if (!mac) return json({ error: "missing_mac" }, 400);
-    if (!["sube", "baja"].includes(evento)) return json({ error: "invalid_evento" }, 400);
+    if (!["sube", "baja", "falla_sensor"].includes(evento)) return json({ error: "invalid_evento" }, 400);
     if (!["frente", "atras"].includes(puerta)) return json({ error: "invalid_puerta" }, 400);
 
     const supabase = createClient(
@@ -140,78 +140,71 @@ Deno.serve(async (req) => {
       ocurrido_en: ocurridoEn,
     });
 
-    // 5.b) Detección de anomalía: si en los últimos 30 min hubo >=10 eventos
-    // y TODOS son de la misma puerta, el otro sensor está mudo (tapado/dañado).
-    try {
-      const desde = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-      const { data: recientes } = await supabase
-        .from("conteo_pasajeros_eventos")
-        .select("puerta")
-        .eq("unidad_id", unidad.id)
-        .gte("ocurrido_en", desde);
+    // 5.b) Falla de sensor reportada directamente por el ESP32.
+    // El firmware sabe cuándo el sensor 1 (de presencia) dispara y el sensor 2
+    // (de conteo) NO responde en esa misma puerta dentro de su ventana.
+    // Cuando eso pasa repetidamente, el ESP32 manda evento "falla_sensor"
+    // con la puerta afectada. Aquí solo guardamos la alerta y avisamos al dueño.
+    if (evento === "falla_sensor") {
+      try {
+        // Cooldown: una alerta por puerta por hora para no saturar.
+        const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data: ultimaAlerta } = await supabase
+          .from("conteo_pasajeros_alertas")
+          .select("id")
+          .eq("unidad_id", unidad.id)
+          .eq("puerta_muda", puerta)
+          .gte("created_at", haceUnaHora)
+          .limit(1)
+          .maybeSingle();
 
-      const total = recientes?.length ?? 0;
-      if (total >= 10) {
-        const frente = recientes!.filter((r: any) => r.puerta === "frente").length;
-        const atras = recientes!.filter((r: any) => r.puerta === "atras").length;
-        const puertaMuda = frente === 0 ? "atras" : atras === 0 ? "frente" : null;
-
-        if (puertaMuda) {
-          const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-          const { data: ultimaAlerta } = await supabase
-            .from("conteo_pasajeros_alertas")
-            .select("id")
-            .eq("unidad_id", unidad.id)
-            .gte("created_at", haceUnaHora)
-            .limit(1)
+        if (!ultimaAlerta) {
+          const { data: prov } = await supabase
+            .from("proveedores")
+            .select("user_id")
+            .eq("id", unidad.proveedor_id)
             .maybeSingle();
 
-          if (!ultimaAlerta) {
-            const { data: prov } = await supabase
-              .from("proveedores")
-              .select("user_id")
-              .eq("id", unidad.proveedor_id)
-              .maybeSingle();
+          const { data: uInfo } = await supabase
+            .from("unidades_empresa")
+            .select("nombre, placas")
+            .eq("id", unidad.id)
+            .maybeSingle();
 
-            const { data: uInfo } = await supabase
-              .from("unidades_empresa")
-              .select("nombre, placas")
-              .eq("id", unidad.id)
-              .maybeSingle();
+          const nombreUnidad = (uInfo as any)?.nombre || (uInfo as any)?.placas || "tu unidad";
+          const puertaTxt = puerta === "frente" ? "frente" : "atrás";
 
-            const nombreUnidad = (uInfo as any)?.nombre || (uInfo as any)?.placas || "tu unidad";
-            const puertaActiva = puertaMuda === "frente" ? "atrás" : "frente";
-            const puertaMudaTxt = puertaMuda === "frente" ? "frente" : "atrás";
+          const mensaje =
+            `⚠️ Falla de sensor en ${nombreUnidad}.\n\n` +
+            `En la puerta de ${puertaTxt}, el primer sensor detecta personas pero el segundo (el que cuenta) no responde. ` +
+            `Probablemente está tapado, sucio o dañado.\n\n` +
+            `Pídele al chofer que limpie o revise el sensor infrarrojo de conteo de esa puerta.`;
 
-            const mensaje =
-              `⚠️ Posible falla de sensor en ${nombreUnidad}.\n\n` +
-              `En los últimos 30 minutos se registraron ${total} pases, pero TODOS por la puerta de ${puertaActiva}. ` +
-              `El sensor de la puerta de ${puertaMudaTxt} podría estar tapado, obstruido o dañado.\n\n` +
-              `Pídele al chofer que revise y limpie el sensor infrarrojo de esa puerta.`;
-
-            const systemUserId = "00000000-0000-0000-0000-000000000001";
-            if (prov?.user_id) {
-              await supabase.from("messages").insert({
-                sender_id: systemUserId,
-                receiver_id: prov.user_id,
-                message: mensaje,
-                is_panic: false,
-                is_read: false,
-              });
-            }
-
-            await supabase.from("conteo_pasajeros_alertas").insert({
-              unidad_id: unidad.id,
-              proveedor_id: unidad.proveedor_id,
-              puerta_muda: puertaMuda,
-              eventos_ventana: total,
+          const systemUserId = "00000000-0000-0000-0000-000000000001";
+          if (prov?.user_id) {
+            await supabase.from("messages").insert({
+              sender_id: systemUserId,
+              receiver_id: prov.user_id,
+              message: mensaje,
+              is_panic: false,
+              is_read: false,
             });
           }
+
+          await supabase.from("conteo_pasajeros_alertas").insert({
+            unidad_id: unidad.id,
+            proveedor_id: unidad.proveedor_id,
+            puerta_muda: puerta,
+            eventos_ventana: 0,
+          });
         }
+      } catch (e) {
+        console.warn("falla_sensor_handling_failed", String(e));
       }
-    } catch (e) {
-      console.warn("anomaly_check_failed", String(e));
+
+      return json({ ok: true, alerta: "falla_sensor_registrada", puerta });
     }
+
 
     // 6) Actualizar contadores del viaje activo
     if (viaje) {
