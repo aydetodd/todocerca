@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -215,10 +216,11 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   );
 
   if (fullscreen) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-background">
+    return createPortal(
+      <div className="fixed inset-0 z-[100000] bg-background">
         {content}
-      </div>
+      </div>,
+      document.body,
     );
   }
 
