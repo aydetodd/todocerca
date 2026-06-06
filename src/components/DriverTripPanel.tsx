@@ -57,6 +57,9 @@ type Viaje = {
   direccion: Direccion | null;
   inicio_manual: boolean | null;
   fin_manual: boolean | null;
+  pasajeros_subidos?: number | null;
+  pasajeros_bajados?: number | null;
+  pasajeros_a_bordo?: number | null;
 };
 
 function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -705,6 +708,57 @@ export function DriverTripPanel({
             </CardContent>
           </Card>
         </div>
+
+        {/* Conteo de pasajeros en tiempo real (ESP32) */}
+        {viajeActivo && (
+          <Card className="border-emerald-400/30 bg-emerald-500/5">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                  Pasajeros · Viaje #{viajeActivo.numero_viaje}
+                </p>
+                <span className="text-[10px] text-muted-foreground">en vivo</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-background/60 p-2">
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {viajeActivo.pasajeros_subidos ?? 0}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Suben</p>
+                </div>
+                <div className="rounded-lg bg-background/60 p-2">
+                  <p className="text-2xl font-bold text-orange-500">
+                    {viajeActivo.pasajeros_bajados ?? 0}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Bajan</p>
+                </div>
+                <div className="rounded-lg bg-background/60 p-2">
+                  <p className="text-2xl font-bold text-primary">
+                    {viajeActivo.pasajeros_a_bordo ?? 0}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">A bordo</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Acumulado del día */}
+        {viajesHoy.length > 0 && (
+          <Card>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Pasajeros hoy</p>
+                <p className="text-xs text-muted-foreground">Suma de todos los viajes</p>
+              </div>
+              <p className="text-2xl font-bold text-foreground">
+                {viajesHoy.reduce((acc, v) => acc + (v.pasajeros_subidos ?? 0), 0)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+
 
         {/* Estado */}
         <Card className={(viajeActivo && insideEnd) || (!viajeActivo && (insideA || insideB)) ? "border-primary/40 bg-primary/5" : ""}>
