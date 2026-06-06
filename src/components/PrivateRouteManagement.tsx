@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pencil, Eye, CheckSquare, Square, Crosshair, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
@@ -40,6 +40,7 @@ import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
 import RutasMaestrasManager from './RutasMaestrasManager';
+import Esp32LinkDialog from './Esp32LinkDialog';
 
 
 interface PrivateVehicle {
@@ -67,6 +68,7 @@ interface Unit {
   cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
   is_active: boolean;
   created_at: string;
+  esp32_mac?: string | null;
 }
 
 const formatCobroTipo = (value: Unit['cobro_tipo']) => {
@@ -106,6 +108,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
+  const [esp32UnitId, setEsp32UnitId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'units' | 'routes' | 'drivers' | 'catalogo'>('units');
   
   // Geography & route catalog state for public/foraneo routes
@@ -803,12 +806,26 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             <div className="flex items-center gap-2 flex-wrap">
                               <Bus className="h-4 w-4 text-amber-500 shrink-0" />
                               <h4 className="font-semibold text-sm">{formatUnitLabel(unit)}</h4>
+                              {unit.esp32_mac && (
+                                <Badge variant="outline" className="text-[10px] gap-1">
+                                  <Cpu className="h-3 w-3" /> ESP32
+                                </Badge>
+                              )}
                             </div>
                             <Badge variant={unit.cobro_tipo ? 'secondary' : 'destructive'} className="mt-2 text-[11px]">
                               {formatCobroTipo(unit.cobro_tipo)}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Vincular ESP32 contador de pasajeros"
+                              onClick={() => setEsp32UnitId(unit.id)}
+                            >
+                              <Cpu className={`h-3 w-3 ${unit.esp32_mac ? 'text-primary' : ''}`} />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1348,6 +1365,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Esp32LinkDialog
+        open={!!esp32UnitId}
+        onOpenChange={(open) => { if (!open) setEsp32UnitId(null); }}
+        unitId={esp32UnitId}
+        unitName={units.find(u => u.id === esp32UnitId)?.nombre}
+        onSaved={fetchUnits}
+      />
     </div>
   );
 }
