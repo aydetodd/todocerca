@@ -217,6 +217,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const today = getHermosilloToday();
   const completadosHoy = filtered.filter((v) => v.fecha === today && v.estado === "completado").length;
   const enCursoHoy = filtered.filter((v) => v.estado === "en_curso").length;
+  const totalSubidos = filtered.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
+  const totalBajados = filtered.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
+  const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -361,18 +364,34 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-3 rounded-lg bg-primary/10 text-center">
-                <p className="text-2xl font-bold text-primary">{completadosHoy}</p>
-                <p className="text-[10px] text-muted-foreground">Completados</p>
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 rounded-lg bg-primary/10 text-center">
+                  <p className="text-2xl font-bold text-primary">{completadosHoy}</p>
+                  <p className="text-[10px] text-muted-foreground">Completados</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/40 text-center">
+                  <p className="text-2xl font-bold text-foreground">{enCursoHoy}</p>
+                  <p className="text-[10px] text-muted-foreground">En curso</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40 text-center">
+                  <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
+                  <p className="text-[10px] text-muted-foreground">Registros</p>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-secondary/40 text-center">
-                <p className="text-2xl font-bold text-foreground">{enCursoHoy}</p>
-                <p className="text-[10px] text-muted-foreground">En curso</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/40 text-center">
-                <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
-                <p className="text-[10px] text-muted-foreground">Registros</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 rounded-lg bg-emerald-500/10 text-center">
+                  <p className="text-2xl font-bold text-emerald-600">↑{totalSubidos}</p>
+                  <p className="text-[10px] text-muted-foreground">Pasajeros subieron</p>
+                </div>
+                <div className="p-3 rounded-lg bg-amber-500/10 text-center">
+                  <p className="text-2xl font-bold text-amber-600">↓{totalBajados}</p>
+                  <p className="text-[10px] text-muted-foreground">Bajaron</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-500/10 text-center">
+                  <p className="text-2xl font-bold text-blue-600">{totalABordo}</p>
+                  <p className="text-[10px] text-muted-foreground">A bordo</p>
+                </div>
               </div>
             </div>
           )}
@@ -465,11 +484,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                               {enCurso && (
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
                               )}
-                              {(sub > 0 || baj > 0 || abordo > 0) && (
-                                <span className="text-[10px] text-emerald-700 font-medium">
-                                  ↑{sub} ↓{baj}{enCurso ? ` · ${abordo} a bordo` : ""}
-                                </span>
-                              )}
+                              <span className="text-[10px] text-emerald-700 font-medium">
+                                ↑{sub} ↓{baj}{enCurso ? ` · ${abordo} a bordo` : ""}
+                              </span>
                             </div>
                             <span className="text-muted-foreground shrink-0 tabular-nums text-right">
                               <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
