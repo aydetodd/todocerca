@@ -46,6 +46,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    const { data: prov, error: provErr } = await admin
+      .from('proveedores')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (provErr) throw provErr;
+    if (!prov) throw new Error('Perfil de proveedor no encontrado');
+
     const { data: unit, error: unitErr } = await admin
       .from('unidades_empresa')
       .select('id, nombre, proveedor_id, conteo_subscription_status')
@@ -53,7 +61,8 @@ serve(async (req) => {
       .maybeSingle();
     if (unitErr) throw unitErr;
     if (!unit) throw new Error('Unidad no encontrada');
-    if (unit.proveedor_id !== user.id) throw new Error('No autorizado');
+    if (unit.proveedor_id !== prov.id) throw new Error('No autorizado');
+
     if (unit.conteo_subscription_status === 'active') {
       throw new Error('Esta unidad ya tiene Conteo Inteligente activo');
     }
