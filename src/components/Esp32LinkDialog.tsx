@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, Loader2, RefreshCw, Cpu, Trash2 } from 'lucide-react';
+import { Copy, Loader2, RefreshCw, Cpu, Trash2, Bluetooth, CheckCircle2, Circle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Props {
   open: boolean;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 const MAC_REGEX = /^([0-9a-fA-F]{2}[:\-]){5}[0-9a-fA-F]{2}$/;
+const BLE_SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 
 function normalizeMac(raw: string) {
   return raw.trim().toLowerCase().replace(/-/g, ':');
@@ -42,9 +44,8 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
   const [saving, setSaving] = useState(false);
   const [mac, setMac] = useState('');
   const [secret, setSecret] = useState('');
-  const [wifiSsid, setWifiSsid] = useState('');
-  const [wifiPassword, setWifiPassword] = useState('');
   const [hasSavedMac, setHasSavedMac] = useState(false);
+  const [lastSeen, setLastSeen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !unitId) return;
@@ -53,15 +54,15 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
       try {
         const { data, error } = await supabase
           .from('unidades_empresa')
-          .select('esp32_mac, esp32_secret, esp32_wifi_ssid, esp32_wifi_password')
+          .select('esp32_mac, esp32_secret, esp32_last_seen')
           .eq('id', unitId)
           .maybeSingle();
         if (error) throw error;
-        setMac(((data as any)?.esp32_mac as string) || '');
-        setSecret(((data as any)?.esp32_secret as string) || '');
-        setWifiSsid(((data as any)?.esp32_wifi_ssid as string) || '');
-        setWifiPassword(((data as any)?.esp32_wifi_password as string) || '');
-        setHasSavedMac(!!(data as any)?.esp32_mac);
+        const d = data as any;
+        setMac((d?.esp32_mac as string) || '');
+        setSecret((d?.esp32_secret as string) || genSecret());
+        setLastSeen((d?.esp32_last_seen as string) || null);
+        setHasSavedMac(!!d?.esp32_mac);
       } catch (e: any) {
         toast({ title: 'Error', description: e.message, variant: 'destructive' });
       } finally {
@@ -73,7 +74,7 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
   const copy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast({ title: 'Copiado', description: `${label} copiado al portapapeles.` });
+      toast({ title: 'Copiado', description: `${label} copiado.` });
     } catch {
       toast({ title: 'No se pudo copiar', variant: 'destructive' });
     }
@@ -81,32 +82,32 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
 
   const handleSave = async () => {
     if (!unitId) return;
-    const normalized = normalizeMac(mac);
-    if (!MAC_REGEX.test(normalized)) {
+    if (mac && !MAC_REGEX.test(normalizeMac(mac))) {
       toast({
         title: 'MAC inválida',
-        description: 'Usa el formato AA:BB:CC:DD:EE:FF',
+        description: 'Formato esperado: AA:BB:CC:DD:EE:FF (o déjala vacía para que se registre sola)',
         variant: 'destructive',
       });
       return;
     }
-    const finalSecret = secret || genSecret();
     setSaving(true);
     try {
       const { error } = await supabase
         .from('unidades_empresa')
         .update({
-          esp32_mac: normalized,
-          esp32_secret: finalSecret,
-          esp32_wifi_ssid: wifiSsid.trim() || null,
-          esp32_wifi_password: wifiPassword.trim() || null,
+          esp32_mac: mac ? normalizeMac(mac) : null,
+          esp32_secret: secret,
         } as any)
         .eq('id', unitId);
       if (error) throw error;
-      setMac(normalized);
-      setSecret(finalSecret);
-      setHasSavedMac(true);
-      toast({ title: 'ESP32 vinculado', description: 'Ya puedes encender el dispositivo.' });
+      if (mac) setMac(normalizeMac(mac));
+      setHasSavedMac(!!mac);
+      toast({
+        title: 'Listo',
+        description: mac
+          ? 'ESP32 vinculado. Ya puedes encender el módulo.'
+          : 'Secreto guardado. La MAC se registrará sola al primer envío.',
+      });
       onSaved?.();
     } catch (e: any) {
       toast({
@@ -131,9 +132,10 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
         .eq('id', unitId);
       if (error) throw error;
       setMac('');
-      setSecret('');
+      setSecret(genSecret());
       setHasSavedMac(false);
-      toast({ title: 'Desvinculado', description: 'La unidad ya no tiene ESP32.' });
+      setLastSeen(null);
+      toast({ title: 'Desvinculado' });
       onSaved?.();
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -143,16 +145,17 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
   };
 
   const endpoint = `https://kijwxiumskwztbjahuhv.supabase.co/functions/v1/esp32-conteo-pasajeros`;
+  const online = lastSeen && Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Cpu className="h-5 w-5 text-primary" /> Vincular ESP32
           </DialogTitle>
           <DialogDescription>
-            {unitName ? `Unidad: ${unitName}` : 'Conecta el contador de pasajeros a esta unidad.'}
+            {unitName ? `Unidad: ${unitName}` : 'Contador de pasajeros'}
           </DialogDescription>
         </DialogHeader>
 
@@ -162,136 +165,106 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
           </div>
         ) : (
           <div className="space-y-4">
-            <Alert>
-              <AlertDescription className="text-xs">
-                Programa el ESP32 con el SSID y contraseña de abajo. El chofer solo crea un hotspot
-                con ese nombre y contraseña en su teléfono y el módulo se conecta solo.
-              </AlertDescription>
-            </Alert>
+            {/* Estado del módulo */}
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <span className="text-sm font-medium">Estado del módulo</span>
+              {hasSavedMac ? (
+                online ? (
+                  <Badge className="bg-green-600 hover:bg-green-600">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> Conectado
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">
+                    <Circle className="h-3 w-3 mr-1" /> Sin reportar
+                  </Badge>
+                )
+              ) : (
+                <Badge variant="outline">Sin vincular</Badge>
+              )}
+            </div>
 
-            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
+            {/* Paso 1 */}
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
               <div className="text-xs font-semibold text-primary">
-                📶 Hotspot del chofer (entrégalo en la tarjeta de suscripción)
+                Paso 1 · Programa el ESP32 (una sola vez)
               </div>
+              <p className="text-xs text-muted-foreground">
+                Copia el <strong>Endpoint</strong> y el <strong>Secreto</strong> en el firmware
+                antes de soldar el módulo en el camión. Eso es todo lo que necesita el código.
+              </p>
 
               <div className="space-y-1">
-                <Label className="text-xs">Nombre del hotspot (SSID)</Label>
+                <Label className="text-xs">Endpoint</Label>
                 <div className="flex gap-1">
-                  <Input
-                    value={wifiSsid}
-                    onChange={(e) => setWifiSsid(e.target.value)}
-                    placeholder="Ej: TodoCerca_142"
-                    className="font-mono text-sm"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                  />
-                  {wifiSsid && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copy(wifiSsid, 'SSID')}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Input value={endpoint} readOnly className="text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={() => copy(endpoint, 'Endpoint')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs">Contraseña del hotspot</Label>
+                <Label className="text-xs">Secreto compartido</Label>
                 <div className="flex gap-1">
-                  <Input
-                    value={wifiPassword}
-                    onChange={(e) => setWifiPassword(e.target.value)}
-                    placeholder="Mínimo 8 caracteres"
-                    className="font-mono text-sm"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                  />
-                  {wifiPassword && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copy(wifiPassword, 'Contraseña')}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Input value={secret} onChange={(e) => setSecret(e.target.value)} className="font-mono text-xs" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setSecret(genSecret())}
+                    title="Generar nuevo"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button type="button" variant="outline" size="icon" onClick={() => copy(secret, 'Secreto')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Banda 2.4 GHz obligatoria. Cambia el código del ESP32 antes de entregarlo y anota
-                  estos datos en la etiqueta que le das al concesionario.
-                </p>
               </div>
             </div>
 
+            {/* Paso 2 */}
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="text-xs font-semibold flex items-center gap-1">
+                <Bluetooth className="h-3.5 w-3.5 text-blue-500" />
+                Paso 2 · El chofer conecta el WiFi por Bluetooth
+              </div>
+              <p className="text-xs text-muted-foreground">
+                El chofer NO necesita saber el SSID ni la contraseña de antemano. Cada vez que
+                cambie de hotspot, hace esto:
+              </p>
+              <ol className="text-xs space-y-1 list-decimal pl-4 text-muted-foreground">
+                <li>Prende el hotspot en su celular (2.4 GHz).</li>
+                <li>Abre la app TodoCerca → su panel → botón <strong>"Conectar contador"</strong>.</li>
+                <li>El celular detecta el ESP32 por Bluetooth y le envía SSID + contraseña.</li>
+                <li>El LED del módulo queda fijo cuando se conecta. Listo.</li>
+              </ol>
+              <p className="text-[10px] text-muted-foreground pt-1">
+                Service UUID BLE: <code className="text-[10px]">{BLE_SERVICE_UUID}</code>
+              </p>
+            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">MAC del ESP32</Label>
+            {/* Paso 3 */}
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="text-xs font-semibold">Paso 3 · MAC del ESP32 (opcional)</div>
+              <p className="text-xs text-muted-foreground">
+                Si tienes la MAC anotada de la etiqueta, pégala aquí. Si no, déjala vacía: se
+                registrará sola la primera vez que el módulo envíe un evento.
+              </p>
               <Input
                 value={mac}
                 onChange={(e) => setMac(e.target.value)}
-                placeholder="AA:BB:CC:DD:EE:FF"
+                placeholder="AA:BB:CC:DD:EE:FF (opcional)"
                 className="font-mono text-sm"
                 autoCapitalize="none"
                 autoCorrect="off"
               />
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">Secreto compartido</Label>
-              <div className="flex gap-1">
-                <Input
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder="Se generará al guardar"
-                  className="font-mono text-xs"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setSecret(genSecret())}
-                  title="Generar nuevo secreto"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                {secret && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copy(secret, 'Secreto')}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Endpoint para el firmware</Label>
-              <div className="flex gap-1">
-                <Input value={endpoint} readOnly className="text-xs" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copy(endpoint, 'Endpoint')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                POST JSON: {`{ mac, secret, evento: "sube"|"baja", puerta: "frente"|"atras" }`}
-              </p>
-            </div>
-
+            {/* Acciones */}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} disabled={saving} className="flex-1">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : hasSavedMac ? 'Actualizar' : 'Guardar'}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar configuración'}
               </Button>
               {hasSavedMac && (
                 <Button
@@ -299,6 +272,7 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
                   onClick={handleUnlink}
                   disabled={saving}
                   className="text-destructive"
+                  title="Desvincular"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
