@@ -83,10 +83,12 @@ interface Vehicle {
 }
 
 interface UnitInfo {
+  id: string;
   nombre: string;
   descripcion: string | null;
   placas: string | null;
   cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
+  has_esp32: boolean;
 }
 
 interface TodayAssignment {
