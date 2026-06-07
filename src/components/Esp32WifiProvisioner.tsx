@@ -21,11 +21,24 @@ interface Props {
   unitLabel?: string;
 }
 
-// Mismo UUID que el firmware del ESP32
+// Mismo UUID que el firmware genérico del ESP32
 const BLE_SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const BLE_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 
+// Endpoint único para todos los módulos del mundo. El firmware genérico
+// no lo conoce: se lo mandamos por Bluetooth la primera vez junto con el secreto.
+const ENDPOINT =
+  'https://kijwxiumskwztbjahuhv.supabase.co/functions/v1/esp32-conteo-pasajeros';
+
 type Step = 'idle' | 'fetching' | 'scanning' | 'connecting' | 'sending' | 'success' | 'error';
+
+function genSecret() {
+  const arr = new Uint8Array(18);
+  crypto.getRandomValues(arr);
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
   const { toast } = useToast();
@@ -50,24 +63,34 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
     if (!supported) {
       setStep('error');
       setErrorMsg(
-        'Tu navegador no soporta Bluetooth Web. Abre la app en Chrome Android o usa la app nativa.',
+        'Tu navegador no soporta Bluetooth. Abre la app en Chrome para Android o en la app instalada.',
       );
       return;
     }
 
     try {
       setStep('fetching');
+
+      // 1) Leer el secreto guardado de la unidad. Si no existe, generarlo
+      //    automáticamente — el concesionario no necesita pedirlo a nadie.
       const { data, error } = await supabase
         .from('unidades_empresa')
         .select('esp32_secret')
         .eq('id', unidadId)
         .maybeSingle();
       if (error) throw error;
-      const secret = (data as any)?.esp32_secret;
+
+      let secret = (data as any)?.esp32_secret as string | null;
       if (!secret) {
-        throw new Error('Esta unidad no tiene un ESP32 vinculado. Pide al admin que lo configure.');
+        secret = genSecret();
+        const { error: upErr } = await supabase
+          .from('unidades_empresa')
+          .update({ esp32_secret: secret } as any)
+          .eq('id', unidadId);
+        if (upErr) throw upErr;
       }
 
+      // 2) Bluetooth
       setStep('scanning');
       const device = await (navigator as any).bluetooth.requestDevice({
         filters: [{ services: [BLE_SERVICE_UUID] }],
@@ -79,8 +102,15 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
       const service = await server.getPrimaryService(BLE_SERVICE_UUID);
       const characteristic = await service.getCharacteristic(BLE_CHAR_UUID);
 
+      // 3) Mandar TODO lo que el módulo necesita: endpoint + secreto + WiFi.
+      //    Así el firmware sale 100% genérico de fábrica.
       setStep('sending');
-      const payload = JSON.stringify({ ssid: ssid.trim(), pass, secret });
+      const payload = JSON.stringify({
+        endpoint: ENDPOINT,
+        secret,
+        ssid: ssid.trim(),
+        pass,
+      });
       const encoder = new TextEncoder();
       await characteristic.writeValue(encoder.encode(payload));
 
@@ -151,8 +181,9 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
           <div className="space-y-3">
             <Alert>
               <AlertDescription className="text-xs">
-                1. Prende tu hotspot (2.4 GHz). 2. Llena los datos. 3. Presiona "Enviar al módulo".
-                Tu celular detectará el ESP32 por Bluetooth.
+                1. Enchufa el ESP32 al camión (12V). 2. Prende tu hotspot (2.4 GHz).
+                3. Llena los datos y presiona "Enviar al módulo". El celular detectará
+                el ESP32 por Bluetooth y le mandará todo lo necesario.
               </AlertDescription>
             </Alert>
 
@@ -183,7 +214,7 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
 
             {!supported && (
               <p className="text-[11px] text-destructive">
-                Este navegador no soporta Bluetooth Web. Usa Chrome en Android.
+                Este navegador no soporta Bluetooth. Usa Chrome en Android o la app instalada.
               </p>
             )}
 
@@ -197,7 +228,7 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
                 ) : (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {step === 'fetching' && 'Cargando secreto…'}
+                    {step === 'fetching' && 'Preparando…'}
                     {step === 'scanning' && 'Buscando módulo…'}
                     {step === 'connecting' && 'Conectando…'}
                     {step === 'sending' && 'Enviando…'}
