@@ -137,6 +137,12 @@ Deno.serve(async (req) => {
     if (!authed) return json({ error: "bad_credentials" }, 401);
 
     // 3) Buscar viaje en curso de esa unidad
+    // Actualizar last_seen para que la UI marque "Conectado"
+    await supabase
+      .from("unidades_empresa")
+      .update({ esp32_last_seen: new Date().toISOString() })
+      .eq("id", unidad.id);
+
     const { data: viaje } = await supabase
       .from("viajes_realizados")
       .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_id")
