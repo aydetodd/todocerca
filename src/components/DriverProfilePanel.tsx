@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
+import Esp32WifiProvisioner from '@/components/Esp32WifiProvisioner';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
@@ -83,10 +84,12 @@ interface Vehicle {
 }
 
 interface UnitInfo {
+  id: string;
   nombre: string;
   descripcion: string | null;
   placas: string | null;
   cobro_tipo: 'por_viaje' | 'por_pasajero' | null;
+  has_esp32: boolean;
 }
 
 interface TodayAssignment {
@@ -629,6 +632,16 @@ function SingleDriverPanel({
           })()}
         </div>
 
+        {/* Botón Conectar contador (Bluetooth → ESP32) */}
+        {hasAssignment && unitInfo?.has_esp32 && unitInfo?.id && (
+          <div className="flex justify-end">
+            <Esp32WifiProvisioner
+              unidadId={unitInfo.id}
+              unitLabel={unitInfo.nombre || unitInfo.placas || undefined}
+            />
+          </div>
+        )}
+
         {/* Row 2: Route selector (full width) */}
         {hasAssignment && (
           <div className="space-y-2">
@@ -786,7 +799,7 @@ export default function DriverProfilePanel() {
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(nombre, descripcion, placas, cobro_tipo)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(id, nombre, descripcion, placas, cobro_tipo, esp32_secret)')
             .eq('chofer_id', driver.id)
             .order('fecha', { ascending: false })
             .limit(1)
@@ -816,10 +829,12 @@ export default function DriverProfilePanel() {
                   asignado_por: assignment.asignado_por,
                   unit: unitData
                     ? {
+                        id: unitData.id,
                         nombre: unitData.nombre,
                         descripcion: unitData.descripcion,
                         placas: unitData.placas,
                         cobro_tipo: (unitData.cobro_tipo as 'por_viaje' | 'por_pasajero' | null) ?? null,
+                        has_esp32: !!unitData.esp32_secret,
                       }
                     : null,
                 }
