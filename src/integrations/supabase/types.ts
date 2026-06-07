@@ -3791,6 +3791,7 @@ export type Database = {
           conteo_subscription_status: string | null
           created_at: string
           descripcion: string | null
+          esp32_last_seen: string | null
           esp32_mac: string | null
           esp32_secret: string | null
           esp32_wifi_password: string | null
@@ -3816,6 +3817,7 @@ export type Database = {
           conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_last_seen?: string | null
           esp32_mac?: string | null
           esp32_secret?: string | null
           esp32_wifi_password?: string | null
@@ -3841,6 +3843,7 @@ export type Database = {
           conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_last_seen?: string | null
           esp32_mac?: string | null
           esp32_secret?: string | null
           esp32_wifi_password?: string | null

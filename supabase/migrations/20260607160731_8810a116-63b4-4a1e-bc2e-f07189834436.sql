@@ -1,0 +1,1 @@
+ALTER TABLE public.unidades_empresa ADD COLUMN IF NOT EXISTS esp32_last_seen TIMESTAMPTZ;
