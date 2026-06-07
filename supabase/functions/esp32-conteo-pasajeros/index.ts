@@ -50,15 +50,58 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1) Localizar unidad por MAC
-    const { data: unidad, error: uErr } = await supabase
+    // 1) Localizar unidad por MAC. Si no existe, intentar auto-vincular usando el secreto
+    //    que el concesionario ya guardó vía BLE (cada unidad tiene su secreto único).
+    let { data: unidad, error: uErr } = await supabase
       .from("unidades_empresa")
-      .select("id, proveedor_id, esp32_secret, is_active")
+      .select("id, proveedor_id, esp32_secret, is_active, esp32_mac")
       .ilike("esp32_mac", mac)
       .maybeSingle();
 
     if (uErr) return json({ error: "db_error", detail: uErr.message }, 500);
-    if (!unidad) return json({ error: "unit_not_found" }, 404);
+
+    if (!unidad) {
+      const incomingSecretRaw = typeof body.secret === "string" ? body.secret : null;
+      const incomingTsRaw = typeof body.timestamp === "number" ? body.timestamp : null;
+      const incomingTokenRaw = typeof body.token === "string" ? body.token.toLowerCase() : null;
+
+      // Buscar candidatos por secret plano
+      if (incomingSecretRaw) {
+        const { data: cand } = await supabase
+          .from("unidades_empresa")
+          .select("id, proveedor_id, esp32_secret, is_active, esp32_mac")
+          .eq("esp32_secret", incomingSecretRaw)
+          .is("esp32_mac", null)
+          .limit(1)
+          .maybeSingle();
+        if (cand) unidad = cand;
+      }
+
+      // Buscar por token MD5 (sin filtrar por mac null para permitir re-vinculación)
+      if (!unidad && incomingTokenRaw && incomingTsRaw !== null) {
+        const { data: candidates } = await supabase
+          .from("unidades_empresa")
+          .select("id, proveedor_id, esp32_secret, is_active, esp32_mac")
+          .not("esp32_secret", "is", null)
+          .is("esp32_mac", null);
+        for (const c of candidates ?? []) {
+          if (!c.esp32_secret) continue;
+          const expected = md5(`${c.esp32_secret}${incomingTsRaw}`).toLowerCase();
+          if (expected === incomingTokenRaw) { unidad = c as any; break; }
+        }
+      }
+
+      if (unidad) {
+        // Auto-vincular la MAC a la unidad
+        await supabase
+          .from("unidades_empresa")
+          .update({ esp32_mac: mac, esp32_last_seen: new Date().toISOString() })
+          .eq("id", unidad.id);
+        console.log("[esp32] auto-vinculado", { unit_id: unidad.id, mac });
+      }
+    }
+
+    if (!unidad) return json({ error: "unit_not_found", hint: "Configura el módulo desde la app (Conectar contador) antes de enviar eventos." }, 404);
     if (!unidad.is_active) return json({ error: "unit_inactive" }, 403);
     if (!unidad.esp32_secret) return json({ error: "no_secret_configured" }, 401);
 
