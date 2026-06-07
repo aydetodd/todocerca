@@ -632,6 +632,16 @@ function SingleDriverPanel({
           })()}
         </div>
 
+        {/* Botón Conectar contador (Bluetooth → ESP32) */}
+        {hasAssignment && unitInfo?.has_esp32 && unitInfo?.id && (
+          <div className="flex justify-end">
+            <Esp32WifiProvisioner
+              unidadId={unitInfo.id}
+              unitLabel={unitInfo.nombre || unitInfo.placas || undefined}
+            />
+          </div>
+        )}
+
         {/* Row 2: Route selector (full width) */}
         {hasAssignment && (
           <div className="space-y-2">
