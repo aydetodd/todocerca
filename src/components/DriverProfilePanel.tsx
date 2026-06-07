@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
+import Esp32WifiProvisioner from '@/components/Esp32WifiProvisioner';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
