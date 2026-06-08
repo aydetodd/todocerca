@@ -162,7 +162,7 @@ export default function PanelConcesionario() {
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas, descripcion")
         .eq("proveedor_id", provId)
-        .neq("transport_type", "taxi"),
+        .eq("transport_type", "publico"),
       12000,
       "unidades"
     );
@@ -513,7 +513,7 @@ export default function PanelConcesionario() {
           supabase.from("unidades_empresa")
             .select("id, nombre, numero_economico, placas, descripcion, transport_type")
             .eq("proveedor_id", prov.id)
-            .neq("transport_type", "taxi"),
+            .eq("transport_type", "publico"),
           8000, "unidades empresa");
 
         if (empresaUnidades) {
@@ -797,7 +797,7 @@ export default function PanelConcesionario() {
         .from("unidades_empresa")
         .select("id, nombre, numero_economico, placas")
         .eq("proveedor_id", proveedor.id)
-        .neq("transport_type", "taxi"); // Protocolo 2: Taxi oculto
+        .eq("transport_type", "publico"); // Protocolo 2: Taxi oculto
 
       if (!misUnidades || misUnidades.length === 0) {
         toast.info("No hay unidades registradas");
