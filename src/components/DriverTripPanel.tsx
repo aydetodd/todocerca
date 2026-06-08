@@ -870,6 +870,10 @@ export function DriverTripPanel({
                       )}
                     </span>
                     <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold whitespace-nowrap">
+                        <span className="text-emerald-500">↑{v.pasajeros_subidos ?? 0}</span>
+                        <span className="text-orange-500 ml-1">↓{v.pasajeros_bajados ?? 0}</span>
+                      </span>
                       <span className="text-muted-foreground">
                         {v.inicio_at ? new Date(v.inicio_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : "—"}
                         {v.fin_at && ` → ${new Date(v.fin_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}`}
