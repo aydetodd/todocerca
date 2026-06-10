@@ -152,25 +152,40 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     if (!mapRef.current || !mapReady) return;
     if (privateRouteProductoId) return; // MapView ya dibuja el overlay de la ruta activa
 
+    const buses = locations.filter((l: any) => l.is_bus);
     const productIds = Array.from(
+      new Set(buses.map((l: any) => l.route_producto_id).filter(Boolean) as string[])
+    );
+    // Para buses sin route_producto_id (RLS limita choferes_empresa para pasajeros)
+    // intentamos resolver por nombre de ruta del perfil.
+    const routeNamesWithoutId = Array.from(
       new Set(
-        locations
-          .filter((l: any) => l.is_bus && l.route_producto_id)
-          .map((l: any) => l.route_producto_id as string)
+        buses
+          .filter((l: any) => !l.route_producto_id && l.profiles?.route_name)
+          .map((l: any) => l.profiles.route_name as string)
       )
     );
 
-    // Quitar capas de rutas que ya no tienen unidades visibles
-    const wanted = new Set(productIds);
-    for (const [id, layer] of routeLayersRef.current.entries()) {
-      if (!wanted.has(id)) {
+    const cacheKey = (id?: string | null, name?: string | null) =>
+      id ? `id:${id}` : name ? `name:${name.trim().toLowerCase()}` : '';
+
+    const wanted = new Set<string>([
+      ...productIds.map((id) => cacheKey(id, null)),
+      ...routeNamesWithoutId.map((n) => cacheKey(null, n)),
+    ]);
+
+    for (const [key, layer] of routeLayersRef.current.entries()) {
+      if (!wanted.has(key)) {
         layer.remove();
-        routeLayersRef.current.delete(id);
+        routeLayersRef.current.delete(key);
       }
     }
 
-    const missing = productIds.filter((id) => !routeLayersRef.current.has(id));
-    if (missing.length === 0) return;
+    const missingIds = productIds.filter((id) => !routeLayersRef.current.has(cacheKey(id, null)));
+    const missingNames = routeNamesWithoutId.filter(
+      (n) => !routeLayersRef.current.has(cacheKey(null, n))
+    );
+    if (missingIds.length === 0 && missingNames.length === 0) return;
 
     let cancelled = false;
 
@@ -194,28 +209,56 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       return group;
     };
 
+    const fallbackKmlByName = async (nombre: string) => {
+      try {
+        const mod = await import('@/hooks/useRouteOverlay');
+        const catalogId = mod.routeNameToId(nombre);
+        if (!catalogId) return null;
+        const resp = await fetch(`/data/rutas/${catalogId}.geojson`);
+        if (!resp.ok) return null;
+        return await resp.json();
+      } catch {
+        return null;
+      }
+    };
+
     (async () => {
-      const { data } = await supabase
-        .from('productos')
-        .select('id, nombre, route_geojson')
-        .in('id', missing);
-      if (cancelled || !data) return;
-      for (const row of data as any[]) {
-        let geo = (row as any).route_geojson;
-        if (!geo) {
-          // Fallback: trazado estático del catálogo público (KML) por nombre
-          try {
-            const mod = await import('@/hooks/useRouteOverlay');
-            const catalogId = mod.routeNameToId(row.nombre);
-            if (catalogId) {
-              const resp = await fetch(`/data/rutas/${catalogId}.geojson`);
-              if (resp.ok) geo = await resp.json();
-            }
-          } catch {}
+      // 1) Por ID conocido
+      if (missingIds.length > 0) {
+        const { data } = await supabase
+          .from('productos')
+          .select('id, nombre, route_geojson')
+          .in('id', missingIds);
+        if (cancelled) return;
+        for (const row of (data || []) as any[]) {
+          let geo = row.route_geojson || (await fallbackKmlByName(row.nombre));
+          if (!geo || cancelled) continue;
+          const group = drawGeo(geo);
+          if (group) routeLayersRef.current.set(cacheKey(row.id, null), group);
         }
-        if (!geo || cancelled) continue;
-        const group = drawGeo(geo);
-        if (group) routeLayersRef.current.set(row.id, group);
+      }
+
+      // 2) Por nombre cuando el bus no expone productoId (limitación RLS para pasajeros)
+      if (missingNames.length > 0) {
+        const { data } = await supabase
+          .from('productos')
+          .select('id, nombre, route_geojson, route_type, is_private')
+          .in('nombre', missingNames)
+          .in('route_type', ['urbana', 'foranea', 'privada'])
+          .eq('is_private', false);
+        if (cancelled) return;
+        const byName = new Map<string, any>();
+        for (const row of (data || []) as any[]) {
+          const key = (row.nombre || '').trim().toLowerCase();
+          if (!byName.has(key)) byName.set(key, row);
+        }
+        for (const nombre of missingNames) {
+          const row = byName.get(nombre.trim().toLowerCase());
+          let geo = row?.route_geojson || (await fallbackKmlByName(nombre));
+          if (!geo || cancelled) continue;
+          const group = drawGeo(geo);
+          if (group) routeLayersRef.current.set(cacheKey(null, nombre), group);
+        }
       }
     })();
 
