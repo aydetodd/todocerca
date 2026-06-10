@@ -144,6 +144,86 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     return () => clearInterval(interval);
   }, [currentUserId, updateLocation]);
 
+  // Auto-draw route traces for every visible bus so passengers also see the route line
+  // (antes solo lo veía el chofer/concesionario). Se omite cuando MapView ya dibuja
+  // una ruta específica para evitar duplicar el trazado.
+  const routeLayersRef = useRef<Map<string, L.LayerGroup>>(new Map());
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    if (privateRouteProductoId) return; // MapView ya dibuja el overlay de la ruta activa
+
+    const productIds = Array.from(
+      new Set(
+        locations
+          .filter((l: any) => l.is_bus && l.route_producto_id)
+          .map((l: any) => l.route_producto_id as string)
+      )
+    );
+
+    // Quitar capas de rutas que ya no tienen unidades visibles
+    const wanted = new Set(productIds);
+    for (const [id, layer] of routeLayersRef.current.entries()) {
+      if (!wanted.has(id)) {
+        layer.remove();
+        routeLayersRef.current.delete(id);
+      }
+    }
+
+    const missing = productIds.filter((id) => !routeLayersRef.current.has(id));
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+
+    const drawGeo = (geo: any) => {
+      const map = mapRef.current;
+      if (!map) return null;
+      const group = L.layerGroup().addTo(map);
+      const lineFeatures = (geo.features || []).filter(
+        (f: any) => f.geometry?.type === 'LineString' || f.geometry?.type === 'MultiLineString'
+      );
+      lineFeatures.forEach((feat: any) => {
+        const segments = feat.geometry.type === 'LineString'
+          ? [feat.geometry.coordinates as number[][]]
+          : (feat.geometry.coordinates as number[][][]);
+        const color = (feat.properties?.color as string) || '#0066CC';
+        segments.forEach((seg: number[][]) => {
+          const coords = seg.map(([lng, lat]) => [lat, lng] as [number, number]);
+          L.polyline(coords, { color, weight: 5, opacity: 0.85 }).addTo(group);
+        });
+      });
+      return group;
+    };
+
+    (async () => {
+      const { data } = await supabase
+        .from('productos')
+        .select('id, nombre, route_geojson')
+        .in('id', missing);
+      if (cancelled || !data) return;
+      for (const row of data as any[]) {
+        let geo = (row as any).route_geojson;
+        if (!geo) {
+          // Fallback: trazado estático del catálogo público (KML) por nombre
+          try {
+            const mod = await import('@/hooks/useRouteOverlay');
+            const catalogId = mod.routeNameToId(row.nombre);
+            if (catalogId) {
+              const resp = await fetch(`/data/rutas/${catalogId}.geojson`);
+              if (resp.ok) geo = await resp.json();
+            }
+          } catch {}
+        }
+        if (!geo || cancelled) continue;
+        const group = drawGeo(geo);
+        if (group) routeLayersRef.current.set(row.id, group);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [locations, mapReady, privateRouteProductoId]);
+
   // Update markers - SOLO cuando initialLoadDone sea true
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
