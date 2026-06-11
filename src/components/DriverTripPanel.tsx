@@ -846,11 +846,7 @@ export function DriverTripPanel({
           </Card>
         )}
 
-        {loading && (
-          <div className="flex justify-center py-3">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+        {/* Actualización silenciosa en segundo plano */}
 
         {/* Historial del día */}
         {viajesHoy.length > 0 && (
