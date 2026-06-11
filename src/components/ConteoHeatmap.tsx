@@ -256,11 +256,7 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
       >
         {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
       </Button>
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {/* Actualización silenciosa: sin spinner visible */}
       {!loading && eventos.length === 0 && (
         <div className="absolute bottom-2 left-2 right-12 bg-background/85 text-[11px] text-muted-foreground px-3 py-2 rounded-md text-center pointer-events-none">
           Aún no hay eventos con ubicación. El mapa muestra la ruta asignada.
