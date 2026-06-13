@@ -120,51 +120,39 @@ export function DriverTripPanel({
   const [manualEndOpen, setManualEndOpen] = useState(false);
   const inFlightRef = useRef(false);
   // ---- Modo automático (foráneas) ----
-  // jornadaActiva persiste entre recargas del navegador.
+  // La jornada ahora es totalmente automática: siempre activa durante el día
+  // (Hermosillo, UTC-7). El cron `close-overnight-trips` cierra cualquier viaje
+  // abierto al cambio de día.
   const jornadaKey = `jornada_activa_${choferEmpresaId}`;
   const jornadaDateKey = `jornada_activa_date_${choferEmpresaId}`;
-  // Claves persistentes para el "siguiente paso" del auto-mode.
-  // Sin esto, al recargar/segundo plano se pierde el ref y los viajes
-  // intermedios no se cuentan hasta cerrar uno manualmente.
   const lastFenceKey = `jornada_last_fence_${choferEmpresaId}`;
   const lastFenceDateKey = `jornada_last_fence_date_${choferEmpresaId}`;
   const lastActionAtKey = `jornada_last_action_at_${choferEmpresaId}`;
-  const [jornadaActiva, setJornadaActiva] = useState<boolean>(() => {
-    try {
-      const flag = localStorage.getItem(jornadaKey) === "1";
-      if (!flag) return false;
-      const savedDate = localStorage.getItem(jornadaDateKey);
-      const today = getHermosilloToday();
-      if (savedDate && savedDate !== today) {
-        localStorage.removeItem(jornadaKey);
-        localStorage.removeItem(jornadaDateKey);
-        localStorage.removeItem(lastFenceKey);
-        localStorage.removeItem(lastFenceDateKey);
-        localStorage.removeItem(lastActionAtKey);
-        return false;
-      }
-      return true;
-    } catch { return false; }
-  });
+  // En auto mode la jornada siempre está activa. Mantenemos los nombres por
+  // compatibilidad con el resto de efectos, pero ya no hay botones.
+  const jornadaActiva = autoMode;
+  const setJornadaActiva = (_v: boolean) => { /* no-op: jornada automática */ };
 
+  // Limpieza diaria de claves residuales (cambio de fecha Hermosillo).
   useEffect(() => {
-    if (!jornadaActiva) return;
-    const interval = setInterval(() => {
-      const savedDate = localStorage.getItem(jornadaDateKey);
-      const today = getHermosilloToday();
-      if (savedDate && savedDate !== today) {
-        try {
-          localStorage.removeItem(jornadaKey);
-          localStorage.removeItem(jornadaDateKey);
+    if (!autoMode) return;
+    const cleanIfNewDay = () => {
+      try {
+        const today = getHermosilloToday();
+        const savedDate = localStorage.getItem(jornadaDateKey);
+        if (savedDate && savedDate !== today) {
           localStorage.removeItem(lastFenceKey);
           localStorage.removeItem(lastFenceDateKey);
           localStorage.removeItem(lastActionAtKey);
-        } catch {}
-        setJornadaActiva(false);
-      }
-    }, 60_000);
+        }
+        localStorage.setItem(jornadaKey, "1");
+        localStorage.setItem(jornadaDateKey, today);
+      } catch {}
+    };
+    cleanIfNewDay();
+    const interval = setInterval(cleanIfNewDay, 60_000);
     return () => clearInterval(interval);
-  }, [jornadaActiva, jornadaKey, jornadaDateKey, lastFenceKey, lastFenceDateKey, lastActionAtKey]);
+  }, [autoMode, jornadaKey, jornadaDateKey, lastFenceKey, lastFenceDateKey, lastActionAtKey]);
 
   // Última geocerca recién cerrada (persistido para sobrevivir recargas).
   const lastClosedFenceRef = useRef<"A" | "B" | null>(null);
