@@ -383,49 +383,26 @@ export function DriverTripPanel({
   }, [autoMode, jornadaActiva, viajeActivo, currentPos, insideA, insideB, setLastActionAt, setLastClosedFence]);
 
 
-  // Iniciar jornada (auto mode) desde un punto declarado por el chofer: "A" o "B"
-  const startJornadaFrom = async (origin: "A" | "B") => {
-    let dir: Direccion;
-    let lat: number | null = null;
-    let lng: number | null = null;
-    let manual = false;
 
-    if (origin === "A") {
-      dir = "AB";
-      lat = origenLat ?? null;
-      lng = origenLng ?? null;
-      // si el GPS confirma que está dentro de A, no es manual
-      manual = !insideA;
-    } else if (origin === "B") {
-      dir = "BA";
-      lat = destinoLat ?? null;
-      lng = destinoLng ?? null;
-      manual = !insideB;
-    }
-
-    await insertViaje(dir, { lat, lng, manual });
-    try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
-    setJornadaActiva(true);
-    setLastClosedFence(null);
+  // ---- AUTO MODE: arranca automáticamente el primer viaje sin dirección ----
+  // Al abrir el panel, si la jornada está activa, no hay viaje en curso, no hay
+  // viajes hoy y aún no hay geocerca cerrada, se crea automáticamente un viaje
+  // (direccion=null) que se completará solo al llegar a A o B.
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!autoMode || !hasGeofences) return;
+    if (autoStartedRef.current) return;
+    if (loading) return;
+    if (viajeActivo) return;
+    if (viajesHoy.length > 0) return;
+    if (lastClosedFenceRef.current) return;
+    if (inFlightRef.current) return;
+    autoStartedRef.current = true;
+    const lat = currentPos?.lat ?? null;
+    const lng = currentPos?.lng ?? null;
+    insertViaje(null, { lat, lng, manual: lat == null });
     setLastActionAt(Date.now());
-    setAskStartPoint(false);
-  };
-
-  // Inicia un viaje desde un punto intermedio SIN definir dirección.
-  // La dirección (AB/BA) se decidirá automáticamente cuando el GPS entre a la geocerca A o B.
-  const startJornadaFromIntermediate = async () => {
-    if (!currentPos) {
-      toast.error("Esperando GPS para usar tu ubicación actual…");
-      return;
-    }
-    await insertViaje(null, { lat: currentPos.lat, lng: currentPos.lng, manual: true });
-    try { localStorage.setItem(jornadaKey, "1"); localStorage.setItem(jornadaDateKey, getHermosilloToday()); } catch {}
-    setJornadaActiva(true);
-    setLastClosedFence(null);
-    setLastActionAt(Date.now());
-    setAskIntermediateEndPoint(false);
-    setAskStartPoint(false);
-  };
+  }, [autoMode, hasGeofences, loading, viajeActivo, viajesHoy.length, currentPos, setLastActionAt]);
 
   const insertViaje = async (
     direccion: Direccion | null,
