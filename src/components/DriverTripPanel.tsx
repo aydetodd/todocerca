@@ -687,9 +687,9 @@ export function DriverTripPanel({
         {/* Botones según estado */}
         {autoMode ? (
           <div className="space-y-2">
-            {!jornadaActiva && !viajeActivo && hasGeofences && (
+            {hasGeofences && !viajeActivo && (
               <p className="text-[11px] text-center text-muted-foreground">
-                Inicia la jornada desde el botón en la esquina superior derecha. Después del primer viaje, los siguientes se cuentan solos.
+                Jornada automática. El primer viaje se cuenta solo cuando llegues al Punto A o al Punto B.
               </p>
             )}
             {!hasGeofences && (
