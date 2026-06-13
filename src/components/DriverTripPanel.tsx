@@ -581,60 +581,7 @@ export function DriverTripPanel({
                 {viajeActivo.inicio_manual ? " · m" : ""}
               </Badge>
             )}
-            {autoMode && hasGeofences && !jornadaActiva && !viajeActivo && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 text-xs border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
-                disabled={inFlightRef.current}
-                onClick={() => setAskStartPoint(true)}
-              >
-                <Play className="h-3.5 w-3.5 mr-1" />
-                Iniciar jornada
-              </Button>
-            )}
-            {autoMode && jornadaActiva && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 text-xs border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                disabled={inFlightRef.current}
-                onClick={async () => {
-                  if (viajeActivo) {
-                    const lat = currentPos?.lat ?? null;
-                    const lng = currentPos?.lng ?? null;
-                    inFlightRef.current = true;
-                    try {
-                      await supabase
-                        .from("viajes_realizados")
-                        .update({
-                          fin_lat: lat, fin_lng: lng,
-                          fin_at: new Date().toISOString(),
-                          estado: "completado",
-                          fin_manual: lat == null,
-                        } as any)
-                        .eq("id", viajeActivo.id);
-                    } finally {
-                      setTimeout(() => { inFlightRef.current = false; }, 1000);
-                    }
-                  }
-                  try {
-                    localStorage.removeItem(jornadaKey);
-                    localStorage.removeItem(jornadaDateKey);
-                    localStorage.removeItem(lastFenceKey);
-                    localStorage.removeItem(lastFenceDateKey);
-                    localStorage.removeItem(lastActionAtKey);
-                  } catch {}
-                  setJornadaActiva(false);
-                  setLastClosedFence(null);
-                  setLastActionAt(0);
-                  toast.success("🏁 Jornada finalizada");
-                }}
-              >
-                <Flag className="h-3.5 w-3.5 mr-1" />
-                Finalizar jornada
-              </Button>
-            )}
+            {/* Jornada totalmente automática: sin botones de iniciar / finalizar. */}
           </div>
         </div>
       </div>
