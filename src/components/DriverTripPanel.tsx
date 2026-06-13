@@ -111,10 +111,7 @@ export function DriverTripPanel({
   const [gpsError, setGpsError] = useState<string | null>(null);
   // Diálogo para elegir dirección AB / BA antes de iniciar
   const [askDir, setAskDir] = useState(false);
-  // Diálogo para elegir punto de partida al iniciar jornada (auto mode)
-  const [askStartPoint, setAskStartPoint] = useState(false);
-  // Si inicia desde medio camino, primero debe elegir dónde termina ese primer viaje.
-  const [askIntermediateEndPoint, setAskIntermediateEndPoint] = useState(false);
+  // (Auto mode) – ya no se piden diálogos de inicio de jornada: todo es automático.
   // Diálogo de inicio/fin manual (sin GPS o fuera de geocerca)
   const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
   const [manualEndOpen, setManualEndOpen] = useState(false);
