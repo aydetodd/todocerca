@@ -55,7 +55,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: 'price_1SQWOSGyH05pxWZz6WKwcTj8',
+          price: 'price_1TiPWyGyH05pxWZzjCLA0PSn', // GPS extra $100 MXN/año (LIVE)
           quantity: quantity,
         },
       ],
