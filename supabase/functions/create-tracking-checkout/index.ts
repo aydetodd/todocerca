@@ -62,8 +62,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          // Rastreo GPS $800 MXN/año (hasta 5 dispositivos)
-          price: 'price_1TfBaVGyH05pxWZzooe1M8dy',
+          // Rastreo GPS $400 MXN/año (hasta 5 dispositivos) - LIVE
+          price: 'price_1TiPWwGyH05pxWZzlKjKZNMy',
           quantity: 1,
         },
       ],

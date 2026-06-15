@@ -13,7 +13,8 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Conteo Inteligente: $500 MXN/año por unidad con sensor de pasajeros
-const CONTEO_PRICE_ID = 'price_1TfBaXGyH05pxWZzscPZeh7A';
+// Conteo de pasajeros $500 MXN/año (LIVE)
+const CONTEO_PRICE_ID = 'price_1TiPWvGyH05pxWZzhAoSTEK2';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

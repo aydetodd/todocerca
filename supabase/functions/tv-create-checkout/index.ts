@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PRICE_ID = "price_1TU226GyH05pxWZzsFu9lIfI";
+const PRICE_ID = "price_1TiPWyGyH05pxWZz96VmAQB7"; // TodoCerca TV $50 MXN/mes (LIVE)
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

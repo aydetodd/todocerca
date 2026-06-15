@@ -12,8 +12,8 @@ const logStep = (step: string, details?: any) => {
   console.log(`[ADD-PRIVATE-VEHICLE] ${step}${detailsStr}`);
 };
 
-// Precio normal unificado: $800 MXN/año por unidad de transporte
-const UNIT_PRICE_ID = 'price_1TfBaTGyH05pxWZzTJVSuY0Z';
+// Precio normal unificado: $800 MXN/año por unidad de transporte (LIVE)
+const UNIT_PRICE_ID = 'price_1TiPWuGyH05pxWZz4sg3Uwe3';
 const ROUTE_PRICE_IDS: Record<string, string> = {
   privada: UNIT_PRICE_ID,
   urbana: UNIT_PRICE_ID,
