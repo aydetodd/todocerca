@@ -70,6 +70,13 @@ type UnidadDetalle = {
   descripcion: string | null;
   estado_verificacion: string | null;
   transport_type: string | null;
+  esp32_mac?: string | null;
+  esp32_secret?: string | null;
+  punto_a_lat?: number | null;
+  punto_a_lng?: number | null;
+  punto_b_lat?: number | null;
+  punto_b_lng?: number | null;
+  geofence_radius_m?: number | null;
 };
 
 type IngresoUnidad = {
@@ -90,6 +97,8 @@ export default function PanelConcesionario() {
   const [proveedor, setProveedor] = useState<any>(null);
   
   const [unidades, setUnidades] = useState<UnidadDetalle[]>([]);
+  const [unidadEsp32, setUnidadEsp32] = useState<UnidadDetalle | null>(null);
+  const [unidadAB, setUnidadAB] = useState<UnidadDetalle | null>(null);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
@@ -514,7 +523,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion, transport_type")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_secret, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
             .eq("proveedor_id", prov.id)
             .eq("transport_type", "publico"),
           8000, "unidades empresa");
@@ -530,6 +539,13 @@ export default function PanelConcesionario() {
             descripcion: u.descripcion || null,
             estado_verificacion: null,
             transport_type: u.transport_type || null,
+            esp32_mac: u.esp32_mac || null,
+            esp32_secret: u.esp32_secret || null,
+            punto_a_lat: u.punto_a_lat,
+            punto_a_lng: u.punto_a_lng,
+            punto_b_lat: u.punto_b_lat,
+            punto_b_lng: u.punto_b_lng,
+            geofence_radius_m: u.geofence_radius_m,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
