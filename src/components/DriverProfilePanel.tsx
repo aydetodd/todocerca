@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
-import Esp32WifiProvisioner from '@/components/Esp32WifiProvisioner';
+import { useAutoTripGeofence } from '@/hooks/useAutoTripGeofence';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
@@ -551,6 +551,11 @@ function SingleDriverPanel({
 
   const currentRouteId = data.todayAssignment?.producto_id || '';
   const unitInfo = data.todayAssignment?.unit;
+
+  // Conteo automático de viajes A↔B: solo activo cuando el chofer está en línea con unidad
+  useAutoTripGeofence(unitInfo?.id || null, isActive && !!unitInfo?.id);
+
+
 
   const driverName = data.driver.nombre || 'Sin nombre';
   const vehicleParts: string[] = [];
