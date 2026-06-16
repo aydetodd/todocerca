@@ -2135,6 +2135,56 @@ export default function PanelConcesionario() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ESP32: vinculación desde el concesionario (ya no la hace el chofer) */}
+      <Esp32LinkDialog
+        open={!!unidadEsp32}
+        onOpenChange={(o) => !o && setUnidadEsp32(null)}
+        unitId={unidadEsp32?.id || null}
+        unitName={unidadEsp32 ? `#${unidadEsp32.numero_economico}` : undefined}
+        onSaved={() => {
+          // refrescar lista para actualizar el badge ESP32 ✓
+          if (proveedor?.id) {
+            (async () => {
+              const { data } = await supabase
+                .from("unidades_empresa")
+                .select("id, esp32_mac, esp32_secret")
+                .eq("proveedor_id", proveedor.id);
+              if (data) {
+                setUnidades((prev) => prev.map((u) => {
+                  const fresh = data.find((d: any) => d.id === u.id);
+                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_secret: fresh.esp32_secret } : u;
+                }));
+              }
+            })();
+          }
+        }}
+      />
+
+      {/* Puntos A y B por unidad: el viaje se cuenta automáticamente al cruzar el radio */}
+      <UnidadPuntosABDialog
+        open={!!unidadAB}
+        onOpenChange={(o) => !o && setUnidadAB(null)}
+        unidadId={unidadAB?.id || null}
+        unitName={unidadAB ? `#${unidadAB.numero_economico}` : undefined}
+        onSaved={() => {
+          if (proveedor?.id) {
+            (async () => {
+              const { data } = await supabase
+                .from("unidades_empresa")
+                .select("id, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
+                .eq("proveedor_id", proveedor.id);
+              if (data) {
+                setUnidades((prev) => prev.map((u) => {
+                  const fresh = data.find((d: any) => d.id === u.id);
+                  return fresh ? { ...u, ...fresh } : u;
+                }));
+              }
+            })();
+          }
+        }}
+      />
     </div>
   );
 }
+
