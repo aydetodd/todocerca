@@ -632,15 +632,9 @@ function SingleDriverPanel({
           })()}
         </div>
 
-        {/* Botón Conectar contador (Bluetooth → ESP32) */}
-        {hasAssignment && unitInfo?.has_esp32 && unitInfo?.id && (
-          <div className="flex justify-end">
-            <Esp32WifiProvisioner
-              unidadId={unitInfo.id}
-              unitLabel={unitInfo.nombre || unitInfo.placas || undefined}
-            />
-          </div>
-        )}
+        {/* El ESP32 ya no se vincula desde aquí: lo hace el concesionario desde su panel.
+            El chofer solo prende el carro y maneja; los viajes se cierran y abren
+            automáticamente al cruzar los puntos A y B configurados por el concesionario. */}
 
         {/* Row 2: Route selector (full width) */}
         {hasAssignment && (
