@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     // 4. Viaje abierto actual de esta unidad hoy
     const { data: viajeAbierto } = await supabase
       .from("viajes_realizados")
-      .select("id, numero_viaje, origen, destino, inicio_at")
+      .select("id, numero_viaje, origen, destino, inicio_at, pasajeros_subidos")
       .eq("unidad_id", body.unidad_id)
       .eq("chofer_id", chofer.id)
       .eq("fecha", today)
@@ -124,12 +124,10 @@ Deno.serve(async (req) => {
       const finLat = insideA ? Number(unidad.punto_a_lat) : Number(unidad.punto_b_lat);
       const finLng = insideA ? Number(unidad.punto_a_lng) : Number(unidad.punto_b_lng);
 
-      // Snapshot de pasajeros: cuenta eventos 'subida' del viaje en curso
-      const { count: pasajerosCount } = await supabase
-        .from("conteo_pasajeros_eventos")
-        .select("id", { count: "exact", head: true })
-        .eq("viaje_id", viajeAbierto.id)
-        .eq("evento", "subida");
+      // Snapshot de pasajeros: el contador de ESP32 ya viene acumulado
+      // en `pasajeros_subidos` (el edge function esp32-conteo-pasajeros lo
+      // incrementa por evento). Lo respetamos tal cual.
+      const pasajerosCount = viajeAbierto.pasajeros_subidos ?? 0;
 
       await supabase
         .from("viajes_realizados")
