@@ -137,7 +137,6 @@ Deno.serve(async (req) => {
           fin_lat: finLat,
           fin_lng: finLng,
           fin_manual: false,
-          pasajeros_subidos: pasajerosCount || 0,
         })
         .eq("id", viajeAbierto.id);
 
