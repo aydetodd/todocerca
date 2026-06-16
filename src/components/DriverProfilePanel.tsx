@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon } from 'lucide-react';
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
-import Esp32WifiProvisioner from '@/components/Esp32WifiProvisioner';
+import { useAutoTripGeofence } from '@/hooks/useAutoTripGeofence';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
@@ -552,6 +552,11 @@ function SingleDriverPanel({
   const currentRouteId = data.todayAssignment?.producto_id || '';
   const unitInfo = data.todayAssignment?.unit;
 
+  // Conteo automático de viajes A↔B: solo activo cuando el chofer está en línea con unidad
+  useAutoTripGeofence(unitInfo?.id || null, isActive && !!unitInfo?.id);
+
+
+
   const driverName = data.driver.nombre || 'Sin nombre';
   const vehicleParts: string[] = [];
   if (unitInfo?.descripcion) vehicleParts.push(unitInfo.descripcion);
@@ -632,15 +637,9 @@ function SingleDriverPanel({
           })()}
         </div>
 
-        {/* Botón Conectar contador (Bluetooth → ESP32) */}
-        {hasAssignment && unitInfo?.has_esp32 && unitInfo?.id && (
-          <div className="flex justify-end">
-            <Esp32WifiProvisioner
-              unidadId={unitInfo.id}
-              unitLabel={unitInfo.nombre || unitInfo.placas || undefined}
-            />
-          </div>
-        )}
+        {/* El ESP32 ya no se vincula desde aquí: lo hace el concesionario desde su panel.
+            El chofer solo prende el carro y maneja; los viajes se cierran y abren
+            automáticamente al cruzar los puntos A y B configurados por el concesionario. */}
 
         {/* Row 2: Route selector (full width) */}
         {hasAssignment && (

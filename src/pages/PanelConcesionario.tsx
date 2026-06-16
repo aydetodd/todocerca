@@ -26,6 +26,9 @@ import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
+import Esp32LinkDialog from "@/components/Esp32LinkDialog";
+import UnidadPuntosABDialog from "@/components/UnidadPuntosABDialog";
+import { Cpu, MapPin } from "lucide-react";
 
 // (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
 
@@ -67,6 +70,13 @@ type UnidadDetalle = {
   descripcion: string | null;
   estado_verificacion: string | null;
   transport_type: string | null;
+  esp32_mac?: string | null;
+  esp32_secret?: string | null;
+  punto_a_lat?: number | null;
+  punto_a_lng?: number | null;
+  punto_b_lat?: number | null;
+  punto_b_lng?: number | null;
+  geofence_radius_m?: number | null;
 };
 
 type IngresoUnidad = {
@@ -87,6 +97,8 @@ export default function PanelConcesionario() {
   const [proveedor, setProveedor] = useState<any>(null);
   
   const [unidades, setUnidades] = useState<UnidadDetalle[]>([]);
+  const [unidadEsp32, setUnidadEsp32] = useState<UnidadDetalle | null>(null);
+  const [unidadAB, setUnidadAB] = useState<UnidadDetalle | null>(null);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
@@ -511,7 +523,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion, transport_type")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_secret, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
             .eq("proveedor_id", prov.id)
             .eq("transport_type", "publico"),
           8000, "unidades empresa");
@@ -527,6 +539,13 @@ export default function PanelConcesionario() {
             descripcion: u.descripcion || null,
             estado_verificacion: null,
             transport_type: u.transport_type || null,
+            esp32_mac: u.esp32_mac || null,
+            esp32_secret: u.esp32_secret || null,
+            punto_a_lat: u.punto_a_lat,
+            punto_a_lng: u.punto_a_lng,
+            punto_b_lat: u.punto_b_lat,
+            punto_b_lng: u.punto_b_lng,
+            geofence_radius_m: u.geofence_radius_m,
           })));
         }
       } catch (e) { console.error("Error loading unidades:", e); }
@@ -1400,23 +1419,52 @@ export default function PanelConcesionario() {
                 </CardContent>
               </Card>
             ) : (
-              unidades.map((u) => (
-                <Card key={u.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Placas: {u.placas}
-                          {u.descripcion && ` • ${u.descripcion}`}
-                          {u.linea && ` • ${u.linea}`}
-                          {u.modelo && ` ${u.modelo}`}
-                        </p>
+              unidades.map((u) => {
+                const hasPoints = (u as any).punto_a_lat != null && (u as any).punto_b_lat != null;
+                const hasEsp32 = !!(u as any).esp32_secret || !!(u as any).esp32_mac;
+                return (
+                  <Card key={u.id}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Placas: {u.placas}
+                            {u.descripcion && ` • ${u.descripcion}`}
+                            {u.linea && ` • ${u.linea}`}
+                            {u.modelo && ` ${u.modelo}`}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          size="sm"
+                          variant={hasEsp32 ? "secondary" : "outline"}
+                          className="h-8 text-xs"
+                          onClick={() => { setUnidadEsp32(u); }}
+                        >
+                          <Cpu className="h-3.5 w-3.5 mr-1" />
+                          {hasEsp32 ? "ESP32 ✓" : "Vincular ESP32"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={hasPoints ? "secondary" : "outline"}
+                          className="h-8 text-xs"
+                          onClick={() => { setUnidadAB(u); }}
+                        >
+                          <MapPin className="h-3.5 w-3.5 mr-1" />
+                          {hasPoints ? "Puntos A/B ✓" : "Definir A y B"}
+                        </Button>
+                      </div>
+                      {!hasPoints && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Sin puntos A y B no se cuentan viajes automáticos. Define el origen y destino del recorrido.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </TabsContent>
 
@@ -2087,6 +2135,56 @@ export default function PanelConcesionario() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ESP32: vinculación desde el concesionario (ya no la hace el chofer) */}
+      <Esp32LinkDialog
+        open={!!unidadEsp32}
+        onOpenChange={(o) => !o && setUnidadEsp32(null)}
+        unitId={unidadEsp32?.id || null}
+        unitName={unidadEsp32 ? `#${unidadEsp32.numero_economico}` : undefined}
+        onSaved={() => {
+          // refrescar lista para actualizar el badge ESP32 ✓
+          if (proveedor?.id) {
+            (async () => {
+              const { data } = await supabase
+                .from("unidades_empresa")
+                .select("id, esp32_mac, esp32_secret")
+                .eq("proveedor_id", proveedor.id);
+              if (data) {
+                setUnidades((prev) => prev.map((u) => {
+                  const fresh = data.find((d: any) => d.id === u.id);
+                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_secret: fresh.esp32_secret } : u;
+                }));
+              }
+            })();
+          }
+        }}
+      />
+
+      {/* Puntos A y B por unidad: el viaje se cuenta automáticamente al cruzar el radio */}
+      <UnidadPuntosABDialog
+        open={!!unidadAB}
+        onOpenChange={(o) => !o && setUnidadAB(null)}
+        unidadId={unidadAB?.id || null}
+        unitName={unidadAB ? `#${unidadAB.numero_economico}` : undefined}
+        onSaved={() => {
+          if (proveedor?.id) {
+            (async () => {
+              const { data } = await supabase
+                .from("unidades_empresa")
+                .select("id, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
+                .eq("proveedor_id", proveedor.id);
+              if (data) {
+                setUnidades((prev) => prev.map((u) => {
+                  const fresh = data.find((d: any) => d.id === u.id);
+                  return fresh ? { ...u, ...fresh } : u;
+                }));
+              }
+            })();
+          }
+        }}
+      />
     </div>
   );
 }
+
