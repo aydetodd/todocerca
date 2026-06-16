@@ -26,6 +26,9 @@ import ContratoNotas from "@/components/ContratoNotas";
 import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
+import Esp32LinkDialog from "@/components/Esp32LinkDialog";
+import UnidadPuntosABDialog from "@/components/UnidadPuntosABDialog";
+import { Cpu, MapPin } from "lucide-react";
 
 // (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
 
@@ -1400,23 +1403,52 @@ export default function PanelConcesionario() {
                 </CardContent>
               </Card>
             ) : (
-              unidades.map((u) => (
-                <Card key={u.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Placas: {u.placas}
-                          {u.descripcion && ` • ${u.descripcion}`}
-                          {u.linea && ` • ${u.linea}`}
-                          {u.modelo && ` ${u.modelo}`}
-                        </p>
+              unidades.map((u) => {
+                const hasPoints = (u as any).punto_a_lat != null && (u as any).punto_b_lat != null;
+                const hasEsp32 = !!(u as any).esp32_secret || !!(u as any).esp32_mac;
+                return (
+                  <Card key={u.id}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-foreground text-lg">#{u.numero_economico}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Placas: {u.placas}
+                            {u.descripcion && ` • ${u.descripcion}`}
+                            {u.linea && ` • ${u.linea}`}
+                            {u.modelo && ` ${u.modelo}`}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          size="sm"
+                          variant={hasEsp32 ? "secondary" : "outline"}
+                          className="h-8 text-xs"
+                          onClick={() => { setUnidadEsp32(u); }}
+                        >
+                          <Cpu className="h-3.5 w-3.5 mr-1" />
+                          {hasEsp32 ? "ESP32 ✓" : "Vincular ESP32"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={hasPoints ? "secondary" : "outline"}
+                          className="h-8 text-xs"
+                          onClick={() => { setUnidadAB(u); }}
+                        >
+                          <MapPin className="h-3.5 w-3.5 mr-1" />
+                          {hasPoints ? "Puntos A/B ✓" : "Definir A y B"}
+                        </Button>
+                      </div>
+                      {!hasPoints && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Sin puntos A y B no se cuentan viajes automáticos. Define el origen y destino del recorrido.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </TabsContent>
 
