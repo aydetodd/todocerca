@@ -3796,6 +3796,7 @@ export type Database = {
           esp32_secret: string | null
           esp32_wifi_password: string | null
           esp32_wifi_ssid: string | null
+          geofence_radius_m: number | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
@@ -3806,6 +3807,10 @@ export type Database = {
           numero_economico: string | null
           placas: string | null
           proveedor_id: string
+          punto_a_lat: number | null
+          punto_a_lng: number | null
+          punto_b_lat: number | null
+          punto_b_lng: number | null
           transport_type: string | null
           updated_at: string
         }
@@ -3822,6 +3827,7 @@ export type Database = {
           esp32_secret?: string | null
           esp32_wifi_password?: string | null
           esp32_wifi_ssid?: string | null
+          geofence_radius_m?: number | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -3832,6 +3838,10 @@ export type Database = {
           numero_economico?: string | null
           placas?: string | null
           proveedor_id: string
+          punto_a_lat?: number | null
+          punto_a_lng?: number | null
+          punto_b_lat?: number | null
+          punto_b_lng?: number | null
           transport_type?: string | null
           updated_at?: string
         }
@@ -3848,6 +3858,7 @@ export type Database = {
           esp32_secret?: string | null
           esp32_wifi_password?: string | null
           esp32_wifi_ssid?: string | null
+          geofence_radius_m?: number | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -3858,6 +3869,10 @@ export type Database = {
           numero_economico?: string | null
           placas?: string | null
           proveedor_id?: string
+          punto_a_lat?: number | null
+          punto_a_lng?: number | null
+          punto_b_lat?: number | null
+          punto_b_lng?: number | null
           transport_type?: string | null
           updated_at?: string
         }
@@ -4143,6 +4158,7 @@ export type Database = {
           closed_overnight: boolean
           contrato_id: string | null
           created_at: string
+          destino: string | null
           direccion: string | null
           estado: string
           fecha: string
@@ -4157,6 +4173,7 @@ export type Database = {
           inicio_manual: boolean
           notas: string | null
           numero_viaje: number
+          origen: string | null
           pasajeros_a_bordo: number
           pasajeros_bajados: number
           pasajeros_subidos: number
@@ -4169,6 +4186,7 @@ export type Database = {
           closed_overnight?: boolean
           contrato_id?: string | null
           created_at?: string
+          destino?: string | null
           direccion?: string | null
           estado?: string
           fecha?: string
@@ -4183,6 +4201,7 @@ export type Database = {
           inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
+          origen?: string | null
           pasajeros_a_bordo?: number
           pasajeros_bajados?: number
           pasajeros_subidos?: number
@@ -4195,6 +4214,7 @@ export type Database = {
           closed_overnight?: boolean
           contrato_id?: string | null
           created_at?: string
+          destino?: string | null
           direccion?: string | null
           estado?: string
           fecha?: string
@@ -4209,6 +4229,7 @@ export type Database = {
           inicio_manual?: boolean
           notas?: string | null
           numero_viaje?: number
+          origen?: string | null
           pasajeros_a_bordo?: number
           pasajeros_bajados?: number
           pasajeros_subidos?: number
@@ -4984,6 +5005,17 @@ export type Database = {
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
+      }
+      rpc_unidad_set_puntos_ab: {
+        Args: {
+          _a_lat: number
+          _a_lng: number
+          _b_lat: number
+          _b_lng: number
+          _radio: number
+          _unidad_id: string
+        }
+        Returns: string
       }
       save_private_route_trace: {
         Args: { _filename: string; _geojson: Json; _producto_id: string }
