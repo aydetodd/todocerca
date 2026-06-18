@@ -394,25 +394,34 @@ export function DriverTripPanel({
 
 
 
-  // ---- AUTO MODE: arranca automáticamente el primer viaje sin dirección ----
-  // Al abrir el panel, si la jornada está activa, no hay viaje en curso, no hay
-  // viajes hoy y aún no hay geocerca cerrada, se crea automáticamente un viaje
-  // (direccion=null) que se completará solo al llegar a A o B.
-  const autoStartedRef = useRef(false);
+  // ---- AUTO MODE: garantizar SIEMPRE un viaje activo ----
+  // Si no hay viaje en curso, abre uno automáticamente:
+  //  - Dentro de A → AB    · Dentro de B → BA
+  //  - Si no, alterna desde el último viaje cerrado (BA→AB, AB→BA)
+  //  - Si no hay viajes hoy → sin dirección (se define al llegar a A o B)
   useEffect(() => {
     if (!autoMode || !hasGeofences) return;
-    if (autoStartedRef.current) return;
     if (loading) return;
     if (viajeActivo) return;
-    if (viajesHoy.length > 0) return;
-    if (lastClosedFenceRef.current) return;
     if (inFlightRef.current) return;
-    autoStartedRef.current = true;
-    const lat = currentPos?.lat ?? null;
-    const lng = currentPos?.lng ?? null;
-    insertViaje(null, { lat, lng, manual: lat == null });
-    setLastActionAt(Date.now());
-  }, [autoMode, hasGeofences, loading, viajeActivo, viajesHoy.length, currentPos, setLastActionAt]);
+    const now = Date.now();
+    if (now - lastAutoActionAtRef.current < 60_000) return;
+
+    let nextDir: Direccion | null = null;
+    let lat: number | null = currentPos?.lat ?? null;
+    let lng: number | null = currentPos?.lng ?? null;
+    if (insideA) { nextDir = "AB"; lat = origenLat!; lng = origenLng!; }
+    else if (insideB) { nextDir = "BA"; lat = destinoLat!; lng = destinoLng!; }
+    else {
+      const lastCompleted = viajesHoy.find(v => v.estado === "completado" && v.direccion);
+      if (lastCompleted?.direccion) {
+        nextDir = lastCompleted.direccion === "BA" ? "AB" : "BA";
+      }
+    }
+    setLastActionAt(now);
+    setLastClosedFence(null);
+    insertViaje(nextDir, { lat, lng, manual: lat == null });
+  }, [autoMode, hasGeofences, loading, viajeActivo, viajesHoy, currentPos, insideA, insideB, origenLat, origenLng, destinoLat, destinoLng, setLastActionAt, setLastClosedFence]);
 
   const insertViaje = async (
     direccion: Direccion | null,
