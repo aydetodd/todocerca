@@ -637,39 +637,48 @@ export function DriverTripPanel({
           </Card>
         </div>
 
-        {/* Conteo de pasajeros en tiempo real (ESP32) */}
-        {viajeActivo && (
-          <Card className="border-emerald-400/30 bg-emerald-500/5">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                  Pasajeros · Viaje #{viajeActivo.numero_viaje}
-                </p>
-                <span className="text-[10px] text-muted-foreground">en vivo</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-background/60 p-2">
-                  <p className="text-2xl font-bold text-emerald-600">
-                    {viajeActivo.pasajeros_subidos ?? 0}
+        {/* Conteo en vivo: SIEMPRE hay un viaje activo. Mostramos en paralelo
+            las personas que SUBEN al nuevo viaje y las que BAJARON del anterior. */}
+        {(() => {
+          const viajeAnterior = viajesHoy.find(v => v.id !== viajeActivo?.id && v.estado === "completado");
+          if (!viajeActivo && !viajeAnterior) return null;
+          return (
+            <div className="grid grid-cols-2 gap-2">
+              <Card className="border-emerald-400/40 bg-emerald-500/5">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                    Suben
                   </p>
-                  <p className="text-[10px] text-muted-foreground">Suben</p>
-                </div>
-                <div className="rounded-lg bg-background/60 p-2">
-                  <p className="text-2xl font-bold text-orange-500">
-                    {viajeActivo.pasajeros_bajados ?? 0}
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    {viajeActivo ? `Viaje #${viajeActivo.numero_viaje} (${dirActiva ?? "—"})` : "Sin viaje en curso"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">Bajan</p>
-                </div>
-                <div className="rounded-lg bg-background/60 p-2">
-                  <p className="text-2xl font-bold text-primary">
-                    {viajeActivo.pasajeros_a_bordo ?? 0}
+                  <p className="text-4xl font-bold text-emerald-600">
+                    {viajeActivo?.pasajeros_subidos ?? 0}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">A bordo</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    A bordo: <strong>{viajeActivo?.pasajeros_a_bordo ?? 0}</strong>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-orange-400/40 bg-orange-500/5">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                    Bajan
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    {viajeAnterior ? `Viaje #${viajeAnterior.numero_viaje} (${viajeAnterior.direccion ?? "—"})` : "Sin viaje previo"}
+                  </p>
+                  <p className="text-4xl font-bold text-orange-500">
+                    {viajeAnterior?.pasajeros_bajados ?? 0}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Subió: <strong>{viajeAnterior?.pasajeros_subidos ?? 0}</strong>
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })()}
 
         {/* Acumulado del día */}
         {viajesHoy.length > 0 && (
