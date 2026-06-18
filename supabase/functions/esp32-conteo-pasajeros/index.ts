@@ -277,10 +277,17 @@ Deno.serve(async (req) => {
     }
 
 
-    // 6) Actualizar contadores del viaje activo
-    if (viaje) {
-      const subidos = (viaje.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);
-      const bajados = (viaje.pasajeros_bajados ?? 0) + (evento === "baja" ? 1 : 0);
+    // 6) Atribuir el evento:
+    //    - "sube"  → SIEMPRE al viaje en curso (el que está por comenzar / en camino)
+    //    - "baja"  → al viaje recién cerrado si existe dentro de los últimos 10 min,
+    //                si no, al viaje en curso.
+    const target = evento === "sube"
+      ? viajeActivo
+      : (viajeRecienCerrado ?? viajeActivo);
+
+    if (target) {
+      const subidos = (target.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);
+      const bajados = (target.pasajeros_bajados ?? 0) + (evento === "baja" ? 1 : 0);
       const aBordo = Math.max(0, subidos - bajados);
 
       await supabase
@@ -290,9 +297,16 @@ Deno.serve(async (req) => {
           pasajeros_bajados: bajados,
           pasajeros_a_bordo: aBordo,
         })
-        .eq("id", viaje.id);
+        .eq("id", target.id);
 
-      return json({ ok: true, viaje_id: viaje.id, subidos, bajados, a_bordo: aBordo });
+      return json({
+        ok: true,
+        viaje_id: target.id,
+        atribuido_a: target === viajeRecienCerrado ? "recien_cerrado" : "en_curso",
+        subidos,
+        bajados,
+        a_bordo: aBordo,
+      });
     }
 
     return json({ ok: true, viaje_id: null, note: "evento_registrado_sin_viaje_activo" });
