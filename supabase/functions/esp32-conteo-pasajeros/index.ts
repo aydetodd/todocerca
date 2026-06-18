@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
       .update({ esp32_last_seen: new Date().toISOString() })
       .eq("id", unidad.id);
 
-    const { data: viaje } = await supabase
+    // Viaje en curso (al que se atribuyen las SUBIDAS)
+    const { data: viajeActivo } = await supabase
       .from("viajes_realizados")
       .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_id")
       .eq("unidad_id", unidad.id)
@@ -151,6 +152,27 @@ Deno.serve(async (req) => {
       .order("inicio_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
+
+    // Último viaje recién cerrado (ventana de 10 min). Las BAJADAS dentro de esa ventana
+    // pertenecen al viaje que acaba de terminar (la gente baja en la geocerca de llegada),
+    // no al nuevo viaje que ya se abrió automáticamente.
+    let viajeRecienCerrado: any = null;
+    if (evento === "baja") {
+      const ventana = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: ult } = await supabase
+        .from("viajes_realizados")
+        .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_id, fin_at")
+        .eq("unidad_id", unidad.id)
+        .eq("estado", "finalizado")
+        .gte("fin_at", ventana)
+        .order("fin_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      viajeRecienCerrado = ult;
+    }
+
+    // El viaje "de referencia" para sacar chofer/ubicación: el activo si hay, si no el recién cerrado.
+    const viaje = (evento === "baja" && viajeRecienCerrado) ? viajeRecienCerrado : viajeActivo;
 
     // 4) Si el ESP32 no mandó coordenadas, sacarlas del teléfono del chofer
     let finalLat = lat;
@@ -255,10 +277,17 @@ Deno.serve(async (req) => {
     }
 
 
-    // 6) Actualizar contadores del viaje activo
-    if (viaje) {
-      const subidos = (viaje.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);
-      const bajados = (viaje.pasajeros_bajados ?? 0) + (evento === "baja" ? 1 : 0);
+    // 6) Atribuir el evento:
+    //    - "sube"  → SIEMPRE al viaje en curso (el que está por comenzar / en camino)
+    //    - "baja"  → al viaje recién cerrado si existe dentro de los últimos 10 min,
+    //                si no, al viaje en curso.
+    const target = evento === "sube"
+      ? viajeActivo
+      : (viajeRecienCerrado ?? viajeActivo);
+
+    if (target) {
+      const subidos = (target.pasajeros_subidos ?? 0) + (evento === "sube" ? 1 : 0);
+      const bajados = (target.pasajeros_bajados ?? 0) + (evento === "baja" ? 1 : 0);
       const aBordo = Math.max(0, subidos - bajados);
 
       await supabase
@@ -268,9 +297,16 @@ Deno.serve(async (req) => {
           pasajeros_bajados: bajados,
           pasajeros_a_bordo: aBordo,
         })
-        .eq("id", viaje.id);
+        .eq("id", target.id);
 
-      return json({ ok: true, viaje_id: viaje.id, subidos, bajados, a_bordo: aBordo });
+      return json({
+        ok: true,
+        viaje_id: target.id,
+        atribuido_a: target === viajeRecienCerrado ? "recien_cerrado" : "en_curso",
+        subidos,
+        bajados,
+        a_bordo: aBordo,
+      });
     }
 
     return json({ ok: true, viaje_id: null, note: "evento_registrado_sin_viaje_activo" });
