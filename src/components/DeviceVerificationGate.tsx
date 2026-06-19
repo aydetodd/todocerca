@@ -35,6 +35,11 @@ export function DeviceVerificationGate({ onVerified }: Props) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (data?.auto_verified) {
+        toast({ title: "Dispositivo autorizado", description: "Ya puedes entrar" });
+        onVerified();
+        return;
+      }
       setPhoneMasked(data?.phone_masked || "");
       setStep("code");
       toast({ title: "Código enviado", description: "Revisa los SMS de tu teléfono registrado" });
