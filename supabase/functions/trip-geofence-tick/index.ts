@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     // 4. Viaje abierto actual de esta unidad hoy
     const { data: viajeAbierto } = await supabase
       .from("viajes_realizados")
-      .select("id, numero_viaje, origen, destino, inicio_at, pasajeros_subidos")
+      .select("id, numero_viaje, origen, destino, direccion, inicio_at, pasajeros_subidos")
       .eq("unidad_id", body.unidad_id)
       .eq("chofer_id", chofer.id)
       .eq("fecha", today)
@@ -119,8 +119,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     // Si está dentro de A o B y hay viaje abierto cuyo destino coincide → CIERRA
-    if (viajeAbierto && ((insideA && viajeAbierto.destino === "A") || (insideB && viajeAbierto.destino === "B"))) {
-      const finPunto = insideA ? "A" : "B";
+    const destinoActual = viajeAbierto?.destino || (viajeAbierto?.direccion === "AB" ? "B" : viajeAbierto?.direccion === "BA" ? "A" : null);
+    if (viajeAbierto && ((insideA && destinoActual === "A") || (insideB && destinoActual === "B"))) {
+      const finPunto = destinoActual as "A" | "B";
       const finLat = insideA ? Number(unidad.punto_a_lat) : Number(unidad.punto_b_lat);
       const finLng = insideA ? Number(unidad.punto_a_lng) : Number(unidad.punto_b_lng);
 
@@ -132,17 +133,19 @@ Deno.serve(async (req) => {
       await supabase
         .from("viajes_realizados")
         .update({
-          estado: "finalizado",
+          estado: "completado",
           fin_at: new Date().toISOString(),
           fin_lat: finLat,
           fin_lng: finLng,
           fin_manual: false,
+          direccion: finPunto === "A" ? "BA" : "AB",
         })
         .eq("id", viajeAbierto.id);
 
       // Abrir el siguiente viaje (alternando origen/destino)
       const nuevoOrigen = finPunto; // arrancamos donde acabamos
       const nuevoDestino = finPunto === "A" ? "B" : "A";
+      const nuevaDireccion = nuevoOrigen === "A" ? "AB" : "BA";
       const { data: ultimoNum } = await supabase
         .from("viajes_realizados")
         .select("numero_viaje")
@@ -168,6 +171,7 @@ Deno.serve(async (req) => {
           estado: "en_curso",
           origen: nuevoOrigen,
           destino: nuevoDestino,
+          direccion: nuevaDireccion,
         })
         .select("id")
         .single();
@@ -188,6 +192,7 @@ Deno.serve(async (req) => {
     if (!viajeAbierto && (insideA || insideB)) {
       const origen = insideA ? "A" : "B";
       const destino = origen === "A" ? "B" : "A";
+      const direccion = origen === "A" ? "AB" : "BA";
       const inicioLat = insideA ? Number(unidad.punto_a_lat) : Number(unidad.punto_b_lat);
       const inicioLng = insideA ? Number(unidad.punto_a_lng) : Number(unidad.punto_b_lng);
 
@@ -216,6 +221,7 @@ Deno.serve(async (req) => {
           estado: "en_curso",
           origen,
           destino,
+          direccion,
         })
         .select("id")
         .single();
