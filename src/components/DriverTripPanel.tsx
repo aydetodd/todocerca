@@ -637,46 +637,80 @@ export function DriverTripPanel({
           </Card>
         </div>
 
-        {/* Conteo en vivo: SIEMPRE hay un viaje activo. Mostramos en paralelo
-            las personas que SUBEN al nuevo viaje y las que BAJARON del anterior. */}
+        {/* Conteo en vivo:
+            - DENTRO de una geocerca (A o B): mostramos DOS tarjetas en paralelo.
+              SUBEN → al nuevo viaje en curso. BAJAN → del viaje recién cerrado.
+            - FUERA de las geocercas: una sola tarjeta con el viaje en curso
+              (suben, bajan y a bordo). */}
         {(() => {
+          const enGeocerca = insideA || insideB;
           const viajeAnterior = viajesHoy.find(v => v.id !== viajeActivo?.id && v.estado === "completado");
-          if (!viajeActivo && !viajeAnterior) return null;
+
+          if (enGeocerca && (viajeActivo || viajeAnterior)) {
+            return (
+              <div className="grid grid-cols-2 gap-2">
+                <Card className="border-emerald-400/40 bg-emerald-500/5">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                      Suben
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      {viajeActivo ? `Viaje #${viajeActivo.numero_viaje} (${dirActiva ?? "—"})` : "Sin viaje en curso"}
+                    </p>
+                    <p className="text-4xl font-bold text-emerald-600">
+                      {viajeActivo?.pasajeros_subidos ?? 0}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      A bordo: <strong>{viajeActivo?.pasajeros_a_bordo ?? 0}</strong>
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-orange-400/40 bg-orange-500/5">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-[10px] font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                      Bajan
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      {viajeAnterior ? `Viaje #${viajeAnterior.numero_viaje} (${viajeAnterior.direccion ?? "—"})` : "Sin viaje previo"}
+                    </p>
+                    <p className="text-4xl font-bold text-orange-500">
+                      {viajeAnterior?.pasajeros_bajados ?? 0}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Subió: <strong>{viajeAnterior?.pasajeros_subidos ?? 0}</strong>
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          }
+
+          if (!viajeActivo) return null;
           return (
-            <div className="grid grid-cols-2 gap-2">
-              <Card className="border-emerald-400/40 bg-emerald-500/5">
-                <CardContent className="p-3 text-center">
-                  <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                    Suben
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mb-1">
-                    {viajeActivo ? `Viaje #${viajeActivo.numero_viaje} (${dirActiva ?? "—"})` : "Sin viaje en curso"}
-                  </p>
-                  <p className="text-4xl font-bold text-emerald-600">
-                    {viajeActivo?.pasajeros_subidos ?? 0}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    A bordo: <strong>{viajeActivo?.pasajeros_a_bordo ?? 0}</strong>
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-orange-400/40 bg-orange-500/5">
-                <CardContent className="p-3 text-center">
-                  <p className="text-[10px] font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
-                    Bajan
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mb-1">
-                    {viajeAnterior ? `Viaje #${viajeAnterior.numero_viaje} (${viajeAnterior.direccion ?? "—"})` : "Sin viaje previo"}
-                  </p>
-                  <p className="text-4xl font-bold text-orange-500">
-                    {viajeAnterior?.pasajeros_bajados ?? 0}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Subió: <strong>{viajeAnterior?.pasajeros_subidos ?? 0}</strong>
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="border-primary/40 bg-primary/5">
+              <CardContent className="p-3">
+                <p className="text-[10px] font-semibold text-primary uppercase tracking-wide text-center">
+                  Viaje en curso
+                </p>
+                <p className="text-[10px] text-muted-foreground mb-2 text-center">
+                  Viaje #{viajeActivo.numero_viaje} ({dirActiva ?? "—"})
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Suben</p>
+                    <p className="text-2xl font-bold text-emerald-600">{viajeActivo.pasajeros_subidos ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-orange-700 dark:text-orange-300 uppercase">Bajan</p>
+                    <p className="text-2xl font-bold text-orange-500">{viajeActivo.pasajeros_bajados ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase">A bordo</p>
+                    <p className="text-2xl font-bold text-foreground">{viajeActivo.pasajeros_a_bordo ?? 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           );
         })()}
 
