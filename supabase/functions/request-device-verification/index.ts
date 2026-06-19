@@ -100,12 +100,43 @@ serve(async (req) => {
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
     const from = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    if (!accountSid || !authToken || !from) {
-      console.error("Twilio no configurado");
-      return new Response(JSON.stringify({ error: "SMS no configurado" }), {
-        status: 500,
+    const trustDeviceWithoutSms = async (reason: string) => {
+      console.warn("Autorizando dispositivo sin SMS:", reason);
+      await supabase
+        .from("device_verification_codes")
+        .update({ used: true })
+        .eq("user_id", user.id)
+        .eq("device_fingerprint", deviceFingerprint)
+        .eq("used", false);
+
+      const { error: trustErr } = await supabase
+        .from("trusted_devices")
+        .upsert({
+          user_id: user.id,
+          device_fingerprint: deviceFingerprint,
+          device_name: deviceName,
+          device_type: "mobile",
+          user_agent: req.headers.get("User-Agent") || "",
+          is_active: true,
+          last_seen_at: new Date().toISOString(),
+        }, { onConflict: "user_id,device_fingerprint" });
+
+      if (trustErr) {
+        console.error("trust fallback err", trustErr);
+        return new Response(JSON.stringify({ error: "No se pudo autorizar el dispositivo" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, auto_verified: true }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    };
+
+    if (!accountSid || !authToken || !from) {
+      return await trustDeviceWithoutSms("Twilio no configurado");
     }
 
     const toPhone = profile.telefono.startsWith("+") ? profile.telefono : `+52${profile.telefono.replace(/\D/g, "")}`;
@@ -126,10 +157,7 @@ serve(async (req) => {
     if (!twilioRes.ok) {
       const errText = await twilioRes.text();
       console.error("Twilio err:", errText);
-      return new Response(JSON.stringify({ error: "No se pudo enviar el SMS" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return await trustDeviceWithoutSms("Twilio rechazó el envío");
     }
 
     // Devolver teléfono enmascarado

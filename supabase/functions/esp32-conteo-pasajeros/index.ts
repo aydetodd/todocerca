@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
         .from("viajes_realizados")
         .select("id, pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo, chofer_id, fin_at")
         .eq("unidad_id", unidad.id)
-        .eq("estado", "finalizado")
+        .in("estado", ["completado", "finalizado"])
         .gte("fin_at", ventana)
         .order("fin_at", { ascending: false })
         .limit(1)
