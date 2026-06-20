@@ -638,49 +638,62 @@ export function DriverTripPanel({
         </div>
 
         {/* Conteo en vivo:
-            - DENTRO de una geocerca (A o B): mostramos DOS tarjetas en paralelo.
-              SUBEN → al nuevo viaje en curso. BAJAN → del viaje recién cerrado.
-            - FUERA de las geocercas: una sola tarjeta con el viaje en curso
-              (suben, bajan y a bordo). */}
+            - DENTRO de una geocerca (A o B): mostramos DOS tableros idénticos
+              (Suben / Bajan / A bordo). Tablero superior = viaje anterior (recién cerrado),
+              donde se suman las BAJADAS. Tablero inferior = viaje nuevo en curso,
+              donde se suman las SUBIDAS. Cada viaje mantiene su propio conteo
+              independiente — no importa cuánto quede a bordo al final.
+            - FUERA de las geocercas: una sola tarjeta con el viaje en curso. */}
         {(() => {
           const enGeocerca = insideA || insideB;
           const viajeAnterior = viajesHoy.find(v => v.id !== viajeActivo?.id && v.estado === "completado");
 
+          const Tablero = ({
+            titulo, etiqueta, viaje, accent,
+          }: { titulo: string; etiqueta: string; viaje: any; accent: "prev" | "new" }) => (
+            <Card className={accent === "new" ? "border-primary/40 bg-primary/5" : "border-orange-400/40 bg-orange-500/5"}>
+              <CardContent className="p-3">
+                <p className={`text-[10px] font-semibold uppercase tracking-wide text-center ${accent === "new" ? "text-primary" : "text-orange-600 dark:text-orange-300"}`}>
+                  {titulo}
+                </p>
+                <p className="text-[10px] text-muted-foreground mb-2 text-center">{etiqueta}</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Suben</p>
+                    <p className="text-2xl font-bold text-emerald-600">{viaje?.pasajeros_subidos ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-orange-700 dark:text-orange-300 uppercase">Bajan</p>
+                    <p className="text-2xl font-bold text-orange-500">{viaje?.pasajeros_bajados ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase">A bordo</p>
+                    <p className="text-2xl font-bold text-foreground">{viaje?.pasajeros_a_bordo ?? 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+
           if (enGeocerca && (viajeActivo || viajeAnterior)) {
             return (
-              <div className="grid grid-cols-2 gap-2">
-                <Card className="border-emerald-400/40 bg-emerald-500/5">
-                  <CardContent className="p-3 text-center">
-                    <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                      Suben
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mb-1">
-                      {viajeActivo ? `Viaje #${viajeActivo.numero_viaje} (${dirActiva ?? "—"})` : "Sin viaje en curso"}
-                    </p>
-                    <p className="text-4xl font-bold text-emerald-600">
-                      {viajeActivo?.pasajeros_subidos ?? 0}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      A bordo: <strong>{viajeActivo?.pasajeros_a_bordo ?? 0}</strong>
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="border-orange-400/40 bg-orange-500/5">
-                  <CardContent className="p-3 text-center">
-                    <p className="text-[10px] font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
-                      Bajan
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mb-1">
-                      {viajeAnterior ? `Viaje #${viajeAnterior.numero_viaje} (${viajeAnterior.direccion ?? "—"})` : "Sin viaje previo"}
-                    </p>
-                    <p className="text-4xl font-bold text-orange-500">
-                      {viajeAnterior?.pasajeros_bajados ?? 0}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Subió: <strong>{viajeAnterior?.pasajeros_subidos ?? 0}</strong>
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="space-y-2">
+                {viajeAnterior && (
+                  <Tablero
+                    titulo="Viaje anterior (bajando)"
+                    etiqueta={`Viaje #${viajeAnterior.numero_viaje} (${viajeAnterior.direccion ?? "—"})`}
+                    viaje={viajeAnterior}
+                    accent="prev"
+                  />
+                )}
+                {viajeActivo && (
+                  <Tablero
+                    titulo="Nuevo viaje (subiendo)"
+                    etiqueta={`Viaje #${viajeActivo.numero_viaje} (${dirActiva ?? "—"})`}
+                    viaje={viajeActivo}
+                    accent="new"
+                  />
+                )}
               </div>
             );
           }
