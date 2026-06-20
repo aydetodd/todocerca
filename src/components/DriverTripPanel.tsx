@@ -361,7 +361,14 @@ export function DriverTripPanel({
         if (closeErr) throw closeErr;
 
         // 2) Abrir el siguiente viaje INMEDIATAMENTE
-        const lastNum = Math.max(viajeActivo.numero_viaje, viajesHoy[0]?.numero_viaje || 0);
+        // Solo contamos viajes cuya fecha sea la de HOY (Hermosillo). Esto evita
+        // que al cruzar la medianoche se siga numerando desde el último viaje
+        // de ayer (ej. ayer terminó en #8 → hoy debe comenzar en #1, no #9).
+        const viajesHoyMismo = viajesHoy.filter(v => (v as any).fecha === todayStr);
+        const baseHoy = viajeActivo && (viajeActivo as any).fecha === todayStr
+          ? viajeActivo.numero_viaje
+          : 0;
+        const lastNum = Math.max(baseHoy, viajesHoyMismo[0]?.numero_viaje || 0);
         const { error: openErr } = await supabase.from("viajes_realizados").insert({
           contrato_id: routeProductId ? null : contratoId,
           producto_id: routeProductId,
@@ -430,7 +437,10 @@ export function DriverTripPanel({
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     try {
-      const lastNum = viajesHoy[0]?.numero_viaje || 0;
+      // Solo contar viajes de HOY (Hermosillo). Si cruzamos medianoche,
+      // el primer viaje del nuevo día debe ser #1 aunque ayer haya terminado en #N.
+      const viajesHoyMismo = viajesHoy.filter(v => (v as any).fecha === todayStr);
+      const lastNum = viajesHoyMismo[0]?.numero_viaje || 0;
       const { error } = await supabase.from("viajes_realizados").insert({
         contrato_id: routeProductId ? null : contratoId,
         producto_id: routeProductId,
