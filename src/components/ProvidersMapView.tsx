@@ -316,23 +316,15 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
             const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
             const hasAnyRouteMatch = hasMatchByRouteId || hasMatchByAssignment;
 
-            // Private drivers: accept assignment match OR active route product fallback
-            if (realtimeLocation.is_private_driver) {
-              if (!hasAnyRouteMatch) {
-                console.log(`❌ ${provider.business_name}: chofer sin coincidencia de ruta activa en la búsqueda`);
-                return null;
-              }
-              filteredProducts = provider.productos.filter(
-                p => !!p.id && (assignmentProductIds.has(p.id) || p.id === activeRouteProductId)
-              );
-            } else {
-              // Non-driver providers use active route_producto_id
-              if (!hasMatchByRouteId) {
-                console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId || 'N/A'} no coincide con la búsqueda`);
-                return null;
-              }
-              filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
+            // STRICT: only show the unit if its CURRENTLY ACTIVE route matches the searched route.
+            // A driver may have multiple assignments (e.g., several routes/units), but only the one
+            // they currently turned ON (profile.route_name → route_producto_id) should appear on the map.
+            // This prevents showing an "Apagada" private route as if the bus were available.
+            if (!hasMatchByRouteId) {
+              console.log(`❌ ${provider.business_name}: ruta activa ${activeRouteProductId || 'N/A'} no coincide con la búsqueda (apagada o en otra ruta)`);
+              return null;
             }
+            filteredProducts = provider.productos.filter(p => p.id === activeRouteProductId);
 
             if (filteredProducts.length === 0) {
               return null;
