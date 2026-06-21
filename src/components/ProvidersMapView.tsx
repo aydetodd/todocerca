@@ -199,9 +199,30 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   const isRouteSearch = vehicleFilter === 'ruta';
 
-  // Draw route polyline overlay if routeOverlayId is provided
-  // We use mapReady state to trigger re-run after map initialization
-  useRouteOverlay(mapRef, mapReady ? (routeOverlayId ?? null) : null);
+  // Fetch uploaded route trace (route_geojson) for the selected route product.
+  // Necesario para rutas foráneas/privadas con trazado manual que no coinciden con el catálogo KML.
+  const [inlineRouteGeoJSON, setInlineRouteGeoJSON] = useState<any | null>(null);
+  useEffect(() => {
+    if (!routeProductoId) { setInlineRouteGeoJSON(null); return; }
+    let cancelled = false;
+    supabase
+      .from('productos')
+      .select('route_geojson')
+      .eq('id', routeProductoId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setInlineRouteGeoJSON((data as any)?.route_geojson || null);
+      });
+    return () => { cancelled = true; };
+  }, [routeProductoId]);
+
+  // Draw route polyline overlay: prefer uploaded trace, else catalog KML by name
+  useRouteOverlay(
+    mapRef,
+    mapReady && !inlineRouteGeoJSON ? (routeOverlayId ?? null) : null,
+    mapReady ? inlineRouteGeoJSON : null
+  );
 
   // Get real-time locations - don't block on loading if we have static coordinates
   const { locations: realtimeLocations, loading: realtimeLoading } = useRealtimeLocations(routeProductoId, routeType);
