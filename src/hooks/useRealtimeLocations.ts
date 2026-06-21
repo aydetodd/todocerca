@@ -8,6 +8,7 @@ import {
 } from '@/utils/capacitorLocation';
 
 export interface DriverAssignment {
+  choferId?: string;
   routeName: string;
   productoId: string;
   unitName: string | null;
@@ -115,8 +116,8 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     
     // Phase 1: Fetch profiles + categories + route live units in parallel (no dependencies)
     const [profilesResult, taxiCatResult, rutaCatResult, routeUnits] = await Promise.all([
-      supabase.from('profiles')
-        .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km')
+      (supabase as any).from('profiles')
+        .select('id, user_id, apodo, estado, telefono, provider_type, route_name, tarifa_km, active_route_producto_id, active_chofer_id, active_unidad_id, active_transport_type')
         .eq('role', 'proveedor')
         .in('estado', ['available', 'busy']),
       supabase.from('product_categories')
@@ -338,6 +339,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
             const empresaName = driverRec ? (driverRec as any).proveedores?.nombre : null;
 
             const entry: DriverAssignment = {
+              choferId: a.chofer_id,
               routeName: (a.productos as any)?.nombre || 'Ruta',
               productoId: a.producto_id,
               unitName: unitData?.nombre || null,
@@ -380,10 +382,18 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
 
       const allAssignments = driverAssignmentMap.get(loc.user_id) || [];
       const normalizedProfileRouteName = normalizeRouteName(profile.route_name);
+      const activeProfileProductId = (profile as any).active_route_producto_id || null;
+      const activeProfileChoferId = (profile as any).active_chofer_id || null;
       const profileMatchedAssignment = normalizedProfileRouteName
         ? allAssignments.find(a => normalizeRouteName(a.routeName) === normalizedProfileRouteName)
         : null;
-      const activeAssignment = profileMatchedAssignment || allAssignments[0] || null;
+      const activeAssignmentFromProfile = activeProfileProductId
+        ? allAssignments.find(a =>
+            a.productoId === activeProfileProductId &&
+            (!activeProfileChoferId || a.choferId === activeProfileChoferId)
+          ) || null
+        : null;
+      const activeAssignment = activeAssignmentFromProfile || profileMatchedAssignment || allAssignments[0] || null;
       const orderedAssignments = activeAssignment
         ? [
             activeAssignment,
@@ -400,7 +410,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
 
       // Determine the specific route/product currently ACTIVE for this location
       const specificProductoId = isPrivateDriver
-        ? (activeAssignment?.productoId || profileMatchedRouteProduct?.id || null)
+        ? (activeProfileProductId || activeAssignment?.productoId || profileMatchedRouteProduct?.id || null)
         : (hasRutaProduct && rutaInfo ? rutaInfo.productoId : null);
 
       // Private/public route is determined by the exact active product

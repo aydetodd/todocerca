@@ -243,10 +243,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       const status = realtimeLocation.profiles?.estado || 'offline';
       if (status === 'offline') return null;
 
-      const matchedAssignment = routeProductoId
+      const matchedAssignment = routeProductoId && realtimeLocation.route_producto_id === routeProductoId
         ? realtimeLocation.all_assignments?.find(a => a.productoId === routeProductoId)
         : null;
-      const activeProductId = matchedAssignment?.productoId || realtimeLocation.route_producto_id || routeProductoId || '';
+      const activeProductId = realtimeLocation.route_producto_id || matchedAssignment?.productoId || '';
       const resolvedRouteName = matchedAssignment?.routeName || realtimeLocation.profiles?.route_name || routeName || 'Ruta';
       const productForMap =
         baseProvider?.productos.find(p => p.id === activeProductId) ||
@@ -310,11 +310,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
           if (vehicleFilter === 'ruta') {
             const searchedProductIds = new Set(provider.productos.map(p => p.id).filter(Boolean) as string[]);
             const activeRouteProductId = realtimeLocation.route_producto_id;
-            const assignmentProductIds = new Set((realtimeLocation.all_assignments || []).map(a => a.productoId));
 
             const hasMatchByRouteId = !!activeRouteProductId && searchedProductIds.has(activeRouteProductId);
-            const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
-            const hasAnyRouteMatch = hasMatchByRouteId || hasMatchByAssignment;
 
             // STRICT: only show the unit if its CURRENTLY ACTIVE route matches the searched route.
             // A driver may have multiple assignments (e.g., several routes/units), but only the one
@@ -360,14 +357,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
     if (vehicleFilter !== 'ruta' || !routeProductoId) return mappedProviders;
 
-    const targetName = normalizeName(routeName);
     const routeUnits = realtimeLocations
       .filter((loc) => {
         if (loc.route_producto_id === routeProductoId) return true;
-        if (loc.all_assignments?.some(a => a.productoId === routeProductoId)) return true;
-        if (!targetName) return false;
-        if (normalizeName(loc.profiles?.route_name) === targetName) return true;
-        return !!loc.all_assignments?.some(a => normalizeName(a.routeName) === targetName);
+        return false;
       })
       .filter((loc) => !mappedProviders.some(provider => provider.user_id === loc.user_id))
       .map((loc) => buildProviderFromRealtime(loc, byUserId.get(loc.user_id) || null))

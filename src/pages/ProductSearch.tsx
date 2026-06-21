@@ -1126,7 +1126,7 @@ const ProductSearch = () => {
                     routeOverlayId={isRutasCategory && selectedRoute ? routeNameToId(selectedRoute) : null}
                     routeProductoId={isRutasCategory ? selectedRouteProductoId : null}
                     routeName={isRutasCategory ? selectedRoute : null}
-                    routeType={selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'publico' ? 'urbana' : null}
+                    routeType={selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'privado' ? 'privada' : selectedRouteType === 'publico' ? 'urbana' : null}
                   />
                 </div>
               </section>
