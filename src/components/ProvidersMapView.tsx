@@ -360,7 +360,6 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
     if (vehicleFilter !== 'ruta' || !routeProductoId) return mappedProviders;
 
-    const targetName = normalizeName(routeName);
     const routeUnits = realtimeLocations
       .filter((loc) => {
         if (loc.route_producto_id === routeProductoId) return true;
