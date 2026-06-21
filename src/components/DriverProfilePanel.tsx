@@ -744,6 +744,8 @@ export default function DriverProfilePanel() {
   const [companies, setCompanies] = useState<DriverCompanyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRouteName, setActiveRouteName] = useState<string | null>(null);
+  const [activeRouteProductoId, setActiveRouteProductoId] = useState<string | null>(null);
+  const [activeChoferId, setActiveChoferId] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<'available' | 'busy' | 'offline'>('offline');
 
   useEffect(() => {
@@ -771,13 +773,15 @@ export default function DriverProfilePanel() {
     try {
       setLoading(true);
 
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
-        .select('route_name, estado')
+        .select('route_name, estado, active_route_producto_id, active_chofer_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
       setActiveRouteName(profile?.route_name || null);
+      setActiveRouteProductoId(profile?.active_route_producto_id || null);
+      setActiveChoferId(profile?.active_chofer_id || null);
       setProfileStatus((profile?.estado as 'available' | 'busy' | 'offline' | null) || 'offline');
 
       const { data: drivers, error: driversError } = await supabase
@@ -844,6 +848,7 @@ export default function DriverProfilePanel() {
               nombre: driver.nombre,
               proveedor_id: driver.proveedor_id,
               businessName: proveedor?.nombre || 'Empresa',
+              transport_type: (driver as any).transport_type || null,
             },
             vehicles: filteredVehicles,
             todayAssignment: assignment
@@ -894,6 +899,8 @@ export default function DriverProfilePanel() {
           key={companyData.driver.id}
           data={companyData}
           activeRouteName={activeRouteName}
+          activeRouteProductoId={activeRouteProductoId}
+          activeChoferId={activeChoferId}
           profileStatus={profileStatus}
           onRefresh={loadAllDriverData}
         />
