@@ -2699,6 +2699,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_chofer_id: string | null
+          active_route_producto_id: string | null
+          active_transport_type: string | null
+          active_unidad_id: string | null
           apodo: string | null
           codigo_postal: string | null
           consecutive_number: number
@@ -2726,6 +2730,10 @@ export type Database = {
           verified: boolean | null
         }
         Insert: {
+          active_chofer_id?: string | null
+          active_route_producto_id?: string | null
+          active_transport_type?: string | null
+          active_unidad_id?: string | null
           apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
@@ -2753,6 +2761,10 @@ export type Database = {
           verified?: boolean | null
         }
         Update: {
+          active_chofer_id?: string | null
+          active_route_producto_id?: string | null
+          active_transport_type?: string | null
+          active_unidad_id?: string | null
           apodo?: string | null
           codigo_postal?: string | null
           consecutive_number?: number
