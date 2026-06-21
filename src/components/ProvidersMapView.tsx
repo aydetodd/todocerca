@@ -310,11 +310,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
           if (vehicleFilter === 'ruta') {
             const searchedProductIds = new Set(provider.productos.map(p => p.id).filter(Boolean) as string[]);
             const activeRouteProductId = realtimeLocation.route_producto_id;
-            const assignmentProductIds = new Set((realtimeLocation.all_assignments || []).map(a => a.productoId));
 
             const hasMatchByRouteId = !!activeRouteProductId && searchedProductIds.has(activeRouteProductId);
-            const hasMatchByAssignment = Array.from(searchedProductIds).some(id => assignmentProductIds.has(id));
-            const hasAnyRouteMatch = hasMatchByRouteId || hasMatchByAssignment;
 
             // STRICT: only show the unit if its CURRENTLY ACTIVE route matches the searched route.
             // A driver may have multiple assignments (e.g., several routes/units), but only the one
