@@ -72,6 +72,7 @@ interface DriverRecord {
   nombre: string | null;
   proveedor_id: string;
   businessName: string;
+  transport_type: string | null;
 }
 
 interface Vehicle {
@@ -343,11 +344,15 @@ function StartTripButton({ productoId, onClick }: { productoId: string; onClick:
 function SingleDriverPanel({
   data,
   activeRouteName,
+  activeRouteProductoId,
+  activeChoferId,
   profileStatus,
   onRefresh,
 }: {
   data: DriverCompanyData;
   activeRouteName: string | null;
+  activeRouteProductoId: string | null;
+  activeChoferId: string | null;
   profileStatus: 'available' | 'busy' | 'offline';
   onRefresh: () => void;
 }) {
@@ -358,7 +363,11 @@ function SingleDriverPanel({
   const [toggling, setToggling] = useState(false);
 
   const hasAssignment = !!data.todayAssignment;
-  const isCurrentRoute = hasAssignment && normalizeRouteName(activeRouteName) === normalizeRouteName(data.todayAssignment?.vehicleName);
+  const isCurrentRoute = hasAssignment && (
+    activeRouteProductoId
+      ? data.todayAssignment?.producto_id === activeRouteProductoId && data.driver.id === activeChoferId
+      : normalizeRouteName(activeRouteName) === normalizeRouteName(data.todayAssignment?.vehicleName)
+  );
   const isActive = hasAssignment && profileStatus !== 'offline' && isCurrentRoute;
 
   const handleToggleActive = async (turnOn: boolean) => {
@@ -377,9 +386,15 @@ function SingleDriverPanel({
       }
 
       if (!turnOn) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('profiles')
-          .update({ estado: 'offline' })
+          .update({
+            estado: 'offline',
+            active_route_producto_id: null,
+            active_chofer_id: null,
+            active_unidad_id: null,
+            active_transport_type: null,
+          })
           .eq('user_id', user.id);
 
         if (error) throw error;
@@ -389,11 +404,15 @@ function SingleDriverPanel({
           description: `Tu unidad y ruta quedaron guardadas en "${formatShortRouteName(data.todayAssignment.vehicleName)}"`,
         });
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('profiles')
           .update({
             estado: 'available',
             route_name: data.todayAssignment.vehicleName,
+            active_route_producto_id: data.todayAssignment.producto_id,
+            active_chofer_id: data.driver.id,
+            active_unidad_id: data.todayAssignment.unit?.id || null,
+            active_transport_type: data.driver.transport_type,
           })
           .eq('user_id', user.id);
 
@@ -525,9 +544,16 @@ function SingleDriverPanel({
 
       const selectedVehicle = data.vehicles.find(v => v.id === vehicleId);
       if (user && selectedVehicle) {
-        await supabase
+        await (supabase as any)
           .from('profiles')
-          .update({ route_name: selectedVehicle.nombre, estado: 'available' })
+          .update({
+            route_name: selectedVehicle.nombre,
+            estado: 'available',
+            active_route_producto_id: vehicleId,
+            active_chofer_id: data.driver.id,
+            active_unidad_id: data.todayAssignment.unit?.id || null,
+            active_transport_type: data.driver.transport_type,
+          })
           .eq('user_id', user.id);
       }
 
