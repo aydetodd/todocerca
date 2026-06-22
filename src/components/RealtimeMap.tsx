@@ -298,18 +298,20 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           .replace(/[^a-z0-9]+/g, '');
       const targetName = normalizeName(privateRouteNameProp);
       const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea';
+      // STRICT: solo aparece la unidad cuya RUTA ACTIVA actual coincide con la buscada.
+      // No usamos all_assignments (asignaciones históricas) porque mostraría al chofer en
+      // todas sus rutas a la vez aunque la tenga "Apagada".
       filteredLocations = locations.filter(loc => {
         if (loc.route_producto_id === privateRouteProductoId) return true;
-        if (loc.all_assignments?.some(a => a.productoId === privateRouteProductoId)) return true;
-        // Para rutas PUBLICAS: aceptar unidades de cualquier concesionario sirviendo el MISMO nombre de ruta
+        // Para rutas PÚBLICAS (urbana/foránea): aceptar otros concesionarios que estén
+        // activos sirviendo el MISMO nombre de ruta (route_name del perfil = ruta activa).
         if (isPublicView && targetName) {
           const currentName = normalizeName(loc.profiles?.route_name);
           if (currentName && currentName === targetName) return true;
-          if (loc.all_assignments?.some(a => normalizeName(a.routeName) === targetName)) return true;
         }
         return false;
       });
-      console.log('[Map] Filtering by route', { isPublicView, targetName, total: filteredLocations.length });
+      console.log('[Map] Filtering by route (strict active)', { isPublicView, targetName, total: filteredLocations.length });
     } else if (privateRouteUserId) {
       filteredLocations = locations.filter(loc => loc.user_id === privateRouteUserId);
       console.log('🔒 [Map] Filtering to show only route provider:', filteredLocations.length);
