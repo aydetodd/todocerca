@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Share2, LayoutGrid, MessageCircle, Heart } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle, Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -72,6 +72,16 @@ export const NavigationBar = () => {
         >
           <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
           <span className="text-[10px]">Favoritos</span>
+        </Button>
+
+        <Button
+          variant={isActive('/domotica') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/domotica')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+        >
+          <Sparkles className={`h-5 w-5 ${isActive('/domotica') ? '' : 'text-amber-400'}`} />
+          <span className="text-[10px]">Domótica</span>
         </Button>
 
         <Button
