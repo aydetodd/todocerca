@@ -41,6 +41,7 @@ import VotacionDetalle from "./pages/VotacionDetalle";
 import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
+import Domotica from "./pages/Domotica";
 import GpsLocationPage from "./pages/GpsLocationPage";
 import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
@@ -186,6 +187,7 @@ export default function AppWrapper() {
           <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
+          <Route path="/domotica" element={<Domotica />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
