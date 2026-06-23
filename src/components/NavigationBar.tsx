@@ -75,6 +75,16 @@ export const NavigationBar = () => {
         </Button>
 
         <Button
+          variant={isActive('/domotica') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => navigate('/domotica')}
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+        >
+          <Sparkles className={`h-5 w-5 ${isActive('/domotica') ? '' : 'text-amber-400'}`} />
+          <span className="text-[10px]">Domótica</span>
+        </Button>
+
+        <Button
           variant="ghost"
           size="sm"
           onClick={handleShare}
