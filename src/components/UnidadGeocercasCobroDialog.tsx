@@ -48,18 +48,19 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   const zonasRef = useRef(zonas);
   zonasRef.current = zonas;
 
-  // Cargar zonas + trazado de la ruta activa + puntos A/B
   useEffect(() => {
-    if (!open || !unidadId) return;
+    if (!open || (!unidadId && !productoId)) return;
     (async () => {
       setLoading(true);
       try {
-        const { data: zonasData, error } = await supabase
+        let q = supabase
           .from("unidad_geocercas_cobro" as any)
           .select("id, sentido, orden, nombre, lat, lng, radio_m, precio_mxn")
-          .eq("unidad_id", unidadId)
           .order("sentido")
           .order("orden");
+        if (productoId) q = q.eq("producto_id", productoId);
+        else if (unidadId) q = q.eq("unidad_id", unidadId);
+        const { data: zonasData, error } = await q;
         if (error) throw error;
         const ida: Zona[] = [];
         const vuelta: Zona[] = [];
@@ -82,7 +83,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         setLoading(false);
       }
     })();
-  }, [open, unidadId, toast]);
+  }, [open, unidadId, productoId, toast]);
 
   // Init map
   useEffect(() => {
