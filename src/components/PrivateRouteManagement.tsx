@@ -1499,6 +1499,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           )}
         </DialogContent>
       </Dialog>
+
+      <UnidadGeocercasCobroDialog
+        open={!!cobroFor}
+        onOpenChange={(o) => { if (!o) setCobroFor(null); }}
+        productoId={cobroFor?.id || null}
+        unitName={cobroFor?.nombre}
+      />
     </div>
   );
 }
