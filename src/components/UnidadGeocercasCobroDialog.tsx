@@ -30,7 +30,7 @@ type Sentido = "ida" | "vuelta";
 
 const COLORS: Record<Sentido, string> = { ida: "#16a34a", vuelta: "#ea580c" };
 
-export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadId, unitName }: Props) {
+export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadId, productoId, unitName }: Props) {
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
