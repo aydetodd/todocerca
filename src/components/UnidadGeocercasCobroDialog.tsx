@@ -186,7 +186,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         abMarkersRef.current = null;
       }
     };
-  }, [open, unidadId]);
+  }, [open, unidadId, productoId]);
 
   // Redibujar círculos de zonas
   useEffect(() => {
