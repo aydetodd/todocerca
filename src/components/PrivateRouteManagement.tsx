@@ -1085,6 +1085,18 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             />
                           </div>
 
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+                            onClick={() => setCobroFor({ id: vehicle.id, nombre: vehicle.nombre })}
+                            disabled={!vehicle.route_geojson}
+                            title={vehicle.route_geojson ? 'Definir zonas de cobro IDA / VUELTA' : 'Primero dibuja el trazado de la ruta'}
+                          >
+                            💲 Geocercas de cobro (ida / vuelta)
+                          </Button>
+
                           {transportType === 'privado' && (
                             <Button
                               variant="outline"
