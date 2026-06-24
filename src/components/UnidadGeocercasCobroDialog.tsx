@@ -12,7 +12,8 @@ import { Loader2, Plus, Trash2, Save, DollarSign } from "lucide-react";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  unidadId: string | null;
+  unidadId?: string | null;
+  productoId?: string | null;
   unitName?: string;
 }
 
