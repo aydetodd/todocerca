@@ -244,7 +244,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   };
 
   const handleSave = async () => {
-    if (!unidadId) return;
+    if (!unidadId && !productoId) return;
     setSaving(true);
     try {
       for (const s of ["ida", "vuelta"] as Sentido[]) {
@@ -255,11 +255,11 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
           radio_m: z.radio_m,
           precio_mxn: z.precio_mxn,
         }));
-        const { error } = await (supabase as any).rpc("rpc_unidad_set_geocercas_cobro", {
-          _unidad_id: unidadId,
-          _sentido: s,
-          _zonas: payload,
-        });
+        const rpcName = productoId ? "rpc_producto_set_geocercas_cobro" : "rpc_unidad_set_geocercas_cobro";
+        const args: any = productoId
+          ? { _producto_id: productoId, _sentido: s, _zonas: payload }
+          : { _unidad_id: unidadId, _sentido: s, _zonas: payload };
+        const { error } = await (supabase as any).rpc(rpcName, args);
         if (error) throw error;
       }
       toast({ title: "Guardado", description: `Zonas de cobro actualizadas (${zonas.ida.length} ida, ${zonas.vuelta.length} vuelta)` });
