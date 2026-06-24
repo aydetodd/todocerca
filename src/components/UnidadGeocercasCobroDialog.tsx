@@ -12,7 +12,8 @@ import { Loader2, Plus, Trash2, Save, DollarSign } from "lucide-react";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  unidadId: string | null;
+  unidadId?: string | null;
+  productoId?: string | null;
   unitName?: string;
 }
 
@@ -29,7 +30,7 @@ type Sentido = "ida" | "vuelta";
 
 const COLORS: Record<Sentido, string> = { ida: "#16a34a", vuelta: "#ea580c" };
 
-export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadId, unitName }: Props) {
+export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadId, productoId, unitName }: Props) {
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -47,18 +48,19 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   const zonasRef = useRef(zonas);
   zonasRef.current = zonas;
 
-  // Cargar zonas + trazado de la ruta activa + puntos A/B
   useEffect(() => {
-    if (!open || !unidadId) return;
+    if (!open || (!unidadId && !productoId)) return;
     (async () => {
       setLoading(true);
       try {
-        const { data: zonasData, error } = await supabase
+        let q = supabase
           .from("unidad_geocercas_cobro" as any)
           .select("id, sentido, orden, nombre, lat, lng, radio_m, precio_mxn")
-          .eq("unidad_id", unidadId)
           .order("sentido")
           .order("orden");
+        if (productoId) q = q.eq("producto_id", productoId);
+        else if (unidadId) q = q.eq("unidad_id", unidadId);
+        const { data: zonasData, error } = await q;
         if (error) throw error;
         const ida: Zona[] = [];
         const vuelta: Zona[] = [];
@@ -81,7 +83,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         setLoading(false);
       }
     })();
-  }, [open, unidadId, toast]);
+  }, [open, unidadId, productoId, toast]);
 
   // Init map
   useEffect(() => {
@@ -108,30 +110,31 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         setZonas((prev) => ({ ...prev, [s]: [...prev[s], nueva] }));
       });
 
-      // Cargar trazado + A/B de la unidad
-      if (unidadId) {
-        try {
+      // Cargar trazado + A/B (de unidad o de producto/ruta)
+      try {
+        let gj: any = null;
+        let abPoints: { lat: number; lng: number; label: string; color: string; radius: number }[] = [];
+
+        if (productoId) {
+          const { data: p } = await supabase
+            .from("productos")
+            .select("route_geojson, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m")
+            .eq("id", productoId)
+            .maybeSingle();
+          const pd = p as any;
+          gj = pd?.route_geojson;
+          if (pd?.route_origin_lat != null) abPoints.push({ lat: Number(pd.route_origin_lat), lng: Number(pd.route_origin_lng), label: "A", color: "#2563eb", radius: pd.route_geofence_radius_m || 150 });
+          if (pd?.route_destination_lat != null) abPoints.push({ lat: Number(pd.route_destination_lat), lng: Number(pd.route_destination_lng), label: "B", color: "#7c3aed", radius: pd.route_geofence_radius_m || 150 });
+        } else if (unidadId) {
           const { data: u } = await supabase
             .from("unidades_empresa")
-            .select("punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m, productos:asignaciones_chofer(producto_id)")
+            .select("punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
             .eq("id", unidadId)
             .maybeSingle();
           const ud = u as any;
-          // Dibujar A/B
-          if (ud?.punto_a_lat != null && abMarkersRef.current) {
-            L.circle([Number(ud.punto_a_lat), Number(ud.punto_a_lng)], {
-              radius: ud.geofence_radius_m || 150,
-              color: "#2563eb", weight: 2, fillOpacity: 0.1,
-            }).bindTooltip("A", { permanent: true, direction: "center" }).addTo(abMarkersRef.current);
-          }
-          if (ud?.punto_b_lat != null && abMarkersRef.current) {
-            L.circle([Number(ud.punto_b_lat), Number(ud.punto_b_lng)], {
-              radius: ud.geofence_radius_m || 150,
-              color: "#7c3aed", weight: 2, fillOpacity: 0.1,
-            }).bindTooltip("B", { permanent: true, direction: "center" }).addTo(abMarkersRef.current);
-          }
+          if (ud?.punto_a_lat != null) abPoints.push({ lat: Number(ud.punto_a_lat), lng: Number(ud.punto_a_lng), label: "A", color: "#2563eb", radius: ud.geofence_radius_m || 150 });
+          if (ud?.punto_b_lat != null) abPoints.push({ lat: Number(ud.punto_b_lat), lng: Number(ud.punto_b_lng), label: "B", color: "#7c3aed", radius: ud.geofence_radius_m || 150 });
 
-          // Buscar trazado de la última ruta asignada a la unidad
           const { data: asign } = await supabase
             .from("asignaciones_chofer")
             .select("producto_id, fecha, created_at, productos:producto_id(route_geojson)")
@@ -139,32 +142,37 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
             .order("fecha", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(1);
-          const gj = (asign?.[0] as any)?.productos?.route_geojson;
-          if (gj?.features) {
-            const all: L.LatLngExpression[] = [];
-            gj.features.forEach((f: any) => {
-              if (f.geometry?.type === "LineString") {
-                const coords = (f.geometry.coordinates as number[][]).map(([lng, lat]) => [lat, lng] as [number, number]);
+          gj = (asign?.[0] as any)?.productos?.route_geojson;
+        }
+
+        abPoints.forEach((pt) => {
+          if (abMarkersRef.current) {
+            L.circle([pt.lat, pt.lng], { radius: pt.radius, color: pt.color, weight: 2, fillOpacity: 0.1 })
+              .bindTooltip(pt.label, { permanent: true, direction: "center" })
+              .addTo(abMarkersRef.current);
+          }
+        });
+
+        const all: L.LatLngExpression[] = [];
+        if (gj?.features) {
+          gj.features.forEach((f: any) => {
+            if (f.geometry?.type === "LineString") {
+              const coords = (f.geometry.coordinates as number[][]).map(([lng, lat]) => [lat, lng] as [number, number]);
+              all.push(...coords);
+              L.polyline(coords, { color: "#0066CC", weight: 4, opacity: 0.7 }).addTo(map);
+            } else if (f.geometry?.type === "MultiLineString") {
+              (f.geometry.coordinates as number[][][]).forEach((seg) => {
+                const coords = seg.map(([lng, lat]) => [lat, lng] as [number, number]);
                 all.push(...coords);
                 L.polyline(coords, { color: "#0066CC", weight: 4, opacity: 0.7 }).addTo(map);
-              } else if (f.geometry?.type === "MultiLineString") {
-                (f.geometry.coordinates as number[][][]).forEach((seg) => {
-                  const coords = seg.map(([lng, lat]) => [lat, lng] as [number, number]);
-                  all.push(...coords);
-                  L.polyline(coords, { color: "#0066CC", weight: 4, opacity: 0.7 }).addTo(map);
-                });
-              }
-            });
-            if (all.length > 0) map.fitBounds(L.latLngBounds(all), { padding: [40, 40] });
-          } else if (ud?.punto_a_lat != null && ud?.punto_b_lat != null) {
-            map.fitBounds(L.latLngBounds([
-              [Number(ud.punto_a_lat), Number(ud.punto_a_lng)],
-              [Number(ud.punto_b_lat), Number(ud.punto_b_lng)],
-            ]), { padding: [40, 40] });
-          }
-        } catch (e) {
-          console.warn("[GeocercasCobro] no se pudo cargar trazado", e);
+              });
+            }
+          });
         }
+        abPoints.forEach((pt) => all.push([pt.lat, pt.lng]));
+        if (all.length > 0) map.fitBounds(L.latLngBounds(all), { padding: [40, 40] });
+      } catch (e) {
+        console.warn("[GeocercasCobro] no se pudo cargar trazado", e);
       }
     }, 100);
 
@@ -178,7 +186,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         abMarkersRef.current = null;
       }
     };
-  }, [open, unidadId]);
+  }, [open, unidadId, productoId]);
 
   // Redibujar círculos de zonas
   useEffect(() => {
@@ -236,7 +244,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   };
 
   const handleSave = async () => {
-    if (!unidadId) return;
+    if (!unidadId && !productoId) return;
     setSaving(true);
     try {
       for (const s of ["ida", "vuelta"] as Sentido[]) {
@@ -247,11 +255,11 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
           radio_m: z.radio_m,
           precio_mxn: z.precio_mxn,
         }));
-        const { error } = await (supabase as any).rpc("rpc_unidad_set_geocercas_cobro", {
-          _unidad_id: unidadId,
-          _sentido: s,
-          _zonas: payload,
-        });
+        const rpcName = productoId ? "rpc_producto_set_geocercas_cobro" : "rpc_unidad_set_geocercas_cobro";
+        const args: any = productoId
+          ? { _producto_id: productoId, _sentido: s, _zonas: payload }
+          : { _unidad_id: unidadId, _sentido: s, _zonas: payload };
+        const { error } = await (supabase as any).rpc(rpcName, args);
         if (error) throw error;
       }
       toast({ title: "Guardado", description: `Zonas de cobro actualizadas (${zonas.ida.length} ida, ${zonas.vuelta.length} vuelta)` });
