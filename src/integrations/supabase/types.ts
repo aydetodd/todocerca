@@ -3794,6 +3794,56 @@ export type Database = {
         }
         Relationships: []
       }
+      unidad_geocercas_cobro: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          nombre: string
+          orden: number
+          precio_mxn: number
+          radio_m: number
+          sentido: string
+          unidad_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          nombre?: string
+          orden?: number
+          precio_mxn?: number
+          radio_m?: number
+          sentido: string
+          unidad_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          nombre?: string
+          orden?: number
+          precio_mxn?: number
+          radio_m?: number
+          sentido?: string
+          unidad_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidad_geocercas_cobro_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_empresa: {
         Row: {
           anio: number | null
@@ -5017,6 +5067,10 @@ export type Database = {
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
+      }
+      rpc_unidad_set_geocercas_cobro: {
+        Args: { _sentido: string; _unidad_id: string; _zonas: Json }
+        Returns: number
       }
       rpc_unidad_set_puntos_ab: {
         Args: {
