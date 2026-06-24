@@ -29,7 +29,7 @@ import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 import Esp32LinkDialog from "@/components/Esp32LinkDialog";
 import UnidadPuntosABDialog from "@/components/UnidadPuntosABDialog";
 import UnidadGeocercasCobroDialog from "@/components/UnidadGeocercasCobroDialog";
-import { Cpu, MapPin, DollarSign } from "lucide-react";
+import { Cpu, MapPin } from "lucide-react";
 
 // (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
 
@@ -2194,6 +2194,13 @@ export default function PanelConcesionario() {
             })();
           }
         }}
+      />
+
+      <UnidadGeocercasCobroDialog
+        open={!!unidadCobro}
+        onOpenChange={(o) => !o && setUnidadCobro(null)}
+        unidadId={unidadCobro?.id || null}
+        unitName={unidadCobro ? `#${unidadCobro.numero_economico}` : undefined}
       />
     </div>
   );
