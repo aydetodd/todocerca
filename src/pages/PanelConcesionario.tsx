@@ -28,6 +28,7 @@ import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 import Esp32LinkDialog from "@/components/Esp32LinkDialog";
 import UnidadPuntosABDialog from "@/components/UnidadPuntosABDialog";
+import UnidadGeocercasCobroDialog from "@/components/UnidadGeocercasCobroDialog";
 import { Cpu, MapPin } from "lucide-react";
 
 // (verificación documental retirada — Protocolo 2: solo aplica a taxis ocultos)
@@ -99,6 +100,7 @@ export default function PanelConcesionario() {
   const [unidades, setUnidades] = useState<UnidadDetalle[]>([]);
   const [unidadEsp32, setUnidadEsp32] = useState<UnidadDetalle | null>(null);
   const [unidadAB, setUnidadAB] = useState<UnidadDetalle | null>(null);
+  const [unidadCobro, setUnidadCobro] = useState<UnidadDetalle | null>(null);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [fraudes, setFraudes] = useState<FraudeResumen[]>([]);
   const [cuentaConectada, setCuentaConectada] = useState<any>(null);
@@ -1455,6 +1457,15 @@ export default function PanelConcesionario() {
                           <MapPin className="h-3.5 w-3.5 mr-1" />
                           {hasPoints ? "Puntos A/B ✓" : "Definir A y B"}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs col-span-2"
+                          onClick={() => { setUnidadCobro(u); }}
+                        >
+                          <DollarSign className="h-3.5 w-3.5 mr-1" />
+                          Geocercas de cobro (ida / vuelta)
+                        </Button>
                       </div>
                       {!hasPoints && (
                         <p className="text-[11px] text-muted-foreground">
@@ -2183,6 +2194,13 @@ export default function PanelConcesionario() {
             })();
           }
         }}
+      />
+
+      <UnidadGeocercasCobroDialog
+        open={!!unidadCobro}
+        onOpenChange={(o) => !o && setUnidadCobro(null)}
+        unidadId={unidadCobro?.id || null}
+        unitName={unidadCobro ? `#${unidadCobro.numero_economico}` : undefined}
       />
     </div>
   );
