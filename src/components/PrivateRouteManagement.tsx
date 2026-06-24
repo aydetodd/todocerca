@@ -36,6 +36,7 @@ import { Plus, Bus, Loader2, Users, Link, Trash2, CreditCard, Route, MapPin, Pen
 import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
+import UnidadGeocercasCobroDialog from './UnidadGeocercasCobroDialog';
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
