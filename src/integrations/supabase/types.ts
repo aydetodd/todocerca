@@ -3803,9 +3803,10 @@ export type Database = {
           nombre: string
           orden: number
           precio_mxn: number
+          producto_id: string | null
           radio_m: number
           sentido: string
-          unidad_id: string
+          unidad_id: string | null
           updated_at: string
         }
         Insert: {
@@ -3816,9 +3817,10 @@ export type Database = {
           nombre?: string
           orden?: number
           precio_mxn?: number
+          producto_id?: string | null
           radio_m?: number
           sentido: string
-          unidad_id: string
+          unidad_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -3829,12 +3831,20 @@ export type Database = {
           nombre?: string
           orden?: number
           precio_mxn?: number
+          producto_id?: string | null
           radio_m?: number
           sentido?: string
-          unidad_id?: string
+          unidad_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "unidad_geocercas_cobro_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "unidad_geocercas_cobro_unidad_id_fkey"
             columns: ["unidad_id"]
@@ -5066,6 +5076,10 @@ export type Database = {
       normalize_route_name: { Args: { _nombre: string }; Returns: string }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
+        Returns: undefined
+      }
+      rpc_producto_set_geocercas_cobro: {
+        Args: { _producto_id: string; _sentido: string; _zonas: Json }
         Returns: undefined
       }
       rpc_unidad_set_geocercas_cobro: {
