@@ -183,6 +183,7 @@ export default function AppWrapper() {
           <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
           <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
           <Route path="/panel-concesionario/foraneo" element={<PanelConcesionarioForaneo />} />
+          <Route path="/flota-monitoreo" element={<FlotaMonitoreo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/tv" element={<TodoCercaTv />} />
           <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
