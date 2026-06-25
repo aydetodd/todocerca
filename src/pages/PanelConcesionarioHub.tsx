@@ -3,10 +3,10 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Bus, Truck, CarFront, Lock } from 'lucide-react';
+import { ArrowLeft, Bus, Truck, CarFront, Lock, Activity } from 'lucide-react';
 
 type PanelOption = {
-  key: 'publico' | 'foraneo' | 'privado';
+  key: 'publico' | 'foraneo' | 'privado' | 'flota';
   label: string;
   description: string;
   icon: typeof Bus;
@@ -43,6 +43,15 @@ const OPTIONS: PanelOption[] = [
     color: 'text-amber-600',
     bgColor: 'bg-amber-100',
     to: '/panel-concesionario/privado',
+  },
+  {
+    key: 'flota',
+    label: 'Monitoreo de Flota',
+    description: 'Todas tus unidades en tiempo real: con teléfono del chofer o con Raspberry Pi a bordo.',
+    icon: Activity,
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-100',
+    to: '/flota-monitoreo',
   },
 ];
 

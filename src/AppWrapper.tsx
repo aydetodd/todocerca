@@ -55,6 +55,7 @@ import PanelConcesionarioHub from "./pages/PanelConcesionarioHub";
 import PanelConcesionario from "./pages/PanelConcesionario";
 import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
 import PanelConcesionarioForaneo from "./pages/PanelConcesionarioForaneo";
+import FlotaMonitoreo from "./pages/FlotaMonitoreo";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
@@ -182,6 +183,7 @@ export default function AppWrapper() {
           <Route path="/panel-concesionario/publico" element={<PanelConcesionario />} />
           <Route path="/panel-concesionario/privado" element={<PanelConcesionarioPrivado />} />
           <Route path="/panel-concesionario/foraneo" element={<PanelConcesionarioForaneo />} />
+          <Route path="/flota-monitoreo" element={<FlotaMonitoreo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/tv" element={<TodoCercaTv />} />
           <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
