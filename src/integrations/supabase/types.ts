@@ -3868,6 +3868,7 @@ export type Database = {
           esp32_secret: string | null
           esp32_wifi_password: string | null
           esp32_wifi_ssid: string | null
+          fecha_migracion_pi: string | null
           geofence_radius_m: number | null
           id: string
           is_active: boolean | null
@@ -3877,14 +3878,18 @@ export type Database = {
           modelo: string | null
           nombre: string
           numero_economico: string | null
+          pi_last_seen: string | null
           placas: string | null
           proveedor_id: string
           punto_a_lat: number | null
           punto_a_lng: number | null
           punto_b_lat: number | null
           punto_b_lng: number | null
+          raspberry_pi_id: string | null
           transport_type: string | null
           updated_at: string
+          usa_raspberry: boolean
+          usa_telefono: boolean
         }
         Insert: {
           anio?: number | null
@@ -3899,6 +3904,7 @@ export type Database = {
           esp32_secret?: string | null
           esp32_wifi_password?: string | null
           esp32_wifi_ssid?: string | null
+          fecha_migracion_pi?: string | null
           geofence_radius_m?: number | null
           id?: string
           is_active?: boolean | null
@@ -3908,14 +3914,18 @@ export type Database = {
           modelo?: string | null
           nombre: string
           numero_economico?: string | null
+          pi_last_seen?: string | null
           placas?: string | null
           proveedor_id: string
           punto_a_lat?: number | null
           punto_a_lng?: number | null
           punto_b_lat?: number | null
           punto_b_lng?: number | null
+          raspberry_pi_id?: string | null
           transport_type?: string | null
           updated_at?: string
+          usa_raspberry?: boolean
+          usa_telefono?: boolean
         }
         Update: {
           anio?: number | null
@@ -3930,6 +3940,7 @@ export type Database = {
           esp32_secret?: string | null
           esp32_wifi_password?: string | null
           esp32_wifi_ssid?: string | null
+          fecha_migracion_pi?: string | null
           geofence_radius_m?: number | null
           id?: string
           is_active?: boolean | null
@@ -3939,14 +3950,18 @@ export type Database = {
           modelo?: string | null
           nombre?: string
           numero_economico?: string | null
+          pi_last_seen?: string | null
           placas?: string | null
           proveedor_id?: string
           punto_a_lat?: number | null
           punto_a_lng?: number | null
           punto_b_lat?: number | null
           punto_b_lng?: number | null
+          raspberry_pi_id?: string | null
           transport_type?: string | null
           updated_at?: string
+          usa_raspberry?: boolean
+          usa_telefono?: boolean
         }
         Relationships: [
           {
