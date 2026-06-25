@@ -3,7 +3,7 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Bus, Truck, CarFront, Lock } from 'lucide-react';
+import { ArrowLeft, Bus, Truck, CarFront, Lock, Activity } from 'lucide-react';
 
 type PanelOption = {
   key: 'publico' | 'foraneo' | 'privado';
