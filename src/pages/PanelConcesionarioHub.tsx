@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Bus, Truck, CarFront, Lock, Activity } from 'lucide-react';
 
 type PanelOption = {
-  key: 'publico' | 'foraneo' | 'privado';
+  key: 'publico' | 'foraneo' | 'privado' | 'flota';
   label: string;
   description: string;
   icon: typeof Bus;
