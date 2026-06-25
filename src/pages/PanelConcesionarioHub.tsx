@@ -44,6 +44,15 @@ const OPTIONS: PanelOption[] = [
     bgColor: 'bg-amber-100',
     to: '/panel-concesionario/privado',
   },
+  {
+    key: 'flota',
+    label: 'Monitoreo de Flota',
+    description: 'Todas tus unidades en tiempo real: con teléfono del chofer o con Raspberry Pi a bordo.',
+    icon: Activity,
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-100',
+    to: '/flota-monitoreo',
+  },
 ];
 
 export default function PanelConcesionarioHub() {
