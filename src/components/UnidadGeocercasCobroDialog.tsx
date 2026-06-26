@@ -95,6 +95,11 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       mapRef.current = map;
       layersRef.current = L.layerGroup().addTo(map);
       abMarkersRef.current = L.layerGroup().addTo(map);
+      // Forzar tamaño cuando el dialog ya pintó
+      setTimeout(() => map.invalidateSize(), 50);
+      setTimeout(() => map.invalidateSize(), 250);
+      setTimeout(() => map.invalidateSize(), 600);
+
 
       // Click → agregar zona al sentido activo
       map.on("click", (e: L.LeafletMouseEvent) => {
