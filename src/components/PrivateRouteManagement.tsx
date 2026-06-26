@@ -37,6 +37,8 @@ import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
 import UnidadGeocercasCobroDialog from './UnidadGeocercasCobroDialog';
+import RouteParadasTarifasDialog from './RouteParadasTarifasDialog';
+
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
@@ -109,6 +111,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [showDrivers, setShowDrivers] = useState(false);
   const [endpointsOpenFor, setEndpointsOpenFor] = useState<string | null>(null);
   const [cobroFor, setCobroFor] = useState<{ id: string; nombre: string } | null>(null);
+  const [paradasFor, setParadasFor] = useState<{ id: string; nombre: string } | null>(null);
+
   const [newVehicle, setNewVehicle] = useState({ nombre: '', descripcion: '' });
   const [newUnit, setNewUnit] = useState({ nombre: '', placas: '', descripcion: '', cobro_tipo: '' as '' | 'por_viaje' | 'por_pasajero' });
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
@@ -1097,6 +1101,19 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                             💲 Geocercas de cobro (ida / vuelta)
                           </Button>
 
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start gap-2 border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
+                            onClick={() => setParadasFor({ id: vehicle.id, nombre: vehicle.nombre })}
+                            disabled={!vehicle.route_geojson}
+                            title={vehicle.route_geojson ? 'Definir paradas A, A1, A2... B y matriz de precios por tramo' : 'Primero dibuja el trazado de la ruta'}
+                          >
+                            📍 Paradas y tarifas por tramo (cobro QR)
+                          </Button>
+
+
                           {transportType === 'privado' && (
                             <Button
                               variant="outline"
@@ -1506,6 +1523,16 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         productoId={cobroFor?.id || null}
         unitName={cobroFor?.nombre}
       />
+
+      {paradasFor && (
+        <RouteParadasTarifasDialog
+          open={!!paradasFor}
+          onOpenChange={(o) => { if (!o) setParadasFor(null); }}
+          productoId={paradasFor.id}
+          routeName={paradasFor.nombre}
+        />
+      )}
+
     </div>
   );
 }

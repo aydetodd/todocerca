@@ -515,6 +515,117 @@ export type Database = {
         }
         Relationships: []
       }
+      cobros_qr_tramo: {
+        Row: {
+          bajada_at: string | null
+          bajada_lat: number | null
+          bajada_lng: number | null
+          created_at: string
+          devuelto: number | null
+          estado: string
+          fuente: string
+          id: string
+          parada_bajada_id: string | null
+          parada_subida_id: string | null
+          pasajero_user_id: string | null
+          precio_apartado: number
+          precio_real: number | null
+          producto_id: string | null
+          qr_token: string
+          sentido: string | null
+          subida_at: string | null
+          subida_lat: number | null
+          subida_lng: number | null
+          unidad_id: string
+          updated_at: string
+          viaje_id: string | null
+        }
+        Insert: {
+          bajada_at?: string | null
+          bajada_lat?: number | null
+          bajada_lng?: number | null
+          created_at?: string
+          devuelto?: number | null
+          estado?: string
+          fuente?: string
+          id?: string
+          parada_bajada_id?: string | null
+          parada_subida_id?: string | null
+          pasajero_user_id?: string | null
+          precio_apartado?: number
+          precio_real?: number | null
+          producto_id?: string | null
+          qr_token: string
+          sentido?: string | null
+          subida_at?: string | null
+          subida_lat?: number | null
+          subida_lng?: number | null
+          unidad_id: string
+          updated_at?: string
+          viaje_id?: string | null
+        }
+        Update: {
+          bajada_at?: string | null
+          bajada_lat?: number | null
+          bajada_lng?: number | null
+          created_at?: string
+          devuelto?: number | null
+          estado?: string
+          fuente?: string
+          id?: string
+          parada_bajada_id?: string | null
+          parada_subida_id?: string | null
+          pasajero_user_id?: string | null
+          precio_apartado?: number
+          precio_real?: number | null
+          producto_id?: string | null
+          qr_token?: string
+          sentido?: string | null
+          subida_at?: string | null
+          subida_lat?: number | null
+          subida_lng?: number | null
+          unidad_id?: string
+          updated_at?: string
+          viaje_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobros_qr_tramo_parada_bajada_id_fkey"
+            columns: ["parada_bajada_id"]
+            isOneToOne: false
+            referencedRelation: "route_paradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_qr_tramo_parada_subida_id_fkey"
+            columns: ["parada_subida_id"]
+            isOneToOne: false
+            referencedRelation: "route_paradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_qr_tramo_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_qr_tramo_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_qr_tramo_viaje_id_fkey"
+            columns: ["viaje_id"]
+            isOneToOne: false
+            referencedRelation: "viajes_realizados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteo_pasajeros_alertas: {
         Row: {
           created_at: string
@@ -3083,6 +3194,50 @@ export type Database = {
         }
         Relationships: []
       }
+      route_paradas: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          nombre: string
+          orden: number
+          producto_id: string
+          radio_m: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          nombre: string
+          orden: number
+          producto_id: string
+          radio_m?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          nombre?: string
+          orden?: number
+          producto_id?: string
+          radio_m?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_paradas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_passenger_access: {
         Row: {
           claimed_at: string
@@ -3105,6 +3260,61 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "route_passenger_access_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      route_tarifas: {
+        Row: {
+          created_at: string
+          id: string
+          parada_bajada_id: string
+          parada_subida_id: string
+          precio_mxn: number
+          producto_id: string
+          sentido: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parada_bajada_id: string
+          parada_subida_id: string
+          precio_mxn?: number
+          producto_id: string
+          sentido: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parada_bajada_id?: string
+          parada_subida_id?: string
+          precio_mxn?: number
+          producto_id?: string
+          sentido?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_tarifas_parada_bajada_id_fkey"
+            columns: ["parada_bajada_id"]
+            isOneToOne: false
+            referencedRelation: "route_paradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_tarifas_parada_subida_id_fkey"
+            columns: ["parada_subida_id"]
+            isOneToOne: false
+            referencedRelation: "route_paradas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_tarifas_producto_id_fkey"
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
@@ -4869,6 +5079,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      fn_parada_mas_cercana: {
+        Args: { _lat: number; _lng: number; _producto_id: string }
+        Returns: string
+      }
       get_chofer_by_invite_token: {
         Args: { p_token: string }
         Returns: {
@@ -5093,9 +5307,27 @@ export type Database = {
         Args: { proveedor_id_param: string }
         Returns: undefined
       }
+      rpc_cobro_qr_scan: {
+        Args: {
+          _fuente?: string
+          _lat: number
+          _lng: number
+          _qr_token: string
+          _unidad_id: string
+        }
+        Returns: Json
+      }
       rpc_producto_set_geocercas_cobro: {
         Args: { _producto_id: string; _sentido: string; _zonas: Json }
         Returns: undefined
+      }
+      rpc_route_set_paradas: {
+        Args: { _paradas: Json; _producto_id: string }
+        Returns: number
+      }
+      rpc_route_set_tarifas: {
+        Args: { _producto_id: string; _tarifas: Json }
+        Returns: number
       }
       rpc_unidad_set_geocercas_cobro: {
         Args: { _sentido: string; _unidad_id: string; _zonas: Json }

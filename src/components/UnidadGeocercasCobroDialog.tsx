@@ -95,6 +95,11 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       mapRef.current = map;
       layersRef.current = L.layerGroup().addTo(map);
       abMarkersRef.current = L.layerGroup().addTo(map);
+      // Forzar tamaño cuando el dialog ya pintó
+      setTimeout(() => map.invalidateSize(), 50);
+      setTimeout(() => map.invalidateSize(), 250);
+      setTimeout(() => map.invalidateSize(), 600);
+
 
       // Click → agregar zona al sentido activo
       map.on("click", (e: L.LeafletMouseEvent) => {
@@ -275,7 +280,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" /> Geocercas de cobro
@@ -301,7 +306,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
                 <TabsTrigger value="vuelta">🟠 VUELTA (B→A) · {zonas.vuelta.length}</TabsTrigger>
               </TabsList>
 
-              <div ref={containerRef} className="w-full h-72 rounded-md border border-border overflow-hidden mt-3" />
+              <div ref={containerRef} className="w-full h-[55vh] min-h-[360px] rounded-md border border-border overflow-hidden mt-3" />
 
               <TabsContent value={sentido} className="mt-3 space-y-2">
                 {currentZonas.length === 0 && (
