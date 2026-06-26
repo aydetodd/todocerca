@@ -306,7 +306,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
                 <TabsTrigger value="vuelta">🟠 VUELTA (B→A) · {zonas.vuelta.length}</TabsTrigger>
               </TabsList>
 
-              <div ref={containerRef} className="w-full h-72 rounded-md border border-border overflow-hidden mt-3" />
+              <div ref={containerRef} className="w-full h-[55vh] min-h-[360px] rounded-md border border-border overflow-hidden mt-3" />
 
               <TabsContent value={sentido} className="mt-3 space-y-2">
                 {currentZonas.length === 0 && (
