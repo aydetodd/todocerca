@@ -37,6 +37,8 @@ import PrivateRouteDrivers from './PrivateRouteDrivers';
 import { RouteEndpointsPicker } from './RouteEndpointsPicker';
 import RouteTraceUploader from './RouteTraceUploader';
 import UnidadGeocercasCobroDialog from './UnidadGeocercasCobroDialog';
+import RouteParadasTarifasDialog from './RouteParadasTarifasDialog';
+
 import { formatUnitLabel } from '@/lib/unitDisplay';
 import { useHispanoamerica } from '@/hooks/useHispanoamerica';
 import { PAISES_HISPANOAMERICA } from '@/data/paises-hispanoamerica';
