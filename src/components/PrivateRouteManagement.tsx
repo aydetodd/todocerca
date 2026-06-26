@@ -1523,6 +1523,16 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         productoId={cobroFor?.id || null}
         unitName={cobroFor?.nombre}
       />
+
+      {paradasFor && (
+        <RouteParadasTarifasDialog
+          open={!!paradasFor}
+          onOpenChange={(o) => { if (!o) setParadasFor(null); }}
+          productoId={paradasFor.id}
+          routeName={paradasFor.nombre}
+        />
+      )}
+
     </div>
   );
 }
