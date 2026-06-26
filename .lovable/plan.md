@@ -1,85 +1,93 @@
-# Geocercas de tarifa por sentido (ida / vuelta)
 
-## Qué se logra (en simple)
+## Lo que vamos a construir
 
-Hoy el concesionario solo marca **A** y **B** (geocercas de cierre/apertura de viaje, con un solo radio). 
+### 1) Arreglar el mapa del diálogo de geocercas de cobro
+Hoy se abre el diálogo pero el mapa no aparece. Es un bug de Leaflet: el contenedor se monta antes de tener tamaño, así que el mapa se renderiza en 0×0. Arreglo: forzar `invalidateSize()` al abrir el diálogo y dar altura fija al contenedor (`h-[60vh]`).
 
-Ahora además podrá pintar sobre el trazado **geocercas de cobro** (zonas tarifarias) **independientes**, con su propio tamaño cada una, y **separadas por sentido**:
+### 2) Tarifas por tramo (matriz origen→destino)
 
-- **Sentido IDA (A → B):** sus propias geocercas y precios.
-- **Sentido VUELTA (B → A):** otras geocercas distintas con sus precios.
+En vez de "una geocerca = un precio", cada ruta tiene **paradas ordenadas** (A, A1, A2, A3, A4, A5, B) y una **matriz de precios** entre cualquier par de paradas, separada por sentido (ida / vuelta).
 
-Cuando el camión va en sentido A→B el sistema solo respeta las geocercas de IDA; cuando regresa B→A respeta las de VUELTA. Así una misma calle puede cobrar diferente según el sentido.
+Ejemplo de lo que tú escribiste:
 
-## Ejemplo numérico
+```text
+IDA:
+  A  → B  = $100
+  A1 → B  = $90
+  A2 → B  = $80
+  A1 → A2 = $15
+  A4 → A5 = $18
+  A4 → B  = $20
+  ...
+```
 
-Ruta Obregón → Cócorit, A = Terminal Obregón, B = Plaza Cócorit.
+El concesionario lo edita en una **tabla tipo Excel** dentro de la app: filas = parada de subida, columnas = parada de bajada. Solo llena el triángulo que aplica al sentido (ida llena hacia adelante, vuelta hacia atrás).
 
-**IDA (A→B):**
-- Zona 1 "Centro Obregón" radio 300 m → $15
-- Zona 2 "Esperanza" radio 250 m → $25
-- Zona 3 "Cócorit" radio 400 m → $35
+### 3) Cobro automático con QR (sin que el chofer toque nada)
 
-**VUELTA (B→A):**
-- Zona 1 "Salida Cócorit" radio 350 m → $35 (centro distinto, está 200 m al sur)
-- Zona 2 "Esperanza retorno" radio 250 m → $25 (parada de regreso queda en otra esquina)
-- Zona 3 "Llegada Obregón" radio 300 m → $15
+Flujo del pasajero:
 
-A las 10:00 el camión sale de A → el sistema sabe que va en sentido IDA → solo evalúa las 3 geocercas verdes. A las 11:30 cruza B y arranca el viaje de vuelta → ahora solo evalúa las 3 geocercas naranjas.
+1. **Sube al camión** y escanea el QR del lector (Raspberry Pi o teléfono del chofer).
+   - El sistema detecta en qué parada (geocerca) está el camión en ese momento → esa es su **parada de subida**.
+   - Se "aparta" en stand-by el precio máximo posible desde esa parada hasta el final de la ruta (peor caso, para asegurar saldo).
+2. **Baja del camión** y escanea el MISMO QR otra vez.
+   - El sistema detecta la parada actual → esa es su **parada de bajada**.
+   - Calcula el precio real `tarifa[subida][bajada]` según sentido del viaje.
+   - **Devuelve la diferencia** entre lo apartado y lo real, y cobra solo lo que recorrió.
+3. Si el pasajero nunca baja (se le olvida re-escanear) antes de fin de viaje, se cobra el tramo completo hasta el final.
 
-## Lo que cambia para el concesionario (UI)
+### 4) Qué guardamos por cada cobro
 
-En el editor de trazado de la unidad/ruta, debajo del mapa de "Puntos A y B" aparece una nueva sección **"Geocercas de cobro por sentido"** con:
+Por cada pasajero y por cada viaje:
+- QR / pasajero id
+- Parada de subida + coordenadas + timestamp
+- Parada de bajada + coordenadas + timestamp
+- Sentido (ida/vuelta)
+- Precio apartado, precio real, diferencia devuelta
+- Unidad, chofer, viaje, ruta
+- Origen del scan: `raspberry_pi` o `telefono_chofer`
 
-- **Pestañas:** `🟢 IDA (A→B)` | `🟠 VUELTA (B→A)`
-- Botón **"+ Agregar zona"**: toca el mapa y cae un marcador con su círculo.
-- Cada zona tiene tarjeta con: nombre, radio (slider 50–800 m), precio MXN, botón eliminar.
-- El círculo se puede **arrastrar** para reposicionar.
-- Los círculos de IDA salen verdes, los de VUELTA naranjas, los de A/B se mantienen como ya están (azul/morado). Todo se ve sobre el mismo trazado azul de la ruta.
-- Botón **"Guardar geocercas"** al fondo.
+Esto alimenta los reportes, conteo, mapa de calor y analíticas.
 
-Mismo diálogo, una pestaña arriba: **[Puntos A/B] [Geocercas de cobro]** para no abrumar.
+### 5) Raspberry Pi y teléfono usan el MISMO endpoint
 
-## Lo que cambia para el chofer
+Una sola Edge Function `cobro-qr-tramo` que recibe:
+```json
+{ "unidad_id", "qr_token", "lat", "lng", "fuente": "raspberry"|"telefono" }
+```
+- Si es el 1er scan del pasajero en este viaje → registra subida + aparta saldo.
+- Si es el 2do scan → registra bajada + ajusta cobro.
 
-Nada visible. El chofer sigue sin tocar nada. El backend ya sabe qué sentido lleva el viaje abierto (origen/destino A o B) y solo evalúa las geocercas de ese sentido.
+Así la Pi y el celular del chofer son intercambiables (alineado con el sistema dual que ya armamos).
 
-## Cambios técnicos
+---
 
-### Base de datos (1 migración)
+## Cambios técnicos (resumen para no técnicos: dónde queda cada cosa)
 
-Nueva tabla `unidad_geocercas_cobro`:
-- `unidad_id` (fk a unidades_empresa)
-- `sentido` text CHECK in ('ida','vuelta')
-- `orden` int (para ordenar por secuencia del recorrido)
-- `nombre` text
-- `lat`, `lng` numeric
-- `radio_m` int (50–800)
-- `precio_mxn` numeric
-- `created_at`, `updated_at`
+**Base de datos** (1 migración):
+- `route_paradas` — paradas ordenadas por ruta (orden, nombre, lat, lng, radio_m).
+- `route_tarifas` — matriz de precios `producto_id × sentido × parada_subida_id × parada_bajada_id → precio_mxn`.
+- `cobros_qr_tramo` — registro de cada subida/bajada por pasajero.
+- RPCs: `rpc_route_set_paradas`, `rpc_route_set_tarifas`, `rpc_cobro_qr_scan` (resuelve subida/bajada y calcula).
+- GRANTs + RLS para concesionario dueño.
 
-GRANTs para `authenticated` y `service_role`. RLS: solo el dueño de la unidad (vía `is_proveedor_owner`) puede leer/escribir; service_role full.
+**Edge Function**:
+- `cobro-qr-tramo` (Pi + teléfono).
 
-RPC `rpc_unidad_set_geocercas_cobro(_unidad_id, _sentido, _zonas jsonb)` que reemplaza todas las zonas de ese sentido en una sola transacción.
+**UI concesionario** (todo dentro del módulo de rutas, no hay icono nuevo):
+- Pestaña **"Paradas y tarifas"** en cada ruta privada/foránea, con:
+  - Editor de paradas sobre el mapa del trazado azul.
+  - Tabla editable de la matriz ida / vuelta.
+- Fix del mapa en `UnidadGeocercasCobroDialog`.
 
-### Edge function `trip-geofence-tick` (extender)
+**UI chofer / scanner**:
+- Scanner existente llama al nuevo RPC; muestra "Subió en A2 — apartado $80" o "Bajó en A4 — cobrado $36, devuelto $44".
 
-Cuando hay viaje abierto, además del check de cerrar al cruzar A/B:
-1. Lee `unidad_geocercas_cobro` del sentido del viaje (`origen → destino` → si origen='A' es ida, si origen='B' es vuelta).
-2. Para cada zona calcula Haversine; si la posición entró por primera vez en esa zona durante este viaje, registra un evento de cobro (`viajes_realizados.tarifas_aplicadas` jsonb append, o tabla aparte si conviene).
-3. Idempotente: no duplica si el GPS rebota dentro del mismo círculo del mismo viaje.
+---
 
-### Frontend
+## Lo que NO incluye este plan (lo hablamos aparte si quieres)
+- Tarjeta/saldo del pasajero (hoy asumimos que el QR ya tiene crédito como en el sistema `qr_tickets` actual).
+- Firmware de la Raspberry Pi (solo dejamos listo el endpoint que va a consumir).
+- Pantalla pública de "cuánto pagué" para el pasajero (se puede agregar después).
 
-- `src/components/UnidadGeocercasCobroDialog.tsx` (nuevo): mapa + pestañas ida/vuelta + lista editable de zonas.
-- `src/components/UnidadPuntosABDialog.tsx`: agregar pestaña arriba con tabs `Puntos A/B` y `Geocercas de cobro` (o botón aparte en la tarjeta de la unidad). Se mantiene 100% compatible con lo existente.
-- `src/pages/PanelConcesionario.tsx`: nuevo botón **"💲 Geocercas de cobro"** en la tarjeta de unidad, junto a "Puntos A/B".
-
-## Lo que NO cambia
-
-- Puntos A y B y su radio único siguen funcionando igual (cierre/apertura de viajes).
-- Trazado de la ruta (`route_geojson`) no se toca.
-- Chofer no ve nada nuevo.
-- Conteo de pasajeros del ESP32 sigue igual.
-
-¿Apruebas para implementar?
+¿Apruebo y empiezo? Si quieres ajustar el orden (por ejemplo arreglar primero solo el mapa y dejar la matriz de tarifas para el siguiente turno) dímelo.
