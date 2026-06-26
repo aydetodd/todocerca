@@ -122,3 +122,7 @@ verify_jwt = false
 
 [functions.esp32-conteo-pasajeros]
 verify_jwt = false
+
+[functions.cobro-qr-tramo]
+verify_jwt = false
+
