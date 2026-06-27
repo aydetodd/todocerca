@@ -325,8 +325,8 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <label className="text-[11px] text-muted-foreground">Radio (m)
-                        <Input type="number" min={50} max={2000} value={p.radio_m}
-                          onChange={(e) => updateParada(idx, { radio_m: Math.max(50, Math.min(2000, parseInt(e.target.value) || 200)) })}
+                        <Input type="number" min={50} max={99999} value={p.radio_m}
+                          onChange={(e) => updateParada(idx, { radio_m: Math.max(50, Math.min(99999, parseInt(e.target.value) || 200)) })}
                           className="h-8 text-sm" />
                       </label>
                       <label className="text-[11px] text-muted-foreground">Lat
