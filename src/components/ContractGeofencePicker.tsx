@@ -167,7 +167,7 @@ export function ContractGeofencePicker({ origen, destino, radio, onChange }: Con
         <Input
           type="number"
           min={50}
-          max={1000}
+          max={99999}
           value={radio}
           onChange={(e) => onChange({ origen, destino, radio: Math.max(50, parseInt(e.target.value) || 150) })}
           className="h-8 w-24"
