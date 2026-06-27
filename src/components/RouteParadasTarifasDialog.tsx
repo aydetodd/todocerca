@@ -84,13 +84,17 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
   // Init map (solo cuando estamos en pestaña paradas)
   useEffect(() => {
     if (!open || tab !== "paradas") return;
-    const t = setTimeout(async () => {
+    let ro: ResizeObserver | null = null;
+
+    const tryInit = async () => {
       if (!containerRef.current || mapRef.current) return;
+      if (containerRef.current.clientHeight < 50 || containerRef.current.clientWidth < 50) return;
+
       const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       layerRef.current = L.layerGroup().addTo(map);
-      [50, 250, 600].forEach((d) => setTimeout(() => map.invalidateSize(), d));
+      [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
 
       map.on("click", (e: L.LeafletMouseEvent) => {
         setParadas((prev) => {
@@ -143,10 +147,18 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
       } catch (e) {
         console.warn("[Paradas] trazado:", e);
       }
-    }, 100);
+    };
+
+    tryInit();
+    if (containerRef.current) {
+      ro = new ResizeObserver(() => { tryInit(); });
+      ro.observe(containerRef.current);
+    }
+    const fallback = setTimeout(tryInit, 400);
 
     return () => {
-      clearTimeout(t);
+      clearTimeout(fallback);
+      if (ro) ro.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -300,7 +312,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
               <p className="text-xs text-muted-foreground">
                 Toca el mapa para agregar una parada. Arrastra el número para moverla. El orden A → B se define con los botones ↑↓.
               </p>
-              <div ref={containerRef} className="w-full h-[50vh] min-h-[320px] rounded-md border overflow-hidden" />
+              <div ref={containerRef} style={{ height: 380 }} className="w-full rounded-md border overflow-hidden" />
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {paradas.map((p, idx) => (
                   <div key={p.tempId} className="border rounded-md p-2 space-y-2 bg-card">

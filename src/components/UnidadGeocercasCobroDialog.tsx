@@ -88,17 +88,16 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   // Init map
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(async () => {
+    let ro: ResizeObserver | null = null;
+    const tryInit = async () => {
       if (!containerRef.current || mapRef.current) return;
+      if (containerRef.current.clientHeight < 50 || containerRef.current.clientWidth < 50) return;
       const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       layersRef.current = L.layerGroup().addTo(map);
       abMarkersRef.current = L.layerGroup().addTo(map);
-      // Forzar tamaño cuando el dialog ya pintó
-      setTimeout(() => map.invalidateSize(), 50);
-      setTimeout(() => map.invalidateSize(), 250);
-      setTimeout(() => map.invalidateSize(), 600);
+      [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
 
 
       // Click → agregar zona al sentido activo
@@ -179,10 +178,19 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       } catch (e) {
         console.warn("[GeocercasCobro] no se pudo cargar trazado", e);
       }
-    }, 100);
+    };
+
+    // Intentar de inmediato y observar cambios de tamaño hasta que tenga dimensiones
+    tryInit();
+    if (containerRef.current) {
+      ro = new ResizeObserver(() => { tryInit(); });
+      ro.observe(containerRef.current);
+    }
+    const fallback = setTimeout(tryInit, 400);
 
     return () => {
-      clearTimeout(t);
+      clearTimeout(fallback);
+      if (ro) ro.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -306,7 +314,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
                 <TabsTrigger value="vuelta">🟠 VUELTA (B→A) · {zonas.vuelta.length}</TabsTrigger>
               </TabsList>
 
-              <div ref={containerRef} className="w-full h-[55vh] min-h-[360px] rounded-md border border-border overflow-hidden mt-3" />
+              <div ref={containerRef} style={{ height: 400 }} className="w-full rounded-md border border-border overflow-hidden mt-3" />
 
               <TabsContent value={sentido} className="mt-3 space-y-2">
                 {currentZonas.length === 0 && (
