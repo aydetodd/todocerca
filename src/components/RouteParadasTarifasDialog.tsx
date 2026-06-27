@@ -312,7 +312,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
               <p className="text-xs text-muted-foreground">
                 Toca el mapa para agregar una parada. Arrastra el número para moverla. El orden A → B se define con los botones ↑↓.
               </p>
-              <div ref={containerRef} className="w-full h-[50vh] min-h-[320px] rounded-md border overflow-hidden" />
+              <div ref={containerRef} style={{ height: 380 }} className="w-full rounded-md border overflow-hidden" />
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {paradas.map((p, idx) => (
                   <div key={p.tempId} className="border rounded-md p-2 space-y-2 bg-card">
