@@ -239,12 +239,12 @@ export default function UnidadPuntosABDialog({ open, onOpenChange, unidadId, uni
               <Input
                 type="number"
                 min={50}
-                max={1000}
+                max={99999}
                 value={radio}
-                onChange={(e) => setRadio(Math.max(50, Math.min(1000, parseInt(e.target.value) || 150)))}
+                onChange={(e) => setRadio(Math.max(50, Math.min(99999, parseInt(e.target.value) || 150)))}
                 className="h-8 w-24"
               />
-              <span className="text-[11px] text-muted-foreground">50–1000. Recomendado 150 m.</span>
+              <span className="text-[11px] text-muted-foreground">50–99,999 m. Recomendado 150 m.</span>
             </div>
 
             <Button onClick={handleSave} disabled={saving || !puntoA || !puntoB} className="w-full">
