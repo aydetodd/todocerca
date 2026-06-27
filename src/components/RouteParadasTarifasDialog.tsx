@@ -165,7 +165,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
         layerRef.current = null;
       }
     };
-  }, [open, tab, productoId]);
+  }, [open, tab, productoId, loading]);
 
   // Redibujar paradas
   useEffect(() => {
