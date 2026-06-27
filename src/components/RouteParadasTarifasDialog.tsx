@@ -90,7 +90,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
       if (!containerRef.current || mapRef.current) return;
       if (containerRef.current.clientHeight < 50 || containerRef.current.clientWidth < 50) return;
 
-      const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
+      const map = L.map(containerRef.current, { center: [27.4861, -109.9401], zoom: 11, attributionControl: false });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       layerRef.current = L.layerGroup().addTo(map);
