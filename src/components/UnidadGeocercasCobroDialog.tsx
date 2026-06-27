@@ -178,10 +178,19 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       } catch (e) {
         console.warn("[GeocercasCobro] no se pudo cargar trazado", e);
       }
-    }, 100);
+    };
+
+    // Intentar de inmediato y observar cambios de tamaño hasta que tenga dimensiones
+    tryInit();
+    if (containerRef.current) {
+      ro = new ResizeObserver(() => { tryInit(); });
+      ro.observe(containerRef.current);
+    }
+    const fallback = setTimeout(tryInit, 400);
 
     return () => {
-      clearTimeout(t);
+      clearTimeout(fallback);
+      if (ro) ro.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
