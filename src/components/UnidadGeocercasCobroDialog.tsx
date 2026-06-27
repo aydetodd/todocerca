@@ -88,17 +88,16 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   // Init map
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(async () => {
+    let ro: ResizeObserver | null = null;
+    const tryInit = async () => {
       if (!containerRef.current || mapRef.current) return;
+      if (containerRef.current.clientHeight < 50 || containerRef.current.clientWidth < 50) return;
       const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       layersRef.current = L.layerGroup().addTo(map);
       abMarkersRef.current = L.layerGroup().addTo(map);
-      // Forzar tamaño cuando el dialog ya pintó
-      setTimeout(() => map.invalidateSize(), 50);
-      setTimeout(() => map.invalidateSize(), 250);
-      setTimeout(() => map.invalidateSize(), 600);
+      [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
 
 
       // Click → agregar zona al sentido activo
