@@ -274,7 +274,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     return () => {
       cancelled = true;
     };
-  }, [locations, mapReady, privateRouteProductoId]);
+  }, [locations, mapReady, privateRouteProductoId, fleetUserIds]);
 
   // Update markers - SOLO cuando initialLoadDone sea true
   useEffect(() => {
