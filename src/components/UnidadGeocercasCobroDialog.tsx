@@ -40,6 +40,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [sentido, setSentido] = useState<Sentido>("ida");
   const [zonas, setZonas] = useState<Record<Sentido, Zona[]>>({ ida: [], vuelta: [] });
 
@@ -97,6 +98,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       mapRef.current = map;
       layersRef.current = L.layerGroup().addTo(map);
       abMarkersRef.current = L.layerGroup().addTo(map);
+      setMapReady(true);
       [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
 
 
@@ -198,6 +200,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         traceRef.current = null;
         abMarkersRef.current = null;
       }
+      setMapReady(false);
     };
   }, [open, unidadId, productoId, loading]);
 
@@ -205,7 +208,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
   useEffect(() => {
     const map = mapRef.current;
     const layer = layersRef.current;
-    if (!map || !layer) return;
+    if (!mapReady || !map || !layer) return;
     layer.clearLayers();
 
     (Object.keys(zonas) as Sentido[]).forEach((s) => {
@@ -242,7 +245,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
         }
       });
     });
-  }, [zonas, sentido]);
+  }, [zonas, sentido, mapReady]);
 
   const updateZona = (s: Sentido, idx: number, patch: Partial<Zona>) => {
     setZonas((prev) => {

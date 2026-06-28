@@ -38,6 +38,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
   const [sentido, setSentido] = useState<Sentido>("ida");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [paradas, setParadas] = useState<Parada[]>([]);
   // matriz[sentido][subidaTempId][bajadaTempId] = precio
   const [matriz, setMatriz] = useState<Record<Sentido, Record<string, Record<string, number>>>>({ ida: {}, vuelta: {} });
@@ -94,6 +95,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       layerRef.current = L.layerGroup().addTo(map);
+      setMapReady(true);
       [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
 
       map.on("click", (e: L.LeafletMouseEvent) => {
@@ -164,13 +166,14 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
         mapRef.current = null;
         layerRef.current = null;
       }
+      setMapReady(false);
     };
   }, [open, tab, productoId, loading]);
 
   // Redibujar paradas
   useEffect(() => {
     const map = mapRef.current; const layer = layerRef.current;
-    if (!map || !layer) return;
+    if (!mapReady || !map || !layer) return;
     layer.clearLayers();
     paradas.forEach((p, idx) => {
       L.circle([p.lat, p.lng], { radius: p.radio_m, color: "#f59e0b", weight: 2, fillOpacity: 0.2 })
@@ -189,7 +192,7 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
         setParadas((prev) => prev.map((q, i) => i === idx ? { ...q, lat: pos.lat, lng: pos.lng } : q));
       });
     });
-  }, [paradas]);
+  }, [paradas, mapReady]);
 
   const updateParada = (idx: number, patch: Partial<Parada>) => {
     setParadas((prev) => prev.map((p, i) => i === idx ? { ...p, ...patch } : p));
