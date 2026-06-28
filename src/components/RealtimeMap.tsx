@@ -152,10 +152,19 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     if (!mapRef.current || !mapReady) return;
     if (privateRouteProductoId) return; // MapView ya dibuja el overlay de la ruta activa
 
-    const buses = locations.filter((l: any) => l.is_bus);
+    // En modo flota, restringir a los usuarios de la flota visible (evita que aparezcan
+    // trazados de unidades de OTRO tipo del mismo concesionario, ej. una foránea en "Privado").
+    const isFleetMode = Array.isArray(fleetUserIds) && fleetUserIds.length > 0;
+    const fleetSet = isFleetMode ? new Set(fleetUserIds) : null;
+    const buses = locations.filter((l: any) => {
+      if (!l.is_bus) return false;
+      if (fleetSet && !fleetSet.has(l.user_id)) return false;
+      return true;
+    });
     const productIds = Array.from(
       new Set(buses.map((l: any) => l.route_producto_id).filter(Boolean) as string[])
     );
+
     // Para buses sin route_producto_id (RLS limita choferes_empresa para pasajeros)
     // intentamos resolver por nombre de ruta del perfil.
     const routeNamesWithoutId = Array.from(
