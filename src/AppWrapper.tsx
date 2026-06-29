@@ -176,6 +176,7 @@ export default function AppWrapper() {
           {/* Wallet QR Boletos */}
           <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
           <Route path="/wallet/qr-boletos/comprar" element={<ComprarBoletos />} />
+          <Route path="/wallet/familiar" element={<WalletFamiliar />} />
           {/* GenerarQr route removed - QR codes generated automatically on purchase */}
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
