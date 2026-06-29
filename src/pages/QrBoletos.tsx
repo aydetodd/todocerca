@@ -305,6 +305,25 @@ export default function QrBoletos() {
           Comprar Códigos QR
         </Button>
 
+        {/* Wallet Familiar — nueva modalidad */}
+        <Card className="border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-4 space-y-2">
+            <p className="font-semibold text-foreground">💳 Wallet Familiar QR</p>
+            <p className="text-sm text-muted-foreground">
+              Compra saldo y crea QR <strong className="text-foreground">imprimibles y enmicables</strong> para tu familia.
+              Ideal para personas mayores, niños o quien no tiene celular.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/wallet/familiar")}
+            >
+              Abrir Wallet Familiar
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Info */}
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
