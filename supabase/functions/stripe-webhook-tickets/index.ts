@@ -51,6 +51,66 @@ serve(async (req) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      // ============ WALLET FAMILIAR — RECARGA ============
+      if (session.metadata?.type === "wallet_recarga") {
+        const userId = session.metadata.user_id;
+        const montoMxn = parseFloat(session.metadata.monto_mxn || "0");
+
+        if (!userId || montoMxn <= 0) {
+          throw new Error("Wallet recarga: metadata inválida");
+        }
+
+        // Asegurar wallet existe
+        const { data: walletExist } = await supabaseAdmin
+          .from("wallets_qr")
+          .select("id, saldo_mxn, total_recargado")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        let walletId: string;
+        let nuevoSaldo: number;
+        if (walletExist) {
+          walletId = walletExist.id;
+          nuevoSaldo = Number(walletExist.saldo_mxn) + montoMxn;
+          await supabaseAdmin
+            .from("wallets_qr")
+            .update({
+              saldo_mxn: nuevoSaldo,
+              total_recargado: Number(walletExist.total_recargado) + montoMxn,
+              ultima_recarga_at: new Date().toISOString(),
+            })
+            .eq("id", walletId);
+        } else {
+          const { data: newW } = await supabaseAdmin
+            .from("wallets_qr")
+            .insert({
+              user_id: userId,
+              saldo_mxn: montoMxn,
+              total_recargado: montoMxn,
+              ultima_recarga_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+          walletId = newW!.id;
+          nuevoSaldo = montoMxn;
+        }
+
+        await supabaseAdmin.from("movimientos_wallet").insert({
+          wallet_id: walletId,
+          titular_user_id: userId,
+          tipo: "recarga",
+          monto_mxn: montoMxn,
+          saldo_wallet_despues: nuevoSaldo,
+          stripe_payment_id: session.payment_intent as string,
+          descripcion: `Recarga vía Stripe $${montoMxn.toFixed(2)} MXN`,
+        });
+
+        console.log(`[WEBHOOK-TICKETS] Wallet recargada $${montoMxn} user ${userId}, saldo ${nuevoSaldo}`);
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (session.metadata?.type !== "qr_boleto_purchase") {
         console.log("[WEBHOOK-TICKETS] Not a ticket purchase, skipping");
         return new Response(JSON.stringify({ received: true }), {
