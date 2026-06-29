@@ -92,7 +92,6 @@ serve(async (req) => {
     });
 
     // Actualiza wallet.total_gastado
-    await admin.rpc("noop").then(() => null).catch(() => null); // no-op safe
     const { data: w } = await admin.from("wallets_qr").select("total_gastado").eq("id", sub.wallet_id).single();
     if (w) {
       await admin.from("wallets_qr").update({
