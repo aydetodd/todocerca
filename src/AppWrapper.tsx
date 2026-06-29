@@ -46,6 +46,7 @@ import GpsLocationPage from "./pages/GpsLocationPage";
 import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
 import QrBoletos from "./pages/QrBoletos";
+import WalletFamiliar from "./pages/WalletFamiliar";
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
