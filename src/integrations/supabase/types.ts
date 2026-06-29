@@ -2453,6 +2453,75 @@ export type Database = {
           },
         ]
       }
+      movimientos_wallet: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          metadata: Json | null
+          monto_mxn: number
+          producto_id: string | null
+          saldo_sub_qr_despues: number | null
+          saldo_wallet_despues: number | null
+          stripe_payment_id: string | null
+          sub_qr_id: string | null
+          tipo: string
+          titular_user_id: string
+          unidad_id: string | null
+          viaje_id: string | null
+          wallet_id: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          monto_mxn: number
+          producto_id?: string | null
+          saldo_sub_qr_despues?: number | null
+          saldo_wallet_despues?: number | null
+          stripe_payment_id?: string | null
+          sub_qr_id?: string | null
+          tipo: string
+          titular_user_id: string
+          unidad_id?: string | null
+          viaje_id?: string | null
+          wallet_id: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          monto_mxn?: number
+          producto_id?: string | null
+          saldo_sub_qr_despues?: number | null
+          saldo_wallet_despues?: number | null
+          stripe_payment_id?: string | null
+          sub_qr_id?: string | null
+          tipo?: string
+          titular_user_id?: string
+          unidad_id?: string | null
+          viaje_id?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_wallet_sub_qr_id_fkey"
+            columns: ["sub_qr_id"]
+            isOneToOne: false
+            referencedRelation: "sub_qr_saldo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_wallet_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets_qr"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notas_contrato: {
         Row: {
           autor_id: string
@@ -3503,6 +3572,77 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sub_qr_saldo: {
+        Row: {
+          alias: string
+          cancelado_at: string | null
+          categoria: string
+          created_at: string
+          estado: string
+          expendio_id: string | null
+          folio_corto: string
+          id: string
+          motivo_cancelacion: string | null
+          saldo_mxn: number
+          tipo_emisor: string
+          titular_user_id: string
+          token: string
+          total_gastado: number
+          ultima_ruta_producto_id: string | null
+          ultimo_uso_at: string | null
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          alias: string
+          cancelado_at?: string | null
+          categoria?: string
+          created_at?: string
+          estado?: string
+          expendio_id?: string | null
+          folio_corto: string
+          id?: string
+          motivo_cancelacion?: string | null
+          saldo_mxn?: number
+          tipo_emisor?: string
+          titular_user_id: string
+          token: string
+          total_gastado?: number
+          ultima_ruta_producto_id?: string | null
+          ultimo_uso_at?: string | null
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          alias?: string
+          cancelado_at?: string | null
+          categoria?: string
+          created_at?: string
+          estado?: string
+          expendio_id?: string | null
+          folio_corto?: string
+          id?: string
+          motivo_cancelacion?: string | null
+          saldo_mxn?: number
+          tipo_emisor?: string
+          titular_user_id?: string
+          token?: string
+          total_gastado?: number
+          ultima_ruta_producto_id?: string | null
+          ultimo_uso_at?: string | null
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_qr_saldo_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets_qr"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subdivisiones_nivel1: {
         Row: {
@@ -4811,6 +4951,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wallets_qr: {
+        Row: {
+          created_at: string
+          id: string
+          saldo_mxn: number
+          total_gastado: number
+          total_recargado: number
+          ultima_recarga_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          saldo_mxn?: number
+          total_gastado?: number
+          total_recargado?: number
+          ultima_recarga_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          saldo_mxn?: number
+          total_gastado?: number
+          total_recargado?: number
+          ultima_recarga_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
