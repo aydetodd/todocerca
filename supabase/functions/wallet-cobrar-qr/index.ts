@@ -38,68 +38,96 @@ serve(async (req) => {
       q = q.eq("token", tokenOrFolio);
     }
     const { data: sub } = await q.maybeSingle();
-    if (!sub) throw new Error("QR no reconocido");
-    if (sub.estado !== "activo") throw new Error(`QR ${sub.estado}`);
 
-    // Consulta de saldo nada más
+    // Si no es sub-QR, intentar como QR EJE (wallets_qr)
+    let isEje = false;
+    let ejeWallet: any = null;
+    if (!sub) {
+      let qe = admin.from("wallets_qr").select("*");
+      if (tokenOrFolio.toUpperCase().startsWith("EJ-")) {
+        qe = qe.eq("folio_corto", tokenOrFolio.toUpperCase());
+      } else {
+        qe = qe.eq("token", tokenOrFolio);
+      }
+      const { data: w } = await qe.maybeSingle();
+      if (!w) throw new Error("QR no reconocido");
+      ejeWallet = w;
+      isEje = true;
+    } else if (sub.estado !== "activo") {
+      throw new Error(`QR ${sub.estado}`);
+    }
+
     if (onlyConsult) {
+      if (isEje) {
+        return new Response(JSON.stringify({
+          tipo: "eje", alias: "Cuenta Eje",
+          folio_corto: ejeWallet.folio_corto,
+          saldo_mxn: Number(ejeWallet.saldo_mxn), estado: "activo",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       return new Response(JSON.stringify({
-        alias: sub.alias,
-        folio_corto: sub.folio_corto,
-        saldo_mxn: Number(sub.saldo_mxn),
-        estado: sub.estado,
+        tipo: "sub", alias: sub.alias, folio_corto: sub.folio_corto,
+        saldo_mxn: Number(sub.saldo_mxn), estado: sub.estado,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!monto || monto <= 0) throw new Error("Monto inválido");
 
-    // Cooldown anti-fraude
-    if (sub.ultimo_uso_at) {
-      const elapsed = (Date.now() - new Date(sub.ultimo_uso_at).getTime()) / 1000;
+    const ultimo = isEje ? ejeWallet.ultimo_uso_at : sub.ultimo_uso_at;
+    if (ultimo) {
+      const elapsed = (Date.now() - new Date(ultimo).getTime()) / 1000;
       if (elapsed < COOLDOWN_SECS) {
         const wait = Math.ceil(COOLDOWN_SECS - elapsed);
         throw new Error(`QR usado hace ${Math.floor(elapsed)}s. Espera ${wait}s (anti-fraude)`);
       }
     }
 
-    // Saldo
-    if (Number(sub.saldo_mxn) < monto) {
-      throw new Error(`Saldo insuficiente. Disponible $${Number(sub.saldo_mxn).toFixed(2)}, requerido $${monto.toFixed(2)}`);
+    const saldoActual = isEje ? Number(ejeWallet.saldo_mxn) : Number(sub.saldo_mxn);
+    if (saldoActual < monto) {
+      throw new Error(`Saldo insuficiente. Disponible $${saldoActual.toFixed(2)}, requerido $${monto.toFixed(2)}`);
     }
 
-    const nuevoSaldo = Number(sub.saldo_mxn) - monto;
+    const nuevoSaldo = saldoActual - monto;
     const nowIso = new Date().toISOString();
+    const titularId = isEje ? ejeWallet.user_id : sub.titular_user_id;
+    const walletId = isEje ? ejeWallet.id : sub.wallet_id;
+    const aliasLog = isEje ? `Cuenta Eje (${ejeWallet.folio_corto})` : `${sub.alias} (${sub.folio_corto})`;
 
-    await admin.from("sub_qr_saldo").update({
-      saldo_mxn: nuevoSaldo,
-      total_gastado: Number(sub.total_gastado) + monto,
-      ultimo_uso_at: nowIso,
-      ultima_ruta_producto_id: productoId,
-    }).eq("id", sub.id);
+    if (isEje) {
+      await admin.from("wallets_qr").update({
+        saldo_mxn: nuevoSaldo,
+        total_gastado: Number(ejeWallet.total_gastado) + monto,
+        ultimo_uso_at: nowIso,
+      }).eq("id", ejeWallet.id);
+    } else {
+      await admin.from("sub_qr_saldo").update({
+        saldo_mxn: nuevoSaldo,
+        total_gastado: Number(sub.total_gastado) + monto,
+        ultimo_uso_at: nowIso,
+        ultima_ruta_producto_id: productoId,
+      }).eq("id", sub.id);
+      const { data: w } = await admin.from("wallets_qr").select("total_gastado").eq("id", sub.wallet_id).single();
+      if (w) {
+        await admin.from("wallets_qr").update({
+          total_gastado: Number(w.total_gastado) + monto,
+        }).eq("id", sub.wallet_id);
+      }
+    }
 
-    // Movimiento
     await admin.from("movimientos_wallet").insert({
-      wallet_id: sub.wallet_id,
-      titular_user_id: sub.titular_user_id,
-      sub_qr_id: sub.id,
+      wallet_id: walletId,
+      titular_user_id: titularId,
+      sub_qr_id: isEje ? null : sub.id,
       tipo: "cobro_viaje",
       monto_mxn: monto,
-      saldo_sub_qr_despues: nuevoSaldo,
+      saldo_sub_qr_despues: isEje ? null : nuevoSaldo,
+      saldo_wallet_despues: isEje ? nuevoSaldo : null,
       producto_id: productoId,
       unidad_id: unidadId,
-      descripcion: `Cobro ${sub.alias}: $${monto.toFixed(2)} (saldo restante $${nuevoSaldo.toFixed(2)})`,
-      metadata: { fuente },
+      descripcion: `Cobro ${aliasLog}: $${monto.toFixed(2)} (saldo $${nuevoSaldo.toFixed(2)})`,
+      metadata: { fuente, qr_tipo: isEje ? "eje" : "sub" },
     });
 
-    // Actualiza wallet.total_gastado
-    const { data: w } = await admin.from("wallets_qr").select("total_gastado").eq("id", sub.wallet_id).single();
-    if (w) {
-      await admin.from("wallets_qr").update({
-        total_gastado: Number(w.total_gastado) + monto,
-      }).eq("id", sub.wallet_id);
-    }
-
-    // Notificar al titular (inbox)
     try {
       let rutaNombre = "";
       if (productoId) {
@@ -108,8 +136,8 @@ serve(async (req) => {
       }
       await admin.from("messages").insert({
         sender_id: SYSTEM_USER,
-        receiver_id: sub.titular_user_id,
-        message: `💳 QR "${sub.alias}" (${sub.folio_corto}) pagó $${monto.toFixed(2)}${rutaNombre}. Saldo restante: $${nuevoSaldo.toFixed(2)}`,
+        receiver_id: titularId,
+        message: `💳 ${aliasLog} pagó $${monto.toFixed(2)}${rutaNombre}. Saldo restante: $${nuevoSaldo.toFixed(2)}`,
         is_panic: false,
         is_read: false,
       });
