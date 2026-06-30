@@ -62,6 +62,7 @@ export default function WalletFamiliar() {
 
   const [cancelarTo, setCancelarTo] = useState<SubQR | null>(null);
   const [verQR, setVerQR] = useState<SubQR | null>(null);
+  const [verEjeQR, setVerEjeQR] = useState(false);
   const [working, setWorking] = useState(false);
 
   useEffect(() => {
