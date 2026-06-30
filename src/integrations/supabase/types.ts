@@ -4955,31 +4955,40 @@ export type Database = {
       wallets_qr: {
         Row: {
           created_at: string
+          folio_corto: string
           id: string
           saldo_mxn: number
+          token: string
           total_gastado: number
           total_recargado: number
           ultima_recarga_at: string | null
+          ultimo_uso_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          folio_corto: string
           id?: string
           saldo_mxn?: number
+          token?: string
           total_gastado?: number
           total_recargado?: number
           ultima_recarga_at?: string | null
+          ultimo_uso_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          folio_corto?: string
           id?: string
           saldo_mxn?: number
+          token?: string
           total_gastado?: number
           total_recargado?: number
           ultima_recarga_at?: string | null
+          ultimo_uso_at?: string | null
           updated_at?: string
           user_id?: string
         }
