@@ -256,14 +256,22 @@ export default function WalletFamiliar() {
             <p className="text-xs text-muted-foreground mt-1">
               Recargado: ${Number(wallet?.total_recargado || 0).toFixed(2)} · Gastado: ${Number(wallet?.total_gastado || 0).toFixed(2)}
             </p>
-            <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="grid grid-cols-3 gap-2 mt-4">
               <Button onClick={() => setShowRecargar(true)}>
                 <ArrowDownToLine className="h-4 w-4 mr-1" /> Recargar
+              </Button>
+              <Button variant="secondary" onClick={() => setVerEjeQR(true)}>
+                Mi QR
               </Button>
               <Button variant="outline" onClick={() => setShowCrear(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Crear QR
               </Button>
             </div>
+            {wallet?.folio_corto && (
+              <p className="text-[11px] font-mono text-center text-muted-foreground mt-2">
+                Tu QR eje: <strong>{wallet.folio_corto}</strong> — cobra de este saldo directo
+              </p>
+            )}
           </CardContent>
         </Card>
 
