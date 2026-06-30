@@ -35,6 +35,8 @@ type Wallet = {
   saldo_mxn: number;
   total_recargado: number;
   total_gastado: number;
+  token: string;
+  folio_corto: string;
 };
 
 const MIN_RECARGA = 200;
