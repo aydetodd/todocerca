@@ -147,8 +147,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       ok: true,
-      alias: sub.alias,
-      folio_corto: sub.folio_corto,
+      tipo: isEje ? "eje" : "sub",
+      alias: isEje ? "Cuenta Eje" : sub.alias,
+      folio_corto: isEje ? ejeWallet.folio_corto : sub.folio_corto,
       cobrado: monto,
       saldo_restante: nuevoSaldo,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
