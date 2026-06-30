@@ -447,6 +447,50 @@ export default function WalletFamiliar() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog Ver QR EJE (cuenta titular) */}
+      <Dialog open={verEjeQR} onOpenChange={setVerEjeQR}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Mi QR — Cuenta Eje</DialogTitle></DialogHeader>
+          {wallet && (
+            <div className="text-center space-y-3">
+              <div className="bg-white p-4 rounded-xl inline-block">
+                <QRCodeSVG id="qr-eje-svg" value={wallet.token} size={240} level="H" includeMargin />
+              </div>
+              <p className="font-mono text-lg">{wallet.folio_corto}</p>
+              <p className="text-2xl font-bold text-primary">${saldo.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">
+                Este QR cobra <strong>directo de tu saldo principal</strong>. Úsalo tú o imprímelo para ti.
+              </p>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  const win = window.open("", "_blank", "width=600,height=800");
+                  if (!win) { toast.error("Permite ventanas emergentes"); return; }
+                  const svg = document.getElementById("qr-eje-svg");
+                  const svgStr = svg ? new XMLSerializer().serializeToString(svg) : "";
+                  win.document.write(`<!DOCTYPE html><html><head><title>QR Eje</title>
+                    <style>body{font-family:system-ui;text-align:center;padding:40px;}
+                    .card{border:3px solid #000;border-radius:16px;padding:32px;max-width:420px;margin:0 auto;}
+                    .folio{font-size:28px;font-weight:700;letter-spacing:2px;font-family:monospace;margin:16px 0;}
+                    svg{width:280px;height:280px;}</style></head><body>
+                    <div class="card">
+                      <h1>TodoCerca · QR Eje</h1>
+                      ${svgStr}
+                      <div class="folio">${wallet.folio_corto}</div>
+                      <div>Paga directo del saldo principal</div>
+                    </div>
+                    <script>window.onload=()=>window.print();</script></body></html>`);
+                  win.document.close();
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" /> Imprimir para enmicar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+
       {/* Confirm cancelar */}
       <AlertDialog open={!!cancelarTo} onOpenChange={(o) => !o && setCancelarTo(null)}>
         <AlertDialogContent>
