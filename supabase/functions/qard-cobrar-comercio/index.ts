@@ -141,39 +141,10 @@ serve(async (req) => {
       metadata: { sub_index: sub.sub_index, alias: sub.alias },
     });
 
-    // 7) Acumular en liquidaciones_diarias del comercio (Stripe Connect ya existente)
-    // Idempotente por día
-    const hoy = new Date().toISOString().slice(0, 10);
-    try {
-      const { data: liq } = await admin
-        .from("liquidaciones_diarias")
-        .select("id, monto_bruto, comision_plataforma, monto_neto, cantidad_transacciones")
-        .eq("proveedor_user_id", comercio.id)
-        .eq("fecha", hoy)
-        .maybeSingle();
+    // 7) La liquidación al CLABE del comercio se calcula por lote diario a partir
+    //    de qard_movimientos.neto_comercio_mxn (job separado — Fase 1 solo acumula).
 
-      if (liq) {
-        await admin.from("liquidaciones_diarias").update({
-          monto_bruto: Number(liq.monto_bruto) + monto,
-          comision_plataforma: Number(liq.comision_plataforma) + comision,
-          monto_neto: Number(liq.monto_neto) + neto,
-          cantidad_transacciones: Number(liq.cantidad_transacciones || 0) + 1,
-        }).eq("id", liq.id);
-      } else {
-        await admin.from("liquidaciones_diarias").insert({
-          proveedor_user_id: comercio.id,
-          fecha: hoy,
-          monto_bruto: monto,
-          comision_plataforma: comision,
-          monto_neto: neto,
-          cantidad_transacciones: 1,
-          estado: "pendiente",
-          origen: "qard",
-        });
-      }
-    } catch (e) {
-      console.warn("[QARD-COBRAR] No se pudo actualizar liquidación:", e);
-    }
+
 
     // 8) Notificar al titular vía bandeja de sistema
     try {
