@@ -2898,6 +2898,8 @@ export type Database = {
           phone_verified: boolean | null
           postal_code: string | null
           provider_type: Database["public"]["Enums"]["provider_type"] | null
+          qard_nivel2_id: string | null
+          qard_number: string | null
           recovery_email: string | null
           role: Database["public"]["Enums"]["user_role"]
           route_name: string | null
@@ -2929,6 +2931,8 @@ export type Database = {
           phone_verified?: boolean | null
           postal_code?: string | null
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
+          qard_nivel2_id?: string | null
+          qard_number?: string | null
           recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
@@ -2960,6 +2964,8 @@ export type Database = {
           phone_verified?: boolean | null
           postal_code?: string | null
           provider_type?: Database["public"]["Enums"]["provider_type"] | null
+          qard_nivel2_id?: string | null
+          qard_number?: string | null
           recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
@@ -2971,7 +2977,15 @@ export type Database = {
           verification_code?: string | null
           verified?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_qard_nivel2_id_fkey"
+            columns: ["qard_nivel2_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisiones_nivel2"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proveedor_locations: {
         Row: {
@@ -3042,6 +3056,176 @@ export type Database = {
           telefono?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      qard_movimientos: {
+        Row: {
+          comercio_nombre: string | null
+          comercio_user_id: string | null
+          comision_mxn: number | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          metadata: Json | null
+          monto_mxn: number
+          neto_comercio_mxn: number | null
+          saldo_despues: number
+          sub_qr_id: string | null
+          tipo: string
+          titular_user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          comercio_nombre?: string | null
+          comercio_user_id?: string | null
+          comision_mxn?: number | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          monto_mxn: number
+          neto_comercio_mxn?: number | null
+          saldo_despues: number
+          sub_qr_id?: string | null
+          tipo: string
+          titular_user_id: string
+          wallet_id: string
+        }
+        Update: {
+          comercio_nombre?: string | null
+          comercio_user_id?: string | null
+          comision_mxn?: number | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          monto_mxn?: number
+          neto_comercio_mxn?: number | null
+          saldo_despues?: number
+          sub_qr_id?: string | null
+          tipo?: string
+          titular_user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_movimientos_sub_qr_id_fkey"
+            columns: ["sub_qr_id"]
+            isOneToOne: false
+            referencedRelation: "qard_sub_qr"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qard_movimientos_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "qard_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qard_secuencia_municipio: {
+        Row: {
+          ee: string
+          mmm: string
+          next_id: number
+          pp: string
+        }
+        Insert: {
+          ee: string
+          mmm: string
+          next_id?: number
+          pp: string
+        }
+        Update: {
+          ee?: string
+          mmm?: string
+          next_id?: number
+          pp?: string
+        }
+        Relationships: []
+      }
+      qard_sub_qr: {
+        Row: {
+          alias: string
+          created_at: string
+          estado: string
+          horario_fin: string | null
+          horario_inicio: string | null
+          id: string
+          limite_por_transaccion: number | null
+          qard_number: string
+          sub_index: number
+          titular_user_id: string
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          alias?: string
+          created_at?: string
+          estado?: string
+          horario_fin?: string | null
+          horario_inicio?: string | null
+          id?: string
+          limite_por_transaccion?: number | null
+          qard_number: string
+          sub_index: number
+          titular_user_id: string
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          estado?: string
+          horario_fin?: string | null
+          horario_inicio?: string | null
+          id?: string
+          limite_por_transaccion?: number | null
+          qard_number?: string
+          sub_index?: number
+          titular_user_id?: string
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_sub_qr_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "qard_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qard_wallets: {
+        Row: {
+          created_at: string
+          estado: string
+          id: string
+          saldo_mxn: number
+          telefono_lock: string | null
+          titular_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          id?: string
+          saldo_mxn?: number
+          telefono_lock?: string | null
+          titular_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          id?: string
+          saldo_mxn?: number
+          telefono_lock?: string | null
+          titular_user_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5485,6 +5669,16 @@ export type Database = {
       }
       normalize_phone: { Args: { phone: string }; Returns: string }
       normalize_route_name: { Args: { _nombre: string }; Returns: string }
+      qard_bucket_for_user: {
+        Args: { _user_id: string }
+        Returns: {
+          ee: string
+          mmm: string
+          pp: string
+        }[]
+      }
+      qard_ensure_number: { Args: { _user_id: string }; Returns: string }
+      qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
