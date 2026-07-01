@@ -51,7 +51,38 @@ serve(async (req) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // ============ WALLET FAMILIAR — RECARGA ============
+      // ============ QaRd — RECARGA ============
+      if (session.metadata?.type === "qard_recarga") {
+        const userId = session.metadata.user_id;
+        const montoMxn = parseFloat(session.metadata.monto_mxn || "0");
+        if (!userId || montoMxn <= 0) throw new Error("QaRd recarga: metadata inválida");
+
+        await supabaseAdmin.rpc("qard_ensure_wallet", { _user_id: userId });
+
+        const { data: w } = await supabaseAdmin
+          .from("qard_wallets").select("id, saldo_mxn").eq("titular_user_id", userId).single();
+        const nuevoSaldo = Number(w!.saldo_mxn) + montoMxn;
+
+        await supabaseAdmin.from("qard_wallets")
+          .update({ saldo_mxn: nuevoSaldo }).eq("id", w!.id);
+
+        await supabaseAdmin.from("qard_movimientos").insert({
+          wallet_id: w!.id,
+          titular_user_id: userId,
+          tipo: "recarga",
+          monto_mxn: montoMxn,
+          saldo_despues: nuevoSaldo,
+          descripcion: `Recarga vía Stripe $${montoMxn.toFixed(2)} MXN`,
+          metadata: { stripe_payment_id: session.payment_intent },
+        });
+
+        console.log(`[WEBHOOK-TICKETS] QaRd recarga +$${montoMxn} user ${userId}, saldo ${nuevoSaldo}`);
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // ============ WALLET FAMILIAR — RECARGA (legacy, mantener por compatibilidad) ============
       if (session.metadata?.type === "wallet_recarga") {
         const userId = session.metadata.user_id;
         const montoMxn = parseFloat(session.metadata.monto_mxn || "0");
