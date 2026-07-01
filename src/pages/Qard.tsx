@@ -17,7 +17,7 @@ type SubQR = {
   limite_por_transaccion: number | null;
   estado: "activa" | "cancelada";
 };
-type Wallet = { id: string; saldo_mxn: number; estado: string };
+type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
@@ -32,7 +32,7 @@ export default function Qard() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const [loading, setLoading] = useState(true);
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [subs, setSubs] = useState<SubQR[]>([]);
   const [mov, setMov] = useState<Movimiento[]>([]);
   const [qardNumber, setQardNumber] = useState<string>("");
