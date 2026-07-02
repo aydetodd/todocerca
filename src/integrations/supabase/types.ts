@@ -2522,6 +2522,63 @@ export type Database = {
           },
         ]
       }
+      mx_inegi_estados: {
+        Row: {
+          clave: string | null
+          cve_estado: string
+          nombre: string
+        }
+        Insert: {
+          clave?: string | null
+          cve_estado: string
+          nombre: string
+        }
+        Update: {
+          clave?: string | null
+          cve_estado?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
+      mx_inegi_municipios: {
+        Row: {
+          cve_estado: string
+          cve_municipio: string
+          nombre: string
+        }
+        Insert: {
+          cve_estado: string
+          cve_municipio: string
+          nombre: string
+        }
+        Update: {
+          cve_estado?: string
+          cve_municipio?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
+      mx_ladas: {
+        Row: {
+          cve_estado: string
+          cve_municipio: string
+          descripcion: string | null
+          lada: string
+        }
+        Insert: {
+          cve_estado: string
+          cve_municipio?: string
+          descripcion?: string | null
+          lada: string
+        }
+        Update: {
+          cve_estado?: string
+          cve_municipio?: string
+          descripcion?: string | null
+          lada?: string
+        }
+        Relationships: []
+      }
       notas_contrato: {
         Row: {
           autor_id: string
