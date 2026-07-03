@@ -83,15 +83,15 @@ export default function MainHome() {
 
         <Card 
           className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/wallet/qr-boletos')}
+          onClick={() => navigate('/qard')}
         >
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Ticket className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">QR Boleto Digital</h3>
-              <p className="text-sm text-muted-foreground">Compra y usa boletos de transporte</p>
+              <h3 className="font-semibold text-lg">QaRd saldo digital</h3>
+              <p className="text-sm text-muted-foreground">Tu tarjeta universal recargable de 16 dígitos</p>
             </div>
           </CardContent>
         </Card>
