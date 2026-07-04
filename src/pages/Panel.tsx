@@ -56,12 +56,7 @@ export default function Panel() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
 
-  // Format user ID with 6 digits and role suffix
-  const formatUserId = (consecutiveNumber: number, role: string) => {
-    const paddedNumber = String(consecutiveNumber).padStart(6, '0');
-    const suffix = role === 'proveedor' ? 'p' : 'c';
-    return `${paddedNumber}${suffix}`;
-  };
+  // ID Usuario = número QaRd de 16 dígitos
 
   useEffect(() => {
     if (authLoading) return;
@@ -272,14 +267,12 @@ export default function Panel() {
             <p className="text-sm text-muted-foreground">Información de tu cuenta y estado</p>
             
             <div className="space-y-3">
-              {profile?.consecutive_number && (
-                <div>
-                  <span className="text-sm font-medium">ID Usuario:</span>
-                  <p className="text-sm font-mono font-bold text-primary">
-                    {formatUserId(profile.consecutive_number, profile.role)}
-                  </p>
-                </div>
-              )}
+              <div>
+                <span className="text-sm font-medium">ID Usuario / QaRd:</span>
+                <p className="text-sm font-mono font-bold text-primary">
+                  {formatQardNumber(profile?.qard_number, profile?.consecutive_number)}
+                </p>
+              </div>
               {user?.email && !user.email.endsWith('@todocerca.app') && (
                 <div>
                   <span className="text-sm font-medium">Email:</span>

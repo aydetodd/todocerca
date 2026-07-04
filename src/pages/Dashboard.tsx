@@ -92,12 +92,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
 
-  // Format user ID with 6 digits and role suffix
-  const formatUserId = (consecutiveNumber: number, role: string) => {
-    const paddedNumber = String(consecutiveNumber).padStart(6, "0");
-    const suffix = role === "proveedor" ? "p" : "c";
-    return `${paddedNumber}${suffix}`;
-  };
+  // ID Usuario = número QaRd de 16 dígitos
 
   useEffect(() => {
     if (authLoading) return;
@@ -496,14 +491,12 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {profile?.consecutive_number && (
-                      <div>
-                        <span className="text-sm font-medium">ID Usuario:</span>
-                        <p className="text-sm font-mono font-bold text-primary">
-                          {formatUserId(profile.consecutive_number, profile.role)}
-                        </p>
-                      </div>
-                    )}
+                    <div>
+                      <span className="text-sm font-medium">ID Usuario / QaRd:</span>
+                      <p className="text-sm font-mono font-bold text-primary">
+                        {formatQardNumber(profile?.qard_number, profile?.consecutive_number)}
+                      </p>
+                    </div>
 
                     <div>
                       <span className="text-sm font-medium">Email:</span>
