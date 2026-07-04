@@ -21,12 +21,7 @@ export default function DashboardMain() {
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
 
-  // Format user ID with 6 digits and role suffix
-  const formatUserId = (consecutiveNumber: number, role: string) => {
-    const paddedNumber = String(consecutiveNumber).padStart(6, '0');
-    const suffix = role === 'proveedor' ? 'p' : 'c';
-    return `${paddedNumber}${suffix}`;
-  };
+  // ID Usuario = número QaRd de 16 dígitos
 
   useEffect(() => {
     if (authLoading) return;

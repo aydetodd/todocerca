@@ -1,3 +1,4 @@
+import { formatQardNumber } from "@/lib/qardFormat";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,12 +25,7 @@ export default function MiPerfil() {
   const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
 
-  // Format user ID with 6 digits and role suffix
-  const formatUserId = (consecutiveNumber: number, role: string) => {
-    const paddedNumber = String(consecutiveNumber).padStart(6, '0');
-    const suffix = role === 'proveedor' ? 'p' : 'c';
-    return `${paddedNumber}${suffix}`;
-  };
+  // ID Usuario = número QaRd de 16 dígitos (igual para todos, sin p/c)
 
   useEffect(() => {
     if (authLoading) return;
@@ -248,14 +244,12 @@ export default function MiPerfil() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {profile?.consecutive_number && (
-                <div>
-                  <span className="text-sm font-medium">ID Usuario:</span>
-                  <p className="text-sm font-mono font-bold text-primary">
-                    {formatUserId(profile.consecutive_number, profile.role)}
-                  </p>
-                </div>
-              )}
+              <div>
+                <span className="text-sm font-medium">ID Usuario / QaRd:</span>
+                <p className="text-sm font-mono font-bold text-primary">
+                  {formatQardNumber(profile?.qard_number, profile?.consecutive_number)}
+                </p>
+              </div>
               <div>
                 <span className="text-sm font-medium">Nombre:</span>
                 <p className="text-sm text-muted-foreground">{profile?.nombre}</p>
