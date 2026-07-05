@@ -254,17 +254,32 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
                     )}
                   </div>
                   {maestra ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        Usa el trazado de "{maestra.nombre}"
-                      </span>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          Usa el trazado de "{maestra.nombre}"
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUnlink(p.id)}
+                          disabled={busy}
+                        >
+                          <Unlink className="h-3 w-3 mr-1" /> Desvincular
+                        </Button>
+                      </div>
+                      {maestra.tiene_cambio_pendiente && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-700 bg-amber-50">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Cambio pendiente de aprobación
+                        </Badge>
+                      )}
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleUnlink(p.id)}
-                        disabled={busy}
+                        variant="outline"
+                        className="w-full h-8 text-xs"
+                        onClick={() => setSolicitudTarget(maestra)}
                       >
-                        <Unlink className="h-3 w-3 mr-1" /> Desvincular
+                        <Edit3 className="h-3 w-3 mr-1" /> Solicitar cambio a esta ruta
                       </Button>
                     </div>
                   ) : (
