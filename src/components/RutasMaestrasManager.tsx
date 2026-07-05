@@ -21,8 +21,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle } from 'lucide-react';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+import SolicitarCambioRutaDialog from '@/components/SolicitarCambioRutaDialog';
 
 function extractEndpoints(geojson: any): { origin: { lat: number; lng: number } | null; destination: { lat: number; lng: number } | null } {
   try {
@@ -53,6 +54,7 @@ interface Maestra {
   route_destination_lat: number | null;
   route_destination_lng: number | null;
   route_geofence_radius_m: number | null;
+  tiene_cambio_pendiente?: boolean | null;
 }
 
 interface ProductoForaneo {
@@ -73,6 +75,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
   const [productos, setProductos] = useState<ProductoForaneo[]>([]);
   const [showProposal, setShowProposal] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [solicitudTarget, setSolicitudTarget] = useState<Maestra | null>(null);
 
   // Proposal form
   const [propNombre, setPropNombre] = useState('');
@@ -251,17 +254,32 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
                     )}
                   </div>
                   {maestra ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        Usa el trazado de "{maestra.nombre}"
-                      </span>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          Usa el trazado de "{maestra.nombre}"
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUnlink(p.id)}
+                          disabled={busy}
+                        >
+                          <Unlink className="h-3 w-3 mr-1" /> Desvincular
+                        </Button>
+                      </div>
+                      {maestra.tiene_cambio_pendiente && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-700 bg-amber-50">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Cambio pendiente de aprobación
+                        </Badge>
+                      )}
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleUnlink(p.id)}
-                        disabled={busy}
+                        variant="outline"
+                        className="w-full h-8 text-xs"
+                        onClick={() => setSolicitudTarget(maestra)}
                       >
-                        <Unlink className="h-3 w-3 mr-1" /> Desvincular
+                        <Edit3 className="h-3 w-3 mr-1" /> Solicitar cambio a esta ruta
                       </Button>
                     </div>
                   ) : (
@@ -406,6 +424,13 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SolicitarCambioRutaDialog
+        open={!!solicitudTarget}
+        onOpenChange={(o) => !o && setSolicitudTarget(null)}
+        maestra={solicitudTarget}
+        onSubmitted={load}
+      />
     </div>
   );
 }

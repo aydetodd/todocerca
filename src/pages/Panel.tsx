@@ -35,6 +35,7 @@ import SystemInbox from '@/components/SystemInbox';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
+import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import ProviderRegistration from '@/components/ProviderRegistration';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
@@ -409,6 +410,11 @@ export default function Panel() {
                     {/* Rutas foráneas maestras */}
                     <div className="pt-3 border-t">
                       <AdminRutasMaestras />
+                    </div>
+
+                    {/* Solicitudes de cambio a rutas maestras */}
+                    <div className="pt-3 border-t">
+                      <AdminSolicitudesCambioRutas />
                     </div>
                   </>
                 )}
