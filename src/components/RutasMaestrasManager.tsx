@@ -75,6 +75,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
   const [productos, setProductos] = useState<ProductoForaneo[]>([]);
   const [showProposal, setShowProposal] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [solicitudTarget, setSolicitudTarget] = useState<Maestra | null>(null);
 
   // Proposal form
   const [propNombre, setPropNombre] = useState('');
