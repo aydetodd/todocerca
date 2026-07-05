@@ -424,6 +424,13 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SolicitarCambioRutaDialog
+        open={!!solicitudTarget}
+        onOpenChange={(o) => !o && setSolicitudTarget(null)}
+        maestra={solicitudTarget}
+        onSubmitted={load}
+      />
     </div>
   );
 }
