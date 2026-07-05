@@ -3667,6 +3667,71 @@ export type Database = {
           },
         ]
       }
+      ruta_maestra_solicitudes: {
+        Row: {
+          admin_motivo_rechazo: string | null
+          admin_resuelto_at: string | null
+          admin_user_id: string | null
+          created_at: string
+          estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
+          id: string
+          motivo: string
+          propuesta: Json
+          ruta_maestra_id: string
+          solicitante_nombre: string | null
+          solicitante_proveedor_id: string | null
+          solicitante_qard: string | null
+          solicitante_telefono: string | null
+          solicitante_user_id: string
+          tipo_cambio: Database["public"]["Enums"]["ruta_solicitud_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          admin_motivo_rechazo?: string | null
+          admin_resuelto_at?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["ruta_solicitud_estado"]
+          id?: string
+          motivo: string
+          propuesta?: Json
+          ruta_maestra_id: string
+          solicitante_nombre?: string | null
+          solicitante_proveedor_id?: string | null
+          solicitante_qard?: string | null
+          solicitante_telefono?: string | null
+          solicitante_user_id: string
+          tipo_cambio: Database["public"]["Enums"]["ruta_solicitud_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          admin_motivo_rechazo?: string | null
+          admin_resuelto_at?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["ruta_solicitud_estado"]
+          id?: string
+          motivo?: string
+          propuesta?: Json
+          ruta_maestra_id?: string
+          solicitante_nombre?: string | null
+          solicitante_proveedor_id?: string | null
+          solicitante_qard?: string | null
+          solicitante_telefono?: string | null
+          solicitante_user_id?: string
+          tipo_cambio?: Database["public"]["Enums"]["ruta_solicitud_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ruta_maestra_solicitudes_ruta_maestra_id_fkey"
+            columns: ["ruta_maestra_id"]
+            isOneToOne: false
+            referencedRelation: "rutas_foraneas_maestras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rutas_catalogo: {
         Row: {
           ciudad: string | null
@@ -3733,6 +3798,7 @@ export type Database = {
           route_geojson: Json
           route_origin_lat: number | null
           route_origin_lng: number | null
+          tiene_cambio_pendiente: boolean
           updated_at: string
         }
         Insert: {
@@ -3752,6 +3818,7 @@ export type Database = {
           route_geojson: Json
           route_origin_lat?: number | null
           route_origin_lng?: number | null
+          tiene_cambio_pendiente?: boolean
           updated_at?: string
         }
         Update: {
@@ -3771,6 +3838,7 @@ export type Database = {
           route_geojson?: Json
           route_origin_lat?: number | null
           route_origin_lng?: number | null
+          tiene_cambio_pendiente?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -5417,11 +5485,39 @@ export type Database = {
           route_geojson: Json
           route_origin_lat: number | null
           route_origin_lng: number | null
+          tiene_cambio_pendiente: boolean
           updated_at: string
         }
         SetofOptions: {
           from: "*"
           to: "rutas_foraneas_maestras"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_approve_solicitud_cambio: {
+        Args: { _id: string }
+        Returns: {
+          admin_motivo_rechazo: string | null
+          admin_resuelto_at: string | null
+          admin_user_id: string | null
+          created_at: string
+          estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
+          id: string
+          motivo: string
+          propuesta: Json
+          ruta_maestra_id: string
+          solicitante_nombre: string | null
+          solicitante_proveedor_id: string | null
+          solicitante_qard: string | null
+          solicitante_telefono: string | null
+          solicitante_user_id: string
+          tipo_cambio: Database["public"]["Enums"]["ruta_solicitud_tipo"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ruta_maestra_solicitudes"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -5445,11 +5541,39 @@ export type Database = {
           route_geojson: Json
           route_origin_lat: number | null
           route_origin_lng: number | null
+          tiene_cambio_pendiente: boolean
           updated_at: string
         }
         SetofOptions: {
           from: "*"
           to: "rutas_foraneas_maestras"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_reject_solicitud_cambio: {
+        Args: { _id: string; _motivo: string }
+        Returns: {
+          admin_motivo_rechazo: string | null
+          admin_resuelto_at: string | null
+          admin_user_id: string | null
+          created_at: string
+          estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
+          id: string
+          motivo: string
+          propuesta: Json
+          ruta_maestra_id: string
+          solicitante_nombre: string | null
+          solicitante_proveedor_id: string | null
+          solicitante_qard: string | null
+          solicitante_telefono: string | null
+          solicitante_user_id: string
+          tipo_cambio: Database["public"]["Enums"]["ruta_solicitud_tipo"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ruta_maestra_solicitudes"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -5814,6 +5938,13 @@ export type Database = {
       citizen_report_status: "active" | "resolved" | "hidden"
       citizen_vote_type: "confirm" | "resolve"
       provider_type: "taxi" | "ruta"
+      ruta_solicitud_estado: "pending" | "approved" | "rejected"
+      ruta_solicitud_tipo:
+        | "renombrar"
+        | "trazado"
+        | "geocercas"
+        | "precio"
+        | "otro"
       subscription_status: "activa" | "vencida" | "pendiente"
       user_role: "admin" | "cliente" | "proveedor"
       user_status: "available" | "busy" | "offline"
@@ -5958,6 +6089,14 @@ export const Constants = {
       citizen_report_status: ["active", "resolved", "hidden"],
       citizen_vote_type: ["confirm", "resolve"],
       provider_type: ["taxi", "ruta"],
+      ruta_solicitud_estado: ["pending", "approved", "rejected"],
+      ruta_solicitud_tipo: [
+        "renombrar",
+        "trazado",
+        "geocercas",
+        "precio",
+        "otro",
+      ],
       subscription_status: ["activa", "vencida", "pendiente"],
       user_role: ["admin", "cliente", "proveedor"],
       user_status: ["available", "busy", "offline"],
