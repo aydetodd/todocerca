@@ -54,6 +54,7 @@ interface Maestra {
   route_destination_lat: number | null;
   route_destination_lng: number | null;
   route_geofence_radius_m: number | null;
+  tiene_cambio_pendiente?: boolean | null;
 }
 
 interface ProductoForaneo {
