@@ -21,8 +21,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle } from 'lucide-react';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
+import SolicitarCambioRutaDialog from '@/components/SolicitarCambioRutaDialog';
 
 function extractEndpoints(geojson: any): { origin: { lat: number; lng: number } | null; destination: { lat: number; lng: number } | null } {
   try {
