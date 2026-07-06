@@ -111,7 +111,7 @@ async function drawCard(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(20);
-  doc.text("QaRd", backCenterX, backMidY + 9, {
+  doc.text("QaRd", backCenterX, backMidY + 4.5, {
     align: "center",
     angle: 180,
   });
@@ -120,7 +120,7 @@ async function drawCard(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
   doc.setTextColor(60);
-  doc.text("Saldo Digital", backCenterX, backMidY - 1, {
+  doc.text("Saldo Digital", backCenterX, backMidY - 3.5, {
     align: "center",
     angle: 180,
   });
@@ -129,7 +129,7 @@ async function drawCard(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(110);
-  doc.text("todocerca.mx", backCenterX, backMidY - 10, {
+  doc.text("todocerca.mx", backCenterX, backMidY - 6.5, {
     align: "center",
     angle: 180,
   });
