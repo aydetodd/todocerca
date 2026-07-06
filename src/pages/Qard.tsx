@@ -41,6 +41,21 @@ export default function Qard() {
   const [monto, setMonto] = useState<string>("200");
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
+  const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+
+  const rotarCvv = async (id: string) => {
+    const custom = prompt("Escribe el nuevo CVV (3-4 dígitos) o deja vacío para uno aleatorio:");
+    if (custom === null) return;
+    const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
+      _sub_qr_id: id, _nuevo_cvv: custom.trim() || null,
+    });
+    if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
+    toast({ title: "CVV actualizado", description: `Nuevo CVV: ${data}` });
+    setCvvVisible(v => ({ ...v, [id]: true }));
+    cargar();
+  };
+
+
 
   const cargar = async () => {
     setLoading(true);
