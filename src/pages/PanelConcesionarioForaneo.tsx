@@ -116,6 +116,9 @@ export default function PanelConcesionarioForaneo() {
               <TabsTrigger value="catalogo" className="text-xs">
                 <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
               </TabsTrigger>
+              <TabsTrigger value="tarifas" className="text-xs">
+                <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
+              </TabsTrigger>
               <TabsTrigger value="gestion" className="text-xs">
                 <Settings className="h-3 w-3 mr-1" /> Unidades / Choferes / Rutas
               </TabsTrigger>
