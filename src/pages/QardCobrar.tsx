@@ -7,11 +7,16 @@ import { ArrowLeft, ScanLine, CircleDollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function QardCobrar() {
   const nav = useNavigate();
   const [monto, setMonto] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualQard, setManualQard] = useState("");
+  const [manualVenc, setManualVenc] = useState("12/99");
+  const [manualCvv, setManualCvv] = useState("");
   const [ultimo, setUltimo] = useState<any>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
