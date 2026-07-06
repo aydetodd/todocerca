@@ -44,6 +44,7 @@ serve(async (req) => {
     if (!monto || monto <= 0) {
       return jsonErr("Monto inválido", "invalido");
     }
+    console.log("[QARD-COBRAR] payload", { qard: qardNumberRaw.slice(-4), monto, manual, cvvLen: cvvInput?.length ?? 0 });
     if (manual && (!cvvInput || cvvInput.length < 3)) {
       return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
     }
@@ -63,12 +64,15 @@ serve(async (req) => {
       return jsonErr("TARJETA APAGADA por el titular", "apagada", { color: "rojo" });
     }
 
-    // Validación de CVV (obligatoria en cobros manuales)
-    if (manual) {
+    // Validación de CVV: si el cliente envía CVV o marca manual, debe coincidir SIEMPRE
+    if (manual || cvvInput) {
       if (!sub.cvv) {
         return jsonErr("Esta tarjeta no tiene CVV activo. Pide al titular que lo genere.", "cvv_no_configurado", { color: "rojo" });
       }
-      if (String(sub.cvv) !== cvvInput) {
+      const cvvGuardado = String(sub.cvv).replace(/\D/g, "").trim();
+      const cvvRecibido = String(cvvInput ?? "").replace(/\D/g, "").trim();
+      console.log("[QARD-COBRAR] cvv match?", { esperado_len: cvvGuardado.length, recibido_len: cvvRecibido.length, ok: cvvGuardado === cvvRecibido });
+      if (cvvGuardado !== cvvRecibido) {
         return jsonErr("CVV incorrecto", "cvv_invalido", { color: "rojo" });
       }
     }
