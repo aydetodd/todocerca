@@ -3216,6 +3216,7 @@ export type Database = {
           id: string
           limite_por_transaccion: number | null
           qard_number: string
+          saldo_mxn: number
           sub_index: number
           titular_user_id: string
           updated_at: string
@@ -3233,6 +3234,7 @@ export type Database = {
           id?: string
           limite_por_transaccion?: number | null
           qard_number: string
+          saldo_mxn?: number
           sub_index: number
           titular_user_id: string
           updated_at?: string
@@ -3250,6 +3252,7 @@ export type Database = {
           id?: string
           limite_por_transaccion?: number | null
           qard_number?: string
+          saldo_mxn?: number
           sub_index?: number
           titular_user_id?: string
           updated_at?: string
@@ -5891,6 +5894,17 @@ export type Database = {
       qard_sub_qr_rotar_cvv: {
         Args: { _nuevo_cvv?: string; _sub_qr_id: string }
         Returns: string
+      }
+      qard_sub_set_estado: {
+        Args: { _estado: string; _sub_qr_id: string }
+        Returns: string
+      }
+      qard_transferir_a_sub: {
+        Args: { _monto_mxn: number; _sub_qr_id: string }
+        Returns: {
+          saldo_sub: number
+          saldo_wallet: number
+        }[]
       }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
