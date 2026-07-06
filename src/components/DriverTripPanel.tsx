@@ -1008,6 +1008,11 @@ export function DriverTripPanel({
 
       {/* Diálogos de inicio de jornada eliminados: el primer viaje se crea solo. */}
 
+      {/* Escáner Cobrar QR (foráneas) */}
+      {scannerOpen && viajeActivo && (
+        <ForaneoScanner viajeId={viajeActivo.id} onClose={() => setScannerOpen(false)} />
+      )}
+
     </div>
   );
 }
