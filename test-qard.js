@@ -25,7 +25,7 @@ function dashedLine(doc, x1, y1, x2, y2, dash = 1.2, gap = 1.2) {
   }
 }
 
-async function drawCard(doc, x, y, opts, variant) {
+async function drawCard(doc, x, y, opts, offsets) {
   const { qardNumber, vencimiento } = opts;
 
   doc.setDrawColor(150);
@@ -38,9 +38,12 @@ async function drawCard(doc, x, y, opts, variant) {
   doc.setDrawColor(90);
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
 
-  // center line
-  // doc.setDrawColor(255, 0, 0);
-  // doc.line(x, y + CARD_H + CARD_H/2, x + CARD_W, y + CARD_H + CARD_H/2);
+  // debug center lines
+  doc.setDrawColor(255, 0, 0);
+  doc.setLineWidth(0.2);
+  doc.line(x, y + CARD_H + CARD_H/2, x + CARD_W, y + CARD_H + CARD_H/2);
+  doc.setDrawColor(0, 255, 0);
+  doc.line(x + CARD_W/2, y + CARD_H, x + CARD_W/2, y + FOLD_H);
 
   const qrSizeMm = 32;
   const qrX = x + (CARD_W - qrSizeMm) / 2;
@@ -75,16 +78,6 @@ async function drawCard(doc, x, y, opts, variant) {
   const backCenterX = x + CARD_W / 2;
   const backMidY = y + CARD_H + CARD_H / 2;
 
-  const variants = {
-    4: { q: 6, s: -2, t: -8 },
-    5: { q: 5, s: -3, t: -7 },
-    6: { q: 4.5, s: -3.5, t: -6.5 },
-    7: { q: 4, s: -4, t: -6 },
-    8: { q: 3.5, s: -4.5, t: -5.5 },
-    9: { q: 3, s: -5, t: -5 },
-  };
-  const offsets = variants[variant];
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(20);
@@ -108,34 +101,24 @@ async function drawCard(doc, x, y, opts, variant) {
     align: "center",
     angle: 180,
   });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.setTextColor(150);
-  doc.text(`v${variant}: q=${offsets.q} s=${offsets.s} t=${offsets.t}`, x + 2, y + FOLD_H - 2);
 }
 
 async function main() {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  const pageW = 210;
-  const pageH = 297;
 
-  const cols = 2;
-  const rows = 3;
-  const gapX = 8;
-  const gapY = 6;
-  const totalW = cols * CARD_W + (cols - 1) * gapX;
-  const totalH = rows * FOLD_H + (rows - 1) * gapY;
-  const originX = (pageW - totalW) / 2;
-  const originY = (pageH - totalH) / 2;
+  // draw 3 cards: v6, v7, v8
+  const variants = [
+    { q: 4.5, s: -3.5, t: -6.5 },
+    { q: 4, s: -4, t: -6 },
+    { q: 3.5, s: -4.5, t: -5.5 },
+  ];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const variant = [4,5,6,7,8,9][r * cols + c];
-      const x = originX + c * (CARD_W + gapX);
-      const y = originY + r * (FOLD_H + gapY);
-      await drawCard(doc, x, y, { qardNumber: "5226030000000104", vencimiento: "12/99" }, variant);
-    }
+  for (let i = 0; i < 3; i++) {
+    await drawCard(doc, 15, 20 + i * (FOLD_H + 15), { qardNumber: "5226030000000104", vencimiento: "12/99" }, variants[i]);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`v${i}: q=${variants[i].q} s=${variants[i].s} t=${variants[i].t}`, 15, 20 + i * (FOLD_H + 15) - 2);
   }
 
   doc.save("test.pdf");
