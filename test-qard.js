@@ -25,7 +25,7 @@ function dashedLine(doc, x1, y1, x2, y2, dash = 1.2, gap = 1.2) {
   }
 }
 
-async function drawCard(doc, x, y, opts, offsets) {
+async function drawCard(doc, x, y, opts) {
   const { qardNumber, vencimiento } = opts;
 
   doc.setDrawColor(150);
@@ -37,13 +37,6 @@ async function drawCard(doc, x, y, opts, offsets) {
 
   doc.setDrawColor(90);
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
-
-  // debug center lines
-  doc.setDrawColor(255, 0, 0);
-  doc.setLineWidth(0.2);
-  doc.line(x, y + CARD_H + CARD_H/2, x + CARD_W, y + CARD_H + CARD_H/2);
-  doc.setDrawColor(0, 255, 0);
-  doc.line(x + CARD_W/2, y + CARD_H, x + CARD_W/2, y + FOLD_H);
 
   const qrSizeMm = 32;
   const qrX = x + (CARD_W - qrSizeMm) / 2;
@@ -76,12 +69,14 @@ async function drawCard(doc, x, y, opts, offsets) {
   });
 
   const backCenterX = x + CARD_W / 2;
-  const backMidY = y + CARD_H + CARD_H / 2;
+  const backTop = y + CARD_H;
+  const backBottom = y + FOLD_H;
+  const backMidY = (backTop + backBottom) / 2;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(20);
-  doc.text("QaRd", backCenterX, backMidY + offsets.q, {
+  doc.text("QaRd", backCenterX, backMidY + 4.5, {
     align: "center",
     angle: 180,
   });
@@ -89,7 +84,7 @@ async function drawCard(doc, x, y, opts, offsets) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
   doc.setTextColor(60);
-  doc.text("Saldo Digital", backCenterX, backMidY + offsets.s, {
+  doc.text("Saldo Digital", backCenterX, backMidY - 3.5, {
     align: "center",
     angle: 180,
   });
@@ -97,7 +92,7 @@ async function drawCard(doc, x, y, opts, offsets) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(110);
-  doc.text("todocerca.mx", backCenterX, backMidY + offsets.t, {
+  doc.text("todocerca.mx", backCenterX, backMidY - 6.5, {
     align: "center",
     angle: 180,
   });
@@ -105,21 +100,45 @@ async function drawCard(doc, x, y, opts, offsets) {
 
 async function main() {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pageW = 210;
+  const pageH = 297;
 
-  // draw 3 cards: v6, v7, v8
-  const variants = [
-    { q: 4.5, s: -3.5, t: -6.5 },
-    { q: 4, s: -4, t: -6 },
-    { q: 3.5, s: -4.5, t: -5.5 },
-  ];
+  const cols = 2;
+  const rows = 2;
+  const gapX = 8;
+  const gapY = 10;
+  const totalW = cols * CARD_W + (cols - 1) * gapX;
+  const totalH = rows * FOLD_H + (rows - 1) * gapY;
+  const originX = (pageW - totalW) / 2;
+  const originY = (pageH - totalH) / 2;
 
-  for (let i = 0; i < 3; i++) {
-    await drawCard(doc, 15, 20 + i * (FOLD_H + 15), { qardNumber: "5226030000000104", vencimiento: "12/99" }, variants[i]);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text(`v${i}: q=${variants[i].q} s=${variants[i].s} t=${variants[i].t}`, 15, 20 + i * (FOLD_H + 15) - 2);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(40);
+  doc.text(
+    "Tarjetas QaRd · Juan · recortar, doblar y enmicar",
+    pageW / 2,
+    originY - 6,
+    { align: "center" }
+  );
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = originX + c * (CARD_W + gapX);
+      const y = originY + r * (FOLD_H + gapY);
+      await drawCard(doc, x, y, { qardNumber: "5226030000000104", vencimiento: "12/99" });
+    }
   }
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.text(
+    "Imprime en papel blanco tamaño carta/A4 al 100% (sin ajuste). Recorta por el borde punteado y dobla por la línea central.",
+    pageW / 2,
+    pageH - 10,
+    { align: "center" }
+  );
 
   doc.save("test.pdf");
 }
