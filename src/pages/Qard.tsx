@@ -147,24 +147,53 @@ export default function Qard() {
       </div>
 
       {/* Tarjeta titular */}
-      <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
-        <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-          <CreditCard className="h-4 w-4" /> Tarjeta principal (00)
-        </div>
-        <div className="font-mono text-xl tracking-wider mb-3">{formatNumero(qardNumber)}</div>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Saldo</div>
-            <div className={`text-3xl font-bold ${saldoColor}`}>${saldo.toFixed(2)}</div>
-            {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
-          </div>
-          {qardNumber && (
-            <div className="bg-white p-2 rounded-lg">
-              <QRCodeSVG value={qardNumber} size={96} level="H" />
+      {(() => {
+        const titular = subs.find(s => s.sub_index === 0);
+        return (
+          <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
+            <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+              <CreditCard className="h-4 w-4" /> Tarjeta principal (00)
             </div>
-          )}
-        </div>
-      </Card>
+            <div className="font-mono text-xl tracking-wider mb-3">{formatNumero(qardNumber)}</div>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Saldo</div>
+                <div className={`text-3xl font-bold ${saldoColor}`}>${saldo.toFixed(2)}</div>
+                {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
+                <div className="flex gap-4 mt-2 text-xs">
+                  <div>
+                    <div className="text-muted-foreground">Vence</div>
+                    <div className="font-mono font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">CVV</div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-semibold">
+                        {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
+                      </span>
+                      {titular && (
+                        <>
+                          <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
+                            {cvvVisible[titular.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          </button>
+                          <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
+                            <RotateCw className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {qardNumber && (
+                <div className="bg-white p-2 rounded-lg">
+                  <QRCodeSVG value={qardNumber} size={96} level="H" />
+                </div>
+              )}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Recargar */}
       <Card className="p-4">
