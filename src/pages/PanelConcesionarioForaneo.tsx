@@ -4,13 +4,14 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Loader2, Truck, Route, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, Truck, Route, Settings, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ReporteViajes } from '@/components/ReporteViajes';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 import RutasMaestrasManager from '@/components/RutasMaestrasManager';
+import ForaneoTarifasManager from '@/components/ForaneoTarifasManager';
 
 export default function PanelConcesionarioForaneo() {
   const { user, loading: authLoading } = useAuth();
@@ -115,6 +116,9 @@ export default function PanelConcesionarioForaneo() {
               <TabsTrigger value="catalogo" className="text-xs">
                 <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
               </TabsTrigger>
+              <TabsTrigger value="tarifas" className="text-xs">
+                <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
+              </TabsTrigger>
               <TabsTrigger value="gestion" className="text-xs">
                 <Settings className="h-3 w-3 mr-1" /> Unidades / Choferes / Rutas
               </TabsTrigger>
@@ -141,7 +145,9 @@ export default function PanelConcesionarioForaneo() {
             <RutasMaestrasManager proveedorId={proveedor.id} />
           </TabsContent>
 
-
+          <TabsContent value="tarifas" className="space-y-3 mt-4">
+            <ForaneoTarifasManager proveedorId={proveedor.id} />
+          </TabsContent>
 
           <TabsContent value="gestion" className="space-y-3 mt-4">
             <PrivateRouteManagement
