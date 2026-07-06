@@ -101,7 +101,7 @@ export default function QardCobrar() {
     if (!/^\d{3,4}$/.test(manualCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
     const m = Number(monto);
     setManualOpen(false);
-    await procesarCobro(digits, m);
+    await procesarCobro(digits, m, { cvv: manualCvv, manual: true });
   };
 
   return (
