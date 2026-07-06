@@ -61,6 +61,7 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: "payment",
+      allow_promotion_codes: true,
       success_url: `${req.headers.get("origin")}/qard?recarga=success&monto=${monto}`,
       cancel_url: `${req.headers.get("origin")}/qard?recarga=cancelled`,
       metadata: {
