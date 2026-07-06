@@ -253,12 +253,34 @@ export default function Qard() {
         </div>
         <div className="space-y-2">
           {subs.filter(s => s.sub_index > 0).map(s => (
-            <div key={s.id} className="flex items-center gap-3 border rounded p-2">
+            <div key={s.id} className={`flex items-center gap-3 border rounded p-2 ${s.estado === "apagada" ? "opacity-60 bg-muted/40" : ""}`}>
               <div className="bg-white p-1 rounded"><QRCodeSVG value={s.qard_number} size={56} /></div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
+                  {s.estado === "apagada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">APAGADA</span>}
+                  {s.estado === "cancelada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-200 text-red-800 font-semibold">CANCELADA</span>}
+                </div>
                 <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
-                <div className="flex gap-3 text-[11px] mt-0.5">
+                <div className="flex items-center gap-3 mt-1">
+                  <div className="text-sm">
+                    <span className="text-muted-foreground text-[11px]">Saldo</span>{" "}
+                    <b className={Number(s.saldo_mxn) > 0 ? "text-green-700" : "text-muted-foreground"}>
+                      ${Number(s.saldo_mxn ?? 0).toFixed(2)}
+                    </b>
+                  </div>
+                  {s.estado !== "cancelada" && (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => transferirSub(s, 1)} title="Asignar saldo">
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => transferirSub(s, -1)} title="Devolver saldo al titular" disabled={Number(s.saldo_mxn ?? 0) <= 0}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 text-[11px] mt-1">
                   <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
                   <span className="flex items-center gap-1">
                     CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
@@ -268,8 +290,7 @@ export default function Qard() {
                     <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
                   </span>
                 </div>
-                {s.limite_por_transaccion && <div className="text-xs">Límite: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
-                {s.estado === "cancelada" && <div className="text-xs text-red-600">CANCELADO</div>}
+                {s.limite_por_transaccion && <div className="text-[11px] mt-0.5">Máx por cobro: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
               </div>
               <div className="flex flex-col gap-1">
                 <Button
@@ -277,17 +298,23 @@ export default function Qard() {
                   variant="ghost"
                   title="Imprimir tarjetas (PDF)"
                   onClick={() =>
-                    generarPdfTarjetasQard(
-                      s.qard_number,
-                      s.fecha_vencimiento ?? "12/99",
-                      s.alias
-                    )
+                    generarPdfTarjetasQard(s.qard_number, s.fecha_vencimiento ?? "12/99", s.alias)
                   }
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
-                {s.estado === "activa" && (
-                  <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)}>
+                {s.estado !== "cancelada" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    title={s.estado === "activa" ? "Apagar" : "Encender"}
+                    onClick={() => toggleSub(s)}
+                  >
+                    <Power className={`h-4 w-4 ${s.estado === "activa" ? "text-green-600" : "text-red-600"}`} />
+                  </Button>
+                )}
+                {s.estado !== "cancelada" && (
+                  <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)} title="Cancelar definitivamente">
                     <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 )}
