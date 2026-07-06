@@ -303,7 +303,13 @@ export default function Qard() {
                 </div>
                 {familiares.filter(s => s.estado === filtroGrupo).map(s => (
             <div key={s.id} className={`flex items-center gap-3 border rounded p-2 ${s.estado === "apagada" ? "opacity-60 bg-muted/40" : ""}`}>
-              <div className="bg-white p-1 rounded"><QRCodeSVG value={s.qard_number} size={56} /></div>
+              <button
+                className="bg-white p-1 rounded cursor-pointer active:scale-95 transition"
+                onClick={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })}
+                title="Toca para agrandar y pagar"
+              >
+                <QRCodeSVG value={s.qard_number} size={56} />
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
