@@ -220,6 +220,16 @@ export default function Qard() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
                 <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
+                <div className="flex gap-3 text-[11px] mt-0.5">
+                  <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
+                  <span className="flex items-center gap-1">
+                    CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
+                    <button onClick={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}>
+                      {cvvVisible[s.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </button>
+                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
+                  </span>
+                </div>
                 {s.limite_por_transaccion && <div className="text-xs">Límite: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
                 {s.estado === "cancelada" && <div className="text-xs text-red-600">CANCELADO</div>}
               </div>
