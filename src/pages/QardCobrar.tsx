@@ -7,11 +7,16 @@ import { ArrowLeft, ScanLine, CircleDollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function QardCobrar() {
   const nav = useNavigate();
   const [monto, setMonto] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualQard, setManualQard] = useState("");
+  const [manualVenc, setManualVenc] = useState("12/99");
+  const [manualCvv, setManualCvv] = useState("");
   const [ultimo, setUltimo] = useState<any>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
@@ -69,13 +74,34 @@ export default function QardCobrar() {
     }
   };
 
-  const cobrarManual = async () => {
-    const numero = prompt("Escribe los 16 dígitos del QR");
-    if (numero) {
-      const m = Number(monto);
-      if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
-      await procesarCobro(numero, m);
-    }
+  const abrirManual = () => {
+    const m = Number(monto);
+    if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
+    setManualQard("");
+    setManualVenc("12/99");
+    setManualCvv("");
+    setManualOpen(true);
+  };
+
+  const formatQardInput = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 16);
+    return d.replace(/(.{4})/g, "$1 ").trim();
+  };
+
+  const formatVencInput = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 4);
+    if (d.length <= 2) return d;
+    return `${d.slice(0, 2)}/${d.slice(2)}`;
+  };
+
+  const confirmarManual = async () => {
+    const digits = manualQard.replace(/\D/g, "");
+    if (digits.length !== 16) return toast({ title: "El QR debe tener 16 dígitos", variant: "destructive" });
+    if (manualVenc !== "12/99") return toast({ title: "Vencimiento inválido", description: "Todas las QaRd vencen 12/99", variant: "destructive" });
+    if (!/^\d{3,4}$/.test(manualCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    const m = Number(monto);
+    setManualOpen(false);
+    await procesarCobro(digits, m);
   };
 
   return (
@@ -100,7 +126,7 @@ export default function QardCobrar() {
         {!scanning ? (
           <div className="flex gap-2">
             <Button className="flex-1" size="lg" onClick={iniciarEscaneo}><ScanLine className="h-5 w-5 mr-2" /> ESCANEAR QR</Button>
-            <Button variant="outline" onClick={cobrarManual}>Manual</Button>
+            <Button variant="outline" onClick={abrirManual}>Manual</Button>
           </div>
         ) : (
           <div>
@@ -131,6 +157,58 @@ export default function QardCobrar() {
           )}
         </Card>
       )}
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cobro manual</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Número QaRd (16 dígitos)</label>
+              <Input
+                inputMode="numeric"
+                value={manualQard}
+                onChange={(e) => setManualQard(formatQardInput(e.target.value))}
+                placeholder="0000 0000 0000 0000"
+                className="text-lg tracking-widest"
+                maxLength={19}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Vence</label>
+                <Input
+                  inputMode="numeric"
+                  value={manualVenc}
+                  onChange={(e) => setManualVenc(formatVencInput(e.target.value))}
+                  placeholder="12/99"
+                  maxLength={5}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Todas vencen 12/99</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">CVV</label>
+                <Input
+                  inputMode="numeric"
+                  type="password"
+                  value={manualCvv}
+                  onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="•••"
+                  maxLength={4}
+                />
+              </div>
+            </div>
+            <div className="text-sm bg-muted rounded p-2">
+              Monto a cobrar: <b>${Number(monto || 0).toFixed(2)}</b>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarManual}>Cobrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
