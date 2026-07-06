@@ -88,11 +88,36 @@ export default function Qard() {
     // realtime
     const ch = supabase.channel("qard-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "qard_wallets" }, () => cargar())
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_sub_qr" }, () => cargar())
       .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos" }, () => cargar())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
   }, []);
+
+  const transferirSub = async (sub: SubQR, signo: 1 | -1) => {
+    const etiqueta = signo > 0 ? `Asignar a ${sub.alias}` : `Retirar de ${sub.alias}`;
+    const raw = prompt(`${etiqueta}\n\nMonto MXN:`, "100");
+    if (raw === null) return;
+    const m = Number(raw);
+    if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
+    const { error } = await supabase.rpc("qard_transferir_a_sub" as any, {
+      _sub_qr_id: sub.id, _monto_mxn: m * signo,
+    });
+    if (error) return toast({ title: "No se pudo transferir", description: error.message, variant: "destructive" });
+    toast({ title: signo > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
+    cargar();
+  };
+
+  const toggleSub = async (sub: SubQR) => {
+    const nuevo = sub.estado === "activa" ? "apagada" : "activa";
+    const { error } = await supabase.rpc("qard_sub_set_estado" as any, {
+      _sub_qr_id: sub.id, _estado: nuevo,
+    });
+    if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
+    toast({ title: nuevo === "activa" ? "QaRd encendida" : "QaRd apagada" });
+    cargar();
+  };
 
   const recargar = async () => {
     const m = Number(monto);
