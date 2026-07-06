@@ -91,7 +91,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [maestrasRes, productosRes] = await Promise.all([
+    const [maestrasRes, productosRes, permisosRes] = await Promise.all([
       supabase
         .from('rutas_foraneas_maestras' as any)
         .select('*')
@@ -102,11 +102,27 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
         .select('id, nombre, ruta_maestra_id')
         .eq('proveedor_id', proveedorId)
         .eq('route_type', 'foranea'),
+      user
+        ? supabase
+            .from('ruta_maestra_solicitudes' as any)
+            .select('ruta_maestra_id, permiso_expira_at')
+            .eq('solicitante_user_id', user.id)
+            .eq('estado', 'approved')
+        : Promise.resolve({ data: [], error: null } as any),
     ]);
     if (!maestrasRes.error) setMaestras((maestrasRes.data as any) || []);
     if (!productosRes.error) setProductos((productosRes.data as any) || []);
+    if (!permisosRes.error) {
+      const now = Date.now();
+      const map: Record<string, string | null> = {};
+      ((permisosRes.data as any[]) || []).forEach((r) => {
+        const exp = r.permiso_expira_at ? new Date(r.permiso_expira_at).getTime() : Infinity;
+        if (exp > now) map[r.ruta_maestra_id] = r.permiso_expira_at;
+      });
+      setPermisos(map);
+    }
     setLoading(false);
-  }, [proveedorId]);
+  }, [proveedorId, user]);
 
   useEffect(() => {
     load();
