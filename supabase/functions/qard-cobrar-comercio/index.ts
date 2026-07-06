@@ -51,7 +51,7 @@ serve(async (req) => {
     // 1) Buscar sub-QR
     const { data: sub } = await admin
       .from("qard_sub_qr")
-      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin")
+      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin, cvv")
       .eq("qard_number", qardNumberRaw)
       .maybeSingle();
 
@@ -61,6 +61,16 @@ serve(async (req) => {
     }
     if (sub.estado === "apagada") {
       return jsonErr("TARJETA APAGADA por el titular", "apagada", { color: "rojo" });
+    }
+
+    // Validación de CVV (obligatoria en cobros manuales)
+    if (manual) {
+      if (!sub.cvv) {
+        return jsonErr("Esta tarjeta no tiene CVV activo. Pide al titular que lo genere.", "cvv_no_configurado", { color: "rojo" });
+      }
+      if (String(sub.cvv) !== cvvInput) {
+        return jsonErr("CVV incorrecto", "cvv_invalido", { color: "rojo" });
+      }
     }
 
     // 2) Reglas del sub-QR
