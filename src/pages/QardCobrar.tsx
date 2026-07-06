@@ -74,13 +74,34 @@ export default function QardCobrar() {
     }
   };
 
-  const cobrarManual = async () => {
-    const numero = prompt("Escribe los 16 dígitos del QR");
-    if (numero) {
-      const m = Number(monto);
-      if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
-      await procesarCobro(numero, m);
-    }
+  const abrirManual = () => {
+    const m = Number(monto);
+    if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
+    setManualQard("");
+    setManualVenc("12/99");
+    setManualCvv("");
+    setManualOpen(true);
+  };
+
+  const formatQardInput = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 16);
+    return d.replace(/(.{4})/g, "$1 ").trim();
+  };
+
+  const formatVencInput = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 4);
+    if (d.length <= 2) return d;
+    return `${d.slice(0, 2)}/${d.slice(2)}`;
+  };
+
+  const confirmarManual = async () => {
+    const digits = manualQard.replace(/\D/g, "");
+    if (digits.length !== 16) return toast({ title: "El QR debe tener 16 dígitos", variant: "destructive" });
+    if (manualVenc !== "12/99") return toast({ title: "Vencimiento inválido", description: "Todas las QaRd vencen 12/99", variant: "destructive" });
+    if (!/^\d{3,4}$/.test(manualCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    const m = Number(monto);
+    setManualOpen(false);
+    await procesarCobro(digits, m);
   };
 
   return (
