@@ -192,6 +192,17 @@ export default function Qard() {
                 </div>
               )}
             </div>
+            {qardNumber && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-3"
+                onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99")}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir tarjetas (PDF · 4 por hoja)
+              </Button>
+            )}
           </Card>
         );
       })()}
