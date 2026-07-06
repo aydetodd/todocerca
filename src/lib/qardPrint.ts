@@ -90,50 +90,50 @@ async function drawCard(
   });
 
   // ================= REVERSO (mitad inferior, IMPRESO DE CABEZA) =================
-  // Al doblar la mitad inferior hacia atrás, el texto rotado 180° queda derecho.
-  // Coordenada Y "física" del reverso: y + CARD_H .. y + 2*CARD_H
-  // Como el texto se rota 180°, y "hacia abajo" en la mitad reversa
-  // se percibe "hacia arriba" cuando ya está doblado.
+  // Al doblar hacia atrás, el texto rotado 180° queda derecho y centrado.
+  // Coordenadas físicas del reverso: y + CARD_H .. y + FOLD_H
+  // Con angle:180, el punto (bx, by) corresponde visualmente a la esquina
+  // opuesta cuando ya está doblado. Para centrar verticalmente en la mitad
+  // inferior, usamos el centro físico de esa mitad.
   const backCenterX = x + CARD_W / 2;
-  const backBottomY = y + FOLD_H; // borde inferior físico = borde SUPERIOR cuando ya está doblado
+  const backTop = y + CARD_H;         // borde físico superior del reverso (= pliegue)
+  const backBottom = y + FOLD_H;      // borde físico inferior del reverso
+  const backMidY = (backTop + backBottom) / 2;
 
-  // "todocerca" grande — quedará arriba y centrado tras el doblez
+  // Con angle 180, "hacia abajo" en Y se percibe "hacia arriba" al doblar.
+  // Colocamos las 3 líneas centradas respecto a backMidY.
+  // Orden visual (ya doblado, de arriba a abajo): QaRd → Saldo Digital → todocerca.mx
+  // Como está rotado 180°, en Y físico el orden se invierte:
+  //   físicamente arriba (backMidY - offset) = visualmente abajo
+  //   físicamente abajo  (backMidY + offset) = visualmente arriba
+
+  // QaRd (grande) — visualmente arriba → físicamente abajo del centro
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
+  doc.setFontSize(28);
   doc.setTextColor(20);
-  doc.text("todocerca", backCenterX, backBottomY - CARD_H + 14, {
+  doc.text("QaRd", backCenterX, backMidY + 9, {
     align: "center",
     angle: 180,
   });
 
-  // "QaRd · Saldo Digital"
+  // Saldo Digital (mediano) — visualmente medio
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(14);
   doc.setTextColor(60);
-  doc.text("QaRd  ·  Saldo Digital", backCenterX, backBottomY - CARD_H + 23, {
+  doc.text("Saldo Digital", backCenterX, backMidY - 1, {
     align: "center",
     angle: 180,
   });
 
-  // Alias opcional (para sub-QR familiares)
-  if (alias) {
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(10);
-    doc.setTextColor(90);
-    doc.text(alias, backCenterX, backBottomY - CARD_H + 31, {
-      align: "center",
-      angle: 180,
-    });
-  }
-
-  // Marca discreta abajo (que al doblar queda cerca del pliegue)
+  // todocerca.mx (chico) — visualmente abajo → físicamente arriba del centro
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(130);
-  doc.text("todocerca.mx", backCenterX, backBottomY - 6, {
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text("todocerca.mx", backCenterX, backMidY - 10, {
     align: "center",
     angle: 180,
   });
+
 }
 
 export async function generarPdfTarjetasQard(
