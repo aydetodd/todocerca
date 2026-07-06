@@ -3207,7 +3207,10 @@ export type Database = {
         Row: {
           alias: string
           created_at: string
+          cvv: string
+          cvv_updated_at: string
           estado: string
+          fecha_vencimiento: string
           horario_fin: string | null
           horario_inicio: string | null
           id: string
@@ -3221,7 +3224,10 @@ export type Database = {
         Insert: {
           alias?: string
           created_at?: string
+          cvv?: string
+          cvv_updated_at?: string
           estado?: string
+          fecha_vencimiento?: string
           horario_fin?: string | null
           horario_inicio?: string | null
           id?: string
@@ -3235,7 +3241,10 @@ export type Database = {
         Update: {
           alias?: string
           created_at?: string
+          cvv?: string
+          cvv_updated_at?: string
           estado?: string
+          fecha_vencimiento?: string
           horario_fin?: string | null
           horario_inicio?: string | null
           id?: string
@@ -5877,6 +5886,10 @@ export type Database = {
       qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
       qard_finalize_registration: {
         Args: { _nivel2_id: string }
+        Returns: string
+      }
+      qard_sub_qr_rotar_cvv: {
+        Args: { _nuevo_cvv?: string; _sub_qr_id: string }
         Returns: string
       }
       reset_order_sequence: {

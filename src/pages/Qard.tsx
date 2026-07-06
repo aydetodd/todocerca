@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, RefreshCw, Trash2, ArrowLeft, Wallet } from "lucide-react";
+import { CreditCard, Plus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 type SubQR = {
@@ -16,6 +16,8 @@ type SubQR = {
   alias: string;
   limite_por_transaccion: number | null;
   estado: "activa" | "cancelada";
+  fecha_vencimiento: string | null;
+  cvv: string | null;
 };
 type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
@@ -39,6 +41,21 @@ export default function Qard() {
   const [monto, setMonto] = useState<string>("200");
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
+  const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+
+  const rotarCvv = async (id: string) => {
+    const custom = prompt("Escribe el nuevo CVV (3-4 dígitos) o deja vacío para uno aleatorio:");
+    if (custom === null) return;
+    const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
+      _sub_qr_id: id, _nuevo_cvv: custom.trim() || null,
+    });
+    if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
+    toast({ title: "CVV actualizado", description: `Nuevo CVV: ${data}` });
+    setCvvVisible(v => ({ ...v, [id]: true }));
+    cargar();
+  };
+
+
 
   const cargar = async () => {
     setLoading(true);
@@ -130,24 +147,53 @@ export default function Qard() {
       </div>
 
       {/* Tarjeta titular */}
-      <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
-        <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-          <CreditCard className="h-4 w-4" /> Tarjeta principal (00)
-        </div>
-        <div className="font-mono text-xl tracking-wider mb-3">{formatNumero(qardNumber)}</div>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Saldo</div>
-            <div className={`text-3xl font-bold ${saldoColor}`}>${saldo.toFixed(2)}</div>
-            {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
-          </div>
-          {qardNumber && (
-            <div className="bg-white p-2 rounded-lg">
-              <QRCodeSVG value={qardNumber} size={96} level="H" />
+      {(() => {
+        const titular = subs.find(s => s.sub_index === 0);
+        return (
+          <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
+            <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+              <CreditCard className="h-4 w-4" /> Tarjeta principal (00)
             </div>
-          )}
-        </div>
-      </Card>
+            <div className="font-mono text-xl tracking-wider mb-3">{formatNumero(qardNumber)}</div>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Saldo</div>
+                <div className={`text-3xl font-bold ${saldoColor}`}>${saldo.toFixed(2)}</div>
+                {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
+                <div className="flex gap-4 mt-2 text-xs">
+                  <div>
+                    <div className="text-muted-foreground">Vence</div>
+                    <div className="font-mono font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">CVV</div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-semibold">
+                        {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
+                      </span>
+                      {titular && (
+                        <>
+                          <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
+                            {cvvVisible[titular.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          </button>
+                          <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
+                            <RotateCw className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {qardNumber && (
+                <div className="bg-white p-2 rounded-lg">
+                  <QRCodeSVG value={qardNumber} size={96} level="H" />
+                </div>
+              )}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Recargar */}
       <Card className="p-4">
@@ -174,6 +220,16 @@ export default function Qard() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
                 <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
+                <div className="flex gap-3 text-[11px] mt-0.5">
+                  <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
+                  <span className="flex items-center gap-1">
+                    CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
+                    <button onClick={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}>
+                      {cvvVisible[s.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </button>
+                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
+                  </span>
+                </div>
                 {s.limite_por_transaccion && <div className="text-xs">Límite: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
                 {s.estado === "cancelada" && <div className="text-xs text-red-600">CANCELADO</div>}
               </div>
