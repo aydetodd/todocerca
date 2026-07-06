@@ -245,9 +245,27 @@ export default function Qard() {
                 {s.limite_por_transaccion && <div className="text-xs">Límite: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
                 {s.estado === "cancelada" && <div className="text-xs text-red-600">CANCELADO</div>}
               </div>
-              {s.estado === "activa" && (
-                <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-              )}
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="Imprimir tarjetas (PDF)"
+                  onClick={() =>
+                    generarPdfTarjetasQard(
+                      s.qard_number,
+                      s.fecha_vencimiento ?? "12/99",
+                      s.alias
+                    )
+                  }
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+                {s.estado === "activa" && (
+                  <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)}>
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
           {subs.filter(s => s.sub_index > 0).length === 0 && (
