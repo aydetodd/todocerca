@@ -44,6 +44,7 @@ export default function Qard() {
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+  const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
 
   const rotarCvv = async (id: string) => {
     const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
@@ -252,7 +253,34 @@ export default function Qard() {
           <Button onClick={crearSub}><Plus className="h-4 w-4" /></Button>
         </div>
         <div className="space-y-2">
-          {subs.filter(s => s.sub_index > 0).map(s => (
+          {(() => {
+            const familiares = subs.filter(s => s.sub_index > 0);
+            const counts = {
+              activa: familiares.filter(s => s.estado === "activa").length,
+              apagada: familiares.filter(s => s.estado === "apagada").length,
+              cancelada: familiares.filter(s => s.estado === "cancelada").length,
+            };
+            const grupos: Array<{ k: "activa" | "apagada" | "cancelada"; label: string }> = [
+              { k: "activa", label: `Activas (${counts.activa})` },
+              { k: "apagada", label: `Apagadas (${counts.apagada})` },
+              { k: "cancelada", label: `Canceladas (${counts.cancelada})` },
+            ];
+            return (
+              <>
+                <div className="flex gap-1 mb-2">
+                  {grupos.map(g => (
+                    <Button
+                      key={g.k}
+                      size="sm"
+                      variant={filtroGrupo === g.k ? "default" : "outline"}
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => setFiltroGrupo(g.k)}
+                    >
+                      {g.label}
+                    </Button>
+                  ))}
+                </div>
+                {familiares.filter(s => s.estado === filtroGrupo).map(s => (
             <div key={s.id} className={`flex items-center gap-3 border rounded p-2 ${s.estado === "apagada" ? "opacity-60 bg-muted/40" : ""}`}>
               <div className="bg-white p-1 rounded"><QRCodeSVG value={s.qard_number} size={56} /></div>
               <div className="flex-1 min-w-0">
@@ -321,9 +349,12 @@ export default function Qard() {
               </div>
             </div>
           ))}
-          {subs.filter(s => s.sub_index > 0).length === 0 && (
-            <div className="text-xs text-muted-foreground">Aún no tienes sub-QR familiares.</div>
-          )}
+                {familiares.filter(s => s.estado === filtroGrupo).length === 0 && (
+                  <div className="text-xs text-muted-foreground">Sin QaRd en este grupo.</div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </Card>
 
