@@ -347,6 +347,9 @@ export default function Qard() {
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
+                <Button size="sm" variant="ghost" title="Ver movimientos" onClick={() => abrirMovsSub(s)}>
+                  <History className="h-4 w-4" />
+                </Button>
                 {s.estado !== "cancelada" && (
                   <Button
                     size="sm"
