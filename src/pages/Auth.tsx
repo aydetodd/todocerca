@@ -354,6 +354,35 @@ const Auth = () => {
             console.warn('Profile update timeout, continuing...', e);
           }
 
+          // Fijar municipio elegido y generar QaRd definitivo en ese bucket
+          try {
+            const { data: qardNumber, error: qardErr } = await supabase.rpc(
+              'qard_finalize_registration',
+              { _nivel2_id: ubicacion.municipioId }
+            );
+            if (qardErr) throw qardErr;
+            console.log('🎫 QaRd generado en municipio elegido:', qardNumber);
+          } catch (e: any) {
+            console.error('Error generando QaRd por municipio:', e);
+            const msg = String(e?.message || '');
+            if (msg.includes('MUNICIPIO_AGOTADO')) {
+              toast({
+                title: 'Municipio saturado',
+                description: 'Este municipio ya alcanzó 9,999,999 usuarios. Elige un municipio cercano y vuelve a intentarlo.',
+                variant: 'destructive',
+              });
+              await supabase.auth.signOut();
+              setLoading(false);
+              return;
+            }
+            // Otros errores: seguimos, el QaRd se puede regenerar después
+            toast({
+              title: 'Aviso',
+              description: 'No se pudo asignar tu número por municipio en este momento. Se generará automáticamente al iniciar sesión.',
+            });
+          }
+
+
           // Enviar código de verificación SMS
           console.log('📱 Sending SMS verification code...');
           const smsPromise = supabase.functions.invoke('send-verification-sms', {
