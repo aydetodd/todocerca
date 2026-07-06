@@ -44,7 +44,7 @@ export default function Qard() {
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
 
   const rotarCvv = async (id: string) => {
-    const custom = prompt("Escribe el nuevo CVV (3-4 dígitos) o deja vacío para uno aleatorio:");
+    const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
     if (custom === null) return;
     const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
       _sub_qr_id: id, _nuevo_cvv: custom.trim() || null,
