@@ -15,6 +15,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import UbicacionSelector, { UbicacionValue } from "@/components/UbicacionSelector";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -37,6 +38,7 @@ const Auth = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [ubicacion, setUbicacion] = useState<UbicacionValue>({ paisId: '', estadoId: '', municipioId: '' });
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -134,6 +136,16 @@ const Auth = () => {
       toast({
         title: "Error",
         description: "Debes aceptar los Términos de Uso y la Política de Contenido Prohibido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar país / estado / municipio en registro (obligatorio para el QaRd)
+    if (!isLogin && (!ubicacion.paisId || !ubicacion.estadoId || !ubicacion.municipioId)) {
+      toast({
+        title: "Faltan datos de ubicación",
+        description: "Selecciona País, Estado y Municipio. Estos datos definen tu número de usuario (QaRd) y no podrán cambiarse después.",
         variant: "destructive",
       });
       return;
@@ -341,6 +353,35 @@ const Auth = () => {
           } catch (e) {
             console.warn('Profile update timeout, continuing...', e);
           }
+
+          // Fijar municipio elegido y generar QaRd definitivo en ese bucket
+          try {
+            const { data: qardNumber, error: qardErr } = await supabase.rpc(
+              'qard_finalize_registration',
+              { _nivel2_id: ubicacion.municipioId }
+            );
+            if (qardErr) throw qardErr;
+            console.log('🎫 QaRd generado en municipio elegido:', qardNumber);
+          } catch (e: any) {
+            console.error('Error generando QaRd por municipio:', e);
+            const msg = String(e?.message || '');
+            if (msg.includes('MUNICIPIO_AGOTADO')) {
+              toast({
+                title: 'Municipio saturado',
+                description: 'Este municipio ya alcanzó 9,999,999 usuarios. Elige un municipio cercano y vuelve a intentarlo.',
+                variant: 'destructive',
+              });
+              await supabase.auth.signOut();
+              setLoading(false);
+              return;
+            }
+            // Otros errores: seguimos, el QaRd se puede regenerar después
+            toast({
+              title: 'Aviso',
+              description: 'No se pudo asignar tu número por municipio en este momento. Se generará automáticamente al iniciar sesión.',
+            });
+          }
+
 
           // Enviar código de verificación SMS
           console.log('📱 Sending SMS verification code...');
@@ -696,6 +737,21 @@ const Auth = () => {
                     <p className="text-xs text-muted-foreground mt-1">
                       Este correo se usará <strong>únicamente</strong> para enviarte un enlace de recuperación si olvidas tu contraseña. No enviaremos publicidad.
                     </p>
+                  </div>
+
+                  <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 space-y-2">
+                    <div className="text-sm font-medium">
+                      📍 Tu ubicación (define tu número de usuario / QaRd)
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Elige país, estado y municipio. <strong>No podrás cambiarlo después</strong> — tu número de usuario se genera con este municipio.
+                    </p>
+                    <UbicacionSelector
+                      value={ubicacion}
+                      onChange={setUbicacion}
+                      required
+                      compact
+                    />
                   </div>
                 </>
               )}
