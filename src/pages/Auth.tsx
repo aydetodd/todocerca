@@ -738,6 +738,21 @@ const Auth = () => {
                       Este correo se usará <strong>únicamente</strong> para enviarte un enlace de recuperación si olvidas tu contraseña. No enviaremos publicidad.
                     </p>
                   </div>
+
+                  <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 space-y-2">
+                    <div className="text-sm font-medium">
+                      📍 Tu ubicación (define tu número de usuario / QaRd)
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Elige país, estado y municipio. <strong>No podrás cambiarlo después</strong> — tu número de usuario se genera con este municipio.
+                    </p>
+                    <UbicacionSelector
+                      value={ubicacion}
+                      onChange={setUbicacion}
+                      required
+                      compact
+                    />
+                  </div>
                 </>
               )}
 
