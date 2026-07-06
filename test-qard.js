@@ -1,9 +1,5 @@
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const CARD_W = 85.6;
 const CARD_H = 53.98;
@@ -29,8 +25,8 @@ function dashedLine(doc, x1, y1, x2, y2, dash = 1.2, gap = 1.2) {
   }
 }
 
-async function drawCard(doc, x, y, opts) {
-  const { qardNumber, vencimiento, alias } = opts;
+async function drawCard(doc, x, y, opts, variant) {
+  const { qardNumber, vencimiento } = opts;
 
   doc.setDrawColor(150);
   doc.setLineWidth(0.15);
@@ -41,6 +37,10 @@ async function drawCard(doc, x, y, opts) {
 
   doc.setDrawColor(90);
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
+
+  // Centro visual del reverso (para debug)
+  // doc.setDrawColor(255, 0, 0);
+  // doc.line(x, y + CARD_H + CARD_H/2, x + CARD_W, y + CARD_H + CARD_H/2);
 
   const qrSizeMm = 32;
   const qrX = x + (CARD_W - qrSizeMm) / 2;
@@ -73,14 +73,20 @@ async function drawCard(doc, x, y, opts) {
   });
 
   const backCenterX = x + CARD_W / 2;
-  const backTop = y + CARD_H;
-  const backBottom = y + FOLD_H;
-  const backMidY = (backTop + backBottom) / 2;
+  const backMidY = y + CARD_H + CARD_H / 2;
+
+  let offsets;
+  if (variant === 1) offsets = { q: 9, s: -1, t: -10 };
+  if (variant === 2) offsets = { q: 8, s: -1, t: -9 };
+  if (variant === 3) offsets = { q: 7, s: -2, t: -9 };
+  if (variant === 4) offsets = { q: 6, s: -2, t: -8 };
+  if (variant === 5) offsets = { q: 5, s: -3, t: -8 };
+  if (variant === 6) offsets = { q: 4.5, s: -3.5, t: -7.5 };
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(20);
-  doc.text("QaRd", backCenterX, backMidY + 9, {
+  doc.text("QaRd", backCenterX, backMidY + offsets.q, {
     align: "center",
     angle: 180,
   });
@@ -88,7 +94,7 @@ async function drawCard(doc, x, y, opts) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
   doc.setTextColor(60);
-  doc.text("Saldo Digital", backCenterX, backMidY - 1, {
+  doc.text("Saldo Digital", backCenterX, backMidY + offsets.s, {
     align: "center",
     angle: 180,
   });
@@ -96,10 +102,16 @@ async function drawCard(doc, x, y, opts) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(110);
-  doc.text("todocerca.mx", backCenterX, backMidY - 10, {
+  doc.text("todocerca.mx", backCenterX, backMidY + offsets.t, {
     align: "center",
     angle: 180,
   });
+
+  // label
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6);
+  doc.setTextColor(150);
+  doc.text(`v${variant}: q=${offsets.q} s=${offsets.s} t=${offsets.t}`, x + 2, y + FOLD_H - 2);
 }
 
 async function main() {
@@ -108,43 +120,25 @@ async function main() {
   const pageH = 297;
 
   const cols = 2;
-  const rows = 2;
+  const rows = 3;
   const gapX = 8;
-  const gapY = 10;
+  const gapY = 6;
   const totalW = cols * CARD_W + (cols - 1) * gapX;
   const totalH = rows * FOLD_H + (rows - 1) * gapY;
   const originX = (pageW - totalW) / 2;
   const originY = (pageH - totalH) / 2;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(40);
-  doc.text(
-    "Tarjetas QaRd · Juan · recortar, doblar y enmicar",
-    pageW / 2,
-    originY - 6,
-    { align: "center" }
-  );
-
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
+      const variant = r * cols + c + 1;
+      if (variant > 6) continue;
       const x = originX + c * (CARD_W + gapX);
       const y = originY + r * (FOLD_H + gapY);
-      await drawCard(doc, x, y, { qardNumber: "5226030000000104", vencimiento: "12/99", alias: "Juan" });
+      await drawCard(doc, x, y, { qardNumber: "5226030000000104", vencimiento: "12/99" }, variant);
     }
   }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(120);
-  doc.text(
-    "Imprime en papel blanco tamaño carta/A4 al 100% (sin ajuste). Recorta por el borde punteado y dobla por la línea central.",
-    pageW / 2,
-    pageH - 10,
-    { align: "center" }
-  );
-
-  doc.save(__dirname + "/test.pdf");
+  doc.save("test.pdf");
 }
 
 main().catch(console.error);
