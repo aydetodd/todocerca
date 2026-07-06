@@ -157,6 +157,58 @@ export default function QardCobrar() {
           )}
         </Card>
       )}
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cobro manual</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Número QaRd (16 dígitos)</label>
+              <Input
+                inputMode="numeric"
+                value={manualQard}
+                onChange={(e) => setManualQard(formatQardInput(e.target.value))}
+                placeholder="0000 0000 0000 0000"
+                className="text-lg tracking-widest"
+                maxLength={19}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Vence</label>
+                <Input
+                  inputMode="numeric"
+                  value={manualVenc}
+                  onChange={(e) => setManualVenc(formatVencInput(e.target.value))}
+                  placeholder="12/99"
+                  maxLength={5}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Todas vencen 12/99</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">CVV</label>
+                <Input
+                  inputMode="numeric"
+                  type="password"
+                  value={manualCvv}
+                  onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="•••"
+                  maxLength={4}
+                />
+              </div>
+            </div>
+            <div className="text-sm bg-muted rounded p-2">
+              Monto a cobrar: <b>${Number(monto || 0).toFixed(2)}</b>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarManual}>Cobrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
