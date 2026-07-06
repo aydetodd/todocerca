@@ -44,6 +44,7 @@ export default function Qard() {
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+  const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
 
   const rotarCvv = async (id: string) => {
     const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
