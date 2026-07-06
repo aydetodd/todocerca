@@ -50,6 +50,7 @@ interface Maestra {
   estado: 'pending' | 'approved' | 'rejected';
   created_by_user_id: string;
   rechazo_motivo: string | null;
+  route_geojson: any;
   route_origin_lat: number | null;
   route_origin_lng: number | null;
   route_destination_lat: number | null;
