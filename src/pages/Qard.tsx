@@ -457,6 +457,18 @@ export default function Qard() {
         </DialogContent>
       </Dialog>
 
+      {/* QR fullscreen para pagar */}
+      {qrFullscreen && (
+        <div
+          className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6"
+          onClick={() => setQrFullscreen(null)}
+        >
+          <div className="text-black text-lg font-semibold mb-4">{qrFullscreen.label}</div>
+          <QRCodeSVG value={qrFullscreen.value} size={Math.min(window.innerWidth, window.innerHeight) - 80} level="H" />
+          <div className="text-black/60 text-sm mt-6">Toca para cerrar</div>
+        </div>
+      )}
+
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
       </Button>
