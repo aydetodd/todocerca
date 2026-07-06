@@ -46,13 +46,16 @@ serve(async (req) => {
     // 1) Buscar sub-QR
     const { data: sub } = await admin
       .from("qard_sub_qr")
-      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, limite_por_transaccion, horario_inicio, horario_fin")
+      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin")
       .eq("qard_number", qardNumberRaw)
       .maybeSingle();
 
     if (!sub) return jsonErr("Tarjeta no encontrada", "no_existe");
-    if (sub.estado !== "activa") {
+    if (sub.estado === "cancelada") {
       return jsonErr("TARJETA CANCELADA", "cancelada", { color: "rojo" });
+    }
+    if (sub.estado === "apagada") {
+      return jsonErr("TARJETA APAGADA por el titular", "apagada", { color: "rojo" });
     }
 
     // 2) Reglas del sub-QR
@@ -75,7 +78,7 @@ serve(async (req) => {
       }
     }
 
-    // 3) Wallet + saldo (con lock via transacción simulada — leemos, calculamos, actualizamos con condición)
+    // 3) Wallet del titular (siempre necesario para movimientos y bloqueo)
     const { data: wallet } = await admin
       .from("qard_wallets")
       .select("id, saldo_mxn, estado")
@@ -85,11 +88,14 @@ serve(async (req) => {
     if (!wallet) return jsonErr("Billetera no encontrada", "no_existe");
     if (wallet.estado !== "activa") return jsonErr("BILLETERA BLOQUEADA", "bloqueada", { color: "rojo" });
 
-    const saldoActual = Number(wallet.saldo_mxn);
+    // 3.1) Determinar fuente del saldo: titular (sub_index=0) usa wallet; sub-QRs usan su saldo propio
+    const esTitular = sub.sub_index === 0;
+    const saldoActual = esTitular ? Number(wallet.saldo_mxn) : Number(sub.saldo_mxn ?? 0);
+    const minAceptado = esTitular ? SALDO_MIN : 0; // sub-QRs no pueden ir a negativo
     const saldoDespues = +(saldoActual - monto).toFixed(2);
 
-    if (saldoDespues < SALDO_MIN) {
-      if (saldoActual <= SALDO_MIN) {
+    if (saldoDespues < minAceptado) {
+      if (saldoActual <= minAceptado) {
         return jsonErr(
           `LÍMITE ALCANZADO. Saldo: $${saldoActual.toFixed(2)}`,
           "limite_alcanzado",
@@ -103,17 +109,25 @@ serve(async (req) => {
       );
     }
 
-    // 4) Descontar (optimistic con condición sobre saldo actual)
-    const { error: updErr, data: updRow } = await admin
-      .from("qard_wallets")
-      .update({ saldo_mxn: saldoDespues })
-      .eq("id", wallet.id)
-      .eq("saldo_mxn", saldoActual)
-      .select("id")
-      .maybeSingle();
-
-    if (updErr || !updRow) {
-      return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
+    // 4) Descontar del origen correcto (optimistic lock por saldo previo)
+    if (esTitular) {
+      const { error: updErr, data: updRow } = await admin
+        .from("qard_wallets")
+        .update({ saldo_mxn: saldoDespues })
+        .eq("id", wallet.id)
+        .eq("saldo_mxn", saldoActual)
+        .select("id")
+        .maybeSingle();
+      if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
+    } else {
+      const { error: updErr, data: updRow } = await admin
+        .from("qard_sub_qr")
+        .update({ saldo_mxn: saldoDespues })
+        .eq("id", sub.id)
+        .eq("saldo_mxn", saldoActual)
+        .select("id")
+        .maybeSingle();
+      if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
     }
 
     // 5) Split 6% / 94%
