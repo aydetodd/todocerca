@@ -26,6 +26,7 @@ type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
+  sub_qr_id: string | null;
 };
 
 function formatNumero(n?: string | null) {
