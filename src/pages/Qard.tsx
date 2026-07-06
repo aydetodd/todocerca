@@ -46,6 +46,20 @@ export default function Qard() {
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
+  const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
+  const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
+
+  const abrirMovsSub = async (sub: SubQR) => {
+    setSubMovOpen(sub);
+    setSubMovs([]);
+    const { data } = await supabase
+      .from("qard_movimientos" as any)
+      .select("*")
+      .eq("sub_qr_id", sub.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setSubMovs((data as any) ?? []);
+  };
 
   const rotarCvv = async (id: string) => {
     const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
