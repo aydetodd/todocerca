@@ -35,6 +35,8 @@ serve(async (req) => {
     const body = await req.json();
     const qardNumberRaw = String(body.qard_number || "").replace(/\D/g, "");
     const monto = Number(body.monto_mxn);
+    const cvvInput = body.cvv != null ? String(body.cvv).replace(/\D/g, "") : null;
+    const manual = !!body.manual;
 
     if (qardNumberRaw.length !== 16) {
       return jsonErr("QR inválido (deben ser 16 dígitos)", "invalido");
@@ -42,11 +44,14 @@ serve(async (req) => {
     if (!monto || monto <= 0) {
       return jsonErr("Monto inválido", "invalido");
     }
+    if (manual && (!cvvInput || cvvInput.length < 3)) {
+      return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
+    }
 
     // 1) Buscar sub-QR
     const { data: sub } = await admin
       .from("qard_sub_qr")
-      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin")
+      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin, cvv")
       .eq("qard_number", qardNumberRaw)
       .maybeSingle();
 
@@ -56,6 +61,16 @@ serve(async (req) => {
     }
     if (sub.estado === "apagada") {
       return jsonErr("TARJETA APAGADA por el titular", "apagada", { color: "rojo" });
+    }
+
+    // Validación de CVV (obligatoria en cobros manuales)
+    if (manual) {
+      if (!sub.cvv) {
+        return jsonErr("Esta tarjeta no tiene CVV activo. Pide al titular que lo genere.", "cvv_no_configurado", { color: "rojo" });
+      }
+      if (String(sub.cvv) !== cvvInput) {
+        return jsonErr("CVV incorrecto", "cvv_invalido", { color: "rojo" });
+      }
     }
 
     // 2) Reglas del sub-QR
