@@ -78,6 +78,8 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
   const [showProposal, setShowProposal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [solicitudTarget, setSolicitudTarget] = useState<Maestra | null>(null);
+  const [editTarget, setEditTarget] = useState<Maestra | null>(null);
+  const [permisos, setPermisos] = useState<Record<string, string | null>>({}); // ruta_maestra_id -> permiso_expira_at
 
   // Proposal form
   const [propNombre, setPropNombre] = useState('');
