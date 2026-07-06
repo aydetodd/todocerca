@@ -349,9 +349,12 @@ export default function Qard() {
               </div>
             </div>
           ))}
-          {subs.filter(s => s.sub_index > 0).length === 0 && (
-            <div className="text-xs text-muted-foreground">Aún no tienes sub-QR familiares.</div>
-          )}
+                {familiares.filter(s => s.estado === filtroGrupo).length === 0 && (
+                  <div className="text-xs text-muted-foreground">Sin QaRd en este grupo.</div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </Card>
 
