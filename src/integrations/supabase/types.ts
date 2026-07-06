@@ -3960,6 +3960,7 @@ export type Database = {
         Row: {
           codigo: string | null
           created_at: string | null
+          cve_estado: string | null
           id: string
           is_active: boolean | null
           nombre: string
@@ -3970,6 +3971,7 @@ export type Database = {
         Insert: {
           codigo?: string | null
           created_at?: string | null
+          cve_estado?: string | null
           id?: string
           is_active?: boolean | null
           nombre: string
@@ -3980,6 +3982,7 @@ export type Database = {
         Update: {
           codigo?: string | null
           created_at?: string | null
+          cve_estado?: string | null
           id?: string
           is_active?: boolean | null
           nombre?: string
@@ -4001,6 +4004,7 @@ export type Database = {
         Row: {
           codigo_postal: string | null
           created_at: string | null
+          cve_municipio: string | null
           id: string
           is_active: boolean | null
           latitud: number | null
@@ -4014,6 +4018,7 @@ export type Database = {
         Insert: {
           codigo_postal?: string | null
           created_at?: string | null
+          cve_municipio?: string | null
           id?: string
           is_active?: boolean | null
           latitud?: number | null
@@ -4027,6 +4032,7 @@ export type Database = {
         Update: {
           codigo_postal?: string | null
           created_at?: string | null
+          cve_municipio?: string | null
           id?: string
           is_active?: boolean | null
           latitud?: number | null
@@ -5929,6 +5935,7 @@ export type Database = {
           id: string
         }[]
       }
+      unaccent: { Args: { "": string }; Returns: string }
       unlink_producto_from_ruta_maestra: {
         Args: { _producto_id: string }
         Returns: string
