@@ -140,6 +140,16 @@ const Auth = () => {
       });
       return;
     }
+
+    // Validar país / estado / municipio en registro (obligatorio para el QaRd)
+    if (!isLogin && (!ubicacion.paisId || !ubicacion.estadoId || !ubicacion.municipioId)) {
+      toast({
+        title: "Faltan datos de ubicación",
+        description: "Selecciona País, Estado y Municipio. Estos datos definen tu número de usuario (QaRd) y no podrán cambiarse después.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setLoading(true);
     setShowIdConsecutivo(false);
