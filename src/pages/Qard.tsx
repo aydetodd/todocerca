@@ -373,34 +373,74 @@ export default function Qard() {
         </div>
       </Card>
 
-      {/* Movimientos */}
-      <Card className="p-4">
-        <div className="font-semibold mb-2">Últimos movimientos</div>
-        {mov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
-        <div className="space-y-2">
-          {mov.map(m => {
-            const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
-            const label =
-              m.tipo === "recarga" ? "Recarga" :
-              m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
-              m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
-              m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
-              m.tipo;
-            const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
-            return (
-            <div key={m.id} className="flex justify-between text-sm border-b pb-1">
-              <div>
-                <div className="font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
-              </div>
-              <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
-                {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
-              </div>
+      {/* Movimientos de la cuenta eje */}
+      {(() => {
+        const titularId = subs.find(s => s.sub_index === 0)?.id;
+        const ejeMov = mov.filter(m =>
+          !m.sub_qr_id || m.sub_qr_id === titularId ||
+          m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+        );
+        return (
+          <Card className="p-4">
+            <div className="font-semibold mb-2">Últimos movimientos · cuenta eje</div>
+            {ejeMov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
+            <div className="space-y-2">
+              {ejeMov.map(m => {
+                const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
+                const label =
+                  m.tipo === "recarga" ? "Recarga" :
+                  m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+                  m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
+                  m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
+                  m.tipo;
+                const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
+                return (
+                  <div key={m.id} className="flex justify-between text-sm border-b pb-1">
+                    <div>
+                      <div className="font-medium">{label}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+                    </div>
+                    <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
+                      {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            );
-          })}
-        </div>
-      </Card>
+          </Card>
+        );
+      })()}
+
+      {/* Dialog: movimientos de un sub-QR */}
+      <Dialog open={!!subMovOpen} onOpenChange={(o) => !o && setSubMovOpen(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Movimientos · {subMovOpen?.alias}</DialogTitle>
+          </DialogHeader>
+          {subMovs.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {subMovs.map(m => {
+              const label =
+                m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+                m.tipo === "transfer_a_sub" ? "Recibido del titular" :
+                m.tipo === "transfer_desde_sub" ? "Devuelto al titular" :
+                m.tipo;
+              const positivo = m.tipo === "transfer_a_sub";
+              return (
+                <div key={m.id} className="flex justify-between text-sm border-b pb-1">
+                  <div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+                  </div>
+                  <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
+                    {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
