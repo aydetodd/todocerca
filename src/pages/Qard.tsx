@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type SubQR = {
   id: string;
