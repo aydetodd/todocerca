@@ -49,6 +49,7 @@ export default function Qard() {
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
+  const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
 
   const abrirMovsSub = async (sub: SubQR) => {
     setSubMovOpen(sub);
