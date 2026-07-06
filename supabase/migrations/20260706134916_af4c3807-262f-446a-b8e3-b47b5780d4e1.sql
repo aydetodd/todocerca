@@ -1,0 +1,2 @@
+ALTER TABLE public.qard_sub_qr DROP CONSTRAINT IF EXISTS qard_sub_qr_estado_check;
+ALTER TABLE public.qard_sub_qr ADD CONSTRAINT qard_sub_qr_estado_check CHECK (estado IN ('activa','apagada','cancelada'));
