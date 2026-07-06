@@ -26,8 +26,10 @@ import {
   Play,
   CheckCircle2,
   WifiOff,
+  QrCode,
 } from "lucide-react";
 import { getHermosilloToday } from "@/lib/utils";
+import { ForaneoScanner } from "@/components/ForaneoScanner";
 
 interface DriverTripPanelProps {
   choferEmpresaId: string;
