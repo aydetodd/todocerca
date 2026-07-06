@@ -363,10 +363,19 @@ export default function Qard() {
         <div className="font-semibold mb-2">Últimos movimientos</div>
         {mov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
         <div className="space-y-2">
-          {mov.map(m => (
+          {mov.map(m => {
+            const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
+            const label =
+              m.tipo === "recarga" ? "Recarga" :
+              m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+              m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
+              m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
+              m.tipo;
+            const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
+            return (
             <div key={m.id} className="flex justify-between text-sm border-b pb-1">
               <div>
-                <div className="font-medium">{m.tipo === "recarga" ? "Recarga" : m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` : m.tipo}</div>
+                <div className="font-medium">{label}</div>
                 <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
               </div>
               <div className={`font-semibold ${m.tipo === "recarga" ? "text-green-600" : "text-red-600"}`}>
