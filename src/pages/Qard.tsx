@@ -378,11 +378,12 @@ export default function Qard() {
                 <div className="font-medium">{label}</div>
                 <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
               </div>
-              <div className={`font-semibold ${m.tipo === "recarga" ? "text-green-600" : "text-red-600"}`}>
-                {m.tipo === "recarga" ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+              <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
+                {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
