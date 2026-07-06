@@ -35,12 +35,17 @@ serve(async (req) => {
     const body = await req.json();
     const qardNumberRaw = String(body.qard_number || "").replace(/\D/g, "");
     const monto = Number(body.monto_mxn);
+    const cvvInput = body.cvv != null ? String(body.cvv).replace(/\D/g, "") : null;
+    const manual = !!body.manual;
 
     if (qardNumberRaw.length !== 16) {
       return jsonErr("QR inválido (deben ser 16 dígitos)", "invalido");
     }
     if (!monto || monto <= 0) {
       return jsonErr("Monto inválido", "invalido");
+    }
+    if (manual && (!cvvInput || cvvInput.length < 3)) {
+      return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
     }
 
     // 1) Buscar sub-QR
