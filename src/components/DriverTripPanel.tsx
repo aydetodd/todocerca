@@ -118,6 +118,7 @@ export function DriverTripPanel({
   const [manualStartDir, setManualStartDir] = useState<Direccion | null>(null);
   const [manualEndOpen, setManualEndOpen] = useState(false);
   const inFlightRef = useRef(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   // ---- Modo automático (foráneas) ----
   // La jornada ahora es totalmente automática: siempre activa durante el día
   // (Hermosillo, UTC-7). El cron `close-overnight-trips` cierra cualquier viaje
