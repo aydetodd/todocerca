@@ -38,6 +38,7 @@ const Auth = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [ubicacion, setUbicacion] = useState<UbicacionValue>({ paisId: '', estadoId: '', municipioId: '' });
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
