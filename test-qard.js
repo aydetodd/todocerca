@@ -38,7 +38,7 @@ async function drawCard(doc, x, y, opts, variant) {
   doc.setDrawColor(90);
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
 
-  // Centro visual del reverso (para debug)
+  // center line
   // doc.setDrawColor(255, 0, 0);
   // doc.line(x, y + CARD_H + CARD_H/2, x + CARD_W, y + CARD_H + CARD_H/2);
 
@@ -75,13 +75,15 @@ async function drawCard(doc, x, y, opts, variant) {
   const backCenterX = x + CARD_W / 2;
   const backMidY = y + CARD_H + CARD_H / 2;
 
-  let offsets;
-  if (variant === 1) offsets = { q: 9, s: -1, t: -10 };
-  if (variant === 2) offsets = { q: 8, s: -1, t: -9 };
-  if (variant === 3) offsets = { q: 7, s: -2, t: -9 };
-  if (variant === 4) offsets = { q: 6, s: -2, t: -8 };
-  if (variant === 5) offsets = { q: 5, s: -3, t: -8 };
-  if (variant === 6) offsets = { q: 4.5, s: -3.5, t: -7.5 };
+  const variants = {
+    4: { q: 6, s: -2, t: -8 },
+    5: { q: 5, s: -3, t: -7 },
+    6: { q: 4.5, s: -3.5, t: -6.5 },
+    7: { q: 4, s: -4, t: -6 },
+    8: { q: 3.5, s: -4.5, t: -5.5 },
+    9: { q: 3, s: -5, t: -5 },
+  };
+  const offsets = variants[variant];
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
@@ -107,7 +109,6 @@ async function drawCard(doc, x, y, opts, variant) {
     angle: 180,
   });
 
-  // label
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(150);
@@ -130,8 +131,7 @@ async function main() {
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const variant = r * cols + c + 1;
-      if (variant > 6) continue;
+      const variant = [4,5,6,7,8,9][r * cols + c];
       const x = originX + c * (CARD_W + gapX);
       const y = originY + r * (FOLD_H + gapY);
       await drawCard(doc, x, y, { qardNumber: "5226030000000104", vencimiento: "12/99" }, variant);
