@@ -49,6 +49,7 @@ export default function Qard() {
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
+  const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
 
   const abrirMovsSub = async (sub: SubQR) => {
     setSubMovOpen(sub);
@@ -230,9 +231,13 @@ export default function Qard() {
                 </div>
               </div>
               {qardNumber && (
-                <div className="bg-white p-2 rounded-lg">
+                <button
+                  className="bg-white p-2 rounded-lg cursor-pointer active:scale-95 transition"
+                  onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
+                  title="Toca para agrandar y pagar"
+                >
                   <QRCodeSVG value={qardNumber} size={96} level="H" />
-                </div>
+                </button>
               )}
             </div>
             {qardNumber && (
@@ -298,7 +303,13 @@ export default function Qard() {
                 </div>
                 {familiares.filter(s => s.estado === filtroGrupo).map(s => (
             <div key={s.id} className={`flex items-center gap-3 border rounded p-2 ${s.estado === "apagada" ? "opacity-60 bg-muted/40" : ""}`}>
-              <div className="bg-white p-1 rounded"><QRCodeSVG value={s.qard_number} size={56} /></div>
+              <button
+                className="bg-white p-1 rounded cursor-pointer active:scale-95 transition"
+                onClick={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })}
+                title="Toca para agrandar y pagar"
+              >
+                <QRCodeSVG value={s.qard_number} size={56} />
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
@@ -445,6 +456,18 @@ export default function Qard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* QR fullscreen para pagar */}
+      {qrFullscreen && (
+        <div
+          className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6"
+          onClick={() => setQrFullscreen(null)}
+        >
+          <div className="text-black text-lg font-semibold mb-4">{qrFullscreen.label}</div>
+          <QRCodeSVG value={qrFullscreen.value} size={Math.min(window.innerWidth, window.innerHeight) - 80} level="H" />
+          <div className="text-black/60 text-sm mt-6">Toca para cerrar</div>
+        </div>
+      )}
 
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
