@@ -231,9 +231,13 @@ export default function Qard() {
                 </div>
               </div>
               {qardNumber && (
-                <div className="bg-white p-2 rounded-lg">
+                <button
+                  className="bg-white p-2 rounded-lg cursor-pointer active:scale-95 transition"
+                  onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
+                  title="Toca para agrandar y pagar"
+                >
                   <QRCodeSVG value={qardNumber} size={96} level="H" />
-                </div>
+                </button>
               )}
             </div>
             {qardNumber && (
