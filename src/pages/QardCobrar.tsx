@@ -54,14 +54,14 @@ export default function QardCobrar() {
     }
   };
 
-  const procesarCobro = async (qard: string, m: number) => {
+  const procesarCobro = async (qard: string, m: number, opts?: { cvv?: string; manual?: boolean }) => {
     const clean = qard.replace(/\D/g, "");
     if (clean.length !== 16) {
       setUltimo({ ok: false, mensaje: "QR inválido (no son 16 dígitos)", color: "rojo" });
       return;
     }
     const { data, error } = await supabase.functions.invoke("qard-cobrar-comercio", {
-      body: { qard_number: clean, monto_mxn: m },
+      body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual },
     });
     if (error) {
       setUltimo({ ok: false, mensaje: error.message, color: "rojo" });
