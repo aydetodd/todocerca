@@ -462,6 +462,14 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
         maestra={solicitudTarget}
         onSubmitted={load}
       />
+
+      <EditarRutaMaestraDialog
+        open={!!editTarget}
+        onOpenChange={(o) => !o && setEditTarget(null)}
+        maestra={editTarget}
+        permisoExpiraAt={editTarget ? permisos[editTarget.id] : null}
+        onSaved={load}
+      />
     </div>
   );
 }
