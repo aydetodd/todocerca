@@ -130,6 +130,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       .channel('rutas-maestras-' + proveedorId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rutas_foraneas_maestras' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'productos', filter: `proveedor_id=eq.${proveedorId}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ruta_maestra_solicitudes' }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
