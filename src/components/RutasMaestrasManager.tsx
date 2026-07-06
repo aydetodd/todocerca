@@ -294,14 +294,24 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
                           <AlertTriangle className="h-3 w-3 mr-1" /> Cambio pendiente de aprobación
                         </Badge>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full h-8 text-xs"
-                        onClick={() => setSolicitudTarget(maestra)}
-                      >
-                        <Edit3 className="h-3 w-3 mr-1" /> Solicitar cambio a esta ruta
-                      </Button>
+                      {permisos[maestra.id] ? (
+                        <Button
+                          size="sm"
+                          className="w-full h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                          onClick={() => setEditTarget(maestra)}
+                        >
+                          <PencilLine className="h-3 w-3 mr-1" /> Editar ahora (autorizado)
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full h-8 text-xs"
+                          onClick={() => setSolicitudTarget(maestra)}
+                        >
+                          <Edit3 className="h-3 w-3 mr-1" /> Pedir autorización para editar
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex gap-2 items-center">
