@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, RefreshCw, Trash2, ArrowLeft, Wallet } from "lucide-react";
+import { CreditCard, Plus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 type SubQR = {
@@ -16,6 +16,8 @@ type SubQR = {
   alias: string;
   limite_por_transaccion: number | null;
   estado: "activa" | "cancelada";
+  fecha_vencimiento: string | null;
+  cvv: string | null;
 };
 type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
