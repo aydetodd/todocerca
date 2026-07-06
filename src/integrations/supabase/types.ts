@@ -3676,6 +3676,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
           id: string
           motivo: string
+          permiso_expira_at: string | null
           propuesta: Json
           ruta_maestra_id: string
           solicitante_nombre: string | null
@@ -3694,6 +3695,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["ruta_solicitud_estado"]
           id?: string
           motivo: string
+          permiso_expira_at?: string | null
           propuesta?: Json
           ruta_maestra_id: string
           solicitante_nombre?: string | null
@@ -3712,6 +3714,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["ruta_solicitud_estado"]
           id?: string
           motivo?: string
+          permiso_expira_at?: string | null
           propuesta?: Json
           ruta_maestra_id?: string
           solicitante_nombre?: string | null
@@ -5505,6 +5508,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
           id: string
           motivo: string
+          permiso_expira_at: string | null
           propuesta: Json
           ruta_maestra_id: string
           solicitante_nombre: string | null
@@ -5561,6 +5565,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["ruta_solicitud_estado"]
           id: string
           motivo: string
+          permiso_expira_at: string | null
           propuesta: Json
           ruta_maestra_id: string
           solicitante_nombre: string | null
@@ -5783,6 +5788,10 @@ export type Database = {
       get_visible_tracker_ids: {
         Args: { _group_id: string; _user_id: string }
         Returns: string[]
+      }
+      has_active_edit_permission: {
+        Args: { _ruta_id: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {

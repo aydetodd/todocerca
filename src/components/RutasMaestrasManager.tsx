@@ -21,9 +21,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle } from 'lucide-react';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle, PencilLine } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
 import SolicitarCambioRutaDialog from '@/components/SolicitarCambioRutaDialog';
+import EditarRutaMaestraDialog from '@/components/EditarRutaMaestraDialog';
 
 function extractEndpoints(geojson: any): { origin: { lat: number; lng: number } | null; destination: { lat: number; lng: number } | null } {
   try {
@@ -49,6 +50,7 @@ interface Maestra {
   estado: 'pending' | 'approved' | 'rejected';
   created_by_user_id: string;
   rechazo_motivo: string | null;
+  route_geojson: any;
   route_origin_lat: number | null;
   route_origin_lng: number | null;
   route_destination_lat: number | null;
@@ -76,6 +78,8 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
   const [showProposal, setShowProposal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [solicitudTarget, setSolicitudTarget] = useState<Maestra | null>(null);
+  const [editTarget, setEditTarget] = useState<Maestra | null>(null);
+  const [permisos, setPermisos] = useState<Record<string, string | null>>({}); // ruta_maestra_id -> permiso_expira_at
 
   // Proposal form
   const [propNombre, setPropNombre] = useState('');
@@ -87,7 +91,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [maestrasRes, productosRes] = await Promise.all([
+    const [maestrasRes, productosRes, permisosRes] = await Promise.all([
       supabase
         .from('rutas_foraneas_maestras' as any)
         .select('*')
@@ -98,11 +102,27 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
         .select('id, nombre, ruta_maestra_id')
         .eq('proveedor_id', proveedorId)
         .eq('route_type', 'foranea'),
+      user
+        ? supabase
+            .from('ruta_maestra_solicitudes' as any)
+            .select('ruta_maestra_id, permiso_expira_at')
+            .eq('solicitante_user_id', user.id)
+            .eq('estado', 'approved')
+        : Promise.resolve({ data: [], error: null } as any),
     ]);
     if (!maestrasRes.error) setMaestras((maestrasRes.data as any) || []);
     if (!productosRes.error) setProductos((productosRes.data as any) || []);
+    if (!permisosRes.error) {
+      const now = Date.now();
+      const map: Record<string, string | null> = {};
+      ((permisosRes.data as any[]) || []).forEach((r) => {
+        const exp = r.permiso_expira_at ? new Date(r.permiso_expira_at).getTime() : Infinity;
+        if (exp > now) map[r.ruta_maestra_id] = r.permiso_expira_at;
+      });
+      setPermisos(map);
+    }
     setLoading(false);
-  }, [proveedorId]);
+  }, [proveedorId, user]);
 
   useEffect(() => {
     load();
@@ -110,6 +130,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       .channel('rutas-maestras-' + proveedorId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rutas_foraneas_maestras' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'productos', filter: `proveedor_id=eq.${proveedorId}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ruta_maestra_solicitudes' }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -273,14 +294,24 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
                           <AlertTriangle className="h-3 w-3 mr-1" /> Cambio pendiente de aprobación
                         </Badge>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full h-8 text-xs"
-                        onClick={() => setSolicitudTarget(maestra)}
-                      >
-                        <Edit3 className="h-3 w-3 mr-1" /> Solicitar cambio a esta ruta
-                      </Button>
+                      {permisos[maestra.id] ? (
+                        <Button
+                          size="sm"
+                          className="w-full h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                          onClick={() => setEditTarget(maestra)}
+                        >
+                          <PencilLine className="h-3 w-3 mr-1" /> Editar ahora (autorizado)
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full h-8 text-xs"
+                          onClick={() => setSolicitudTarget(maestra)}
+                        >
+                          <Edit3 className="h-3 w-3 mr-1" /> Pedir autorización para editar
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex gap-2 items-center">
@@ -430,6 +461,14 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
         onOpenChange={(o) => !o && setSolicitudTarget(null)}
         maestra={solicitudTarget}
         onSubmitted={load}
+      />
+
+      <EditarRutaMaestraDialog
+        open={!!editTarget}
+        onOpenChange={(o) => !o && setEditTarget(null)}
+        maestra={editTarget}
+        permisoExpiraAt={editTarget ? permisos[editTarget.id] : null}
+        onSaved={load}
       />
     </div>
   );
