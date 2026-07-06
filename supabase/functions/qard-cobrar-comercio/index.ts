@@ -44,6 +44,7 @@ serve(async (req) => {
     if (!monto || monto <= 0) {
       return jsonErr("Monto inválido", "invalido");
     }
+    console.log("[QARD-COBRAR] payload", { qard: qardNumberRaw.slice(-4), monto, manual, cvvLen: cvvInput?.length ?? 0 });
     if (manual && (!cvvInput || cvvInput.length < 3)) {
       return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
     }
