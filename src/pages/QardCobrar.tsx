@@ -126,7 +126,7 @@ export default function QardCobrar() {
         {!scanning ? (
           <div className="flex gap-2">
             <Button className="flex-1" size="lg" onClick={iniciarEscaneo}><ScanLine className="h-5 w-5 mr-2" /> ESCANEAR QR</Button>
-            <Button variant="outline" onClick={cobrarManual}>Manual</Button>
+            <Button variant="outline" onClick={abrirManual}>Manual</Button>
           </div>
         ) : (
           <div>
