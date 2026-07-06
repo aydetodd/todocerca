@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type SubQR = {
   id: string;
@@ -25,6 +26,7 @@ type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
+  sub_qr_id: string | null;
 };
 
 function formatNumero(n?: string | null) {
@@ -45,6 +47,20 @@ export default function Qard() {
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
+  const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
+  const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
+
+  const abrirMovsSub = async (sub: SubQR) => {
+    setSubMovOpen(sub);
+    setSubMovs([]);
+    const { data } = await supabase
+      .from("qard_movimientos" as any)
+      .select("*")
+      .eq("sub_qr_id", sub.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setSubMovs((data as any) ?? []);
+  };
 
   const rotarCvv = async (id: string) => {
     const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
@@ -331,6 +347,9 @@ export default function Qard() {
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
+                <Button size="sm" variant="ghost" title="Ver movimientos" onClick={() => abrirMovsSub(s)}>
+                  <History className="h-4 w-4" />
+                </Button>
                 {s.estado !== "cancelada" && (
                   <Button
                     size="sm"
@@ -358,34 +377,74 @@ export default function Qard() {
         </div>
       </Card>
 
-      {/* Movimientos */}
-      <Card className="p-4">
-        <div className="font-semibold mb-2">Últimos movimientos</div>
-        {mov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
-        <div className="space-y-2">
-          {mov.map(m => {
-            const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
-            const label =
-              m.tipo === "recarga" ? "Recarga" :
-              m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
-              m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
-              m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
-              m.tipo;
-            const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
-            return (
-            <div key={m.id} className="flex justify-between text-sm border-b pb-1">
-              <div>
-                <div className="font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
-              </div>
-              <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
-                {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
-              </div>
+      {/* Movimientos de la cuenta eje */}
+      {(() => {
+        const titularId = subs.find(s => s.sub_index === 0)?.id;
+        const ejeMov = mov.filter(m =>
+          !m.sub_qr_id || m.sub_qr_id === titularId ||
+          m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+        );
+        return (
+          <Card className="p-4">
+            <div className="font-semibold mb-2">Últimos movimientos · cuenta eje</div>
+            {ejeMov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
+            <div className="space-y-2">
+              {ejeMov.map(m => {
+                const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
+                const label =
+                  m.tipo === "recarga" ? "Recarga" :
+                  m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+                  m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
+                  m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
+                  m.tipo;
+                const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
+                return (
+                  <div key={m.id} className="flex justify-between text-sm border-b pb-1">
+                    <div>
+                      <div className="font-medium">{label}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+                    </div>
+                    <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
+                      {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            );
-          })}
-        </div>
-      </Card>
+          </Card>
+        );
+      })()}
+
+      {/* Dialog: movimientos de un sub-QR */}
+      <Dialog open={!!subMovOpen} onOpenChange={(o) => !o && setSubMovOpen(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Movimientos · {subMovOpen?.alias}</DialogTitle>
+          </DialogHeader>
+          {subMovs.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {subMovs.map(m => {
+              const label =
+                m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+                m.tipo === "transfer_a_sub" ? "Recibido del titular" :
+                m.tipo === "transfer_desde_sub" ? "Devuelto al titular" :
+                m.tipo;
+              const positivo = m.tipo === "transfer_a_sub";
+              return (
+                <div key={m.id} className="flex justify-between text-sm border-b pb-1">
+                  <div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+                  </div>
+                  <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
+                    {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
