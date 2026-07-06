@@ -5875,6 +5875,10 @@ export type Database = {
       }
       qard_ensure_number: { Args: { _user_id: string }; Returns: string }
       qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
+      qard_finalize_registration: {
+        Args: { _nivel2_id: string }
+        Returns: string
+      }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
