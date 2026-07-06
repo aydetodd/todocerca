@@ -1,91 +1,95 @@
 
-## Qué se construye
+# Cobro QR foráneo — modelo standby (sube-baja)
 
-Cuando un concesionario quiera modificar una ruta foránea maestra (nombre, trazado a mano, geocercas A/B, precio, o cualquier otro ajuste), abrirá una **solicitud** que:
+## Idea en simple
 
-1. Se guarda como evidencia con sus datos (nombre, QaRd, teléfono, ruta afectada) auto-adjuntos.
-2. Le llega al admin por **bandeja interna** de la app y por **correo electrónico**.
-3. Marca la ruta como "con cambio pendiente" pero **la ruta sigue operando** normal.
-4. El admin la **aprueba o rechaza**. Al aprobar, los cambios se aplican a la ruta maestra y se propagan a todas las rutas de concesionarios vinculadas. Al rechazar, se conserva la evidencia con el motivo.
+El concesionario dibuja **una o varias geocercas de cobro** sobre su ruta:
 
-Los archivos KML/KMZ/GPX **no se piden** — el trazado propuesto se dibuja a mano en el mapa (mismo componente que ya usan hoy para trazar) y se guarda como GeoJSON en la solicitud.
+- Ruta con tarifa única (ej. $9): **1 sola geocerca** que cubre todo el trayecto.
+- Ruta con tarifas por tramo (ej. Obregón → Bácum con paradas intermedias): **varias geocercas** con precio entre cada par.
 
-## Flujo del concesionario
+Cuando el pasajero **sube** y escanea su QR:
+1. El sistema apunta el QR + la geocerca donde subió + hora + viaje activo.
+2. El saldo del pasajero **queda en standby** (no se cobra todavía).
+3. En el escáner del chofer aparece **"Sube: Juan · $? pendiente"** y suma +1 en "Suben / A bordo".
 
-En "Catálogo Maestro" de rutas foráneas, cada ruta aprobada tendrá botón **"Solicitar cambio"**. Abre un diálogo:
+Cuando el pasajero **baja** y vuelve a escanear el mismo QR:
+1. El sistema busca su "viaje abierto" en standby.
+2. Calcula el precio según la geocerca de subida ↔ geocerca de bajada.
+3. **Cobra ese monto** al saldo QaRd del pasajero.
+4. En el escáner aparece **"Baja: Juan · $12"** y suma +1 en "Bajan / A bordo −1".
 
-- Tipo de cambio: Renombrar / Trazado / Geocercas A-B / Precio / Otro.
-- Campos que aparecen según el tipo:
-  - Renombrar → nuevo nombre.
-  - Trazado → mini-mapa para dibujar a mano el nuevo recorrido.
-  - Geocercas → picker para mover A/B y radio.
-  - Precio → nuevo importe.
-  - Otro → texto libre.
-- **Motivo** (obligatorio): "por qué".
-- Se muestra en pantalla lo que se va a enviar como evidencia (su nombre, QaRd, teléfono, ruta) para que sepa que queda registrado.
+Si el pasajero baja en la última geocerca del recorrido sin re-escanear, al cerrarse el viaje se cobra automáticamente la tarifa **máxima** de esa subida.
 
-Al enviar, la ruta muestra un badge amarillo "Cambio pendiente" hasta que el admin resuelva.
+## Qué cambia en la app
 
-## Flujo del admin
+### 1. Pantalla del chofer (foráneas) — mantener info + agregar escáner
 
-Nueva tarjeta en el panel de admin: **"Solicitudes de cambio a rutas maestras"** con filtros Pendientes / Aprobadas / Rechazadas. Cada solicitud muestra:
+En `DriverTripPanel` (Viajes con confirmación) se agrega **un botón grande "Cobrar QR"** justo debajo del mapa. Al tocarlo abre el escáner en pantalla completa:
 
-- Concesionario (nombre + QaRd + teléfono).
-- Ruta afectada + tipo de cambio.
-- Valor actual vs propuesto (side by side).
-- Motivo del concesionario.
-- Botones **Aprobar** / **Rechazar** (rechazar pide motivo visible para el concesionario).
+- Cámara continua + input manual.
+- Cada scan llama al edge function nuevo `cobro-qr-foraneo`.
+- Muestra toast/chime distinto para **subida** ("+1 Juan · standby") vs **bajada** ("−1 Juan · $12 cobrados").
+- Botón "Cerrar" regresa a la pantalla del viaje sin perder #viaje ni conteo.
 
-Al aprobar: los cambios se escriben en `rutas_foraneas_maestras` y se propagan (trigger existente) a los `productos` vinculados. Se limpia el badge de "pendiente".
+El resto de la pantalla queda igual (#viaje, Suben/Bajan/A bordo, geocercas A/B, historial).
 
-## Notificaciones
+### 2. Configuración de geocercas de cobro (concesionario)
 
-- **Bandeja interna**: se inserta un mensaje del canal oficial del sistema (ID `0...1`) al inbox del admin (usuario con `consecutive_number = 1`). Confirmación al concesionario cuando se aprueba/rechaza.
-- **Correo**: edge function `notify-ruta-solicitud` envía email al admin con los datos de la solicitud y un link al panel. Requiere que el dominio de correo de Lovable Cloud esté configurado; si no lo está, la solicitud igual se crea y la bandeja interna funciona — solo se omite el correo.
+Ya existe la pantalla **"Geocercas de cobro (ida/vuelta)"** de la ruta. La extendemos para:
+
+- Permitir **N geocercas** ordenadas a lo largo de la ruta (no solo A/B).
+- Cada geocerca: nombre corto (ej. "Providencia"), centro (lat/lng), radio.
+- Una **tabla de tarifas** entre pares de geocercas: `desde_geocerca → hasta_geocerca = $precio`.
+- Caso simple (tarifa única): 1 sola geocerca y `precio_default` de la ruta.
+
+### 3. Modelo de datos
+
+Tablas nuevas:
+
+- `ruta_geocercas_cobro`
+  - `id`, `producto_id`, `nombre`, `lat`, `lng`, `radio_m`, `orden`
+- `ruta_tarifas_tramo`
+  - `id`, `producto_id`, `desde_geocerca_id`, `hasta_geocerca_id`, `precio_mxn`
+- `qard_viajes_pasajero` (el "standby")
+  - `id`, `qard_number` / `wallet_id`, `viaje_id`, `producto_id`, `subida_geocerca_id`, `subida_at`, `bajada_geocerca_id` (null hasta que baja), `bajada_at`, `monto_cobrado_mxn` (null hasta que baja), `estado` ('abierto' | 'cerrado' | 'auto_cerrado')
+
+Cada tabla lleva sus `GRANT` y RLS estándar (solo el concesionario dueño puede editar sus geocercas/tarifas; el chofer puede leerlas de sus contratos; los `qard_viajes_pasajero` los inserta/actualiza la edge function con `service_role`).
+
+### 4. Edge function `cobro-qr-foraneo`
+
+Entrada: `{ unidad_id, viaje_id, qard_token, lat, lng }`.
+
+Lógica:
+1. Identifica al pasajero por `qard_token` y valida saldo mínimo.
+2. Detecta en qué **geocerca de cobro** cae `lat/lng` (la más cercana dentro del radio).
+3. Busca fila abierta en `qard_viajes_pasajero` para ese pasajero + `viaje_id`:
+   - **Si no existe → SUBIDA**: inserta `{subida_geocerca_id, subida_at, estado='abierto'}`, incrementa `pasajeros_subidos` y `pasajeros_a_bordo` en `viajes_realizados`. Devuelve `{tipo:'sube', pasajero, standby:true}`.
+   - **Si existe → BAJADA**: busca precio en `ruta_tarifas_tramo(subida, bajada)`; cobra del wallet QaRd; marca `estado='cerrado'`, `monto_cobrado_mxn`; incrementa `pasajeros_bajados`, decrementa `pasajeros_a_bordo`. Devuelve `{tipo:'baja', pasajero, monto}`.
+4. Si el mismo QR escanea en la **misma geocerca** dentro de 60 s → ignora (anti-doble-tap).
+
+### 5. Cierre automático al terminar viaje
+
+Cuando `DriverTripPanel` cierra un viaje (llega a la geocerca destino), un trigger o el propio update de `viajes_realizados` a `completado` dispara:
+
+- Para cada `qard_viajes_pasajero` con `estado='abierto'` de ese viaje:
+  - Cobra la **tarifa máxima** desde su `subida_geocerca_id` hasta la última geocerca de la ruta.
+  - Marca `estado='auto_cerrado'`.
+
+Así ningún pasajero se queda "gratis" por olvidar escanear al bajar.
 
 ## Detalles técnicos
 
-### Migración
+- Anti-cruce ruta pública vs privada respetado (memoria `qr-scope-publico-vs-privado`): `qard_viajes_pasajero.producto_id` debe coincidir con el `producto_id` del viaje.
+- Realtime: agregar `qard_viajes_pasajero` a `supabase_realtime` para que el escáner y la lista "A bordo" se sincronicen entre dispositivos.
+- Precisión GPS: si el punto cae fuera de todas las geocercas de cobro por <30 m, se snapea a la más cercana.
+- Hermosillo (UTC-7) para `subida_at` / `bajada_at` en reportes.
+- Reporte diario del concesionario: se agrega columna "$ cobrado por tramo" agrupado por viaje.
 
-Tabla `ruta_maestra_solicitudes`:
-- `ruta_maestra_id` → FK a `rutas_foraneas_maestras`
-- `solicitante_user_id`, `solicitante_nombre`, `solicitante_qard`, `solicitante_telefono` (snapshot inmutable — evidencia)
-- `tipo_cambio` enum: `renombrar | trazado | geocercas | precio | otro`
-- `propuesta` jsonb (contiene nuevo nombre, nuevo geojson, nuevo lat/lng/radio, nuevo precio, según tipo)
-- `motivo` text (obligatorio)
-- `estado` enum: `pending | approved | rejected` (default pending)
-- `admin_user_id`, `admin_resuelto_at`, `admin_motivo_rechazo`
+## Fases sugeridas
 
-Columna nueva en `rutas_foraneas_maestras`: `tiene_cambio_pendiente boolean default false`.
+1. **Fase A (esta iteración)**: botón "Cobrar QR" en `DriverTripPanel` + pantalla escáner que llama al edge function. Tablas + edge function `cobro-qr-foraneo` con lógica sube/baja. Cierre automático al completar viaje.
+2. **Fase B**: UI del concesionario para dibujar N geocercas y capturar la tabla de tarifas entre pares.
+3. **Fase C**: reporte diario con desglose $ cobrado por tramo por viaje.
 
-RLS:
-- Concesionario: `INSERT` con `auth.uid() = solicitante_user_id`; `SELECT` solo de las suyas.
-- Admin (`has_role(auth.uid(), 'admin')` o `consecutive_number = 1`): `SELECT/UPDATE` de todas.
-
-Triggers:
-- `AFTER INSERT`: marca la ruta como pendiente, inserta mensaje al inbox del admin, invoca (best-effort) la edge function de email.
-- RPCs `admin_approve_solicitud_cambio(_id)` y `admin_reject_solicitud_cambio(_id, _motivo)` — aplican los cambios y avisan al concesionario por bandeja interna.
-
-Realtime habilitado en la tabla para que el badge "pendiente" y la bandeja del admin actualicen sin recargar.
-
-### Edge function
-
-`supabase/functions/notify-ruta-solicitud/index.ts` — enviada por el trigger DB vía `pg_net` (o llamada desde el cliente tras crear la solicitud, más simple y sin dependencias nuevas). Usa la infra de correo de Lovable Cloud.
-
-### Frontend
-
-Nuevos componentes:
-- `src/components/SolicitarCambioRutaDialog.tsx` (concesionario)
-- `src/components/AdminSolicitudesCambioRutas.tsx` (admin)
-
-Modificados:
-- `src/components/RutasMaestrasManager.tsx` → botón "Solicitar cambio" + badge "Cambio pendiente".
-- Panel de admin donde vive `AdminRutasMaestras` → agrega la nueva tarjeta.
-
-Sin tocar lógica de negocio existente ni tipos de rutas. Sin credenciales nuevas. Sin librerías nuevas.
-
-## Fuera de alcance (para no gastar de más)
-
-- Subida de foto/PDF como evidencia (descartado por ti — solo datos auto-adjuntos).
-- Aprobación parcial (todo o nada por solicitud).
-- Historial visual de versiones anteriores del trazado (queda en la tabla `propuesta` como jsonb, pero sin UI de diff visual).
+¿Arranco por la Fase A?

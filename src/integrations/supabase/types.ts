@@ -3268,6 +3268,91 @@ export type Database = {
           },
         ]
       }
+      qard_viajes_pasajero: {
+        Row: {
+          bajada_at: string | null
+          bajada_geocerca_id: string | null
+          bajada_lat: number | null
+          bajada_lng: number | null
+          chofer_id: string | null
+          created_at: string
+          estado: string
+          id: string
+          monto_cobrado_mxn: number | null
+          producto_id: string
+          qard_number: string
+          subida_at: string
+          subida_geocerca_id: string | null
+          subida_lat: number | null
+          subida_lng: number | null
+          unidad_id: string | null
+          updated_at: string
+          viaje_id: string
+        }
+        Insert: {
+          bajada_at?: string | null
+          bajada_geocerca_id?: string | null
+          bajada_lat?: number | null
+          bajada_lng?: number | null
+          chofer_id?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_cobrado_mxn?: number | null
+          producto_id: string
+          qard_number: string
+          subida_at?: string
+          subida_geocerca_id?: string | null
+          subida_lat?: number | null
+          subida_lng?: number | null
+          unidad_id?: string | null
+          updated_at?: string
+          viaje_id: string
+        }
+        Update: {
+          bajada_at?: string | null
+          bajada_geocerca_id?: string | null
+          bajada_lat?: number | null
+          bajada_lng?: number | null
+          chofer_id?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_cobrado_mxn?: number | null
+          producto_id?: string
+          qard_number?: string
+          subida_at?: string
+          subida_geocerca_id?: string | null
+          subida_lat?: number | null
+          subida_lng?: number | null
+          unidad_id?: string | null
+          updated_at?: string
+          viaje_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_viajes_pasajero_bajada_geocerca_id_fkey"
+            columns: ["bajada_geocerca_id"]
+            isOneToOne: false
+            referencedRelation: "ruta_geocercas_cobro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qard_viajes_pasajero_subida_geocerca_id_fkey"
+            columns: ["subida_geocerca_id"]
+            isOneToOne: false
+            referencedRelation: "ruta_geocercas_cobro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qard_viajes_pasajero_viaje_id_fkey"
+            columns: ["viaje_id"]
+            isOneToOne: false
+            referencedRelation: "viajes_realizados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qard_wallets: {
         Row: {
           created_at: string
@@ -3644,6 +3729,42 @@ export type Database = {
           },
         ]
       }
+      ruta_geocercas_cobro: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          nombre: string
+          orden: number
+          producto_id: string
+          radio_m: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          nombre: string
+          orden?: number
+          producto_id: string
+          radio_m?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          nombre?: string
+          orden?: number
+          producto_id?: string
+          radio_m?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ruta_invitaciones: {
         Row: {
           accepted_at: string | null
@@ -3743,6 +3864,51 @@ export type Database = {
             columns: ["ruta_maestra_id"]
             isOneToOne: false
             referencedRelation: "rutas_foraneas_maestras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ruta_tarifas_tramo: {
+        Row: {
+          created_at: string
+          desde_geocerca_id: string
+          hasta_geocerca_id: string
+          id: string
+          precio_mxn: number
+          producto_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desde_geocerca_id: string
+          hasta_geocerca_id: string
+          id?: string
+          precio_mxn?: number
+          producto_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desde_geocerca_id?: string
+          hasta_geocerca_id?: string
+          id?: string
+          precio_mxn?: number
+          producto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ruta_tarifas_tramo_desde_geocerca_id_fkey"
+            columns: ["desde_geocerca_id"]
+            isOneToOne: false
+            referencedRelation: "ruta_geocercas_cobro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ruta_tarifas_tramo_hasta_geocerca_id_fkey"
+            columns: ["hasta_geocerca_id"]
+            isOneToOne: false
+            referencedRelation: "ruta_geocercas_cobro"
             referencedColumns: ["id"]
           },
         ]
@@ -5923,6 +6089,15 @@ export type Database = {
       rpc_producto_set_geocercas_cobro: {
         Args: { _producto_id: string; _sentido: string; _zonas: Json }
         Returns: undefined
+      }
+      rpc_qard_scan_foraneo: {
+        Args: {
+          _lat: number
+          _lng: number
+          _qard_number: string
+          _viaje_id: string
+        }
+        Returns: Json
       }
       rpc_route_set_paradas: {
         Args: { _paradas: Json; _producto_id: string }
