@@ -631,6 +631,17 @@ export function DriverTripPanel({
 
       {/* Contenido */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-40">
+        {/* Cobrar QR (foráneas) */}
+        {viajeActivo && (
+          <Button
+            size="lg"
+            className="w-full h-14 text-base bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setScannerOpen(true)}
+          >
+            <QrCode className="h-5 w-5 mr-2" />
+            Cobrar QR (sube/baja)
+          </Button>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="p-3 text-center">
