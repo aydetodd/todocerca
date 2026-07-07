@@ -421,7 +421,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 </div>
                 <div className="p-3 rounded-lg bg-blue-500/10 text-center">
                   <p className="text-2xl font-bold text-blue-600">{totalABordo}</p>
-                  <p className="text-[10px] text-muted-foreground">A bordo</p>
+                  <p className="text-[10px] text-muted-foreground">En stand (a bordo)</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
