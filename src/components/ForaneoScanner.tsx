@@ -197,25 +197,30 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
   const aBordo = viaje?.pasajeros_a_bordo ?? 0;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col">
-      {/* Header */}
-      <div className="shrink-0 bg-black/95 text-white px-3 py-2 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-2 min-w-0">
-          <QrCode className="h-5 w-5 shrink-0" />
-          <div className="min-w-0">
-            <div className="text-sm font-bold truncate">Cobrar QR · foránea</div>
-            <div className="text-[10px] opacity-70 truncate">
-              {gpsError ? "⚠ Sin GPS" : pos ? "GPS activo" : "Esperando GPS..."}
-              {prod?.nombre ? ` · ${prod.nombre}` : ""}
+    <div className={`${embedded ? "absolute inset-0" : "fixed inset-0 z-[200]"} bg-black flex flex-col`}>
+      {/* Header (solo en modal) */}
+      {!embedded && (
+        <div className="shrink-0 bg-black/95 text-white px-3 py-2 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <QrCode className="h-5 w-5 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-sm font-bold truncate">Cobrar QR · foránea</div>
+              <div className="text-[10px] opacity-70 truncate">
+                {gpsError ? "⚠ Sin GPS" : pos ? "GPS activo" : "Esperando GPS..."}
+                {prod?.nombre ? ` · ${prod.nombre}` : ""}
+              </div>
             </div>
           </div>
+          {onClose && (
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          )}
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0" onClick={onClose}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
+      )}
 
       {/* Tabs */}
+      {!hideTabs && (
       <div className="shrink-0 grid grid-cols-3 bg-black/90 border-b border-white/10">
         {([
           { k: "lector", label: "Lector", icon: QrCode },
