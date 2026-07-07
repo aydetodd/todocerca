@@ -175,10 +175,35 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       (v.fecha >= desde && v.fecha <= hasta) ||
       (v.estado === "en_curso" && v.fecha >= desdeMinus1);
 
-    if (error) { console.error(error); setViajes([]); }
-    else setViajes(((data || []) as ViajeRow[]).filter(inRange));
+    if (error) { console.error(error); setViajes([]); setCobrosPorViaje({}); setLoading(false); return; }
+    const rows = ((data || []) as ViajeRow[]).filter(inRange);
+    setViajes(rows);
+
+    // Cargar importes cobrados por viaje (QR foráneo + tramos urbanos)
+    const viajeIds = rows.map((v) => v.id);
+    const totals: Record<string, { monto: number; cobros: number }> = {};
+    if (viajeIds.length > 0) {
+      const [{ data: qvp }, { data: cqt }] = await Promise.all([
+        supabase.from("qard_viajes_pasajero").select("viaje_id, monto_cobrado_mxn").in("viaje_id", viajeIds),
+        supabase.from("cobros_qr_tramo").select("viaje_id, precio_real").in("viaje_id", viajeIds),
+      ]);
+      (qvp || []).forEach((r: any) => {
+        if (!r.viaje_id) return;
+        const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
+        t.monto += Number(r.monto_cobrado_mxn) || 0;
+        t.cobros += 1;
+      });
+      (cqt || []).forEach((r: any) => {
+        if (!r.viaje_id) return;
+        const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
+        t.monto += Number(r.precio_real) || 0;
+        t.cobros += 1;
+      });
+    }
+    setCobrosPorViaje(totals);
     setLoading(false);
   }, [proveedorId, getRange]);
+
 
   useEffect(() => {
     if (periodo !== "custom") load();
