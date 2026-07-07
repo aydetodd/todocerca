@@ -488,23 +488,27 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               {buckets.map((b) => {
                 const completados = b.viajes.filter((v) => v.estado === "completado").length;
                 const totalSuben = b.viajes.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
+                const totalBajan = b.viajes.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
+                const totalStand = b.viajes.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
+                const totalImporte = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+                const totalCobrosB = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
                 return (
                   <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
-                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-0.5">
+                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Badge variant="outline" className="text-[10px]">{completados} viajes</Badge>
-                          {totalSuben > 0 && (
-                            <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">
-                              {totalSuben} pasajeros
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{completados} viajes</Badge>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {b.unidadLabel} · {b.choferLabel}
                       </p>
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">↑{totalSuben} subieron</Badge>
+                        <Badge className="text-[10px] bg-amber-100 text-amber-700 border-0">↓{totalBajan} bajaron</Badge>
+                        <Badge className="text-[10px] bg-blue-100 text-blue-700 border-0">{totalStand} en stand</Badge>
+                        <Badge className="text-[10px] bg-violet-100 text-violet-700 border-0">{totalCobrosB} cobros</Badge>
+                        <Badge className="text-[10px] bg-primary/15 text-primary border-0">{fmtMoney(totalImporte)}</Badge>
+                      </div>
                     </div>
                     <div className="divide-y divide-border">
                       {b.viajes.map((v) => {
