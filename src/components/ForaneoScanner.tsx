@@ -238,6 +238,9 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
           </button>
         ))}
       </div>
+      )}
+
+
 
       {/* Contenido */}
       <div className="relative flex-1 overflow-hidden bg-black">
