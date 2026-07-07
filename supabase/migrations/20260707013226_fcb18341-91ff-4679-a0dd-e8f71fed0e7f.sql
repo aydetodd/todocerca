@@ -1,0 +1,2 @@
+ALTER TABLE public.qard_viajes_pasajero DROP CONSTRAINT IF EXISTS qard_viajes_pasajero_subida_geocerca_id_fkey;
+ALTER TABLE public.qard_viajes_pasajero DROP CONSTRAINT IF EXISTS qard_viajes_pasajero_bajada_geocerca_id_fkey;

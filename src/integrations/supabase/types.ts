@@ -3331,20 +3331,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "qard_viajes_pasajero_bajada_geocerca_id_fkey"
-            columns: ["bajada_geocerca_id"]
-            isOneToOne: false
-            referencedRelation: "ruta_geocercas_cobro"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qard_viajes_pasajero_subida_geocerca_id_fkey"
-            columns: ["subida_geocerca_id"]
-            isOneToOne: false
-            referencedRelation: "ruta_geocercas_cobro"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "qard_viajes_pasajero_viaje_id_fkey"
             columns: ["viaje_id"]
             isOneToOne: false
