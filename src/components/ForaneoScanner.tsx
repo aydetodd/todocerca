@@ -45,8 +45,8 @@ function beep(kind: "sube" | "baja" | "error") {
   } catch {}
 }
 
-export function ForaneoScanner({ viajeId, onClose }: Props) {
-  const [tab, setTab] = useState<Tab>("lector");
+export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab = "lector", hideTabs = false }: Props) {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
