@@ -929,6 +929,7 @@ export function DriverTripPanel({
           </Card>
         )}
       </div>
+      )}
 
       {/* Diálogo: elegir dirección AB / BA */}
       <AlertDialog open={askDir} onOpenChange={setAskDir}>
