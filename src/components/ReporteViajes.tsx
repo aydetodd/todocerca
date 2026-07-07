@@ -48,6 +48,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [filterChofer, setFilterChofer] = useState("all");
   const [filterRuta, setFilterRuta] = useState("all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
+  const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
@@ -174,10 +175,35 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       (v.fecha >= desde && v.fecha <= hasta) ||
       (v.estado === "en_curso" && v.fecha >= desdeMinus1);
 
-    if (error) { console.error(error); setViajes([]); }
-    else setViajes(((data || []) as ViajeRow[]).filter(inRange));
+    if (error) { console.error(error); setViajes([]); setCobrosPorViaje({}); setLoading(false); return; }
+    const rows = ((data || []) as ViajeRow[]).filter(inRange);
+    setViajes(rows);
+
+    // Cargar importes cobrados por viaje (QR foráneo + tramos urbanos)
+    const viajeIds = rows.map((v) => v.id);
+    const totals: Record<string, { monto: number; cobros: number }> = {};
+    if (viajeIds.length > 0) {
+      const [{ data: qvp }, { data: cqt }] = await Promise.all([
+        supabase.from("qard_viajes_pasajero").select("viaje_id, monto_cobrado_mxn").in("viaje_id", viajeIds),
+        supabase.from("cobros_qr_tramo").select("viaje_id, precio_real").in("viaje_id", viajeIds),
+      ]);
+      (qvp || []).forEach((r: any) => {
+        if (!r.viaje_id) return;
+        const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
+        t.monto += Number(r.monto_cobrado_mxn) || 0;
+        t.cobros += 1;
+      });
+      (cqt || []).forEach((r: any) => {
+        if (!r.viaje_id) return;
+        const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
+        t.monto += Number(r.precio_real) || 0;
+        t.cobros += 1;
+      });
+    }
+    setCobrosPorViaje(totals);
     setLoading(false);
   }, [proveedorId, getRange]);
+
 
   useEffect(() => {
     if (periodo !== "custom") load();
@@ -220,6 +246,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalSubidos = filtered.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
   const totalBajados = filtered.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
   const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
+  const totalCobrado = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+  const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
+  const fmtMoney = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -266,10 +295,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       String(v.pasajeros_subidos ?? 0),
       String(v.pasajeros_bajados ?? 0),
       String(v.pasajeros_a_bordo ?? 0),
+      String(cobrosPorViaje[v.id]?.cobros ?? 0),
+      (cobrosPorViaje[v.id]?.monto ?? 0).toFixed(2),
     ]);
     downloadCSV(
       `reporte-viajes-${getRange().desde}_a_${getRange().hasta}.csv`,
-      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo"],
+      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo", "Cobros", "Importe MXN"],
       rows
     );
   };
@@ -390,7 +421,17 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 </div>
                 <div className="p-3 rounded-lg bg-blue-500/10 text-center">
                   <p className="text-2xl font-bold text-blue-600">{totalABordo}</p>
-                  <p className="text-[10px] text-muted-foreground">A bordo</p>
+                  <p className="text-[10px] text-muted-foreground">En stand (a bordo)</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-violet-500/10 text-center">
+                  <p className="text-2xl font-bold text-violet-600">{totalCobros}</p>
+                  <p className="text-[10px] text-muted-foreground">Cobros al bajar</p>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/15 text-center">
+                  <p className="text-2xl font-bold text-primary">{fmtMoney(totalCobrado)}</p>
+                  <p className="text-[10px] text-muted-foreground">Importe cobrado</p>
                 </div>
               </div>
             </div>
@@ -447,23 +488,27 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               {buckets.map((b) => {
                 const completados = b.viajes.filter((v) => v.estado === "completado").length;
                 const totalSuben = b.viajes.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
+                const totalBajan = b.viajes.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
+                const totalStand = b.viajes.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
+                const totalImporte = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+                const totalCobrosB = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
                 return (
                   <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
-                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-0.5">
+                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Badge variant="outline" className="text-[10px]">{completados} viajes</Badge>
-                          {totalSuben > 0 && (
-                            <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">
-                              {totalSuben} pasajeros
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{completados} viajes</Badge>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {b.unidadLabel} · {b.choferLabel}
                       </p>
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">↑{totalSuben} subieron</Badge>
+                        <Badge className="text-[10px] bg-amber-100 text-amber-700 border-0">↓{totalBajan} bajaron</Badge>
+                        <Badge className="text-[10px] bg-blue-100 text-blue-700 border-0">{totalStand} en stand</Badge>
+                        <Badge className="text-[10px] bg-violet-100 text-violet-700 border-0">{totalCobrosB} cobros</Badge>
+                        <Badge className="text-[10px] bg-primary/15 text-primary border-0">{fmtMoney(totalImporte)}</Badge>
+                      </div>
                     </div>
                     <div className="divide-y divide-border">
                       {b.viajes.map((v) => {
@@ -485,8 +530,13 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
                               )}
                               <span className="text-[10px] text-emerald-700 font-medium">
-                                ↑{sub} ↓{baj}{enCurso ? ` · ${abordo} a bordo` : ""}
+                                ↑{sub} ↓{baj} · {abordo} en stand
                               </span>
+                              {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
+                                <span className="text-[10px] font-semibold text-primary">
+                                  {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
+                                </span>
+                              )}
                             </div>
                             <span className="text-muted-foreground shrink-0 tabular-nums text-right">
                               <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
