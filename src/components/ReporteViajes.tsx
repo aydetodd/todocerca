@@ -48,6 +48,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [filterChofer, setFilterChofer] = useState("all");
   const [filterRuta, setFilterRuta] = useState("all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
+  const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
