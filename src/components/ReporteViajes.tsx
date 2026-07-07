@@ -246,6 +246,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalSubidos = filtered.reduce((s, v) => s + (v.pasajeros_subidos ?? 0), 0);
   const totalBajados = filtered.reduce((s, v) => s + (v.pasajeros_bajados ?? 0), 0);
   const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
+  const totalCobrado = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+  const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
+  const fmtMoney = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
