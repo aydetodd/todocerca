@@ -424,6 +424,16 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   <p className="text-[10px] text-muted-foreground">A bordo</p>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-violet-500/10 text-center">
+                  <p className="text-2xl font-bold text-violet-600">{totalCobros}</p>
+                  <p className="text-[10px] text-muted-foreground">Cobros al bajar</p>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/15 text-center">
+                  <p className="text-2xl font-bold text-primary">{fmtMoney(totalCobrado)}</p>
+                  <p className="text-[10px] text-muted-foreground">Importe cobrado</p>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
