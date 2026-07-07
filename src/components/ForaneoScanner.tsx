@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { X, QrCode, ArrowDownCircle, ArrowUpCircle, Map as MapIcon, Users } from "lucide-react";
-import DriverMiniMap from "@/components/DriverMiniMap";
+import { DriverMiniMap } from "@/components/DriverMiniMap";
 
 interface Props {
   viajeId: string;
