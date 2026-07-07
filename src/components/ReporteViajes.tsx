@@ -530,8 +530,13 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                                 <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
                               )}
                               <span className="text-[10px] text-emerald-700 font-medium">
-                                ↑{sub} ↓{baj}{enCurso ? ` · ${abordo} a bordo` : ""}
+                                ↑{sub} ↓{baj} · {abordo} en stand
                               </span>
+                              {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
+                                <span className="text-[10px] font-semibold text-primary">
+                                  {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
+                                </span>
+                              )}
                             </div>
                             <span className="text-muted-foreground shrink-0 tabular-nums text-right">
                               <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
