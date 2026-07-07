@@ -119,6 +119,8 @@ export function DriverTripPanel({
   const [manualEndOpen, setManualEndOpen] = useState(false);
   const inFlightRef = useRef(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  // Pestaña activa: panel principal, mapa a pantalla completa, o lector QR
+  const [viewTab, setViewTab] = useState<"panel" | "mapa" | "lector">("panel");
   // ---- Modo automático (foráneas) ----
   // La jornada ahora es totalmente automática: siempre activa durante el día
   // (Hermosillo, UTC-7). El cron `close-overnight-trips` cierra cualquier viaje
@@ -618,25 +620,59 @@ export function DriverTripPanel({
         </div>
       </div>
 
-      {/* Mapa */}
-      <div className="shrink-0 h-[35vh] border-b border-border">
-        <DriverMiniMap
-          routeProductId={routeProductId}
-          origenLat={origenLat}
-          origenLng={origenLng}
-          destinoLat={destinoLat}
-          destinoLng={destinoLng}
-        />
+      {/* Barra de pestañas de vista */}
+      <div className="shrink-0 grid grid-cols-3 bg-card border-b border-border">
+        {([
+          { k: "panel", label: "Panel" },
+          { k: "mapa", label: "Mapa" },
+          { k: "lector", label: "Lector QR" },
+        ] as { k: "panel" | "mapa" | "lector"; label: string }[]).map(({ k, label }) => (
+          <button
+            key={k}
+            onClick={() => setViewTab(k)}
+            className={`py-2 text-xs font-semibold transition-colors ${
+              viewTab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Contenido */}
+      {/* Mapa: compacto en 'panel', pantalla completa en 'mapa', oculto en 'lector' */}
+      {viewTab !== "lector" && (
+        <div className={`${viewTab === "mapa" ? "flex-1" : "shrink-0 h-[35vh]"} border-b border-border relative`}>
+          <DriverMiniMap
+            routeProductId={routeProductId}
+            origenLat={origenLat}
+            origenLng={origenLng}
+            destinoLat={destinoLat}
+            destinoLng={destinoLng}
+          />
+        </div>
+      )}
+
+      {/* Lector QR embebido a pantalla completa */}
+      {viewTab === "lector" && viajeActivo && (
+        <div className="flex-1 relative bg-black">
+          <ForaneoScanner viajeId={viajeActivo.id} embedded hideTabs initialTab="lector" />
+        </div>
+      )}
+      {viewTab === "lector" && !viajeActivo && (
+        <div className="flex-1 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
+          No hay viaje activo. Inicia un viaje para cobrar QR.
+        </div>
+      )}
+
+      {/* Contenido del panel (solo en tab 'panel') */}
+      {viewTab === "panel" && (
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-40">
         {/* Cobrar QR (foráneas) */}
         {viajeActivo && (
           <Button
             size="lg"
             className="w-full h-14 text-base bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => setScannerOpen(true)}
+            onClick={() => setViewTab("lector")}
           >
             <QrCode className="h-5 w-5 mr-2" />
             Cobrar QR (sube/baja)
@@ -893,6 +929,7 @@ export function DriverTripPanel({
           </Card>
         )}
       </div>
+      )}
 
       {/* Diálogo: elegir dirección AB / BA */}
       <AlertDialog open={askDir} onOpenChange={setAskDir}>
@@ -1008,10 +1045,11 @@ export function DriverTripPanel({
 
       {/* Diálogos de inicio de jornada eliminados: el primer viaje se crea solo. */}
 
-      {/* Escáner Cobrar QR (foráneas) */}
+      {/* Escáner en modal (retrocompatibilidad; ahora se usa la pestaña 'Lector QR') */}
       {scannerOpen && viajeActivo && (
         <ForaneoScanner viajeId={viajeActivo.id} onClose={() => setScannerOpen(false)} />
       )}
+
 
     </div>
   );
