@@ -295,10 +295,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       String(v.pasajeros_subidos ?? 0),
       String(v.pasajeros_bajados ?? 0),
       String(v.pasajeros_a_bordo ?? 0),
+      String(cobrosPorViaje[v.id]?.cobros ?? 0),
+      (cobrosPorViaje[v.id]?.monto ?? 0).toFixed(2),
     ]);
     downloadCSV(
       `reporte-viajes-${getRange().desde}_a_${getRange().hasta}.csv`,
-      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo"],
+      ["Fecha", "Viaje #", "Sentido", "Estado", "Eco.", "Placas", "Chofer", "Ruta", "Inicio", "Fin", "Inicio src", "Fin src", "Suben", "Bajan", "A bordo", "Cobros", "Importe MXN"],
       rows
     );
   };
