@@ -9,7 +9,13 @@ import { DriverMiniMap } from "@/components/DriverMiniMap";
 
 interface Props {
   viajeId: string;
-  onClose: () => void;
+  onClose?: () => void;
+  /** Si es true, se renderiza dentro de un contenedor padre (sin fixed inset-0 ni header propio). */
+  embedded?: boolean;
+  /** Pestaña inicial (útil al montar en embedded). */
+  initialTab?: "lector" | "mapa" | "conteo";
+  /** Ocultar la barra de pestañas interna (cuando el padre ya provee tabs). */
+  hideTabs?: boolean;
 }
 
 type ScanResult = {
