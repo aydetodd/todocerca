@@ -153,6 +153,31 @@ export default function Qard() {
     window.location.href = data.url;
   };
 
+  const enviarP2P = async () => {
+    const desde = (p2pFromId || qardNumber).replace(/\s+/g, "");
+    const hacia = p2pTo.replace(/\s+/g, "");
+    const cvv = p2pCvv.trim();
+    const m = Number(p2pMonto);
+    if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
+    if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
+    if (cvv.length !== 4) return toast({ title: "CVV dinámico debe tener 4 dígitos", variant: "destructive" });
+    if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
+    if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a la QaRd terminada en ${hacia.slice(-4)}?\n\nEs gratis y no se puede revertir.`)) return;
+    setP2pEnviando(true);
+    const { data, error } = await supabase.rpc("qard_transfer_p2p" as any, {
+      _from_numero16: desde, _to_numero16: hacia, _cvv: cvv, _monto: m,
+    });
+    setP2pEnviando(false);
+    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    const res = data as any;
+    if (!res?.ok) return toast({ title: "No se pudo enviar", description: res?.error ?? "Error desconocido", variant: "destructive" });
+    toast({ title: "Transferencia enviada", description: `$${m.toFixed(2)} MXN a •••• ${res.destino_ultimos4}` });
+    setP2pTo(""); setP2pCvv(""); setP2pMonto("");
+    cargar();
+  };
+
+
+
   const crearSub = async () => {
     if (!newAlias.trim()) return toast({ title: "Escribe un alias", variant: "destructive" });
     const { data: { user } } = await supabase.auth.getUser();
