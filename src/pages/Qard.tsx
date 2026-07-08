@@ -260,6 +260,7 @@ export default function Qard() {
                         </>
                       )}
                     </div>
+                  </div>
                 </div>
                 {wallet?.cvv_dinamico && (
                   <div className="mt-2 text-xs">
