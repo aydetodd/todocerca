@@ -239,6 +239,14 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     });
     setCobrosPorViaje(totals);
     setPasajerosPorViaje(pasajeros);
+    // Auto-expandir viajes que ya tienen pasajeros registrados (para que el concesionario vea el detalle sin tocar)
+    setExpanded((prev) => {
+      const next = { ...prev };
+      Object.keys(pasajeros).forEach((vid) => {
+        if (next[vid] === undefined) next[vid] = true;
+      });
+      return next;
+    });
     setLoading(false);
   }, [proveedorId, getRange]);
 
