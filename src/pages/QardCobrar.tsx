@@ -160,28 +160,21 @@ export default function QardCobrar() {
         ) : (
           <div>
             <div id="qard-reader" className="w-full rounded overflow-hidden bg-black" />
-            <Button variant="destructive" className="w-full mt-2" onClick={stopScan}>Cancelar</Button>
+            <Button variant="outline" className="w-full mt-2" onClick={stopScan}>Cancelar</Button>
           </div>
         )}
       </Card>
 
       {ultimo && (
         <Card className={`p-6 text-center border-4 ${
-          ultimo.color === "verde" ? "border-green-500 bg-green-50" :
-          ultimo.color === "amarillo" ? "border-yellow-500 bg-yellow-50" :
-          ultimo.color === "naranja" ? "border-orange-500 bg-orange-50" :
-          "border-red-500 bg-red-50"
+          ultimo.ok ? "border-primary bg-primary text-primary-foreground" : "border-primary-foreground/30 bg-secondary text-secondary-foreground"
         }`}>
-          <div className={`text-3xl font-bold ${
-            ultimo.color === "verde" ? "text-green-700" :
-            ultimo.color === "amarillo" ? "text-yellow-700" :
-            ultimo.color === "naranja" ? "text-orange-700" : "text-red-700"
-          }`}>{ultimo.mensaje}</div>
+          <div className={`text-3xl font-bold ${ultimo.ok ? "text-primary-foreground" : "text-primary-foreground/90"}`}>{ultimo.mensaje}</div>
           {ultimo.ok && (
             <>
-              <div className="text-sm mt-2">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
+              <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
               <div className="mt-3 text-sm">Recibirás: <b>${Number(ultimo.neto).toFixed(2)}</b> (comisión ${Number(ultimo.comision).toFixed(2)})</div>
-              <div className="text-xs text-muted-foreground mt-1">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
+              <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
             </>
           )}
         </Card>
