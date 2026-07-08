@@ -18,6 +18,35 @@ export default function QardCobrar() {
   const [manualVenc, setManualVenc] = useState("12/99");
   const [manualCvv, setManualCvv] = useState("");
   const [ultimo, setUltimo] = useState<any>(null);
+  const [cobros, setCobros] = useState<any[]>([]);
+  const [totalNeto, setTotalNeto] = useState(0);
+  const [totalBruto, setTotalBruto] = useState(0);
+  const [totalComision, setTotalComision] = useState(0);
+
+  const cargarCobros = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("qard_movimientos" as any)
+      .select("*")
+      .eq("comercio_user_id", user.id)
+      .eq("tipo", "cobro_comercio")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const rows = (data as any[]) ?? [];
+    setCobros(rows);
+    setTotalBruto(rows.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
+    setTotalComision(rows.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
+  }, []);
+
+  useEffect(() => {
+    cargarCobros();
+    const ch = supabase.channel("qard-cobros-comercio")
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos" }, () => cargarCobros())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [cargarCobros]);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   const stopScan = async () => {
