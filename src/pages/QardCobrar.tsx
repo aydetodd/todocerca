@@ -245,12 +245,36 @@ export default function QardCobrar() {
             <div className="font-bold">−${totalComision.toFixed(2)}</div>
           </div>
           <div className="rounded bg-primary p-2 border border-primary-foreground/30">
-            <div className="text-[10px] text-primary-foreground/80 uppercase">Recibes</div>
+            <div className="text-[10px] text-primary-foreground/80 uppercase">Disponible</div>
             <div className="font-bold">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
+
+        <div className="rounded-lg bg-secondary/50 p-3 mb-3">
+          <div className="text-xs font-semibold mb-2 text-primary-foreground/90">Retirar saldo (simulado)</div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("oxxo")}>
+              <Banknote className="h-4 w-4" />
+              <span className="text-[11px]">OXXO efectivo</span>
+            </Button>
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("spei")}>
+              <Building2 className="h-4 w-4" />
+              <span className="text-[11px]">SPEI a mi banco</span>
+            </Button>
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("qard")}>
+              <CreditCard className="h-4 w-4" />
+              <span className="text-[11px]">A otra QaRd</span>
+            </Button>
+          </div>
+          {totalRetirado > 0 && (
+            <div className="text-[10px] text-primary-foreground/70 mt-2">
+              Retirado acumulado: ${totalRetirado.toFixed(2)}
+            </div>
+          )}
+        </div>
+
         <div className="text-[11px] text-primary-foreground/70 mb-2">
-          Últimos {cobros.length} cobros (se liquida a tu cuenta bancaria según tu configuración).
+          Últimos {cobros.length} movimientos.
         </div>
         {cobros.length === 0 ? (
           <div className="text-xs text-primary-foreground/70 text-center py-3">Sin cobros aún.</div>
