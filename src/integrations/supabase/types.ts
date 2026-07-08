@@ -3208,6 +3208,7 @@ export type Database = {
           alias: string
           created_at: string
           cvv: string
+          cvv_dinamico: string | null
           cvv_updated_at: string
           estado: string
           fecha_vencimiento: string
@@ -3226,6 +3227,7 @@ export type Database = {
           alias?: string
           created_at?: string
           cvv?: string
+          cvv_dinamico?: string | null
           cvv_updated_at?: string
           estado?: string
           fecha_vencimiento?: string
@@ -3244,6 +3246,7 @@ export type Database = {
           alias?: string
           created_at?: string
           cvv?: string
+          cvv_dinamico?: string | null
           cvv_updated_at?: string
           estado?: string
           fecha_vencimiento?: string
@@ -3348,6 +3351,7 @@ export type Database = {
       qard_wallets: {
         Row: {
           created_at: string
+          cvv_dinamico: string | null
           estado: string
           id: string
           saldo_mxn: number
@@ -3357,6 +3361,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cvv_dinamico?: string | null
           estado?: string
           id?: string
           saldo_mxn?: number
@@ -3366,6 +3371,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cvv_dinamico?: string | null
           estado?: string
           id?: string
           saldo_mxn?: number
@@ -5811,6 +5817,7 @@ export type Database = {
         Args: { _lat: number; _lng: number; _producto_id: string }
         Returns: string
       }
+      gen_cvv4: { Args: never; Returns: string }
       get_chofer_by_invite_token: {
         Args: { p_token: string }
         Returns: {
@@ -6056,6 +6063,15 @@ export type Database = {
       qard_sub_set_estado: {
         Args: { _estado: string; _sub_qr_id: string }
         Returns: string
+      }
+      qard_transfer_p2p: {
+        Args: {
+          _cvv: string
+          _from_numero16: string
+          _monto: number
+          _to_numero16: string
+        }
+        Returns: Json
       }
       qard_transferir_a_sub: {
         Args: { _monto_mxn: number; _sub_qr_id: string }
