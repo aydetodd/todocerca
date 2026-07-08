@@ -277,26 +277,38 @@ export default function QardCobrar() {
           Últimos {cobros.length} movimientos.
         </div>
         {cobros.length === 0 ? (
-          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin cobros aún.</div>
+          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin movimientos aún.</div>
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
-            {cobros.map((m) => (
-              <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
-                <div>
-                  <div className="font-medium">{m.descripcion || "Cobro QaRd"}</div>
-                  <div className="text-[11px] text-primary-foreground/70">
-                    {new Date(m.created_at).toLocaleString()} · comisión ${Number(m.comision_mxn ?? 0).toFixed(2)}
+            {cobros.map((m) => {
+              const esRetiro = String(m.tipo).startsWith("retiro_");
+              const neto = Number(m.neto_comercio_mxn ?? 0);
+              return (
+                <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
+                  <div className="min-w-0 pr-2">
+                    <div className="font-medium truncate">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                    <div className="text-[11px] text-primary-foreground/70">
+                      {new Date(m.created_at).toLocaleString()}
+                      {!esRetiro && ` · comisión $${Number(m.comision_mxn ?? 0).toFixed(2)}`}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-semibold ${esRetiro ? "text-red-300" : ""}`}>
+                      {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
+                    </div>
+                    {!esRetiro && (
+                      <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">+${Number(m.neto_comercio_mxn ?? 0).toFixed(2)}</div>
-                  <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
+
+
+
 
 
 
