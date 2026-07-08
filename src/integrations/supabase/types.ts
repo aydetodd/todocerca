@@ -3208,7 +3208,6 @@ export type Database = {
           alias: string
           created_at: string
           cvv: string
-          cvv_dinamico: string | null
           cvv_updated_at: string
           estado: string
           fecha_vencimiento: string
@@ -3227,7 +3226,6 @@ export type Database = {
           alias?: string
           created_at?: string
           cvv?: string
-          cvv_dinamico?: string | null
           cvv_updated_at?: string
           estado?: string
           fecha_vencimiento?: string
@@ -3246,7 +3244,6 @@ export type Database = {
           alias?: string
           created_at?: string
           cvv?: string
-          cvv_dinamico?: string | null
           cvv_updated_at?: string
           estado?: string
           fecha_vencimiento?: string
@@ -3351,7 +3348,6 @@ export type Database = {
       qard_wallets: {
         Row: {
           created_at: string
-          cvv_dinamico: string | null
           estado: string
           id: string
           saldo_mxn: number
@@ -3361,7 +3357,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          cvv_dinamico?: string | null
           estado?: string
           id?: string
           saldo_mxn?: number
@@ -3371,7 +3366,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          cvv_dinamico?: string | null
           estado?: string
           id?: string
           saldo_mxn?: number
@@ -5817,7 +5811,7 @@ export type Database = {
         Args: { _lat: number; _lng: number; _producto_id: string }
         Returns: string
       }
-      gen_cvv4: { Args: never; Returns: string }
+      gen_cvv3: { Args: never; Returns: string }
       get_chofer_by_invite_token: {
         Args: { p_token: string }
         Returns: {

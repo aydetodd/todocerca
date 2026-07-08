@@ -21,9 +21,8 @@ type SubQR = {
   estado: "activa" | "apagada" | "cancelada";
   fecha_vencimiento: string | null;
   cvv: string | null;
-  cvv_dinamico: string | null;
 };
-type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: string | null };
+type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
@@ -47,7 +46,6 @@ export default function Qard() {
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
-  const [cvvDinVisible, setCvvDinVisible] = useState(false);
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
@@ -160,7 +158,7 @@ export default function Qard() {
     const m = Number(p2pMonto);
     if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
     if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
-    if (cvv.length !== 4) return toast({ title: "CVV dinámico debe tener 4 dígitos", variant: "destructive" });
+    if (cvv.length !== 3) return toast({ title: "El CVV debe tener 3 dígitos", variant: "destructive" });
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
     if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a la QaRd terminada en ${hacia.slice(-4)}?\n\nEs gratis y no se puede revertir.`)) return;
     setP2pEnviando(true);
@@ -262,20 +260,7 @@ export default function Qard() {
                     </div>
                   </div>
                 </div>
-                {wallet?.cvv_dinamico && (
-                  <div className="mt-2 text-xs">
-                    <div className="text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-primary text-base">
-                        {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
-                      </span>
-                      <button onClick={() => setCvvDinVisible(v => !v)}>
-                        {cvvDinVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      </button>
-                      <span className="text-[10px] text-muted-foreground">Cambia tras cada uso</span>
-                    </div>
-                  </div>
-                )}
+ 
               </div>
               {qardNumber && (
                 <button
@@ -316,7 +301,7 @@ export default function Qard() {
       <Card className="p-4 border-primary/40">
         <div className="font-semibold mb-1">Transferir a otra QaRd</div>
         <div className="text-xs text-muted-foreground mb-3">
-          Gratis entre usuarios. Necesitas el número de 16 dígitos + su CVV dinámico (4 dígitos).
+          Gratis entre usuarios. Solo necesitas los 16 dígitos de la QaRd destino y su CVV de 3 dígitos. Al recibir, el CVV del destinatario cambia automáticamente.
         </div>
         <div className="space-y-2">
           <div>
@@ -346,13 +331,13 @@ export default function Qard() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">CVV dinámico</Label>
+              <Label className="text-xs">CVV destino</Label>
               <Input
                 inputMode="numeric"
-                maxLength={4}
-                placeholder="4 dígitos"
+                maxLength={3}
+                placeholder="3 dígitos"
                 value={p2pCvv}
-                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
               />
             </div>
             <div>
