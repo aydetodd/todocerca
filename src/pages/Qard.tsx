@@ -21,8 +21,9 @@ type SubQR = {
   estado: "activa" | "apagada" | "cancelada";
   fecha_vencimiento: string | null;
   cvv: string | null;
+  cvv_dinamico: string | null;
 };
-type WalletRow = { id: string; saldo_mxn: number; estado: string };
+type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: string | null };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
@@ -46,10 +47,17 @@ export default function Qard() {
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+  const [cvvDinVisible, setCvvDinVisible] = useState(false);
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
+  // P2P transfer
+  const [p2pFromId, setP2pFromId] = useState<string>(""); // qard_number origen (eje o sub)
+  const [p2pTo, setP2pTo] = useState("");
+  const [p2pCvv, setP2pCvv] = useState("");
+  const [p2pMonto, setP2pMonto] = useState("");
+  const [p2pEnviando, setP2pEnviando] = useState(false);
 
   const abrirMovsSub = async (sub: SubQR) => {
     setSubMovOpen(sub);
@@ -145,6 +153,31 @@ export default function Qard() {
     window.location.href = data.url;
   };
 
+  const enviarP2P = async () => {
+    const desde = (p2pFromId || qardNumber).replace(/\s+/g, "");
+    const hacia = p2pTo.replace(/\s+/g, "");
+    const cvv = p2pCvv.trim();
+    const m = Number(p2pMonto);
+    if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
+    if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
+    if (cvv.length !== 4) return toast({ title: "CVV dinámico debe tener 4 dígitos", variant: "destructive" });
+    if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
+    if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a la QaRd terminada en ${hacia.slice(-4)}?\n\nEs gratis y no se puede revertir.`)) return;
+    setP2pEnviando(true);
+    const { data, error } = await supabase.rpc("qard_transfer_p2p" as any, {
+      _from_numero16: desde, _to_numero16: hacia, _cvv: cvv, _monto: m,
+    });
+    setP2pEnviando(false);
+    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    const res = data as any;
+    if (!res?.ok) return toast({ title: "No se pudo enviar", description: res?.error ?? "Error desconocido", variant: "destructive" });
+    toast({ title: "Transferencia enviada", description: `$${m.toFixed(2)} MXN a •••• ${res.destino_ultimos4}` });
+    setP2pTo(""); setP2pCvv(""); setP2pMonto("");
+    cargar();
+  };
+
+
+
   const crearSub = async () => {
     if (!newAlias.trim()) return toast({ title: "Escribe un alias", variant: "destructive" });
     const { data: { user } } = await supabase.auth.getUser();
@@ -229,6 +262,20 @@ export default function Qard() {
                     </div>
                   </div>
                 </div>
+                {wallet?.cvv_dinamico && (
+                  <div className="mt-2 text-xs">
+                    <div className="text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-primary text-base">
+                        {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
+                      </span>
+                      <button onClick={() => setCvvDinVisible(v => !v)}>
+                        {cvvDinVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                      <span className="text-[10px] text-muted-foreground">Cambia tras cada uso</span>
+                    </div>
+                  </div>
+                )}
               </div>
               {qardNumber && (
                 <button
@@ -264,6 +311,68 @@ export default function Qard() {
         </div>
         <div className="text-xs text-muted-foreground mt-1">Mínimo $200 MXN. Recibes el monto exacto, sin descuentos.</div>
       </Card>
+
+      {/* Transferir a otra QaRd (P2P gratis) */}
+      <Card className="p-4 border-primary/40">
+        <div className="font-semibold mb-1">Transferir a otra QaRd</div>
+        <div className="text-xs text-muted-foreground mb-3">
+          Gratis entre usuarios. Necesitas el número de 16 dígitos + su CVV dinámico (4 dígitos).
+        </div>
+        <div className="space-y-2">
+          <div>
+            <Label className="text-xs">Origen</Label>
+            <select
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={p2pFromId || qardNumber}
+              onChange={e => setP2pFromId(e.target.value)}
+            >
+              <option value={qardNumber}>Principal (00) · {formatNumero(qardNumber)}</option>
+              {subs.filter(s => s.sub_index > 0 && s.estado === "activa").map(s => (
+                <option key={s.id} value={s.qard_number}>
+                  {s.alias} · {String(s.sub_index).padStart(2,"0")} · saldo ${Number(s.saldo_mxn).toFixed(2)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">Número destino (16 dígitos)</Label>
+            <Input
+              inputMode="numeric"
+              maxLength={19}
+              placeholder="0000 0000 0000 0000"
+              value={p2pTo}
+              onChange={e => setP2pTo(e.target.value.replace(/\D/g, "").slice(0, 16))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">CVV dinámico</Label>
+              <Input
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="4 dígitos"
+                value={p2pCvv}
+                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Monto MXN</Label>
+              <Input
+                type="number"
+                min={1}
+                step="0.01"
+                placeholder="0.00"
+                value={p2pMonto}
+                onChange={e => setP2pMonto(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button className="w-full" onClick={enviarP2P} disabled={p2pEnviando}>
+            {p2pEnviando ? "Enviando…" : "Enviar transferencia"}
+          </Button>
+        </div>
+      </Card>
+
 
       {/* Sub-QR familiares */}
       <Card className="p-4">
