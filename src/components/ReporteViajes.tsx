@@ -50,10 +50,13 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [filterRuta, setFilterRuta] = useState("all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
   const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
+  const [pasajerosPorViaje, setPasajerosPorViaje] = useState<Record<string, PasajeroRow[]>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
+
 
   const getRange = useCallback((): { desde: string; hasta: string } => {
     const today = getHermosilloToday();
