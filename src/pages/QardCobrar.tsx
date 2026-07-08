@@ -363,6 +363,75 @@ export default function QardCobrar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {retiroMetodo === "oxxo" && "Retirar efectivo en OXXO"}
+              {retiroMetodo === "spei" && "Enviar SPEI a mi banco"}
+              {retiroMetodo === "qard" && "Transferir a otra QaRd"}
+            </DialogTitle>
+            <DialogDescription>
+              Disponible: <b>${totalNeto.toFixed(2)}</b> · Simulación (sin dinero real).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Monto (MXN)</label>
+              <Input
+                type="number" step="0.01" min="20"
+                value={retiroMonto}
+                onChange={e => setRetiroMonto(e.target.value)}
+                placeholder="100.00"
+                className="text-xl h-12"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
+            </div>
+
+            {retiroMetodo === "spei" && (
+              <div>
+                <label className="text-sm font-medium">CLABE destino (opcional)</label>
+                <Input
+                  inputMode="numeric"
+                  value={retiroDestino}
+                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
+                  placeholder="18 dígitos (o vacío para usar la registrada)"
+                  maxLength={18}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Si la dejas vacía, usa la CLABE de tu cuenta de cobros.</p>
+              </div>
+            )}
+
+            {retiroMetodo === "qard" && (
+              <div>
+                <label className="text-sm font-medium">QaRd (16) o CLABE (18)</label>
+                <Input
+                  inputMode="numeric"
+                  value={retiroDestino}
+                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
+                  placeholder="0000000000000000"
+                  maxLength={18}
+                  className="tracking-widest"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Transferencia entre QaRd, gratis e inmediata.</p>
+              </div>
+            )}
+
+            {retiroMetodo === "oxxo" && (
+              <div className="text-xs bg-muted rounded p-2">
+                Se generará una referencia de 14 dígitos válida 72 h en cualquier OXXO.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
+            <Button onClick={confirmarRetiro} disabled={retiroLoading}>
+              {retiroLoading ? "Procesando…" : "Retirar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
