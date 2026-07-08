@@ -21,9 +21,8 @@ type SubQR = {
   estado: "activa" | "apagada" | "cancelada";
   fecha_vencimiento: string | null;
   cvv: string | null;
-  cvv_dinamico: string | null;
 };
-type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: string | null };
+type WalletRow = { id: string; saldo_mxn: number; estado: string };
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
