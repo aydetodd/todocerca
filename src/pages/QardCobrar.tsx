@@ -3,11 +3,11 @@ import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet } from "lucide-react";
+import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet, Banknote, Building2, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -22,6 +22,14 @@ export default function QardCobrar() {
   const [totalNeto, setTotalNeto] = useState(0);
   const [totalBruto, setTotalBruto] = useState(0);
   const [totalComision, setTotalComision] = useState(0);
+  const [totalRetirado, setTotalRetirado] = useState(0);
+
+  // Retiro
+  const [retiroOpen, setRetiroOpen] = useState(false);
+  const [retiroMetodo, setRetiroMetodo] = useState<"oxxo" | "spei" | "qard">("oxxo");
+  const [retiroMonto, setRetiroMonto] = useState("");
+  const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroLoading, setRetiroLoading] = useState(false);
 
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -30,14 +38,17 @@ export default function QardCobrar() {
       .from("qard_movimientos" as any)
       .select("*")
       .eq("comercio_user_id", user.id)
-      .eq("tipo", "cobro_comercio")
+      .in("tipo", ["cobro_comercio", "retiro_oxxo", "retiro_spei", "retiro_qard"])
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(80);
     const rows = (data as any[]) ?? [];
     setCobros(rows);
-    setTotalBruto(rows.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
+    const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
+    setTotalBruto(soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    setTotalComision(soloCobros.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
+    setTotalRetirado(soloRetiros.reduce((s, r) => s + Number(r.monto_mxn ?? 0), 0));
     setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
-    setTotalComision(rows.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
   }, []);
 
   useEffect(() => {
@@ -133,6 +144,41 @@ export default function QardCobrar() {
     await procesarCobro(digits, m, { cvv: manualCvv, manual: true });
   };
 
+  const abrirRetiro = (metodo: "oxxo" | "spei" | "qard") => {
+    if (totalNeto <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
+    setRetiroMetodo(metodo);
+    setRetiroMonto("");
+    setRetiroDestino("");
+    setRetiroOpen(true);
+  };
+
+  const confirmarRetiro = async () => {
+    const m = Number(retiroMonto);
+    if (!m || m < 20) return toast({ title: "Monto mínimo $20", variant: "destructive" });
+    if (m > totalNeto) return toast({ title: "Excede tu saldo disponible", variant: "destructive" });
+    if (retiroMetodo === "qard") {
+      const d = retiroDestino.replace(/\D/g, "");
+      if (d.length !== 16 && d.length !== 18) {
+        return toast({ title: "Ingresa 16 dígitos de QaRd o 18 de CLABE", variant: "destructive" });
+      }
+    }
+    if (retiroMetodo === "spei" && retiroDestino) {
+      const d = retiroDestino.replace(/\D/g, "");
+      if (d.length !== 18) return toast({ title: "CLABE debe tener 18 dígitos", variant: "destructive" });
+    }
+    setRetiroLoading(true);
+    const { data, error } = await supabase.functions.invoke("qard-retirar", {
+      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino },
+    });
+    setRetiroLoading(false);
+    if (error || !data?.ok) {
+      return toast({ title: "No se pudo retirar", description: (data?.error || error?.message) ?? "", variant: "destructive" });
+    }
+    setRetiroOpen(false);
+    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)} · Simulado` });
+    cargarCobros();
+  };
+
   return (
     <div className="p-4 max-w-lg mx-auto pb-40 space-y-4">
       <div className="flex items-center gap-2">
@@ -199,34 +245,70 @@ export default function QardCobrar() {
             <div className="font-bold">−${totalComision.toFixed(2)}</div>
           </div>
           <div className="rounded bg-primary p-2 border border-primary-foreground/30">
-            <div className="text-[10px] text-primary-foreground/80 uppercase">Recibes</div>
+            <div className="text-[10px] text-primary-foreground/80 uppercase">Disponible</div>
             <div className="font-bold">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
+
+        <div className="rounded-lg bg-secondary/50 p-3 mb-3">
+          <div className="text-xs font-semibold mb-2 text-primary-foreground/90">Retirar saldo (simulado)</div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("oxxo")}>
+              <Banknote className="h-4 w-4" />
+              <span className="text-[11px]">OXXO efectivo</span>
+            </Button>
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("spei")}>
+              <Building2 className="h-4 w-4" />
+              <span className="text-[11px]">SPEI a mi banco</span>
+            </Button>
+            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("qard")}>
+              <CreditCard className="h-4 w-4" />
+              <span className="text-[11px]">A otra QaRd</span>
+            </Button>
+          </div>
+          {totalRetirado > 0 && (
+            <div className="text-[10px] text-primary-foreground/70 mt-2">
+              Retirado acumulado: ${totalRetirado.toFixed(2)}
+            </div>
+          )}
+        </div>
+
         <div className="text-[11px] text-primary-foreground/70 mb-2">
-          Últimos {cobros.length} cobros (se liquida a tu cuenta bancaria según tu configuración).
+          Últimos {cobros.length} movimientos.
         </div>
         {cobros.length === 0 ? (
-          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin cobros aún.</div>
+          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin movimientos aún.</div>
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
-            {cobros.map((m) => (
-              <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
-                <div>
-                  <div className="font-medium">{m.descripcion || "Cobro QaRd"}</div>
-                  <div className="text-[11px] text-primary-foreground/70">
-                    {new Date(m.created_at).toLocaleString()} · comisión ${Number(m.comision_mxn ?? 0).toFixed(2)}
+            {cobros.map((m) => {
+              const esRetiro = String(m.tipo).startsWith("retiro_");
+              const neto = Number(m.neto_comercio_mxn ?? 0);
+              return (
+                <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
+                  <div className="min-w-0 pr-2">
+                    <div className="font-medium truncate">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                    <div className="text-[11px] text-primary-foreground/70">
+                      {new Date(m.created_at).toLocaleString()}
+                      {!esRetiro && ` · comisión $${Number(m.comision_mxn ?? 0).toFixed(2)}`}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-semibold ${esRetiro ? "text-red-300" : ""}`}>
+                      {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
+                    </div>
+                    {!esRetiro && (
+                      <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">+${Number(m.neto_comercio_mxn ?? 0).toFixed(2)}</div>
-                  <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
+
+
+
 
 
 
@@ -278,6 +360,75 @@ export default function QardCobrar() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setManualOpen(false)}>Cancelar</Button>
             <Button onClick={confirmarManual}>Cobrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {retiroMetodo === "oxxo" && "Retirar efectivo en OXXO"}
+              {retiroMetodo === "spei" && "Enviar SPEI a mi banco"}
+              {retiroMetodo === "qard" && "Transferir a otra QaRd"}
+            </DialogTitle>
+            <DialogDescription>
+              Disponible: <b>${totalNeto.toFixed(2)}</b> · Simulación (sin dinero real).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Monto (MXN)</label>
+              <Input
+                type="number" step="0.01" min="20"
+                value={retiroMonto}
+                onChange={e => setRetiroMonto(e.target.value)}
+                placeholder="100.00"
+                className="text-xl h-12"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
+            </div>
+
+            {retiroMetodo === "spei" && (
+              <div>
+                <label className="text-sm font-medium">CLABE destino (opcional)</label>
+                <Input
+                  inputMode="numeric"
+                  value={retiroDestino}
+                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
+                  placeholder="18 dígitos (o vacío para usar la registrada)"
+                  maxLength={18}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Si la dejas vacía, usa la CLABE de tu cuenta de cobros.</p>
+              </div>
+            )}
+
+            {retiroMetodo === "qard" && (
+              <div>
+                <label className="text-sm font-medium">QaRd (16) o CLABE (18)</label>
+                <Input
+                  inputMode="numeric"
+                  value={retiroDestino}
+                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
+                  placeholder="0000000000000000"
+                  maxLength={18}
+                  className="tracking-widest"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">Transferencia entre QaRd, gratis e inmediata.</p>
+              </div>
+            )}
+
+            {retiroMetodo === "oxxo" && (
+              <div className="text-xs bg-muted rounded p-2">
+                Se generará una referencia de 14 dígitos válida 72 h en cualquier OXXO.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
+            <Button onClick={confirmarRetiro} disabled={retiroLoading}>
+              {retiroLoading ? "Procesando…" : "Retirar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
