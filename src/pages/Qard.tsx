@@ -312,6 +312,68 @@ export default function Qard() {
         <div className="text-xs text-muted-foreground mt-1">Mínimo $200 MXN. Recibes el monto exacto, sin descuentos.</div>
       </Card>
 
+      {/* Transferir a otra QaRd (P2P gratis) */}
+      <Card className="p-4 border-primary/40">
+        <div className="font-semibold mb-1">Transferir a otra QaRd</div>
+        <div className="text-xs text-muted-foreground mb-3">
+          Gratis entre usuarios. Necesitas el número de 16 dígitos + su CVV dinámico (4 dígitos).
+        </div>
+        <div className="space-y-2">
+          <div>
+            <Label className="text-xs">Origen</Label>
+            <select
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={p2pFromId || qardNumber}
+              onChange={e => setP2pFromId(e.target.value)}
+            >
+              <option value={qardNumber}>Principal (00) · {formatNumero(qardNumber)}</option>
+              {subs.filter(s => s.sub_index > 0 && s.estado === "activa").map(s => (
+                <option key={s.id} value={s.qard_number}>
+                  {s.alias} · {String(s.sub_index).padStart(2,"0")} · saldo ${Number(s.saldo_mxn).toFixed(2)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">Número destino (16 dígitos)</Label>
+            <Input
+              inputMode="numeric"
+              maxLength={19}
+              placeholder="0000 0000 0000 0000"
+              value={p2pTo}
+              onChange={e => setP2pTo(e.target.value.replace(/\D/g, "").slice(0, 16))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">CVV dinámico</Label>
+              <Input
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="4 dígitos"
+                value={p2pCvv}
+                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Monto MXN</Label>
+              <Input
+                type="number"
+                min={1}
+                step="0.01"
+                placeholder="0.00"
+                value={p2pMonto}
+                onChange={e => setP2pMonto(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button className="w-full" onClick={enviarP2P} disabled={p2pEnviando}>
+            {p2pEnviando ? "Enviando…" : "Enviar transferencia"}
+          </Button>
+        </div>
+      </Card>
+
+
       {/* Sub-QR familiares */}
       <Card className="p-4">
         <div className="font-semibold mb-3">Sub-QR familiares</div>
