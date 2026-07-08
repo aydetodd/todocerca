@@ -22,6 +22,14 @@ export default function QardCobrar() {
   const [totalNeto, setTotalNeto] = useState(0);
   const [totalBruto, setTotalBruto] = useState(0);
   const [totalComision, setTotalComision] = useState(0);
+  const [totalRetirado, setTotalRetirado] = useState(0);
+
+  // Retiro
+  const [retiroOpen, setRetiroOpen] = useState(false);
+  const [retiroMetodo, setRetiroMetodo] = useState<"oxxo" | "spei" | "qard">("oxxo");
+  const [retiroMonto, setRetiroMonto] = useState("");
+  const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroLoading, setRetiroLoading] = useState(false);
 
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -30,14 +38,17 @@ export default function QardCobrar() {
       .from("qard_movimientos" as any)
       .select("*")
       .eq("comercio_user_id", user.id)
-      .eq("tipo", "cobro_comercio")
+      .in("tipo", ["cobro_comercio", "retiro_oxxo", "retiro_spei", "retiro_qard"])
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(80);
     const rows = (data as any[]) ?? [];
     setCobros(rows);
-    setTotalBruto(rows.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
+    const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
+    setTotalBruto(soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    setTotalComision(soloCobros.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
+    setTotalRetirado(soloRetiros.reduce((s, r) => s + Number(r.monto_mxn ?? 0), 0));
     setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
-    setTotalComision(rows.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
   }, []);
 
   useEffect(() => {
