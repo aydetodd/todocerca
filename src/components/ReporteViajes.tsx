@@ -596,30 +596,68 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                         const sub = v.pasajeros_subidos ?? 0;
                         const baj = v.pasajeros_bajados ?? 0;
                         const abordo = v.pasajeros_a_bordo ?? 0;
+                        const pax = pasajerosPorViaje[v.id] || [];
+                        const isOpen = !!expanded[v.id];
                         return (
-                          <div key={v.id} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                              <span className="font-semibold">#{v.numero_viaje}</span>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
-                              {flagManual && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>
-                              )}
-                              {enCurso && (
-                                <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
-                              )}
-                              <span className="text-[10px] text-emerald-700 font-medium">
-                                ↑{sub} ↓{baj} · {abordo} en stand
+                          <div key={v.id} className="text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setExpanded((e) => ({ ...e, [v.id]: !e[v.id] }))}
+                              className="w-full px-3 py-2 flex items-center justify-between gap-2 hover:bg-muted/30 text-left"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                                {pax.length > 0 ? (
+                                  isOpen ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />
+                                ) : <span className="w-3" />}
+                                <span className="font-semibold">#{v.numero_viaje}</span>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
+                                {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
+                                {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
+                                {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
+                                  <span className="text-[10px] font-semibold text-primary">
+                                    {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-muted-foreground shrink-0 tabular-nums text-right">
+                                <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
+                                {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                               </span>
-                              {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                <span className="text-[10px] font-semibold text-primary">
-                                  {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-muted-foreground shrink-0 tabular-nums text-right">
-                              <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
-                              {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
-                            </span>
+                            </button>
+                            {isOpen && pax.length > 0 && (
+                              <div className="bg-muted/20 px-3 py-2 space-y-1">
+                                <p className="text-[10px] text-muted-foreground">
+                                  Pasajeros anónimos (sin identificar). Se numeran al subir; al bajar se liga al número de subida.
+                                </p>
+                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-2 gap-y-0.5 text-[11px]">
+                                  <span className="font-semibold">Subida</span>
+                                  <span className="font-semibold">Bajada</span>
+                                  <span className="font-semibold">Coordenadas (sube → baja)</span>
+                                  <span className="font-semibold text-right">Importe</span>
+                                  {pax.map((p, i) => (
+                                    <div key={i} className="contents">
+                                      <span className="text-emerald-700">
+                                        {p.numero_subida != null ? `#${p.numero_subida}` : "—"}
+                                        <span className="opacity-60 ml-1">{fmtTime(p.subida_at)}</span>
+                                      </span>
+                                      <span className="text-amber-700">
+                                        {p.numero_bajada != null
+                                          ? `Baj#${p.numero_bajada} (era Sub#${p.numero_subida ?? "?"})`
+                                          : <span className="text-muted-foreground">a bordo</span>}
+                                        {p.bajada_at && <span className="opacity-60 ml-1">{fmtTime(p.bajada_at)}</span>}
+                                      </span>
+                                      <span className="text-muted-foreground tabular-nums truncate">
+                                        {p.subida_lat != null ? `${p.subida_lat.toFixed(5)}, ${p.subida_lng?.toFixed(5)}` : "—"}
+                                        {" → "}
+                                        {p.bajada_lat != null ? `${p.bajada_lat.toFixed(5)}, ${p.bajada_lng?.toFixed(5)}` : "…"}
+                                      </span>
+                                      <span className="text-right tabular-nums">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -627,6 +665,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   </div>
                 );
               })}
+
 
             </CardContent>
           </Card>
