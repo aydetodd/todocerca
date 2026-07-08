@@ -260,8 +260,21 @@ export default function Qard() {
                         </>
                       )}
                     </div>
-                  </div>
                 </div>
+                {wallet?.cvv_dinamico && (
+                  <div className="mt-2 text-xs">
+                    <div className="text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-primary text-base">
+                        {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
+                      </span>
+                      <button onClick={() => setCvvDinVisible(v => !v)}>
+                        {cvvDinVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                      <span className="text-[10px] text-muted-foreground">Cambia tras cada uso</span>
+                    </div>
+                  </div>
+                )}
               </div>
               {qardNumber && (
                 <button
