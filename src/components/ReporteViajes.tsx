@@ -239,6 +239,14 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     });
     setCobrosPorViaje(totals);
     setPasajerosPorViaje(pasajeros);
+    // Auto-expandir viajes que ya tienen pasajeros registrados (para que el concesionario vea el detalle sin tocar)
+    setExpanded((prev) => {
+      const next = { ...prev };
+      Object.keys(pasajeros).forEach((vid) => {
+        if (next[vid] === undefined) next[vid] = true;
+      });
+      return next;
+    });
     setLoading(false);
   }, [proveedorId, getRange]);
 
@@ -607,7 +615,10 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                 {pax.length > 0 ? (
-                                  isOpen ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />
+                                  <span className="inline-flex items-center gap-0.5 text-primary font-semibold text-[10px] bg-primary/10 rounded px-1.5 py-0.5 shrink-0">
+                                    {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                    {isOpen ? "Ocultar" : `Ver ${pax.length} pasajeros`}
+                                  </span>
                                 ) : <span className="w-3" />}
                                 <span className="font-semibold">#{v.numero_viaje}</span>
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
