@@ -317,7 +317,7 @@ export default function Qard() {
       <Card className="p-4 border-primary/40">
         <div className="font-semibold mb-1">Transferir a otra QaRd</div>
         <div className="text-xs text-muted-foreground mb-3">
-          Gratis entre usuarios. Solo necesitas los 16 dígitos de la QaRd destino y su CVV de 3 dígitos. Al recibir, el CVV del destinatario cambia automáticamente.
+          Gratis entre usuarios. Necesitas los 16 dígitos de la QaRd destino + su <b>CVV dinámico de 4 dígitos</b> (el de 3 dígitos es solo para compras). El CVV dinámico se rota tras cada transferencia.
         </div>
         <div className="space-y-2">
           <div>
@@ -347,13 +347,13 @@ export default function Qard() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">CVV destino</Label>
+              <Label className="text-xs">CVV dinámico (4 dígitos)</Label>
               <Input
                 inputMode="numeric"
-                maxLength={3}
-                placeholder="3 dígitos"
+                maxLength={4}
+                placeholder="4 dígitos"
                 value={p2pCvv}
-                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
               />
             </div>
             <div>
