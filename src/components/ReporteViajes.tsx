@@ -550,12 +550,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
 
         return (
           <Card>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-sm">Detalle de viajes</CardTitle>
-              <Button size="sm" variant="outline" onClick={handleExport}>
-                <Download className="h-3 w-3 mr-1" /> CSV
-              </Button>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={handleExport}>
+                  <Download className="h-3 w-3 mr-1" /> CSV viajes
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleExportPasajeros} title="Datos anónimos por pasajero (sin QaRd) con coordenadas para armar mapa de calor">
+                  <Download className="h-3 w-3 mr-1" /> CSV mapa de calor
+                </Button>
+              </div>
             </CardHeader>
+
             <CardContent className="space-y-4">
               {buckets.map((b) => {
                 const completados = b.viajes.filter((v) => v.estado === "completado").length;
