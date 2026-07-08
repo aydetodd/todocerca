@@ -344,6 +344,39 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     );
   };
 
+  // CSV anónimo por pasajero (para armar mapa de calor). Sin QaRd, sin nombre.
+  const handleExportPasajeros = () => {
+    const rows: string[][] = [];
+    filtered.forEach((v) => {
+      const lista = pasajerosPorViaje[v.id] || [];
+      lista.forEach((p) => {
+        rows.push([
+          v.fecha,
+          String(v.numero_viaje),
+          getRutaLabel(v),
+          getUnidadLabel(v),
+          getChoferLabel(v),
+          p.numero_subida != null ? `Sub#${p.numero_subida}` : "",
+          p.numero_bajada != null ? `Baj#${p.numero_bajada} → Sub#${p.numero_subida ?? "?"}` : "",
+          p.subida_at || "",
+          p.subida_lat != null ? String(p.subida_lat) : "",
+          p.subida_lng != null ? String(p.subida_lng) : "",
+          p.bajada_at || "",
+          p.bajada_lat != null ? String(p.bajada_lat) : "",
+          p.bajada_lng != null ? String(p.bajada_lng) : "",
+          (p.monto || 0).toFixed(2),
+          p.estado || "",
+        ]);
+      });
+    });
+    downloadCSV(
+      `pasajeros-anonimo-${getRange().desde}_a_${getRange().hasta}.csv`,
+      ["Fecha","Viaje #","Ruta","Unidad","Chofer","Subida","Bajada (ligada a subida)","Hora subida","Lat subida","Lng subida","Hora bajada","Lat bajada","Lng bajada","Importe MXN","Estado"],
+      rows,
+    );
+  };
+
+
 
   return (
     <div className="space-y-3">
