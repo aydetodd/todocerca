@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Calendar, Filter, RefreshCw, Download } from "lucide-react";
+import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { getHermosilloToday } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csvExport";
+
 
 interface ReporteViajesProps {
   proveedorId?: string;
