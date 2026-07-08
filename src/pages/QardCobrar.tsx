@@ -160,74 +160,67 @@ export default function QardCobrar() {
         ) : (
           <div>
             <div id="qard-reader" className="w-full rounded overflow-hidden bg-black" />
-            <Button variant="destructive" className="w-full mt-2" onClick={stopScan}>Cancelar</Button>
+            <Button variant="outline" className="w-full mt-2" onClick={stopScan}>Cancelar</Button>
           </div>
         )}
       </Card>
 
       {ultimo && (
         <Card className={`p-6 text-center border-4 ${
-          ultimo.color === "verde" ? "border-green-500 bg-green-50" :
-          ultimo.color === "amarillo" ? "border-yellow-500 bg-yellow-50" :
-          ultimo.color === "naranja" ? "border-orange-500 bg-orange-50" :
-          "border-red-500 bg-red-50"
+          ultimo.ok ? "border-primary bg-primary text-primary-foreground" : "border-primary-foreground/30 bg-secondary text-secondary-foreground"
         }`}>
-          <div className={`text-3xl font-bold ${
-            ultimo.color === "verde" ? "text-green-700" :
-            ultimo.color === "amarillo" ? "text-yellow-700" :
-            ultimo.color === "naranja" ? "text-orange-700" : "text-red-700"
-          }`}>{ultimo.mensaje}</div>
+          <div className={`text-3xl font-bold ${ultimo.ok ? "text-primary-foreground" : "text-primary-foreground/90"}`}>{ultimo.mensaje}</div>
           {ultimo.ok && (
             <>
-              <div className="text-sm mt-2">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
+              <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
               <div className="mt-3 text-sm">Recibirás: <b>${Number(ultimo.neto).toFixed(2)}</b> (comisión ${Number(ultimo.comision).toFixed(2)})</div>
-              <div className="text-xs text-muted-foreground mt-1">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
+              <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
             </>
           )}
         </Card>
       )}
 
-      <Card className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/30">
+      <Card className="p-4 bg-primary/15 text-primary-foreground border-primary/40">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 font-semibold">
-            <Wallet className="h-5 w-5 text-green-700" /> Mis cobros recibidos
+            <Wallet className="h-5 w-5 text-primary" /> Mis cobros recibidos
           </div>
           <Button variant="ghost" size="icon" onClick={cargarCobros} title="Actualizar">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center mb-3">
-          <div className="rounded bg-white/60 p-2">
-            <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
+          <div className="rounded bg-secondary/70 p-2">
+            <div className="text-[10px] text-primary-foreground/80 uppercase">Cobrado</div>
             <div className="font-bold">${totalBruto.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-white/60 p-2">
-            <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
-            <div className="font-bold text-red-700">−${totalComision.toFixed(2)}</div>
+          <div className="rounded bg-secondary/70 p-2">
+            <div className="text-[10px] text-primary-foreground/80 uppercase">Comisión</div>
+            <div className="font-bold">−${totalComision.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-white p-2 border border-green-500/40">
-            <div className="text-[10px] text-muted-foreground uppercase">Recibes</div>
-            <div className="font-bold text-green-700">${totalNeto.toFixed(2)}</div>
+          <div className="rounded bg-primary p-2 border border-primary-foreground/30">
+            <div className="text-[10px] text-primary-foreground/80 uppercase">Recibes</div>
+            <div className="font-bold">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
-        <div className="text-[11px] text-muted-foreground mb-2">
+        <div className="text-[11px] text-primary-foreground/70 mb-2">
           Últimos {cobros.length} cobros (se liquida a tu cuenta bancaria según tu configuración).
         </div>
         {cobros.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-3">Sin cobros aún.</div>
+          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin cobros aún.</div>
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
             {cobros.map((m) => (
-              <div key={m.id} className="flex justify-between items-center text-sm border-b border-green-500/20 pb-1">
+              <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
                 <div>
                   <div className="font-medium">{m.descripcion || "Cobro QaRd"}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[11px] text-primary-foreground/70">
                     {new Date(m.created_at).toLocaleString()} · comisión ${Number(m.comision_mxn ?? 0).toFixed(2)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-green-700">+${Number(m.neto_comercio_mxn ?? 0).toFixed(2)}</div>
-                  <div className="text-[10px] text-muted-foreground">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
+                  <div className="font-semibold">+${Number(m.neto_comercio_mxn ?? 0).toFixed(2)}</div>
+                  <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
                 </div>
               </div>
             ))}
