@@ -47,10 +47,17 @@ export default function Qard() {
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
+  const [cvvDinVisible, setCvvDinVisible] = useState(false);
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
+  // P2P transfer
+  const [p2pFromId, setP2pFromId] = useState<string>(""); // qard_number origen (eje o sub)
+  const [p2pTo, setP2pTo] = useState("");
+  const [p2pCvv, setP2pCvv] = useState("");
+  const [p2pMonto, setP2pMonto] = useState("");
+  const [p2pEnviando, setP2pEnviando] = useState(false);
 
   const abrirMovsSub = async (sub: SubQR) => {
     setSubMovOpen(sub);
