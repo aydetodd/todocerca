@@ -39,6 +39,20 @@ type ViajeRow = {
   productos?: { nombre?: string | null } | null;
 };
 
+type PasajeroRow = {
+  numero_subida: number | null;
+  numero_bajada: number | null;
+  subida_at: string | null;
+  bajada_at: string | null;
+  subida_lat: number | null;
+  subida_lng: number | null;
+  bajada_lat: number | null;
+  bajada_lng: number | null;
+  monto: number;
+  estado: string | null;
+};
+
+
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
