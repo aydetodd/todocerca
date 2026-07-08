@@ -160,7 +160,7 @@ export default function Qard() {
     const m = Number(p2pMonto);
     if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
     if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
-    if (cvv.length !== 3) return toast({ title: "El CVV debe tener 3 dígitos", variant: "destructive" });
+    if (cvv.length !== 4) return toast({ title: "El CVV dinámico debe tener 4 dígitos", variant: "destructive" });
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
     if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a la QaRd terminada en ${hacia.slice(-4)}?\n\nEs gratis y no se puede revertir.`)) return;
     setP2pEnviando(true);
