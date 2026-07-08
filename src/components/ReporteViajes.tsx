@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Calendar, Filter, RefreshCw, Download } from "lucide-react";
+import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { getHermosilloToday } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csvExport";
+
 
 interface ReporteViajesProps {
   proveedorId?: string;
@@ -38,6 +39,20 @@ type ViajeRow = {
   productos?: { nombre?: string | null } | null;
 };
 
+type PasajeroRow = {
+  numero_subida: number | null;
+  numero_bajada: number | null;
+  subida_at: string | null;
+  bajada_at: string | null;
+  subida_lat: number | null;
+  subida_lng: number | null;
+  bajada_lat: number | null;
+  bajada_lng: number | null;
+  monto: number;
+  estado: string | null;
+};
+
+
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
   const [loading, setLoading] = useState(true);
@@ -49,10 +64,13 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [filterRuta, setFilterRuta] = useState("all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
   const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
+  const [pasajerosPorViaje, setPasajerosPorViaje] = useState<Record<string, PasajeroRow[]>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
+
 
   const getRange = useCallback((): { desde: string; hasta: string } => {
     const today = getHermosilloToday();
@@ -179,12 +197,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     const rows = ((data || []) as ViajeRow[]).filter(inRange);
     setViajes(rows);
 
-    // Cargar importes cobrados por viaje (QR foráneo + tramos urbanos)
+    // Cargar importes cobrados por viaje + detalle anónimo de pasajeros (para mapa de calor)
     const viajeIds = rows.map((v) => v.id);
     const totals: Record<string, { monto: number; cobros: number }> = {};
+    const pasajeros: Record<string, PasajeroRow[]> = {};
     if (viajeIds.length > 0) {
       const [{ data: qvp }, { data: cqt }] = await Promise.all([
-        supabase.from("qard_viajes_pasajero").select("viaje_id, monto_cobrado_mxn").in("viaje_id", viajeIds),
+        supabase.from("qard_viajes_pasajero")
+          .select("viaje_id, monto_cobrado_mxn, numero_subida, numero_bajada, subida_at, bajada_at, subida_lat, subida_lng, bajada_lat, bajada_lng, estado")
+          .in("viaje_id", viajeIds),
         supabase.from("cobros_qr_tramo").select("viaje_id, precio_real").in("viaje_id", viajeIds),
       ]);
       (qvp || []).forEach((r: any) => {
@@ -192,6 +213,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
         const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
         t.monto += Number(r.monto_cobrado_mxn) || 0;
         t.cobros += 1;
+        (pasajeros[r.viaje_id] ||= []).push({
+          numero_subida: r.numero_subida ?? null,
+          numero_bajada: r.numero_bajada ?? null,
+          subida_at: r.subida_at ?? null,
+          bajada_at: r.bajada_at ?? null,
+          subida_lat: r.subida_lat ?? null,
+          subida_lng: r.subida_lng ?? null,
+          bajada_lat: r.bajada_lat ?? null,
+          bajada_lng: r.bajada_lng ?? null,
+          monto: Number(r.monto_cobrado_mxn) || 0,
+          estado: r.estado ?? null,
+        });
       });
       (cqt || []).forEach((r: any) => {
         if (!r.viaje_id) return;
@@ -200,9 +233,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
         t.cobros += 1;
       });
     }
+    // Ordenar pasajeros por número de subida
+    Object.keys(pasajeros).forEach((k) => {
+      pasajeros[k].sort((a, b) => (a.numero_subida ?? 999) - (b.numero_subida ?? 999));
+    });
     setCobrosPorViaje(totals);
+    setPasajerosPorViaje(pasajeros);
     setLoading(false);
   }, [proveedorId, getRange]);
+
 
 
   useEffect(() => {
@@ -304,6 +343,39 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       rows
     );
   };
+
+  // CSV anónimo por pasajero (para armar mapa de calor). Sin QaRd, sin nombre.
+  const handleExportPasajeros = () => {
+    const rows: string[][] = [];
+    filtered.forEach((v) => {
+      const lista = pasajerosPorViaje[v.id] || [];
+      lista.forEach((p) => {
+        rows.push([
+          v.fecha,
+          String(v.numero_viaje),
+          getRutaLabel(v),
+          getUnidadLabel(v),
+          getChoferLabel(v),
+          p.numero_subida != null ? `Sub#${p.numero_subida}` : "",
+          p.numero_bajada != null ? `Baj#${p.numero_bajada} → Sub#${p.numero_subida ?? "?"}` : "",
+          p.subida_at || "",
+          p.subida_lat != null ? String(p.subida_lat) : "",
+          p.subida_lng != null ? String(p.subida_lng) : "",
+          p.bajada_at || "",
+          p.bajada_lat != null ? String(p.bajada_lat) : "",
+          p.bajada_lng != null ? String(p.bajada_lng) : "",
+          (p.monto || 0).toFixed(2),
+          p.estado || "",
+        ]);
+      });
+    });
+    downloadCSV(
+      `pasajeros-anonimo-${getRange().desde}_a_${getRange().hasta}.csv`,
+      ["Fecha","Viaje #","Ruta","Unidad","Chofer","Subida","Bajada (ligada a subida)","Hora subida","Lat subida","Lng subida","Hora bajada","Lat bajada","Lng bajada","Importe MXN","Estado"],
+      rows,
+    );
+  };
+
 
 
   return (
@@ -478,12 +550,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
 
         return (
           <Card>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-sm">Detalle de viajes</CardTitle>
-              <Button size="sm" variant="outline" onClick={handleExport}>
-                <Download className="h-3 w-3 mr-1" /> CSV
-              </Button>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={handleExport}>
+                  <Download className="h-3 w-3 mr-1" /> CSV viajes
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleExportPasajeros} title="Datos anónimos por pasajero (sin QaRd) con coordenadas para armar mapa de calor">
+                  <Download className="h-3 w-3 mr-1" /> CSV mapa de calor
+                </Button>
+              </div>
             </CardHeader>
+
             <CardContent className="space-y-4">
               {buckets.map((b) => {
                 const completados = b.viajes.filter((v) => v.estado === "completado").length;
@@ -518,30 +596,68 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                         const sub = v.pasajeros_subidos ?? 0;
                         const baj = v.pasajeros_bajados ?? 0;
                         const abordo = v.pasajeros_a_bordo ?? 0;
+                        const pax = pasajerosPorViaje[v.id] || [];
+                        const isOpen = !!expanded[v.id];
                         return (
-                          <div key={v.id} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                              <span className="font-semibold">#{v.numero_viaje}</span>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
-                              {flagManual && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>
-                              )}
-                              {enCurso && (
-                                <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>
-                              )}
-                              <span className="text-[10px] text-emerald-700 font-medium">
-                                ↑{sub} ↓{baj} · {abordo} en stand
+                          <div key={v.id} className="text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setExpanded((e) => ({ ...e, [v.id]: !e[v.id] }))}
+                              className="w-full px-3 py-2 flex items-center justify-between gap-2 hover:bg-muted/30 text-left"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                                {pax.length > 0 ? (
+                                  isOpen ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />
+                                ) : <span className="w-3" />}
+                                <span className="font-semibold">#{v.numero_viaje}</span>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
+                                {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
+                                {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
+                                {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
+                                  <span className="text-[10px] font-semibold text-primary">
+                                    {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-muted-foreground shrink-0 tabular-nums text-right">
+                                <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
+                                {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                               </span>
-                              {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                <span className="text-[10px] font-semibold text-primary">
-                                  {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-muted-foreground shrink-0 tabular-nums text-right">
-                              <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
-                              {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
-                            </span>
+                            </button>
+                            {isOpen && pax.length > 0 && (
+                              <div className="bg-muted/20 px-3 py-2 space-y-1">
+                                <p className="text-[10px] text-muted-foreground">
+                                  Pasajeros anónimos (sin identificar). Se numeran al subir; al bajar se liga al número de subida.
+                                </p>
+                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-2 gap-y-0.5 text-[11px]">
+                                  <span className="font-semibold">Subida</span>
+                                  <span className="font-semibold">Bajada</span>
+                                  <span className="font-semibold">Coordenadas (sube → baja)</span>
+                                  <span className="font-semibold text-right">Importe</span>
+                                  {pax.map((p, i) => (
+                                    <div key={i} className="contents">
+                                      <span className="text-emerald-700">
+                                        {p.numero_subida != null ? `#${p.numero_subida}` : "—"}
+                                        <span className="opacity-60 ml-1">{fmtTime(p.subida_at)}</span>
+                                      </span>
+                                      <span className="text-amber-700">
+                                        {p.numero_bajada != null
+                                          ? `Baj#${p.numero_bajada} (era Sub#${p.numero_subida ?? "?"})`
+                                          : <span className="text-muted-foreground">a bordo</span>}
+                                        {p.bajada_at && <span className="opacity-60 ml-1">{fmtTime(p.bajada_at)}</span>}
+                                      </span>
+                                      <span className="text-muted-foreground tabular-nums truncate">
+                                        {p.subida_lat != null ? `${p.subida_lat.toFixed(5)}, ${p.subida_lng?.toFixed(5)}` : "—"}
+                                        {" → "}
+                                        {p.bajada_lat != null ? `${p.bajada_lat.toFixed(5)}, ${p.bajada_lng?.toFixed(5)}` : "…"}
+                                      </span>
+                                      <span className="text-right tabular-nums">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -549,6 +665,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   </div>
                 );
               })}
+
 
             </CardContent>
           </Card>

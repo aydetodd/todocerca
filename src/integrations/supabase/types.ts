@@ -3279,6 +3279,8 @@ export type Database = {
           estado: string
           id: string
           monto_cobrado_mxn: number | null
+          numero_bajada: number | null
+          numero_subida: number | null
           producto_id: string
           qard_number: string
           subida_at: string
@@ -3299,6 +3301,8 @@ export type Database = {
           estado?: string
           id?: string
           monto_cobrado_mxn?: number | null
+          numero_bajada?: number | null
+          numero_subida?: number | null
           producto_id: string
           qard_number: string
           subida_at?: string
@@ -3319,6 +3323,8 @@ export type Database = {
           estado?: string
           id?: string
           monto_cobrado_mxn?: number | null
+          numero_bajada?: number | null
+          numero_subida?: number | null
           producto_id?: string
           qard_number?: string
           subida_at?: string
