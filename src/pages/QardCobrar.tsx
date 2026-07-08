@@ -187,6 +187,56 @@ export default function QardCobrar() {
         </Card>
       )}
 
+      <Card className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/30">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 font-semibold">
+            <Wallet className="h-5 w-5 text-green-700" /> Mis cobros recibidos
+          </div>
+          <Button variant="ghost" size="icon" onClick={cargarCobros} title="Actualizar">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+          <div className="rounded bg-white/60 p-2">
+            <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
+            <div className="font-bold">${totalBruto.toFixed(2)}</div>
+          </div>
+          <div className="rounded bg-white/60 p-2">
+            <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
+            <div className="font-bold text-red-700">−${totalComision.toFixed(2)}</div>
+          </div>
+          <div className="rounded bg-white p-2 border border-green-500/40">
+            <div className="text-[10px] text-muted-foreground uppercase">Recibes</div>
+            <div className="font-bold text-green-700">${totalNeto.toFixed(2)}</div>
+          </div>
+        </div>
+        <div className="text-[11px] text-muted-foreground mb-2">
+          Últimos {cobros.length} cobros (se liquida a tu cuenta bancaria según tu configuración).
+        </div>
+        {cobros.length === 0 ? (
+          <div className="text-xs text-muted-foreground text-center py-3">Sin cobros aún.</div>
+        ) : (
+          <div className="space-y-1 max-h-72 overflow-y-auto">
+            {cobros.map((m) => (
+              <div key={m.id} className="flex justify-between items-center text-sm border-b border-green-500/20 pb-1">
+                <div>
+                  <div className="font-medium">{m.descripcion || "Cobro QaRd"}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {new Date(m.created_at).toLocaleString()} · comisión ${Number(m.comision_mxn ?? 0).toFixed(2)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-green-700">+${Number(m.neto_comercio_mxn ?? 0).toFixed(2)}</div>
+                  <div className="text-[10px] text-muted-foreground">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+
+
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
