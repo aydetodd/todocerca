@@ -244,18 +244,18 @@ export default function Qard() {
                     <div className="font-mono font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">CVV</div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono font-semibold">
+                    <div className="text-muted-foreground">CVV compras</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-lg text-amber-400 tracking-wider">
                         {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
                       </span>
                       {titular && (
                         <>
                           <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
-                            {cvvVisible[titular.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                            {cvvVisible[titular.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                           <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
-                            <RotateCw className="h-3 w-3" />
+                            <RotateCw className="h-4 w-4" />
                           </button>
                         </>
                       )}
@@ -263,14 +263,14 @@ export default function Qard() {
                   </div>
                 </div>
                 {wallet?.cvv_dinamico && (
-                  <div className="mt-2 text-xs">
-                    <div className="text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
+                  <div className="mt-2">
+                    <div className="text-xs text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-primary text-base">
+                      <span className="font-mono font-extrabold text-cyan-400 text-2xl tracking-widest">
                         {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
                       </span>
                       <button onClick={() => setCvvDinVisible(v => !v)}>
-                        {cvvDinVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        {cvvDinVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                       <span className="text-[10px] text-muted-foreground">Cambia tras cada transferencia recibida</span>
                     </div>
@@ -445,21 +445,22 @@ export default function Qard() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1 items-center">
                   <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
                   <span className="flex items-center gap-1">
-                    CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
+                    <span className="text-muted-foreground">CVV</span>
+                    <b className="font-mono font-bold text-sm text-amber-400 tracking-wider">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
                     <button onClick={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}>
-                      {cvvVisible[s.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {cvvVisible[s.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
-                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
+                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3.5 w-3.5" /></button>
                   </span>
                   {s.cvv_dinamico && (
                     <span className="flex items-center gap-1">
                       <span className="text-muted-foreground">CVV transf.</span>
-                      <b className="font-mono text-primary">{cvvVisible[`din-${s.id}`] ? s.cvv_dinamico : "••••"}</b>
+                      <b className="font-mono font-extrabold text-base text-cyan-400 tracking-widest">{cvvVisible[`din-${s.id}`] ? s.cvv_dinamico : "••••"}</b>
                       <button onClick={() => setCvvVisible(v => ({ ...v, [`din-${s.id}`]: !v[`din-${s.id}`] }))}>
-                        {cvvVisible[`din-${s.id}`] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        {cvvVisible[`din-${s.id}`] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </span>
                   )}
