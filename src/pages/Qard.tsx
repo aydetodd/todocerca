@@ -445,7 +445,7 @@ export default function Qard() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-3 text-[11px] mt-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1">
                   <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
                   <span className="flex items-center gap-1">
                     CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
@@ -454,6 +454,15 @@ export default function Qard() {
                     </button>
                     <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
                   </span>
+                  {s.cvv_dinamico && (
+                    <span className="flex items-center gap-1">
+                      <span className="text-muted-foreground">CVV transf.</span>
+                      <b className="font-mono text-primary">{cvvVisible[`din-${s.id}`] ? s.cvv_dinamico : "••••"}</b>
+                      <button onClick={() => setCvvVisible(v => ({ ...v, [`din-${s.id}`]: !v[`din-${s.id}`] }))}>
+                        {cvvVisible[`din-${s.id}`] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      </button>
+                    </span>
+                  )}
                 </div>
                 {s.limite_por_transaccion && <div className="text-[11px] mt-0.5">Máx por cobro: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
               </div>
