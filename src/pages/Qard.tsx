@@ -445,21 +445,22 @@ export default function Qard() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1 items-center">
                   <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
                   <span className="flex items-center gap-1">
-                    CVV <b className="font-mono">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
+                    <span className="text-muted-foreground">CVV</span>
+                    <b className="font-mono font-bold text-sm text-amber-400 tracking-wider">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
                     <button onClick={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}>
-                      {cvvVisible[s.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {cvvVisible[s.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
-                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3 w-3" /></button>
+                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3.5 w-3.5" /></button>
                   </span>
                   {s.cvv_dinamico && (
                     <span className="flex items-center gap-1">
                       <span className="text-muted-foreground">CVV transf.</span>
-                      <b className="font-mono text-primary">{cvvVisible[`din-${s.id}`] ? s.cvv_dinamico : "••••"}</b>
+                      <b className="font-mono font-extrabold text-base text-cyan-400 tracking-widest">{cvvVisible[`din-${s.id}`] ? s.cvv_dinamico : "••••"}</b>
                       <button onClick={() => setCvvVisible(v => ({ ...v, [`din-${s.id}`]: !v[`din-${s.id}`] }))}>
-                        {cvvVisible[`din-${s.id}`] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        {cvvVisible[`din-${s.id}`] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </span>
                   )}
