@@ -29,6 +29,7 @@ export default function QardCobrar() {
   const [retiroMetodo, setRetiroMetodo] = useState<"oxxo" | "spei" | "qard">("oxxo");
   const [retiroMonto, setRetiroMonto] = useState("");
   const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroCvv, setRetiroCvv] = useState("");
   const [retiroLoading, setRetiroLoading] = useState(false);
 
   const cargarCobros = useCallback(async () => {
@@ -149,6 +150,7 @@ export default function QardCobrar() {
     setRetiroMetodo(metodo);
     setRetiroMonto("");
     setRetiroDestino("");
+    setRetiroCvv("");
     setRetiroOpen(true);
   };
 
@@ -158,8 +160,11 @@ export default function QardCobrar() {
     if (m > totalNeto) return toast({ title: "Excede tu saldo disponible", variant: "destructive" });
     if (retiroMetodo === "qard") {
       const d = retiroDestino.replace(/\D/g, "");
-      if (d.length !== 16 && d.length !== 18) {
-        return toast({ title: "Ingresa 16 dígitos de QaRd o 18 de CLABE", variant: "destructive" });
+      if (d.length !== 16) {
+        return toast({ title: "Ingresa los 16 dígitos de la QaRd destino", variant: "destructive" });
+      }
+      if (retiroCvv.length !== 4) {
+        return toast({ title: "Escribe el CVV dinámico de 4 dígitos del destino", variant: "destructive" });
       }
     }
     if (retiroMetodo === "spei" && retiroDestino) {
@@ -168,14 +173,14 @@ export default function QardCobrar() {
     }
     setRetiroLoading(true);
     const { data, error } = await supabase.functions.invoke("qard-retirar", {
-      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino },
+      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino, cvv: retiroCvv },
     });
     setRetiroLoading(false);
     if (error || !data?.ok) {
       return toast({ title: "No se pudo retirar", description: (data?.error || error?.message) ?? "", variant: "destructive" });
     }
     setRetiroOpen(false);
-    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)} · Simulado` });
+    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}${data.simulado ? " · Simulado" : ""}` });
     cargarCobros();
   };
 
@@ -404,18 +409,34 @@ export default function QardCobrar() {
             )}
 
             {retiroMetodo === "qard" && (
-              <div>
-                <label className="text-sm font-medium">QaRd (16) o CLABE (18)</label>
-                <Input
-                  inputMode="numeric"
-                  value={retiroDestino}
-                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  placeholder="0000000000000000"
-                  maxLength={18}
-                  className="tracking-widest"
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">Transferencia entre QaRd, gratis e inmediata.</p>
-              </div>
+              <>
+                <div>
+                  <label className="text-sm font-medium">QaRd destino (16 dígitos)</label>
+                  <Input
+                    inputMode="numeric"
+                    value={retiroDestino}
+                    onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))}
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={16}
+                    className="tracking-widest"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">CVV dinámico del destino (4 dígitos)</label>
+                  <Input
+                    inputMode="numeric"
+                    type="password"
+                    value={retiroCvv}
+                    onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="••••"
+                    maxLength={4}
+                    className="tracking-widest"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Pide al destinatario su CVV dinámico de 4 dígitos (rota tras cada transferencia recibida).
+                  </p>
+                </div>
+              </>
             )}
 
             {retiroMetodo === "oxxo" && (
