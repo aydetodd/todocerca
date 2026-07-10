@@ -29,6 +29,7 @@ export default function QardCobrar() {
   const [retiroMetodo, setRetiroMetodo] = useState<"oxxo" | "spei" | "qard">("oxxo");
   const [retiroMonto, setRetiroMonto] = useState("");
   const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroCvv, setRetiroCvv] = useState("");
   const [retiroLoading, setRetiroLoading] = useState(false);
 
   const cargarCobros = useCallback(async () => {
