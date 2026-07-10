@@ -160,8 +160,11 @@ export default function QardCobrar() {
     if (m > totalNeto) return toast({ title: "Excede tu saldo disponible", variant: "destructive" });
     if (retiroMetodo === "qard") {
       const d = retiroDestino.replace(/\D/g, "");
-      if (d.length !== 16 && d.length !== 18) {
-        return toast({ title: "Ingresa 16 dígitos de QaRd o 18 de CLABE", variant: "destructive" });
+      if (d.length !== 16) {
+        return toast({ title: "Ingresa los 16 dígitos de la QaRd destino", variant: "destructive" });
+      }
+      if (retiroCvv.length !== 4) {
+        return toast({ title: "Escribe el CVV dinámico de 4 dígitos del destino", variant: "destructive" });
       }
     }
     if (retiroMetodo === "spei" && retiroDestino) {
@@ -170,14 +173,14 @@ export default function QardCobrar() {
     }
     setRetiroLoading(true);
     const { data, error } = await supabase.functions.invoke("qard-retirar", {
-      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino },
+      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino, cvv: retiroCvv },
     });
     setRetiroLoading(false);
     if (error || !data?.ok) {
       return toast({ title: "No se pudo retirar", description: (data?.error || error?.message) ?? "", variant: "destructive" });
     }
     setRetiroOpen(false);
-    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)} · Simulado` });
+    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}${data.simulado ? " · Simulado" : ""}` });
     cargarCobros();
   };
 
