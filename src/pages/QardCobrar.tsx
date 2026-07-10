@@ -409,18 +409,34 @@ export default function QardCobrar() {
             )}
 
             {retiroMetodo === "qard" && (
-              <div>
-                <label className="text-sm font-medium">QaRd (16) o CLABE (18)</label>
-                <Input
-                  inputMode="numeric"
-                  value={retiroDestino}
-                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  placeholder="0000000000000000"
-                  maxLength={18}
-                  className="tracking-widest"
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">Transferencia entre QaRd, gratis e inmediata.</p>
-              </div>
+              <>
+                <div>
+                  <label className="text-sm font-medium">QaRd destino (16 dígitos)</label>
+                  <Input
+                    inputMode="numeric"
+                    value={retiroDestino}
+                    onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))}
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={16}
+                    className="tracking-widest"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">CVV dinámico del destino (4 dígitos)</label>
+                  <Input
+                    inputMode="numeric"
+                    type="password"
+                    value={retiroCvv}
+                    onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="••••"
+                    maxLength={4}
+                    className="tracking-widest"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Pide al destinatario su CVV dinámico de 4 dígitos (rota tras cada transferencia recibida).
+                  </p>
+                </div>
+              </>
             )}
 
             {retiroMetodo === "oxxo" && (
