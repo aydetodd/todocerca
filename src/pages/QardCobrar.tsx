@@ -150,6 +150,7 @@ export default function QardCobrar() {
     setRetiroMetodo(metodo);
     setRetiroMonto("");
     setRetiroDestino("");
+    setRetiroCvv("");
     setRetiroOpen(true);
   };
 
