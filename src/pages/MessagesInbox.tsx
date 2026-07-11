@@ -8,18 +8,22 @@ import ShareContactButton from '@/components/ShareContactButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, Clock, User, Users, UserPlus, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { MessageCircle, Clock, User, Users, UserPlus, ShieldCheck, Ban, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 const MessagesInbox = () => {
   const { conversations, loading: loadingConversations, markAsRead } = useUnreadMessages();
-  const { contacts, loading: loadingContacts } = useContacts();
+  const { contacts, loading: loadingContacts, toggleBlocked, addContactByPhone } = useContacts();
   const [selectedChat, setSelectedChat] = useState<{
     id: string;
     name: string;
   } | null>(null);
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [searching, setSearching] = useState(false);
 
   const handleOpenChat = (senderId: string, senderName: string) => {
     // Mark messages as read when opening the chat
