@@ -4826,6 +4826,7 @@ export type Database = {
       }
       user_contacts: {
         Row: {
+          blocked: boolean
           contact_user_id: string
           created_at: string
           id: string
@@ -4834,6 +4835,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          blocked?: boolean
           contact_user_id: string
           created_at?: string
           id?: string
@@ -4842,6 +4844,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          blocked?: boolean
           contact_user_id?: string
           created_at?: string
           id?: string
@@ -5651,6 +5654,15 @@ export type Database = {
         Args: { p_contact_user_id: string; p_nickname?: string }
         Returns: boolean
       }
+      add_contact_by_phone: {
+        Args: { phone_param: string }
+        Returns: {
+          apodo: string
+          blocked: boolean
+          nombre: string
+          user_id: string
+        }[]
+      }
       admin_approve_ruta_maestra: {
         Args: { _id: string; _nombre_final?: string }
         Returns: {
@@ -5809,7 +5821,8 @@ export type Database = {
       find_user_by_phone: {
         Args: { phone_param: string }
         Returns: {
-          phone: string
+          apodo: string
+          nombre: string
           user_id: string
         }[]
       }

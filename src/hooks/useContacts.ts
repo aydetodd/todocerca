@@ -9,6 +9,7 @@ export interface Contact {
   nickname: string | null;
   created_at: string;
   is_sos_trusted: boolean;
+  blocked?: boolean;
   profile?: {
     apodo: string | null;
     nombre: string;
@@ -137,11 +138,55 @@ export const useContacts = () => {
   // Filtrar contactos de confianza SOS
   const sosContacts = contacts.filter(c => c.is_sos_trusted);
 
+  const toggleBlocked = async (contactId: string, blocked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('user_contacts')
+        .update({ blocked })
+        .eq('id', contactId);
+      if (error) throw error;
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, blocked } : c));
+      toast({
+        title: blocked ? 'Contacto bloqueado' : 'Contacto desbloqueado',
+        description: blocked ? 'Ya no verás sus mensajes ni podrá escribirte.' : 'Ya pueden intercambiar mensajes.',
+      });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'No se pudo actualizar', variant: 'destructive' });
+    }
+  };
+
+  const addContactByPhone = async (phone: string): Promise<{ userId: string; name: string } | null> => {
+    try {
+      const { data, error } = await supabase.rpc('add_contact_by_phone', { phone_param: phone });
+      if (error) {
+        const msg = error.message || '';
+        if (msg.includes('user_not_found')) {
+          toast({ title: 'No encontrado', description: 'Ese número no está registrado en TodoCerca.', variant: 'destructive' });
+        } else if (msg.includes('cannot_add_self')) {
+          toast({ title: 'Ese eres tú', description: 'No puedes agregarte a ti mismo.', variant: 'destructive' });
+        } else {
+          toast({ title: 'Error', description: msg, variant: 'destructive' });
+        }
+        return null;
+      }
+      const row: any = Array.isArray(data) ? data[0] : data;
+      if (!row) return null;
+      await fetchContacts();
+      toast({ title: 'Contacto agregado', description: `Ya puedes chatear con ${row.apodo || row.nombre || 'este usuario'}.` });
+      return { userId: row.user_id, name: row.apodo || row.nombre || 'Usuario' };
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'No se pudo agregar', variant: 'destructive' });
+      return null;
+    }
+  };
+
   return {
     contacts,
     sosContacts,
     loading,
     refreshContacts: fetchContacts,
     toggleSOSTrusted,
+    toggleBlocked,
+    addContactByPhone,
   };
 };
