@@ -5655,7 +5655,7 @@ export type Database = {
         Returns: boolean
       }
       add_contact_by_phone: {
-        Args: { _phone: string }
+        Args: { phone_param: string }
         Returns: {
           apodo: string
           blocked: boolean
@@ -5819,7 +5819,7 @@ export type Database = {
         }
       }
       find_user_by_phone: {
-        Args: { _phone: string }
+        Args: { phone_param: string }
         Returns: {
           apodo: string
           nombre: string
