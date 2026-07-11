@@ -9,6 +9,7 @@ export interface Contact {
   nickname: string | null;
   created_at: string;
   is_sos_trusted: boolean;
+  blocked?: boolean;
   profile?: {
     apodo: string | null;
     nombre: string;
