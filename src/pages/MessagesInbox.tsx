@@ -31,6 +31,18 @@ const MessagesInbox = () => {
     setSelectedChat({ id: senderId, name: senderName });
   };
 
+  const handleSearchByPhone = async () => {
+    const clean = phoneSearch.replace(/\D/g, '');
+    if (clean.length < 10) return;
+    setSearching(true);
+    const result = await addContactByPhone(phoneSearch);
+    setSearching(false);
+    if (result) {
+      setPhoneSearch('');
+      setSelectedChat({ id: result.userId, name: result.name });
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
