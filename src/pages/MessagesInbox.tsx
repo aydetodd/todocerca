@@ -158,8 +158,36 @@ const MessagesInbox = () => {
           </TabsContent>
 
           <TabsContent value="contacts">
-            <div className="mb-4">
+            <div className="mb-4 space-y-3">
               <ShareContactButton variant="default" size="default" />
+
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-3 space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Search className="h-3.5 w-3.5" />
+                    Buscar por número de teléfono
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <PhoneInput
+                        value={phoneSearch}
+                        onChange={setPhoneSearch}
+                        placeholder="Número de teléfono"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleSearchByPhone}
+                      disabled={searching || phoneSearch.replace(/\D/g, '').length < 10}
+                      size="sm"
+                    >
+                      {searching ? '...' : 'Chatear'}
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Si el número está registrado en TodoCerca, se agrega el contacto y se abre el chat.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
             {loadingContacts ? (
@@ -176,46 +204,70 @@ const MessagesInbox = () => {
                     No tienes contactos
                   </p>
                   <p className="text-sm text-muted-foreground text-center">
-                    Comparte tu código QR o enlace para que tus amigos te agreguen
+                    Comparte tu QR, tu enlace, o busca a alguien por su número de teléfono arriba.
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <ScrollArea className="h-[calc(100vh-280px)]">
+              <ScrollArea className="h-[calc(100vh-360px)]">
                 <div className="space-y-2">
-                  {contacts.map((contact) => (
-                    <Card
-                      key={contact.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedChat({
-                        id: contact.contact_user_id,
-                        name: contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Usuario'
-                      })}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center flex-shrink-0">
-                            <User className="h-6 w-6 text-secondary-foreground" />
+                  {contacts.map((contact) => {
+                    const displayName = contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Usuario';
+                    return (
+                      <Card
+                        key={contact.id}
+                        className={`transition-colors ${contact.blocked ? 'opacity-50' : 'hover:bg-muted/50'}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                              onClick={() => {
+                                if (contact.blocked) return;
+                                setSelectedChat({ id: contact.contact_user_id, name: displayName });
+                              }}
+                            >
+                              <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center flex-shrink-0">
+                                <User className="h-6 w-6 text-secondary-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-foreground truncate">
+                                  {displayName}
+                                  {contact.blocked && (
+                                    <span className="ml-2 text-[10px] bg-destructive/20 text-destructive px-1.5 py-0.5 rounded-full font-medium">
+                                      Bloqueado
+                                    </span>
+                                  )}
+                                </h3>
+                                {contact.nickname && contact.profile?.apodo && contact.nickname !== contact.profile?.apodo && (
+                                  <p className="text-sm text-muted-foreground">
+                                    @{contact.profile?.apodo}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBlocked(contact.id, !contact.blocked);
+                              }}
+                              title={contact.blocked ? 'Desbloquear' : 'Bloquear'}
+                            >
+                              <Ban className={`h-4 w-4 ${contact.blocked ? 'text-destructive' : 'text-muted-foreground'}`} />
+                            </Button>
+                            {!contact.blocked && <MessageCircle className="h-5 w-5 text-muted-foreground" />}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground truncate">
-                              {contact.nickname || contact.profile?.apodo || contact.profile?.nombre || 'Usuario'}
-                            </h3>
-                            {contact.nickname && contact.profile?.apodo && contact.nickname !== contact.profile?.apodo && (
-                              <p className="text-sm text-muted-foreground">
-                                @{contact.profile?.apodo}
-                              </p>
-                            )}
-                          </div>
-                          <MessageCircle className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}
           </TabsContent>
+
         </Tabs>
       </div>
 
