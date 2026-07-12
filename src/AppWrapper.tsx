@@ -77,7 +77,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing"];
+const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona"];
 
 const DeviceVerificationProvider = () => {
   const location = useLocation();
