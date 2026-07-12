@@ -144,6 +144,7 @@ export default function AppWrapper() {
           <Route path="/home" element={<MainHome />} />
           <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
+          <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
