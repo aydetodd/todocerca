@@ -63,6 +63,7 @@ import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
+import ComoFunciona from "./pages/ComoFunciona";
 import { NavigationBar } from "@/components/NavigationBar";
 import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
@@ -76,7 +77,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing"];
+const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona"];
 
 const DeviceVerificationProvider = () => {
   const location = useLocation();
@@ -143,6 +144,7 @@ export default function AppWrapper() {
           <Route path="/home" element={<MainHome />} />
           <Route path="/panel" element={<Panel />} />
           <Route path="/landing" element={<Index />} />
+          <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
