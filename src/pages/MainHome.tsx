@@ -96,40 +96,7 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        {isAdmin && (<>
-        <Card
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-red-500/30"
-          onClick={() => navigate('/reportes-ciudadanos')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="h-7 w-7 text-red-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Reportes Ciudadanos</h3>
-              <p className="text-sm text-muted-foreground">Reporta baches, fugas, alumbrado y más</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-amber-500/40"
-          onClick={() => navigate('/tv')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-primary/20 flex items-center justify-center flex-shrink-0">
-              <Radio className="h-7 w-7 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
-                TodoCerca TV
-                <span className="text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded">PRÓXIMAMENTE</span>
-              </h3>
-              <p className="text-sm text-muted-foreground">Guía de programación comunitaria</p>
-            </div>
-          </CardContent>
-        </Card>
-        </>)}
+        {/* Protocolo 3: Reportes Ciudadanos y TodoCerca TV ocultos */}
 
         {isEmpresaTransporte && (
           <Card 
