@@ -158,20 +158,24 @@ export default function Qard() {
     const hacia = p2pTo.replace(/\s+/g, "");
     const cvv = p2pCvv.trim();
     const m = Number(p2pMonto);
+    const misNumeros = new Set<string>([qardNumber, ...subs.map(s => (s.qard_number || "").replace(/\s+/g, ""))].filter(Boolean));
+    const mismoDueno = misNumeros.has(hacia);
     if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
     if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
-    if (cvv.length !== 4) return toast({ title: "El CVV dinámico debe tener 4 dígitos", variant: "destructive" });
+    if (desde === hacia) return toast({ title: "Origen y destino son la misma cuenta", variant: "destructive" });
+    if (!mismoDueno && cvv.length !== 4) return toast({ title: "CVV dinámico de 4 dígitos requerido", variant: "destructive" });
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
-    if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a la QaRd terminada en ${hacia.slice(-4)}?\n\nEs gratis y no se puede revertir.`)) return;
+    const label = mismoDueno ? "una cuenta tuya" : `la QaRd terminada en ${hacia.slice(-4)}`;
+    if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a ${label}?\n\nEs gratis y no se puede revertir.`)) return;
     setP2pEnviando(true);
     const { data, error } = await supabase.rpc("qard_transfer_p2p" as any, {
-      _from_numero16: desde, _to_numero16: hacia, _cvv: cvv, _monto: m,
+      _from_numero16: desde, _to_numero16: hacia, _cvv: mismoDueno ? "" : cvv, _monto: m,
     });
     setP2pEnviando(false);
     if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
     const res = data as any;
     if (!res?.ok) return toast({ title: "No se pudo enviar", description: res?.error ?? "Error desconocido", variant: "destructive" });
-    toast({ title: "Transferencia enviada", description: `$${m.toFixed(2)} MXN a •••• ${res.destino_ultimos4}` });
+    toast({ title: "Transferencia enviada", description: `$${m.toFixed(2)} MXN a •••• ${hacia.slice(-4)}` });
     setP2pTo(""); setP2pCvv(""); setP2pMonto("");
     cargar();
   };
