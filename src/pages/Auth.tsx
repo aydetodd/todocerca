@@ -788,7 +788,7 @@ const Auth = () => {
                       <p>Al registrarte en TodoCerca:</p>
                       <ul className="list-disc list-inside space-y-1 ml-2">
                         <li>Confirmas que tienes 18+ años.</li>
-                        <li>Tú eres responsable de lo que publicas sea legal en México.</li>
+                        <li>Tú eres responsable de lo que publicas sea legal en México o en tu país.</li>
                         <li>No vendas armas, drogas, productos robados, medicinas sin receta, ni nada prohibido por la ley.</li>
                         <li>TodoCerca solo conecta vecinos — no participa en tus transacciones.</li>
                       </ul>
