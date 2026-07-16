@@ -711,16 +711,6 @@ const Auth = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="nombre">Nombre: Persona / Negocio / Empresa (opcional)</Label>
-                    <Input
-                      id="nombre"
-                      type="text"
-                      value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
                     <Label htmlFor="recoveryEmail">
                       Correo electrónico * <span className="text-xs font-normal text-muted-foreground">(para recuperar contraseña)</span>
                     </Label>
@@ -734,18 +724,9 @@ const Auth = () => {
                       onChange={(e) => setRecoveryEmail(e.target.value)}
                       required
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Este correo se usará <strong>únicamente</strong> para enviarte un enlace de recuperación si olvidas tu contraseña. No enviaremos publicidad.
-                    </p>
                   </div>
 
                   <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 space-y-2">
-                    <div className="text-sm font-medium">
-                      📍 Tu ubicación (define tu número de usuario / QaRd)
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Elige país, estado y municipio. <strong>No podrás cambiarlo después</strong> — tu número de usuario se genera con este municipio.
-                    </p>
                     <UbicacionSelector
                       value={ubicacion}
                       onChange={setUbicacion}
@@ -807,7 +788,7 @@ const Auth = () => {
                       <p>Al registrarte en TodoCerca:</p>
                       <ul className="list-disc list-inside space-y-1 ml-2">
                         <li>Confirmas que tienes 18+ años.</li>
-                        <li>Tú eres responsable de lo que publicas sea legal en México.</li>
+                        <li>Tú eres responsable de lo que publicas sea legal en México o en tu país.</li>
                         <li>No vendas armas, drogas, productos robados, medicinas sin receta, ni nada prohibido por la ley.</li>
                         <li>TodoCerca solo conecta vecinos — no participa en tus transacciones.</li>
                       </ul>
@@ -839,7 +820,7 @@ const Auth = () => {
                         className="mt-1"
                       />
                       <Label htmlFor="prohibited" className="text-sm leading-relaxed cursor-pointer">
-                        ☑ Acepto la <span className="font-semibold">Política de Contenido Prohibido</span>: No publicaré armas, drogas, artículos falsificados, servicios sin licencia, ni nada ilegal según las leyes mexicanas.
+                        ☑ Acepto la <span className="font-semibold">Política de Contenido Prohibido</span>: No publicaré armas, drogas, artículos falsificados, servicios sin licencia, ni nada ilegal según las leyes mexicanas o las de tu país.
                       </Label>
                     </div>
                   </div>
@@ -856,7 +837,7 @@ const Auth = () => {
                             <li>TodoCerca es un directorio comunitario gratuito para conectar vecinos.</li>
                             <li>No somos parte en ninguna transacción entre usuarios.</li>
                             <li>No garantizamos la calidad, legalidad ni seguridad de lo que se publica.</li>
-                            <li>Podemos suspender cualquier cuenta que viole las leyes mexicanas o nuestras reglas.</li>
+                            <li>Podemos suspender cualquier cuenta que viole las leyes mexicanas o las de tu país o nuestras reglas.</li>
                             <li>Al usar la aplicación, aceptas que asumes los riesgos de tus interacciones.</li>
                           </ol>
                         </div>
