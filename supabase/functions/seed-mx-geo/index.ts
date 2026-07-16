@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       }));
       const { error: eM, count } = await admin
         .from("subdivisiones_nivel2")
-        .upsert(rows, { onConflict: "slug", ignoreDuplicates: true, count: "exact" });
+        .upsert(rows, { onConflict: "nivel1_id,slug", ignoreDuplicates: true, count: "exact" });
       if (eM) throw eM;
       municipiosCreados += count ?? 0;
     }
