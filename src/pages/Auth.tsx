@@ -820,7 +820,7 @@ const Auth = () => {
                         className="mt-1"
                       />
                       <Label htmlFor="prohibited" className="text-sm leading-relaxed cursor-pointer">
-                        ☑ Acepto la <span className="font-semibold">Política de Contenido Prohibido</span>: No publicaré armas, drogas, artículos falsificados, servicios sin licencia, ni nada ilegal según las leyes mexicanas.
+                        ☑ Acepto la <span className="font-semibold">Política de Contenido Prohibido</span>: No publicaré armas, drogas, artículos falsificados, servicios sin licencia, ni nada ilegal según las leyes mexicanas o las de tu país.
                       </Label>
                     </div>
                   </div>
