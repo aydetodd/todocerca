@@ -1,5 +1,6 @@
 // One-shot seeder for Mexican estados/municipios into subdivisiones_nivel1/2
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import DATA from "./estados-municipios-mx.json" with { type: "json" };
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
