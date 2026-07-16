@@ -126,3 +126,6 @@ verify_jwt = false
 [functions.cobro-qr-tramo]
 verify_jwt = false
 
+
+[functions.seed-mx-geo]
+verify_jwt = false
