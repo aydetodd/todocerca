@@ -837,7 +837,7 @@ const Auth = () => {
                             <li>TodoCerca es un directorio comunitario gratuito para conectar vecinos.</li>
                             <li>No somos parte en ninguna transacción entre usuarios.</li>
                             <li>No garantizamos la calidad, legalidad ni seguridad de lo que se publica.</li>
-                            <li>Podemos suspender cualquier cuenta que viole las leyes mexicanas o nuestras reglas.</li>
+                            <li>Podemos suspender cualquier cuenta que viole las leyes mexicanas o las de tu país o nuestras reglas.</li>
                             <li>Al usar la aplicación, aceptas que asumes los riesgos de tus interacciones.</li>
                           </ol>
                         </div>
