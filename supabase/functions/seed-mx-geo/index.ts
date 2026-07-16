@@ -24,10 +24,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const jsonUrl = "https://todocerca.mx/data/estados-municipios-mx.json";
-    const res = await fetch(jsonUrl);
-    if (!res.ok) throw new Error(`fetch json ${res.status}`);
-    const data = (await res.json()) as Record<string, string[]>;
+    const data = DATA as Record<string, string[]>;
 
     const { data: pais, error: eP } = await admin
       .from("paises")
