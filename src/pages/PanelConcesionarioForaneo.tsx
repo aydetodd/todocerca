@@ -12,6 +12,7 @@ import { ReporteViajes } from '@/components/ReporteViajes';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 import RutasMaestrasManager from '@/components/RutasMaestrasManager';
 import ForaneoTarifasManager from '@/components/ForaneoTarifasManager';
+import ForaneoTrazadoOverlay from '@/components/ForaneoTrazadoOverlay';
 
 export default function PanelConcesionarioForaneo() {
   const { user, loading: authLoading } = useAuth();
@@ -119,6 +120,9 @@ export default function PanelConcesionarioForaneo() {
               <TabsTrigger value="tarifas" className="text-xs">
                 <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
               </TabsTrigger>
+              <TabsTrigger value="trazado" className="text-xs">
+                <Route className="h-3 w-3 mr-1" /> Trazado / Segmentación
+              </TabsTrigger>
               <TabsTrigger value="gestion" className="text-xs">
                 <Settings className="h-3 w-3 mr-1" /> Unidades / Choferes / Rutas
               </TabsTrigger>
@@ -148,6 +152,12 @@ export default function PanelConcesionarioForaneo() {
           <TabsContent value="tarifas" className="space-y-3 mt-4">
             <ForaneoTarifasManager proveedorId={proveedor.id} />
           </TabsContent>
+
+          <TabsContent value="trazado" className="space-y-3 mt-4">
+            <ForaneoTrazadoOverlay proveedorId={proveedor.id} />
+          </TabsContent>
+
+
 
           <TabsContent value="gestion" className="space-y-3 mt-4">
             <PrivateRouteManagement
