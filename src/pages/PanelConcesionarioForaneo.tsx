@@ -120,6 +120,9 @@ export default function PanelConcesionarioForaneo() {
               <TabsTrigger value="tarifas" className="text-xs">
                 <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
               </TabsTrigger>
+              <TabsTrigger value="trazado" className="text-xs">
+                <Route className="h-3 w-3 mr-1" /> Trazado / Segmentación
+              </TabsTrigger>
               <TabsTrigger value="gestion" className="text-xs">
                 <Settings className="h-3 w-3 mr-1" /> Unidades / Choferes / Rutas
               </TabsTrigger>
