@@ -153,6 +153,12 @@ export default function PanelConcesionarioForaneo() {
             <ForaneoTarifasManager proveedorId={proveedor.id} />
           </TabsContent>
 
+          <TabsContent value="trazado" className="space-y-3 mt-4">
+            <ForaneoTrazadoOverlay proveedorId={proveedor.id} />
+          </TabsContent>
+
+
+
           <TabsContent value="gestion" className="space-y-3 mt-4">
             <PrivateRouteManagement
               proveedorId={proveedor.id}
