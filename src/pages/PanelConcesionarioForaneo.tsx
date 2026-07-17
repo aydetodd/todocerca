@@ -12,6 +12,7 @@ import { ReporteViajes } from '@/components/ReporteViajes';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 import RutasMaestrasManager from '@/components/RutasMaestrasManager';
 import ForaneoTarifasManager from '@/components/ForaneoTarifasManager';
+import ForaneoTrazadoOverlay from '@/components/ForaneoTrazadoOverlay';
 
 export default function PanelConcesionarioForaneo() {
   const { user, loading: authLoading } = useAuth();
