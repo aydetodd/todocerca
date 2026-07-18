@@ -56,8 +56,8 @@ export default function UnidadWaypointsDialog({
       setLoading(true);
       try {
         const [{ data: u }, { data: wps }] = await Promise.all([
-          supabase.from("unidades_empresa").select("viaje_tipo").eq("id", unidadId).maybeSingle(),
-          supabase.from("unidad_viaje_waypoints")
+          (supabase as any).from("unidades_empresa").select("viaje_tipo").eq("id", unidadId).maybeSingle(),
+          (supabase as any).from("unidad_viaje_waypoints")
             .select("orden, label, lat, lng, radio_m")
             .eq("unidad_id", unidadId).order("orden"),
         ]);
