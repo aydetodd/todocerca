@@ -1,95 +1,99 @@
+## Objetivo
 
-# Cobro QR foráneo — modelo standby (sube-baja)
+Sustituir el modelo actual de **solo A y B** por una **secuencia ordenada e ilimitada de puntos** (A, B, C, D, E…), cada uno con su propio radio. El viaje se cierra al tocar el **último** punto de la secuencia y se abre el siguiente ciclo empezando de nuevo en A.
 
-## Idea en simple
+Aplica primero a **rutas foráneas** (donde ya existe el trazado manual). Cuando quede sólido, se replica a urbanas.
 
-El concesionario dibuja **una o varias geocercas de cobro** sobre su ruta:
+---
 
-- Ruta con tarifa única (ej. $9): **1 sola geocerca** que cubre todo el trayecto.
-- Ruta con tarifas por tramo (ej. Obregón → Bácum con paradas intermedias): **varias geocercas** con precio entre cada par.
+## 1. Base de datos
 
-Cuando el pasajero **sube** y escanea su QR:
-1. El sistema apunta el QR + la geocerca donde subió + hora + viaje activo.
-2. El saldo del pasajero **queda en standby** (no se cobra todavía).
-3. En el escáner del chofer aparece **"Sube: Juan · $? pendiente"** y suma +1 en "Suben / A bordo".
+**Nueva tabla `unidad_viaje_waypoints`** (secuencia por unidad):
+- `unidad_id` (FK a `unidades_empresa`)
+- `orden` (1 = A, 2 = B, 3 = C, …)
+- `label` (texto libre: "Patio", "Maquila", "Regreso")
+- `lat`, `lng`
+- `radio_m` (radio propio de ese punto)
+- Único: `(unidad_id, orden)`
 
-Cuando el pasajero **baja** y vuelve a escanear el mismo QR:
-1. El sistema busca su "viaje abierto" en standby.
-2. Calcula el precio según la geocerca de subida ↔ geocerca de bajada.
-3. **Cobra ese monto** al saldo QaRd del pasajero.
-4. En el escáner aparece **"Baja: Juan · $12"** y suma +1 en "Bajan / A bordo −1".
+**Alter `unidades_empresa`:**
+- Nueva columna `viaje_tipo` ENUM('sencillo','redondo') default 'sencillo'.
+- Se **conservan** `punto_a_lat/lng`, `punto_b_lat/lng`, `geofence_radius_m` para no romper nada existente; una migración de datos los copia como waypoints orden 1 y 2 automáticamente. Después el sistema lee de la nueva tabla.
 
-Si el pasajero baja en la última geocerca del recorrido sin re-escanear, al cerrarse el viaje se cobra automáticamente la tarifa **máxima** de esa subida.
+**Alter `viajes_realizados`:**
+- Nueva columna `waypoint_orden_actual` (int) — indica cuál punto está esperando cruzar el chofer (2 = va rumbo a B, 3 = va rumbo a C, etc.).
+- Los campos `origen`/`destino` se mantienen para retro-compatibilidad pero se llenan con el label del waypoint correspondiente.
 
-## Qué cambia en la app
+RLS: mismas reglas que `unidades_empresa` (dueño concesionario + choferes asignados leen; solo dueño escribe).
 
-### 1. Pantalla del chofer (foráneas) — mantener info + agregar escáner
+---
 
-En `DriverTripPanel` (Viajes con confirmación) se agrega **un botón grande "Cobrar QR"** justo debajo del mapa. Al tocarlo abre el escáner en pantalla completa:
+## 2. Edge Function `trip-geofence-tick`
 
-- Cámara continua + input manual.
-- Cada scan llama al edge function nuevo `cobro-qr-foraneo`.
-- Muestra toast/chime distinto para **subida** ("+1 Juan · standby") vs **bajada** ("−1 Juan · $12 cobrados").
-- Botón "Cerrar" regresa a la pantalla del viaje sin perder #viaje ni conteo.
+Reescribir la lógica de "insideA / insideB" para trabajar con la secuencia:
 
-El resto de la pantalla queda igual (#viaje, Suben/Bajan/A bordo, geocercas A/B, historial).
+1. Cargar los waypoints ordenados de la unidad.
+2. Si NO hay viaje abierto:
+   - Si el chofer está dentro del **waypoint 1 (A)**, abrir viaje con `waypoint_orden_actual = 2`.
+3. Si HAY viaje abierto:
+   - Calcular distancia al waypoint `waypoint_orden_actual`.
+   - Si entró en su radio:
+     - Si es el **último** de la secuencia → cerrar viaje (completado) y abrir el siguiente ciclo con `waypoint_orden_actual = 2`.
+     - Si NO es el último → solo avanzar `waypoint_orden_actual += 1` (no cierra viaje todavía, es una parada intermedia).
 
-### 2. Configuración de geocercas de cobro (concesionario)
+Con esto:
+- **Sencillo (2 puntos):** A → B cierra. Idéntico al comportamiento actual.
+- **Redondo clásico (3 puntos):** A → B (parada intermedia) → C cierra.
+- **Redondo multi-parada (N puntos):** cierra hasta el último.
 
-Ya existe la pantalla **"Geocercas de cobro (ida/vuelta)"** de la ruta. La extendemos para:
+---
 
-- Permitir **N geocercas** ordenadas a lo largo de la ruta (no solo A/B).
-- Cada geocerca: nombre corto (ej. "Providencia"), centro (lat/lng), radio.
-- Una **tabla de tarifas** entre pares de geocercas: `desde_geocerca → hasta_geocerca = $precio`.
-- Caso simple (tarifa única): 1 sola geocerca y `precio_default` de la ruta.
+## 3. UI Concesionario
 
-### 3. Modelo de datos
+Reemplazar `ContractGeofencePicker` (que solo permite origen/destino) por **`WaypointsPicker`**:
 
-Tablas nuevas:
+- Lista ordenada de puntos con drag-to-reorder.
+- Botón **"+ Agregar punto"** (sin tope).
+- Por cada punto: label, coordenadas (tap en mapa o "usar mi ubicación") y **input de radio propio**.
+- Mapa muestra los puntos numerados 1, 2, 3… con círculos de sus radios respectivos y una línea punteada uniéndolos en orden.
+- Botón "Eliminar punto" en cada fila (mínimo 2 puntos).
+- Selector arriba: **Sencillo (A→B)** / **Redondo (A→B→…→último)**.
 
-- `ruta_geocercas_cobro`
-  - `id`, `producto_id`, `nombre`, `lat`, `lng`, `radio_m`, `orden`
-- `ruta_tarifas_tramo`
-  - `id`, `producto_id`, `desde_geocerca_id`, `hasta_geocerca_id`, `precio_mxn`
-- `qard_viajes_pasajero` (el "standby")
-  - `id`, `qard_number` / `wallet_id`, `viaje_id`, `producto_id`, `subida_geocerca_id`, `subida_at`, `bajada_geocerca_id` (null hasta que baja), `bajada_at`, `monto_cobrado_mxn` (null hasta que baja), `estado` ('abierto' | 'cerrado' | 'auto_cerrado')
+Se integra en el diálogo de puntos A/B de unidades y en el flujo de contratos foráneos.
 
-Cada tabla lleva sus `GRANT` y RLS estándar (solo el concesionario dueño puede editar sus geocercas/tarifas; el chofer puede leerlas de sus contratos; los `qard_viajes_pasajero` los inserta/actualiza la edge function con `service_role`).
+---
 
-### 4. Edge function `cobro-qr-foraneo`
+## 4. UI Chofer (`DriverTripPanel`)
 
-Entrada: `{ unidad_id, viaje_id, qard_token, lat, lng }`.
+En el panel del viaje mostrar:
+- "Vas rumbo a: **C – Maquila**" (usando `waypoint_orden_actual` + label).
+- Progreso: `2 / 4 puntos` para que sepa cuántas paradas faltan para cerrar.
+- El resto (mapa, lector QR, conteo) queda igual.
 
-Lógica:
-1. Identifica al pasajero por `qard_token` y valida saldo mínimo.
-2. Detecta en qué **geocerca de cobro** cae `lat/lng` (la más cercana dentro del radio).
-3. Busca fila abierta en `qard_viajes_pasajero` para ese pasajero + `viaje_id`:
-   - **Si no existe → SUBIDA**: inserta `{subida_geocerca_id, subida_at, estado='abierto'}`, incrementa `pasajeros_subidos` y `pasajeros_a_bordo` en `viajes_realizados`. Devuelve `{tipo:'sube', pasajero, standby:true}`.
-   - **Si existe → BAJADA**: busca precio en `ruta_tarifas_tramo(subida, bajada)`; cobra del wallet QaRd; marca `estado='cerrado'`, `monto_cobrado_mxn`; incrementa `pasajeros_bajados`, decrementa `pasajeros_a_bordo`. Devuelve `{tipo:'baja', pasajero, monto}`.
-4. Si el mismo QR escanea en la **misma geocerca** dentro de 60 s → ignora (anti-doble-tap).
+---
 
-### 5. Cierre automático al terminar viaje
+## 5. Migración de datos existentes
 
-Cuando `DriverTripPanel` cierra un viaje (llega a la geocerca destino), un trigger o el propio update de `viajes_realizados` a `completado` dispara:
+Al aplicar la migración:
+- Para cada `unidades_empresa` con `punto_a_lat` y `punto_b_lat` NO nulos: insertar 2 filas en `unidad_viaje_waypoints` (orden 1 = A con radio actual, orden 2 = B con mismo radio) y marcar `viaje_tipo = 'sencillo'`.
+- Viajes abiertos existentes: setear `waypoint_orden_actual` según su `destino` actual (destino B → 2, destino A → 1 del ciclo siguiente, etc.).
 
-- Para cada `qard_viajes_pasajero` con `estado='abierto'` de ese viaje:
-  - Cobra la **tarifa máxima** desde su `subida_geocerca_id` hasta la última geocerca de la ruta.
-  - Marca `estado='auto_cerrado'`.
+Nada existente deja de funcionar; solo gana la capacidad de agregar C, D, E…
 
-Así ningún pasajero se queda "gratis" por olvidar escanear al bajar.
+---
 
-## Detalles técnicos
+## 6. Alcance de este cambio
 
-- Anti-cruce ruta pública vs privada respetado (memoria `qr-scope-publico-vs-privado`): `qard_viajes_pasajero.producto_id` debe coincidir con el `producto_id` del viaje.
-- Realtime: agregar `qard_viajes_pasajero` a `supabase_realtime` para que el escáner y la lista "A bordo" se sincronicen entre dispositivos.
-- Precisión GPS: si el punto cae fuera de todas las geocercas de cobro por <30 m, se snapea a la más cercana.
-- Hermosillo (UTC-7) para `subida_at` / `bajada_at` en reportes.
-- Reporte diario del concesionario: se agrega columna "$ cobrado por tramo" agrupado por viaje.
+- ✅ Backend: nueva tabla + edge function actualizada + migración de datos.
+- ✅ UI concesionario: nuevo editor de waypoints (foráneas primero).
+- ✅ UI chofer: indicador de "próximo punto".
+- ❌ Urbanas: NO se toca en este cambio. Se replica cuando el flujo esté probado en foráneas.
+- ❌ Cobro por tramo (`unidad_geocercas_cobro`, sub-QR): NO se toca; sigue con su lógica independiente.
 
-## Fases sugeridas
+---
 
-1. **Fase A (esta iteración)**: botón "Cobrar QR" en `DriverTripPanel` + pantalla escáner que llama al edge function. Tablas + edge function `cobro-qr-foraneo` con lógica sube/baja. Cierre automático al completar viaje.
-2. **Fase B**: UI del concesionario para dibujar N geocercas y capturar la tabla de tarifas entre pares.
-3. **Fase C**: reporte diario con desglose $ cobrado por tramo por viaje.
+## Notas técnicas
 
-¿Arranco por la Fase A?
+- El label es libre para que el concesionario pueda llamar a los puntos como quiera ("Patio", "Fábrica", "Regreso patio"), y la UI del chofer los muestra tal cual.
+- El radio se define en metros por punto con default 150 m.
+- `useAutoTripGeofence` no cambia — sigue mandando ubicación cada 15 s; toda la lógica nueva vive en `trip-geofence-tick`.
