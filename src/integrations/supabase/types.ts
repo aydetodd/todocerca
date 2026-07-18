@@ -4698,6 +4698,50 @@ export type Database = {
           },
         ]
       }
+      unidad_viaje_waypoints: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          lat: number
+          lng: number
+          orden: number
+          radio_m: number
+          unidad_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          lat: number
+          lng: number
+          orden: number
+          radio_m?: number
+          unidad_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          lat?: number
+          lng?: number
+          orden?: number
+          radio_m?: number
+          unidad_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidad_viaje_waypoints_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_empresa: {
         Row: {
           anio: number | null
@@ -4734,6 +4778,7 @@ export type Database = {
           updated_at: string
           usa_raspberry: boolean
           usa_telefono: boolean
+          viaje_tipo: string
         }
         Insert: {
           anio?: number | null
@@ -4770,6 +4815,7 @@ export type Database = {
           updated_at?: string
           usa_raspberry?: boolean
           usa_telefono?: boolean
+          viaje_tipo?: string
         }
         Update: {
           anio?: number | null
@@ -4806,6 +4852,7 @@ export type Database = {
           updated_at?: string
           usa_raspberry?: boolean
           usa_telefono?: boolean
+          viaje_tipo?: string
         }
         Relationships: [
           {
@@ -5114,6 +5161,7 @@ export type Database = {
           producto_id: string | null
           unidad_id: string | null
           updated_at: string
+          waypoint_orden_actual: number | null
         }
         Insert: {
           chofer_id: string
@@ -5142,6 +5190,7 @@ export type Database = {
           producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
+          waypoint_orden_actual?: number | null
         }
         Update: {
           chofer_id?: string
@@ -5170,6 +5219,7 @@ export type Database = {
           producto_id?: string | null
           unidad_id?: string | null
           updated_at?: string
+          waypoint_orden_actual?: number | null
         }
         Relationships: [
           {
@@ -6143,6 +6193,10 @@ export type Database = {
           _unidad_id: string
         }
         Returns: string
+      }
+      rpc_unidad_set_waypoints: {
+        Args: { _unidad_id: string; _viaje_tipo: string; _waypoints: Json }
+        Returns: number
       }
       save_private_route_trace: {
         Args: { _filename: string; _geojson: Json; _producto_id: string }
