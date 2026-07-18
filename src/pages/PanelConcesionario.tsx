@@ -27,7 +27,7 @@ import RecursosContrato from "@/components/RecursosContrato";
 import { applyTransportAssignmentFallback } from "@/lib/transportAssignments";
 import { ContractGeofencePicker } from "@/components/ContractGeofencePicker";
 import Esp32LinkDialog from "@/components/Esp32LinkDialog";
-import UnidadPuntosABDialog from "@/components/UnidadPuntosABDialog";
+import UnidadWaypointsDialog from "@/components/UnidadWaypointsDialog";
 import UnidadGeocercasCobroDialog from "@/components/UnidadGeocercasCobroDialog";
 import { Cpu, MapPin } from "lucide-react";
 
