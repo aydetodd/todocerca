@@ -2173,7 +2173,7 @@ export default function PanelConcesionario() {
       />
 
       {/* Puntos A y B por unidad: el viaje se cuenta automáticamente al cruzar el radio */}
-      <UnidadPuntosABDialog
+      <UnidadWaypointsDialog
         open={!!unidadAB}
         onOpenChange={(o) => !o && setUnidadAB(null)}
         unidadId={unidadAB?.id || null}
