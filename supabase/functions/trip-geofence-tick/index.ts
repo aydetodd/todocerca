@@ -1,5 +1,7 @@
 // Trip geofence tick: recibe {unidad_id, lat, lng} del chofer y abre/cierra viajes
-// automáticamente cuando entra al radio del punto A o B configurado por el concesionario.
+// automáticamente al cruzar los waypoints ordenados configurados por el concesionario.
+// Soporta secuencias ilimitadas: A → B → C → D → …
+// Cierra el viaje al tocar el último waypoint y abre el siguiente ciclo empezando en el waypoint 1.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
@@ -7,6 +9,14 @@ interface Body {
   unidad_id: string;
   lat: number;
   lng: number;
+}
+
+interface Waypoint {
+  orden: number;
+  label: string;
+  lat: number;
+  lng: number;
+  radio_m: number;
 }
 
 function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -37,7 +47,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Auth check (usa anon key del caller para validar JWT)
     const callerClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -59,23 +68,43 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Lee unidad + verifica que sea chofer activo de esa unidad
+    // 1. Unidad
     const { data: unidad } = await supabase
       .from("unidades_empresa")
-      .select("id, proveedor_id, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
+      .select("id, proveedor_id, viaje_tipo")
       .eq("id", body.unidad_id)
       .maybeSingle();
 
-    if (!unidad || unidad.punto_a_lat == null || unidad.punto_b_lat == null) {
-      return new Response(JSON.stringify({ skipped: true, reason: "no_points" }), {
+    if (!unidad) {
+      return new Response(JSON.stringify({ skipped: true, reason: "no_unit" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 2. Waypoints ordenados
+    const { data: waypointsRaw } = await supabase
+      .from("unidad_viaje_waypoints")
+      .select("orden, label, lat, lng, radio_m")
+      .eq("unidad_id", body.unidad_id)
+      .order("orden", { ascending: true });
+
+    const waypoints: Waypoint[] = (waypointsRaw || []).map((w: any) => ({
+      orden: w.orden,
+      label: w.label,
+      lat: Number(w.lat),
+      lng: Number(w.lng),
+      radio_m: Number(w.radio_m || 150),
+    }));
+
+    if (waypoints.length < 2) {
+      return new Response(JSON.stringify({ skipped: true, reason: "no_waypoints" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const today = getHermosilloToday();
-    const radio = Number(unidad.geofence_radius_m || 150);
 
-    // 2. Chofer + asignación de hoy
+    // 3. Chofer + asignación
     const { data: chofer } = await supabase
       .from("choferes_empresa")
       .select("id, proveedor_id")
@@ -97,19 +126,12 @@ Deno.serve(async (req) => {
       .eq("unidad_id", body.unidad_id)
       .eq("fecha", today)
       .maybeSingle();
-
     const productoId = asignacion?.producto_id || null;
 
-    // 3. Calcular distancias
-    const distA = haversineMeters(body.lat, body.lng, Number(unidad.punto_a_lat), Number(unidad.punto_a_lng));
-    const distB = haversineMeters(body.lat, body.lng, Number(unidad.punto_b_lat), Number(unidad.punto_b_lng));
-    const insideA = distA <= radio;
-    const insideB = distB <= radio;
-
-    // 4. Viaje abierto actual de esta unidad hoy
+    // 4. Viaje abierto actual
     const { data: viajeAbierto } = await supabase
       .from("viajes_realizados")
-      .select("id, numero_viaje, origen, destino, direccion, inicio_at, pasajeros_subidos")
+      .select("id, numero_viaje, waypoint_orden_actual, direccion, pasajeros_subidos")
       .eq("unidad_id", body.unidad_id)
       .eq("chofer_id", chofer.id)
       .eq("fecha", today)
@@ -118,34 +140,19 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Si está dentro de A o B y hay viaje abierto cuyo destino coincide → CIERRA
-    const destinoActual = viajeAbierto?.destino || (viajeAbierto?.direccion === "AB" ? "B" : viajeAbierto?.direccion === "BA" ? "A" : null);
-    if (viajeAbierto && ((insideA && destinoActual === "A") || (insideB && destinoActual === "B"))) {
-      const finPunto = destinoActual as "A" | "B";
-      const finLat = insideA ? Number(unidad.punto_a_lat) : Number(unidad.punto_b_lat);
-      const finLng = insideA ? Number(unidad.punto_a_lng) : Number(unidad.punto_b_lng);
+    const insideOf = (w: Waypoint) =>
+      haversineMeters(body.lat, body.lng, w.lat, w.lng) <= w.radio_m;
 
-      // Snapshot de pasajeros: el contador de ESP32 ya viene acumulado
-      // en `pasajeros_subidos` (el edge function esp32-conteo-pasajeros lo
-      // incrementa por evento). Lo respetamos tal cual.
-      const pasajerosCount = viajeAbierto.pasajeros_subidos ?? 0;
+    // Sin viaje abierto → si está dentro del waypoint 1, abrir viaje.
+    if (!viajeAbierto) {
+      const wp1 = waypoints[0];
+      if (!insideOf(wp1)) {
+        return new Response(
+          JSON.stringify({ action: "noop", reason: "esperando_wp1", label: wp1.label }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
 
-      await supabase
-        .from("viajes_realizados")
-        .update({
-          estado: "completado",
-          fin_at: new Date().toISOString(),
-          fin_lat: finLat,
-          fin_lng: finLng,
-          fin_manual: false,
-          direccion: finPunto === "A" ? "BA" : "AB",
-        })
-        .eq("id", viajeAbierto.id);
-
-      // Abrir el siguiente viaje (alternando origen/destino)
-      const nuevoOrigen = finPunto; // arrancamos donde acabamos
-      const nuevoDestino = finPunto === "A" ? "B" : "A";
-      const nuevaDireccion = nuevoOrigen === "A" ? "AB" : "BA";
       const { data: ultimoNum } = await supabase
         .from("viajes_realizados")
         .select("numero_viaje")
@@ -165,75 +172,132 @@ Deno.serve(async (req) => {
           fecha: today,
           numero_viaje: proximoNum,
           inicio_at: new Date().toISOString(),
-          inicio_lat: finLat,
-          inicio_lng: finLng,
+          inicio_lat: wp1.lat,
+          inicio_lng: wp1.lng,
           inicio_manual: false,
           estado: "en_curso",
-          origen: nuevoOrigen,
-          destino: nuevoDestino,
-          direccion: nuevaDireccion,
+          origen: wp1.label,
+          destino: waypoints[waypoints.length - 1].label,
+          direccion: "AB",
+          waypoint_orden_actual: 2,
         })
         .select("id")
         .single();
 
       return new Response(
         JSON.stringify({
-          action: "closed_and_opened",
-          closed_id: viajeAbierto.id,
-          pasajeros: pasajerosCount || 0,
-          new_trip_id: nuevo?.id,
-          new_destino: nuevoDestino,
+          action: "opened",
+          trip_id: nuevo?.id,
+          proximo_orden: 2,
+          proximo_label: waypoints[1].label,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Si NO hay viaje abierto y está dentro de A o B → ABRIR uno nuevo
-    if (!viajeAbierto && (insideA || insideB)) {
-      const origen = insideA ? "A" : "B";
-      const destino = origen === "A" ? "B" : "A";
-      const direccion = origen === "A" ? "AB" : "BA";
-      const inicioLat = insideA ? Number(unidad.punto_a_lat) : Number(unidad.punto_b_lat);
-      const inicioLng = insideA ? Number(unidad.punto_a_lng) : Number(unidad.punto_b_lng);
+    // Con viaje abierto → revisar si entró al waypoint que estaba esperando
+    const proxOrden = viajeAbierto.waypoint_orden_actual || 2;
+    const proximoWp = waypoints.find((w) => w.orden === proxOrden);
 
-      const { data: ultimoNum } = await supabase
-        .from("viajes_realizados")
-        .select("numero_viaje")
-        .eq("chofer_id", chofer.id)
-        .eq("fecha", today)
-        .order("numero_viaje", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const proximoNum = (ultimoNum?.numero_viaje || 0) + 1;
-
-      const { data: nuevo } = await supabase
-        .from("viajes_realizados")
-        .insert({
-          chofer_id: chofer.id,
-          unidad_id: body.unidad_id,
-          producto_id: productoId,
-          fecha: today,
-          numero_viaje: proximoNum,
-          inicio_at: new Date().toISOString(),
-          inicio_lat: inicioLat,
-          inicio_lng: inicioLng,
-          inicio_manual: false,
-          estado: "en_curso",
-          origen,
-          destino,
-          direccion,
-        })
-        .select("id")
-        .single();
-
+    if (!proximoWp) {
+      // Waypoint fuera de rango (config cambió) → cerrar viaje sin avance
       return new Response(
-        JSON.stringify({ action: "opened", trip_id: nuevo?.id, origen, destino }),
+        JSON.stringify({ action: "noop", reason: "wp_no_existe", orden: proxOrden }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    if (!insideOf(proximoWp)) {
+      const distancia = Math.round(
+        haversineMeters(body.lat, body.lng, proximoWp.lat, proximoWp.lng),
+      );
+      return new Response(
+        JSON.stringify({
+          action: "noop",
+          proximo_orden: proxOrden,
+          proximo_label: proximoWp.label,
+          distancia_m: distancia,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Cruzó el waypoint esperado
+    const esUltimo = proxOrden >= waypoints.length;
+
+    if (!esUltimo) {
+      // Parada intermedia → solo avanzar contador
+      await supabase
+        .from("viajes_realizados")
+        .update({ waypoint_orden_actual: proxOrden + 1 })
+        .eq("id", viajeAbierto.id);
+
+      return new Response(
+        JSON.stringify({
+          action: "advanced",
+          trip_id: viajeAbierto.id,
+          cruzo_label: proximoWp.label,
+          proximo_orden: proxOrden + 1,
+          proximo_label: waypoints[proxOrden]?.label || "",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Último waypoint → cerrar viaje y abrir siguiente ciclo desde wp1
+    await supabase
+      .from("viajes_realizados")
+      .update({
+        estado: "completado",
+        fin_at: new Date().toISOString(),
+        fin_lat: proximoWp.lat,
+        fin_lng: proximoWp.lng,
+        fin_manual: false,
+      })
+      .eq("id", viajeAbierto.id);
+
+    // Abrir siguiente ciclo (empieza en wp1 y espera wp2)
+    const wp1 = waypoints[0];
+    const { data: ultimoNum } = await supabase
+      .from("viajes_realizados")
+      .select("numero_viaje")
+      .eq("chofer_id", chofer.id)
+      .eq("fecha", today)
+      .order("numero_viaje", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const proximoNum = (ultimoNum?.numero_viaje || 0) + 1;
+
+    const { data: nuevo } = await supabase
+      .from("viajes_realizados")
+      .insert({
+        chofer_id: chofer.id,
+        unidad_id: body.unidad_id,
+        producto_id: productoId,
+        fecha: today,
+        numero_viaje: proximoNum,
+        inicio_at: new Date().toISOString(),
+        inicio_lat: wp1.lat,
+        inicio_lng: wp1.lng,
+        inicio_manual: false,
+        estado: "en_curso",
+        origen: wp1.label,
+        destino: waypoints[waypoints.length - 1].label,
+        direccion: "AB",
+        waypoint_orden_actual: 2,
+      })
+      .select("id")
+      .single();
+
     return new Response(
-      JSON.stringify({ action: "noop", distA: Math.round(distA), distB: Math.round(distB), radio }),
+      JSON.stringify({
+        action: "closed_and_opened",
+        closed_id: viajeAbierto.id,
+        pasajeros: viajeAbierto.pasajeros_subidos || 0,
+        new_trip_id: nuevo?.id,
+        proximo_orden: 2,
+        proximo_label: waypoints[1].label,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
