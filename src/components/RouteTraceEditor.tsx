@@ -332,7 +332,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           <DialogTitle>{isDrawMode ? 'Dibujar trazado' : 'Editor de trazado'}</DialogTitle>
           <DialogDescription className="text-xs">
             {isDrawMode
-              ? 'Toca el mapa para ir poniendo puntos. Arrastra cualquier punto para acomodar las vueltas. Verde = inicio/fin.'
+              ? 'Toca el mapa para ir poniendo puntos (A, B, C, D…). Toca sobre la línea azul para insertar un vértice entre dos puntos. Arrastra cualquier punto para acomodarlo.'
               : 'Toca el mapa o la línea para agregar puntos. Arrastra cualquier punto para acomodar las vueltas. Verde = inicio/fin · Rojo = seleccionado.'}
           </DialogDescription>
         </DialogHeader>
