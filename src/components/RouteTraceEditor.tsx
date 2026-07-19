@@ -102,17 +102,22 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       m.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         const current = coordsRef.current;
-        if (isDrawMode && current.length < 2) {
-          // Primero coloca A y luego B (append).
+        if (isDrawMode) {
+          // Modo dibujar: SIEMPRE agrega un punto nuevo al final.
+          // A, B, C, D, ... sin límite. Para insertar un vértice
+          // ENTRE dos puntos existentes, tocar sobre la línea azul.
           pushHistory();
           const next = [...current, [lat, lng] as [number, number]];
           setCoords(next);
           setSelectedIdx(next.length - 1);
         } else {
-          // Ya hay A y B (o estamos en modo edición): cada tap inserta
-          // un vértice en el segmento más cercano al punto tocado,
-          // para poder ir formando las vueltas del camión.
-          if (current.length < 2) return;
+          if (current.length < 2) {
+            pushHistory();
+            const next = [...current, [lat, lng] as [number, number]];
+            setCoords(next);
+            setSelectedIdx(next.length - 1);
+            return;
+          }
           const insertAt = findInsertIndex(current, [lat, lng]);
           pushHistory();
           const next = [...current];
@@ -183,7 +188,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
         const isSelected = idx === selectedIdx;
         const isEndpoint = idx === 0 || idx === coords.length - 1;
         const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
-        const label = idx === 0 ? 'A' : idx === coords.length - 1 ? 'B' : '';
+        const label = idx === 0 || idx === coords.length - 1 ? String.fromCharCode(65 + Math.min(idx, 25)) : '';
         const size = isEndpoint ? 22 : isSelected ? 18 : 14;
         const icon = L.divIcon({
           className: 'route-vertex-marker',
@@ -327,7 +332,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           <DialogTitle>{isDrawMode ? 'Dibujar trazado' : 'Editor de trazado'}</DialogTitle>
           <DialogDescription className="text-xs">
             {isDrawMode
-              ? 'Toca el mapa para ir poniendo puntos. Arrastra cualquier punto para acomodar las vueltas. Verde = inicio/fin.'
+              ? 'Toca el mapa para ir poniendo puntos (A, B, C, D…). Toca sobre la línea azul para insertar un vértice entre dos puntos. Arrastra cualquier punto para acomodarlo.'
               : 'Toca el mapa o la línea para agregar puntos. Arrastra cualquier punto para acomodar las vueltas. Verde = inicio/fin · Rojo = seleccionado.'}
           </DialogDescription>
         </DialogHeader>
