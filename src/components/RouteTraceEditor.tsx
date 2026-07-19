@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Undo2, Trash2, Locate, Maximize2, Minimize2 } from 'lucide-react';
+import { Loader2, Save, Undo2, Trash2, Locate, Maximize2, Minimize2, MapPin, Waypoints } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MapSearchBar from '@/components/MapSearchBar';
@@ -18,10 +18,13 @@ interface Props {
   initialCenter?: [number, number]; // [lat, lng] for draw mode
 }
 
+type Mode = 'puntos' | 'vertices';
+
 /**
- * Vertex editor / drawer for a route LineString.
- * - Draw mode (geojson=null): tap on the map to add points one by one.
- * - Edit mode: click polyline to insert; drag vertices; delete selected.
+ * Editor de trazado en 2 fases:
+ * 1) PUNTOS (A, B, C…): pocos, ordenados. Definen paradas del recorrido.
+ * 2) VÉRTICES: se insertan ENTRE los puntos para acomodar la línea a las curvas de las calles.
+ *    Un vértice no es una parada, solo dobla la línea.
  */
 export default function RouteTraceEditor({ open, onOpenChange, productoId, filename, geojson, onSaved, initialCenter }: Props) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -29,16 +32,21 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
   const polylineRef = useRef<L.Polyline | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
   const coordsRef = useRef<[number, number][]>([]);
+  const waypointFlagsRef = useRef<boolean[]>([]);
   const selectedIdxRef = useRef<number | null>(null);
+  const modeRef = useRef<Mode>('puntos');
   const [coords, setCoords] = useState<[number, number][]>([]);
-  const [history, setHistory] = useState<[number, number][][]>([]);
+  const [waypointFlags, setWaypointFlags] = useState<boolean[]>([]);
+  const [history, setHistory] = useState<{ coords: [number, number][]; flags: boolean[] }[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [color, setColor] = useState<string>('#0066CC');
+  const [mode, setMode] = useState<Mode>('puntos');
   const colorRef = useRef<string>('#0066CC');
   useEffect(() => { colorRef.current = color; }, [color]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   const isDrawMode = !geojson;
   const { toast } = useToast();
 
@@ -53,18 +61,20 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     { value: '#000000', label: 'Negro' },
   ];
 
-  // Keep refs in sync (so map handlers see latest values)
   useEffect(() => { coordsRef.current = coords; }, [coords]);
+  useEffect(() => { waypointFlagsRef.current = waypointFlags; }, [waypointFlags]);
   useEffect(() => { selectedIdxRef.current = selectedIdx; }, [selectedIdx]);
 
-  // Load coords from geojson (edit mode) or start empty (draw mode)
+  // Load
   useEffect(() => {
     if (!open) return;
     if (isDrawMode) {
       setCoords([]);
+      setWaypointFlags([]);
       setHistory([]);
       setSelectedIdx(null);
       setColor('#0066CC');
+      setMode('puntos');
       return;
     }
     const line = geojson.features?.find((f: any) => f?.geometry?.type === 'LineString');
@@ -73,13 +83,24 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       return;
     }
     const c = (line.geometry.coordinates as number[][]).map(([lng, lat]) => [lat, lng] as [number, number]);
+    // Si el geojson trae metadata de waypoints la respetamos; si no, marcamos solo el primero y el último.
+    const savedFlags: boolean[] | undefined = line.properties?.waypointFlags;
+    const flags = Array.isArray(savedFlags) && savedFlags.length === c.length
+      ? savedFlags.map(Boolean)
+      : c.map((_, i) => i === 0 || i === c.length - 1);
     setCoords(c);
+    setWaypointFlags(flags);
     setHistory([]);
     setSelectedIdx(null);
     setColor((line.properties?.color as string) || '#0066CC');
+    setMode('vertices');
   }, [open, geojson, isDrawMode, toast]);
 
-  // Init map (wait one frame so the Dialog has measured the container)
+  const pushHistory = () => {
+    setHistory((h) => [...h.slice(-49), { coords: coordsRef.current, flags: waypointFlagsRef.current }]);
+  };
+
+  // Init map
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -95,45 +116,45 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       if (mapRef.current) return;
       const center = initialCenter || [29.0729, -110.9559];
       m = L.map(el, { zoomControl: true, attributionControl: false }).setView(center, 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(m);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
 
       m.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         const current = coordsRef.current;
-        if (isDrawMode) {
-          // Modo dibujar: SIEMPRE agrega un punto nuevo al final.
-          // A, B, C, D, ... sin límite. Para insertar un vértice
-          // ENTRE dos puntos existentes, tocar sobre la línea azul.
+        const flags = waypointFlagsRef.current;
+        const currentMode = modeRef.current;
+
+        if (currentMode === 'puntos') {
+          // Agrega un NUEVO PUNTO (A, B, C…) siempre al final.
           pushHistory();
           const next = [...current, [lat, lng] as [number, number]];
+          const nextFlags = [...flags, true];
           setCoords(next);
+          setWaypointFlags(nextFlags);
           setSelectedIdx(next.length - 1);
         } else {
+          // Vértices: se insertan ENTRE dos puntos existentes.
           if (current.length < 2) {
-            pushHistory();
-            const next = [...current, [lat, lng] as [number, number]];
-            setCoords(next);
-            setSelectedIdx(next.length - 1);
+            toast({ title: 'Faltan puntos', description: 'Primero define al menos 2 puntos (A y B).', variant: 'destructive' });
             return;
           }
           const insertAt = findInsertIndex(current, [lat, lng]);
           pushHistory();
           const next = [...current];
+          const nextFlags = [...flags];
           next.splice(insertAt, 0, [lat, lng]);
+          nextFlags.splice(insertAt, 0, false); // vértice = no waypoint
           setCoords(next);
+          setWaypointFlags(nextFlags);
           setSelectedIdx(insertAt);
         }
       });
 
       mapRef.current = m;
       setMapReady(true);
-      // Force a resize once the dialog finishes animating
       requestAnimationFrame(() => m && m.invalidateSize());
       setTimeout(() => m && m.invalidateSize(), 300);
 
-      // Center on the user's location for draw mode
       if (isDrawMode && !initialCenter && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => { try { m && m.setView([pos.coords.latitude, pos.coords.longitude], 16); } catch {} },
@@ -158,8 +179,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-
-  // Redraw polyline + markers whenever coords change
+  // Redraw
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -171,12 +191,16 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       const poly = L.polyline(coords, { color, weight: 5, opacity: 0.85 }).addTo(map);
       poly.on('click', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
+        if (modeRef.current !== 'vertices') return; // en modo puntos, no insertar sobre la línea
         const { lat, lng } = e.latlng;
         const insertAt = findInsertIndex(coordsRef.current, [lat, lng]);
         pushHistory();
         const next = [...coordsRef.current];
+        const nextFlags = [...waypointFlagsRef.current];
         next.splice(insertAt, 0, [lat, lng]);
+        nextFlags.splice(insertAt, 0, false);
         setCoords(next);
+        setWaypointFlags(nextFlags);
         setSelectedIdx(insertAt);
       });
       polylineRef.current = poly;
@@ -184,17 +208,28 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 
     if (coords.length > 0) {
       const group = L.layerGroup().addTo(map);
+      // Compute waypoint letters based on waypointFlags order
+      let wpCounter = 0;
       coords.forEach(([lat, lng], idx) => {
+        const isWp = waypointFlags[idx];
         const isSelected = idx === selectedIdx;
-        const isEndpoint = idx === 0 || idx === coords.length - 1;
-        const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
-        const label = idx === 0 || idx === coords.length - 1 ? String.fromCharCode(65 + Math.min(idx, 25)) : '';
-        const size = isEndpoint ? 22 : isSelected ? 18 : 14;
+        let markerHtml: string;
+        if (isWp) {
+          const letter = String.fromCharCode(65 + Math.min(wpCounter, 25));
+          wpCounter++;
+          const bg = isSelected ? '#dc2626' : '#16a34a';
+          markerHtml = `<div style="width:24px;height:24px;border-radius:50%;background:${bg};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;cursor:grab">${letter}</div>`;
+        } else {
+          const bg = isSelected ? '#dc2626' : color;
+          const size = isSelected ? 12 : 9;
+          markerHtml = `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid white;box-shadow:0 1px 2px rgba(0,0,0,.4);cursor:grab"></div>`;
+        }
+        const iconSize = isWp ? 24 : (isSelected ? 12 : 9);
         const icon = L.divIcon({
           className: 'route-vertex-marker',
-          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${markerColor};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:11px;cursor:grab">${label}</div>`,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
+          html: markerHtml,
+          iconSize: [iconSize, iconSize],
+          iconAnchor: [iconSize / 2, iconSize / 2],
         });
         const marker = L.marker([lat, lng], { icon, draggable: true }).addTo(group);
         marker.on('click', (e: any) => { L.DomEvent.stopPropagation(e); setSelectedIdx(idx); });
@@ -217,22 +252,18 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       markersGroupRef.current = group;
     }
 
-    // Fit bounds only on first load in EDIT mode
     if (!isDrawMode && history.length === 0 && polylineRef.current) {
       try { map.fitBounds(polylineRef.current.getBounds(), { padding: [30, 30] }); } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coords, selectedIdx, color, mapReady]);
-
-  const pushHistory = () => {
-    setHistory((h) => [...h.slice(-49), coordsRef.current]);
-  };
+  }, [coords, waypointFlags, selectedIdx, color, mapReady]);
 
   const undo = () => {
     setHistory((h) => {
       if (h.length === 0) return h;
       const prev = h[h.length - 1];
-      setCoords(prev);
+      setCoords(prev.coords);
+      setWaypointFlags(prev.flags);
       setSelectedIdx(null);
       return h.slice(0, -1);
     });
@@ -240,12 +271,15 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 
   const deleteVertex = () => {
     if (selectedIdx === null) return;
-    if (coords.length <= 2 && !isDrawMode) {
-      toast({ title: 'No se puede', description: 'Una ruta necesita al menos 2 puntos.', variant: 'destructive' });
+    const wpCount = waypointFlags.filter(Boolean).length;
+    const isWp = waypointFlags[selectedIdx];
+    if (isWp && wpCount <= 2 && !isDrawMode) {
+      toast({ title: 'No se puede', description: 'Se necesitan al menos 2 puntos (A y B).', variant: 'destructive' });
       return;
     }
     pushHistory();
     setCoords((c) => c.filter((_, i) => i !== selectedIdx));
+    setWaypointFlags((f) => f.filter((_, i) => i !== selectedIdx));
     setSelectedIdx(null);
   };
 
@@ -253,6 +287,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     if (coords.length === 0) return;
     pushHistory();
     setCoords([]);
+    setWaypointFlags([]);
     setSelectedIdx(null);
   };
 
@@ -264,6 +299,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     setSaving(true);
     try {
       const newCoords = coords.map(([lat, lng]) => [lng, lat]);
+      const flagsCopy = [...waypointFlags];
 
       let newGeoJSON: any;
       if (isDrawMode) {
@@ -272,7 +308,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
           features: [
             {
               type: 'Feature',
-              properties: { source: 'hand-drawn', createdAt: new Date().toISOString(), color },
+              properties: { source: 'hand-drawn', createdAt: new Date().toISOString(), color, waypointFlags: flagsCopy },
               geometry: { type: 'LineString', coordinates: newCoords },
             },
           ],
@@ -285,7 +321,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             return {
               ...f,
               geometry: { ...f.geometry, coordinates: newCoords },
-              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString(), color },
+              properties: { ...(f.properties || {}), edited: true, editedAt: new Date().toISOString(), color, waypointFlags: flagsCopy },
             };
           }
           return f;
@@ -299,7 +335,9 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
         _geojson: newGeoJSON,
       });
       if (error) throw error;
-      toast({ title: '✅ Trazado guardado', description: `${coords.length} puntos.` });
+      const wpCount = flagsCopy.filter(Boolean).length;
+      const vxCount = coords.length - wpCount;
+      toast({ title: '✅ Trazado guardado', description: `${wpCount} puntos · ${vxCount} vértices.` });
       onSaved?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -325,23 +363,56 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
     try { mapRef.current?.setView([lat, lng], 17); } catch {}
   };
 
+  const wpCount = waypointFlags.filter(Boolean).length;
+  const vxCount = coords.length - wpCount;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-4 pt-4">
           <DialogTitle>{isDrawMode ? 'Dibujar trazado' : 'Editor de trazado'}</DialogTitle>
           <DialogDescription className="text-xs">
-            {isDrawMode
-              ? 'Toca el mapa para ir poniendo puntos (A, B, C, D…). Toca sobre la línea azul para insertar un vértice entre dos puntos. Arrastra cualquier punto para acomodarlo.'
-              : 'Toca el mapa o la línea para agregar puntos. Arrastra cualquier punto para acomodar las vueltas. Verde = inicio/fin · Rojo = seleccionado.'}
+            {mode === 'puntos'
+              ? 'PASO 1 — Puntos (A, B, C…): toca el mapa para marcar cada parada del recorrido en orden. Pocos, los importantes.'
+              : 'PASO 2 — Vértices: toca sobre la línea o el mapa para insertar puntos que doblan la línea sobre las calles. Los vértices NO son paradas.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-y bg-muted/40">
+
+        {/* Selector de fase */}
+        <div className="flex items-center gap-2 px-4 py-2 border-y bg-muted/40">
+          <Button
+            size="sm"
+            variant={mode === 'puntos' ? 'default' : 'outline'}
+            onClick={() => { setMode('puntos'); setSelectedIdx(null); }}
+            className="flex-1"
+          >
+            <MapPin className="h-3 w-3 mr-1" />
+            1. Puntos ({wpCount})
+          </Button>
+          <Button
+            size="sm"
+            variant={mode === 'vertices' ? 'default' : 'outline'}
+            onClick={() => {
+              if (coords.length < 2) {
+                toast({ title: 'Primero pon los puntos', description: 'Marca al menos A y B antes de acomodar la línea.', variant: 'destructive' });
+                return;
+              }
+              setMode('vertices'); setSelectedIdx(null);
+            }}
+            className="flex-1"
+            disabled={coords.length < 2}
+          >
+            <Waypoints className="h-3 w-3 mr-1" />
+            2. Vértices ({vxCount})
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b bg-muted/20">
           <Button size="sm" variant="outline" onClick={undo} disabled={history.length === 0}>
             <Undo2 className="h-3 w-3 mr-1" />Deshacer
           </Button>
           <Button size="sm" variant="outline" onClick={deleteVertex} disabled={selectedIdx === null} className="text-destructive">
-            <Trash2 className="h-3 w-3 mr-1" />Eliminar vértice
+            <Trash2 className="h-3 w-3 mr-1" />Eliminar
           </Button>
           {isDrawMode && (
             <Button size="sm" variant="ghost" onClick={clearAll} disabled={coords.length === 0} className="text-destructive">
@@ -349,13 +420,14 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             </Button>
           )}
           <span className="ml-auto text-[11px] text-muted-foreground">
-            {coords.length} puntos {selectedIdx !== null && `· seleccionado #${selectedIdx + 1}`}
+            {selectedIdx !== null && `Seleccionado: ${waypointFlags[selectedIdx] ? 'punto' : 'vértice'} #${selectedIdx + 1}`}
           </span>
         </div>
+
         {!mapExpanded && (
           <>
             <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-background">
-              <span className="text-[11px] text-muted-foreground mr-1">Color de la ruta:</span>
+              <span className="text-[11px] text-muted-foreground mr-1">Color:</span>
               {COLOR_PALETTE.map((c) => (
                 <button
                   key={c.value}
@@ -382,6 +454,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             </div>
           </>
         )}
+
         <div className="relative flex-1 w-full" style={{ minHeight: 300 }}>
           <div ref={mapElRef} className="absolute inset-0 w-full h-full" />
           <Button
@@ -395,6 +468,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
             {mapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
         </div>
+
         <DialogFooter className="px-4 pb-4 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving || coords.length < 2}>
@@ -408,8 +482,6 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
 }
 
 function findInsertIndex(coords: [number, number][], point: [number, number]): number {
-  // Distancia perpendicular del punto al segmento (no al punto medio),
-  // para que insertar vértices entre A y B respete realmente el segmento más cercano.
   let bestIdx = 1;
   let bestDist = Infinity;
   const [px, py] = point;
