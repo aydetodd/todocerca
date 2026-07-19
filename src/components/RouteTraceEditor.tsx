@@ -188,7 +188,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
         const isSelected = idx === selectedIdx;
         const isEndpoint = idx === 0 || idx === coords.length - 1;
         const markerColor = isSelected ? '#dc2626' : isEndpoint ? '#16a34a' : color;
-        const label = idx === 0 ? 'A' : idx === coords.length - 1 ? 'B' : '';
+        const label = idx === 0 || idx === coords.length - 1 ? String.fromCharCode(65 + Math.min(idx, 25)) : '';
         const size = isEndpoint ? 22 : isSelected ? 18 : 14;
         const icon = L.divIcon({
           className: 'route-vertex-marker',
