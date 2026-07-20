@@ -86,9 +86,22 @@ export default function UnidadWaypointsDialog({
     if (!open) return;
     const t = setTimeout(() => {
       if (!containerRef.current || mapRef.current) return;
-      const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
+      const map = L.map(containerRef.current, { center: [23.6345, -102.5528], zoom: 5 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
+      // Centrar en la ubicación actual del usuario si no hay puntos aún
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const hasPoints = waypoints.some((w) => w.lat !== 0 || w.lng !== 0);
+            if (!hasPoints && mapRef.current) {
+              try { mapRef.current.setView([pos.coords.latitude, pos.coords.longitude], 13); } catch {}
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      }
       map.on("click", (e: L.LeafletMouseEvent) => {
         const idx = editingIdxRef.current;
         if (idx == null) return;

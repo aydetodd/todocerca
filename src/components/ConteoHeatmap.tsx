@@ -130,8 +130,8 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
-      center: [29.0729, -110.9559],
-      zoom: 12,
+      center: [23.6345, -102.5528],
+      zoom: 5,
       zoomControl: true,
       attributionControl: false,
       dragging: true,
@@ -143,6 +143,13 @@ export default function ConteoHeatmap({ unidadId, unidadNombre, days = 7 }: Prop
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     mapRef.current = map;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { try { mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 13); } catch {} },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
     layerRef.current = L.layerGroup().addTo(map);
     setTimeout(() => map.invalidateSize(), 120);
 

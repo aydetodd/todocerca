@@ -69,9 +69,21 @@ export default function UnidadPuntosABDialog({ open, onOpenChange, unidadId, uni
     // Pequeño delay para asegurar que el contenedor tenga tamaño
     const t = setTimeout(() => {
       if (!containerRef.current || mapRef.current) return;
-      const map = L.map(containerRef.current, { center: [29.0729, -110.9559], zoom: 12 });
+      const map = L.map(containerRef.current, { center: [23.6345, -102.5528], zoom: 5 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
+      if (navigator.geolocation && !stateRef.current.puntoA && !stateRef.current.puntoB) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const s = stateRef.current;
+            if (!s.puntoA && !s.puntoB && mapRef.current) {
+              try { mapRef.current.setView([pos.coords.latitude, pos.coords.longitude], 13); } catch {}
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      }
 
       map.on("click", (e: L.LeafletMouseEvent) => {
         const point = { lat: e.latlng.lat, lng: e.latlng.lng };

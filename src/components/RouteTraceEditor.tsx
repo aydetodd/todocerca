@@ -114,8 +114,8 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
         return;
       }
       if (mapRef.current) return;
-      const center = initialCenter || [29.0729, -110.9559];
-      m = L.map(el, { zoomControl: true, attributionControl: false }).setView(center, 13);
+      const center = initialCenter || [23.6345, -102.5528];
+      m = L.map(el, { zoomControl: true, attributionControl: false }).setView(center, initialCenter ? 13 : 5);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
 
       m.on('click', (e: L.LeafletMouseEvent) => {
@@ -155,7 +155,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       requestAnimationFrame(() => m && m.invalidateSize());
       setTimeout(() => m && m.invalidateSize(), 300);
 
-      if (isDrawMode && !initialCenter && navigator.geolocation) {
+      if (!initialCenter && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => { try { m && m.setView([pos.coords.latitude, pos.coords.longitude], 16); } catch {} },
           () => {},

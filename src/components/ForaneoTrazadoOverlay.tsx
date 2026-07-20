@@ -70,12 +70,19 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
   // Inicializar mapa
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
-    const map = L.map(mapRef.current, { zoomControl: true }).setView([27.4863, -109.9401], 12);
+    const map = L.map(mapRef.current, { zoomControl: true }).setView([23.6345, -102.5528], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap',
       maxZoom: 19,
     }).addTo(map);
     mapInstance.current = map;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { try { mapInstance.current?.setView([pos.coords.latitude, pos.coords.longitude], 12); } catch {} },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
     return () => {
       map.remove();
       mapInstance.current = null;
