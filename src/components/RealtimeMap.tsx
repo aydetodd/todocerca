@@ -103,13 +103,21 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     };
 
     // Try to get user's current location
+    const fallback = () => {
+      // Vista amplia de México (evita centrar erróneamente en Querétaro/Hermosillo)
+      const map = L.map('map', { attributionControl: false }).setView([23.6345, -102.5528], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      mapRef.current = map;
+      setMapReady(true);
+    };
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => initMap(position.coords.latitude, position.coords.longitude),
-        () => initMap(20.5937, -100.3929) // Fallback
+        () => fallback(),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
       );
     } else {
-      initMap(20.5937, -100.3929);
+      fallback();
     }
 
     return () => {
