@@ -155,7 +155,7 @@ export default function RouteTraceEditor({ open, onOpenChange, productoId, filen
       requestAnimationFrame(() => m && m.invalidateSize());
       setTimeout(() => m && m.invalidateSize(), 300);
 
-      if (isDrawMode && !initialCenter && navigator.geolocation) {
+      if (!initialCenter && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => { try { m && m.setView([pos.coords.latitude, pos.coords.longitude], 16); } catch {} },
           () => {},
