@@ -91,9 +91,16 @@ export default function RouteParadasTarifasDialog({ open, onOpenChange, producto
       if (!containerRef.current || mapRef.current) return;
       if (containerRef.current.clientHeight < 50 || containerRef.current.clientWidth < 50) return;
 
-      const map = L.map(containerRef.current, { center: [27.4861, -109.9401], zoom: 11, attributionControl: false });
+      const map = L.map(containerRef.current, { center: [23.6345, -102.5528], zoom: 5, attributionControl: false });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => { try { mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 13); } catch {} },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      }
       layerRef.current = L.layerGroup().addTo(map);
       setMapReady(true);
       [0, 100, 300, 700].forEach((d) => setTimeout(() => map.invalidateSize(), d));
