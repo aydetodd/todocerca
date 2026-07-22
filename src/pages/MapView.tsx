@@ -394,6 +394,35 @@ export default function MapView() {
     setActiveRouteGeoJSON(mergeRouteTraces(fleetRoutes, visibleRouteIds));
   }, [visibleRouteIds, fleetRoutes, fleetMode]);
 
+  const handleExploreRoutesLoaded = (items: Array<FleetRouteItem & { route_geojson: any }>) => {
+    setFleetRoutes(items);
+    const allIds = new Set<string>(items.map((i) => i.id));
+    setVisibleRouteIds(allIds);
+    setActiveRouteGeoJSON(mergeRouteTraces(items, allIds));
+    setActiveRouteOverlay(null);
+
+    // Fit map to loaded routes
+    if (items.length > 0 && leafletMapRef.current) {
+      const coords: L.LatLngExpression[] = [];
+      items.forEach((r) => {
+        (r.route_geojson?.features || []).forEach((f: any) => {
+          if (f.geometry?.type === 'LineString') {
+            f.geometry.coordinates.forEach(([lng, lat]: number[]) => coords.push([lat, lng]));
+          } else if (f.geometry?.type === 'MultiLineString') {
+            f.geometry.coordinates.forEach((seg: number[][]) =>
+              seg.forEach(([lng, lat]) => coords.push([lat, lng]))
+            );
+          }
+        });
+      });
+      if (coords.length > 0) {
+        try {
+          leafletMapRef.current.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
+        } catch {}
+      }
+    }
+  };
+
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
     setSelectedReceiverName(apodo);
