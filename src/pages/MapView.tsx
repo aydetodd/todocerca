@@ -561,8 +561,8 @@ export default function MapView() {
           </div>
         )}
 
-        {/* Fleet route filter (groups + colors) */}
-        {fleetMode && fleetRoutes.length > 0 && (
+        {/* Fleet / Explore route filter (groups + colors) */}
+        {(fleetMode || exploreMode) && fleetRoutes.length > 0 && (
           <FleetRouteFilter
             routes={fleetRoutes}
             visibleIds={visibleRouteIds}
