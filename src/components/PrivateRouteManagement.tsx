@@ -129,6 +129,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [selectedNombreRuta, setSelectedNombreRuta] = useState('');
   const [rutasCatalogo, setRutasCatalogo] = useState<any[]>([]);
   const [rutasLocalData, setRutasLocalData] = useState<any[]>([]);
+  const [catalogoForaneo, setCatalogoForaneo] = useState<string[]>([]);
+  const [foraneoNuevaModo, setForaneoNuevaModo] = useState(false);
   
   const { loading: geoLoading, getNivel1, getNivel2 } = useHispanoamerica();
   
