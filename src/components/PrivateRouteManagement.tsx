@@ -129,6 +129,8 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const [selectedNombreRuta, setSelectedNombreRuta] = useState('');
   const [rutasCatalogo, setRutasCatalogo] = useState<any[]>([]);
   const [rutasLocalData, setRutasLocalData] = useState<any[]>([]);
+  const [catalogoForaneo, setCatalogoForaneo] = useState<string[]>([]);
+  const [foraneoNuevaModo, setForaneoNuevaModo] = useState(false);
   
   const { loading: geoLoading, getNivel1, getNivel2 } = useHispanoamerica();
   
@@ -168,6 +170,28 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
       setRutasLocalData([]);
     }
   }, [transportType, selectedCiudad]);
+
+  // Catálogo compartido por municipio para rutas foráneas
+  useEffect(() => {
+    if (transportType !== 'foraneo' || !selectedEstado || !selectedCiudad) {
+      setCatalogoForaneo([]);
+      return;
+    }
+    supabase
+      .from('productos')
+      .select('nombre')
+      .eq('route_type', 'foranea')
+      .eq('estado', selectedEstado)
+      .eq('ciudad', selectedCiudad)
+      .not('nombre', 'is', null)
+      .then(({ data }) => {
+        const uniq = Array.from(new Set((data || []).map((r: any) => (r.nombre || '').trim()).filter(Boolean)))
+          .sort((a, b) => a.localeCompare(b));
+        setCatalogoForaneo(uniq);
+        setForaneoNuevaModo(uniq.length === 0);
+      });
+  }, [transportType, selectedEstado, selectedCiudad]);
+
 
   // Derive available lines and route names from local data
   const availableLines = React.useMemo(() => {
@@ -1429,14 +1453,52 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             {transportType !== 'publico' && (
               <div>
                 <Label htmlFor="routeName">Nombre / Nomenclatura *</Label>
-                <Input
-                  id="routeName"
-                  value={newVehicle.nombre}
-                  onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
-                  placeholder={transportType === 'foraneo' ? 'Ej: Hermosillo - Guaymas, Express Norte...' : 'Ej: Ruta 2, Ruta Sur, Express Norte...'}
-                />
+                {transportType === 'foraneo' && selectedCiudad && catalogoForaneo.length > 0 && !foraneoNuevaModo ? (
+                  <>
+                    <select
+                      value={newVehicle.nombre}
+                      onChange={(e) => {
+                        if (e.target.value === '__nueva__') {
+                          setForaneoNuevaModo(true);
+                          setNewVehicle({ ...newVehicle, nombre: '' });
+                        } else {
+                          setNewVehicle({ ...newVehicle, nombre: e.target.value });
+                        }
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="">Selecciona una ruta ya registrada en {selectedCiudad}</option>
+                      {catalogoForaneo.map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                      <option value="__nueva__">➕ Registrar nueva ruta…</option>
+                    </select>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {catalogoForaneo.length} ruta(s) ya registradas por concesionarios en {selectedCiudad}.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      id="routeName"
+                      value={newVehicle.nombre}
+                      onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
+                      placeholder={transportType === 'foraneo' ? 'Ej: Hermosillo - Guaymas, Express Norte...' : 'Ej: Ruta 2, Ruta Sur, Express Norte...'}
+                    />
+                    {transportType === 'foraneo' && catalogoForaneo.length > 0 && foraneoNuevaModo && (
+                      <button
+                        type="button"
+                        onClick={() => { setForaneoNuevaModo(false); setNewVehicle({ ...newVehicle, nombre: '' }); }}
+                        className="text-[11px] text-primary underline mt-1"
+                      >
+                        ← Elegir del catálogo existente
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             )}
+
 
             <div>
               <Label htmlFor="routeDesc">Recorrido / Descripción</Label>
