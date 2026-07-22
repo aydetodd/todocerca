@@ -15,6 +15,7 @@ import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
 import { FleetRouteFilter, type FleetRouteItem } from '@/components/FleetRouteFilter';
+import { ExplorarForaneasPicker } from '@/components/ExplorarForaneasPicker';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
