@@ -388,11 +388,11 @@ export default function MapView() {
     checkDriverRoute();
   }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
-  // Re-render fleet trace overlay when user toggles the filter
+  // Re-render fleet/explore trace overlay when user toggles the filter
   useEffect(() => {
-    if (!fleetMode || fleetRoutes.length === 0) return;
+    if ((!fleetMode && !exploreMode) || fleetRoutes.length === 0) return;
     setActiveRouteGeoJSON(mergeRouteTraces(fleetRoutes, visibleRouteIds));
-  }, [visibleRouteIds, fleetRoutes, fleetMode]);
+  }, [visibleRouteIds, fleetRoutes, fleetMode, exploreMode]);
 
   const handleExploreRoutesLoaded = (items: Array<FleetRouteItem & { route_geojson: any }>) => {
     setFleetRoutes(items);
