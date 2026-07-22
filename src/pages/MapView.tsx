@@ -519,8 +519,14 @@ export default function MapView() {
                 {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
               </Button>
             )}
-            {/* Removed hardcoded "Ver Ruta L1 Manga" test toggle — every route now uses its own
-                uploaded KML/KMZ via productos.route_geojson. */}
+            {/* Explorar rutas foráneas por municipio (todas las de todos los concesionarios) */}
+            {!fleetMode && !privateRouteToken && !publicRouteProductoId && !asChofer && (
+              <ExplorarForaneasPicker
+                active={exploreMode}
+                onToggle={setExploreMode}
+                onRoutesLoaded={handleExploreRoutesLoaded}
+              />
+            )}
             <MapSearchBar onSelectLocation={handleSearchLocation} />
           </div>
         </div>
