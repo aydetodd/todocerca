@@ -171,6 +171,28 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
     }
   }, [transportType, selectedCiudad]);
 
+  // Catálogo compartido por municipio para rutas foráneas
+  useEffect(() => {
+    if (transportType !== 'foraneo' || !selectedEstado || !selectedCiudad) {
+      setCatalogoForaneo([]);
+      return;
+    }
+    supabase
+      .from('productos')
+      .select('nombre')
+      .eq('route_type', 'foranea')
+      .eq('estado', selectedEstado)
+      .eq('ciudad', selectedCiudad)
+      .not('nombre', 'is', null)
+      .then(({ data }) => {
+        const uniq = Array.from(new Set((data || []).map((r: any) => (r.nombre || '').trim()).filter(Boolean)))
+          .sort((a, b) => a.localeCompare(b));
+        setCatalogoForaneo(uniq);
+        setForaneoNuevaModo(uniq.length === 0);
+      });
+  }, [transportType, selectedEstado, selectedCiudad]);
+
+
   // Derive available lines and route names from local data
   const availableLines = React.useMemo(() => {
     if (rutasLocalData.length === 0) return [];
