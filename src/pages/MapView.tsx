@@ -15,6 +15,7 @@ import { useFavoritos } from '@/hooks/useFavoritos';
 import L from 'leaflet';
 import { useRouteOverlay, routeNameToId } from '@/hooks/useRouteOverlay';
 import { FleetRouteFilter, type FleetRouteItem } from '@/components/FleetRouteFilter';
+import { ExplorarForaneasPicker } from '@/components/ExplorarForaneasPicker';
 
 export default function MapView() {
   const [searchParams] = useSearchParams();
@@ -42,6 +43,7 @@ export default function MapView() {
   const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
   const [fleetRoutes, setFleetRoutes] = useState<Array<FleetRouteItem & { route_geojson: any }>>([]);
   const [visibleRouteIds, setVisibleRouteIds] = useState<Set<string>>(new Set());
+  const [exploreMode, setExploreMode] = useState(false);
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
@@ -386,11 +388,40 @@ export default function MapView() {
     checkDriverRoute();
   }, [privateRouteToken, publicRouteProductoId, toast, fleetMode, fleetTypeParam]);
 
-  // Re-render fleet trace overlay when user toggles the filter
+  // Re-render fleet/explore trace overlay when user toggles the filter
   useEffect(() => {
-    if (!fleetMode || fleetRoutes.length === 0) return;
+    if ((!fleetMode && !exploreMode) || fleetRoutes.length === 0) return;
     setActiveRouteGeoJSON(mergeRouteTraces(fleetRoutes, visibleRouteIds));
-  }, [visibleRouteIds, fleetRoutes, fleetMode]);
+  }, [visibleRouteIds, fleetRoutes, fleetMode, exploreMode]);
+
+  const handleExploreRoutesLoaded = (items: Array<FleetRouteItem & { route_geojson: any }>) => {
+    setFleetRoutes(items);
+    const allIds = new Set<string>(items.map((i) => i.id));
+    setVisibleRouteIds(allIds);
+    setActiveRouteGeoJSON(mergeRouteTraces(items, allIds));
+    setActiveRouteOverlay(null);
+
+    // Fit map to loaded routes
+    if (items.length > 0 && leafletMapRef.current) {
+      const coords: L.LatLngExpression[] = [];
+      items.forEach((r) => {
+        (r.route_geojson?.features || []).forEach((f: any) => {
+          if (f.geometry?.type === 'LineString') {
+            f.geometry.coordinates.forEach(([lng, lat]: number[]) => coords.push([lat, lng]));
+          } else if (f.geometry?.type === 'MultiLineString') {
+            f.geometry.coordinates.forEach((seg: number[][]) =>
+              seg.forEach(([lng, lat]) => coords.push([lat, lng]))
+            );
+          }
+        });
+      });
+      if (coords.length > 0) {
+        try {
+          leafletMapRef.current.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
+        } catch {}
+      }
+    }
+  };
 
   const handleOpenChat = (userId: string, apodo: string) => {
     setSelectedReceiverId(userId);
@@ -488,8 +519,14 @@ export default function MapView() {
                 {fleetMode ? `Mi Flota (${fleetUnitCount})` : '🚌 Mi Flota'}
               </Button>
             )}
-            {/* Removed hardcoded "Ver Ruta L1 Manga" test toggle — every route now uses its own
-                uploaded KML/KMZ via productos.route_geojson. */}
+            {/* Explorar rutas foráneas por municipio (todas las de todos los concesionarios) */}
+            {!fleetMode && !privateRouteToken && !publicRouteProductoId && !asChofer && (
+              <ExplorarForaneasPicker
+                active={exploreMode}
+                onToggle={setExploreMode}
+                onRoutesLoaded={handleExploreRoutesLoaded}
+              />
+            )}
             <MapSearchBar onSelectLocation={handleSearchLocation} />
           </div>
         </div>
@@ -524,8 +561,8 @@ export default function MapView() {
           </div>
         )}
 
-        {/* Fleet route filter (groups + colors) */}
-        {fleetMode && fleetRoutes.length > 0 && (
+        {/* Fleet / Explore route filter (groups + colors) */}
+        {(fleetMode || exploreMode) && fleetRoutes.length > 0 && (
           <FleetRouteFilter
             routes={fleetRoutes}
             visibleIds={visibleRouteIds}
