@@ -43,6 +43,7 @@ export default function MapView() {
   const [activeRouteGeoJSON, setActiveRouteGeoJSON] = useState<any | null>(null);
   const [fleetRoutes, setFleetRoutes] = useState<Array<FleetRouteItem & { route_geojson: any }>>([]);
   const [visibleRouteIds, setVisibleRouteIds] = useState<Set<string>>(new Set());
+  const [exploreMode, setExploreMode] = useState(false);
   const leafletMapRef = useRef<L.Map | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const { toast } = useToast();
