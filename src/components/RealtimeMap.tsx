@@ -33,7 +33,10 @@ interface RealtimeMapProps {
   fleetUserIds?: string[];
   fleetTransportType?: string | null;
   mapRef?: React.MutableRefObject<L.Map | null>;
+  /** If provided, restrict auto-drawn bus route traces to these productos IDs (empty set = draw none). */
+  allowedRouteProductoIds?: Set<string> | null;
 }
+
 
 // Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
 function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -46,7 +49,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType, mapRef: externalMapRef }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType, mapRef: externalMapRef, allowedRouteProductoIds }: RealtimeMapProps) => {
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -169,19 +172,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       if (fleetSet && !fleetSet.has(l.user_id)) return false;
       return true;
     });
-    const productIds = Array.from(
+    let productIds = Array.from(
       new Set(buses.map((l: any) => l.route_producto_id).filter(Boolean) as string[])
     );
 
     // Para buses sin route_producto_id (RLS limita choferes_empresa para pasajeros)
     // intentamos resolver por nombre de ruta del perfil.
-    const routeNamesWithoutId = Array.from(
+    let routeNamesWithoutId = Array.from(
       new Set(
         buses
           .filter((l: any) => !l.route_producto_id && l.profiles?.route_name)
           .map((l: any) => l.profiles.route_name as string)
       )
     );
+
+    // Si el usuario aplicó un filtro de rutas visibles (ej. "Explorar foráneas → Ninguna"),
+    // restringir los trazados dibujados a esas rutas. Un Set vacío = no dibujar ninguna.
+    if (allowedRouteProductoIds) {
+      productIds = productIds.filter((id) => allowedRouteProductoIds.has(id));
+      routeNamesWithoutId = []; // sin ID no podemos garantizar coincidencia con el filtro
+    }
+
 
     const cacheKey = (id?: string | null, name?: string | null) =>
       id ? `id:${id}` : name ? `name:${name.trim().toLowerCase()}` : '';
@@ -282,7 +293,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
     return () => {
       cancelled = true;
     };
-  }, [locations, mapReady, privateRouteProductoId, fleetUserIds]);
+  }, [locations, mapReady, privateRouteProductoId, fleetUserIds, allowedRouteProductoIds]);
 
   // Update markers - SOLO cuando initialLoadDone sea true
   useEffect(() => {
