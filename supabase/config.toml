@@ -129,3 +129,6 @@ verify_jwt = false
 
 [functions.seed-mx-geo]
 verify_jwt = false
+
+[functions.get-link-invitation]
+verify_jwt = false
