@@ -49,7 +49,7 @@ function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType, mapRef: externalMapRef }: RealtimeMapProps) => {
+export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privateRouteProductoId, privateRouteName: privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType, mapRef: externalMapRef, allowedRouteProductoIds }: RealtimeMapProps) => {
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
