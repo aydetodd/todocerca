@@ -499,7 +499,9 @@ export default function MapView() {
           fleetUserIds={fleetMode ? fleetUserIds : undefined}
           fleetTransportType={fleetMode ? fleetTypeParam : null}
           mapRef={leafletMapRef}
+          allowedRouteProductoIds={(fleetMode || exploreMode) ? visibleRouteIds : null}
         />
+
         
         {/* Top-left controls: fleet toggle + search */}
         <div className="absolute top-4 left-4 z-30">
