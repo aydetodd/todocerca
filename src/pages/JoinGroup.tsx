@@ -35,31 +35,23 @@ const JoinGroup = () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
 
-      // Fetch invitation details
-      const { data: invite, error: inviteError } = await supabase
-        .from('tracking_invitations')
-        .select('*, tracking_groups(name)')
-        .eq('invite_token', token)
-        .eq('status', 'pending')
-        .single();
+      // Fetch invitation details vía edge function (service role, evita RLS)
+      const { data: resp, error: inviteError } = await supabase.functions.invoke(
+        'get-link-invitation',
+        { body: { invite_token: token } }
+      );
 
-      if (inviteError || !invite) {
-        setError('Invitación no válida o ya fue utilizada');
+      if (inviteError || !resp?.success) {
+        setError(resp?.error || 'Invitación no válida o ya fue utilizada');
         setLoading(false);
         return;
       }
 
-      // Check if expired
-      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-        setError('Esta invitación ha expirado');
-        setLoading(false);
-        return;
-      }
-
-      setInvitation(invite);
-      setNickname(invite.nickname || '');
+      setInvitation(resp.invitation);
+      setNickname(resp.invitation.nickname || '');
       setLoading(false);
     };
+
 
     checkAuthAndInvitation();
   }, [token]);
