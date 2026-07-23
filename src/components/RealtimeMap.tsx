@@ -172,19 +172,27 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       if (fleetSet && !fleetSet.has(l.user_id)) return false;
       return true;
     });
-    const productIds = Array.from(
+    let productIds = Array.from(
       new Set(buses.map((l: any) => l.route_producto_id).filter(Boolean) as string[])
     );
 
     // Para buses sin route_producto_id (RLS limita choferes_empresa para pasajeros)
     // intentamos resolver por nombre de ruta del perfil.
-    const routeNamesWithoutId = Array.from(
+    let routeNamesWithoutId = Array.from(
       new Set(
         buses
           .filter((l: any) => !l.route_producto_id && l.profiles?.route_name)
           .map((l: any) => l.profiles.route_name as string)
       )
     );
+
+    // Si el usuario aplicó un filtro de rutas visibles (ej. "Explorar foráneas → Ninguna"),
+    // restringir los trazados dibujados a esas rutas. Un Set vacío = no dibujar ninguna.
+    if (allowedRouteProductoIds) {
+      productIds = productIds.filter((id) => allowedRouteProductoIds.has(id));
+      routeNamesWithoutId = []; // sin ID no podemos garantizar coincidencia con el filtro
+    }
+
 
     const cacheKey = (id?: string | null, name?: string | null) =>
       id ? `id:${id}` : name ? `name:${name.trim().toLowerCase()}` : '';
