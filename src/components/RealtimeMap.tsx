@@ -33,7 +33,10 @@ interface RealtimeMapProps {
   fleetUserIds?: string[];
   fleetTransportType?: string | null;
   mapRef?: React.MutableRefObject<L.Map | null>;
+  /** If provided, restrict auto-drawn bus route traces to these productos IDs (empty set = draw none). */
+  allowedRouteProductoIds?: Set<string> | null;
 }
+
 
 // Calculate bearing (heading) between two coordinates in degrees (0=North, 90=East)
 function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
