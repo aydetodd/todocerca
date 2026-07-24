@@ -197,7 +197,7 @@ export default function QardCobrar() {
           <Input
             type="number" step="0.01" min="0"
             value={monto} onChange={e => setMonto(e.target.value)}
-            placeholder="100.00" className="text-2xl h-14"
+            className="text-2xl h-14"
             disabled={scanning}
           />
           <p className="text-xs text-muted-foreground mt-1">Comisión 6% (recibes 94%). Sin membresías.</p>
@@ -231,9 +231,9 @@ export default function QardCobrar() {
         </Card>
       )}
 
-      <Card className="p-4 bg-primary/15 text-primary-foreground border-primary/40">
+      <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 font-semibold">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
             <Wallet className="h-5 w-5 text-primary" /> Mis cobros recibidos
           </div>
           <Button variant="ghost" size="icon" onClick={cargarCobros} title="Actualizar">
@@ -241,22 +241,22 @@ export default function QardCobrar() {
           </Button>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center mb-3">
-          <div className="rounded bg-secondary/70 p-2">
-            <div className="text-[10px] text-primary-foreground/80 uppercase">Cobrado</div>
-            <div className="font-bold">${totalBruto.toFixed(2)}</div>
+          <div className="rounded bg-muted p-2">
+            <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
+            <div className="font-bold text-foreground">${totalBruto.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-secondary/70 p-2">
-            <div className="text-[10px] text-primary-foreground/80 uppercase">Comisión</div>
-            <div className="font-bold">−${totalComision.toFixed(2)}</div>
+          <div className="rounded bg-muted p-2">
+            <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
+            <div className="font-bold text-foreground">−${totalComision.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-primary p-2 border border-primary-foreground/30">
-            <div className="text-[10px] text-primary-foreground/80 uppercase">Disponible</div>
-            <div className="font-bold">${totalNeto.toFixed(2)}</div>
+          <div className="rounded bg-primary p-2">
+            <div className="text-[10px] text-primary-foreground/90 uppercase">Disponible</div>
+            <div className="font-bold text-primary-foreground">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
 
-        <div className="rounded-lg bg-secondary/50 p-3 mb-3">
-          <div className="text-xs font-semibold mb-2 text-primary-foreground/90">Retirar saldo (simulado)</div>
+        <div className="rounded-lg bg-muted p-3 mb-3">
+          <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo (simulado)</div>
           <div className="grid grid-cols-3 gap-2">
             <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("oxxo")}>
               <Banknote className="h-4 w-4" />
@@ -272,37 +272,37 @@ export default function QardCobrar() {
             </Button>
           </div>
           {totalRetirado > 0 && (
-            <div className="text-[10px] text-primary-foreground/70 mt-2">
+            <div className="text-[10px] text-muted-foreground mt-2">
               Retirado acumulado: ${totalRetirado.toFixed(2)}
             </div>
           )}
         </div>
 
-        <div className="text-[11px] text-primary-foreground/70 mb-2">
+        <div className="text-[11px] text-muted-foreground mb-2">
           Últimos {cobros.length} movimientos.
         </div>
         {cobros.length === 0 ? (
-          <div className="text-xs text-primary-foreground/70 text-center py-3">Sin movimientos aún.</div>
+          <div className="text-xs text-muted-foreground text-center py-3">Sin movimientos aún.</div>
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
             {cobros.map((m) => {
               const esRetiro = String(m.tipo).startsWith("retiro_");
               const neto = Number(m.neto_comercio_mxn ?? 0);
               return (
-                <div key={m.id} className="flex justify-between items-center text-sm border-b border-primary/20 pb-1">
+                <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                   <div className="min-w-0 pr-2">
-                    <div className="font-medium truncate">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
-                    <div className="text-[11px] text-primary-foreground/70">
+                    <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                    <div className="text-[11px] text-muted-foreground">
                       {new Date(m.created_at).toLocaleString()}
                       {!esRetiro && ` · comisión $${Number(m.comision_mxn ?? 0).toFixed(2)}`}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`font-semibold ${esRetiro ? "text-red-300" : ""}`}>
+                    <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
                       {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
                     </div>
                     {!esRetiro && (
-                      <div className="text-[10px] text-primary-foreground/70">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
+                      <div className="text-[10px] text-muted-foreground">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
                     )}
                   </div>
                 </div>
@@ -329,7 +329,7 @@ export default function QardCobrar() {
                 inputMode="numeric"
                 value={manualQard}
                 onChange={(e) => setManualQard(formatQardInput(e.target.value))}
-                placeholder="0000 0000 0000 0000"
+                
                 className="text-lg tracking-widest"
                 maxLength={19}
               />
@@ -341,7 +341,7 @@ export default function QardCobrar() {
                   inputMode="numeric"
                   value={manualVenc}
                   onChange={(e) => setManualVenc(formatVencInput(e.target.value))}
-                  placeholder="12/99"
+                  
                   maxLength={5}
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">Todas vencen 12/99</p>
@@ -353,7 +353,7 @@ export default function QardCobrar() {
                   type="password"
                   value={manualCvv}
                   onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="•••"
+                  
                   maxLength={4}
                 />
               </div>
@@ -388,7 +388,7 @@ export default function QardCobrar() {
                 type="number" step="0.01" min="20"
                 value={retiroMonto}
                 onChange={e => setRetiroMonto(e.target.value)}
-                placeholder="100.00"
+                
                 className="text-xl h-12"
               />
               <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
@@ -401,7 +401,7 @@ export default function QardCobrar() {
                   inputMode="numeric"
                   value={retiroDestino}
                   onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  placeholder="18 dígitos (o vacío para usar la registrada)"
+                  
                   maxLength={18}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">Si la dejas vacía, usa la CLABE de tu cuenta de cobros.</p>
@@ -416,7 +416,7 @@ export default function QardCobrar() {
                     inputMode="numeric"
                     value={retiroDestino}
                     onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))}
-                    placeholder="0000 0000 0000 0000"
+                    
                     maxLength={16}
                     className="tracking-widest"
                   />
@@ -428,7 +428,7 @@ export default function QardCobrar() {
                     type="password"
                     value={retiroCvv}
                     onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="••••"
+                    
                     maxLength={4}
                     className="tracking-widest"
                   />
