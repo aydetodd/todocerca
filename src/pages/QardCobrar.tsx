@@ -197,7 +197,7 @@ export default function QardCobrar() {
           <Input
             type="number" step="0.01" min="0"
             value={monto} onChange={e => setMonto(e.target.value)}
-            placeholder="100.00" className="text-2xl h-14"
+            className="text-2xl h-14"
             disabled={scanning}
           />
           <p className="text-xs text-muted-foreground mt-1">Comisión 6% (recibes 94%). Sin membresías.</p>
