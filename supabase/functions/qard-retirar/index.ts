@@ -42,16 +42,15 @@ serve(async (req) => {
     // Asegurar wallet del comercio (usa RPC, y si no existe la crea directo)
     try { await admin.rpc("qard_ensure_wallet", { _user_id: user.id }); } catch (_) {}
     let { data: wallet } = await admin
-      .from("qard_wallets").select("id").eq("user_id", user.id).maybeSingle();
+      .from("qard_wallets").select("id").eq("titular_user_id", user.id).maybeSingle();
     if (!wallet) {
       // Fallback: crear wallet mínima si el RPC falló
-      const num = Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
-      const cvv3 = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10)).join("");
       const cvv4 = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join("");
       const ins = await admin.from("qard_wallets").insert({
-        user_id: user.id, titular_user_id: user.id,
-        qard_number: num, cvv: cvv3, cvv_dinamico: cvv4, saldo_mxn: 0, estado: "activa",
+        titular_user_id: user.id,
+        cvv_dinamico: cvv4, saldo_mxn: 0, estado: "activa",
       }).select("id").single();
+      if (ins.error) throw new Error(`No se pudo crear la billetera: ${ins.error.message}`);
       wallet = ins.data as any;
       if (!wallet) throw new Error("No se pudo crear la billetera");
     }
