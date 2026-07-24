@@ -329,7 +329,7 @@ export default function QardCobrar() {
                 inputMode="numeric"
                 value={manualQard}
                 onChange={(e) => setManualQard(formatQardInput(e.target.value))}
-                placeholder="0000 0000 0000 0000"
+                
                 className="text-lg tracking-widest"
                 maxLength={19}
               />
@@ -341,7 +341,7 @@ export default function QardCobrar() {
                   inputMode="numeric"
                   value={manualVenc}
                   onChange={(e) => setManualVenc(formatVencInput(e.target.value))}
-                  placeholder="12/99"
+                  
                   maxLength={5}
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">Todas vencen 12/99</p>
@@ -353,7 +353,7 @@ export default function QardCobrar() {
                   type="password"
                   value={manualCvv}
                   onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="•••"
+                  
                   maxLength={4}
                 />
               </div>
@@ -388,7 +388,7 @@ export default function QardCobrar() {
                 type="number" step="0.01" min="20"
                 value={retiroMonto}
                 onChange={e => setRetiroMonto(e.target.value)}
-                placeholder="100.00"
+                
                 className="text-xl h-12"
               />
               <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
@@ -401,7 +401,7 @@ export default function QardCobrar() {
                   inputMode="numeric"
                   value={retiroDestino}
                   onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  placeholder="18 dígitos (o vacío para usar la registrada)"
+                  
                   maxLength={18}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">Si la dejas vacía, usa la CLABE de tu cuenta de cobros.</p>
@@ -416,7 +416,7 @@ export default function QardCobrar() {
                     inputMode="numeric"
                     value={retiroDestino}
                     onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))}
-                    placeholder="0000 0000 0000 0000"
+                    
                     maxLength={16}
                     className="tracking-widest"
                   />
@@ -428,7 +428,7 @@ export default function QardCobrar() {
                     type="password"
                     value={retiroCvv}
                     onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="••••"
+                    
                     maxLength={4}
                     className="tracking-widest"
                   />
