@@ -408,11 +408,10 @@ export function DriverTripPanel({
 
   // ---- AUTO MODE: garantizar SIEMPRE un viaje activo ----
   // Si no hay viaje en curso, abre uno automáticamente:
-  //  - Dentro de A → AB    · Dentro de B → BA
-  //  - Si no, alterna desde el último viaje cerrado (BA→AB, AB→BA)
-  //  - Si no hay viajes hoy → sin dirección (se define al llegar a A o B)
+  //  - Con Punto A/B: Dentro de A → AB · Dentro de B → BA
+  //  - Sin Punto A/B clásico: abre viaje sin dirección para permitir cobrar con geocercas de tramo.
   useEffect(() => {
-    if (!autoMode || !hasGeofences) return;
+    if (!autoMode) return;
     if (loading) return;
     if (viajeActivo) return;
     if (inFlightRef.current) return;
@@ -422,8 +421,8 @@ export function DriverTripPanel({
     let nextDir: Direccion | null = null;
     let lat: number | null = currentPos?.lat ?? null;
     let lng: number | null = currentPos?.lng ?? null;
-    if (insideA) { nextDir = "AB"; lat = origenLat!; lng = origenLng!; }
-    else if (insideB) { nextDir = "BA"; lat = destinoLat!; lng = destinoLng!; }
+    if (hasGeofences && insideA) { nextDir = "AB"; lat = origenLat!; lng = origenLng!; }
+    else if (hasGeofences && insideB) { nextDir = "BA"; lat = destinoLat!; lng = destinoLng!; }
     else {
       const lastCompleted = viajesHoy.find(v => v.estado === "completado" && v.direccion);
       if (lastCompleted?.direccion) {
@@ -828,8 +827,8 @@ export function DriverTripPanel({
               </p>
             )}
             {!hasGeofences && (
-              <p className="text-xs text-center text-destructive">
-                Pide al concesionario marcar el Punto A y el Punto B en la ruta.
+              <p className="text-xs text-center text-muted-foreground">
+                Ruta por geocercas de cobro. Usa “Cobrar QR” para registrar subida y bajada.
               </p>
             )}
           </div>
