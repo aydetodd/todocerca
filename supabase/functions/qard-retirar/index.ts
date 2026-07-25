@@ -121,6 +121,8 @@ serve(async (req) => {
         return err("La QaRd destino no existe");
       }
 
+      if (!toWalletId || !toTitular) return err("La QaRd destino está incompleta");
+
       const mismoTitular = toTitular === user.id;
       if (!mismoTitular) {
         if (cvv.length !== 4) return err("Escribe el CVV dinámico de 4 dígitos del destino");
@@ -144,7 +146,11 @@ serve(async (req) => {
           await admin.from("qard_wallets").update({ cvv_dinamico: nuevoCvv }).eq("id", toWalletId);
         }
         if (toSubId) {
-          await admin.from("qard_sub_qr").update({ saldo_mxn: monto, cvv_dinamico: nuevoCvv }).eq("id", toSubId).eq("sub_index", 0);
+          const { data: curAfter } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
+          await admin.from("qard_sub_qr")
+            .update({ saldo_mxn: Number(curAfter?.saldo_mxn ?? 0), cvv_dinamico: nuevoCvv })
+            .eq("id", toSubId)
+            .eq("sub_index", 0);
         }
       } else {
         const { data: curSub } = await admin.from("qard_sub_qr").select("saldo_mxn").eq("id", toSubId).single();
