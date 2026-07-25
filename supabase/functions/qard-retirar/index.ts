@@ -102,6 +102,7 @@ serve(async (req) => {
       let toSubIndex = 0;
       let toTitular: string | null = null;
       let toCvvDin: string | null = null;
+      let saldoDestinoDespues = 0;
 
       const { data: subRow } = await admin
         .from("qard_sub_qr")
@@ -154,22 +155,27 @@ serve(async (req) => {
         }
       } else {
         const { data: curSub } = await admin.from("qard_sub_qr").select("saldo_mxn").eq("id", toSubId).single();
-        await admin.from("qard_sub_qr")
+        const { data: updSub, error: updSubErr } = await admin.from("qard_sub_qr")
           .update({ saldo_mxn: Number(curSub?.saldo_mxn ?? 0) + monto, cvv_dinamico: nuevoCvv })
-          .eq("id", toSubId);
-        const { data: curW } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
-        await admin.from("qard_wallets").update({ saldo_mxn: Number(curW?.saldo_mxn ?? 0) + monto }).eq("id", toWalletId);
+          .eq("id", toSubId)
+          .select("saldo_mxn")
+          .single();
+        if (updSubErr) throw updSubErr;
+        saldoDestinoDespues = Number(updSub?.saldo_mxn ?? 0);
       }
 
       // Movimiento acreditación al receptor
-      const { data: curW2 } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
+      if (toSubIndex === 0) {
+        const { data: curW2 } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
+        saldoDestinoDespues = Number(curW2?.saldo_mxn ?? 0);
+      }
       await admin.from("qard_movimientos").insert({
         wallet_id: toWalletId,
         titular_user_id: toTitular,
         sub_qr_id: toSubIndex === 0 ? null : toSubId,
         tipo: "transferencia_p2p_in",
         monto_mxn: monto,
-        saldo_despues: Number(curW2?.saldo_mxn ?? 0),
+        saldo_despues: saldoDestinoDespues,
         descripcion: `Transferencia recibida de cobros •••• ${d.slice(-4)}`,
         comercio_nombre: "Transferencia P2P",
       });
