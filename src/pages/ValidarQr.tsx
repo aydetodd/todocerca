@@ -265,18 +265,19 @@ export default function ValidarQr() {
                   autoMode: false,
                 });
               }
-            } else if (isForanea && p?.route_origin_lat != null && p?.route_destination_lat != null) {
-              // Foránea con geocercas A/B configuradas → panel de viajes en modo AUTOMÁTICO
+            } else if (isForanea) {
+              // Foránea → siempre usa el lector QaRd por geocercas de cobro.
+              // Algunas rutas no tienen Punto A/B clásico, pero sí geocercas de cobro por tramo.
               setTripContract({
                 contratoId: asignacionActiva.producto_id,
                 choferEmpresaId: choferActivo.id,
                 unidadId: asignacionActiva.unidad_id,
                 routeProductId: asignacionActiva.producto_id,
                 empresaNombre: "Ruta foránea",
-                origenLat: p.route_origin_lat,
-                origenLng: p.route_origin_lng,
-                destinoLat: p.route_destination_lat,
-                destinoLng: p.route_destination_lng,
+                origenLat: p.route_origin_lat ?? null,
+                origenLng: p.route_origin_lng ?? null,
+                destinoLat: p.route_destination_lat ?? null,
+                destinoLng: p.route_destination_lng ?? null,
                 radioM: p.route_geofence_radius_m ?? 150,
                 autoMode: true,
               });

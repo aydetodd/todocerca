@@ -163,8 +163,8 @@ export default function QardCobrar() {
       if (d.length !== 16) {
         return toast({ title: "Ingresa los 16 dígitos de la QaRd destino", variant: "destructive" });
       }
-      if (retiroCvv.length !== 4) {
-        return toast({ title: "Escribe el CVV dinámico de 4 dígitos del destino", variant: "destructive" });
+      if (retiroCvv && retiroCvv.length !== 4) {
+        return toast({ title: "El CVV dinámico debe tener 4 dígitos", variant: "destructive" });
       }
     }
     if (retiroMetodo === "spei" && retiroDestino) {
@@ -378,7 +378,7 @@ export default function QardCobrar() {
               {retiroMetodo === "qard" && "Transferir a otra QaRd"}
             </DialogTitle>
             <DialogDescription>
-              Disponible: <b>${totalNeto.toFixed(2)}</b> · Simulación (sin dinero real).
+              Disponible: <b>${totalNeto.toFixed(2)}</b>{retiroMetodo !== "qard" ? " · Simulación (sin dinero real)." : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -433,7 +433,7 @@ export default function QardCobrar() {
                     className="tracking-widest"
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    Pide al destinatario su CVV dinámico de 4 dígitos (rota tras cada transferencia recibida).
+                    Si mandas a otra persona, pide su CVV dinámico de 4 dígitos. Si es tu propia QaRd, puedes dejarlo vacío.
                   </p>
                 </div>
               </>
