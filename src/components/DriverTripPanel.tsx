@@ -572,8 +572,10 @@ export function DriverTripPanel({
     statusLabel = `Sin señal GPS — puedes registrar el viaje manualmente`;
     statusColor = "text-destructive";
   } else if (!hasGeofences) {
-    statusLabel = "El concesionario no ha definido los puntos A y B en el contrato";
-    statusColor = "text-destructive";
+    statusLabel = autoMode
+      ? "Ruta lista para cobrar por geocercas de tramo"
+      : "El concesionario no ha definido los puntos A y B en el contrato";
+    statusColor = autoMode ? "text-primary" : "text-destructive";
   } else if (currentPos) {
     if (viajeActivo) {
       statusLabel = insideEnd
@@ -878,7 +880,7 @@ export function DriverTripPanel({
         )}
 
 
-        {!hasGeofences && (
+        {!hasGeofences && !autoMode && (
           <Card className="border-destructive/40 bg-destructive/5">
             <CardContent className="p-3 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
