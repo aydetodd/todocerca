@@ -94,7 +94,7 @@ serve(async (req) => {
       // Transferencia REAL a otra QaRd
       const d = destino.replace(/\D/g, "");
       if (d.length !== 16) return err("Ingresa los 16 dígitos de la QaRd destino");
-      if (cvv.length !== 4) return err("Escribe el CVV dinámico de 4 dígitos del destino");
+      if (cvv && cvv.length !== 4) return err("El CVV dinámico debe tener 4 dígitos");
 
       // Buscar destino en sub_qr (índice 0 = principal, >0 = sub) — todos viven ahí por convención
       let toSubId: string | null = null;
@@ -105,7 +105,7 @@ serve(async (req) => {
 
       const { data: subRow } = await admin
         .from("qard_sub_qr")
-        .select("id, wallet_id, sub_index, cvv_dinamico, qard_wallets!inner(id, titular_user_id)")
+        .select("id, wallet_id, sub_index, cvv_dinamico, qard_wallets!inner(id, titular_user_id, cvv_dinamico)")
         .eq("qard_number", d)
         .maybeSingle();
 
@@ -113,36 +113,38 @@ serve(async (req) => {
         toSubId = (subRow as any).id;
         toWalletId = (subRow as any).wallet_id;
         toSubIndex = (subRow as any).sub_index;
-        toCvvDin = (subRow as any).cvv_dinamico;
+        toCvvDin = toSubIndex === 0
+          ? ((subRow as any).qard_wallets?.cvv_dinamico || (subRow as any).cvv_dinamico)
+          : (subRow as any).cvv_dinamico;
         toTitular = (subRow as any).qard_wallets?.titular_user_id;
       } else {
-        // fallback: buscar en wallets directamente (por si algún principal no tuviera fila sub_qr 00)
-        const { data: wRow } = await admin
-          .from("qard_wallets")
-          .select("id, titular_user_id, cvv_dinamico")
-          .eq("qard_number", d)
-          .maybeSingle();
-        if (!wRow) return err("La QaRd destino no existe");
-        toWalletId = (wRow as any).id;
-        toTitular = (wRow as any).titular_user_id;
-        toCvvDin = (wRow as any).cvv_dinamico;
+        return err("La QaRd destino no existe");
       }
 
-      if (!toCvvDin || toCvvDin !== cvv) return err("CVV dinámico incorrecto");
+      const mismoTitular = toTitular === user.id;
+      if (!mismoTitular) {
+        if (cvv.length !== 4) return err("Escribe el CVV dinámico de 4 dígitos del destino");
+        if (!toCvvDin || toCvvDin !== cvv) return err("CVV dinámico incorrecto");
+      }
 
       // Nuevo CVV de 4 dígitos
       const nuevoCvv = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join("");
 
       // Acreditar destino
       if (toSubIndex === 0 || !toSubId) {
-        await admin.rpc("qard_wallet_credit" as any, { _wallet_id: toWalletId, _monto: monto }).catch(async () => {
-          // fallback manual
+        const creditRes = await admin.rpc("qard_wallet_credit" as any, { _wallet_id: toWalletId, _monto: monto });
+        if (creditRes.error) {
           const { data: cur } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
-          await admin.from("qard_wallets").update({ saldo_mxn: Number(cur?.saldo_mxn ?? 0) + monto, cvv_dinamico: nuevoCvv }).eq("id", toWalletId);
-        });
-        await admin.from("qard_wallets").update({ cvv_dinamico: nuevoCvv }).eq("id", toWalletId);
+          const { error: updWalletErr } = await admin
+            .from("qard_wallets")
+            .update({ saldo_mxn: Number(cur?.saldo_mxn ?? 0) + monto, cvv_dinamico: nuevoCvv })
+            .eq("id", toWalletId);
+          if (updWalletErr) throw updWalletErr;
+        } else {
+          await admin.from("qard_wallets").update({ cvv_dinamico: nuevoCvv }).eq("id", toWalletId);
+        }
         if (toSubId) {
-          await admin.from("qard_sub_qr").update({ cvv_dinamico: nuevoCvv }).eq("id", toSubId);
+          await admin.from("qard_sub_qr").update({ saldo_mxn: monto, cvv_dinamico: nuevoCvv }).eq("id", toSubId).eq("sub_index", 0);
         }
       } else {
         const { data: curSub } = await admin.from("qard_sub_qr").select("saldo_mxn").eq("id", toSubId).single();
