@@ -590,44 +590,51 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 </div>
               </div>
 
-              {/* Cómo cobra el concesionario */}
-              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
-                <p className="text-xs font-semibold text-foreground mb-1">
-                  ¿Cómo cobras este dinero?
-                </p>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Del importe cobrado a pasajeros, el 94% queda disponible para ti (6% comisión de plataforma). Elige cómo retirarlo:
+              {/* Cómo cobra el concesionario — sobre el importe pendiente de este reporte */}
+              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-foreground mb-1">Cobra el importe de estos viajes</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Solo cuenta lo que aún no has cobrado. Al retirar, se marcan como pagados y no se vuelven a incluir.
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-md bg-white border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bruto</p>
+                    <p className="text-sm font-bold text-foreground">{fmtMoney(brutoDisponible)}</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-white border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Comisión 6%</p>
+                    <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
+                    <p className="text-[10px] uppercase tracking-wide opacity-90">Neto a recibir</p>
+                    <p className="text-sm font-bold">{fmtMoney(netoDisponible)}</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  {viajesDisponibles.length} viaje(s) pendientes de cobrar
+                  {yaCobradoNeto > 0 && ` · Ya cobrado en este periodo: ${fmtMoney(yaCobradoNeto)}`}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=qard")}
-                  >
-                    <ArrowRightLeft className="h-4 w-4 mr-2" />
-                    Transferir a QaRd
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("qard")}>
+                    <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=oxxo")}
-                  >
-                    <Store className="h-4 w-4 mr-2" />
-                    Cobrar en OXXO
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("oxxo")}>
+                    <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=spei")}
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Enviar al banco (SPEI)
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("spei")}>
+                    <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
                   </Button>
                 </div>
               </div>
+
             </div>
           )}
         </CardContent>
