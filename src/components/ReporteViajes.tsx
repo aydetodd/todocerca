@@ -309,7 +309,20 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
   const totalCobrado = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
   const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
+
+  // Disponible para retirar: solo viajes NO retirados aún
+  const viajesDisponibles = filtered.filter((v) => !v.retirado_at && (cobrosPorViaje[v.id]?.monto || 0) > 0);
+  const brutoDisponible = viajesDisponibles.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+  const comisionDisponible = +(brutoDisponible * 0.06).toFixed(2);
+  const netoDisponible = +(brutoDisponible - comisionDisponible).toFixed(2);
+
+  // Ya cobrado (histórico, dentro del rango filtrado)
+  const yaCobradoNeto = filtered
+    .filter((v) => v.retirado_at)
+    .reduce((s, v) => s + (Number(v.retiro_neto_mxn) || 0), 0);
+
   const fmtMoney = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
