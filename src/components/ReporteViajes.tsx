@@ -40,10 +40,15 @@ type ViajeRow = {
   pasajeros_subidos?: number | null;
   pasajeros_bajados?: number | null;
   pasajeros_a_bordo?: number | null;
+  retirado_at?: string | null;
+  retiro_metodo?: string | null;
+  retiro_neto_mxn?: number | null;
+  retiro_referencia?: string | null;
   choferes_empresa?: { nombre?: string | null } | null;
   unidades_empresa?: { numero_economico?: string | null; placas?: string | null } | null;
   productos?: { nombre?: string | null } | null;
 };
+
 
 type PasajeroRow = {
   numero_subida: number | null;
