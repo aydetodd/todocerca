@@ -745,12 +745,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
                                 {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
                                 {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                {v.retirado_at && (
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 border-0 gap-0.5">
+                                    <CheckCircle2 className="h-2.5 w-2.5" /> Cobrado
+                                  </Badge>
+                                )}
                                 <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
                                 {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                  <span className="text-[10px] font-semibold text-primary">
+                                  <span className={`text-[10px] font-semibold ${v.retirado_at ? "text-muted-foreground line-through" : "text-primary"}`}>
                                     {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
                                   </span>
                                 )}
+
                               </div>
                               <span className="text-muted-foreground shrink-0 tabular-nums text-right">
                                 <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
