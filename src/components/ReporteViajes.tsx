@@ -419,6 +419,46 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     );
   };
 
+  const openRetiro = (metodo: "qard" | "oxxo" | "spei") => {
+    if (viajesDisponibles.length === 0) {
+      toast({ title: "Sin viajes por cobrar", description: "No hay importe pendiente de retirar en este periodo.", variant: "destructive" });
+      return;
+    }
+    setRetiroMetodo(metodo);
+    setRetiroDestino("");
+    setRetiroCvv("");
+    setRetiroOpen(true);
+  };
+
+  const ejecutarRetiro = async () => {
+    setRetiroLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("retirar-viajes-concesionario", {
+        body: {
+          viaje_ids: viajesDisponibles.map((v) => v.id),
+          metodo: retiroMetodo,
+          destino: retiroDestino,
+          cvv: retiroCvv,
+        },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "No se pudo retirar");
+      toast({
+        title: "Cobro realizado",
+        description: `${data.viajes_cobrados} viaje(s) cobrados. Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}`,
+      });
+      setRetiroOpen(false);
+      await load();
+    } catch (e: any) {
+      toast({ title: "No se pudo cobrar", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setRetiroLoading(false);
+    }
+  };
+
+
+
+
 
 
   return (
