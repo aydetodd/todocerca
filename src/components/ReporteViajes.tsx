@@ -83,6 +83,14 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
 
+  // Retiro de importe de viajes
+  const [retiroOpen, setRetiroOpen] = useState(false);
+  const [retiroMetodo, setRetiroMetodo] = useState<"qard" | "oxxo" | "spei">("qard");
+  const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroCvv, setRetiroCvv] = useState("");
+  const [retiroLoading, setRetiroLoading] = useState(false);
+
+
 
   const getRange = useCallback((): { desde: string; hasta: string } => {
     const today = getHermosilloToday();
