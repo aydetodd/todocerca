@@ -516,6 +516,45 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   <p className="text-[10px] text-muted-foreground">Importe cobrado</p>
                 </div>
               </div>
+
+              {/* Cómo cobra el concesionario */}
+              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <p className="text-xs font-semibold text-foreground mb-1">
+                  ¿Cómo cobras este dinero?
+                </p>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Del importe cobrado a pasajeros, el 94% queda disponible para ti (6% comisión de plataforma). Elige cómo retirarlo:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=qard")}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Transferir a QaRd
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=oxxo")}
+                  >
+                    <Store className="h-4 w-4 mr-2" />
+                    Cobrar en OXXO
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=spei")}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Enviar al banco (SPEI)
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
