@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getHermosilloToday } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csvExport";
 
@@ -55,6 +56,7 @@ type PasajeroRow = {
 
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>("hoy");
   const [customStart, setCustomStart] = useState("");
@@ -512,6 +514,45 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 <div className="p-3 rounded-lg bg-primary/15 text-center">
                   <p className="text-2xl font-bold text-primary">{fmtMoney(totalCobrado)}</p>
                   <p className="text-[10px] text-muted-foreground">Importe cobrado</p>
+                </div>
+              </div>
+
+              {/* Cómo cobra el concesionario */}
+              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <p className="text-xs font-semibold text-foreground mb-1">
+                  ¿Cómo cobras este dinero?
+                </p>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Del importe cobrado a pasajeros, el 94% queda disponible para ti (6% comisión de plataforma). Elige cómo retirarlo:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=qard")}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Transferir a QaRd
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=oxxo")}
+                  >
+                    <Store className="h-4 w-4 mr-2" />
+                    Cobrar en OXXO
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => navigate("/qard/cobrar?retiro=spei")}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Enviar al banco (SPEI)
+                  </Button>
                 </div>
               </div>
             </div>
