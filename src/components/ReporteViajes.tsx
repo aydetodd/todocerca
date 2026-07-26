@@ -56,6 +56,7 @@ type PasajeroRow = {
 
 
 export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: ReporteViajesProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>("hoy");
   const [customStart, setCustomStart] = useState("");
