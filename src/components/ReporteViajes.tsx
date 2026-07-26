@@ -3,11 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2 } from "lucide-react";
+import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getHermosilloToday } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csvExport";
+import { toast } from "@/hooks/use-toast";
+
 
 
 interface ReporteViajesProps {
@@ -35,10 +40,15 @@ type ViajeRow = {
   pasajeros_subidos?: number | null;
   pasajeros_bajados?: number | null;
   pasajeros_a_bordo?: number | null;
+  retirado_at?: string | null;
+  retiro_metodo?: string | null;
+  retiro_neto_mxn?: number | null;
+  retiro_referencia?: string | null;
   choferes_empresa?: { nombre?: string | null } | null;
   unidades_empresa?: { numero_economico?: string | null; placas?: string | null } | null;
   productos?: { nombre?: string | null } | null;
 };
+
 
 type PasajeroRow = {
   numero_subida: number | null;
@@ -72,6 +82,14 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [unidades, setUnidades] = useState<{ id: string; label: string }[]>([]);
   const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([]);
   const [rutas, setRutas] = useState<{ id: string; nombre: string }[]>([]);
+
+  // Retiro de importe de viajes
+  const [retiroOpen, setRetiroOpen] = useState(false);
+  const [retiroMetodo, setRetiroMetodo] = useState<"qard" | "oxxo" | "spei">("qard");
+  const [retiroDestino, setRetiroDestino] = useState("");
+  const [retiroCvv, setRetiroCvv] = useState("");
+  const [retiroLoading, setRetiroLoading] = useState(false);
+
 
 
   const getRange = useCallback((): { desde: string; hasta: string } => {
@@ -180,10 +198,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
         id, fecha, numero_viaje, estado, inicio_at, fin_at, chofer_id, unidad_id, contrato_id,
         producto_id, direccion, inicio_manual, fin_manual,
         pasajeros_subidos, pasajeros_bajados, pasajeros_a_bordo,
+        retirado_at, retiro_metodo, retiro_neto_mxn, retiro_referencia,
         choferes_empresa(nombre),
         unidades_empresa(numero_economico, placas),
         productos(nombre)
       `)
+
       .or(orFilters.join(","))
       .gte("fecha", desdeMinus1)
       .lte("fecha", hasta)
@@ -297,7 +317,20 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalABordo = filtered.reduce((s, v) => s + (v.pasajeros_a_bordo ?? 0), 0);
   const totalCobrado = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
   const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
+
+  // Disponible para retirar: solo viajes NO retirados aún
+  const viajesDisponibles = filtered.filter((v) => !v.retirado_at && (cobrosPorViaje[v.id]?.monto || 0) > 0);
+  const brutoDisponible = viajesDisponibles.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+  const comisionDisponible = +(brutoDisponible * 0.06).toFixed(2);
+  const netoDisponible = +(brutoDisponible - comisionDisponible).toFixed(2);
+
+  // Ya cobrado (histórico, dentro del rango filtrado)
+  const yaCobradoNeto = filtered
+    .filter((v) => v.retirado_at)
+    .reduce((s, v) => s + (Number(v.retiro_neto_mxn) || 0), 0);
+
   const fmtMoney = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 
   const rutasMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -385,6 +418,46 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       rows,
     );
   };
+
+  const openRetiro = (metodo: "qard" | "oxxo" | "spei") => {
+    if (viajesDisponibles.length === 0) {
+      toast({ title: "Sin viajes por cobrar", description: "No hay importe pendiente de retirar en este periodo.", variant: "destructive" });
+      return;
+    }
+    setRetiroMetodo(metodo);
+    setRetiroDestino("");
+    setRetiroCvv("");
+    setRetiroOpen(true);
+  };
+
+  const ejecutarRetiro = async () => {
+    setRetiroLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("retirar-viajes-concesionario", {
+        body: {
+          viaje_ids: viajesDisponibles.map((v) => v.id),
+          metodo: retiroMetodo,
+          destino: retiroDestino,
+          cvv: retiroCvv,
+        },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "No se pudo retirar");
+      toast({
+        title: "Cobro realizado",
+        description: `${data.viajes_cobrados} viaje(s) cobrados. Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}`,
+      });
+      setRetiroOpen(false);
+      await load();
+    } catch (e: any) {
+      toast({ title: "No se pudo cobrar", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setRetiroLoading(false);
+    }
+  };
+
+
+
 
 
 
@@ -517,44 +590,51 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 </div>
               </div>
 
-              {/* Cómo cobra el concesionario */}
-              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
-                <p className="text-xs font-semibold text-foreground mb-1">
-                  ¿Cómo cobras este dinero?
-                </p>
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Del importe cobrado a pasajeros, el 94% queda disponible para ti (6% comisión de plataforma). Elige cómo retirarlo:
+              {/* Cómo cobra el concesionario — sobre el importe pendiente de este reporte */}
+              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-foreground mb-1">Cobra el importe de estos viajes</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Solo cuenta lo que aún no has cobrado. Al retirar, se marcan como pagados y no se vuelven a incluir.
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-md bg-white border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bruto</p>
+                    <p className="text-sm font-bold text-foreground">{fmtMoney(brutoDisponible)}</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-white border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Comisión 6%</p>
+                    <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
+                    <p className="text-[10px] uppercase tracking-wide opacity-90">Neto a recibir</p>
+                    <p className="text-sm font-bold">{fmtMoney(netoDisponible)}</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  {viajesDisponibles.length} viaje(s) pendientes de cobrar
+                  {yaCobradoNeto > 0 && ` · Ya cobrado en este periodo: ${fmtMoney(yaCobradoNeto)}`}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=qard")}
-                  >
-                    <ArrowRightLeft className="h-4 w-4 mr-2" />
-                    Transferir a QaRd
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("qard")}>
+                    <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=oxxo")}
-                  >
-                    <Store className="h-4 w-4 mr-2" />
-                    Cobrar en OXXO
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("oxxo")}>
+                    <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/qard/cobrar?retiro=spei")}
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Enviar al banco (SPEI)
+                  <Button size="sm" variant="outline" className="justify-start"
+                    disabled={netoDisponible <= 0}
+                    onClick={() => openRetiro("spei")}>
+                    <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
                   </Button>
                 </div>
               </div>
+
             </div>
           )}
         </CardContent>
@@ -665,12 +745,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
                                 {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
                                 {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                {v.retirado_at && (
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 border-0 gap-0.5">
+                                    <CheckCircle2 className="h-2.5 w-2.5" /> Cobrado
+                                  </Badge>
+                                )}
                                 <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
                                 {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                  <span className="text-[10px] font-semibold text-primary">
+                                  <span className={`text-[10px] font-semibold ${v.retirado_at ? "text-muted-foreground line-through" : "text-primary"}`}>
                                     {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
                                   </span>
                                 )}
+
                               </div>
                               <span className="text-muted-foreground shrink-0 tabular-nums text-right">
                                 <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
@@ -723,6 +809,73 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </Card>
         );
       })()}
+
+      {/* Diálogo de retiro */}
+      <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {retiroMetodo === "qard" && "Transferir a QaRd"}
+              {retiroMetodo === "oxxo" && "Cobrar en OXXO"}
+              {retiroMetodo === "spei" && "Enviar al banco (SPEI)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 rounded-md bg-muted/40 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Bruto</p>
+                <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/40 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Comisión 6%</p>
+                <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+              </div>
+              <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
+                <p className="text-[10px] uppercase opacity-90">Recibes</p>
+                <p className="text-sm font-bold">{fmtMoney(netoDisponible)}</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {viajesDisponibles.length} viaje(s) se marcarán como cobrados.
+            </p>
+
+            {retiroMetodo === "qard" && (
+              <>
+                <div>
+                  <Label className="text-xs">QaRd destino (16 dígitos)</Label>
+                  <Input inputMode="numeric" value={retiroDestino}
+                    onChange={(e) => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CVV dinámico (4 dígitos) — opcional si es tu propia QaRd</Label>
+                  <Input inputMode="numeric" value={retiroCvv}
+                    onChange={(e) => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} />
+                </div>
+              </>
+            )}
+            {retiroMetodo === "spei" && (
+              <div>
+                <Label className="text-xs">CLABE (18 dígitos) — deja vacío para usar tu CLABE registrada</Label>
+                <Input inputMode="numeric" value={retiroDestino}
+                  onChange={(e) => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))} />
+              </div>
+            )}
+            {retiroMetodo === "oxxo" && (
+              <p className="text-[11px] text-muted-foreground">
+                Se generará una referencia OXXO para retirar en efectivo (vigencia 72h).
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || netoDisponible <= 0}>
+              {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Cobrar {fmtMoney(netoDisponible)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 }
