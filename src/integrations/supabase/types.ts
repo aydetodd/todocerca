@@ -5159,6 +5159,12 @@ export type Database = {
           pasajeros_bajados: number
           pasajeros_subidos: number
           producto_id: string | null
+          retirado_at: string | null
+          retiro_batch_id: string | null
+          retiro_bruto_mxn: number | null
+          retiro_metodo: string | null
+          retiro_neto_mxn: number | null
+          retiro_referencia: string | null
           unidad_id: string | null
           updated_at: string
           waypoint_orden_actual: number | null
@@ -5188,6 +5194,12 @@ export type Database = {
           pasajeros_bajados?: number
           pasajeros_subidos?: number
           producto_id?: string | null
+          retirado_at?: string | null
+          retiro_batch_id?: string | null
+          retiro_bruto_mxn?: number | null
+          retiro_metodo?: string | null
+          retiro_neto_mxn?: number | null
+          retiro_referencia?: string | null
           unidad_id?: string | null
           updated_at?: string
           waypoint_orden_actual?: number | null
@@ -5217,6 +5229,12 @@ export type Database = {
           pasajeros_bajados?: number
           pasajeros_subidos?: number
           producto_id?: string | null
+          retirado_at?: string | null
+          retiro_batch_id?: string | null
+          retiro_bruto_mxn?: number | null
+          retiro_metodo?: string | null
+          retiro_neto_mxn?: number | null
+          retiro_referencia?: string | null
           unidad_id?: string | null
           updated_at?: string
           waypoint_orden_actual?: number | null
