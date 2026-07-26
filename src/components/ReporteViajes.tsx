@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getHermosilloToday } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csvExport";
 
