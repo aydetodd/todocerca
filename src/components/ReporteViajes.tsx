@@ -809,6 +809,73 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </Card>
         );
       })()}
+
+      {/* Diálogo de retiro */}
+      <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {retiroMetodo === "qard" && "Transferir a QaRd"}
+              {retiroMetodo === "oxxo" && "Cobrar en OXXO"}
+              {retiroMetodo === "spei" && "Enviar al banco (SPEI)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 rounded-md bg-muted/40 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Bruto</p>
+                <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/40 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Comisión 6%</p>
+                <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+              </div>
+              <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
+                <p className="text-[10px] uppercase opacity-90">Recibes</p>
+                <p className="text-sm font-bold">{fmtMoney(netoDisponible)}</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {viajesDisponibles.length} viaje(s) se marcarán como cobrados.
+            </p>
+
+            {retiroMetodo === "qard" && (
+              <>
+                <div>
+                  <Label className="text-xs">QaRd destino (16 dígitos)</Label>
+                  <Input inputMode="numeric" value={retiroDestino}
+                    onChange={(e) => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CVV dinámico (4 dígitos) — opcional si es tu propia QaRd</Label>
+                  <Input inputMode="numeric" value={retiroCvv}
+                    onChange={(e) => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} />
+                </div>
+              </>
+            )}
+            {retiroMetodo === "spei" && (
+              <div>
+                <Label className="text-xs">CLABE (18 dígitos) — deja vacío para usar tu CLABE registrada</Label>
+                <Input inputMode="numeric" value={retiroDestino}
+                  onChange={(e) => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))} />
+              </div>
+            )}
+            {retiroMetodo === "oxxo" && (
+              <p className="text-[11px] text-muted-foreground">
+                Se generará una referencia OXXO para retirar en efectivo (vigencia 72h).
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || netoDisponible <= 0}>
+              {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Cobrar {fmtMoney(netoDisponible)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 }
