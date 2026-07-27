@@ -317,7 +317,17 @@ Paleta: Azul marino profundo con acentos brillantes
     --input: 210 14% 89%;
     --ring: 16 100% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Sombra estándar tarjetas */
+    --shadow-card: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-button: 0 2px 8px rgba(255,107,53,0.3);
+    --brand-orange: #FF6B35;
+    --brand-orange-soft: #FFF0EB;
+    --text-primary: #212529;
+    --text-secondary: #6C757D;
+    --border-soft: #DEE2E6;
+    --balance-green: #28A745;
 
     /* Sidebar clara */
     --sidebar-background: 0 0% 100%;
