@@ -132,3 +132,7 @@ verify_jwt = false
 
 [functions.get-link-invitation]
 verify_jwt = false
+
+[functions.retirar-viajes-concesionario]
+verify_jwt = false
+
