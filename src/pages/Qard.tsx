@@ -531,8 +531,17 @@ export default function Qard() {
                   m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
                   m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
                   m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
+                  m.tipo === "retiro_qard" ? "Transferencia enviada" :
+                  m.tipo === "retiro_oxxo" ? "Retiro en OXXO" :
+                  m.tipo === "retiro_spei" ? "Envío SPEI" :
+                  m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
+                  m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
                   m.tipo;
-                const positivo = m.tipo === "recarga" || m.tipo === "transfer_desde_sub";
+                const positivo =
+                  m.tipo === "recarga" ||
+                  m.tipo === "transfer_desde_sub" ||
+                  m.tipo === "cobro_comercio" ||
+                  m.tipo === "transferencia_p2p_in";
                 return (
                   <div key={m.id} className="flex justify-between text-sm border-b pb-1">
                     <div>
