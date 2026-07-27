@@ -34,21 +34,27 @@ serve(async (req) => {
     if (!["qard", "oxxo", "spei"].includes(metodo)) return err("Método inválido");
 
     // 1) Validar que los viajes son del concesionario y no están retirados
-    const [{ data: contratos }, { data: choferesProv }] = await Promise.all([
+    const [{ data: contratos }, { data: choferesProv }, { data: prods }] = await Promise.all([
       admin.from("contratos_transporte").select("id").eq("concesionario_id", user.id),
       admin.from("choferes_empresa").select("id").eq("proveedor_id", user.id),
+      admin.from("productos").select("id").eq("proveedor_id", user.id),
     ]);
     const contratoIds = (contratos || []).map((c: any) => c.id);
     const choferIds = (choferesProv || []).map((c: any) => c.id);
+    const productoIds = (prods || []).map((p: any) => p.id);
 
     const { data: viajes, error: vErr } = await admin
       .from("viajes_realizados")
-      .select("id, contrato_id, chofer_id, retirado_at")
+      .select("id, contrato_id, chofer_id, producto_id, retirado_at")
       .in("id", viajeIds);
     if (vErr) throw vErr;
 
     const validos = (viajes || []).filter((v: any) =>
-      !v.retirado_at && (contratoIds.includes(v.contrato_id) || choferIds.includes(v.chofer_id))
+      !v.retirado_at && (
+        contratoIds.includes(v.contrato_id) ||
+        choferIds.includes(v.chofer_id) ||
+        productoIds.includes(v.producto_id)
+      )
     );
     if (!validos.length) return err("Los viajes ya fueron cobrados o no te pertenecen");
     const validosIds = validos.map((v: any) => v.id);
