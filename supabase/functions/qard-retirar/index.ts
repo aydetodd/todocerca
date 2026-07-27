@@ -164,29 +164,36 @@ serve(async (req) => {
         saldoDestinoDespues = Number(updSub?.saldo_mxn ?? 0);
       }
 
-      // Movimiento acreditación al receptor
+      // Movimiento acreditación al receptor (omitir si es transferencia interna a la propia cuenta eje para no duplicar)
+      const skipInboundMov = mismoTitular && toSubIndex === 0;
       if (toSubIndex === 0) {
         const { data: curW2 } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
         saldoDestinoDespues = Number(curW2?.saldo_mxn ?? 0);
       }
-      await admin.from("qard_movimientos").insert({
-        wallet_id: toWalletId,
-        titular_user_id: toTitular,
-        sub_qr_id: toSubIndex === 0 ? null : toSubId,
-        tipo: "transferencia_p2p_in",
-        monto_mxn: monto,
-        saldo_despues: saldoDestinoDespues,
-        descripcion: `Transferencia recibida de cobros •••• ${d.slice(-4)}`,
-        comercio_nombre: "Transferencia P2P",
-      });
+      if (!skipInboundMov) {
+        await admin.from("qard_movimientos").insert({
+          wallet_id: toWalletId,
+          titular_user_id: toTitular,
+          sub_qr_id: toSubIndex === 0 ? null : toSubId,
+          tipo: "transferencia_p2p_in",
+          monto_mxn: monto,
+          saldo_despues: saldoDestinoDespues,
+          descripcion: mismoTitular
+            ? `Transferencia interna a ${toSubIndex === 0 ? "cuenta eje" : "sub-QR"} •••• ${d.slice(-4)}`
+            : `Transferencia recibida de cobros •••• ${d.slice(-4)}`,
+          comercio_nombre: "Transferencia P2P",
+        });
+      }
 
-      // Aviso al receptor con el nuevo CVV
-      await admin.from("messages").insert({
-        sender_id: "00000000-0000-0000-0000-000000000001",
-        receiver_id: toTitular,
-        message: `💸 Recibiste una transferencia\n\nMonto: $${monto.toFixed(2)} MXN\nCuenta •••• ${d.slice(-4)}\n\n🔐 Nuevo CVV dinámico (4 díg): ${nuevoCvv}\n(Rota tras cada transferencia recibida. El CVV de 3 díg de compras NO cambia)`,
-        is_read: false,
-      });
+      // Aviso al receptor con el nuevo CVV (solo si es a otro titular)
+      if (!mismoTitular) {
+        await admin.from("messages").insert({
+          sender_id: "00000000-0000-0000-0000-000000000001",
+          receiver_id: toTitular,
+          message: `💸 Recibiste una transferencia\n\nMonto: $${monto.toFixed(2)} MXN\nCuenta •••• ${d.slice(-4)}\n\n🔐 Nuevo CVV dinámico (4 díg): ${nuevoCvv}\n(Rota tras cada transferencia recibida. El CVV de 3 díg de compras NO cambia)`,
+          is_read: false,
+        });
+      }
 
       referencia = `QARD${Date.now().toString().slice(-10)}`;
       descripcion = `Transferencia a QaRd •••• ${d.slice(-4)} · ${referencia}`;
