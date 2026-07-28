@@ -172,13 +172,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
 
     const { desde, hasta } = getRange();
 
-    const [{ data: contratos }, { data: choferesProv }] = await Promise.all([
+    const [{ data: contratos }, { data: choferesProv }, { data: productosProv }] = await Promise.all([
       supabase.from("contratos_transporte").select("id").eq("concesionario_id", proveedorId),
       supabase.from("choferes_empresa").select("id").eq("proveedor_id", proveedorId),
+      supabase.from("productos").select("id").eq("proveedor_id", proveedorId).eq("route_type", routeFilterType),
     ]);
     const contratoIds = (contratos || []).map((c: any) => c.id);
     const choferIds = (choferesProv || []).map((c: any) => c.id);
-    if (contratoIds.length === 0 && choferIds.length === 0) { setViajes([]); setLoading(false); return; }
+    const productoIds = (productosProv || []).map((p: any) => p.id);
+    if (contratoIds.length === 0 && choferIds.length === 0 && productoIds.length === 0) { setViajes([]); setLoading(false); return; }
 
     // Ampliamos 1 día atrás para capturar viajes en_curso iniciados antes de medianoche
     const desdeMinus1 = (() => {
@@ -191,6 +193,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     const orFilters: string[] = [];
     if (contratoIds.length > 0) orFilters.push(`contrato_id.in.(${contratoIds.join(",")})`);
     if (choferIds.length > 0) orFilters.push(`chofer_id.in.(${choferIds.join(",")})`);
+    if (productoIds.length > 0) orFilters.push(`producto_id.in.(${productoIds.join(",")})`);
 
     const { data, error } = await (supabase as any)
       .from("viajes_realizados")
@@ -270,7 +273,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       return next;
     });
     setLoading(false);
-  }, [proveedorId, getRange]);
+  }, [proveedorId, getRange, routeFilterType]);
 
 
 

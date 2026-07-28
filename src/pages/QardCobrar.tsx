@@ -249,9 +249,9 @@ export default function QardCobrar() {
             <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
             <div className="font-bold text-foreground">−${totalComision.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-primary p-2">
+          <div className="rounded-xl bg-primary p-2 shadow-[var(--shadow-button)]">
             <div className="text-[10px] text-primary-foreground/90 uppercase">Disponible</div>
-            <div className="font-bold text-primary-foreground">${totalNeto.toFixed(2)}</div>
+            <div className="font-bold text-primary-foreground text-[22px] leading-tight">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
 

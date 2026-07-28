@@ -33,11 +33,21 @@ serve(async (req) => {
     if (!viajeIds.length) return err("Selecciona al menos un viaje");
     if (!["qard", "oxxo", "spei"].includes(metodo)) return err("Método inválido");
 
+    // El usuario autenticado es auth.users.id.
+    // Pero choferes/productos/contratos pertenecen al registro public.proveedores.id.
+    // Si comparamos directo contra user.id, los viajes foráneos reales salen como "no te pertenecen".
+    const { data: proveedor } = await admin
+      .from("proveedores")
+      .select("id, user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const proveedorId = (proveedor as any)?.id || user.id;
+
     // 1) Validar que los viajes son del concesionario y no están retirados
     const [{ data: contratos }, { data: choferesProv }, { data: prods }] = await Promise.all([
-      admin.from("contratos_transporte").select("id").eq("concesionario_id", user.id),
-      admin.from("choferes_empresa").select("id").eq("proveedor_id", user.id),
-      admin.from("productos").select("id").eq("proveedor_id", user.id),
+      admin.from("contratos_transporte").select("id").eq("concesionario_id", proveedorId),
+      admin.from("choferes_empresa").select("id").eq("proveedor_id", proveedorId),
+      admin.from("productos").select("id").eq("proveedor_id", proveedorId),
     ]);
     const contratoIds = (contratos || []).map((c: any) => c.id);
     const choferIds = (choferesProv || []).map((c: any) => c.id);
@@ -166,7 +176,7 @@ serve(async (req) => {
       let clabe = destino.replace(/\D/g, "");
       if (!clabe) {
         const { data: cc } = await admin
-          .from("cuentas_conectadas").select("info_bancaria").eq("concesionario_id", user.id).maybeSingle();
+          .from("cuentas_conectadas").select("info_bancaria").eq("concesionario_id", proveedorId).maybeSingle();
         const ib: any = cc?.info_bancaria ?? {};
         clabe = String(ib?.clabe || ib?.last4 || "").replace(/\D/g, "");
       }

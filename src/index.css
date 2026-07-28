@@ -320,14 +320,13 @@ Paleta: Azul marino profundo con acentos brillantes
     --radius: 0.75rem;
 
     /* Sombra estándar tarjetas */
-    --shadow-card: 0 4px 12px rgba(0,0,0,0.08);
-    --shadow-button: 0 2px 8px rgba(255,107,53,0.3);
-    --brand-orange: #FF6B35;
-    --brand-orange-soft: #FFF0EB;
-    --text-primary: #212529;
-    --text-secondary: #6C757D;
-    --border-soft: #DEE2E6;
-    --balance-green: #28A745;
+    --shadow-card: 0 4px 12px hsl(0 0% 0% / 0.08);
+    --shadow-button: 0 2px 8px hsl(var(--primary) / 0.30);
+    --brand-orange-soft: 16 100% 96%;
+    --text-primary: 210 11% 15%;
+    --text-secondary: 208 7% 46%;
+    --border-soft: 210 14% 89%;
+    --balance-green: 134 61% 41%;
 
     /* Sidebar clara */
     --sidebar-background: 0 0% 100%;
@@ -434,11 +433,12 @@ Paleta: Azul marino profundo con acentos brillantes
    POLISH TIPOGRÁFICO Y DE COMPONENTES
    ============================================ */
 @layer base {
-  h1 { @apply text-[28px] font-bold; color: var(--text-primary); }
-  h2 { @apply text-[22px] font-bold; color: var(--text-primary); }
-  h3 { @apply text-[18px] font-semibold; color: var(--text-primary); }
-  p  { @apply text-[16px]; color: var(--text-primary); }
-  small, .text-muted { @apply text-[14px] font-light; color: var(--text-secondary); }
+  html { background-color: hsl(var(--background)); }
+  h1 { @apply text-[28px] font-bold; color: hsl(var(--text-primary)); }
+  h2 { @apply text-[22px] font-bold; color: hsl(var(--text-primary)); }
+  h3 { @apply text-[18px] font-semibold; color: hsl(var(--text-primary)); }
+  p  { @apply text-[16px]; color: hsl(var(--text-primary)); }
+  small, .text-muted { @apply text-[14px] font-light; color: hsl(var(--text-secondary)); }
 }
 
 @layer components {
@@ -448,15 +448,21 @@ Paleta: Azul marino profundo con acentos brillantes
   .card-elevated {
     box-shadow: var(--shadow-card) !important;
     border-radius: 12px !important;
-    border-color: var(--border-soft) !important;
-    background-color: #FFFFFF !important;
+    border-color: hsl(var(--border-soft)) !important;
+    background-color: hsl(var(--card)) !important;
+  }
+
+  .rounded-lg.border.bg-card {
+    box-shadow: var(--shadow-card) !important;
+    border-radius: 12px !important;
+    border-color: hsl(var(--border-soft)) !important;
   }
 
   /* Monto de saldo grande y verde */
   .qard-balance {
     font-size: 42px;
     font-weight: 700;
-    color: var(--balance-green);
+    color: hsl(var(--balance-green));
     line-height: 1.1;
   }
 
@@ -464,34 +470,42 @@ Paleta: Azul marino profundo con acentos brillantes
   button[class*="bg-primary"],
   .btn-primary-polish {
     border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(255,107,53,0.3);
+    box-shadow: var(--shadow-button);
     transition: all .2s ease;
   }
   button[class*="bg-primary"]:hover {
-    box-shadow: 0 4px 14px rgba(255,107,53,0.4);
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.40);
   }
 
   /* Header de app con sombra y fondo blanco */
   header, .app-header {
-    background-color: #FFFFFF;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    background-color: hsl(var(--card));
+    box-shadow: 0 1px 4px hsl(0 0% 0% / 0.06);
   }
 
   /* CTA "¡Regístrate ahora!" — naranja muy suave */
   .cta-register-soft {
-    background-color: var(--brand-orange-soft) !important;
-    border: 1px solid var(--border-soft) !important;
-    color: var(--text-primary) !important;
+    background-color: hsl(var(--brand-orange-soft)) !important;
+    border: 1px solid hsl(var(--border-soft)) !important;
+    color: hsl(var(--text-primary)) !important;
   }
 
   /* Reducir el uso agresivo de naranja en bordes de tarjetas */
   .border-primary\/20, .border-primary\/30, .border-orange-200, .border-orange-300 {
-    border-color: var(--border-soft) !important;
+    border-color: hsl(var(--border-soft)) !important;
   }
 
   /* Fondo naranja claro en tarjetas → blanco */
   .bg-orange-50, .bg-orange-100, .bg-primary\/5, .bg-primary\/10 {
-    background-color: #FFFFFF !important;
+    background-color: hsl(var(--card)) !important;
+  }
+
+  .text-muted-foreground {
+    color: hsl(var(--text-secondary)) !important;
+  }
+
+  .text-foreground {
+    color: hsl(var(--text-primary)) !important;
   }
 
   /* Espaciado entre secciones */

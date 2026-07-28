@@ -27,7 +27,7 @@ type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: 
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
-  sub_qr_id: string | null;
+  sub_qr_id: string | null; comercio_user_id?: string | null;
 };
 
 function formatNumero(n?: string | null) {
@@ -218,7 +218,7 @@ export default function Qard() {
   if (loading) return <div className="p-6 text-center">Cargando QaRd…</div>;
 
   const saldo = Number(wallet?.saldo_mxn ?? 0);
-  const saldoColor = saldo < 0 ? "text-red-600" : "text-green-600";
+  const saldoColor = saldo < 0 ? "text-destructive" : "qard-balance";
 
   return (
     <div className="p-4 max-w-3xl mx-auto pb-40 space-y-4">
@@ -240,7 +240,7 @@ export default function Qard() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <div className="text-xs text-muted-foreground">Saldo</div>
-                <div className={`text-3xl font-bold ${saldoColor}`}>${saldo.toFixed(2)}</div>
+                <div className={saldoColor}>${saldo.toFixed(2)}</div>
                 {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
                 <div className="flex gap-4 mt-2 text-xs">
                   <div>
@@ -250,7 +250,7 @@ export default function Qard() {
                   <div>
                     <div className="text-muted-foreground">CVV compras</div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-lg text-amber-400 tracking-wider">
+                      <span className="font-mono font-bold text-lg text-amber-600 tracking-wider">
                         {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
                       </span>
                       {titular && (
@@ -270,7 +270,7 @@ export default function Qard() {
                   <div className="mt-2">
                     <div className="text-xs text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-extrabold text-cyan-400 text-2xl tracking-widest">
+                      <span className="font-mono font-extrabold text-primary text-2xl tracking-widest">
                         {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
                       </span>
                       <button onClick={() => setCvvDinVisible(v => !v)}>
@@ -311,7 +311,7 @@ export default function Qard() {
       <Card className="p-4">
         <div className="font-semibold mb-2">Recargar saldo</div>
         <div className="flex gap-2">
-          <Input type="number" min={200} step={50} value={monto} onChange={e => setMonto(e.target.value)} placeholder="Monto MXN" />
+          <Input type="number" min={200} step={50} value={monto} onChange={e => setMonto(e.target.value)} />
           <Button onClick={recargar}><Plus className="h-4 w-4 mr-1" /> Recargar</Button>
         </div>
         <div className="text-xs text-muted-foreground mt-1">Mínimo $200 MXN. Recibes el monto exacto, sin descuentos.</div>
@@ -516,8 +516,10 @@ export default function Qard() {
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
         const ejeMov = mov.filter(m =>
-          !m.sub_qr_id || m.sub_qr_id === titularId ||
-          m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+          !m.comercio_user_id && (
+            !m.sub_qr_id || m.sub_qr_id === titularId ||
+            m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+          )
         );
         return (
           <Card className="p-4">

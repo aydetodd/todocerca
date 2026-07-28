@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Share2, LayoutGrid, MessageCircle, Heart, Sparkles } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -35,23 +35,23 @@ export const NavigationBar = () => {
   if (hiddenPaths.includes(location.pathname)) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom shadow-[0_-2px_10px_hsl(0_0%_0%_/_0.06)]">
       <div className="container flex items-center justify-around py-2">
         <Button
-          variant={isActive('/home') ? 'default' : 'ghost'}
+          variant="ghost"
           size="sm"
           onClick={() => navigate('/home')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/home') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Home className="h-5 w-5" />
           <span className="text-[10px]">Inicio</span>
         </Button>
         
         <Button
-          variant={isActive('/mensajes') ? 'default' : 'ghost'}
+          variant="ghost"
           size="sm"
           onClick={() => navigate('/mensajes')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative bg-transparent shadow-none ${isActive('/mensajes') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <div className="relative">
             <MessageCircle className="h-5 w-5" />
@@ -65,10 +65,10 @@ export const NavigationBar = () => {
         </Button>
         
         <Button
-          variant={isActive('/favoritos') ? 'default' : 'ghost'}
+          variant="ghost"
           size="sm"
           onClick={() => navigate('/favoritos')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/favoritos') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
           <span className="text-[10px]">Favoritos</span>
@@ -78,17 +78,17 @@ export const NavigationBar = () => {
           variant="ghost"
           size="sm"
           onClick={handleShare}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none text-muted-foreground"
         >
           <Share2 className="h-5 w-5" />
           <span className="text-[10px]">Compartir</span>
         </Button>
 
         <Button
-          variant={isActive('/dashboard') ? 'default' : 'ghost'}
+          variant="ghost"
           size="sm"
           onClick={() => navigate('/dashboard')}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <LayoutGrid className="h-5 w-5" />
           <span className="text-[10px]">Panel</span>
