@@ -1,7 +1,7 @@
 // Service Worker (PWA)
 // NOTE: Avoid caching Vite /src modules or JS chunks to prevent mixed-version React runtime (black screen).
 
-const CACHE_NAME = 'todocerca-v39-stable';
+const CACHE_NAME = 'todocerca-v40-light-polish';
 
 const PRECACHE_URLS = [
   '/',
