@@ -27,7 +27,7 @@ type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: 
 type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
-  sub_qr_id: string | null;
+  sub_qr_id: string | null; comercio_user_id?: string | null;
 };
 
 function formatNumero(n?: string | null) {
@@ -516,8 +516,10 @@ export default function Qard() {
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
         const ejeMov = mov.filter(m =>
-          !m.sub_qr_id || m.sub_qr_id === titularId ||
-          m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+          !m.comercio_user_id && (
+            !m.sub_qr_id || m.sub_qr_id === titularId ||
+            m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
+          )
         );
         return (
           <Card className="p-4">
