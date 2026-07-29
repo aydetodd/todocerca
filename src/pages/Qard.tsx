@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History, Download } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { downloadCSV } from "@/lib/csvExport";
 
 type SubQR = {
   id: string;
@@ -97,7 +98,7 @@ export default function Qard() {
       supabase.from("profiles").select("qard_number").eq("user_id", user.id).maybeSingle(),
       supabase.from("qard_wallets" as any).select("*").eq("titular_user_id", user.id).maybeSingle(),
       supabase.from("qard_sub_qr" as any).select("*").eq("titular_user_id", user.id).order("sub_index"),
-      supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString()).order("created_at", { ascending: false }).limit(500),
     ]);
     setQardNumber((prof as any)?.qard_number ?? "");
     setWallet(w as any);
