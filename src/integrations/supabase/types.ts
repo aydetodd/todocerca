@@ -6138,6 +6138,7 @@ export type Database = {
         Args: { _nivel2_id: string }
         Returns: string
       }
+      qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
       qard_sub_qr_rotar_cvv: {
         Args: { _nuevo_cvv?: string; _sub_qr_id: string }
         Returns: string

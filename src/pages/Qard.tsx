@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History, Download } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { downloadCSV } from "@/lib/csvExport";
 
 type SubQR = {
   id: string;
@@ -97,7 +98,7 @@ export default function Qard() {
       supabase.from("profiles").select("qard_number").eq("user_id", user.id).maybeSingle(),
       supabase.from("qard_wallets" as any).select("*").eq("titular_user_id", user.id).maybeSingle(),
       supabase.from("qard_sub_qr" as any).select("*").eq("titular_user_id", user.id).order("sub_index"),
-      supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString()).order("created_at", { ascending: false }).limit(500),
     ]);
     setQardNumber((prof as any)?.qard_number ?? "");
     setWallet(w as any);
@@ -512,7 +513,7 @@ export default function Qard() {
         </div>
       </Card>
 
-      {/* Movimientos de la cuenta eje */}
+      {/* Estado de cuenta estilo banco (2 meses) */}
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
         const ejeMov = mov.filter(m =>
@@ -521,45 +522,107 @@ export default function Qard() {
             m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
           )
         );
+        const esPositivo = (t: string) =>
+          t === "recarga" || t === "transfer_desde_sub" || t === "cobro_comercio" || t === "transferencia_p2p_in";
+        const etiqueta = (m: Movimiento) => {
+          const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
+          return m.tipo === "recarga" ? "Recarga" :
+            m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+            m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
+            m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
+            m.tipo === "retiro_qard" ? "Transferencia enviada" :
+            m.tipo === "retiro_oxxo" ? "Retiro en OXXO" :
+            m.tipo === "retiro_spei" ? "Envío SPEI" :
+            m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
+            m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
+            m.tipo;
+        };
+
+        // Saldo corrido: partimos del saldo actual y caminamos hacia atrás
+        let corrido = Number(wallet?.saldo_mxn ?? 0);
+        const filas = ejeMov.map(m => {
+          const signo = esPositivo(m.tipo) ? 1 : -1;
+          const monto = Math.abs(Number(m.monto_mxn)) * signo;
+          const saldoDespues = corrido;
+          corrido = +(corrido - monto).toFixed(2);
+          return { m, monto, saldoDespues: +saldoDespues.toFixed(2), saldoAntes: corrido };
+        });
+
+        const mesLabel = (d: string) =>
+          new Date(d).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+        const meses: { label: string; filas: typeof filas }[] = [];
+        filas.forEach(f => {
+          const lbl = mesLabel(f.m.created_at);
+          const last = meses[meses.length - 1];
+          if (last && last.label === lbl) last.filas.push(f);
+          else meses.push({ label: lbl, filas: [f] });
+        });
+
+        const exportarMes = (label: string, fs: typeof filas) => {
+          downloadCSV(
+            `qard-estado-cuenta-${label.replace(/\s+/g, "-")}.csv`,
+            ["Fecha", "Concepto", "Ingreso", "Egreso", "Saldo"],
+            [
+              ...fs.map(f => [
+                new Date(f.m.created_at).toLocaleString("es-MX"),
+                etiqueta(f.m),
+                f.monto > 0 ? f.monto.toFixed(2) : "",
+                f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "",
+                f.saldoDespues.toFixed(2),
+              ]),
+              ["", "Saldo inicial del mes", "", "", (fs[fs.length - 1]?.saldoAntes ?? 0).toFixed(2)],
+            ]
+          );
+        };
+
         return (
           <Card className="p-4">
-            <div className="font-semibold mb-2">Últimos movimientos · cuenta eje</div>
-            {ejeMov.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
-            <div className="space-y-2">
-              {ejeMov.map(m => {
-                const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
-                const label =
-                  m.tipo === "recarga" ? "Recarga" :
-                  m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
-                  m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
-                  m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
-                  m.tipo === "retiro_qard" ? "Transferencia enviada" :
-                  m.tipo === "retiro_oxxo" ? "Retiro en OXXO" :
-                  m.tipo === "retiro_spei" ? "Envío SPEI" :
-                  m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
-                  m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
-                  m.tipo;
-                const positivo =
-                  m.tipo === "recarga" ||
-                  m.tipo === "transfer_desde_sub" ||
-                  m.tipo === "cobro_comercio" ||
-                  m.tipo === "transferencia_p2p_in";
-                return (
-                  <div key={m.id} className="flex justify-between text-sm border-b pb-1">
-                    <div>
-                      <div className="font-medium">{label}</div>
-                      <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+            <div className="font-semibold mb-1">Estado de cuenta · cuenta eje</div>
+            <div className="text-xs text-muted-foreground mb-3">
+              Se guardan los movimientos de los últimos 2 meses. Descarga tu CSV cada mes para conservarlo.
+            </div>
+            {filas.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
+
+            {meses.map(mes => (
+              <div key={mes.label} className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold capitalize">{mes.label}</div>
+                  <Button size="sm" variant="outline" onClick={() => exportarMes(mes.label, mes.filas)}>
+                    <Download className="h-4 w-4 mr-1" /> CSV
+                  </Button>
+                </div>
+                <div className="divide-y">
+                  {mes.filas.map(f => (
+                    <div key={f.m.id} className="flex justify-between items-center gap-2 py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{etiqueta(f.m)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(f.m.created_at).toLocaleString("es-MX")}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>
+                          {f.monto > 0 ? "+" : "−"}${Math.abs(f.monto).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Saldo ${f.saldoDespues.toFixed(2)}
+                        </div>
+                      </div>
                     </div>
-                    <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
-                      {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
+                  ))}
+                  <div className="flex justify-between items-center py-2 text-sm">
+                    <div className="text-muted-foreground">Saldo inicial del mes</div>
+                    <div className="font-semibold">
+                      ${(mes.filas[mes.filas.length - 1]?.saldoAntes ?? 0).toFixed(2)}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            ))}
           </Card>
         );
       })()}
+
 
       {/* Dialog: movimientos de un sub-QR */}
       <Dialog open={!!subMovOpen} onOpenChange={(o) => !o && setSubMovOpen(null)}>
