@@ -11,6 +11,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadCSV } from "@/lib/csvExport";
+import todocercaLogo from "@/assets/todocerca-icon-512.png";
+
 
 type SubQR = {
   id: string;
