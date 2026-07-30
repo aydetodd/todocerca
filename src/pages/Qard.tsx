@@ -229,84 +229,132 @@ export default function Qard() {
         <Button variant="ghost" size="icon" className="ml-auto" onClick={cargar}><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
-      {/* Tarjeta titular */}
+      {/* Tarjeta titular — estilo bancario real */}
       {(() => {
         const titular = subs.find(s => s.sub_index === 0);
+        const digits = (qardNumber || "").replace(/\D/g, "");
+        const grupos = digits.length === 16
+          ? [digits.slice(0,4), digits.slice(4,8), digits.slice(8,12), digits.slice(12,16)]
+          : ["••••","••••","••••","••••"];
         return (
-          <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
-            <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-              <CreditCard className="h-4 w-4" /> Tarjeta principal (00)
-            </div>
-            <div className="font-mono text-xl tracking-wider mb-3">{formatNumero(qardNumber)}</div>
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <div className="text-xs text-muted-foreground">Saldo</div>
-                <div className={saldoColor}>${saldo.toFixed(2)}</div>
-                {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
-                <div className="flex gap-4 mt-2 text-xs">
-                  <div>
-                    <div className="text-muted-foreground">Vence</div>
-                    <div className="font-mono font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">CVV compras</div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-lg text-amber-600 tracking-wider">
-                        {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
-                      </span>
-                      {titular && (
-                        <>
-                          <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
-                            {cvvVisible[titular.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                          <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
-                            <RotateCw className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+          <div className="space-y-3">
+            {/* Plástico */}
+            <div
+              className="relative overflow-hidden rounded-2xl p-5 text-white shadow-xl"
+              style={{
+                background: "linear-gradient(135deg, hsl(215 40% 14%) 0%, hsl(215 35% 22%) 45%, hsl(16 100% 38%) 100%)",
+                aspectRatio: "1.586 / 1",
+                minHeight: 210,
+              }}
+            >
+              {/* brillo diagonal */}
+              <div className="pointer-events-none absolute -top-16 -left-10 h-48 w-72 rotate-12 rounded-full bg-white/10 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-20 -right-10 h-52 w-72 rounded-full bg-white/5 blur-2xl" />
+
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
+                  <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
+                </div>
+                {qardNumber && (
+                  <button
+                    className="bg-white p-1.5 rounded-md active:scale-95 transition"
+                    onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
+                    title="Toca para agrandar y pagar"
+                  >
+                    <QRCodeSVG value={qardNumber} size={54} level="H" />
+                  </button>
+                )}
+              </div>
+
+              {/* Chip + contactless */}
+              <div className="relative mt-3 flex items-center gap-3">
+                <div
+                  className="h-8 w-11 rounded-md border border-yellow-200/40"
+                  style={{ background: "linear-gradient(135deg,#e6c565,#b9902f 45%,#f3dc9a 70%,#c9a13f)" }}
+                >
+                  <div className="h-full w-full rounded-md border-x border-yellow-900/20 opacity-60" />
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="opacity-80">
+                  <path d="M6 8a8 8 0 0 1 0 8M10 6a12 12 0 0 1 0 12M14 4a16 16 0 0 1 0 16" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </div>
+
+              {/* Número grabado */}
+              <div className="relative mt-3 flex justify-between font-mono text-[19px] tracking-[0.12em] [text-shadow:0_1px_0_rgba(0,0,0,.45)]">
+                {grupos.map((g, i) => <span key={i}>{g}</span>)}
+              </div>
+
+              {/* Pie de tarjeta */}
+              <div className="relative mt-3 flex items-end justify-between">
+                <div>
+                  <div className="text-[8px] uppercase tracking-widest text-white/50">Titular</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide truncate max-w-[150px]">
+                    {titular?.alias || "TITULAR QaRd"}
                   </div>
                 </div>
-                {wallet?.cvv_dinamico && (
-                  <div className="mt-2">
-                    <div className="text-xs text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-extrabold text-primary text-2xl tracking-widest">
-                        {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
-                      </span>
-                      <button onClick={() => setCvvDinVisible(v => !v)}>
-                        {cvvDinVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                      <span className="text-[10px] text-muted-foreground">Cambia tras cada transferencia recibida</span>
-                    </div>
+                <div className="text-right">
+                  <div className="text-[8px] uppercase tracking-widest text-white/50">Vence</div>
+                  <div className="font-mono text-xs font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[8px] uppercase tracking-widest text-white/50">CVV</div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-xs font-bold tracking-widest">
+                      {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
+                    </span>
+                    {titular && (
+                      <>
+                        <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
+                          {cvvVisible[titular.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                        <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
+                          <RotateCw className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
-                )}
- 
+                </div>
               </div>
-              {qardNumber && (
-                <button
-                  className="bg-white p-2 rounded-lg cursor-pointer active:scale-95 transition"
-                  onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
-                  title="Toca para agrandar y pagar"
-                >
-                  <QRCodeSVG value={qardNumber} size={96} level="H" />
-                </button>
-              )}
             </div>
-            {qardNumber && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mt-3"
-                onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99")}
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir tarjetas (PDF · 4 por hoja)
-              </Button>
-            )}
-          </Card>
+
+            {/* Datos debajo del plástico */}
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground">Saldo</div>
+              <div className={saldoColor}>${saldo.toFixed(2)}</div>
+              {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
+
+              {wallet?.cvv_dinamico && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground">CVV dinámico (para recibir transferencias)</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-primary text-2xl tracking-widest">
+                      {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
+                    </span>
+                    <button onClick={() => setCvvDinVisible(v => !v)}>
+                      {cvvDinVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">Cambia tras cada transferencia recibida</span>
+                  </div>
+                </div>
+              )}
+
+              {qardNumber && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3"
+                  onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99")}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir tarjetas (PDF · 4 por hoja)
+                </Button>
+              )}
+            </Card>
+          </div>
         );
       })()}
+
 
       {/* Recargar */}
       <Card className="p-4">
