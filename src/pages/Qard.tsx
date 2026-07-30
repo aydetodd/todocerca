@@ -252,10 +252,18 @@ export default function Qard() {
               <div className="pointer-events-none absolute -bottom-20 -right-10 h-52 w-72 rounded-full bg-white/5 blur-2xl" />
 
               <div className="relative flex items-start justify-between">
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
-                  <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={todocercaLogo}
+                    alt="Logotipo TodoCerca"
+                    className="h-9 w-9 rounded-lg object-cover shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+                  />
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
+                    <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
+                  </div>
                 </div>
+
                 {qardNumber && (
                   <button
                     className="bg-white p-1.5 rounded-md active:scale-95 transition"
