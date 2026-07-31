@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { MapPin, User, RefreshCw, Eye, EyeOff } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
