@@ -11,7 +11,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadCSV } from "@/lib/csvExport";
-import todocercaLogo from "@/assets/todocerca-icon-512.png";
+import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
+const todocercaLogo = todocercaLogoAsset.url;
 
 
 type SubQR = {
@@ -258,8 +259,9 @@ export default function Qard() {
                   <img
                     src={todocercaLogo}
                     alt="Logotipo TodoCerca"
-                    className="h-9 w-9 rounded-lg object-cover shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+                    className="h-11 w-11 rounded-full bg-white object-cover shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
                   />
+
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
                     <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
