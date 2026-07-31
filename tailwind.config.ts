@@ -67,10 +67,12 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
+      boxShadow: {
+        soft: "var(--shadow-sm)",
+        card: "var(--shadow-card)",
+        elevated: "var(--shadow-elevated)",
+        button: "var(--shadow-button)",
+      },
           },
           to: {
             height: "var(--radix-accordion-content-height)",
