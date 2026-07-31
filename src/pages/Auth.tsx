@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { MapPin, User, RefreshCw, Eye, EyeOff } from "lucide-react";
 import ProviderRegistration from "@/components/ProviderRegistration";
 import PasswordRecovery from "@/components/PasswordRecovery";
@@ -641,6 +642,9 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
