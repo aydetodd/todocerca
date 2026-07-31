@@ -73,10 +73,10 @@ export default {
         elevated: "var(--shadow-elevated)",
         button: "var(--shadow-button)",
       },
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
           from: {
