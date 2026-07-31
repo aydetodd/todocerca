@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import { useProviderStatus } from '@/hooks/useProviderStatus';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface GlobalHeaderProps {
   title?: string;
