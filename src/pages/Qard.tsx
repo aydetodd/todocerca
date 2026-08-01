@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History, Download } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History, Download, Receipt } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -367,6 +367,17 @@ export default function Qard() {
         );
       })()}
 
+
+      {/* Pagar servicios */}
+      <Card className="p-4">
+        <div className="font-semibold mb-1">Pagar servicios</div>
+        <div className="text-xs text-muted-foreground mb-3">
+          Luz, agua, gas, internet y predial con tu saldo QaRd.
+        </div>
+        <Button variant="outline" className="w-full" onClick={() => nav("/qard/servicios")}>
+          <Receipt className="h-4 w-4 mr-2" /> Ir a pagar servicios
+        </Button>
+      </Card>
 
       {/* Recargar */}
       <Card className="p-4">

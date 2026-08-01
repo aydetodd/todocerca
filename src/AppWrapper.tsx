@@ -49,6 +49,7 @@ import QrBoletos from "./pages/QrBoletos";
 import WalletFamiliar from "./pages/WalletFamiliar";
 import Qard from "./pages/Qard";
 import QardCobrar from "./pages/QardCobrar";
+import QardServicios from "./pages/QardServicios";
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
@@ -186,6 +187,7 @@ export default function AppWrapper() {
           {/* QaRd — Billetera universal */}
           <Route path="/qard" element={<Qard />} />
           <Route path="/qard/cobrar" element={<QardCobrar />} />
+          <Route path="/qard/servicios" element={<QardServicios />} />
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
           <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
           <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
