@@ -49,6 +49,7 @@ import QrBoletos from "./pages/QrBoletos";
 import WalletFamiliar from "./pages/WalletFamiliar";
 import Qard from "./pages/Qard";
 import QardCobrar from "./pages/QardCobrar";
+import QardServicios from "./pages/QardServicios";
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
