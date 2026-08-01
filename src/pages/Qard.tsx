@@ -368,6 +368,17 @@ export default function Qard() {
       })()}
 
 
+      {/* Pagar servicios */}
+      <Card className="p-4">
+        <div className="font-semibold mb-1">Pagar servicios</div>
+        <div className="text-xs text-muted-foreground mb-3">
+          Luz, agua, gas, internet y predial con tu saldo QaRd.
+        </div>
+        <Button variant="outline" className="w-full" onClick={() => nav("/qard/servicios")}>
+          <Receipt className="h-4 w-4 mr-2" /> Ir a pagar servicios
+        </Button>
+      </Card>
+
       {/* Recargar */}
       <Card className="p-4">
         <div className="font-semibold mb-2">Recargar saldo</div>
