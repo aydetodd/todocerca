@@ -3182,6 +3182,91 @@ export type Database = {
           },
         ]
       }
+      qard_pagos_servicio: {
+        Row: {
+          comision_mxn: number
+          created_at: string
+          error_msg: string | null
+          estado: string
+          id: string
+          idempotency_key: string
+          metadata: Json
+          monto_mxn: number
+          movimiento_id: string | null
+          proveedor: string
+          proveedor_transfer_id: string | null
+          referencia: string
+          servicio_id: string
+          servicio_nombre: string
+          total_mxn: number
+          updated_at: string
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          comision_mxn?: number
+          created_at?: string
+          error_msg?: string | null
+          estado?: string
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          monto_mxn: number
+          movimiento_id?: string | null
+          proveedor?: string
+          proveedor_transfer_id?: string | null
+          referencia: string
+          servicio_id: string
+          servicio_nombre: string
+          total_mxn: number
+          updated_at?: string
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          comision_mxn?: number
+          created_at?: string
+          error_msg?: string | null
+          estado?: string
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          monto_mxn?: number
+          movimiento_id?: string | null
+          proveedor?: string
+          proveedor_transfer_id?: string | null
+          referencia?: string
+          servicio_id?: string
+          servicio_nombre?: string
+          total_mxn?: number
+          updated_at?: string
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_pagos_servicio_movimiento_id_fkey"
+            columns: ["movimiento_id"]
+            isOneToOne: false
+            referencedRelation: "qard_movimientos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qard_pagos_servicio_servicio_id_fkey"
+            columns: ["servicio_id"]
+            isOneToOne: false
+            referencedRelation: "qard_servicios_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qard_pagos_servicio_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "qard_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qard_secuencia_municipio: {
         Row: {
           ee: string
@@ -3200,6 +3285,66 @@ export type Database = {
           mmm?: string
           next_id?: number
           pp?: string
+        }
+        Relationships: []
+      }
+      qard_servicios_catalogo: {
+        Row: {
+          activo: boolean
+          banco_nombre: string | null
+          categoria: string
+          clabe_destino: string | null
+          comision_fija_mxn: number
+          created_at: string
+          icono: string
+          id: string
+          monto_max_mxn: number
+          monto_min_mxn: number
+          nombre: string
+          orden: number
+          referencia_label: string
+          referencia_max_len: number
+          referencia_min_len: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          banco_nombre?: string | null
+          categoria?: string
+          clabe_destino?: string | null
+          comision_fija_mxn?: number
+          created_at?: string
+          icono?: string
+          id?: string
+          monto_max_mxn?: number
+          monto_min_mxn?: number
+          nombre: string
+          orden?: number
+          referencia_label?: string
+          referencia_max_len?: number
+          referencia_min_len?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          banco_nombre?: string | null
+          categoria?: string
+          clabe_destino?: string | null
+          comision_fija_mxn?: number
+          created_at?: string
+          icono?: string
+          id?: string
+          monto_max_mxn?: number
+          monto_min_mxn?: number
+          nombre?: string
+          orden?: number
+          referencia_label?: string
+          referencia_max_len?: number
+          referencia_min_len?: number
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -6138,7 +6283,21 @@ export type Database = {
         Args: { _nivel2_id: string }
         Returns: string
       }
+      qard_pagar_servicio: {
+        Args: {
+          _idem: string
+          _monto: number
+          _referencia: string
+          _servicio_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
+      qard_revertir_pago_servicio: {
+        Args: { _motivo: string; _pago_id: string }
+        Returns: Json
+      }
       qard_sub_qr_rotar_cvv: {
         Args: { _nuevo_cvv?: string; _sub_qr_id: string }
         Returns: string
