@@ -136,3 +136,6 @@ verify_jwt = false
 [functions.retirar-viajes-concesionario]
 verify_jwt = false
 
+[functions.qard-pagar-servicio]
+verify_jwt = false
+
