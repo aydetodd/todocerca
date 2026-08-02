@@ -30,7 +30,7 @@ export default function Index() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <ShoppingCart className="h-8 w-8 text-primary" />
+            <BrandIcon className="h-9 w-9" />
             <span className="text-xl font-bold">ToDoCerca</span>
           </div>
           <div className="flex gap-2">
