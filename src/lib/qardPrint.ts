@@ -222,13 +222,35 @@ export async function generarPdfTarjetasQard(
     { align: "center" }
   );
 
+  const filename = `QaRd-${qardNumber || "tarjetas"}.pdf`;
   const blob = doc.output("blob");
+
+  // 1) Móvil (iOS/Android): compartir/guardar el archivo con la hoja nativa
+  try {
+    const nav: any = navigator;
+    const file = new File([blob], filename, { type: "application/pdf" });
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      await nav.share({ files: [file], title: filename });
+      return;
+    }
+  } catch {
+    // si el usuario cancela o falla, seguimos con la descarga normal
+  }
+
+  // 2) Escritorio: descarga directa
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `QaRd-${qardNumber || "tarjetas"}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch {
+    window.open(url, "_blank");
+  }
+
+  // 3) Fallback: abrir en pestaña nueva si el navegador bloquea la descarga
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
 }
