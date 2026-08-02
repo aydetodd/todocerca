@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
 import { useProviderStatus } from '@/hooks/useProviderStatus';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BrandIcon } from '@/components/BrandIcon';
 
 interface GlobalHeaderProps {
   title?: string;
@@ -16,9 +16,10 @@ export const GlobalHeader = ({ title = "TodoCerca", children }: GlobalHeaderProp
     <header className="app-header border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/home')}>
-          <MapPin className="h-7 w-7 text-primary" />
+          <BrandIcon className="h-8 w-8" />
           <h1 className="text-[28px] leading-none font-bold text-foreground">{title}</h1>
         </div>
+
 
         <div className="flex items-center gap-3">
           {children}
