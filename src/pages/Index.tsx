@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search, Users, ShoppingCart, Package, Wrench } from 'lucide-react';
 import heroBackground from '@/assets/hero-gradient-background.jpg';
+import { BrandIcon } from '@/components/BrandIcon';
 
 export default function Index() {
   const navigate = useNavigate();
