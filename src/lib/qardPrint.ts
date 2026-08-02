@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 // ISO/IEC 7810 ID-1: 85.60 × 53.98 mm
 const CARD_W = 85.6;
 const CARD_H = 53.98;
-const FOLD_H = CARD_H * 2; // doble altura para doblar (frente + reverso)
+const FOLD_H = CARD_H * 2; // frente + reverso (se dobla a la mitad)
 
 function formatNumero(n: string) {
   const d = (n || "").replace(/\D/g, "").padEnd(16, "0").slice(0, 16);
@@ -35,13 +35,128 @@ function dashedLine(
   }
 }
 
+// Degradado horizontal (azul oscuro → naranja) simulado con franjas finas
+function gradientRect(doc: jsPDF, x: number, y: number, w: number, h: number) {
+  const from = [13, 23, 38];
+  const to = [199, 74, 16];
+  const steps = 120;
+  const sw = w / steps;
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    doc.setFillColor(
+      Math.round(from[0] + (to[0] - from[0]) * t),
+      Math.round(from[1] + (to[1] - from[1]) * t),
+      Math.round(from[2] + (to[2] - from[2]) * t)
+    );
+    doc.rect(x + i * sw, y, sw + 0.15, h, "F");
+  }
+}
+
+// Devuelve el QR ya girado 180° como PNG dataURL
+async function qrDataUrl(value: string, rotated: boolean) {
+  const url = await QRCode.toDataURL(value, {
+    errorCorrectionLevel: "H",
+    margin: 0,
+    width: 700,
+    color: { dark: "#000000", light: "#FFFFFF" },
+  });
+  if (!rotated) return url;
+  return await new Promise<string>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.translate(c.width / 2, c.height / 2);
+      ctx.rotate(Math.PI);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(url);
+    img.src = url;
+  });
+}
+
 async function drawCard(
   doc: jsPDF,
   x: number,
   y: number,
-  opts: { qardNumber: string; vencimiento: string; alias?: string | null }
+  opts: {
+    qardNumber: string;
+    vencimiento: string;
+    alias?: string | null;
+    qrFront: string;
+    qrBack: string;
+  }
 ) {
-  const { qardNumber, vencimiento, alias } = opts;
+  const { qardNumber, vencimiento, alias, qrBack } = opts;
+
+  // ================= FRENTE (mitad superior) — tarjeta como en la app =================
+  gradientRect(doc, x, y, CARD_W, CARD_H);
+
+  // Marca
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("QaRd", x + 6, y + 11);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(215, 220, 230);
+  doc.text(alias ? String(alias).toUpperCase() : "TARJETA PRINCIPAL", x + 6, y + 15.5);
+
+  // Chip dorado
+  doc.setFillColor(212, 175, 55);
+  doc.roundedRect(x + 6, y + 20, 11, 8.5, 1.4, 1.4, "F");
+  doc.setDrawColor(160, 128, 30);
+  doc.setLineWidth(0.2);
+  doc.line(x + 6, y + 24.2, x + 17, y + 24.2);
+  doc.line(x + 11.5, y + 20, x + 11.5, y + 28.5);
+
+  // Contactless (arcos simulados)
+  doc.setDrawColor(255, 255, 255);
+  for (let i = 1; i <= 3; i++) {
+    doc.setLineWidth(0.35);
+    doc.circle(x + 20.5, y + 24.2, i * 1.5);
+  }
+
+  // Número 16 dígitos
+  doc.setFont("courier", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text(formatNumero(qardNumber), x + CARD_W / 2, y + 38, { align: "center" });
+
+  // Titular / Vence
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5.5);
+  doc.setTextColor(200, 206, 216);
+  doc.text("TITULAR", x + 6, y + 45);
+  doc.text("VENCE", x + CARD_W - 6, y + 45, { align: "right" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 22), x + 6, y + 49.5);
+  doc.setFont("courier", "bold");
+  doc.text(vencimiento || "12/99", x + CARD_W - 6, y + 49.5, { align: "right" });
+
+  // ================= REVERSO (mitad inferior) — solo QR grande de cabeza =================
+  const backTop = y + CARD_H;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(x, backTop, CARD_W, CARD_H, "F");
+
+  const qrSize = 42;
+  doc.addImage(
+    qrBack,
+    "PNG",
+    x + (CARD_W - qrSize) / 2,
+    backTop + (CARD_H - qrSize) / 2,
+    qrSize,
+    qrSize
+  );
 
   // ============ Bordes: cortar (punteado fino) ============
   doc.setDrawColor(150);
@@ -54,86 +169,6 @@ async function drawCard(
   // ============ Doblez (a la mitad) ============
   doc.setDrawColor(90);
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
-
-  // ================= FRENTE (mitad superior) =================
-  // QR grande centrado, número debajo, vigencia debajo
-  const qrSizeMm = 32;
-  const qrX = x + (CARD_W - qrSizeMm) / 2;
-  const qrY = y + 3.5;
-
-  const qrDataUrl = await QRCode.toDataURL(qardNumber, {
-    errorCorrectionLevel: "H",
-    margin: 0,
-    width: 512,
-    color: { dark: "#000000", light: "#FFFFFF" },
-  });
-  doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSizeMm, qrSizeMm);
-
-  // Número 16 dígitos
-  doc.setTextColor(0);
-  doc.setFont("courier", "bold");
-  doc.setFontSize(11);
-  doc.text(formatNumero(qardNumber), x + CARD_W / 2, qrY + qrSizeMm + 5, {
-    align: "center",
-  });
-
-  // Vigencia
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(90);
-  doc.text("VIGENCIA", x + CARD_W / 2, qrY + qrSizeMm + 9.5, { align: "center" });
-  doc.setFont("courier", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0);
-  doc.text(vencimiento || "12/99", x + CARD_W / 2, qrY + qrSizeMm + 13.5, {
-    align: "center",
-  });
-
-  // ================= REVERSO (mitad inferior, IMPRESO DE CABEZA) =================
-  // Al doblar hacia atrás, el texto rotado 180° queda derecho y centrado.
-  // Coordenadas físicas del reverso: y + CARD_H .. y + FOLD_H
-  // Con angle:180, el punto (bx, by) corresponde visualmente a la esquina
-  // opuesta cuando ya está doblado. Para centrar verticalmente en la mitad
-  // inferior, usamos el centro físico de esa mitad.
-  const backCenterX = x + CARD_W / 2;
-  const backTop = y + CARD_H;         // borde físico superior del reverso (= pliegue)
-  const backBottom = y + FOLD_H;      // borde físico inferior del reverso
-  const backMidY = (backTop + backBottom) / 2;
-
-  // Con angle 180, "hacia abajo" en Y se percibe "hacia arriba" al doblar.
-  // Colocamos las 3 líneas centradas respecto a backMidY.
-  // Orden visual (ya doblado, de arriba a abajo): QaRd → Saldo Digital → todocerca.mx
-  // Como está rotado 180°, en Y físico el orden se invierte:
-  //   físicamente arriba (backMidY - offset) = visualmente abajo
-  //   físicamente abajo  (backMidY + offset) = visualmente arriba
-
-  // QaRd (grande) — visualmente arriba → físicamente abajo del centro
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.setTextColor(20);
-  doc.text("QaRd", backCenterX, backMidY + 4.5, {
-    align: "center",
-    angle: 180,
-  });
-
-  // Saldo Digital (mediano) — visualmente medio
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.setTextColor(60);
-  doc.text("Saldo Digital", backCenterX, backMidY - 3.5, {
-    align: "center",
-    angle: 180,
-  });
-
-  // todocerca.mx (chico) — visualmente abajo → físicamente arriba del centro
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(110);
-  doc.text("todocerca.mx", backCenterX, backMidY - 6.5, {
-    align: "center",
-    angle: 180,
-  });
-
 }
 
 export async function generarPdfTarjetasQard(
@@ -154,6 +189,9 @@ export async function generarPdfTarjetasQard(
   const originX = (pageW - totalW) / 2;
   const originY = (pageH - totalH) / 2;
 
+  const qrFront = await qrDataUrl(qardNumber, false);
+  const qrBack = await qrDataUrl(qardNumber, true);
+
   // Encabezado
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -169,7 +207,7 @@ export async function generarPdfTarjetasQard(
     for (let c = 0; c < cols; c++) {
       const x = originX + c * (CARD_W + gapX);
       const y = originY + r * (FOLD_H + gapY);
-      await drawCard(doc, x, y, { qardNumber, vencimiento, alias });
+      await drawCard(doc, x, y, { qardNumber, vencimiento, alias, qrFront, qrBack });
     }
   }
 
