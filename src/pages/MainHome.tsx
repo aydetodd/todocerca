@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import DriverProfilePanel from '@/components/DriverProfilePanel';
+import { BrandIcon } from '@/components/BrandIcon';
 
 export default function MainHome() {
   const navigate = useNavigate();
