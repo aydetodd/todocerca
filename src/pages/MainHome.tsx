@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import DriverProfilePanel from '@/components/DriverProfilePanel';
+import { BrandIcon } from '@/components/BrandIcon';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -40,7 +41,8 @@ export default function MainHome() {
     <div className="min-h-screen bg-background pb-40">
       {/* Header simple */}
       <header className="bg-primary/5 border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-center gap-2">
+          <BrandIcon className="h-8 w-8" />
           <h1 className="text-2xl font-bold text-foreground text-center">TodoCerca</h1>
         </div>
       </header>
