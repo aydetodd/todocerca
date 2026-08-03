@@ -1,10 +1,12 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
 
 // ISO/IEC 7810 ID-1: 85.60 × 53.98 mm
 const CARD_W = 85.6;
 const CARD_H = 53.98;
 const FOLD_H = CARD_H * 2; // frente + reverso (se dobla a la mitad)
+
 
 function formatNumero(n: string) {
   const d = (n || "").replace(/\D/g, "").padEnd(16, "0").slice(0, 16);
