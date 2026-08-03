@@ -269,7 +269,7 @@ export default function Qard() {
                 </div>
 
                 {qardNumber && (
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center">
                     <button
                       className="bg-white p-1.5 rounded-md active:scale-95 transition"
                       onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
@@ -277,30 +277,34 @@ export default function Qard() {
                     >
                       <QRCodeSVG value={qardNumber} size={54} level="H" />
                     </button>
-                    <button
-                      className="rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
-                      title="Imprimir tarjetas"
-                      aria-label="Imprimir tarjetas"
-                      onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99", titular?.alias)}
-                    >
-                      <Printer className="h-4 w-4" />
-                    </button>
                   </div>
                 )}
               </div>
 
 
               {/* Chip + contactless */}
-              <div className="relative mt-3 flex items-center gap-3">
-                <div
-                  className="h-8 w-11 rounded-md border border-yellow-200/40"
-                  style={{ background: "linear-gradient(135deg,#e6c565,#b9902f 45%,#f3dc9a 70%,#c9a13f)" }}
-                >
-                  <div className="h-full w-full rounded-md border-x border-yellow-900/20 opacity-60" />
+              <div className="relative mt-3 flex h-8 items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-8 w-11 rounded-md border border-yellow-200/40"
+                    style={{ background: "linear-gradient(135deg,#e6c565,#b9902f 45%,#f3dc9a 70%,#c9a13f)" }}
+                  >
+                    <div className="h-full w-full rounded-md border-x border-yellow-900/20 opacity-60" />
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="opacity-80">
+                    <path d="M6 8a8 8 0 0 1 0 8M10 6a12 12 0 0 1 0 12M14 4a16 16 0 0 1 0 16" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
                 </div>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="opacity-80">
-                  <path d="M6 8a8 8 0 0 1 0 8M10 6a12 12 0 0 1 0 12M14 4a16 16 0 0 1 0 16" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
+                {qardNumber && (
+                  <button
+                    className="mr-[19px] rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
+                    title="Imprimir tarjetas"
+                    aria-label="Imprimir tarjetas"
+                    onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99", titular?.alias)}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               {/* Número grabado */}
