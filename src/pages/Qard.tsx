@@ -269,15 +269,26 @@ export default function Qard() {
                 </div>
 
                 {qardNumber && (
-                  <button
-                    className="bg-white p-1.5 rounded-md active:scale-95 transition"
-                    onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
-                    title="Toca para agrandar y pagar"
-                  >
-                    <QRCodeSVG value={qardNumber} size={54} level="H" />
-                  </button>
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      className="bg-white p-1.5 rounded-md active:scale-95 transition"
+                      onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
+                      title="Toca para agrandar y pagar"
+                    >
+                      <QRCodeSVG value={qardNumber} size={54} level="H" />
+                    </button>
+                    <button
+                      className="rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
+                      title="Imprimir tarjetas"
+                      aria-label="Imprimir tarjetas"
+                      onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99", titular?.alias)}
+                    >
+                      <Printer className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
               </div>
+
 
               {/* Chip + contactless */}
               <div className="relative mt-3 flex items-center gap-3">
