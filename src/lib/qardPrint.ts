@@ -37,18 +37,23 @@ function dashedLine(
   }
 }
 
-// Degradado horizontal (azul oscuro → naranja) simulado con franjas finas
+// Degradado diagonal visualmente equivalente al plástico mostrado en la app.
 function gradientRect(doc: jsPDF, x: number, y: number, w: number, h: number) {
   const from = [13, 23, 38];
-  const to = [199, 74, 16];
+  const middle = [36, 53, 76];
+  const to = [194, 52, 0];
   const steps = 120;
   const sw = w / steps;
   for (let i = 0; i < steps; i++) {
     const t = i / (steps - 1);
+    const firstHalf = t <= 0.45;
+    const localT = firstHalf ? t / 0.45 : (t - 0.45) / 0.55;
+    const start = firstHalf ? from : middle;
+    const end = firstHalf ? middle : to;
     doc.setFillColor(
-      Math.round(from[0] + (to[0] - from[0]) * t),
-      Math.round(from[1] + (to[1] - from[1]) * t),
-      Math.round(from[2] + (to[2] - from[2]) * t)
+      Math.round(start[0] + (end[0] - start[0]) * localT),
+      Math.round(start[1] + (end[1] - start[1]) * localT),
+      Math.round(start[2] + (end[2] - start[2]) * localT)
     );
     doc.rect(x + i * sw, y, sw + 0.15, h, "F");
   }
@@ -134,7 +139,7 @@ async function drawCard(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(200, 208, 220);
-  doc.text(alias ? String(alias) : "Tarjeta principal · 00", logoX + logoD + 3.5, y + 13.5);
+  doc.text("Tarjeta principal · 00", logoX + logoD + 3.5, y + 13.5);
 
   // QR pequeño arriba a la derecha (como en el teléfono)
   const miniQr = 15;
@@ -150,18 +155,18 @@ async function drawCard(
   doc.line(x + 6, y + 24.2, x + 17, y + 24.2);
   doc.line(x + 11.5, y + 20, x + 11.5, y + 28.5);
 
-  // Contactless (arcos simulados)
+  // Contactless, alineado al centro vertical del chip.
   doc.setDrawColor(255, 255, 255);
-  for (let i = 1; i <= 3; i++) {
-    doc.setLineWidth(0.35);
-    doc.circle(x + 20.5, y + 24.2, i * 1.5);
-  }
+  doc.setLineWidth(0.35);
+  doc.line(x + 20.2, y + 22.4, x + 20.2, y + 26.0);
+  doc.line(x + 22.0, y + 21.5, x + 22.0, y + 26.9);
+  doc.line(x + 23.8, y + 20.6, x + 23.8, y + 27.8);
 
   // Número 16 dígitos
   doc.setFont("courier", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
-  doc.text(formatNumero(qardNumber), x + CARD_W / 2, y + 38, { align: "center" });
+  doc.text(formatNumero(qardNumber), x + CARD_W / 2, y + 38.2, { align: "center" });
 
   // Pie: TITULAR / VENCE / CVV
   doc.setFont("helvetica", "normal");
