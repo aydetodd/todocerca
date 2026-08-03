@@ -826,8 +826,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
               </div>
               <div className="p-2 rounded-md bg-muted/40 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase">Comisión 6%</p>
-                <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">
+                  {retiroMetodo === "spei" ? "Comisión 3%" : retiroMetodo === "qard" ? "Sin comisión" : "Comisión"}
+                </p>
+                <p className="text-sm font-bold text-muted-foreground">
+                  {retiroMetodo === "oxxo" ? "Por definir" : `−${fmtMoney(comisionDisponible)}`}
+                </p>
               </div>
               <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
                 <p className="text-[10px] uppercase opacity-90">Recibes</p>
