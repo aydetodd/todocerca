@@ -82,6 +82,21 @@ async function qrDataUrl(value: string, rotated: boolean) {
   });
 }
 
+async function loadLogo(): Promise<string | null> {
+  try {
+    const res = await fetch((todocercaLogoAsset as any).url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function drawCard(
   doc: jsPDF,
   x: number,
@@ -92,23 +107,40 @@ async function drawCard(
     alias?: string | null;
     qrFront: string;
     qrBack: string;
+    logo: string | null;
   }
 ) {
-  const { qardNumber, vencimiento, alias, qrBack } = opts;
+  const { qardNumber, vencimiento, alias, qrFront, qrBack, logo } = opts;
 
-  // ================= FRENTE (mitad superior) — tarjeta como en la app =================
+  // ================= FRENTE (mitad superior) — idéntico a la app =================
   gradientRect(doc, x, y, CARD_W, CARD_H);
 
-  // Marca
+  // Logo circular blanco
+  const logoD = 11;
+  const logoX = x + 6;
+  const logoY = y + 5;
+  doc.setFillColor(255, 255, 255);
+  doc.circle(logoX + logoD / 2, logoY + logoD / 2, logoD / 2, "F");
+  if (logo) {
+    doc.addImage(logo, "JPEG", logoX + 0.9, logoY + 0.9, logoD - 1.8, logoD - 1.8);
+  }
+
+  // Marca "Q A R D" + subtítulo
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("QaRd", x + 6, y + 11);
+  doc.setFontSize(9);
+  doc.text("Q A R D", logoX + logoD + 3.5, y + 9.5);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(215, 220, 230);
-  doc.text(alias ? String(alias).toUpperCase() : "TARJETA PRINCIPAL", x + 6, y + 15.5);
+  doc.setFontSize(6);
+  doc.setTextColor(200, 208, 220);
+  doc.text(alias ? String(alias) : "Tarjeta principal · 00", logoX + logoD + 3.5, y + 13.5);
+
+  // QR pequeño arriba a la derecha (como en el teléfono)
+  const miniQr = 15;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(x + CARD_W - miniQr - 7.4, y + 3.6, miniQr + 2.8, miniQr + 2.8, 1, 1, "F");
+  doc.addImage(qrFront, "PNG", x + CARD_W - miniQr - 6, y + 5, miniQr, miniQr);
 
   // Chip dorado
   doc.setFillColor(212, 175, 55);
@@ -131,19 +163,22 @@ async function drawCard(
   doc.setTextColor(255, 255, 255);
   doc.text(formatNumero(qardNumber), x + CARD_W / 2, y + 38, { align: "center" });
 
-  // Titular / Vence
+  // Pie: TITULAR / VENCE / CVV
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.5);
   doc.setTextColor(200, 206, 216);
   doc.text("TITULAR", x + 6, y + 45);
-  doc.text("VENCE", x + CARD_W - 6, y + 45, { align: "right" });
+  doc.text("VENCE", x + CARD_W / 2, y + 45, { align: "center" });
+  doc.text("CVV", x + CARD_W - 6, y + 45, { align: "right" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 22), x + 6, y + 49.5);
+  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 18), x + 6, y + 49.5);
   doc.setFont("courier", "bold");
-  doc.text(vencimiento || "12/99", x + CARD_W - 6, y + 49.5, { align: "right" });
+  doc.text(vencimiento || "12/99", x + CARD_W / 2, y + 49.5, { align: "center" });
+  doc.text("• • •", x + CARD_W - 6, y + 49.5, { align: "right" });
+
 
   // ================= REVERSO (mitad inferior) — solo QR grande de cabeza =================
   const backTop = y + CARD_H;
