@@ -10,7 +10,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const COMISION_PCT = 0.06;
+// Comisión por método: QaRd sin comisión, SPEI 3%, OXXO aún por definir (0 por ahora).
+const COMISION_POR_METODO: Record<string, number> = { qard: 0, oxxo: 0, spei: 0.03 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
