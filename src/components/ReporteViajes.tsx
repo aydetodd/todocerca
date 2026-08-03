@@ -617,17 +617,17 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("qard")}>
                     <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("oxxo")}>
                     <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
                   </Button>
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("spei")}>
                     <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
                   </Button>
@@ -867,7 +867,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
-            <Button onClick={ejecutarRetiro} disabled={retiroLoading || netoDisponible <= 0}>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || brutoDisponible <= 0}>
               {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Cobrar {fmtMoney(netoDisponible)}
             </Button>
