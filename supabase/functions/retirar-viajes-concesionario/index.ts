@@ -10,7 +10,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const COMISION_PCT = 0.06;
+// Comisión por método: QaRd sin comisión, SPEI 3%, OXXO aún por definir (0 por ahora).
+const COMISION_POR_METODO: Record<string, number> = { qard: 0, oxxo: 0, spei: 0.03 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -79,7 +80,7 @@ serve(async (req) => {
     (cqt || []).forEach((r: any) => { bruto += Number(r.precio_real) || 0; });
     bruto = +bruto.toFixed(2);
     if (bruto <= 0) return err("Los viajes seleccionados no tienen importe cobrado");
-    const comision = +(bruto * COMISION_PCT).toFixed(2);
+    const comision = +(bruto * (COMISION_POR_METODO[metodo] ?? 0)).toFixed(2);
     const neto = +(bruto - comision).toFixed(2);
     if (neto < 1) return err("Neto insuficiente para retirar");
 

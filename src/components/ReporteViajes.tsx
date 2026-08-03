@@ -324,7 +324,10 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   // Disponible para retirar: solo viajes NO retirados aún
   const viajesDisponibles = filtered.filter((v) => !v.retirado_at && (cobrosPorViaje[v.id]?.monto || 0) > 0);
   const brutoDisponible = viajesDisponibles.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
-  const comisionDisponible = +(brutoDisponible * 0.06).toFixed(2);
+  // Comisión según el método de cobro: QaRd 0%, SPEI 3%, OXXO aún por definir.
+  const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.03 };
+  const comisionPct = COMISION_POR_METODO[retiroMetodo];
+  const comisionDisponible = +(brutoDisponible * comisionPct).toFixed(2);
   const netoDisponible = +(brutoDisponible - comisionDisponible).toFixed(2);
 
   // Ya cobrado (histórico, dentro del rango filtrado)
@@ -601,37 +604,30 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                     Solo cuenta lo que aún no has cobrado. Al retirar, se marcan como pagados y no se vuelven a incluir.
                   </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="p-2 rounded-md bg-white border border-border text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bruto</p>
-                    <p className="text-sm font-bold text-foreground">{fmtMoney(brutoDisponible)}</p>
-                  </div>
-                  <div className="p-2 rounded-md bg-white border border-border text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Comisión 6%</p>
-                    <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
-                  </div>
-                  <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
-                    <p className="text-[10px] uppercase tracking-wide opacity-90">Neto a recibir</p>
-                    <p className="text-sm font-bold">{fmtMoney(netoDisponible)}</p>
-                  </div>
+                <div className="p-3 rounded-md bg-white border border-border text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bruto por cobrar</p>
+                  <p className="text-xl font-bold text-foreground">{fmtMoney(brutoDisponible)}</p>
                 </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Transferir a QaRd: sin comisión · SPEI: 3% de comisión · OXXO: comisión por definir.
+                </p>
                 <p className="text-[10px] text-muted-foreground">
                   {viajesDisponibles.length} viaje(s) pendientes de cobrar
                   {yaCobradoNeto > 0 && ` · Ya cobrado en este periodo: ${fmtMoney(yaCobradoNeto)}`}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("qard")}>
                     <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("oxxo")}>
                     <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
                   </Button>
                   <Button size="sm" variant="outline" className="justify-start"
-                    disabled={netoDisponible <= 0}
+                    disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("spei")}>
                     <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
                   </Button>
@@ -830,8 +826,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
               </div>
               <div className="p-2 rounded-md bg-muted/40 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase">Comisión 6%</p>
-                <p className="text-sm font-bold text-muted-foreground">−{fmtMoney(comisionDisponible)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">
+                  {retiroMetodo === "spei" ? "Comisión 3%" : retiroMetodo === "qard" ? "Sin comisión" : "Comisión"}
+                </p>
+                <p className="text-sm font-bold text-muted-foreground">
+                  {retiroMetodo === "oxxo" ? "Por definir" : `−${fmtMoney(comisionDisponible)}`}
+                </p>
               </div>
               <div className="p-2 rounded-md bg-primary text-primary-foreground text-center">
                 <p className="text-[10px] uppercase opacity-90">Recibes</p>
@@ -871,7 +871,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
-            <Button onClick={ejecutarRetiro} disabled={retiroLoading || netoDisponible <= 0}>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || brutoDisponible <= 0}>
               {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Cobrar {fmtMoney(netoDisponible)}
             </Button>
