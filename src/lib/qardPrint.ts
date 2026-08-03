@@ -228,6 +228,8 @@ export async function generarPdfTarjetasQard(
 
   const qrFront = await qrDataUrl(qardNumber, false);
   const qrBack = await qrDataUrl(qardNumber, true);
+  const logo = await loadLogo();
+
 
   // Encabezado
   doc.setFont("helvetica", "bold");
