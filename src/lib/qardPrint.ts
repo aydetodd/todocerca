@@ -246,7 +246,7 @@ export async function generarPdfTarjetasQard(
     for (let c = 0; c < cols; c++) {
       const x = originX + c * (CARD_W + gapX);
       const y = originY + r * (FOLD_H + gapY);
-      await drawCard(doc, x, y, { qardNumber, vencimiento, alias, qrFront, qrBack });
+      await drawCard(doc, x, y, { qardNumber, vencimiento, alias, qrFront, qrBack, logo });
     }
   }
 
