@@ -599,11 +599,11 @@ export default function Qard() {
           )
         );
         const esPositivo = (t: string) =>
-          t === "recarga" || t === "transfer_desde_sub" || t === "cobro_comercio" || t === "transferencia_p2p_in";
+          t === "recarga" || t === "transfer_desde_sub" || t === "transferencia_p2p_in";
         const etiqueta = (m: Movimiento) => {
           const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
           return m.tipo === "recarga" ? "Recarga" :
-            m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+            m.tipo === "cobro_comercio" ? `Pago ${m.comercio_nombre ?? ""}` :
             m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
             m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
             m.tipo === "retiro_qard" ? "Transferencia enviada" :

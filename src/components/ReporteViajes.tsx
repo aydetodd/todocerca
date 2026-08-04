@@ -604,9 +604,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                     Solo cuenta lo que aún no has cobrado. Al retirar, se marcan como pagados y no se vuelven a incluir.
                   </p>
                 </div>
-                <div className="p-3 rounded-md bg-white border border-border text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bruto por cobrar</p>
-                  <p className="text-xl font-bold text-foreground">{fmtMoney(brutoDisponible)}</p>
+                <div className="p-3 rounded-md bg-primary/15 border border-primary/40 text-center">
+                  <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">Bruto por cobrar</p>
+                  <p className="text-2xl font-bold text-primary">{fmtMoney(brutoDisponible)}</p>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Transferir a QaRd: sin comisión · SPEI: 3% de comisión · OXXO: comisión por definir.
