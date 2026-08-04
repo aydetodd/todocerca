@@ -76,6 +76,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [filterRuta, setFilterRuta] = useState("all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
   const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
+  // Importe aún NO retirado por viaje (los cobros se marcan uno por uno al retirar)
+  const [pendientePorViaje, setPendientePorViaje] = useState<Record<string, number>>({});
   const [pasajerosPorViaje, setPasajerosPorViaje] = useState<Record<string, PasajeroRow[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
