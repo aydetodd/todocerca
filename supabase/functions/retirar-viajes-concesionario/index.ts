@@ -61,7 +61,7 @@ serve(async (req) => {
     if (vErr) throw vErr;
 
     const validos = (viajes || []).filter((v: any) =>
-      !v.retirado_at && (
+      (
         contratoIds.includes(v.contrato_id) ||
         choferIds.includes(v.chofer_id) ||
         productoIds.includes(v.producto_id)
@@ -70,16 +70,21 @@ serve(async (req) => {
     if (!validos.length) return err("Los viajes ya fueron cobrados o no te pertenecen");
     const validosIds = validos.map((v: any) => v.id);
 
-    // 2) Calcular bruto
+    // 2) Calcular bruto SOLO con los cobros que aún no han sido retirados.
+    //    (Un viaje en curso puede seguir sumando cobros después de un retiro previo.)
     const [{ data: qvp }, { data: cqt }] = await Promise.all([
-      admin.from("qard_viajes_pasajero").select("viaje_id, monto_cobrado_mxn").in("viaje_id", validosIds),
-      admin.from("cobros_qr_tramo").select("viaje_id, precio_real").in("viaje_id", validosIds),
+      admin.from("qard_viajes_pasajero").select("id, viaje_id, monto_cobrado_mxn")
+        .in("viaje_id", validosIds).is("retirado_at", null),
+      admin.from("cobros_qr_tramo").select("id, viaje_id, precio_real")
+        .in("viaje_id", validosIds).is("retirado_at", null),
     ]);
+    const qvpIds = (qvp || []).map((r: any) => r.id);
+    const cqtIds = (cqt || []).map((r: any) => r.id);
     let bruto = 0;
     (qvp || []).forEach((r: any) => { bruto += Number(r.monto_cobrado_mxn) || 0; });
     (cqt || []).forEach((r: any) => { bruto += Number(r.precio_real) || 0; });
     bruto = +bruto.toFixed(2);
-    if (bruto <= 0) return err("Los viajes seleccionados no tienen importe cobrado");
+    if (bruto <= 0) return err("Los viajes seleccionados no tienen importe pendiente de cobrar");
     const comision = +(bruto * (COMISION_POR_METODO[metodo] ?? 0)).toFixed(2);
     const neto = +(bruto - comision).toFixed(2);
     if (neto < 1) return err("Neto insuficiente para retirar");
@@ -205,10 +210,21 @@ serve(async (req) => {
       metadata,
     });
 
-    // 6) Marcar viajes como retirados (por lote)
+    // 6) Marcar cada cobro como retirado (control fino) y el viaje como pagado
+    const nowIso = new Date().toISOString();
+    if (qvpIds.length) {
+      await admin.from("qard_viajes_pasajero")
+        .update({ retirado_at: nowIso, retiro_referencia: referencia })
+        .in("id", qvpIds);
+    }
+    if (cqtIds.length) {
+      await admin.from("cobros_qr_tramo")
+        .update({ retirado_at: nowIso, retiro_referencia: referencia })
+        .in("id", cqtIds);
+    }
     await admin.from("viajes_realizados")
       .update({
-        retirado_at: new Date().toISOString(),
+        retirado_at: nowIso,
         retiro_metodo: metodo,
         retiro_bruto_mxn: bruto,
         retiro_neto_mxn: neto,
