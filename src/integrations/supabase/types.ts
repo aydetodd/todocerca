@@ -532,6 +532,8 @@ export type Database = {
           precio_real: number | null
           producto_id: string | null
           qr_token: string
+          retirado_at: string | null
+          retiro_referencia: string | null
           sentido: string | null
           subida_at: string | null
           subida_lat: number | null
@@ -556,6 +558,8 @@ export type Database = {
           precio_real?: number | null
           producto_id?: string | null
           qr_token: string
+          retirado_at?: string | null
+          retiro_referencia?: string | null
           sentido?: string | null
           subida_at?: string | null
           subida_lat?: number | null
@@ -580,6 +584,8 @@ export type Database = {
           precio_real?: number | null
           producto_id?: string | null
           qr_token?: string
+          retirado_at?: string | null
+          retiro_referencia?: string | null
           sentido?: string | null
           subida_at?: string | null
           subida_lat?: number | null
@@ -3431,6 +3437,8 @@ export type Database = {
           numero_subida: number | null
           producto_id: string
           qard_number: string
+          retirado_at: string | null
+          retiro_referencia: string | null
           subida_at: string
           subida_geocerca_id: string | null
           subida_lat: number | null
@@ -3453,6 +3461,8 @@ export type Database = {
           numero_subida?: number | null
           producto_id: string
           qard_number: string
+          retirado_at?: string | null
+          retiro_referencia?: string | null
           subida_at?: string
           subida_geocerca_id?: string | null
           subida_lat?: number | null
@@ -3475,6 +3485,8 @@ export type Database = {
           numero_subida?: number | null
           producto_id?: string
           qard_number?: string
+          retirado_at?: string | null
+          retiro_referencia?: string | null
           subida_at?: string
           subida_geocerca_id?: string | null
           subida_lat?: number | null
