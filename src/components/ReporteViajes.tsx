@@ -227,19 +227,22 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     // Cargar importes cobrados por viaje + detalle anónimo de pasajeros (para mapa de calor)
     const viajeIds = rows.map((v) => v.id);
     const totals: Record<string, { monto: number; cobros: number }> = {};
+    const pendientes: Record<string, number> = {};
     const pasajeros: Record<string, PasajeroRow[]> = {};
     if (viajeIds.length > 0) {
       const [{ data: qvp }, { data: cqt }] = await Promise.all([
         supabase.from("qard_viajes_pasajero")
-          .select("viaje_id, monto_cobrado_mxn, numero_subida, numero_bajada, subida_at, bajada_at, subida_lat, subida_lng, bajada_lat, bajada_lng, estado")
+          .select("viaje_id, monto_cobrado_mxn, numero_subida, numero_bajada, subida_at, bajada_at, subida_lat, subida_lng, bajada_lat, bajada_lng, estado, retirado_at")
           .in("viaje_id", viajeIds),
-        supabase.from("cobros_qr_tramo").select("viaje_id, precio_real").in("viaje_id", viajeIds),
+        supabase.from("cobros_qr_tramo").select("viaje_id, precio_real, retirado_at").in("viaje_id", viajeIds),
       ]);
       (qvp || []).forEach((r: any) => {
         if (!r.viaje_id) return;
+        const monto = Number(r.monto_cobrado_mxn) || 0;
         const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
-        t.monto += Number(r.monto_cobrado_mxn) || 0;
+        t.monto += monto;
         t.cobros += 1;
+        if (!r.retirado_at) pendientes[r.viaje_id] = (pendientes[r.viaje_id] || 0) + monto;
         (pasajeros[r.viaje_id] ||= []).push({
           numero_subida: r.numero_subida ?? null,
           numero_bajada: r.numero_bajada ?? null,
@@ -249,17 +252,20 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           subida_lng: r.subida_lng ?? null,
           bajada_lat: r.bajada_lat ?? null,
           bajada_lng: r.bajada_lng ?? null,
-          monto: Number(r.monto_cobrado_mxn) || 0,
+          monto,
           estado: r.estado ?? null,
         });
       });
       (cqt || []).forEach((r: any) => {
         if (!r.viaje_id) return;
+        const monto = Number(r.precio_real) || 0;
         const t = totals[r.viaje_id] ||= { monto: 0, cobros: 0 };
-        t.monto += Number(r.precio_real) || 0;
+        t.monto += monto;
         t.cobros += 1;
+        if (!r.retirado_at) pendientes[r.viaje_id] = (pendientes[r.viaje_id] || 0) + monto;
       });
     }
+    setPendientePorViaje(pendientes);
     // Ordenar pasajeros por número de subida
     Object.keys(pasajeros).forEach((k) => {
       pasajeros[k].sort((a, b) => (a.numero_subida ?? 999) - (b.numero_subida ?? 999));
