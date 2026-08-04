@@ -329,9 +329,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalCobrado = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
   const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
 
-  // Disponible para retirar: solo viajes NO retirados aún
-  const viajesDisponibles = filtered.filter((v) => !v.retirado_at && (cobrosPorViaje[v.id]?.monto || 0) > 0);
-  const brutoDisponible = viajesDisponibles.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
+  // Disponible para retirar: se cuenta cobro por cobro (un viaje en curso puede seguir sumando)
+  const viajesDisponibles = filtered.filter((v) => (pendientePorViaje[v.id] || 0) > 0);
+  const brutoDisponible = +viajesDisponibles.reduce((s, v) => s + (pendientePorViaje[v.id] || 0), 0).toFixed(2);
   // Comisión según el método de cobro: QaRd 0%, SPEI 3%, OXXO aún por definir.
   const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.03 };
   const comisionPct = COMISION_POR_METODO[retiroMetodo];
