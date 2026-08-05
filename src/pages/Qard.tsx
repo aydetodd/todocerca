@@ -39,6 +39,34 @@ function formatNumero(n?: string | null) {
   return `${n.slice(0, 4)} ${n.slice(4, 8)} ${n.slice(8, 12)} ${n.slice(12, 16)}`;
 }
 
+const PERIODOS: { d: number; label: string }[] = [
+  { d: 7, label: "7 días" },
+  { d: 15, label: "15 días" },
+  { d: 30, label: "1 mes" },
+  { d: 62, label: "2 meses" },
+];
+
+function PeriodoSelector({ valor, onChange }: { valor: number; onChange: (d: number) => void }) {
+  return (
+    <div className="flex gap-1 mb-3">
+      {PERIODOS.map(p => (
+        <button
+          key={p.d}
+          onClick={() => onChange(p.d)}
+          className={`flex-1 h-7 rounded-md text-[11px] font-medium border transition ${
+            valor === p.d
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-input"
+          }`}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
 export default function Qard() {
   const nav = useNavigate();
   const [params] = useSearchParams();
