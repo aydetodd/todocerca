@@ -620,7 +620,7 @@ export default function Qard() {
         </div>
       </Card>
 
-      {/* Estado de cuenta estilo banco (2 meses) */}
+      {/* Estado de cuenta estilo banco (2 meses) — se abre con icono */}
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
         const ejeMov = mov.filter(m =>
@@ -647,13 +647,16 @@ export default function Qard() {
 
         // Saldo corrido: partimos del saldo actual y caminamos hacia atrás
         let corrido = Number(wallet?.saldo_mxn ?? 0);
-        const filas = ejeMov.map(m => {
+        const todas = ejeMov.map(m => {
           const signo = esPositivo(m.tipo) ? 1 : -1;
           const monto = Math.abs(Number(m.monto_mxn)) * signo;
           const saldoDespues = corrido;
           corrido = +(corrido - monto).toFixed(2);
           return { m, monto, saldoDespues: +saldoDespues.toFixed(2), saldoAntes: corrido };
         });
+
+        const desde = Date.now() - periodoEje * 24 * 3600 * 1000;
+        const filas = todas.filter(f => new Date(f.m.created_at).getTime() >= desde);
 
         const mesLabel = (d: string) =>
           new Date(d).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
@@ -677,56 +680,75 @@ export default function Qard() {
                 f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "",
                 f.saldoDespues.toFixed(2),
               ]),
-              ["", "Saldo inicial del mes", "", "", (fs[fs.length - 1]?.saldoAntes ?? 0).toFixed(2)],
+              ["", "Saldo inicial del periodo", "", "", (fs[fs.length - 1]?.saldoAntes ?? 0).toFixed(2)],
             ]
           );
         };
 
         return (
-          <Card className="p-4">
-            <div className="font-semibold mb-1">Estado de cuenta · cuenta eje</div>
-            <div className="text-xs text-muted-foreground mb-3">
-              Se guardan los movimientos de los últimos 2 meses. Descarga tu CSV cada mes para conservarlo.
-            </div>
-            {filas.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
-
-            {meses.map(mes => (
-              <div key={mes.label} className="mb-5">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold capitalize">{mes.label}</div>
-                  <Button size="sm" variant="outline" onClick={() => exportarMes(mes.label, mes.filas)}>
-                    <Download className="h-4 w-4 mr-1" /> CSV
-                  </Button>
+          <>
+            <Card className="p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">Estado de cuenta · cuenta eje</div>
+                <div className="text-xs text-muted-foreground">
+                  Movimientos de los últimos 2 meses. Ábrelos con el icono.
                 </div>
-                <div className="divide-y">
-                  {mes.filas.map(f => (
-                    <div key={f.m.id} className="flex justify-between items-center gap-2 py-2">
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm truncate">{etiqueta(f.m)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(f.m.created_at).toLocaleString("es-MX")}
-                        </div>
+              </div>
+              <Button size="icon" variant="outline" title="Ver estado de cuenta" onClick={() => setEjeOpen(true)}>
+                <History className="h-5 w-5" />
+              </Button>
+            </Card>
+
+            <Dialog open={ejeOpen} onOpenChange={setEjeOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Estado de cuenta · cuenta eje</DialogTitle>
+                </DialogHeader>
+                <PeriodoSelector valor={periodoEje} onChange={setPeriodoEje} />
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {filas.length === 0 && (
+                    <div className="text-xs text-muted-foreground">Sin movimientos en este periodo.</div>
+                  )}
+                  {meses.map(mes => (
+                    <div key={mes.label} className="mb-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-semibold capitalize">{mes.label}</div>
+                        <Button size="sm" variant="outline" onClick={() => exportarMes(mes.label, mes.filas)}>
+                          <Download className="h-4 w-4 mr-1" /> CSV
+                        </Button>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>
-                          {f.monto > 0 ? "+" : "−"}${Math.abs(f.monto).toFixed(2)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Saldo ${f.saldoDespues.toFixed(2)}
+                      <div className="divide-y">
+                        {mes.filas.map(f => (
+                          <div key={f.m.id} className="flex justify-between items-center gap-2 py-2">
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm truncate">{etiqueta(f.m)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(f.m.created_at).toLocaleString("es-MX")}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>
+                                {f.monto > 0 ? "+" : "−"}${Math.abs(f.monto).toFixed(2)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Saldo ${f.saldoDespues.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center py-2 text-sm">
+                          <div className="text-muted-foreground">Saldo inicial del mes</div>
+                          <div className="font-semibold">
+                            ${(mes.filas[mes.filas.length - 1]?.saldoAntes ?? 0).toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center py-2 text-sm">
-                    <div className="text-muted-foreground">Saldo inicial del mes</div>
-                    <div className="font-semibold">
-                      ${(mes.filas[mes.filas.length - 1]?.saldoAntes ?? 0).toFixed(2)}
-                    </div>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </Card>
+              </DialogContent>
+            </Dialog>
+          </>
         );
       })()}
 
@@ -737,30 +759,55 @@ export default function Qard() {
           <DialogHeader>
             <DialogTitle>Movimientos · {subMovOpen?.alias}</DialogTitle>
           </DialogHeader>
-          {subMovs.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos.</div>}
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {subMovs.map(m => {
-              const label =
-                m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
-                m.tipo === "transfer_a_sub" ? "Recibido del titular" :
-                m.tipo === "transfer_desde_sub" ? "Devuelto al titular" :
-                m.tipo;
-              const positivo = m.tipo === "transfer_a_sub";
-              return (
-                <div key={m.id} className="flex justify-between text-sm border-b pb-1">
-                  <div>
-                    <div className="font-medium">{label}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</div>
+          <PeriodoSelector valor={periodoSub} onChange={setPeriodoSub} />
+          {(() => {
+            const label = (m: Movimiento) =>
+              m.tipo === "cobro_comercio" ? `Cobro ${m.comercio_nombre ?? ""}` :
+              m.tipo === "transfer_a_sub" ? "Recibido del titular" :
+              m.tipo === "transfer_desde_sub" ? "Devuelto al titular" :
+              m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
+              m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
+              m.tipo;
+            const esPositivo = (t: string) => t === "transfer_a_sub" || t === "transferencia_p2p_in";
+
+            // Saldo corrido del sub-QR: desde su saldo actual hacia atrás
+            let corrido = Number(subMovOpen?.saldo_mxn ?? 0);
+            const todas = subMovs.map(m => {
+              const monto = Math.abs(Number(m.monto_mxn)) * (esPositivo(m.tipo) ? 1 : -1);
+              const saldoDespues = corrido;
+              corrido = +(corrido - monto).toFixed(2);
+              return { m, monto, saldoDespues: +saldoDespues.toFixed(2) };
+            });
+            const desde = Date.now() - periodoSub * 24 * 3600 * 1000;
+            const filas = todas.filter(f => new Date(f.m.created_at).getTime() >= desde);
+
+            if (filas.length === 0) {
+              return <div className="text-xs text-muted-foreground">Sin movimientos en este periodo.</div>;
+            }
+            return (
+              <div className="divide-y max-h-[60vh] overflow-y-auto">
+                {filas.map(f => (
+                  <div key={f.m.id} className="flex justify-between items-center gap-2 py-2">
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm truncate">{label(f.m)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(f.m.created_at).toLocaleString("es-MX")}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>
+                        {f.monto > 0 ? "+" : "−"}${Math.abs(f.monto).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Saldo ${f.saldoDespues.toFixed(2)}</div>
+                    </div>
                   </div>
-                  <div className={`font-semibold ${positivo ? "text-green-600" : "text-red-600"}`}>
-                    {positivo ? "+" : "−"}${Math.abs(Number(m.monto_mxn)).toFixed(2)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
+
 
       {/* QR fullscreen para pagar */}
       {qrFullscreen && (
