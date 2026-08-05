@@ -37,27 +37,32 @@ function dashedLine(
   }
 }
 
-// Degradado diagonal visualmente equivalente al plástico mostrado en la app.
+// Degradado diagonal (135deg) idéntico al plástico de la app.
 function gradientRect(doc: jsPDF, x: number, y: number, w: number, h: number) {
-  const from = [13, 23, 38];
-  const middle = [36, 53, 76];
-  const to = [194, 52, 0];
-  const steps = 120;
-  const sw = w / steps;
-  for (let i = 0; i < steps; i++) {
-    const t = i / (steps - 1);
-    const firstHalf = t <= 0.45;
-    const localT = firstHalf ? t / 0.45 : (t - 0.45) / 0.55;
-    const start = firstHalf ? from : middle;
-    const end = firstHalf ? middle : to;
-    doc.setFillColor(
-      Math.round(start[0] + (end[0] - start[0]) * localT),
-      Math.round(start[1] + (end[1] - start[1]) * localT),
-      Math.round(start[2] + (end[2] - start[2]) * localT)
-    );
-    doc.rect(x + i * sw, y, sw + 0.15, h, "F");
+  const from = [21, 33, 50]; // hsl(215 40% 14%)
+  const middle = [36, 53, 76]; // hsl(215 35% 22%)
+  const to = [194, 52, 0]; // hsl(16 100% 38%)
+  const cols = 90;
+  const rows = 40;
+  const cw = w / cols;
+  const ch = h / rows;
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const t = (i / (cols - 1)) * 0.75 + (j / (rows - 1)) * 0.25;
+      const firstHalf = t <= 0.45;
+      const localT = firstHalf ? t / 0.45 : (t - 0.45) / 0.55;
+      const start = firstHalf ? from : middle;
+      const end = firstHalf ? middle : to;
+      doc.setFillColor(
+        Math.round(start[0] + (end[0] - start[0]) * localT),
+        Math.round(start[1] + (end[1] - start[1]) * localT),
+        Math.round(start[2] + (end[2] - start[2]) * localT)
+      );
+      doc.rect(x + i * cw, y + j * ch, cw + 0.12, ch + 0.12, "F");
+    }
   }
 }
+
 
 // Devuelve el QR ya girado 180° como PNG dataURL
 async function qrDataUrl(value: string, rotated: boolean) {
