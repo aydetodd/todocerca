@@ -101,8 +101,9 @@ export default function Qard() {
       .from("qard_movimientos" as any)
       .select("*")
       .eq("sub_qr_id", sub.id)
+      .gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString())
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(500);
     setSubMovs((data as any) ?? []);
   };
 
