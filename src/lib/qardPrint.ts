@@ -37,27 +37,32 @@ function dashedLine(
   }
 }
 
-// Degradado diagonal visualmente equivalente al plástico mostrado en la app.
+// Degradado diagonal (135deg) idéntico al plástico de la app.
 function gradientRect(doc: jsPDF, x: number, y: number, w: number, h: number) {
-  const from = [13, 23, 38];
-  const middle = [36, 53, 76];
-  const to = [194, 52, 0];
-  const steps = 120;
-  const sw = w / steps;
-  for (let i = 0; i < steps; i++) {
-    const t = i / (steps - 1);
-    const firstHalf = t <= 0.45;
-    const localT = firstHalf ? t / 0.45 : (t - 0.45) / 0.55;
-    const start = firstHalf ? from : middle;
-    const end = firstHalf ? middle : to;
-    doc.setFillColor(
-      Math.round(start[0] + (end[0] - start[0]) * localT),
-      Math.round(start[1] + (end[1] - start[1]) * localT),
-      Math.round(start[2] + (end[2] - start[2]) * localT)
-    );
-    doc.rect(x + i * sw, y, sw + 0.15, h, "F");
+  const from = [21, 33, 50]; // hsl(215 40% 14%)
+  const middle = [36, 53, 76]; // hsl(215 35% 22%)
+  const to = [194, 52, 0]; // hsl(16 100% 38%)
+  const cols = 90;
+  const rows = 40;
+  const cw = w / cols;
+  const ch = h / rows;
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const t = (i / (cols - 1)) * 0.75 + (j / (rows - 1)) * 0.25;
+      const firstHalf = t <= 0.45;
+      const localT = firstHalf ? t / 0.45 : (t - 0.45) / 0.55;
+      const start = firstHalf ? from : middle;
+      const end = firstHalf ? middle : to;
+      doc.setFillColor(
+        Math.round(start[0] + (end[0] - start[0]) * localT),
+        Math.round(start[1] + (end[1] - start[1]) * localT),
+        Math.round(start[2] + (end[2] - start[2]) * localT)
+      );
+      doc.rect(x + i * cw, y + j * ch, cw + 0.12, ch + 0.12, "F");
+    }
   }
 }
+
 
 // Devuelve el QR ya girado 180° como PNG dataURL
 async function qrDataUrl(value: string, rotated: boolean) {
@@ -118,71 +123,111 @@ async function drawCard(
   const { qardNumber, vencimiento, alias, qrFront, qrBack, logo } = opts;
 
   // ================= FRENTE (mitad superior) — idéntico a la app =================
+  // La tarjeta en pantalla mide 340 px de ancho: convertimos px -> mm.
+  const K = CARD_W / 340;
+  const px = (v: number) => v * K;
+
   gradientRect(doc, x, y, CARD_W, CARD_H);
 
-  // Logo circular blanco
-  const logoD = 11;
-  const logoX = x + 6;
-  const logoY = y + 5;
+  // --- Encabezado: logo circular blanco ---
+  const logoD = px(44);
+  const logoCx = x + px(20) + logoD / 2;
+  const logoCy = y + px(20) + logoD / 2;
   doc.setFillColor(255, 255, 255);
-  doc.circle(logoX + logoD / 2, logoY + logoD / 2, logoD / 2, "F");
+  doc.circle(logoCx, logoCy, logoD / 2, "F");
   if (logo) {
-    doc.addImage(logo, "JPEG", logoX + 0.9, logoY + 0.9, logoD - 1.8, logoD - 1.8);
+    doc.addImage(logo, "JPEG", logoCx - logoD / 2 + px(3), logoCy - logoD / 2 + px(3), logoD - px(6), logoD - px(6));
   }
 
-  // Marca "Q A R D" + subtítulo
+  // Marca "QaRd" (mayúsculas espaciadas) + subtítulo
+  const txtX = x + px(72);
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("Q A R D", logoX + logoD + 3.5, y + 9.5);
-
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.setTextColor(200, 208, 220);
-  doc.text("Tarjeta principal · 00", logoX + logoD + 3.5, y + 13.5);
+  doc.setFontSize(7.8);
+  doc.text("Q A R D", txtX, y + px(38));
 
-  // QR pequeño arriba a la derecha (como en el teléfono)
-  const miniQr = 15;
+  doc.setFontSize(6.6);
+  doc.setTextColor(190, 197, 208);
+  doc.text("Tarjeta principal · 00", txtX, y + px(52));
+
+  // --- QR pequeño arriba a la derecha (caja blanca con padding) ---
+  const qrBox = px(66);
+  const qrImg = px(54);
+  const qrBoxX = x + px(340 - 20 - 66);
+  const qrBoxY = y + px(20);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(x + CARD_W - miniQr - 7.4, y + 3.6, miniQr + 2.8, miniQr + 2.8, 1, 1, "F");
-  doc.addImage(qrFront, "PNG", x + CARD_W - miniQr - 6, y + 5, miniQr, miniQr);
+  doc.roundedRect(qrBoxX, qrBoxY, qrBox, qrBox, px(6), px(6), "F");
+  doc.addImage(qrFront, "PNG", qrBoxX + px(6), qrBoxY + px(6), qrImg, qrImg);
 
-  // Chip dorado
-  doc.setFillColor(212, 175, 55);
-  doc.roundedRect(x + 6, y + 20, 11, 8.5, 1.4, 1.4, "F");
-  doc.setDrawColor(160, 128, 30);
-  doc.setLineWidth(0.2);
-  doc.line(x + 6, y + 24.2, x + 17, y + 24.2);
-  doc.line(x + 11.5, y + 20, x + 11.5, y + 28.5);
+  // --- Chip dorado (44x32 px) ---
+  const chipX = x + px(20);
+  const chipY = y + px(76);
+  const chipW = px(44);
+  const chipH = px(32);
+  doc.setFillColor(224, 187, 82);
+  doc.roundedRect(chipX, chipY, chipW, chipH, px(6), px(6), "F");
+  doc.setDrawColor(150, 118, 30);
+  doc.setLineWidth(0.15);
+  doc.line(chipX, chipY + chipH / 2, chipX + chipW, chipY + chipH / 2);
+  doc.line(chipX + chipW / 2, chipY, chipX + chipW / 2, chipY + chipH);
 
-  // Contactless, alineado al centro vertical del chip.
+  // --- Contactless (3 arcos) centrado con el chip ---
+  const clX = x + px(76);
+  const clCy = chipY + chipH / 2;
   doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.35);
-  doc.line(x + 20.2, y + 22.4, x + 20.2, y + 26.0);
-  doc.line(x + 22.0, y + 21.5, x + 22.0, y + 26.9);
-  doc.line(x + 23.8, y + 20.6, x + 23.8, y + 27.8);
+  doc.setLineWidth(0.3);
+  [0, 1, 2].forEach((i) => {
+    const lx = clX + px(4 + i * 5);
+    const half = px(5 + i * 4);
+    doc.line(lx, clCy - half, lx, clCy + half);
+  });
 
-  // Número 16 dígitos
-  doc.setFont("courier", "bold");
-  doc.setFontSize(13);
+  // --- Icono de impresión (a la derecha, alineado con el chip) ---
+  const prX = x + px(340 - 20 - 19 - 16);
+  const prY = chipY + px(3);
+  const prW = px(16);
+  doc.setDrawColor(235, 238, 242);
+  doc.setFillColor(235, 238, 242);
+  doc.setLineWidth(0.22);
+  // bandeja superior
+  doc.rect(prX + prW * 0.22, prY, prW * 0.56, prW * 0.22, "S");
+  // cuerpo
+  doc.rect(prX, prY + prW * 0.24, prW, prW * 0.42, "S");
+  // hoja saliente
+  doc.rect(prX + prW * 0.22, prY + prW * 0.6, prW * 0.56, prW * 0.34, "S");
+
+  // --- Número 16 dígitos (mono, justificado como en pantalla) ---
+  doc.setFont("courier", "normal");
+  doc.setFontSize(13.6);
   doc.setTextColor(255, 255, 255);
-  doc.text(formatNumero(qardNumber), x + CARD_W / 2, y + 38.2, { align: "center" });
+  const grupos = formatNumero(qardNumber).split(" ");
+  const numY = y + px(139);
+  const leftX = x + px(20);
+  const rightX = x + px(320);
+  const gW = doc.getTextWidth(grupos[0]);
+  const span = rightX - leftX - gW;
+  grupos.forEach((g, i) => {
+    doc.text(g, leftX + (span * i) / 3, numY);
+  });
 
-  // Pie: TITULAR / VENCE / CVV
+  // --- Pie: TITULAR / VENCE / CVV ---
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.5);
-  doc.setTextColor(200, 206, 216);
-  doc.text("TITULAR", x + 6, y + 45);
-  doc.text("VENCE", x + CARD_W / 2, y + 45, { align: "center" });
-  doc.text("CVV", x + CARD_W - 6, y + 45, { align: "right" });
+  doc.setFontSize(5.4);
+  doc.setTextColor(175, 183, 196);
+  const labelY = y + px(163);
+  const valueY = y + px(179);
+  doc.text("TITULAR", leftX, labelY);
+  doc.text("VENCE", x + CARD_W / 2, labelY, { align: "center" });
+  doc.text("CVV", rightX, labelY, { align: "right" });
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8.4);
   doc.setTextColor(255, 255, 255);
-  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 18), x + 6, y + 49.5);
+  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 18), leftX, valueY);
   doc.setFont("courier", "bold");
-  doc.text(vencimiento || "12/99", x + CARD_W / 2, y + 49.5, { align: "center" });
-  doc.text("• • •", x + CARD_W - 6, y + 49.5, { align: "right" });
+  doc.text(vencimiento || "12/99", x + CARD_W / 2, valueY, { align: "center" });
+  doc.text("• • •", rightX, valueY, { align: "right" });
+
 
 
   // ================= REVERSO (mitad inferior) — solo QR grande de cabeza =================
