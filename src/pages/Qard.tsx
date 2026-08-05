@@ -55,6 +55,9 @@ export default function Qard() {
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
   const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
+  const [ejeOpen, setEjeOpen] = useState(false);
+  const [periodoEje, setPeriodoEje] = useState<number>(30);
+  const [periodoSub, setPeriodoSub] = useState<number>(30);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
   // P2P transfer
   const [p2pFromId, setP2pFromId] = useState<string>(""); // qard_number origen (eje o sub)
