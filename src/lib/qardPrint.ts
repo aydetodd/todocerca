@@ -127,9 +127,30 @@ async function drawCard(
   const K = CARD_W / 340;
   const px = (v: number) => v * K;
 
+  // Esquinas redondeadas (rounded-2xl = 16px) recortando el degradado
+  const radius = px(16);
+  let clipped = false;
+  try {
+    (doc as any).saveGraphicsState();
+    (doc as any).roundedRect(x, y, CARD_W, CARD_H, radius, radius, null);
+    (doc as any).clip();
+    (doc as any).discardPath?.();
+    clipped = true;
+  } catch {
+    clipped = false;
+  }
+
   gradientRect(doc, x, y, CARD_W, CARD_H);
 
-  // --- Encabezado: logo circular blanco ---
+  if (clipped) {
+    try {
+      (doc as any).restoreGraphicsState();
+    } catch {
+      /* noop */
+    }
+  }
+
+  // --- Encabezado: logo circular blanco (44px) ---
   const logoD = px(44);
   const logoCx = x + px(20) + logoD / 2;
   const logoCy = y + px(20) + logoD / 2;
@@ -140,17 +161,17 @@ async function drawCard(
   }
 
   // Marca "QaRd" (mayúsculas espaciadas) + subtítulo
-  const txtX = x + px(72);
+  const txtX = x + px(20 + 44 + 8);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
+  doc.setFontSize(7.5);
   doc.text("Q A R D", txtX, y + px(38));
 
-  doc.setFontSize(6.6);
-  doc.setTextColor(190, 197, 208);
-  doc.text("Tarjeta principal · 00", txtX, y + px(52));
+  doc.setFontSize(6.4);
+  doc.setTextColor(178, 186, 198);
+  doc.text("Tarjeta principal · 00", txtX, y + px(51));
 
-  // --- QR pequeño arriba a la derecha (caja blanca con padding) ---
+  // --- QR pequeño arriba a la derecha (caja blanca con padding 6px) ---
   const qrBox = px(66);
   const qrImg = px(54);
   const qrBoxX = x + px(340 - 20 - 66);
@@ -159,49 +180,74 @@ async function drawCard(
   doc.roundedRect(qrBoxX, qrBoxY, qrBox, qrBox, px(6), px(6), "F");
   doc.addImage(qrFront, "PNG", qrBoxX + px(6), qrBoxY + px(6), qrImg, qrImg);
 
-  // --- Chip dorado (44x32 px) ---
+  // --- Chip dorado (44x32 px), sin cruces, con brillo ---
   const chipX = x + px(20);
-  const chipY = y + px(76);
+  const chipY = y + px(98);
   const chipW = px(44);
   const chipH = px(32);
-  doc.setFillColor(224, 187, 82);
-  doc.roundedRect(chipX, chipY, chipW, chipH, px(6), px(6), "F");
-  doc.setDrawColor(150, 118, 30);
-  doc.setLineWidth(0.15);
-  doc.line(chipX, chipY + chipH / 2, chipX + chipW, chipY + chipH / 2);
-  doc.line(chipX + chipW / 2, chipY, chipX + chipW / 2, chipY + chipH);
+  const chipSteps = 24;
+  for (let i = 0; i < chipSteps; i++) {
+    const t = i / (chipSteps - 1);
+    // #e6c565 -> #b9902f (45%) -> #f3dc9a (70%) -> #c9a13f
+    const stops: Array<[number, number[]]> = [
+      [0, [230, 197, 101]],
+      [0.45, [185, 144, 47]],
+      [0.7, [243, 220, 154]],
+      [1, [201, 161, 63]],
+    ];
+    let a = stops[0];
+    let b = stops[stops.length - 1];
+    for (let s = 0; s < stops.length - 1; s++) {
+      if (t >= stops[s][0] && t <= stops[s + 1][0]) {
+        a = stops[s];
+        b = stops[s + 1];
+        break;
+      }
+    }
+    const lt = b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]);
+    doc.setFillColor(
+      Math.round(a[1][0] + (b[1][0] - a[1][0]) * lt),
+      Math.round(a[1][1] + (b[1][1] - a[1][1]) * lt),
+      Math.round(a[1][2] + (b[1][2] - a[1][2]) * lt)
+    );
+    doc.rect(chipX + (chipW * i) / chipSteps, chipY, chipW / chipSteps + 0.1, chipH, "F");
+  }
+  doc.setDrawColor(245, 228, 170);
+  doc.setLineWidth(0.12);
+  doc.roundedRect(chipX, chipY, chipW, chipH, px(6), px(6), "S");
 
-  // --- Contactless (3 arcos) centrado con el chip ---
-  const clX = x + px(76);
+  // --- Contactless: 3 arcos (como el SVG de la app) ---
+  const clX = x + px(20 + 44 + 12);
   const clCy = chipY + chipH / 2;
   doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.3);
+  doc.setLineWidth(0.28);
   [0, 1, 2].forEach((i) => {
-    const lx = clX + px(4 + i * 5);
-    const half = px(5 + i * 4);
-    doc.line(lx, clCy - half, lx, clCy + half);
+    const r = px(5 + i * 4);
+    const cx = clX - px(1);
+    const segs = 12;
+    for (let s = 0; s < segs; s++) {
+      const a1 = -Math.PI / 3 + (s / segs) * ((2 * Math.PI) / 3);
+      const a2 = -Math.PI / 3 + ((s + 1) / segs) * ((2 * Math.PI) / 3);
+      doc.line(cx + r * Math.cos(a1), clCy + r * Math.sin(a1), cx + r * Math.cos(a2), clCy + r * Math.sin(a2));
+    }
   });
 
-  // --- Icono de impresión (a la derecha, alineado con el chip) ---
-  const prX = x + px(340 - 20 - 19 - 16);
-  const prY = chipY + px(3);
+  // --- Icono de impresión (derecha, alineado con el chip) ---
   const prW = px(16);
-  doc.setDrawColor(235, 238, 242);
-  doc.setFillColor(235, 238, 242);
+  const prX = x + px(340 - 20 - 19) - prW;
+  const prY = clCy - prW / 2;
+  doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.22);
-  // bandeja superior
   doc.rect(prX + prW * 0.22, prY, prW * 0.56, prW * 0.22, "S");
-  // cuerpo
-  doc.rect(prX, prY + prW * 0.24, prW, prW * 0.42, "S");
-  // hoja saliente
-  doc.rect(prX + prW * 0.22, prY + prW * 0.6, prW * 0.56, prW * 0.34, "S");
+  doc.rect(prX, prY + prW * 0.26, prW, prW * 0.4, "S");
+  doc.rect(prX + prW * 0.22, prY + prW * 0.62, prW * 0.56, prW * 0.34, "S");
 
   // --- Número 16 dígitos (mono, justificado como en pantalla) ---
   doc.setFont("courier", "normal");
-  doc.setFontSize(13.6);
+  doc.setFontSize(13.2);
   doc.setTextColor(255, 255, 255);
   const grupos = formatNumero(qardNumber).split(" ");
-  const numY = y + px(139);
+  const numY = y + px(161);
   const leftX = x + px(20);
   const rightX = x + px(320);
   const gW = doc.getTextWidth(grupos[0]);
@@ -212,21 +258,22 @@ async function drawCard(
 
   // --- Pie: TITULAR / VENCE / CVV ---
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.4);
-  doc.setTextColor(175, 183, 196);
-  const labelY = y + px(163);
-  const valueY = y + px(179);
+  doc.setFontSize(5.2);
+  doc.setTextColor(170, 178, 192);
+  const labelY = y + px(188);
+  const valueY = y + px(203);
   doc.text("TITULAR", leftX, labelY);
   doc.text("VENCE", x + CARD_W / 2, labelY, { align: "center" });
   doc.text("CVV", rightX, labelY, { align: "right" });
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.4);
+  doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 18), leftX, valueY);
   doc.setFont("courier", "bold");
   doc.text(vencimiento || "12/99", x + CARD_W / 2, valueY, { align: "center" });
   doc.text("• • •", rightX, valueY, { align: "right" });
+
 
 
 
