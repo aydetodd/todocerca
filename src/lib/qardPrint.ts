@@ -421,7 +421,7 @@ export async function generarPdfTarjetasQard(
     { align: "center" }
   );
 
-  const filename = `QaRd-${qardNumber || "tarjetas"}.pdf`;
+  const filename = `QaRd-${cards.length === 1 ? cards[0].qardNumber : "tarjetas"}.pdf`;
   const blob = doc.output("blob");
 
   // 1) Móvil (iOS/Android): compartir/guardar el archivo con la hoja nativa
