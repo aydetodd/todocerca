@@ -87,6 +87,8 @@ export default function Qard() {
   const [periodoEje, setPeriodoEje] = useState<number>(30);
   const [periodoSub, setPeriodoSub] = useState<number>(30);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printSel, setPrintSel] = useState<string[]>(["titular"]);
   // P2P transfer
   const [p2pFromId, setP2pFromId] = useState<string>(""); // qard_number origen (eje o sub)
   const [p2pTo, setP2pTo] = useState("");
@@ -332,7 +334,7 @@ export default function Qard() {
                     className="mr-[19px] rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
                     title="Imprimir tarjetas"
                     aria-label="Imprimir tarjetas"
-                    onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99", titular?.alias)}
+                    onClick={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
                   >
                     <Printer className="h-4 w-4" />
                   </button>
@@ -581,16 +583,6 @@ export default function Qard() {
                 {s.limite_por_transaccion && <div className="text-[11px] mt-0.5">Máx por cobro: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
               </div>
               <div className="flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  title="Imprimir tarjetas (PDF)"
-                  onClick={() =>
-                    generarPdfTarjetasQard(s.qard_number, s.fecha_vencimiento ?? "12/99", s.alias)
-                  }
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
                 <Button size="sm" variant="ghost" title="Ver movimientos" onClick={() => abrirMovsSub(s)}>
                   <History className="h-4 w-4" />
                 </Button>
@@ -806,6 +798,72 @@ export default function Qard() {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Elegir qué tarjetas imprimir */}
+      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Qué tarjetas quieres imprimir?</DialogTitle>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground -mt-2 mb-2">
+            Si eliges una sola, se imprimen 4 copias en la hoja. Si eliges varias, se imprime una copia de cada una (4 por hoja).
+          </div>
+          <div className="divide-y max-h-[50vh] overflow-y-auto">
+            {[
+              { id: "titular", nombre: subs.find(x => x.sub_index === 0)?.alias || "Titular", term: "00" },
+              ...subs
+                .filter(s => s.estado !== "cancelada")
+                .map(s => ({ id: s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0") })),
+            ].map(op => {
+              const checked = printSel.includes(op.id);
+              return (
+                <label key={op.id} className="flex items-center gap-3 py-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-primary"
+                    checked={checked}
+                    onChange={() =>
+                      setPrintSel(prev =>
+                        checked ? prev.filter(x => x !== op.id) : [...prev, op.id]
+                      )
+                    }
+                  />
+                  <span className="flex-1 text-sm font-medium truncate">{op.nombre}</span>
+                  <span className="font-mono text-xs text-muted-foreground">· {op.term}</span>
+                </label>
+              );
+            })}
+          </div>
+          <Button
+            className="w-full"
+            disabled={printSel.length === 0}
+            onClick={async () => {
+              const cards = printSel.map(id => {
+                if (id === "titular") {
+                  return {
+                    qardNumber: qardNumber,
+                    vencimiento: subs.find(x => x.sub_index === 0)?.fecha_vencimiento ?? "12/99",
+                    alias: subs.find(x => x.sub_index === 0)?.alias,
+                    subtitle: "Tarjeta principal · 00",
+                  };
+                }
+                const s = subs.find(x => x.id === id)!;
+                return {
+                  qardNumber: s.qard_number,
+                  vencimiento: s.fecha_vencimiento ?? "12/99",
+                  alias: s.alias,
+                  subtitle: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}`,
+                };
+              });
+              setPrintOpen(false);
+              await generarPdfTarjetasQard(cards);
+            }}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir {printSel.length > 0 ? `(${printSel.length})` : ""}
+          </Button>
         </DialogContent>
       </Dialog>
 

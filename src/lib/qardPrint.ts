@@ -115,12 +115,14 @@ async function drawCard(
     qardNumber: string;
     vencimiento: string;
     alias?: string | null;
+    subtitle?: string;
     qrFront: string;
     qrBack: string;
     logo: string | null;
   }
 ) {
   const { qardNumber, vencimiento, alias, qrFront, qrBack, logo } = opts;
+  const subtitle = opts.subtitle || "Tarjeta principal · 00";
 
   // ================= FRENTE (mitad superior) — idéntico a la app =================
   // La tarjeta en pantalla mide 340 px de ancho: convertimos px -> mm.
@@ -150,14 +152,32 @@ async function drawCard(
     }
   }
 
-  // --- Encabezado: logo circular blanco (44px) ---
+  // --- Encabezado: logo recortado en círculo (sin aro blanco alrededor) ---
   const logoD = px(44);
   const logoCx = x + px(20) + logoD / 2;
   const logoCy = y + px(20) + logoD / 2;
-  doc.setFillColor(255, 255, 255);
-  doc.circle(logoCx, logoCy, logoD / 2, "F");
   if (logo) {
-    doc.addImage(logo, "JPEG", logoCx - logoD / 2 + px(3), logoCy - logoD / 2 + px(3), logoD - px(6), logoD - px(6));
+    let logoClipped = false;
+    try {
+      (doc as any).saveGraphicsState();
+      (doc as any).circle(logoCx, logoCy, logoD / 2, null);
+      (doc as any).clip();
+      (doc as any).discardPath?.();
+      logoClipped = true;
+    } catch {
+      logoClipped = false;
+    }
+    doc.addImage(logo, "JPEG", logoCx - logoD / 2, logoCy - logoD / 2, logoD, logoD);
+    if (logoClipped) {
+      try {
+        (doc as any).restoreGraphicsState();
+      } catch {
+        /* noop */
+      }
+    }
+  } else {
+    doc.setFillColor(255, 255, 255);
+    doc.circle(logoCx, logoCy, logoD / 2, "F");
   }
 
   // Marca "QaRd" (mayúsculas espaciadas) + subtítulo
@@ -169,7 +189,8 @@ async function drawCard(
 
   doc.setFontSize(6.4);
   doc.setTextColor(178, 186, 198);
-  doc.text("Tarjeta principal · 00", txtX, y + px(51));
+  doc.text(subtitle, txtX, y + px(51));
+
 
   // --- QR pequeño arriba a la derecha (caja blanca con padding 6px) ---
   const qrBox = px(66);
@@ -305,11 +326,26 @@ async function drawCard(
   dashedLine(doc, x, y + CARD_H, x + CARD_W, y + CARD_H, 2.5, 1.5);
 }
 
+export type QardCardPrint = {
+  qardNumber: string;
+  vencimiento?: string | null;
+  alias?: string | null;
+  subtitle?: string;
+  copias?: number;
+};
+
 export async function generarPdfTarjetasQard(
-  qardNumber: string,
+  input: string | QardCardPrint[],
   vencimiento = "12/99",
   alias?: string | null
 ) {
+  const cards: QardCardPrint[] =
+    typeof input === "string"
+      ? [{ qardNumber: input, vencimiento, alias, copias: 4 }]
+      : input;
+
+  if (!cards.length) return;
+
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const pageW = 210;
   const pageH = 297;
@@ -318,34 +354,61 @@ export async function generarPdfTarjetasQard(
   const rows = 2;
   const gapX = 8;
   const gapY = 10;
+  const perPage = cols * rows;
   const totalW = cols * CARD_W + (cols - 1) * gapX;
   const totalH = rows * FOLD_H + (rows - 1) * gapY;
   const originX = (pageW - totalW) / 2;
   const originY = (pageH - totalH) / 2;
 
-  const qrFront = await qrDataUrl(qardNumber, false);
-  const qrBack = await qrDataUrl(qardNumber, true);
   const logo = await loadLogo();
 
+  // Expandir copias
+  const slots: QardCardPrint[] = [];
+  cards.forEach((c) => {
+    const n = Math.max(1, c.copias ?? (cards.length === 1 ? 4 : 1));
+    for (let i = 0; i < n; i++) slots.push(c);
+  });
 
-  // Encabezado
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(40);
-  doc.text(
-    `Tarjetas QaRd${alias ? " · " + alias : ""} · recortar, doblar y enmicar`,
-    pageW / 2,
-    originY - 6,
-    { align: "center" }
-  );
+  const tituloBase =
+    cards.length === 1
+      ? `Tarjetas QaRd${cards[0].alias ? " · " + cards[0].alias : ""}`
+      : `Tarjetas QaRd (${cards.length})`;
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = originX + c * (CARD_W + gapX);
-      const y = originY + r * (FOLD_H + gapY);
-      await drawCard(doc, x, y, { qardNumber, vencimiento, alias, qrFront, qrBack, logo });
+  const qrCache = new Map<string, { front: string; back: string }>();
+  const getQr = async (v: string) => {
+    if (!qrCache.has(v)) {
+      qrCache.set(v, { front: await qrDataUrl(v, false), back: await qrDataUrl(v, true) });
     }
+    return qrCache.get(v)!;
+  };
+
+  for (let i = 0; i < slots.length; i++) {
+    const pos = i % perPage;
+    if (i > 0 && pos === 0) doc.addPage();
+    if (pos === 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(40);
+      doc.text(`${tituloBase} · recortar, doblar y enmicar`, pageW / 2, originY - 6, {
+        align: "center",
+      });
+    }
+    const card = slots[i];
+    const { front, back } = await getQr(card.qardNumber);
+    const x = originX + (pos % cols) * (CARD_W + gapX);
+    const y = originY + Math.floor(pos / cols) * (FOLD_H + gapY);
+    await drawCard(doc, x, y, {
+      qardNumber: card.qardNumber,
+      vencimiento: card.vencimiento || "12/99",
+      alias: card.alias,
+      subtitle: card.subtitle,
+      qrFront: front,
+      qrBack: back,
+      logo,
+    });
   }
+
+
 
   // Pie
   doc.setFont("helvetica", "normal");
@@ -358,7 +421,7 @@ export async function generarPdfTarjetasQard(
     { align: "center" }
   );
 
-  const filename = `QaRd-${qardNumber || "tarjetas"}.pdf`;
+  const filename = `QaRd-${cards.length === 1 ? cards[0].qardNumber : "tarjetas"}.pdf`;
   const blob = doc.output("blob");
 
   // 1) Móvil (iOS/Android): compartir/guardar el archivo con la hoja nativa
