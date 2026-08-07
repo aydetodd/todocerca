@@ -87,6 +87,8 @@ export default function Qard() {
   const [periodoEje, setPeriodoEje] = useState<number>(30);
   const [periodoSub, setPeriodoSub] = useState<number>(30);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printSel, setPrintSel] = useState<string[]>(["titular"]);
   // P2P transfer
   const [p2pFromId, setP2pFromId] = useState<string>(""); // qard_number origen (eje o sub)
   const [p2pTo, setP2pTo] = useState("");
