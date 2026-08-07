@@ -801,6 +801,72 @@ export default function Qard() {
         </DialogContent>
       </Dialog>
 
+      {/* Elegir qué tarjetas imprimir */}
+      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Qué tarjetas quieres imprimir?</DialogTitle>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground -mt-2 mb-2">
+            Si eliges una sola, se imprimen 4 copias en la hoja. Si eliges varias, se imprime una copia de cada una (4 por hoja).
+          </div>
+          <div className="divide-y max-h-[50vh] overflow-y-auto">
+            {[
+              { id: "titular", nombre: titular?.alias || "Titular", term: "00" },
+              ...subs
+                .filter(s => s.estado !== "cancelada")
+                .map(s => ({ id: s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0") })),
+            ].map(op => {
+              const checked = printSel.includes(op.id);
+              return (
+                <label key={op.id} className="flex items-center gap-3 py-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-primary"
+                    checked={checked}
+                    onChange={() =>
+                      setPrintSel(prev =>
+                        checked ? prev.filter(x => x !== op.id) : [...prev, op.id]
+                      )
+                    }
+                  />
+                  <span className="flex-1 text-sm font-medium truncate">{op.nombre}</span>
+                  <span className="font-mono text-xs text-muted-foreground">· {op.term}</span>
+                </label>
+              );
+            })}
+          </div>
+          <Button
+            className="w-full"
+            disabled={printSel.length === 0}
+            onClick={async () => {
+              const cards = printSel.map(id => {
+                if (id === "titular") {
+                  return {
+                    qardNumber: qardNumber,
+                    vencimiento: titular?.fecha_vencimiento ?? "12/99",
+                    alias: titular?.alias,
+                    subtitle: "Tarjeta principal · 00",
+                  };
+                }
+                const s = subs.find(x => x.id === id)!;
+                return {
+                  qardNumber: s.qard_number,
+                  vencimiento: s.fecha_vencimiento ?? "12/99",
+                  alias: s.alias,
+                  subtitle: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}`,
+                };
+              });
+              setPrintOpen(false);
+              await generarPdfTarjetasQard(cards);
+            }}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir {printSel.length > 0 ? `(${printSel.length})` : ""}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
 
       {/* QR fullscreen para pagar */}
       {qrFullscreen && (
