@@ -115,12 +115,14 @@ async function drawCard(
     qardNumber: string;
     vencimiento: string;
     alias?: string | null;
+    subtitle?: string;
     qrFront: string;
     qrBack: string;
     logo: string | null;
   }
 ) {
   const { qardNumber, vencimiento, alias, qrFront, qrBack, logo } = opts;
+  const subtitle = opts.subtitle || "Tarjeta principal · 00";
 
   // ================= FRENTE (mitad superior) — idéntico a la app =================
   // La tarjeta en pantalla mide 340 px de ancho: convertimos px -> mm.
@@ -150,14 +152,32 @@ async function drawCard(
     }
   }
 
-  // --- Encabezado: logo circular blanco (44px) ---
+  // --- Encabezado: logo recortado en círculo (sin aro blanco alrededor) ---
   const logoD = px(44);
   const logoCx = x + px(20) + logoD / 2;
   const logoCy = y + px(20) + logoD / 2;
-  doc.setFillColor(255, 255, 255);
-  doc.circle(logoCx, logoCy, logoD / 2, "F");
   if (logo) {
-    doc.addImage(logo, "JPEG", logoCx - logoD / 2 + px(3), logoCy - logoD / 2 + px(3), logoD - px(6), logoD - px(6));
+    let logoClipped = false;
+    try {
+      (doc as any).saveGraphicsState();
+      (doc as any).circle(logoCx, logoCy, logoD / 2, null);
+      (doc as any).clip();
+      (doc as any).discardPath?.();
+      logoClipped = true;
+    } catch {
+      logoClipped = false;
+    }
+    doc.addImage(logo, "JPEG", logoCx - logoD / 2, logoCy - logoD / 2, logoD, logoD);
+    if (logoClipped) {
+      try {
+        (doc as any).restoreGraphicsState();
+      } catch {
+        /* noop */
+      }
+    }
+  } else {
+    doc.setFillColor(255, 255, 255);
+    doc.circle(logoCx, logoCy, logoD / 2, "F");
   }
 
   // Marca "QaRd" (mayúsculas espaciadas) + subtítulo
@@ -169,7 +189,8 @@ async function drawCard(
 
   doc.setFontSize(6.4);
   doc.setTextColor(178, 186, 198);
-  doc.text("Tarjeta principal · 00", txtX, y + px(51));
+  doc.text(subtitle, txtX, y + px(51));
+
 
   // --- QR pequeño arriba a la derecha (caja blanca con padding 6px) ---
   const qrBox = px(66);
