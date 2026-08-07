@@ -581,16 +581,6 @@ export default function Qard() {
                 {s.limite_por_transaccion && <div className="text-[11px] mt-0.5">Máx por cobro: ${Number(s.limite_por_transaccion).toFixed(2)}</div>}
               </div>
               <div className="flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  title="Imprimir tarjetas (PDF)"
-                  onClick={() =>
-                    generarPdfTarjetasQard(s.qard_number, s.fecha_vencimiento ?? "12/99", s.alias)
-                  }
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
                 <Button size="sm" variant="ghost" title="Ver movimientos" onClick={() => abrirMovsSub(s)}>
                   <History className="h-4 w-4" />
                 </Button>
