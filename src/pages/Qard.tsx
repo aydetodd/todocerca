@@ -812,7 +812,7 @@ export default function Qard() {
           </div>
           <div className="divide-y max-h-[50vh] overflow-y-auto">
             {[
-              { id: "titular", nombre: titular?.alias || "Titular", term: "00" },
+              { id: "titular", nombre: subs.find(x => x.sub_index === 0)?.alias || "Titular", term: "00" },
               ...subs
                 .filter(s => s.estado !== "cancelada")
                 .map(s => ({ id: s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0") })),
@@ -844,8 +844,8 @@ export default function Qard() {
                 if (id === "titular") {
                   return {
                     qardNumber: qardNumber,
-                    vencimiento: titular?.fecha_vencimiento ?? "12/99",
-                    alias: titular?.alias,
+                    vencimiento: subs.find(x => x.sub_index === 0)?.fecha_vencimiento ?? "12/99",
+                    alias: subs.find(x => x.sub_index === 0)?.alias,
                     subtitle: "Tarjeta principal · 00",
                   };
                 }
