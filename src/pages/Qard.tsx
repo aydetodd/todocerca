@@ -332,7 +332,7 @@ export default function Qard() {
                     className="mr-[19px] rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
                     title="Imprimir tarjetas"
                     aria-label="Imprimir tarjetas"
-                    onClick={() => generarPdfTarjetasQard(qardNumber, titular?.fecha_vencimiento ?? "12/99", titular?.alias)}
+                    onClick={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
                   >
                     <Printer className="h-4 w-4" />
                   </button>
