@@ -382,7 +382,10 @@ export default function Qard() {
             {/* Datos debajo del plástico */}
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Saldo</div>
-              <div className={saldoColor}>${saldo.toFixed(2)}</div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className={saldoColor}>${saldo.toFixed(2)}</span>
+                <span className="text-sm font-semibold text-muted-foreground">QaRd pesos</span>
+              </div>
               {saldo < 0 && <div className="text-xs text-red-600 mt-1">Recarga para seguir usando (máx −$50)</div>}
 
               {wallet?.cvv_dinamico && (
