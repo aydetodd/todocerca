@@ -4,6 +4,8 @@
 // - Marca los viajes como retirados para no volverlos a cobrar
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { RETIROS_STP_ENABLED, METODOS_RETIRO_BLOQUEADOS, MENSAJE_RETIRO_BLOQUEADO } from "../_shared/featureFlags.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +35,13 @@ serve(async (req) => {
     const cvv = String(body.cvv || "").replace(/\D/g, "");
     if (!viajeIds.length) return err("Selecciona al menos un viaje");
     if (!["qard", "oxxo", "spei"].includes(metodo)) return err("Método inválido");
+    if (!RETIROS_STP_ENABLED && METODOS_RETIRO_BLOQUEADOS.includes(metodo)) {
+      return err(MENSAJE_RETIRO_BLOQUEADO);
+    }
+
+    // Límite de peticiones: solo en retiros/transferencias de dinero
+    const rl = await checkRateLimit(admin, user.id, "retirar_viajes", { maxIntentos: 5, ventanaSegundos: 60 });
+    if (!rl.ok) return err(rl.error!);
 
     // El usuario autenticado es auth.users.id.
     // Pero choferes/productos/contratos pertenecen al registro public.proveedores.id.
@@ -123,30 +132,33 @@ serve(async (req) => {
       const toWalletId = (subRow as any).wallet_id;
       const toSubIndex = (subRow as any).sub_index;
       const toTitular = (subRow as any).qard_wallets?.titular_user_id;
-      const toCvvDin = toSubIndex === 0
+      const toCvvDinEnc = toSubIndex === 0
         ? ((subRow as any).qard_wallets?.cvv_dinamico || (subRow as any).cvv_dinamico)
         : (subRow as any).cvv_dinamico;
+      // Los CVV viven cifrados: se descifran con la llave maestra (service_role)
+      const { data: toCvvDin } = await admin.rpc("qard_dec" as any, { _v: toCvvDinEnc });
 
       const mismoTitular = toTitular === user.id;
       if (!mismoTitular) {
         if (cvv.length !== 4) return err("Escribe el CVV dinámico de 4 dígitos del destino");
-        if (!toCvvDin || toCvvDin !== cvv) return err("CVV dinámico incorrecto");
+        if (!toCvvDin || String(toCvvDin) !== cvv) return err("CVV dinámico incorrecto");
       }
 
       const nuevoCvv = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join("");
+      const { data: nuevoCvvEnc } = await admin.rpc("qard_enc" as any, { _v: nuevoCvv });
       let saldoDestinoDespues = 0;
 
       if (toSubIndex === 0) {
         const { data: cur } = await admin.from("qard_wallets").select("saldo_mxn").eq("id", toWalletId).single();
         const nuevo = +(Number(cur?.saldo_mxn ?? 0) + neto).toFixed(2);
-        await admin.from("qard_wallets").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvv }).eq("id", toWalletId);
-        await admin.from("qard_sub_qr").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvv })
+        await admin.from("qard_wallets").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvvEnc }).eq("id", toWalletId);
+        await admin.from("qard_sub_qr").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvvEnc })
           .eq("id", toSubId).eq("sub_index", 0);
         saldoDestinoDespues = nuevo;
       } else {
         const { data: curSub } = await admin.from("qard_sub_qr").select("saldo_mxn").eq("id", toSubId).single();
         const nuevo = +(Number(curSub?.saldo_mxn ?? 0) + neto).toFixed(2);
-        await admin.from("qard_sub_qr").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvv }).eq("id", toSubId);
+        await admin.from("qard_sub_qr").update({ saldo_mxn: nuevo, cvv_dinamico: nuevoCvvEnc }).eq("id", toSubId);
         saldoDestinoDespues = nuevo;
       }
 

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -146,6 +147,9 @@ export default function QardCobrar() {
   };
 
   const abrirRetiro = (metodo: "oxxo" | "spei" | "qard") => {
+    if (!RETIROS_STP_ENABLED && (metodo === "oxxo" || metodo === "spei")) {
+      return toast({ title: "Próximamente", description: MENSAJE_RETIRO_PROXIMAMENTE });
+    }
     if (totalNeto <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
     setRetiroMetodo(metodo);
     setRetiroMonto("");
@@ -256,21 +260,36 @@ export default function QardCobrar() {
         </div>
 
         <div className="rounded-lg bg-muted p-3 mb-3">
-          <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo (simulado)</div>
+          <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo</div>
           <div className="grid grid-cols-3 gap-2">
-            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("oxxo")}>
+            <Button
+              size="sm" variant="outline"
+              className={`h-auto py-2 flex-col gap-1 relative ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
+              onClick={() => abrirRetiro("oxxo")}
+            >
               <Banknote className="h-4 w-4" />
               <span className="text-[11px]">OXXO efectivo</span>
+              {!RETIROS_STP_ENABLED && <span className="text-[9px] text-muted-foreground">Próximamente</span>}
             </Button>
-            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("spei")}>
+            <Button
+              size="sm" variant="outline"
+              className={`h-auto py-2 flex-col gap-1 relative ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
+              onClick={() => abrirRetiro("spei")}
+            >
               <Building2 className="h-4 w-4" />
               <span className="text-[11px]">SPEI a mi banco</span>
+              {!RETIROS_STP_ENABLED && <span className="text-[9px] text-muted-foreground">Próximamente</span>}
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("qard")}>
               <CreditCard className="h-4 w-4" />
               <span className="text-[11px]">A otra QaRd</span>
             </Button>
           </div>
+          {!RETIROS_STP_ENABLED && (
+            <div className="text-[10px] text-muted-foreground mt-2">
+              Efectivo y banco estarán disponibles al activar el nuevo proveedor de pagos. Transferir a otra QaRd sigue siendo gratis.
+            </div>
+          )}
           {totalRetirado > 0 && (
             <div className="text-[10px] text-muted-foreground mt-2">
               Retirado acumulado: ${totalRetirado.toFixed(2)}

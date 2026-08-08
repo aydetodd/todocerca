@@ -69,7 +69,9 @@ serve(async (req) => {
       if (!sub.cvv) {
         return jsonErr("Esta tarjeta no tiene CVV activo. Pide al titular que lo genere.", "cvv_no_configurado", { color: "rojo" });
       }
-      const cvvGuardado = String(sub.cvv).replace(/\D/g, "").trim();
+      // El CVV vive cifrado en la base: lo desciframos con la llave maestra (service_role)
+      const { data: cvvPlano } = await admin.rpc("qard_dec" as any, { _v: sub.cvv });
+      const cvvGuardado = String(cvvPlano ?? "").replace(/\D/g, "").trim();
       const cvvRecibido = String(cvvInput ?? "").replace(/\D/g, "").trim();
       console.log("[QARD-COBRAR] cvv match?", { esperado_len: cvvGuardado.length, recibido_len: cvvRecibido.length, ok: cvvGuardado === cvvRecibido });
       if (cvvGuardado !== cvvRecibido) {

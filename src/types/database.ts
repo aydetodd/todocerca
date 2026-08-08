@@ -1,3 +1,9 @@
+// ############################################################
+// ##  OBSOLETO - NO USAR                                    ##
+// ##  Estos tipos ya no reflejan la base de datos actual y  ##
+// ##  no se importan en ningún archivo del proyecto.        ##
+// ##  Fuente de verdad: src/integrations/supabase/types.ts  ##
+// ############################################################
 // Local database types for todocerca marketplace
 export type UserRole = 'cliente' | 'proveedor';
 export type AvailabilityStatus = 'disponible' | 'ocupado' | 'no_disponible';

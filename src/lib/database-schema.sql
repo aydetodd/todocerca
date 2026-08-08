@@ -1,3 +1,12 @@
+-- ############################################################
+-- ##  OBSOLETO - NO USAR                                    ##
+-- ##  Este archivo NO refleja la base de datos actual.      ##
+-- ##  Habla de tablas y extensiones (PostGIS, user_profiles)##
+-- ##  que ya no existen. Se conserva solo como historia.    ##
+-- ##  Fuente de verdad: migraciones de Supabase +           ##
+-- ##  src/integrations/supabase/types.ts (autogenerado).    ##
+-- ############################################################
+
 -- ===== TODOCERCA DATABASE SCHEMA =====
 -- Run this SQL in your Supabase SQL Editor
 
