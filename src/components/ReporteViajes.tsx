@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getHermosilloToday } from "@/lib/utils";
+import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { downloadCSV } from "@/lib/csvExport";
 import { toast } from "@/hooks/use-toast";
 
