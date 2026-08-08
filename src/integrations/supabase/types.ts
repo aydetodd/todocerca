@@ -3863,6 +3863,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          accion: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recursos_contrato: {
         Row: {
           aprobado_por: string | null
@@ -6514,6 +6535,16 @@ export type Database = {
         Returns: Json
       }
       qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
+      qard_rate_limit_check: {
+        Args: {
+          _accion: string
+          _max?: number
+          _user_id: string
+          _ventana_seg?: number
+        }
+        Returns: boolean
+      }
+      qard_rate_limit_purge: { Args: never; Returns: undefined }
       qard_revertir_pago_servicio: {
         Args: { _motivo: string; _pago_id: string }
         Returns: Json
