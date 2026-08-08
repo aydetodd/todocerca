@@ -629,15 +629,19 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                     onClick={() => openRetiro("qard")}>
                     <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
-                  <Button size="sm" variant="outline" className="justify-start"
+                  <Button size="sm" variant="outline"
+                    className={`justify-start ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
                     disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("oxxo")}>
                     <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
+                    {!RETIROS_STP_ENABLED && <span className="ml-auto text-[10px] text-muted-foreground">Próximamente</span>}
                   </Button>
-                  <Button size="sm" variant="outline" className="justify-start"
+                  <Button size="sm" variant="outline"
+                    className={`justify-start ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
                     disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("spei")}>
                     <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
+                    {!RETIROS_STP_ENABLED && <span className="ml-auto text-[10px] text-muted-foreground">Próximamente</span>}
                   </Button>
                 </div>
               </div>
