@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MIN_RECARGA = 200;
+const MIN_RECARGA = 300;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -33,7 +33,7 @@ serve(async (req) => {
     const body = await req.json();
     const monto = Number(body.monto_mxn);
     if (!monto || monto < MIN_RECARGA) {
-      throw new Error(`Recarga mínima $${MIN_RECARGA} MXN`);
+      throw new Error(`El mínimo de recarga es de ${MIN_RECARGA} pesos por ${MIN_RECARGA} QaRd pesos`);
     }
 
     // Asegurar wallet + qard_number
