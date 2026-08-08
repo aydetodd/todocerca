@@ -185,7 +185,7 @@ export default function Qard() {
 
   const recargar = async () => {
     const m = Number(monto);
-    if (!m || m < 200) return toast({ title: "Mínimo $200 MXN", variant: "destructive" });
+    if (!m || m < 300) return toast({ title: "Mínimo 300 QaRd pesos", description: "La recarga mínima es de $300 pesos por 300 QaRd pesos.", variant: "destructive" });
     const { data, error } = await supabase.functions.invoke("qard-recargar", { body: { monto_mxn: m } });
     if (error || !data?.url) return toast({ title: "Error al recargar", description: error?.message, variant: "destructive" });
     window.location.href = data.url;
