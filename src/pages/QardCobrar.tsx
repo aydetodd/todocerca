@@ -147,6 +147,9 @@ export default function QardCobrar() {
   };
 
   const abrirRetiro = (metodo: "oxxo" | "spei" | "qard") => {
+    if (!RETIROS_STP_ENABLED && (metodo === "oxxo" || metodo === "spei")) {
+      return toast({ title: "Próximamente", description: MENSAJE_RETIRO_PROXIMAMENTE });
+    }
     if (totalNeto <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
     setRetiroMetodo(metodo);
     setRetiroMonto("");
