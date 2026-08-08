@@ -423,12 +423,12 @@ export default function Qard() {
 
       {/* Recargar */}
       <Card className="p-4">
-        <div className="font-semibold mb-2">Recargar saldo</div>
+        <div className="font-semibold mb-2">Recargar QaRd pesos</div>
         <div className="flex gap-2">
-          <Input type="number" min={200} step={50} value={monto} onChange={e => setMonto(e.target.value)} />
-          <Button onClick={recargar}><Plus className="h-4 w-4 mr-1" /> Recargar</Button>
+          <Input type="number" min={300} step={50} value={monto} placeholder="" onChange={e => setMonto(e.target.value)} />
+          <Button onClick={recargar} disabled={Number(monto) < 300}><Plus className="h-4 w-4 mr-1" /> Recargar QaRd pesos</Button>
         </div>
-        <div className="text-xs text-muted-foreground mt-1">Mínimo $200 MXN. Recibes el monto exacto, sin descuentos.</div>
+        <div className="text-xs text-muted-foreground mt-1">El mínimo de recarga es de 300 pesos por 300 QaRd pesos. 1 QaRd peso = 1 peso mexicano.</div>
       </Card>
 
       {/* Transferir a otra QaRd (P2P gratis) */}
