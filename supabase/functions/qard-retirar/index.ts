@@ -44,6 +44,10 @@ serve(async (req) => {
     if (!monto || monto <= 0) return err("Monto inválido");
     if (monto < 20) return err("Monto mínimo $20");
 
+    // Límite de peticiones: solo en movimientos de dinero
+    const rl = await checkRateLimit(admin, user.id, "qard_retirar", { maxIntentos: 5, ventanaSegundos: 60 });
+    if (!rl.ok) return err(rl.error!);
+
     // Límite de peticiones: solo en retiros/transferencias de dinero
     const rl = await checkRateLimit(admin, user.id, "qard_retirar", { maxIntentos: 5, ventanaSegundos: 60 });
     if (!rl.ok) return err(rl.error!);
