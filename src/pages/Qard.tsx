@@ -138,8 +138,21 @@ export default function Qard() {
       supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString()).order("created_at", { ascending: false }).limit(500),
     ]);
     setQardNumber((prof as any)?.qard_number ?? "");
-    setWallet(w as any);
-    setSubs((s as any) ?? []);
+
+    // Los CVV viven cifrados en la base. Solo el dueño los ve en claro vía RPC segura.
+    const { data: cvvs } = await supabase.rpc("qard_mis_cvv" as any);
+    const mapaCvv = new Map<string, { cvv: string | null; cvv_dinamico: string | null }>(
+      ((cvvs as any[]) ?? []).map(r => [r.sub_qr_id as string, { cvv: r.cvv, cvv_dinamico: r.cvv_dinamico }])
+    );
+    const subsPlano = (((s as any[]) ?? []).map(row => ({
+      ...row,
+      cvv: mapaCvv.get(row.id)?.cvv ?? null,
+      cvv_dinamico: mapaCvv.get(row.id)?.cvv_dinamico ?? null,
+    })));
+    const ejeCvvDin = subsPlano.find((r: any) => r.sub_index === 0)?.cvv_dinamico ?? null;
+
+    setWallet(w ? ({ ...(w as any), cvv_dinamico: ejeCvvDin }) as any : (w as any));
+    setSubs(subsPlano as any);
     setMov((m as any) ?? []);
     setLoading(false);
   };
