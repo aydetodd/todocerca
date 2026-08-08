@@ -434,6 +434,10 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   };
 
   const openRetiro = (metodo: "qard" | "oxxo" | "spei") => {
+    if (!RETIROS_STP_ENABLED && (metodo === "oxxo" || metodo === "spei")) {
+      toast({ title: "Próximamente", description: MENSAJE_RETIRO_PROXIMAMENTE });
+      return;
+    }
     if (viajesDisponibles.length === 0) {
       toast({ title: "Sin viajes por cobrar", description: "No hay importe pendiente de retirar en este periodo.", variant: "destructive" });
       return;
