@@ -75,7 +75,7 @@ export default function Qard() {
   const [subs, setSubs] = useState<SubQR[]>([]);
   const [mov, setMov] = useState<Movimiento[]>([]);
   const [qardNumber, setQardNumber] = useState<string>("");
-  const [monto, setMonto] = useState<string>("200");
+  const [monto, setMonto] = useState<string>("");
   const [newAlias, setNewAlias] = useState("");
   const [newLimite, setNewLimite] = useState("");
   const [cvvVisible, setCvvVisible] = useState<Record<string, boolean>>({});
