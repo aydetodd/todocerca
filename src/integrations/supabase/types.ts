@@ -47,6 +47,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_crypto_keys: {
+        Row: {
+          created_at: string
+          nombre: string
+          valor: string
+        }
+        Insert: {
+          created_at?: string
+          nombre: string
+          valor: string
+        }
+        Update: {
+          created_at?: string
+          nombre?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       asignaciones_chofer: {
         Row: {
           asignado_por: string | null
@@ -2626,6 +2644,154 @@ export type Database = {
           },
         ]
       }
+      pagos_config: {
+        Row: {
+          created_at: string
+          id: boolean
+          notas: string | null
+          proveedor_activo: string
+          retiros_habilitados: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          notas?: string | null
+          proveedor_activo?: string
+          retiros_habilitados?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          notas?: string | null
+          proveedor_activo?: string
+          retiros_habilitados?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pagos_cuentas_virtuales: {
+        Row: {
+          beneficiario: string | null
+          clabe: string | null
+          created_at: string
+          estado: string
+          id: string
+          metadata: Json
+          proveedor: string
+          proveedor_ref: string | null
+          updated_at: string
+          user_id: string
+          wallet_id: string | null
+        }
+        Insert: {
+          beneficiario?: string | null
+          clabe?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          metadata?: Json
+          proveedor?: string
+          proveedor_ref?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_id?: string | null
+        }
+        Update: {
+          beneficiario?: string | null
+          clabe?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          metadata?: Json
+          proveedor?: string
+          proveedor_ref?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_cuentas_virtuales_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "qard_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagos_transferencias: {
+        Row: {
+          beneficiario: string | null
+          clabe_destino: string | null
+          clave_rastreo: string | null
+          comision_mxn: number
+          concepto: string | null
+          created_at: string
+          cuenta_virtual_id: string | null
+          direccion: string
+          error_mensaje: string | null
+          estado: string
+          id: string
+          idempotency_key: string | null
+          monto_mxn: number
+          payload: Json
+          proveedor: string
+          proveedor_ref: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiario?: string | null
+          clabe_destino?: string | null
+          clave_rastreo?: string | null
+          comision_mxn?: number
+          concepto?: string | null
+          created_at?: string
+          cuenta_virtual_id?: string | null
+          direccion?: string
+          error_mensaje?: string | null
+          estado?: string
+          id?: string
+          idempotency_key?: string | null
+          monto_mxn: number
+          payload?: Json
+          proveedor?: string
+          proveedor_ref?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiario?: string | null
+          clabe_destino?: string | null
+          clave_rastreo?: string | null
+          comision_mxn?: number
+          concepto?: string | null
+          created_at?: string
+          cuenta_virtual_id?: string | null
+          direccion?: string
+          error_mensaje?: string | null
+          estado?: string
+          id?: string
+          idempotency_key?: string | null
+          monto_mxn?: number
+          payload?: Json
+          proveedor?: string
+          proveedor_ref?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_transferencias_cuenta_virtual_id_fkey"
+            columns: ["cuenta_virtual_id"]
+            isOneToOne: false
+            referencedRelation: "pagos_cuentas_virtuales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paises: {
         Row: {
           codigo_iso: string
@@ -3187,6 +3353,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      qard_movimientos_archivo: {
+        Row: {
+          archived_at: string
+          data: Json
+          id: string
+          movimiento_id: string | null
+          original_created_at: string | null
+          titular_user_id: string | null
+        }
+        Insert: {
+          archived_at?: string
+          data: Json
+          id?: string
+          movimiento_id?: string | null
+          original_created_at?: string | null
+          titular_user_id?: string | null
+        }
+        Update: {
+          archived_at?: string
+          data?: Json
+          id?: string
+          movimiento_id?: string | null
+          original_created_at?: string | null
+          titular_user_id?: string | null
+        }
+        Relationships: []
       }
       qard_pagos_servicio: {
         Row: {
@@ -6289,11 +6482,26 @@ export type Database = {
           pp: string
         }[]
       }
+      qard_cvv_verificar: {
+        Args: { _cvv: string; _qard_number: string; _tipo?: string }
+        Returns: boolean
+      }
+      qard_dec: { Args: { _v: string }; Returns: string }
+      qard_enc: { Args: { _v: string }; Returns: string }
       qard_ensure_number: { Args: { _user_id: string }; Returns: string }
       qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
       qard_finalize_registration: {
         Args: { _nivel2_id: string }
         Returns: string
+      }
+      qard_mis_cvv: {
+        Args: never
+        Returns: {
+          cvv: string
+          cvv_dinamico: string
+          qard_number: string
+          sub_qr_id: string
+        }[]
       }
       qard_pagar_servicio: {
         Args: {
