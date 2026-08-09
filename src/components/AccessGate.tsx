@@ -88,11 +88,6 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
       if (data?.error) throw new Error(data.error);
       setEmailGuardado(correo);
       setEditandoCorreo(false);
-      if (data?.auto_verified) {
-        toast({ title: "Listo", description: "Ya puedes usar TodoCerca aquí" });
-        onVerified();
-        return;
-      }
       setEmailMasked(data?.email_masked || correo);
       setStep("code");
       toast({ title: "Código enviado", description: "Revisa tu correo (y la carpeta de spam)" });
@@ -137,6 +132,10 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
   };
 
   const signOut = async () => {
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) await supabase.from("active_sessions").delete().eq("user_id", auth.user.id);
+    } catch (_) { /* ignorar */ }
     await supabase.auth.signOut();
     window.location.href = "/auth";
   };
