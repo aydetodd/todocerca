@@ -122,6 +122,17 @@ serve(async (req) => {
       });
     }
 
+    // Tomar la sesión única en este dispositivo (libera cualquier otro)
+    await supabase.from("active_sessions").delete().eq("user_id", user.id);
+    const { error: sessErr } = await supabase.from("active_sessions").insert({
+      user_id: user.id,
+      device_fingerprint: deviceFingerprint,
+      device_name: deviceName,
+      device_type: deviceType,
+      user_agent: userAgent,
+    });
+    if (sessErr) console.error("session claim err", sessErr);
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
