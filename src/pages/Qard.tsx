@@ -251,7 +251,7 @@ export default function Qard() {
     if (limite?.disponible !== null && limite && m > limite.disponible) {
       return toast({
         title: "Pasas tu tope del mes",
-        description: `Este mes solo te quedan $${limite.disponible.toFixed(2)} de recarga. El día 1 se reinicia.`,
+        description: `Este mes solo te quedan $${limite.disponible.toFixed(2)} de entradas (recargas + cobros). El día 1 se reinicia.`,
         variant: "destructive",
       });
     }
@@ -508,7 +508,7 @@ export default function Qard() {
           )}
           {identidad?.estado === "moral_approved" ? (
             <div className="text-xs text-sky-700 mt-2 font-medium">
-              Cuenta empresa aprobada: sin tope mensual de recarga.
+              Cuenta Comerciante aprobada: sin tope mensual de entradas.
             </div>
           ) : identidad?.estado === "active" ? (
             <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setMoralOpen(true)}>
@@ -550,13 +550,13 @@ export default function Qard() {
               />
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              Has recargado ${limite.usado.toFixed(2)} de tus ${limite.tope.toFixed(2)} disponibles este mes.
-              Tu saldo no caduca ni tiene tope: solo se limita cuánto dinero nuevo metes al mes.
+              Has recibido ${limite.usado.toFixed(2)} de tus ${limite.tope.toFixed(2)} disponibles este mes (recargas + cobros).
+              Tu saldo no caduca ni tiene tope: solo se limita cuánto dinero nuevo entra al mes. El día 1 se reinicia.
             </div>
           </div>
         )}
         {activa && limite && limite.tope === null && (
-          <div className="text-xs text-sky-700 mt-2 font-medium">Cuenta empresa: recargas sin tope mensual.</div>
+          <div className="text-xs text-sky-700 mt-2 font-medium">Cuenta Comerciante: entradas sin tope mensual.</div>
         )}
       </Card>
 

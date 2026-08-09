@@ -48,9 +48,14 @@ serve(async (req) => {
     const rl = await checkRateLimit(admin, user.id, "qard_retirar", { maxIntentos: 5, ventanaSegundos: 60 });
     if (!rl.ok) return err(rl.error!);
 
-    // Límite de peticiones: solo en retiros/transferencias de dinero
-    const rl = await checkRateLimit(admin, user.id, "qard_retirar", { maxIntentos: 5, ventanaSegundos: 60 });
-    if (!rl.ok) return err(rl.error!);
+    // Retiros a banco/OXXO: solo cuentas de Comerciante aprobado
+    if (metodo === "oxxo" || metodo === "spei") {
+      const { data: identR } = await admin
+        .from("qard_identidad").select("estado").eq("user_id", user.id).maybeSingle();
+      if (identR?.estado !== "moral_approved") {
+        return err("Los retiros a banco y OXXO son solo para cuentas de Comerciante aprobado. Solicita tu upgrade desde tu perfil.");
+      }
+    }
 
     // Asegurar wallet del comercio (usa RPC, y si no existe la crea directo)
     try { await admin.rpc("qard_ensure_wallet", { _user_id: user.id }); } catch (_) {}
@@ -219,6 +224,9 @@ serve(async (req) => {
       metadata.referencia = referencia;
     }
 
+    // Comisión: 2% solo al sacar dinero de la bóveda (SPEI / OXXO). Transferencias QaRd: 0%.
+    const comisionRetiro = metodo === "qard" ? 0 : +(monto * 0.02).toFixed(2);
+    const recibe = +(monto - comisionRetiro).toFixed(2);
     const saldoDespues = +(disponible - monto).toFixed(2);
 
     const { error: insErr } = await admin.from("qard_movimientos").insert({
@@ -228,7 +236,7 @@ serve(async (req) => {
       monto_mxn: monto,
       saldo_despues: saldoDespues,
       comercio_user_id: user.id,
-      comision_mxn: 0,
+      comision_mxn: comisionRetiro,
       neto_comercio_mxn: -monto,
       descripcion,
       metadata,
@@ -238,11 +246,13 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ok: true,
       mensaje: metodo === "oxxo"
-        ? `Retiro en OXXO listo. Referencia ${referencia}`
+        ? `Retiro en OXXO listo por $${recibe.toFixed(2)} (comisión 2%: $${comisionRetiro.toFixed(2)}). Referencia ${referencia}`
         : metodo === "spei"
-        ? `SPEI enviado. Referencia ${referencia}`
+        ? `SPEI enviado por $${recibe.toFixed(2)} (comisión 2%: $${comisionRetiro.toFixed(2)}). Referencia ${referencia}`
         : `Transferencia enviada. Referencia ${referencia}`,
       referencia,
+      comision: comisionRetiro,
+      recibe,
       saldo_despues: saldoDespues,
       simulado: metodo !== "qard",
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

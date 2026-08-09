@@ -206,7 +206,7 @@ export default function QardCobrar() {
             className="text-2xl h-14"
             disabled={scanning}
           />
-          <p className="text-xs text-muted-foreground mt-1">Comisión 6% (recibes 94%). Sin membresías.</p>
+          <p className="text-xs text-muted-foreground mt-1">Sin comisión: recibes el 100%. Solo se cobra 2% al retirar.</p>
         </div>
 
         {!scanning ? (
@@ -235,7 +235,7 @@ export default function QardCobrar() {
                 </div>
               )}
               <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
-              <div className="mt-3 text-sm">Recibirás: <b>${Number(ultimo.neto).toFixed(2)}</b> (comisión ${Number(ultimo.comision).toFixed(2)})</div>
+              <div className="mt-3 text-sm">Recibes: <b>${Number(ultimo.neto).toFixed(2)}</b> (sin comisión)</div>
               <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
             </>
           )}

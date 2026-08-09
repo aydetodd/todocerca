@@ -1,19 +1,20 @@
 ---
 name: Identidad dual QaRd
-description: Apodo para lo social, nombre legal + CURP solo para dinero; activación de tarjeta, tope $10,000/mes y upgrade a Persona Moral
+description: Apodo para lo social, nombre legal + CURP solo para dinero; activación SOLO por correo, tope $10,000/mes de entradas, 0% comisiones internas, 2% al retirar, upgrade Comerciante $200/año
 type: feature
 ---
 
 **Identidad social (gratis)**: solo `profiles.apodo`. Chats, mapa, paradas virtuales, extraviados y regalos NUNCA consultan `nombre_completo` ni `curp`.
 
-**Identidad financiera**: tabla `qard_identidad` (estado `inactive` | `active` | `moral_review` | `moral_approved`, `nombre_completo`, `curp_enc` cifrada con `qard_enc`, `phone_verified`, `email_verified`). Todo usuario nuevo nace con tarjeta generada pero **INACTIVA** y botones de dinero bloqueados.
+**Identidad financiera**: tabla `qard_identidad` (estado `inactive` | `active` | `moral_review` | `moral_approved`). Todo usuario nace con tarjeta generada pero **INACTIVA**.
 
-**Activación (3 pasos)** vía edge function `qard-identidad`: SMS (Twilio + respaldo en buzón interno), correo (token 7 días en `email_verification_tokens`, Resend + respaldo buzón) y datos legales con validación algorítmica de CURP (`src/lib/curp.ts`, dígito verificador RENAPO).
+**Activación (2 pasos, EXCLUSIVAMENTE por correo)** vía `qard-identidad`: (1) código al correo (token 7 días, Resend desde `hola@todocerca.mx`), (2) Nombre Completo + CURP validada con dígito verificador (`src/lib/curp.ts`) y enlace `https://www.gob.mx/curp/` en pestaña nueva. **Ya no se usa SMS.**
 
-**Tope de recarga**: $10,000 MXN por mes calendario (`qard_limite_recarga`), validado en cliente y en `qard-recargar`. El **saldo no caduca ni tiene tope**; el gasto es ilimitado. Persona moral aprobada = sin tope (`tope = null`).
+**Reglas financieras**:
+- Movimientos internos (pagos, transporte, servicios, P2P, cobros de comercio): **0% comisión**.
+- Retiros SPEI/OXXO: **2%** y solo para cuentas Comerciante aprobadas.
+- Tope PLD: **$10,000 MXN de ENTRADAS por mes calendario** (recargas + cobros netos), calculado por `qard_entradas_mes` / `qard_limite_recarga` en horario Hermosillo. Se reinicia el día 1. Saldo acumulado sin tope ni caducidad; gastar es ilimitado.
 
-**Persona Moral**: `qard-moral` (acciones `solicitar` / `resolver`). Razón social + RFC (`src/lib/rfc.ts`) + Constancia de Situación Fiscal en bucket privado `constancias-fiscales` (ruta `{user_id}/...`). Revisión manual en `AdminSolicitudesMoral` dentro de `/panel` (solo admin).
+**Upgrade a Comerciante ($200 MXN/año)**: `qard-moral` acción `solicitar` con `tipo_persona` (fisica|moral), nombre/razón social, CURP o RFC, Constancia de Situación Fiscal en bucket privado `constancias-fiscales` (`{user_id}/...`) y re-verificación por correo. Estado pasa a EN REVISIÓN; admin aprueba/rechaza en `AdminSolicitudesMoral` (/panel) y el usuario recibe correo + buzón interno. Aprobado = sin tope + retiros desbloqueados, `suscripcion_vence` a 1 año.
 
-**Semáforo UI** (`ESTADO_UI` en `src/hooks/useQardIdentidad.ts`): gris INACTIVA, verde ACTIVA, ámbar EN REVISIÓN, azul/oro EMPRESA.
-
-**Regla dual en pantallas**: recibos, movimientos y la confirmación de cobro del comercio (`qard-cobrar-comercio` devuelve `titular_nombre` vía `qard_nombre_legal`) muestran el **nombre completo**; chats y mapas solo el **apodo**.
+**Semáforo UI** (`ESTADO_UI`): gris INACTIVA, verde ACTIVA, ámbar EN REVISIÓN, azul/oro COMERCIANTE.

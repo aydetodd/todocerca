@@ -23,7 +23,7 @@ export const ESTADO_UI: Record<EstadoQard, { label: string; clase: string }> = {
   inactive: { label: "INACTIVA", clase: "bg-muted text-muted-foreground border-border" },
   active: { label: "ACTIVA", clase: "bg-emerald-500 text-white border-emerald-600" },
   moral_review: { label: "EN REVISIÓN", clase: "bg-amber-500 text-white border-amber-600" },
-  moral_approved: { label: "EMPRESA", clase: "bg-sky-600 text-white border-amber-300" },
+  moral_approved: { label: "COMERCIANTE", clase: "bg-sky-600 text-white border-amber-300" },
 };
 
 export function useQardIdentidad() {

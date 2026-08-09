@@ -3379,39 +3379,54 @@ export type Database = {
         Row: {
           constancia_path: string
           created_at: string
+          curp_enc: string | null
           estado: string
           id: string
           motivo_rechazo: string | null
+          nombre_completo: string | null
           razon_social: string
           revisado_at: string | null
           revisado_por: string | null
           rfc: string
+          suscripcion_mxn: number
+          suscripcion_vence: string | null
+          tipo_persona: string
           updated_at: string
           user_id: string
         }
         Insert: {
           constancia_path: string
           created_at?: string
+          curp_enc?: string | null
           estado?: string
           id?: string
           motivo_rechazo?: string | null
+          nombre_completo?: string | null
           razon_social: string
           revisado_at?: string | null
           revisado_por?: string | null
           rfc: string
+          suscripcion_mxn?: number
+          suscripcion_vence?: string | null
+          tipo_persona?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           constancia_path?: string
           created_at?: string
+          curp_enc?: string | null
           estado?: string
           id?: string
           motivo_rechazo?: string | null
+          nombre_completo?: string | null
           razon_social?: string
           revisado_at?: string | null
           revisado_por?: string | null
           rfc?: string
+          suscripcion_mxn?: number
+          suscripcion_vence?: string | null
+          tipo_persona?: string
           updated_at?: string
           user_id?: string
         }
@@ -6669,6 +6684,7 @@ export type Database = {
       qard_enc: { Args: { _v: string }; Returns: string }
       qard_ensure_number: { Args: { _user_id: string }; Returns: string }
       qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
+      qard_entradas_mes: { Args: { _user_id: string }; Returns: number }
       qard_finalize_registration: {
         Args: { _nivel2_id: string }
         Returns: string
