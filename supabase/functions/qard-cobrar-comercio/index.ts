@@ -1,6 +1,6 @@
 // QaRd — Cobro del comercio a un QR
-// Descuenta el 100% del monto al titular del sub-QR y registra 6% comisión / 94% neto para el comercio.
-// El 94% se acumula en liquidaciones_diarias (Stripe Connect existente).
+// Movimientos internos: 0% de comisión. El monto exacto se acredita al comercio.
+// La única comisión de TodoCerca es el 2% al retirar (SPEI/OXXO).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
@@ -9,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const COMISION_PCT = 0.06;
+const COMISION_PCT = 0; // 0% en movimientos internos
 const SALDO_MIN = -50;
 
 serve(async (req) => {
@@ -151,7 +151,7 @@ serve(async (req) => {
       if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
     }
 
-    // 5) Split 6% / 94%
+    // 5) Sin comisión interna: neto = monto
     const comision = +(monto * COMISION_PCT).toFixed(2);
     const neto = +(monto - comision).toFixed(2);
 
