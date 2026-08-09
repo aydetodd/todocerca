@@ -66,9 +66,9 @@ import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
 import { NavigationBar } from "@/components/NavigationBar";
-import { DeviceVerificationGate } from "@/components/DeviceVerificationGate";
+import { AccessGate } from "@/components/AccessGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
-import { SingleSessionGate } from "@/components/SingleSessionGate";
+import { useSingleSession } from "@/hooks/useSingleSession";
 
 // Component to activate global notifications
 const GlobalNotificationsProvider = () => {
@@ -80,15 +80,28 @@ const GlobalNotificationsProvider = () => {
 // Rutas públicas exentas de verificación de dispositivo
 const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona"];
 
-const DeviceVerificationProvider = () => {
+const AccessGateProvider = () => {
   const location = useLocation();
-  const { status, recheck } = useDeviceVerification();
+  const { status: deviceStatus, recheck: recheckDevice } = useDeviceVerification();
+  const { status: sessionStatus, blockedInfo, recheck: recheckSession } = useSingleSession();
 
   const isPublic = PUBLIC_PATHS.some((p) => location.pathname.startsWith(p));
   if (isPublic) return null;
-  if (status !== "needs_verification") return null;
 
-  return <DeviceVerificationGate onVerified={recheck} />;
+  const needsDevice = deviceStatus === "needs_verification";
+  const blocked = sessionStatus === "blocked";
+  if (!needsDevice && !blocked) return null;
+
+  return (
+    <AccessGate
+      motivo={needsDevice ? "dispositivo" : "sesion"}
+      sesionEn={blockedInfo}
+      onVerified={() => {
+        recheckDevice();
+        recheckSession();
+      }}
+    />
+  );
 };
 
 // Direct navigation handler - after auth, go straight to main home
@@ -135,10 +148,8 @@ export default function AppWrapper() {
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
         <NavigationHandler />
-        {/* Verificación de dispositivo móvil nuevo */}
-        <DeviceVerificationProvider />
-        {/* Sesión única por usuario (bloqueo duro) */}
-        <SingleSessionGate />
+        {/* Validación única de acceso (dispositivo + sesión única) por correo */}
+        <AccessGateProvider />
         <NavigationBar />
         <Routes>
           <Route path="/" element={<Home />} />

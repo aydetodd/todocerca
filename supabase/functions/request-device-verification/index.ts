@@ -1,4 +1,4 @@
-// Solicita un código SMS para autorizar un dispositivo móvil nuevo
+// Solicita un código por CORREO para autorizar el acceso desde este dispositivo
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -7,19 +7,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const REMITENTE = Deno.env.get("RESEND_FROM") || "TodoCerca <hola@todocerca.mx>";
+
+function plantilla(titulo: string, cuerpoHtml: string) {
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #eee;border-radius:12px">
+    <h2 style="margin:0 0 12px;color:#111">${titulo}</h2>
+    ${cuerpoHtml}
+    <p style="color:#999;font-size:12px;margin-top:24px">TodoCerca · todocerca.mx</p>
+  </div>`;
+}
+
+function enmascararCorreo(email: string) {
+  const [u, d] = email.split("@");
+  if (!d) return email;
+  const visible = u.slice(0, 2);
+  return `${visible}${"•".repeat(Math.max(u.length - 2, 2))}@${d}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!authHeader) return json({ error: "No autorizado" }, 401);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -33,44 +51,62 @@ serve(async (req) => {
     );
 
     const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Usuario no encontrado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (userError || !user) return json({ error: "Usuario no encontrado" }, 401);
 
     const body = await req.json();
     const deviceFingerprint: string = body.device_fingerprint;
-    const deviceName: string = body.device_name || "Dispositivo móvil";
+    const deviceName: string = body.device_name || "Este dispositivo";
+    const deviceType: string = body.device_type || "mobile";
+    const correoManual: string | undefined = (body.email || "").toString().trim() || undefined;
 
     if (!deviceFingerprint || deviceFingerprint.length < 10) {
-      return new Response(JSON.stringify({ error: "Fingerprint inválido" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Fingerprint inválido" }, 400);
     }
 
-    // Obtener teléfono del perfil
+    // Correo destino: el de la cuenta, el del perfil o el que escriba el usuario
     const { data: profile } = await supabase
       .from("profiles")
-      .select("telefono, nombre, apodo")
+      .select("telefono, email")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!profile?.telefono) {
-      return new Response(JSON.stringify({
-        error: "No tienes un teléfono registrado en tu perfil. Contacta soporte."
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const destino = correoManual || user.email || (profile as any)?.email || null;
+
+    const confiarSinCodigo = async (motivo: string) => {
+      console.warn("Autorizando dispositivo sin código:", motivo);
+      const { error: trustErr } = await supabase
+        .from("trusted_devices")
+        .upsert({
+          user_id: user.id,
+          device_fingerprint: deviceFingerprint,
+          device_name: deviceName,
+          device_type: deviceType,
+          user_agent: req.headers.get("User-Agent") || "",
+          is_active: true,
+          last_seen_at: new Date().toISOString(),
+        }, { onConflict: "user_id,device_fingerprint" });
+      if (trustErr) {
+        console.error("trust fallback err", trustErr);
+        return json({ error: "No se pudo autorizar el dispositivo" }, 500);
+      }
+      // Tomar la sesión única en este dispositivo
+      await supabase.from("active_sessions").delete().eq("user_id", user.id);
+      await supabase.from("active_sessions").insert({
+        user_id: user.id,
+        device_fingerprint: deviceFingerprint,
+        device_name: deviceName,
+        device_type: deviceType,
+        user_agent: req.headers.get("User-Agent") || "",
       });
-    }
+      return json({ success: true, auto_verified: true });
+    };
 
-    // Generar código de 6 dígitos
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (!destino) return await confiarSinCodigo("Sin correo registrado");
+    if (!resendKey) return await confiarSinCodigo("Resend no configurado");
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Guardar código (invalidar previos)
     await supabase
       .from("device_verification_codes")
       .update({ used: true })
@@ -84,95 +120,44 @@ serve(async (req) => {
         user_id: user.id,
         device_fingerprint: deviceFingerprint,
         code,
-        phone: profile.telefono,
+        phone: (profile as any)?.telefono || destino,
       });
 
     if (insertErr) {
       console.error("insert code err", insertErr);
-      return new Response(JSON.stringify({ error: "No se pudo generar el código" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "No se pudo generar el código" }, 500);
     }
 
-    // Enviar SMS via Twilio
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const from = Deno.env.get("TWILIO_PHONE_NUMBER");
-
-    const trustDeviceWithoutSms = async (reason: string) => {
-      console.warn("Autorizando dispositivo sin SMS:", reason);
-      await supabase
-        .from("device_verification_codes")
-        .update({ used: true })
-        .eq("user_id", user.id)
-        .eq("device_fingerprint", deviceFingerprint)
-        .eq("used", false);
-
-      const { error: trustErr } = await supabase
-        .from("trusted_devices")
-        .upsert({
-          user_id: user.id,
-          device_fingerprint: deviceFingerprint,
-          device_name: deviceName,
-          device_type: "mobile",
-          user_agent: req.headers.get("User-Agent") || "",
-          is_active: true,
-          last_seen_at: new Date().toISOString(),
-        }, { onConflict: "user_id,device_fingerprint" });
-
-      if (trustErr) {
-        console.error("trust fallback err", trustErr);
-        return new Response(JSON.stringify({ error: "No se pudo autorizar el dispositivo" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify({ success: true, auto_verified: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    };
-
-    if (!accountSid || !authToken || !from) {
-      return await trustDeviceWithoutSms("Twilio no configurado");
-    }
-
-    const toPhone = profile.telefono.startsWith("+") ? profile.telefono : `+52${profile.telefono.replace(/\D/g, "")}`;
-    const smsBody = `TodoCerca: Tu código para autorizar un dispositivo nuevo (${deviceName}) es: ${code}. Vence en 10 minutos. Si no fuiste tú, ignora este mensaje y cambia tu contraseña.`;
-
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Basic " + btoa(`${accountSid}:${authToken}`),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ To: toPhone, From: from, Body: smsBody }),
-      }
-    );
-
-    if (!twilioRes.ok) {
-      const errText = await twilioRes.text();
-      console.error("Twilio err:", errText);
-      return await trustDeviceWithoutSms("Twilio rechazó el envío");
-    }
-
-    // Devolver teléfono enmascarado
-    const masked = toPhone.slice(0, -4).replace(/\d/g, "•") + toPhone.slice(-4);
-
-    return new Response(JSON.stringify({ success: true, phone_masked: masked }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: REMITENTE,
+        to: [destino],
+        reply_to: "soporte@todocerca.mx",
+        subject: `Tu código de acceso TodoCerca: ${code}`,
+        html: plantilla(
+          "Confirma que eres tú",
+          `<p style="color:#444;margin:0">Estás entrando desde <b>${deviceName}</b>. Usa este código:</p>
+           <p style="font-size:34px;font-weight:800;letter-spacing:4px;margin:8px 0">${code}</p>
+           <p style="color:#666">Vence en 10 minutos. Al confirmarlo, tu cuenta quedará abierta solo en este dispositivo.</p>`
+        ),
+      }),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Resend err:", errText);
+      return await confiarSinCodigo("Resend rechazó el envío");
+    }
+
+    return json({ success: true, email_masked: enmascararCorreo(destino) });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error";
     console.error("request-device-verification err", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: msg }, 500);
   }
 });

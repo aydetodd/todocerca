@@ -4,22 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShieldCheck, Smartphone, Loader2, LogOut } from "lucide-react";
+import { ShieldCheck, Smartphone, Loader2, LogOut, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDeviceFingerprint, getDeviceName, getDeviceType } from "@/lib/deviceFingerprint";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
+  /** Motivo por el que se pide la validación */
+  motivo: "dispositivo" | "sesion";
+  /** Dispositivo donde estaba abierta la cuenta (si aplica) */
+  sesionEn?: { device_name: string | null; device_type: string | null; last_seen_at: string } | null;
   onVerified: () => void;
 }
 
-export function DeviceVerificationGate({ onVerified }: Props) {
+/**
+ * Validación única de acceso: un solo aviso, un solo código por correo.
+ * Autoriza este dispositivo y deja la cuenta abierta únicamente aquí.
+ */
+export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
   const { toast } = useToast();
   const [step, setStep] = useState<"intro" | "code">("intro");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState("");
-  const [phoneMasked, setPhoneMasked] = useState("");
+  const [emailMasked, setEmailMasked] = useState("");
+  const [emailManual, setEmailManual] = useState("");
   const [error, setError] = useState("");
 
   const fp = getDeviceFingerprint();
@@ -31,20 +40,25 @@ export function DeviceVerificationGate({ onVerified }: Props) {
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("request-device-verification", {
-        body: { device_fingerprint: fp, device_name: deviceName },
+        body: {
+          device_fingerprint: fp,
+          device_name: deviceName,
+          device_type: deviceType,
+          email: emailManual.trim() || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (data?.auto_verified) {
-        toast({ title: "Dispositivo autorizado", description: "Ya puedes entrar" });
+        toast({ title: "Listo", description: "Ya puedes usar TodoCerca aquí" });
         onVerified();
         return;
       }
-      setPhoneMasked(data?.phone_masked || "");
+      setEmailMasked(data?.email_masked || "");
       setStep("code");
-      toast({ title: "Código enviado", description: "Revisa los SMS de tu teléfono registrado" });
+      toast({ title: "Código enviado", description: "Revisa tu correo (y la carpeta de spam)" });
     } catch (e: any) {
-      const msg = e?.message || "No se pudo enviar el SMS";
+      const msg = e?.message || "No se pudo enviar el correo";
       setError(msg);
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
@@ -71,7 +85,7 @@ export function DeviceVerificationGate({ onVerified }: Props) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast({ title: "Dispositivo autorizado", description: "Ya puedes usar TodoCerca aquí" });
+      toast({ title: "Acceso confirmado", description: "Tu cuenta quedó abierta solo en este dispositivo" });
       onVerified();
     } catch (e: any) {
       const msg = e?.message || "Código incorrecto";
@@ -87,6 +101,10 @@ export function DeviceVerificationGate({ onVerified }: Props) {
     window.location.href = "/auth";
   };
 
+  const ultimaVez = sesionEn?.last_seen_at
+    ? new Date(sesionEn.last_seen_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })
+    : null;
+
   return (
     <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center p-4 overflow-auto">
       <Card className="w-full max-w-md">
@@ -94,9 +112,10 @@ export function DeviceVerificationGate({ onVerified }: Props) {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
             <ShieldCheck className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle>Autoriza este dispositivo</CardTitle>
+          <CardTitle>Confirma que eres tú</CardTitle>
           <CardDescription>
-            Por seguridad, necesitamos verificar que este teléfono te pertenece.
+            Tu cuenta se abre en un solo dispositivo a la vez. Te enviamos un código por correo para
+            dejarla abierta aquí.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -108,20 +127,38 @@ export function DeviceVerificationGate({ onVerified }: Props) {
             </div>
           </div>
 
+          {motivo === "sesion" && sesionEn && (
+            <div className="text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg p-3">
+              Tu cuenta está abierta en {sesionEn.device_name || "otro dispositivo"}
+              {ultimaVez ? ` (última actividad: ${ultimaVez})` : ""}. Al confirmar el código, se cerrará
+              ahí y quedará abierta aquí.
+            </div>
+          )}
+
           {step === "intro" && (
             <>
-              <p className="text-sm text-muted-foreground">
-                Te enviaremos un código por SMS al número de teléfono registrado en tu cuenta.
-                Si ya no tienes acceso a ese número, contacta a soporte.
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="email-acceso">Correo para recibir el código</Label>
+                <Input
+                  id="email-acceso"
+                  type="email"
+                  inputMode="email"
+                  autoFocus
+                  value={emailManual}
+                  onChange={(e) => setEmailManual(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si lo dejas vacío, lo enviamos al correo de tu cuenta.
+                </p>
+              </div>
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
               <Button onClick={requestCode} disabled={sending} className="w-full" size="lg">
-                {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Enviar código por SMS
+                {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                Enviar código por correo
               </Button>
             </>
           )}
@@ -129,8 +166,8 @@ export function DeviceVerificationGate({ onVerified }: Props) {
           {step === "code" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Enviamos un código de 6 dígitos a <span className="font-mono">{phoneMasked}</span>.
-                Vence en 10 minutos.
+                Enviamos un código de 6 dígitos a <span className="font-mono">{emailMasked}</span>. Vence
+                en 10 minutos.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="code">Código de verificación</Label>
@@ -139,9 +176,9 @@ export function DeviceVerificationGate({ onVerified }: Props) {
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
+                  autoFocus
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="000000"
                   className="text-center text-2xl tracking-widest font-mono"
                 />
               </div>
@@ -152,7 +189,7 @@ export function DeviceVerificationGate({ onVerified }: Props) {
               )}
               <Button onClick={submitCode} disabled={verifying || code.length !== 6} className="w-full" size="lg">
                 {verifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Verificar y autorizar
+                Confirmar y entrar
               </Button>
               <Button onClick={requestCode} variant="ghost" disabled={sending} className="w-full">
                 Reenviar código
