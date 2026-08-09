@@ -455,13 +455,49 @@ export default function Qard() {
       })()}
 
 
+      {/* Activación / identidad financiera */}
+      {!activa ? (
+        <Card className="p-4 border-amber-400/60 bg-amber-50 dark:bg-amber-950/20">
+          <div className="font-semibold mb-1">Tu tarjeta QaRd está INACTIVA</div>
+          <div className="text-xs text-muted-foreground mb-3">
+            Puedes usar los chats, el mapa y todo lo gratis con tu apodo. Para mover dinero
+            (recargar, pagar y transferir) necesitas activarla: verificamos tu teléfono, tu correo
+            y pedimos tu nombre completo y CURP.
+          </div>
+          <Button className="w-full" onClick={() => setActivarOpen(true)}>Activar mi QaRd</Button>
+        </Card>
+      ) : (
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Titular (nombre legal)</div>
+          <div className="font-semibold">{identidad?.nombre_completo ?? "—"}</div>
+          {identidad?.estado === "moral_review" && (
+            <div className="text-xs text-amber-600 mt-2">
+              Tu solicitud de empresa está en revisión (24 a 48 horas).
+            </div>
+          )}
+          {identidad?.estado === "moral_approved" ? (
+            <div className="text-xs text-sky-700 mt-2 font-medium">
+              Cuenta empresa aprobada: sin tope mensual de recarga.
+            </div>
+          ) : identidad?.estado === "active" ? (
+            <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setMoralOpen(true)}>
+              Convertir mi cuenta a Persona Moral / Proveedor
+            </Button>
+          ) : null}
+        </Card>
+      )}
+
       {/* Pagar servicios */}
       <Card className="p-4">
         <div className="font-semibold mb-1">Pagar servicios</div>
         <div className="text-xs text-muted-foreground mb-3">
           Luz, agua, gas, internet y predial con tu saldo QaRd.
         </div>
-        <Button variant="outline" className="w-full" onClick={() => nav("/qard/servicios")}>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => (activa ? nav("/qard/servicios") : pedirActivacion())}
+        >
           <Receipt className="h-4 w-4 mr-2" /> Ir a pagar servicios
         </Button>
       </Card>
@@ -470,11 +506,29 @@ export default function Qard() {
       <Card className="p-4">
         <div className="font-semibold mb-2">Recargar QaRd pesos</div>
         <div className="flex gap-2">
-          <Input type="number" min={300} step={50} value={monto} placeholder="" onChange={e => setMonto(e.target.value)} />
-          <Button onClick={recargar} disabled={Number(monto) < 300}><Plus className="h-4 w-4 mr-1" /> Recargar QaRd pesos</Button>
+          <Input type="number" min={300} step={50} value={monto} placeholder="" disabled={!activa} onChange={e => setMonto(e.target.value)} />
+          <Button onClick={recargar} disabled={!activa || Number(monto) < 300}><Plus className="h-4 w-4 mr-1" /> Recargar QaRd pesos</Button>
         </div>
         <div className="text-xs text-muted-foreground mt-1">El mínimo de recarga es de 300 pesos por 300 QaRd pesos. 1 QaRd peso = 1 peso mexicano.</div>
+        {activa && limite && limite.tope !== null && (
+          <div className="mt-3">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, (limite.usado / limite.tope) * 100)}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Has recargado ${limite.usado.toFixed(2)} de tus ${limite.tope.toFixed(2)} disponibles este mes.
+              Tu saldo no caduca ni tiene tope: solo se limita cuánto dinero nuevo metes al mes.
+            </div>
+          </div>
+        )}
+        {activa && limite && limite.tope === null && (
+          <div className="text-xs text-sky-700 mt-2 font-medium">Cuenta empresa: recargas sin tope mensual.</div>
+        )}
       </Card>
+
 
       {/* Transferir a otra QaRd (P2P gratis) */}
       <Card className="p-4 border-primary/40">
