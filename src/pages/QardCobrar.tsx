@@ -40,17 +40,18 @@ export default function QardCobrar() {
       .from("qard_movimientos" as any)
       .select("*")
       .eq("comercio_user_id", user.id)
-      .in("tipo", ["cobro_comercio", "retiro_oxxo", "retiro_spei", "retiro_qard"])
+      .in("tipo", ["cobro_comercio", "ajuste", "retiro_oxxo", "retiro_spei", "retiro_qard"])
       .order("created_at", { ascending: false })
       .limit(80);
     const rows = (data as any[]) ?? [];
-    setCobros(rows);
+    setCobros(rows.filter(r => r.tipo !== "ajuste"));
     const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
     const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
     setTotalBruto(soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
-    setTotalComision(soloCobros.reduce((s, r) => s + Number(r.comision_mxn ?? 0), 0));
+    setTotalComision(0);
     setTotalRetirado(soloRetiros.reduce((s, r) => s + Number(r.monto_mxn ?? 0), 0));
     setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
+
   }, []);
 
   useEffect(() => {
