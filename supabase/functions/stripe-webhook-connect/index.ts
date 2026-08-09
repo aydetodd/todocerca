@@ -26,12 +26,29 @@ serve(async (req) => {
     const sig = req.headers.get("stripe-signature");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET_CONNECT");
 
-    let event: Stripe.Event;
+    if (!webhookSecret) {
+      console.error("[WEBHOOK-CONNECT] STRIPE_WEBHOOK_SECRET_CONNECT no configurado");
+      return new Response(JSON.stringify({ error: "webhook_not_configured" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!sig) {
+      return new Response(JSON.stringify({ error: "missing_signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (webhookSecret && sig) {
+    let event: Stripe.Event;
+    try {
       event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
-    } else {
-      event = JSON.parse(body);
+    } catch (_err) {
+      console.warn("[WEBHOOK-CONNECT] firma inválida");
+      return new Response(JSON.stringify({ error: "invalid_signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log(`[WEBHOOK-CONNECT] Event: ${event.type}`);
