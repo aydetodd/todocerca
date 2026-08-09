@@ -984,9 +984,19 @@ export default function Qard() {
         </div>
       )}
 
+      <ActivarQardDialog
+        open={activarOpen}
+        onOpenChange={setActivarOpen}
+        phoneVerified={!!identidad?.phone_verified}
+        emailVerified={!!identidad?.email_verified}
+        onActivada={() => { recargarDatos(); cargar(); }}
+      />
+      <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
+
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
       </Button>
+
     </div>
   );
 }
