@@ -29,11 +29,42 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
   const [code, setCode] = useState("");
   const [emailMasked, setEmailMasked] = useState("");
   const [emailManual, setEmailManual] = useState("");
+  const [emailGuardado, setEmailGuardado] = useState<string | null>(null);
+  const [cargandoCorreo, setCargandoCorreo] = useState(true);
+  const [editandoCorreo, setEditandoCorreo] = useState(false);
   const [error, setError] = useState("");
 
   const fp = getDeviceFingerprint();
   const deviceName = getDeviceName();
   const deviceType = getDeviceType();
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth.user?.id;
+        let correo: string | null = auth.user?.email ?? null;
+        if (uid) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("user_id", uid)
+            .maybeSingle();
+          if ((data as any)?.email) correo = (data as any).email;
+        }
+        if (!activo) return;
+        setEmailGuardado(correo);
+        setEmailManual(correo || "");
+      } finally {
+        if (activo) setCargandoCorreo(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, []);
+
 
   const requestCode = async () => {
     setError("");
