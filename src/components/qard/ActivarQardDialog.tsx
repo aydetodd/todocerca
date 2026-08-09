@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Check, ShieldCheck, Loader2 } from "lucide-react";
+import { Check, ShieldCheck, Loader2, ExternalLink } from "lucide-react";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
 
 type Props = {
@@ -30,10 +30,9 @@ async function llamar(accion: string, extra: Record<string, unknown> = {}) {
   return data as any;
 }
 
-export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, emailVerified, onActivada }: Props) {
-  const [paso, setPaso] = useState<1 | 2 | 3>(phoneVerified ? (emailVerified ? 3 : 2) : 1);
+export default function ActivarQardDialog({ open, onOpenChange, emailVerified, onActivada }: Props) {
+  const [paso, setPaso] = useState<1 | 2>(emailVerified ? 2 : 1);
   const [ocupado, setOcupado] = useState(false);
-  const [codigoSms, setCodigoSms] = useState("");
   const [correo, setCorreo] = useState("");
   const [codigoCorreo, setCodigoCorreo] = useState("");
   const [nombre, setNombre] = useState("");
@@ -56,7 +55,7 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
         </DialogHeader>
 
         <div className="flex items-center gap-2 mb-2">
-          {[1, 2, 3].map(n => (
+          {[1, 2].map(n => (
             <div key={n} className={`h-1.5 flex-1 rounded-full ${paso >= n ? "bg-primary" : "bg-muted"}`} />
           ))}
         </div>
@@ -64,55 +63,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
         {paso === 1 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Paso 1 de 3: te mandamos un código de 6 dígitos. Si tu teléfono no recibe el SMS,
-              escribe tu correo y te lo mandamos ahí.
-            </p>
-            <div>
-              <Label className="text-xs">Correo (respaldo, opcional)</Label>
-              <Input type="email"
-                value={correo} onChange={e => setCorreo(e.target.value)} autoFocus />
-            </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={ocupado}
-              onClick={() => ejecutar(async () => {
-                const r = await llamar("enviar_sms", correo.includes("@") ? { email: correo.trim() } : {});
-                toast({
-                  title: "Código enviado",
-                  description: r?.sms
-                    ? "Revisa tus mensajes SMS."
-                    : r?.correo
-                      ? `Te lo mandamos a ${r.destino}. Revisa también Spam.`
-                      : "Revisa tu buzón de TodoCerca (Mensajes).",
-                });
-              })}
-            >
-              Enviar código
-            </Button>
-            <div>
-              <Label className="text-xs">Código recibido</Label>
-              <Input inputMode="numeric" maxLength={6}
-                value={codigoSms} onChange={e => setCodigoSms(e.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus />
-            </div>
-            <Button
-              className="w-full" disabled={ocupado || codigoSms.length !== 6}
-              onClick={() => ejecutar(async () => {
-                await llamar("verificar_sms", { code: codigoSms });
-                toast({ title: "Teléfono verificado" });
-                setPaso(2);
-              })}
-            >
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar"}
-            </Button>
-          </div>
-        )}
-
-
-        {paso === 2 && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Paso 2 de 3: verifica tu correo. El código dura 7 días.
+              Paso 1 de 2: verificamos tu correo electrónico. El código te sirve por 7 días,
+              así puedes terminar cuando tengas tus datos a la mano.
             </p>
             <div>
               <Label className="text-xs">Tu correo</Label>
@@ -123,7 +75,7 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
               variant="outline" className="w-full" disabled={ocupado || !correo.includes("@")}
               onClick={() => ejecutar(async () => {
                 await llamar("enviar_correo", { email: correo.trim() });
-                toast({ title: "Código enviado", description: "Revisa tu correo y tu buzón de TodoCerca." });
+                toast({ title: "Código enviado", description: "Revisa tu correo (y la carpeta de Spam)." });
               })}
             >
               Enviar código al correo
@@ -131,14 +83,14 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             <div>
               <Label className="text-xs">Código recibido</Label>
               <Input inputMode="numeric" maxLength={6}
-                value={codigoCorreo} onChange={e => setCodigoCorreo(e.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus />
+                value={codigoCorreo} onChange={e => setCodigoCorreo(e.target.value.replace(/\D/g, "").slice(0, 6))} />
             </div>
             <Button
               className="w-full" disabled={ocupado || codigoCorreo.length !== 6}
               onClick={() => ejecutar(async () => {
                 await llamar("verificar_correo", { code: codigoCorreo });
                 toast({ title: "Correo verificado" });
-                setPaso(3);
+                setPaso(2);
               })}
             >
               {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar correo"}
@@ -146,10 +98,10 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
           </div>
         )}
 
-        {paso === 3 && (
+        {paso === 2 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Paso 3 de 3: tus datos legales. Solo se usan en pantallas de dinero; en chats y mapas
+              Paso 2 de 2: tus datos legales. Solo se usan en pantallas de dinero; en chats y mapas
               seguirás apareciendo con tu apodo.
             </p>
             <div>
@@ -164,12 +116,20 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
               {curp.length === 18 && !validarCurp(curp) && (
                 <p className="text-xs text-destructive mt-1">{MENSAJE_CURP_INVALIDA}</p>
               )}
+              <a
+                href="https://www.gob.mx/curp/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary font-medium mt-1 inline-flex items-center gap-1 underline"
+              >
+                ¿No sabes tu CURP? Consúltala aquí <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
             <Button
               className="w-full" disabled={ocupado || nombre.trim().length < 5 || !validarCurp(curp)}
               onClick={() => ejecutar(async () => {
                 await llamar("activar", { nombre_completo: nombre.trim(), curp });
-                toast({ title: "¡Tu QaRd está ACTIVA!", description: "Ya puedes recargar, pagar y transferir." });
+                toast({ title: "¡Tu QaRd está ACTIVA!", description: "Ya puedes recargar, pagar y transferir sin comisiones." });
                 onActivada();
                 onOpenChange(false);
               })}
