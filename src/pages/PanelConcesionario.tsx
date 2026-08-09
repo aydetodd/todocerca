@@ -1423,7 +1423,7 @@ export default function PanelConcesionario() {
             ) : (
               unidades.map((u) => {
                 const hasPoints = (u as any).punto_a_lat != null && (u as any).punto_b_lat != null;
-                const hasEsp32 = !!(u as any).esp32_secret || !!(u as any).esp32_mac;
+                const hasEsp32 = !!(u as any).esp32_configurado || !!(u as any).esp32_mac;
                 return (
                   <Card key={u.id}>
                     <CardContent className="p-4 space-y-3">
@@ -2159,12 +2159,12 @@ export default function PanelConcesionario() {
             (async () => {
               const { data } = await supabase
                 .from("unidades_empresa")
-                .select("id, esp32_mac, esp32_secret")
+                .select("id, esp32_mac, esp32_configurado")
                 .eq("proveedor_id", proveedor.id);
               if (data) {
                 setUnidades((prev) => prev.map((u) => {
                   const fresh = data.find((d: any) => d.id === u.id);
-                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_secret: fresh.esp32_secret } : u;
+                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_configurado: fresh.esp32_configurado } : u;
                 }));
               }
             })();

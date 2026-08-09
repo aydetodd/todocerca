@@ -42,7 +42,6 @@ interface Product {
 interface ProviderData {
   id: string;
   nombre: string;
-  email: string;
   telefono: string;
   business_phone: string;
   business_address: string;
