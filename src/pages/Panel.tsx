@@ -36,6 +36,8 @@ import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
+import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
+
 import ProviderRegistration from '@/components/ProviderRegistration';
 
 type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
