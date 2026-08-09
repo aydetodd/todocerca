@@ -216,12 +216,21 @@ export default function Qard() {
   };
 
   const recargar = async () => {
+    if (!activa) return pedirActivacion();
     const m = Number(monto);
     if (!m || m < 300) return toast({ title: "Mínimo 300 QaRd pesos", description: "La recarga mínima es de $300 pesos por 300 QaRd pesos.", variant: "destructive" });
+    if (limite?.disponible !== null && limite && m > limite.disponible) {
+      return toast({
+        title: "Pasas tu tope del mes",
+        description: `Este mes solo te quedan $${limite.disponible.toFixed(2)} de recarga. El día 1 se reinicia.`,
+        variant: "destructive",
+      });
+    }
     const { data, error } = await supabase.functions.invoke("qard-recargar", { body: { monto_mxn: m } });
     if (error || !data?.url) return toast({ title: "Error al recargar", description: error?.message, variant: "destructive" });
     window.location.href = data.url;
   };
+
 
   const enviarP2P = async () => {
     const desde = (p2pFromId || qardNumber).replace(/\s+/g, "");
