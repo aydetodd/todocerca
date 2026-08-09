@@ -153,7 +153,7 @@ serve(async (req) => {
         correoEnviado = await enviarCorreo(
           correoDestino,
           "Tu código para activar tu QaRd",
-          `<p>Tu código para activar tu QaRd es: <b style="font-size:22px">${code}</b></p><p>Vence en 10 minutos.</p>`,
+          plantilla("Tu código para activar tu QaRd", `<p style="font-size:34px;font-weight:800;letter-spacing:4px;margin:8px 0">${code}</p><p style="color:#666">Vence en 10 minutos.</p>`),
         );
       }
       await admin.from("messages").insert({
