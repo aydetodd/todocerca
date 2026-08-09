@@ -69,8 +69,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             </p>
             <div>
               <Label className="text-xs">Correo (respaldo, opcional)</Label>
-              <Input type="email" placeholder="tucorreo@ejemplo.com"
-                value={correo} onChange={e => setCorreo(e.target.value)} />
+              <Input type="email"
+                value={correo} onChange={e => setCorreo(e.target.value)} autoFocus />
             </div>
             <Button
               variant="outline"
@@ -92,8 +92,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             </Button>
             <div>
               <Label className="text-xs">Código recibido</Label>
-              <Input inputMode="numeric" maxLength={6} placeholder="123456"
-                value={codigoSms} onChange={e => setCodigoSms(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+              <Input inputMode="numeric" maxLength={6}
+                value={codigoSms} onChange={e => setCodigoSms(e.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus />
             </div>
             <Button
               className="w-full" disabled={ocupado || codigoSms.length !== 6}
