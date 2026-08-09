@@ -137,15 +137,27 @@ export default function Qard() {
     setSubMovs((data as any) ?? []);
   };
 
-  const rotarCvv = async (id: string) => {
-    const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
-    if (custom === null) return;
+  const rotarCvv = (id: string) => {
+    setCvvRotarId(id);
+    setCvvRotarValor("");
+    setCvvRotarOpen(true);
+  };
+
+  const ejecutarRotarCvv = async () => {
+    if (!cvvRotarId) return;
+    const custom = cvvRotarValor.trim();
+    if (custom && !/^\d{3}$/.test(custom)) {
+      return toast({ title: "CVV inválido", description: "Debe tener exactamente 3 dígitos o dejarse vacío para aleatorio.", variant: "destructive" });
+    }
     const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
-      _sub_qr_id: id, _nuevo_cvv: custom.trim() || null,
+      _sub_qr_id: cvvRotarId, _nuevo_cvv: custom || null,
     });
     if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
     toast({ title: "CVV actualizado", description: `Nuevo CVV: ${data}` });
-    setCvvVisible(v => ({ ...v, [id]: true }));
+    setCvvVisible(v => ({ ...v, [cvvRotarId]: true }));
+    setCvvRotarOpen(false);
+    setCvvRotarId(null);
+    setCvvRotarValor("");
     cargar();
   };
 
