@@ -113,6 +113,8 @@ export default function QardCobrar() {
     if (data.ok) {
       setMonto("");
       toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}` });
+      await cargarCobros();
+      setTimeout(() => { cargarCobros(); }, 1200);
     }
   };
 
