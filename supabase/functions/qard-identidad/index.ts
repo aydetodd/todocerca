@@ -26,17 +26,25 @@ function validarCurp(curp: string): boolean {
   return ((10 - (suma % 10)) % 10) === Number(curp[17]);
 }
 
+const REMITENTE = Deno.env.get("RESEND_FROM") || "TodoCerca <m.villa@todocerca.mx>";
+
+async function enviarConRemitente(key: string, from: string, to: string, subject: string, html: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [to], subject, html }),
+  });
+  if (!res.ok) console.error(`Resend error (${from})`, res.status, await res.text());
+  return res.ok;
+}
+
 async function enviarCorreo(to: string, subject: string, html: string): Promise<boolean> {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (!resendKey) return false;
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "TodoCerca <hola@todocerca.mx>", to: [to], subject, html }),
-    });
-    if (!res.ok) console.error("Resend error", await res.text());
-    return res.ok;
+    if (await enviarConRemitente(resendKey, REMITENTE, to, subject, html)) return true;
+    // Respaldo: remitente de pruebas de Resend (solo llega al dueño de la cuenta)
+    return await enviarConRemitente(resendKey, "TodoCerca <onboarding@resend.dev>", to, subject, html);
   } catch (e) {
     console.error("Resend fetch error", e);
     return false;
