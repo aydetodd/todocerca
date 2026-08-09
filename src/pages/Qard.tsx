@@ -997,6 +997,55 @@ export default function Qard() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: asignar / retirar saldo de sub-QR */}
+      <Dialog open={subTransferOpen} onOpenChange={(o) => { if (!o) { setSubTransferOpen(false); setSubTransferMonto(""); setSubTransferTarget(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {subTransferSigno > 0 ? `Asignar a ${subTransferTarget?.alias}` : `Retirar de ${subTransferTarget?.alias}`}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Monto MXN</Label>
+              <Input
+                type="number"
+                min={1}
+                step="0.01"
+                value={subTransferMonto}
+                onChange={e => setSubTransferMonto(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <Button className="w-full" onClick={ejecutarTransferirSub}>
+              {subTransferSigno > 0 ? "Asignar saldo" : "Retirar saldo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: rotar CVV */}
+      <Dialog open={cvvRotarOpen} onOpenChange={(o) => { if (!o) { setCvvRotarOpen(false); setCvvRotarValor(""); setCvvRotarId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cambiar CVV de compras</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nuevo CVV de 3 dígitos</Label>
+              <Input
+                inputMode="numeric"
+                maxLength={3}
+                value={cvvRotarValor}
+                onChange={e => setCvvRotarValor(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground mt-1">Déjalo vacío para generar uno aleatorio.</p>
+            </div>
+            <Button className="w-full" onClick={ejecutarRotarCvv}>Guardar CVV</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* QR fullscreen para pagar */}
       {qrFullscreen && (
