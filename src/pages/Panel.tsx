@@ -418,6 +418,12 @@ export default function Panel() {
                     <div className="pt-3 border-t">
                       <AdminSolicitudesCambioRutas />
                     </div>
+
+                    {/* Solicitudes de Persona Moral (QaRd) */}
+                    <div className="pt-3 border-t">
+                      <AdminSolicitudesMoral />
+                    </div>
+
                   </>
                 )}
                 
