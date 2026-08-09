@@ -47,6 +47,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_cron_secret: {
+        Row: {
+          created_at: string
+          id: boolean
+          secret: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          secret: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          secret?: string
+        }
+        Relationships: []
+      }
       app_crypto_keys: {
         Row: {
           created_at: string
