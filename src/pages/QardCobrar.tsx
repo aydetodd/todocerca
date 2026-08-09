@@ -206,7 +206,7 @@ export default function QardCobrar() {
             className="text-2xl h-14"
             disabled={scanning}
           />
-          <p className="text-xs text-muted-foreground mt-1">Sin comisión: recibes el 100%. Solo se cobra 2% al retirar.</p>
+          <p className="text-xs text-muted-foreground mt-1">Recibes el monto completo. Transferir a otra QaRd es gratis; solo SPEI y OXXO cobran 2%.</p>
         </div>
 
         {!scanning ? (
@@ -235,7 +235,7 @@ export default function QardCobrar() {
                 </div>
               )}
               <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
-              <div className="mt-3 text-sm">Recibes: <b>${Number(ultimo.neto).toFixed(2)}</b> (sin comisión)</div>
+              <div className="mt-3 text-sm">Recibes: <b>${Number(ultimo.neto).toFixed(2)}</b></div>
               <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
             </>
           )}
@@ -252,20 +252,17 @@ export default function QardCobrar() {
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+        <div className="grid grid-cols-2 gap-2 text-center mb-3">
           <div className="rounded bg-muted p-2">
             <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
             <div className="font-bold text-foreground">${totalBruto.toFixed(2)}</div>
-          </div>
-          <div className="rounded bg-muted p-2">
-            <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
-            <div className="font-bold text-foreground">−${totalComision.toFixed(2)}</div>
           </div>
           <div className="rounded-xl bg-primary p-2 shadow-[var(--shadow-button)]">
             <div className="text-[10px] text-primary-foreground/90 uppercase">Disponible</div>
             <div className="font-bold text-primary-foreground text-[22px] leading-tight">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
+
 
         <div className="rounded-lg bg-muted p-3 mb-3">
           <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo</div>
@@ -295,7 +292,7 @@ export default function QardCobrar() {
           </div>
           {!RETIROS_STP_ENABLED && (
             <div className="text-[10px] text-muted-foreground mt-2">
-              Efectivo y banco estarán disponibles al activar el nuevo proveedor de pagos. Transferir a otra QaRd sigue siendo gratis.
+              Transferir a otra QaRd es gratis. SPEI y OXXO cobran 2% (y en OXXO la tienda puede cobrar aparte); estarán disponibles al activar el nuevo proveedor de pagos.
             </div>
           )}
           {totalRetirado > 0 && (
@@ -321,16 +318,12 @@ export default function QardCobrar() {
                     <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
                     <div className="text-[11px] text-muted-foreground">
                       {new Date(m.created_at).toLocaleString()}
-                      {!esRetiro && ` · comisión $${Number(m.comision_mxn ?? 0).toFixed(2)}`}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
                       {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
                     </div>
-                    {!esRetiro && (
-                      <div className="text-[10px] text-muted-foreground">de ${Math.abs(Number(m.monto_mxn ?? 0)).toFixed(2)}</div>
-                    )}
                   </div>
                 </div>
               );
