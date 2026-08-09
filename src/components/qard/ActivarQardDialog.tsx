@@ -116,8 +116,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             </p>
             <div>
               <Label className="text-xs">Tu correo</Label>
-              <Input type="email" placeholder="tucorreo@ejemplo.com"
-                value={correo} onChange={e => setCorreo(e.target.value)} />
+              <Input type="email"
+                value={correo} onChange={e => setCorreo(e.target.value)} autoFocus />
             </div>
             <Button
               variant="outline" className="w-full" disabled={ocupado || !correo.includes("@")}
@@ -130,8 +130,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             </Button>
             <div>
               <Label className="text-xs">Código recibido</Label>
-              <Input inputMode="numeric" maxLength={6} placeholder="123456"
-                value={codigoCorreo} onChange={e => setCodigoCorreo(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+              <Input inputMode="numeric" maxLength={6}
+                value={codigoCorreo} onChange={e => setCodigoCorreo(e.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus />
             </div>
             <Button
               className="w-full" disabled={ocupado || codigoCorreo.length !== 6}
@@ -154,8 +154,8 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
             </p>
             <div>
               <Label className="text-xs">Nombre completo</Label>
-              <Input placeholder="Como aparece en tu identificación"
-                value={nombre} onChange={e => setNombre(e.target.value)} />
+              <Input
+                value={nombre} onChange={e => setNombre(e.target.value)} autoFocus />
             </div>
             <div>
               <Label className="text-xs">CURP (18 caracteres)</Label>
