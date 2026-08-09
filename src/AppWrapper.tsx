@@ -1,7 +1,7 @@
 // AppWrapper v2025-01-27 - Global notifications for all pages
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalProviderTracking } from "@/components/GlobalProviderTracking";
@@ -183,10 +183,14 @@ export default function AppWrapper() {
           <Route path="/favoritos" element={<Favoritos />} />
           <Route path="/donar" element={<Donar />} />
           <Route path="/extraviados" element={<Extraviados />} />
-          <Route path="/votaciones" element={<Votaciones />} />
-          <Route path="/votaciones/crear" element={<CrearVotacion />} />
-          <Route path="/votaciones/:id" element={<VotacionDetalle />} />
-          <Route path="/sos/:token" element={<SOSView />} />
+          {/* Protocolo 1 + 2 + 3: módulos pausados redirigen a Próximamente */}
+          <Route path="/votaciones" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/votaciones/crear" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/votaciones/:id" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/sos/:token" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/tv" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/reportes-ciudadanos" element={<Navigate to="/proximamente" replace />} />
+          <Route path="/domotica" element={<Navigate to="/proximamente" replace />} />
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
           <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
@@ -208,11 +212,6 @@ export default function AppWrapper() {
           <Route path="/panel-concesionario/foraneo" element={<PanelConcesionarioForaneo />} />
           <Route path="/flota-monitoreo" element={<FlotaMonitoreo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
-          <Route path="/tv" element={<TodoCercaTv />} />
-          <Route path="/reportes-ciudadanos" element={<ReportesCiudadanos />} />
-          <Route path="/privacidad" element={<Privacidad />} />
-          <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
-          <Route path="/domotica" element={<Domotica />} />
           <Route path="/proximamente" element={<Proximamente />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
