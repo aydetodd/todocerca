@@ -13,6 +13,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
+import Proximamente from "./pages/Proximamente";
 import Panel from "./pages/Panel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -212,6 +213,7 @@ export default function AppWrapper() {
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/eliminar-cuenta" element={<EliminarCuenta />} />
           <Route path="/domotica" element={<Domotica />} />
+          <Route path="/proximamente" element={<Proximamente />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
