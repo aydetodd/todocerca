@@ -132,6 +132,10 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
   };
 
   const signOut = async () => {
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) await supabase.from("active_sessions").delete().eq("user_id", auth.user.id);
+    } catch (_) { /* ignorar */ }
     await supabase.auth.signOut();
     window.location.href = "/auth";
   };
