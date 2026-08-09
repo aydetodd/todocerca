@@ -45,7 +45,7 @@ export const NavigationBar = () => {
           className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/home') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Home className="h-5 w-5" />
-          <span className="text-[10px]">Inicio</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Inicio</span>
         </Button>
         
         <Button
@@ -62,7 +62,7 @@ export const NavigationBar = () => {
               </span>
             )}
           </div>
-          <span className="text-[10px]">Mensajes</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Mensajes</span>
         </Button>
         
         <Button
@@ -72,7 +72,7 @@ export const NavigationBar = () => {
           className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/favoritos') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
-          <span className="text-[10px]">Favoritos</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Favoritos</span>
         </Button>
 
         <Button
@@ -82,7 +82,7 @@ export const NavigationBar = () => {
           className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/proximamente') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Sparkles className="h-5 w-5" />
-          <span className="text-[10px]">Próximamente</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Próximamente</span>
         </Button>
 
         <Button
@@ -92,7 +92,7 @@ export const NavigationBar = () => {
           className="flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none text-muted-foreground"
         >
           <Share2 className="h-5 w-5" />
-          <span className="text-[10px]">Compartir</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Compartir</span>
         </Button>
 
 
@@ -103,7 +103,7 @@ export const NavigationBar = () => {
           className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <LayoutGrid className="h-5 w-5" />
-          <span className="text-[10px]">Panel</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Panel</span>
         </Button>
       </div>
     </div>
