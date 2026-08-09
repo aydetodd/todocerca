@@ -112,6 +112,15 @@ const ProductSearch = () => {
   const [loadingProfesiones, setLoadingProfesiones] = useState(false);
 
   const isTaxiMode = initialCategory === 'taxi';
+
+  // Protocolo 2: taxi oculto; si entran con ?category=taxi los mandamos a Próximamente
+  useEffect(() => {
+    if (initialCategory === 'taxi') {
+      navigate('/proximamente', { replace: true });
+    }
+  }, [initialCategory, navigate]);
+  if (initialCategory === 'taxi') return null;
+
   const [results, setResults] = useState<any[]>([]);
   const [mapProviders, setMapProviders] = useState<MapProvider[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
