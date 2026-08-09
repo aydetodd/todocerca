@@ -26,13 +26,33 @@ function validarCurp(curp: string): boolean {
   return ((10 - (suma % 10)) % 10) === Number(curp[17]);
 }
 
-const REMITENTE = Deno.env.get("RESEND_FROM") || "TodoCerca <m.villa@todocerca.mx>";
+const REMITENTE = Deno.env.get("RESEND_FROM") || "TodoCerca <hola@todocerca.mx>";
+const LOGO_URL = "https://todocerca.mx/icon-192.png";
+
+// Plantilla con el logo de TodoCerca (sin rastro de Resend)
+function plantilla(titulo: string, cuerpoHtml: string) {
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#F8F9FA;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a">
+    <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;padding:28px">
+      <tr><td align="center" style="padding-bottom:16px">
+        <img src="${LOGO_URL}" width="64" height="64" alt="TodoCerca" style="border-radius:16px;display:block" />
+        <div style="font-size:18px;font-weight:700;margin-top:10px">TodoCerca</div>
+      </td></tr>
+      <tr><td>
+        <h1 style="font-size:18px;margin:0 0 12px">${titulo}</h1>
+        ${cuerpoHtml}
+      </td></tr>
+      <tr><td style="padding-top:20px;border-top:1px solid #eee;color:#888;font-size:12px" align="center">
+        TodoCerca · todocerca.mx · Si no solicitaste este código, ignora este correo.
+      </td></tr>
+    </table>
+  </body></html>`;
+}
 
 async function enviarConRemitente(key: string, from: string, to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify({ from, to: [to], subject, html, reply_to: "soporte@todocerca.mx" }),
   });
   if (!res.ok) console.error(`Resend error (${from})`, res.status, await res.text());
   return res.ok;
@@ -42,14 +62,14 @@ async function enviarCorreo(to: string, subject: string, html: string): Promise<
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (!resendKey) return false;
   try {
-    if (await enviarConRemitente(resendKey, REMITENTE, to, subject, html)) return true;
-    // Respaldo: remitente de pruebas de Resend (solo llega al dueño de la cuenta)
-    return await enviarConRemitente(resendKey, "TodoCerca <onboarding@resend.dev>", to, subject, html);
+    // Dominio verificado: siempre salimos como TodoCerca, sin respaldo de resend.dev
+    return await enviarConRemitente(resendKey, REMITENTE, to, subject, html);
   } catch (e) {
     console.error("Resend fetch error", e);
     return false;
   }
 }
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
