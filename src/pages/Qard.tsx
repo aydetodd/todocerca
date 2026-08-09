@@ -212,17 +212,25 @@ export default function Qard() {
     // eslint-disable-next-line
   }, []);
 
-  const transferirSub = async (sub: SubQR, signo: 1 | -1) => {
-    const etiqueta = signo > 0 ? `Asignar a ${sub.alias}` : `Retirar de ${sub.alias}`;
-    const raw = prompt(`${etiqueta}\n\nMonto MXN:`, "100");
-    if (raw === null) return;
-    const m = Number(raw);
+  const transferirSub = (sub: SubQR, signo: 1 | -1) => {
+    setSubTransferTarget(sub);
+    setSubTransferSigno(signo);
+    setSubTransferMonto("");
+    setSubTransferOpen(true);
+  };
+
+  const ejecutarTransferirSub = async () => {
+    if (!subTransferTarget) return;
+    const m = Number(subTransferMonto);
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
     const { error } = await supabase.rpc("qard_transferir_a_sub" as any, {
-      _sub_qr_id: sub.id, _monto_mxn: m * signo,
+      _sub_qr_id: subTransferTarget.id, _monto_mxn: m * subTransferSigno,
     });
     if (error) return toast({ title: "No se pudo transferir", description: error.message, variant: "destructive" });
-    toast({ title: signo > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
+    toast({ title: subTransferSigno > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
+    setSubTransferOpen(false);
+    setSubTransferMonto("");
+    setSubTransferTarget(null);
     cargar();
   };
 
