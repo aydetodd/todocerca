@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShieldCheck, Smartphone, Loader2, LogOut, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { getDeviceFingerprint, getDeviceName, getDeviceType } from "@/lib/deviceFingerprint";
 import { useToast } from "@/hooks/use-toast";
 
@@ -84,7 +85,16 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
           email: correo,
         },
       });
-      if (error) throw error;
+      if (error) {
+        let detalle = error.message;
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const j = await error.context.json();
+            if (j?.error) detalle = j.error;
+          } catch (_) { /* ignorar */ }
+        }
+        throw new Error(detalle);
+      }
       if (data?.error) throw new Error(data.error);
       setEmailGuardado(correo);
       setEditandoCorreo(false);
@@ -118,7 +128,16 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
           code,
         },
       });
-      if (error) throw error;
+      if (error) {
+        let detalle = error.message;
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const j = await error.context.json();
+            if (j?.error) detalle = j.error;
+          } catch (_) { /* ignorar */ }
+        }
+        throw new Error(detalle);
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: "Acceso confirmado", description: "Tu cuenta quedó abierta solo en este dispositivo" });
       onVerified();

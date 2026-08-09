@@ -109,30 +109,41 @@ serve(async (req) => {
       return json({ error: "No se pudo generar el código" }, 500);
     }
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: REMITENTE,
-        to: [destino],
-        reply_to: "soporte@todocerca.mx",
-        subject: `Tu código de acceso TodoCerca: ${code}`,
-        html: plantilla(
-          "Confirma que eres tú",
-          `<p style="color:#444;margin:0">Estás entrando desde <b>${deviceName}</b>. Usa este código:</p>
-           <p style="font-size:34px;font-weight:800;letter-spacing:4px;margin:8px 0">${code}</p>
-           <p style="color:#666">Vence en 10 minutos. Al confirmarlo, tu cuenta quedará abierta solo en este dispositivo.</p>`
-        ),
-      }),
-    });
+    const html = plantilla(
+      "Confirma que eres tú",
+      `<p style="color:#444;margin:0">Estás entrando desde <b>${deviceName}</b>. Usa este código:</p>
+       <p style="font-size:34px;font-weight:800;letter-spacing:4px;margin:8px 0">${code}</p>
+       <p style="color:#666">Vence en 10 minutos. Al confirmarlo, tu cuenta quedará abierta solo en este dispositivo.</p>`
+    );
 
+    const enviar = async (from: string) =>
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: [destino],
+          reply_to: "soporte@todocerca.mx",
+          subject: `Tu código de acceso TodoCerca: ${code}`,
+          html,
+        }),
+      });
+
+    let res = await enviar(REMITENTE);
+
+    // Si el dominio propio aún no está verificado en Resend, usamos el remitente por defecto
     if (!res.ok) {
-      const errText = await res.text();
-      console.error("Resend err:", errText);
-      return json({ error: "No se pudo enviar el correo. Revisa que tu correo sea correcto." }, 502);
+      const primerError = await res.text();
+      console.error("Resend err (remitente propio):", primerError);
+      res = await enviar("TodoCerca <onboarding@resend.dev>");
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Resend err (fallback):", errText);
+        return json({ error: "No se pudo enviar el correo: " + errText }, 502);
+      }
     }
 
     return json({ success: true, email_masked: enmascararCorreo(destino) });
