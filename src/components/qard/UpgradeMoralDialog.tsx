@@ -64,7 +64,7 @@ export default function UpgradeMoralDialog({ open, onOpenChange, onEnviada }: Pr
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Nombre de la compañía (Razón Social)</Label>
-            <Input value={razon} onChange={e => setRazon(e.target.value)} placeholder="Transportes del Norte S.A. de C.V." />
+            <Input value={razon} onChange={e => setRazon(e.target.value)} autoFocus />
           </div>
           <div>
             <Label className="text-xs">RFC</Label>
