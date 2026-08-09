@@ -588,7 +588,6 @@ export default function Qard() {
             <Input
               inputMode="numeric"
               maxLength={19}
-              placeholder="0000 0000 0000 0000"
               value={p2pTo}
               onChange={e => setP2pTo(e.target.value.replace(/\D/g, "").slice(0, 16))}
             />
@@ -599,7 +598,6 @@ export default function Qard() {
               <Input
                 inputMode="numeric"
                 maxLength={4}
-                placeholder="4 dígitos"
                 value={p2pCvv}
                 onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
               />
@@ -610,7 +608,6 @@ export default function Qard() {
                 type="number"
                 min={1}
                 step="0.01"
-                placeholder="0.00"
                 value={p2pMonto}
                 onChange={e => setP2pMonto(e.target.value)}
               />
