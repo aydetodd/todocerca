@@ -72,7 +72,7 @@ type UnidadDetalle = {
   estado_verificacion: string | null;
   transport_type: string | null;
   esp32_mac?: string | null;
-  esp32_secret?: string | null;
+  esp32_configurado?: boolean | null;
   punto_a_lat?: number | null;
   punto_a_lng?: number | null;
   punto_b_lat?: number | null;
@@ -525,7 +525,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_secret, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_configurado, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
             .eq("proveedor_id", prov.id)
             .eq("transport_type", "publico"),
           8000, "unidades empresa");
@@ -542,7 +542,7 @@ export default function PanelConcesionario() {
             estado_verificacion: null,
             transport_type: u.transport_type || null,
             esp32_mac: u.esp32_mac || null,
-            esp32_secret: u.esp32_secret || null,
+            esp32_configurado: u.esp32_configurado || false,
             punto_a_lat: u.punto_a_lat,
             punto_a_lng: u.punto_a_lng,
             punto_b_lat: u.punto_b_lat,

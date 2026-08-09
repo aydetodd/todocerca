@@ -37,12 +37,12 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
       try {
         const { data, error } = await supabase
           .from('unidades_empresa')
-          .select('esp32_mac, esp32_secret, esp32_last_seen')
+          .select('esp32_mac, esp32_configurado, esp32_last_seen')
           .eq('id', unitId)
           .maybeSingle();
         if (error) throw error;
         const d = data as any;
-        setHasSecret(!!d?.esp32_secret);
+        setHasSecret(!!d?.esp32_configurado);
         setHasMac(!!d?.esp32_mac);
         setLastSeen((d?.esp32_last_seen as string) || null);
       } catch (e: any) {
@@ -59,9 +59,13 @@ export default function Esp32LinkDialog({ open, onOpenChange, unitId, unitName, 
     try {
       const { error } = await supabase
         .from('unidades_empresa')
-        .update({ esp32_mac: null, esp32_secret: null })
+        .update({ esp32_mac: null })
         .eq('id', unitId);
       if (error) throw error;
+      await supabase
+        .from('unidades_esp32_credenciales')
+        .delete()
+        .eq('unidad_id', unitId);
       setHasSecret(false);
       setHasMac(false);
       setLastSeen(null);
