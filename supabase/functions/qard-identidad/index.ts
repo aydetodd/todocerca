@@ -202,7 +202,7 @@ serve(async (req) => {
       const enviado = await enviarCorreo(
         email,
         "Código para verificar tu correo — QaRd",
-        `<p>Tu código para verificar tu correo es: <b style="font-size:22px">${token}</b></p><p>Vence en 7 días.</p>`,
+        plantilla("Código para verificar tu correo", `<p style="font-size:34px;font-weight:800;letter-spacing:4px;margin:8px 0">${token}</p><p style="color:#666">Vence en 7 días.</p>`),
       );
       await admin.from("messages").insert({
         sender_id: CANAL_OFICIAL,
