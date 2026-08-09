@@ -233,7 +233,9 @@ export default function Qard() {
 
 
   const enviarP2P = async () => {
+    if (!activa) return pedirActivacion();
     const desde = (p2pFromId || qardNumber).replace(/\s+/g, "");
+
     const hacia = p2pTo.replace(/\s+/g, "");
     const cvv = p2pCvv.trim();
     const m = Number(p2pMonto);
