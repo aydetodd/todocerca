@@ -99,6 +99,15 @@ export default function Qard() {
   const [p2pCvv, setP2pCvv] = useState("");
   const [p2pMonto, setP2pMonto] = useState("");
   const [p2pEnviando, setP2pEnviando] = useState(false);
+  // Transferencia a sub-QR
+  const [subTransferOpen, setSubTransferOpen] = useState(false);
+  const [subTransferTarget, setSubTransferTarget] = useState<SubQR | null>(null);
+  const [subTransferSigno, setSubTransferSigno] = useState<1 | -1>(1);
+  const [subTransferMonto, setSubTransferMonto] = useState("");
+  // Rotar CVV
+  const [cvvRotarOpen, setCvvRotarOpen] = useState(false);
+  const [cvvRotarId, setCvvRotarId] = useState<string | null>(null);
+  const [cvvRotarValor, setCvvRotarValor] = useState("");
   // Identidad financiera (activación de la tarjeta)
   const { identidad, limite, activa, recargarDatos } = useQardIdentidad();
   const [activarOpen, setActivarOpen] = useState(false);
@@ -128,15 +137,27 @@ export default function Qard() {
     setSubMovs((data as any) ?? []);
   };
 
-  const rotarCvv = async (id: string) => {
-    const custom = prompt("Escribe el nuevo CVV de 3 dígitos o deja vacío para uno aleatorio:");
-    if (custom === null) return;
+  const rotarCvv = (id: string) => {
+    setCvvRotarId(id);
+    setCvvRotarValor("");
+    setCvvRotarOpen(true);
+  };
+
+  const ejecutarRotarCvv = async () => {
+    if (!cvvRotarId) return;
+    const custom = cvvRotarValor.trim();
+    if (custom && !/^\d{3}$/.test(custom)) {
+      return toast({ title: "CVV inválido", description: "Debe tener exactamente 3 dígitos o dejarse vacío para aleatorio.", variant: "destructive" });
+    }
     const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
-      _sub_qr_id: id, _nuevo_cvv: custom.trim() || null,
+      _sub_qr_id: cvvRotarId, _nuevo_cvv: custom || null,
     });
     if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
     toast({ title: "CVV actualizado", description: `Nuevo CVV: ${data}` });
-    setCvvVisible(v => ({ ...v, [id]: true }));
+    setCvvVisible(v => ({ ...v, [cvvRotarId]: true }));
+    setCvvRotarOpen(false);
+    setCvvRotarId(null);
+    setCvvRotarValor("");
     cargar();
   };
 
@@ -191,17 +212,25 @@ export default function Qard() {
     // eslint-disable-next-line
   }, []);
 
-  const transferirSub = async (sub: SubQR, signo: 1 | -1) => {
-    const etiqueta = signo > 0 ? `Asignar a ${sub.alias}` : `Retirar de ${sub.alias}`;
-    const raw = prompt(`${etiqueta}\n\nMonto MXN:`, "100");
-    if (raw === null) return;
-    const m = Number(raw);
+  const transferirSub = (sub: SubQR, signo: 1 | -1) => {
+    setSubTransferTarget(sub);
+    setSubTransferSigno(signo);
+    setSubTransferMonto("");
+    setSubTransferOpen(true);
+  };
+
+  const ejecutarTransferirSub = async () => {
+    if (!subTransferTarget) return;
+    const m = Number(subTransferMonto);
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
     const { error } = await supabase.rpc("qard_transferir_a_sub" as any, {
-      _sub_qr_id: sub.id, _monto_mxn: m * signo,
+      _sub_qr_id: subTransferTarget.id, _monto_mxn: m * subTransferSigno,
     });
     if (error) return toast({ title: "No se pudo transferir", description: error.message, variant: "destructive" });
-    toast({ title: signo > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
+    toast({ title: subTransferSigno > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
+    setSubTransferOpen(false);
+    setSubTransferMonto("");
+    setSubTransferTarget(null);
     cargar();
   };
 
@@ -508,7 +537,7 @@ export default function Qard() {
       <Card className="p-4">
         <div className="font-semibold mb-2">Recargar QaRd pesos</div>
         <div className="flex gap-2">
-          <Input type="number" min={300} step={50} value={monto} placeholder="" disabled={!activa} onChange={e => setMonto(e.target.value)} />
+          <Input type="number" min={300} step={50} value={monto} disabled={!activa} onChange={e => setMonto(e.target.value)} />
           <Button onClick={recargar} disabled={!activa || Number(monto) < 300}><Plus className="h-4 w-4 mr-1" /> Recargar QaRd pesos</Button>
         </div>
         <div className="text-xs text-muted-foreground mt-1">El mínimo de recarga es de 300 pesos por 300 QaRd pesos. 1 QaRd peso = 1 peso mexicano.</div>
@@ -559,7 +588,6 @@ export default function Qard() {
             <Input
               inputMode="numeric"
               maxLength={19}
-              placeholder="0000 0000 0000 0000"
               value={p2pTo}
               onChange={e => setP2pTo(e.target.value.replace(/\D/g, "").slice(0, 16))}
             />
@@ -570,7 +598,6 @@ export default function Qard() {
               <Input
                 inputMode="numeric"
                 maxLength={4}
-                placeholder="4 dígitos"
                 value={p2pCvv}
                 onChange={e => setP2pCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
               />
@@ -581,7 +608,6 @@ export default function Qard() {
                 type="number"
                 min={1}
                 step="0.01"
-                placeholder="0.00"
                 value={p2pMonto}
                 onChange={e => setP2pMonto(e.target.value)}
               />
@@ -598,8 +624,8 @@ export default function Qard() {
       <Card className="p-4">
         <div className="font-semibold mb-3">Sub-QR familiares</div>
         <div className="flex gap-2 mb-3">
-          <Input placeholder="Alias (ej. Juan)" value={newAlias} onChange={e => setNewAlias(e.target.value)} />
-          <Input type="number" placeholder="Límite/trans (opcional)" value={newLimite} onChange={e => setNewLimite(e.target.value)} />
+          <Input value={newAlias} onChange={e => setNewAlias(e.target.value)} />
+          <Input type="number" value={newLimite} onChange={e => setNewLimite(e.target.value)} />
           <Button onClick={crearSub}><Plus className="h-4 w-4" /></Button>
         </div>
         <div className="space-y-2">
@@ -971,6 +997,55 @@ export default function Qard() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: asignar / retirar saldo de sub-QR */}
+      <Dialog open={subTransferOpen} onOpenChange={(o) => { if (!o) { setSubTransferOpen(false); setSubTransferMonto(""); setSubTransferTarget(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {subTransferSigno > 0 ? `Asignar a ${subTransferTarget?.alias}` : `Retirar de ${subTransferTarget?.alias}`}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Monto MXN</Label>
+              <Input
+                type="number"
+                min={1}
+                step="0.01"
+                value={subTransferMonto}
+                onChange={e => setSubTransferMonto(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <Button className="w-full" onClick={ejecutarTransferirSub}>
+              {subTransferSigno > 0 ? "Asignar saldo" : "Retirar saldo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: rotar CVV */}
+      <Dialog open={cvvRotarOpen} onOpenChange={(o) => { if (!o) { setCvvRotarOpen(false); setCvvRotarValor(""); setCvvRotarId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cambiar CVV de compras</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nuevo CVV de 3 dígitos</Label>
+              <Input
+                inputMode="numeric"
+                maxLength={3}
+                value={cvvRotarValor}
+                onChange={e => setCvvRotarValor(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground mt-1">Déjalo vacío para generar uno aleatorio.</p>
+            </div>
+            <Button className="w-full" onClick={ejecutarRotarCvv}>Guardar CVV</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* QR fullscreen para pagar */}
       {qrFullscreen && (
