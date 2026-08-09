@@ -248,8 +248,8 @@ serve(async (req) => {
         .select("phone_verified, email_verified, estado")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!ident?.phone_verified) return json({ error: "Primero verifica tu teléfono." }, 400);
-      if (!ident?.email_verified) return json({ error: "Primero verifica tu correo." }, 400);
+      // La verificación de identidad es EXCLUSIVAMENTE por correo electrónico
+      if (!ident?.email_verified) return json({ error: "Primero verifica tu correo electrónico." }, 400);
 
       const { data: curpEnc } = await admin.rpc("qard_enc", { _v: curp });
 
@@ -269,7 +269,7 @@ serve(async (req) => {
       await admin.from("messages").insert({
         sender_id: CANAL_OFICIAL,
         receiver_id: user.id,
-        message: "¡Tu tarjeta QaRd quedó ACTIVA! Ya puedes recargar hasta $10,000 QaRd pesos por mes, pagar y transferir.",
+        message: "¡Tu tarjeta QaRd quedó ACTIVA! Puedes recibir hasta $10,000 QaRd pesos al mes (recargas + cobros), pagar y transferir sin comisiones.",
       });
 
       return json({ success: true });
