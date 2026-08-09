@@ -74,9 +74,9 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
       // 1) Leer el secreto guardado de la unidad. Si no existe, generarlo
       //    automáticamente — el concesionario no necesita pedirlo a nadie.
       const { data, error } = await supabase
-        .from('unidades_empresa')
+        .from('unidades_esp32_credenciales')
         .select('esp32_secret')
-        .eq('id', unidadId)
+        .eq('unidad_id', unidadId)
         .maybeSingle();
       if (error) throw error;
 
@@ -84,9 +84,8 @@ export default function Esp32WifiProvisioner({ unidadId, unitLabel }: Props) {
       if (!secret) {
         secret = genSecret();
         const { error: upErr } = await supabase
-          .from('unidades_empresa')
-          .update({ esp32_secret: secret } as any)
-          .eq('id', unidadId);
+          .from('unidades_esp32_credenciales')
+          .upsert({ unidad_id: unidadId, esp32_secret: secret } as any, { onConflict: 'unidad_id' });
         if (upErr) throw upErr;
       }
 

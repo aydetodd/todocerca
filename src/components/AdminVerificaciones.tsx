@@ -76,7 +76,7 @@ export default function AdminVerificaciones() {
         (data || []).map(async (v: any) => {
           const { data: prov } = await supabase
             .from("proveedores")
-            .select("nombre, email")
+            .select("nombre")
             .eq("id", v.concesionario_id)
             .single();
 
@@ -112,7 +112,7 @@ export default function AdminVerificaciones() {
           return {
             ...v,
             proveedor_nombre: prov?.nombre || "—",
-            proveedor_email: prov?.email || "—",
+            proveedor_email: "—",
             unidades: unidades || [],
             cuenta_conectada_id: cuenta?.pagos_habilitados && cuenta?.transferencias_habilitadas ? cuenta.id : null,
           };

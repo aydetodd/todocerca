@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-flespi-token',
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -78,6 +78,29 @@ function isInsidePolygon(lat: number, lng: number, polygon: Array<{lat: number, 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Autenticación del webhook: Flespi debe enviar el token compartido
+  const expectedToken = Deno.env.get('FLESPI_WEBHOOK_TOKEN');
+  if (!expectedToken) {
+    console.error('[FLESPI WEBHOOK] FLESPI_WEBHOOK_TOKEN no configurado');
+    return new Response(JSON.stringify({ error: 'not_configured' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  const url = new URL(req.url);
+  const provided =
+    req.headers.get('x-flespi-token') ??
+    (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '') ??
+    url.searchParams.get('token') ??
+    '';
+  if (provided !== expectedToken) {
+    console.warn('[FLESPI WEBHOOK] token inválido');
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {

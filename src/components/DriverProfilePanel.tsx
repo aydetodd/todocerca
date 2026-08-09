@@ -828,7 +828,7 @@ export default function DriverProfilePanel() {
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(id, nombre, descripcion, placas, cobro_tipo, esp32_secret)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(id, nombre, descripcion, placas, cobro_tipo, esp32_configurado)')
             .eq('chofer_id', driver.id)
             .order('fecha', { ascending: false })
             .limit(1)
@@ -864,7 +864,7 @@ export default function DriverProfilePanel() {
                         descripcion: unitData.descripcion,
                         placas: unitData.placas,
                         cobro_tipo: (unitData.cobro_tipo as 'por_viaje' | 'por_pasajero' | null) ?? null,
-                        has_esp32: !!unitData.esp32_secret,
+                        has_esp32: !!unitData.esp32_configurado,
                       }
                     : null,
                 }

@@ -72,7 +72,7 @@ type UnidadDetalle = {
   estado_verificacion: string | null;
   transport_type: string | null;
   esp32_mac?: string | null;
-  esp32_secret?: string | null;
+  esp32_configurado?: boolean | null;
   punto_a_lat?: number | null;
   punto_a_lng?: number | null;
   punto_b_lat?: number | null;
@@ -525,7 +525,7 @@ export default function PanelConcesionario() {
       try {
         const { data: empresaUnidades } = await withTimeout<any>(
           supabase.from("unidades_empresa")
-            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_secret, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
+            .select("id, nombre, numero_economico, placas, descripcion, transport_type, esp32_mac, esp32_configurado, punto_a_lat, punto_a_lng, punto_b_lat, punto_b_lng, geofence_radius_m")
             .eq("proveedor_id", prov.id)
             .eq("transport_type", "publico"),
           8000, "unidades empresa");
@@ -542,7 +542,7 @@ export default function PanelConcesionario() {
             estado_verificacion: null,
             transport_type: u.transport_type || null,
             esp32_mac: u.esp32_mac || null,
-            esp32_secret: u.esp32_secret || null,
+            esp32_configurado: u.esp32_configurado || false,
             punto_a_lat: u.punto_a_lat,
             punto_a_lng: u.punto_a_lng,
             punto_b_lat: u.punto_b_lat,
@@ -1423,7 +1423,7 @@ export default function PanelConcesionario() {
             ) : (
               unidades.map((u) => {
                 const hasPoints = (u as any).punto_a_lat != null && (u as any).punto_b_lat != null;
-                const hasEsp32 = !!(u as any).esp32_secret || !!(u as any).esp32_mac;
+                const hasEsp32 = !!(u as any).esp32_configurado || !!(u as any).esp32_mac;
                 return (
                   <Card key={u.id}>
                     <CardContent className="p-4 space-y-3">
@@ -2159,12 +2159,12 @@ export default function PanelConcesionario() {
             (async () => {
               const { data } = await supabase
                 .from("unidades_empresa")
-                .select("id, esp32_mac, esp32_secret")
+                .select("id, esp32_mac, esp32_configurado")
                 .eq("proveedor_id", proveedor.id);
               if (data) {
                 setUnidades((prev) => prev.map((u) => {
                   const fresh = data.find((d: any) => d.id === u.id);
-                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_secret: fresh.esp32_secret } : u;
+                  return fresh ? { ...u, esp32_mac: fresh.esp32_mac, esp32_configurado: fresh.esp32_configurado } : u;
                 }));
               }
             })();

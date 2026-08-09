@@ -47,6 +47,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_cron_secret: {
+        Row: {
+          created_at: string
+          id: boolean
+          secret: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          secret: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          secret?: string
+        }
+        Relationships: []
+      }
       app_crypto_keys: {
         Row: {
           created_at: string
@@ -3277,7 +3295,6 @@ export type Database = {
           codigo_postal: string | null
           created_at: string
           description: string | null
-          email: string
           id: string
           latitude: number | null
           longitude: number | null
@@ -3292,7 +3309,6 @@ export type Database = {
           codigo_postal?: string | null
           created_at?: string
           description?: string | null
-          email: string
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -3307,7 +3323,6 @@ export type Database = {
           codigo_postal?: string | null
           created_at?: string
           description?: string | null
-          email?: string
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -5236,11 +5251,9 @@ export type Database = {
           conteo_subscription_status: string | null
           created_at: string
           descripcion: string | null
+          esp32_configurado: boolean
           esp32_last_seen: string | null
           esp32_mac: string | null
-          esp32_secret: string | null
-          esp32_wifi_password: string | null
-          esp32_wifi_ssid: string | null
           fecha_migracion_pi: string | null
           geofence_radius_m: number | null
           id: string
@@ -5273,11 +5286,9 @@ export type Database = {
           conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_configurado?: boolean
           esp32_last_seen?: string | null
           esp32_mac?: string | null
-          esp32_secret?: string | null
-          esp32_wifi_password?: string | null
-          esp32_wifi_ssid?: string | null
           fecha_migracion_pi?: string | null
           geofence_radius_m?: number | null
           id?: string
@@ -5310,11 +5321,9 @@ export type Database = {
           conteo_subscription_status?: string | null
           created_at?: string
           descripcion?: string | null
+          esp32_configurado?: boolean
           esp32_last_seen?: string | null
           esp32_mac?: string | null
-          esp32_secret?: string | null
-          esp32_wifi_password?: string | null
-          esp32_wifi_ssid?: string | null
           fecha_migracion_pi?: string | null
           geofence_radius_m?: number | null
           id?: string
@@ -5352,6 +5361,41 @@ export type Database = {
             columns: ["proveedor_id"]
             isOneToOne: false
             referencedRelation: "proveedores_publico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_esp32_credenciales: {
+        Row: {
+          created_at: string
+          esp32_secret: string | null
+          esp32_wifi_password: string | null
+          esp32_wifi_ssid: string | null
+          unidad_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          esp32_secret?: string | null
+          esp32_wifi_password?: string | null
+          esp32_wifi_ssid?: string | null
+          unidad_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          esp32_secret?: string | null
+          esp32_wifi_password?: string | null
+          esp32_wifi_ssid?: string | null
+          unidad_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_esp32_credenciales_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: true
+            referencedRelation: "unidades_empresa"
             referencedColumns: ["id"]
           },
         ]

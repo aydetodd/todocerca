@@ -1,3 +1,4 @@
+import { isAuthorizedCronCall, unauthorizedResponse } from "../_shared/cronAuth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -16,6 +17,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  if (!(await isAuthorizedCronCall(req))) return unauthorizedResponse(corsHeaders);
 
   try {
     const supabase = createClient(
