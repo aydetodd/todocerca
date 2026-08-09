@@ -1144,6 +1144,36 @@ export type Database = {
           },
         ]
       }
+      email_verification_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       empleados_empresa: {
         Row: {
           created_at: string
@@ -3283,6 +3313,90 @@ export type Database = {
           longitude?: number | null
           nombre?: string
           telefono?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qard_identidad: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          curp_enc: string | null
+          email_verified: boolean
+          estado: string
+          id: string
+          moral_estado: string | null
+          nombre_completo: string | null
+          phone_verified: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          curp_enc?: string | null
+          email_verified?: boolean
+          estado?: string
+          id?: string
+          moral_estado?: string | null
+          nombre_completo?: string | null
+          phone_verified?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          curp_enc?: string | null
+          email_verified?: boolean
+          estado?: string
+          id?: string
+          moral_estado?: string | null
+          nombre_completo?: string | null
+          phone_verified?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qard_moral_solicitudes: {
+        Row: {
+          constancia_path: string
+          created_at: string
+          estado: string
+          id: string
+          motivo_rechazo: string | null
+          razon_social: string
+          revisado_at: string | null
+          revisado_por: string | null
+          rfc: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          constancia_path: string
+          created_at?: string
+          estado?: string
+          id?: string
+          motivo_rechazo?: string | null
+          razon_social: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          rfc: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          constancia_path?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          motivo_rechazo?: string | null
+          razon_social?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          rfc?: string
           updated_at?: string
           user_id?: string
         }
@@ -6515,6 +6629,25 @@ export type Database = {
         Args: { _nivel2_id: string }
         Returns: string
       }
+      qard_limite_recarga: {
+        Args: { _user_id: string }
+        Returns: {
+          disponible: number
+          estado: string
+          tope: number
+          usado: number
+        }[]
+      }
+      qard_mi_identidad: {
+        Args: never
+        Returns: {
+          curp: string
+          email_verified: boolean
+          estado: string
+          nombre_completo: string
+          phone_verified: boolean
+        }[]
+      }
       qard_mis_cvv: {
         Args: never
         Returns: {
@@ -6524,6 +6657,7 @@ export type Database = {
           sub_qr_id: string
         }[]
       }
+      qard_nombre_legal: { Args: { _user_id: string }; Returns: string }
       qard_pagar_servicio: {
         Args: {
           _idem: string
@@ -6545,6 +6679,7 @@ export type Database = {
         Returns: boolean
       }
       qard_rate_limit_purge: { Args: never; Returns: undefined }
+      qard_recargas_mes: { Args: { _user_id: string }; Returns: number }
       qard_revertir_pago_servicio: {
         Args: { _motivo: string; _pago_id: string }
         Returns: Json
