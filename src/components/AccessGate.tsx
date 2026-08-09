@@ -168,31 +168,46 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
 
           {step === "intro" && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="email-acceso">Correo para recibir el código</Label>
-                <Input
-                  id="email-acceso"
-                  type="email"
-                  inputMode="email"
-                  autoFocus
-                  value={emailManual}
-                  onChange={(e) => setEmailManual(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si lo dejas vacío, lo enviamos al correo de tu cuenta.
-                </p>
-              </div>
+              {cargandoCorreo ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Cargando tu correo...
+                </div>
+              ) : emailGuardado && !editandoCorreo ? (
+                <div className="space-y-2">
+                  <Label>Tu correo</Label>
+                  <div className="p-3 rounded-lg bg-muted text-sm font-medium break-all">{emailGuardado}</div>
+                  <Button variant="link" className="px-0 h-auto text-xs" onClick={() => setEditandoCorreo(true)}>
+                    Cambiar correo
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="email-acceso">Tu correo electrónico</Label>
+                  <Input
+                    id="email-acceso"
+                    type="email"
+                    inputMode="email"
+                    autoFocus
+                    value={emailManual}
+                    onChange={(e) => setEmailManual(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este correo se guarda en tu cuenta y ahí llegarán siempre tus claves.
+                  </p>
+                </div>
+              )}
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button onClick={requestCode} disabled={sending} className="w-full" size="lg">
+              <Button onClick={requestCode} disabled={sending || cargandoCorreo} className="w-full" size="lg">
                 {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
                 Enviar código por correo
               </Button>
             </>
           )}
+
 
           {step === "code" && (
             <>
