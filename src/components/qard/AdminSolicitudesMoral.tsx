@@ -12,6 +12,7 @@ type Solicitud = {
   user_id: string;
   razon_social: string;
   rfc: string;
+  tipo_persona?: string;
   constancia_path: string;
   estado: string;
   created_at: string;
@@ -69,7 +70,7 @@ export default function AdminSolicitudesMoral() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Building2 className="h-5 w-5 text-primary" />
-          Solicitudes de Persona Moral
+          Solicitudes de Comerciante
           <Badge variant="secondary">{solicitudes.length}</Badge>
         </CardTitle>
       </CardHeader>
@@ -83,7 +84,10 @@ export default function AdminSolicitudesMoral() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-semibold text-sm">{s.razon_social}</p>
-                <p className="text-xs font-mono text-muted-foreground">{s.rfc}</p>
+                <p className="text-xs text-muted-foreground">
+                  {s.tipo_persona === "fisica" ? "Persona Física" : "Persona Moral"}
+                </p>
+                <p className="text-xs font-mono text-muted-foreground">{s.rfc || "CURP resguardada"}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(s.created_at).toLocaleDateString("es-MX")}
                 </p>
