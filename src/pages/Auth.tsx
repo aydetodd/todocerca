@@ -747,7 +747,7 @@ const Auth = () => {
                 onChange={setTelefono}
                 label="Número de teléfono"
                 required
-                placeholder="5512345678"
+                
               />
 
               <div>

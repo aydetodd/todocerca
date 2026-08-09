@@ -37,22 +37,22 @@ export const NavigationBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom shadow-[0_-2px_10px_hsl(0_0%_0%_/_0.06)]">
-      <div className="container flex items-center justify-around py-2">
+      <div className="w-full flex items-stretch justify-between gap-0 py-2 px-1">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/home')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/home') ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/home') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Home className="h-5 w-5" />
-          <span className="text-[10px]">Inicio</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Inicio</span>
         </Button>
         
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/mensajes')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative bg-transparent shadow-none ${isActive('/mensajes') ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 relative bg-transparent shadow-none ${isActive('/mensajes') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <div className="relative">
             <MessageCircle className="h-5 w-5" />
@@ -62,37 +62,37 @@ export const NavigationBar = () => {
               </span>
             )}
           </div>
-          <span className="text-[10px]">Mensajes</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Mensajes</span>
         </Button>
         
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/favoritos')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/favoritos') ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/favoritos') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
-          <span className="text-[10px]">Favoritos</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Favoritos</span>
         </Button>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/proximamente')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/proximamente') ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/proximamente') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Sparkles className="h-5 w-5" />
-          <span className="text-[10px]">Próximamente</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Próximamente</span>
         </Button>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={handleShare}
-          className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none text-muted-foreground"
+          className="flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none text-muted-foreground"
         >
           <Share2 className="h-5 w-5" />
-          <span className="text-[10px]">Compartir</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Compartir</span>
         </Button>
 
 
@@ -100,10 +100,10 @@ export const NavigationBar = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate('/dashboard')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <LayoutGrid className="h-5 w-5" />
-          <span className="text-[10px]">Panel</span>
+          <span className="text-[9px] leading-tight truncate max-w-full">Panel</span>
         </Button>
       </div>
     </div>
