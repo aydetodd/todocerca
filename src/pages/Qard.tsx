@@ -12,7 +12,11 @@ import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadCSV } from "@/lib/csvExport";
 import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
+import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
+import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
+import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
 const todocercaLogo = todocercaLogoAsset.url;
+
 
 
 type SubQR = {
