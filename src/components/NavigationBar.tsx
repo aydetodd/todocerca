@@ -1,5 +1,6 @@
 import React from "react";
-import { Home, Share2, LayoutGrid, MessageCircle, Heart } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle, Heart, Sparkles } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -77,12 +78,23 @@ export const NavigationBar = () => {
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => navigate('/proximamente')}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none ${isActive('/proximamente') ? 'text-primary' : 'text-muted-foreground'}`}
+        >
+          <Sparkles className="h-5 w-5" />
+          <span className="text-[10px]">Próximamente</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleShare}
           className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 bg-transparent shadow-none text-muted-foreground"
         >
           <Share2 className="h-5 w-5" />
           <span className="text-[10px]">Compartir</span>
         </Button>
+
 
         <Button
           variant="ghost"
