@@ -252,20 +252,17 @@ export default function QardCobrar() {
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+        <div className="grid grid-cols-2 gap-2 text-center mb-3">
           <div className="rounded bg-muted p-2">
             <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
             <div className="font-bold text-foreground">${totalBruto.toFixed(2)}</div>
-          </div>
-          <div className="rounded bg-muted p-2">
-            <div className="text-[10px] text-muted-foreground uppercase">Comisión</div>
-            <div className="font-bold text-foreground">−${totalComision.toFixed(2)}</div>
           </div>
           <div className="rounded-xl bg-primary p-2 shadow-[var(--shadow-button)]">
             <div className="text-[10px] text-primary-foreground/90 uppercase">Disponible</div>
             <div className="font-bold text-primary-foreground text-[22px] leading-tight">${totalNeto.toFixed(2)}</div>
           </div>
         </div>
+
 
         <div className="rounded-lg bg-muted p-3 mb-3">
           <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo</div>
