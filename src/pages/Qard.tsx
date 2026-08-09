@@ -340,6 +340,10 @@ export default function Qard() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
                     <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
+                    <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold tracking-widest ${estadoUi.clase}`}>
+                      {estadoUi.label}
+                    </span>
+
                   </div>
                 </div>
 
