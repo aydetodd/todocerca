@@ -1,6 +1,6 @@
 // QaRd — Identidad financiera: verificación de teléfono, correo y datos legales (nombre + CURP)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +24,23 @@ function validarCurp(curp: string): boolean {
     suma += v * (18 - i);
   }
   return ((10 - (suma % 10)) % 10) === Number(curp[17]);
+}
+
+async function enviarCorreo(to: string, subject: string, html: string): Promise<boolean> {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "TodoCerca <hola@todocerca.mx>", to: [to], subject, html }),
+    });
+    if (!res.ok) console.error("Resend error", await res.text());
+    return res.ok;
+  } catch (e) {
+    console.error("Resend fetch error", e);
+    return false;
+  }
 }
 
 function json(body: unknown, status = 200) {
@@ -101,13 +118,22 @@ serve(async (req) => {
         enviado = res.ok;
         if (!res.ok) console.error("Twilio error", await res.text());
       }
-      // Respaldo: buzón interno
+      // Respaldo: correo (si el usuario dio uno) + buzón interno
+      let correoEnviado = false;
+      const correoDestino = String(body.email || profile?.email || user.email || "").trim().toLowerCase();
+      if (!enviado && correoDestino.includes("@") && !correoDestino.endsWith("@todocerca.app")) {
+        correoEnviado = await enviarCorreo(
+          correoDestino,
+          "Tu código para activar tu QaRd",
+          `<p>Tu código para activar tu QaRd es: <b style="font-size:22px">${code}</b></p><p>Vence en 10 minutos.</p>`,
+        );
+      }
       await admin.from("messages").insert({
         sender_id: CANAL_OFICIAL,
         receiver_id: user.id,
         message: `Tu código para activar tu QaRd es: ${code} (vence en 10 minutos).`,
       });
-      return json({ success: true, sms: enviado });
+      return json({ success: true, sms: enviado, correo: correoEnviado, destino: correoEnviado ? correoDestino : null });
     }
 
     if (accion === "verificar_sms") {
@@ -145,22 +171,11 @@ serve(async (req) => {
 
       await admin.from("profiles").update({ email }).eq("user_id", user.id);
 
-      let enviado = false;
-      const resendKey = Deno.env.get("RESEND_API_KEY");
-      if (resendKey) {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: "TodoCerca <no-reply@todocerca.mx>",
-            to: [email],
-            subject: "Código para activar tu QaRd",
-            html: `<p>Tu código para activar tu QaRd es: <b style="font-size:22px">${token}</b></p><p>Vence en 7 días.</p>`,
-          }),
-        });
-        enviado = res.ok;
-        if (!res.ok) console.error("Resend error", await res.text());
-      }
+      const enviado = await enviarCorreo(
+        email,
+        "Código para verificar tu correo — QaRd",
+        `<p>Tu código para verificar tu correo es: <b style="font-size:22px">${token}</b></p><p>Vence en 7 días.</p>`,
+      );
       await admin.from("messages").insert({
         sender_id: CANAL_OFICIAL,
         receiver_id: user.id,
