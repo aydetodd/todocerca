@@ -227,11 +227,17 @@ export default function QardCobrar() {
           <div className={`text-3xl font-bold ${ultimo.ok ? "text-primary-foreground" : "text-primary-foreground/90"}`}>{ultimo.mensaje}</div>
           {ultimo.ok && (
             <>
+              {ultimo.titular_nombre && (
+                <div className="mt-2 text-base font-semibold uppercase tracking-wide">
+                  {ultimo.titular_nombre}
+                </div>
+              )}
               <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
               <div className="mt-3 text-sm">Recibirás: <b>${Number(ultimo.neto).toFixed(2)}</b> (comisión ${Number(ultimo.comision).toFixed(2)})</div>
               <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
             </>
           )}
+
         </Card>
       )}
 

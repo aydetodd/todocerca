@@ -193,6 +193,9 @@ serve(async (req) => {
       });
     } catch {}
 
+    // Nombre legal del pasajero/titular (contexto financiero: sí se muestra)
+    const { data: nombreLegal } = await admin.rpc("qard_nombre_legal", { _user_id: sub.titular_user_id });
+
     return new Response(JSON.stringify({
       ok: true,
       estado: "cobrado",
@@ -203,7 +206,9 @@ serve(async (req) => {
       neto,
       alias: sub.alias,
       sub_index: sub.sub_index,
+      titular_nombre: nombreLegal ?? null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
   } catch (e) {
     console.error("[QARD-COBRAR]", e);
     return jsonErr(e instanceof Error ? e.message : String(e), "error");

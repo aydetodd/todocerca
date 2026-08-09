@@ -36,8 +36,28 @@ serve(async (req) => {
       throw new Error(`El mínimo de recarga es de ${MIN_RECARGA} pesos por ${MIN_RECARGA} QaRd pesos`);
     }
 
+    // La tarjeta debe estar activada (identidad financiera verificada)
+    const { data: ident } = await admin
+      .from("qard_identidad")
+      .select("estado")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!ident || ident.estado === "inactive") {
+      throw new Error("Primero activa tu QaRd para poder recargar.");
+    }
+
+    // Tope de $10,000 por mes calendario (sin tope para persona moral aprobada)
+    const { data: limRaw } = await admin.rpc("qard_limite_recarga", { _user_id: user.id });
+    const lim = Array.isArray(limRaw) ? limRaw[0] : limRaw;
+    if (lim && lim.tope !== null && Number(monto) > Number(lim.disponible)) {
+      throw new Error(
+        `Este mes solo te quedan $${Number(lim.disponible).toFixed(2)} de recarga. El día 1 se reinicia tu tope.`,
+      );
+    }
+
     // Asegurar wallet + qard_number
     await admin.rpc("qard_ensure_wallet", { _user_id: user.id });
+
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
