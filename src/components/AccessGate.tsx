@@ -185,9 +185,6 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
                 <div className="space-y-2">
                   <Label>Tu correo</Label>
                   <div className="p-3 rounded-lg bg-muted text-sm font-medium break-all">{emailGuardado}</div>
-                  <Button variant="link" className="px-0 h-auto text-xs" onClick={() => setEditandoCorreo(true)}>
-                    Cambiar correo
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
