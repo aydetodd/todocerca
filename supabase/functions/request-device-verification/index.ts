@@ -82,38 +82,9 @@ serve(async (req) => {
       if (upErr) console.error("no se pudo guardar el correo del perfil", upErr);
     }
 
-    const confiarSinCodigo = async (motivo: string) => {
-      console.warn("Autorizando dispositivo sin código:", motivo);
-      const { error: trustErr } = await supabase
-        .from("trusted_devices")
-        .upsert({
-          user_id: user.id,
-          device_fingerprint: deviceFingerprint,
-          device_name: deviceName,
-          device_type: deviceType,
-          user_agent: req.headers.get("User-Agent") || "",
-          is_active: true,
-          last_seen_at: new Date().toISOString(),
-        }, { onConflict: "user_id,device_fingerprint" });
-      if (trustErr) {
-        console.error("trust fallback err", trustErr);
-        return json({ error: "No se pudo autorizar el dispositivo" }, 500);
-      }
-      // Tomar la sesión única en este dispositivo
-      await supabase.from("active_sessions").delete().eq("user_id", user.id);
-      await supabase.from("active_sessions").insert({
-        user_id: user.id,
-        device_fingerprint: deviceFingerprint,
-        device_name: deviceName,
-        device_type: deviceType,
-        user_agent: req.headers.get("User-Agent") || "",
-      });
-      return json({ success: true, auto_verified: true });
-    };
-
     const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!destino) return await confiarSinCodigo("Sin correo registrado");
-    if (!resendKey) return await confiarSinCodigo("Resend no configurado");
+    if (!destino) return json({ error: "No tienes un correo registrado. Escribe tu correo para recibir el código." }, 400);
+    if (!resendKey) return json({ error: "El envío de correos no está configurado. Contacta a soporte@todocerca.mx" }, 500);
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -161,7 +132,7 @@ serve(async (req) => {
     if (!res.ok) {
       const errText = await res.text();
       console.error("Resend err:", errText);
-      return await confiarSinCodigo("Resend rechazó el envío");
+      return json({ error: "No se pudo enviar el correo. Revisa que tu correo sea correcto." }, 502);
     }
 
     return json({ success: true, email_masked: enmascararCorreo(destino) });
