@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,14 +29,51 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
   const [code, setCode] = useState("");
   const [emailMasked, setEmailMasked] = useState("");
   const [emailManual, setEmailManual] = useState("");
+  const [emailGuardado, setEmailGuardado] = useState<string | null>(null);
+  const [cargandoCorreo, setCargandoCorreo] = useState(true);
+  const [editandoCorreo, setEditandoCorreo] = useState(false);
   const [error, setError] = useState("");
 
   const fp = getDeviceFingerprint();
   const deviceName = getDeviceName();
   const deviceType = getDeviceType();
 
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth.user?.id;
+        let correo: string | null = auth.user?.email ?? null;
+        if (uid) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("user_id", uid)
+            .maybeSingle();
+          if ((data as any)?.email) correo = (data as any).email;
+        }
+        if (!activo) return;
+        setEmailGuardado(correo);
+        setEmailManual(correo || "");
+      } finally {
+        if (activo) setCargandoCorreo(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+
   const requestCode = async () => {
     setError("");
+    const correo = emailManual.trim();
+    if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      setError("Escribe un correo válido");
+      setEditandoCorreo(true);
+      return;
+    }
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("request-device-verification", {
@@ -44,19 +81,22 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
           device_fingerprint: fp,
           device_name: deviceName,
           device_type: deviceType,
-          email: emailManual.trim() || undefined,
+          email: correo,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      setEmailGuardado(correo);
+      setEditandoCorreo(false);
       if (data?.auto_verified) {
         toast({ title: "Listo", description: "Ya puedes usar TodoCerca aquí" });
         onVerified();
         return;
       }
-      setEmailMasked(data?.email_masked || "");
+      setEmailMasked(data?.email_masked || correo);
       setStep("code");
       toast({ title: "Código enviado", description: "Revisa tu correo (y la carpeta de spam)" });
+
     } catch (e: any) {
       const msg = e?.message || "No se pudo enviar el correo";
       setError(msg);
@@ -137,31 +177,46 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
 
           {step === "intro" && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="email-acceso">Correo para recibir el código</Label>
-                <Input
-                  id="email-acceso"
-                  type="email"
-                  inputMode="email"
-                  autoFocus
-                  value={emailManual}
-                  onChange={(e) => setEmailManual(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si lo dejas vacío, lo enviamos al correo de tu cuenta.
-                </p>
-              </div>
+              {cargandoCorreo ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Cargando tu correo...
+                </div>
+              ) : emailGuardado && !editandoCorreo ? (
+                <div className="space-y-2">
+                  <Label>Tu correo</Label>
+                  <div className="p-3 rounded-lg bg-muted text-sm font-medium break-all">{emailGuardado}</div>
+                  <Button variant="link" className="px-0 h-auto text-xs" onClick={() => setEditandoCorreo(true)}>
+                    Cambiar correo
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="email-acceso">Tu correo electrónico</Label>
+                  <Input
+                    id="email-acceso"
+                    type="email"
+                    inputMode="email"
+                    autoFocus
+                    value={emailManual}
+                    onChange={(e) => setEmailManual(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este correo se guarda en tu cuenta y ahí llegarán siempre tus claves.
+                  </p>
+                </div>
+              )}
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button onClick={requestCode} disabled={sending} className="w-full" size="lg">
+              <Button onClick={requestCode} disabled={sending || cargandoCorreo} className="w-full" size="lg">
                 {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
                 Enviar código por correo
               </Button>
             </>
           )}
+
 
           {step === "code" && (
             <>

@@ -70,7 +70,17 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const destino = correoManual || user.email || (profile as any)?.email || null;
+    // Prioridad: el correo que el usuario acaba de escribir > el guardado en su perfil > el de la cuenta
+    const destino = correoManual || (profile as any)?.email || user.email || null;
+
+    // Si escribió un correo nuevo, se guarda como su correo oficial para no volver a preguntarlo
+    if (correoManual && correoManual !== (profile as any)?.email) {
+      const { error: upErr } = await supabase
+        .from("profiles")
+        .update({ email: correoManual })
+        .eq("user_id", user.id);
+      if (upErr) console.error("no se pudo guardar el correo del perfil", upErr);
+    }
 
     const confiarSinCodigo = async (motivo: string) => {
       console.warn("Autorizando dispositivo sin código:", motivo);
