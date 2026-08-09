@@ -99,6 +99,15 @@ export default function Qard() {
   const [p2pCvv, setP2pCvv] = useState("");
   const [p2pMonto, setP2pMonto] = useState("");
   const [p2pEnviando, setP2pEnviando] = useState(false);
+  // Transferencia a sub-QR
+  const [subTransferOpen, setSubTransferOpen] = useState(false);
+  const [subTransferTarget, setSubTransferTarget] = useState<SubQR | null>(null);
+  const [subTransferSigno, setSubTransferSigno] = useState<1 | -1>(1);
+  const [subTransferMonto, setSubTransferMonto] = useState("");
+  // Rotar CVV
+  const [cvvRotarOpen, setCvvRotarOpen] = useState(false);
+  const [cvvRotarId, setCvvRotarId] = useState<string | null>(null);
+  const [cvvRotarValor, setCvvRotarValor] = useState("");
   // Identidad financiera (activación de la tarjeta)
   const { identidad, limite, activa, recargarDatos } = useQardIdentidad();
   const [activarOpen, setActivarOpen] = useState(false);
