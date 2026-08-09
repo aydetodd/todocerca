@@ -49,6 +49,17 @@ serve(async (req) => {
       return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
     }
 
+    // 0) Tope PLD de entradas del mes del comercio (identificación simplificada)
+    const { data: limRaw } = await admin.rpc("qard_limite_recarga", { _user_id: comercio.id });
+    const lim = Array.isArray(limRaw) ? limRaw[0] : limRaw;
+    if (lim && lim.tope !== null && monto > Number(lim.disponible)) {
+      return jsonErr(
+        `Este mes solo puedes recibir $${Number(lim.disponible).toFixed(2)} más. El día 1 se reinicia tu tope de $10,000.`,
+        "tope_mensual",
+        { color: "rojo" },
+      );
+    }
+
     // 1) Buscar sub-QR
     const { data: sub } = await admin
       .from("qard_sub_qr")
