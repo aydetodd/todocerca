@@ -99,6 +99,21 @@ export default function Qard() {
   const [p2pCvv, setP2pCvv] = useState("");
   const [p2pMonto, setP2pMonto] = useState("");
   const [p2pEnviando, setP2pEnviando] = useState(false);
+  // Identidad financiera (activación de la tarjeta)
+  const { identidad, limite, activa, recargarDatos } = useQardIdentidad();
+  const [activarOpen, setActivarOpen] = useState(false);
+  const [moralOpen, setMoralOpen] = useState(false);
+  const estadoUi = ESTADO_UI[identidad?.estado ?? "inactive"];
+  const pedirActivacion = () => {
+    toast({
+      title: "Tu QaRd está inactiva",
+      description: "Actívala para poder recargar, pagar y transferir.",
+      variant: "destructive",
+    });
+    setActivarOpen(true);
+  };
+
+
 
   const abrirMovsSub = async (sub: SubQR) => {
     setSubMovOpen(sub);
