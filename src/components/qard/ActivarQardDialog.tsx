@@ -64,15 +64,28 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
         {paso === 1 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Paso 1 de 3: te mandamos un código de 6 dígitos a tu teléfono registrado.
+              Paso 1 de 3: te mandamos un código de 6 dígitos. Si tu teléfono no recibe el SMS,
+              escribe tu correo y te lo mandamos ahí.
             </p>
+            <div>
+              <Label className="text-xs">Correo (respaldo, opcional)</Label>
+              <Input type="email" placeholder="tucorreo@ejemplo.com"
+                value={correo} onChange={e => setCorreo(e.target.value)} />
+            </div>
             <Button
               variant="outline"
               className="w-full"
               disabled={ocupado}
               onClick={() => ejecutar(async () => {
-                await llamar("enviar_sms");
-                toast({ title: "Código enviado", description: "Revisa tus mensajes (SMS o buzón de TodoCerca)." });
+                const r = await llamar("enviar_sms", correo.includes("@") ? { email: correo.trim() } : {});
+                toast({
+                  title: "Código enviado",
+                  description: r?.sms
+                    ? "Revisa tus mensajes SMS."
+                    : r?.correo
+                      ? `Te lo mandamos a ${r.destino}. Revisa también Spam.`
+                      : "Revisa tu buzón de TodoCerca (Mensajes).",
+                });
               })}
             >
               Enviar código
@@ -90,10 +103,11 @@ export default function ActivarQardDialog({ open, onOpenChange, phoneVerified, e
                 setPaso(2);
               })}
             >
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar teléfono"}
+              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar"}
             </Button>
           </div>
         )}
+
 
         {paso === 2 && (
           <div className="space-y-3">
