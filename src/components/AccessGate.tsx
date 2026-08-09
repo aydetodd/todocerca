@@ -68,6 +68,12 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
 
   const requestCode = async () => {
     setError("");
+    const correo = emailManual.trim();
+    if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      setError("Escribe un correo válido");
+      setEditandoCorreo(true);
+      return;
+    }
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("request-device-verification", {
@@ -75,19 +81,22 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
           device_fingerprint: fp,
           device_name: deviceName,
           device_type: deviceType,
-          email: emailManual.trim() || undefined,
+          email: correo,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      setEmailGuardado(correo);
+      setEditandoCorreo(false);
       if (data?.auto_verified) {
         toast({ title: "Listo", description: "Ya puedes usar TodoCerca aquí" });
         onVerified();
         return;
       }
-      setEmailMasked(data?.email_masked || "");
+      setEmailMasked(data?.email_masked || correo);
       setStep("code");
       toast({ title: "Código enviado", description: "Revisa tu correo (y la carpeta de spam)" });
+
     } catch (e: any) {
       const msg = e?.message || "No se pudo enviar el correo";
       setError(msg);
