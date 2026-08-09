@@ -72,13 +72,14 @@ export default function DriverRouteSelector() {
     try {
       setLoading(true);
 
-      // Check if user is a registered driver (by user_id)
-      const { data: driver, error: driverError } = await supabase
+      // Check if user is a registered driver (by user_id) — may have several profiles
+      // (public / foreign / private routes of the same or different companies)
+      const { data: myDrivers, error: driverError } = await supabase
         .from('choferes_empresa')
         .select('id, proveedor_id, nombre, transport_type')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (driverError) {
         console.error('[DriverRouteSelector] Error checking driver:', driverError);
@@ -86,8 +87,25 @@ export default function DriverRouteSelector() {
         return;
       }
 
+      let driverData: any = null;
+
+      if (myDrivers && myDrivers.length > 0) {
+        if (myDrivers.length === 1) {
+          driverData = myDrivers[0];
+        } else {
+          // Prefer the profile that already has an assignment (route + unit)
+          const { data: asigs } = await supabase
+            .from('asignaciones_chofer')
+            .select('chofer_id, fecha')
+            .in('chofer_id', myDrivers.map((d: any) => d.id))
+            .order('fecha', { ascending: false });
+
+          const preferredId = asigs?.[0]?.chofer_id;
+          driverData = myDrivers.find((d: any) => d.id === preferredId) || myDrivers[0];
+        }
+      }
+
       // If not found by user_id, try matching by phone from profile
-      let driverData = driver;
       if (!driverData) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -127,6 +145,7 @@ export default function DriverRouteSelector() {
         setChecked(true);
         return;
       }
+
 
       // Get the business name
       const { data: proveedor } = await supabase
