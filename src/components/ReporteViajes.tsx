@@ -873,10 +873,28 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            <div>
+              <Label className="text-xs">¿Cuánto quieres retirar? (disponible {fmtMoney(brutoDisponible)})</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  inputMode="decimal"
+                  value={retiroMonto}
+                  autoFocus
+                  onChange={(e) => setRetiroMonto(e.target.value.replace(/[^\d.]/g, ""))}
+                />
+                <Button type="button" variant="secondary" className="shrink-0"
+                  onClick={() => setRetiroMonto(brutoDisponible.toFixed(2))}>
+                  Todo
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                El resto ({fmtMoney(restanteRetiro > 0 ? restanteRetiro : 0)}) se queda disponible para después.
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2 rounded-md bg-muted/40 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase">Bruto</p>
-                <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Retiras</p>
+                <p className="text-sm font-bold">{fmtMoney(montoRetiro)}</p>
               </div>
               <div className="p-2 rounded-md bg-muted/40 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase">
@@ -892,8 +910,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {viajesDisponibles.length} viaje(s) se marcarán como cobrados.
+              Se cobran los viajes que quepan en ese monto; los demás quedan pendientes.
             </p>
+
 
             {retiroMetodo === "qard" && (
               <>
