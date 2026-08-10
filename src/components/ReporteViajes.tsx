@@ -91,6 +91,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [retiroMetodo, setRetiroMetodo] = useState<"qard" | "oxxo" | "spei">("qard");
   const [retiroDestino, setRetiroDestino] = useState("");
   const [retiroCvv, setRetiroCvv] = useState("");
+  const [retiroMonto, setRetiroMonto] = useState("");
+
   const [retiroLoading, setRetiroLoading] = useState(false);
 
 
