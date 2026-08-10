@@ -92,13 +92,40 @@ serve(async (req) => {
       admin.from("cobros_qr_tramo").select("id, viaje_id, precio_real")
         .in("viaje_id", validosIds).is("retirado_at", null),
     ]);
-    const qvpIds = (qvp || []).map((r: any) => r.id);
-    const cqtIds = (cqt || []).map((r: any) => r.id);
-    let bruto = 0;
-    (qvp || []).forEach((r: any) => { bruto += Number(r.monto_cobrado_mxn) || 0; });
-    (cqt || []).forEach((r: any) => { bruto += Number(r.precio_real) || 0; });
-    bruto = +bruto.toFixed(2);
+    // Cobros pendientes (unificados). Si el usuario pidió un monto parcial,
+    // se toman cobros de menor a mayor hasta llegar lo más cerca posible sin pasarse.
+    type Pend = { id: string; viaje_id: string; monto: number; tabla: "qvp" | "cqt" };
+    const pendientes: Pend[] = [
+      ...(qvp || []).map((r: any) => ({ id: r.id, viaje_id: r.viaje_id, monto: Number(r.monto_cobrado_mxn) || 0, tabla: "qvp" as const })),
+      ...(cqt || []).map((r: any) => ({ id: r.id, viaje_id: r.viaje_id, monto: Number(r.precio_real) || 0, tabla: "cqt" as const })),
+    ].filter((r) => r.monto > 0);
+
+    const totalPendiente = +pendientes.reduce((s, r) => s + r.monto, 0).toFixed(2);
+    if (totalPendiente <= 0) return err("Los viajes seleccionados no tienen importe pendiente de cobrar");
+
+    let elegidos: Pend[] = pendientes;
+    if (montoSolicitado != null && montoSolicitado < totalPendiente - 0.001) {
+      const orden = [...pendientes].sort((a, b) => a.monto - b.monto);
+      elegidos = [];
+      let acum = 0;
+      for (const r of orden) {
+        if (acum + r.monto <= montoSolicitado + 0.001) { elegidos.push(r); acum += r.monto; }
+      }
+      if (!elegidos.length) {
+        const min = Math.min(...pendientes.map((r) => r.monto));
+        return err(`El monto es menor que el cobro más pequeño ($${min.toFixed(2)}). Retira al menos esa cantidad.`);
+      }
+    }
+
+    const qvpIds = elegidos.filter((r) => r.tabla === "qvp").map((r) => r.id);
+    const cqtIds = elegidos.filter((r) => r.tabla === "cqt").map((r) => r.id);
+    const bruto = +elegidos.reduce((s, r) => s + r.monto, 0).toFixed(2);
     if (bruto <= 0) return err("Los viajes seleccionados no tienen importe pendiente de cobrar");
+    // Viajes que quedan totalmente cobrados (sin pendientes tras este retiro)
+    const idsElegidos = new Set(elegidos.map((r) => r.id));
+    const viajesConResto = new Set(pendientes.filter((r) => !idsElegidos.has(r.id)).map((r) => r.viaje_id));
+    const viajesLiquidados = validosIds.filter((id: string) => !viajesConResto.has(id));
+
     const comision = +(bruto * (COMISION_POR_METODO[metodo] ?? 0)).toFixed(2);
     const neto = +(bruto - comision).toFixed(2);
     if (neto < 1) return err("Neto insuficiente para retirar");
