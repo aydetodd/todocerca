@@ -336,8 +336,11 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   // Comisión según el método de cobro: QaRd 0%, SPEI 3%, OXXO aún por definir.
   const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.03 };
   const comisionPct = COMISION_POR_METODO[retiroMetodo];
-  const comisionDisponible = +(brutoDisponible * comisionPct).toFixed(2);
-  const netoDisponible = +(brutoDisponible - comisionDisponible).toFixed(2);
+  const montoRetiro = Math.min(Number(retiroMonto) || 0, brutoDisponible);
+  const comisionDisponible = +(montoRetiro * comisionPct).toFixed(2);
+  const netoDisponible = +(montoRetiro - comisionDisponible).toFixed(2);
+  const restanteRetiro = +(brutoDisponible - montoRetiro).toFixed(2);
+
 
   // Ya cobrado (histórico, dentro del rango filtrado)
   const yaCobradoNeto = filtered
