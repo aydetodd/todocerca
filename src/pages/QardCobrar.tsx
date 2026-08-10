@@ -228,9 +228,12 @@ export default function QardCobrar() {
 
       {ultimo && (
         <Card className={`p-6 text-center border-4 ${
-          ultimo.ok ? "border-primary bg-primary text-primary-foreground" : "border-primary-foreground/30 bg-secondary text-secondary-foreground"
+          ultimo.ok
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-destructive bg-destructive/10 text-destructive"
         }`}>
-          <div className={`text-3xl font-bold ${ultimo.ok ? "text-primary-foreground" : "text-primary-foreground/90"}`}>{ultimo.mensaje}</div>
+          <div className="text-2xl font-bold leading-snug">{ultimo.mensaje}</div>
+
           {ultimo.ok && (
             <>
               {ultimo.titular_nombre && (
