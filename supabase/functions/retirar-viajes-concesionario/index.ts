@@ -266,16 +266,19 @@ serve(async (req) => {
         .update({ retirado_at: nowIso, retiro_referencia: referencia })
         .in("id", cqtIds);
     }
-    await admin.from("viajes_realizados")
-      .update({
-        retirado_at: nowIso,
-        retiro_metodo: metodo,
-        retiro_bruto_mxn: bruto,
-        retiro_neto_mxn: neto,
-        retiro_referencia: referencia,
-        retiro_batch_id: batchId,
-      })
-      .in("id", validosIds);
+    if (viajesLiquidados.length) {
+      await admin.from("viajes_realizados")
+        .update({
+          retirado_at: nowIso,
+          retiro_metodo: metodo,
+          retiro_bruto_mxn: bruto,
+          retiro_neto_mxn: neto,
+          retiro_referencia: referencia,
+          retiro_batch_id: batchId,
+        })
+        .in("id", viajesLiquidados);
+    }
+
 
     return new Response(JSON.stringify({
       ok: true,
