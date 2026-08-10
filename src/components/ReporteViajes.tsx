@@ -557,97 +557,109 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       </Card>
 
       {/* Hoy: completados / en curso / registros */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
+      <Card className="border border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-[15px] flex items-center gap-2">
             <Calendar className="h-4 w-4" /> Hoy (12:00 am – 11:59 pm)
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="flex justify-center py-6">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-3 rounded-lg bg-primary/10 text-center">
-                  <p className="text-2xl font-bold text-primary">{completadosHoy}</p>
-                  <p className="text-[10px] text-muted-foreground">Completados</p>
+            <div className="space-y-4">
+              {/* Fila 1: operación del día */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
+                  <p className="text-[34px] leading-none font-bold text-foreground tabular-nums">{completadosHoy}</p>
+                  <p className="text-[11px] mt-2 text-muted-foreground">Completados</p>
                 </div>
-                <div className="p-3 rounded-lg bg-secondary/40 text-center">
-                  <p className="text-2xl font-bold text-foreground">{enCursoHoy}</p>
-                  <p className="text-[10px] text-muted-foreground">En curso</p>
+                <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
+                  <p className="text-[34px] leading-none font-bold text-foreground tabular-nums">{enCursoHoy}</p>
+                  <p className="text-[11px] mt-2 text-muted-foreground">En curso</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/40 text-center">
-                  <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Registros</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-3 rounded-lg bg-emerald-500/10 text-center">
-                  <p className="text-2xl font-bold text-emerald-600">↑{totalSubidos}</p>
-                  <p className="text-[10px] text-muted-foreground">Pasajeros subieron</p>
-                </div>
-                <div className="p-3 rounded-lg bg-amber-500/10 text-center">
-                  <p className="text-2xl font-bold text-amber-600">↓{totalBajados}</p>
-                  <p className="text-[10px] text-muted-foreground">Bajaron</p>
-                </div>
-                <div className="p-3 rounded-lg bg-blue-500/10 text-center">
-                  <p className="text-2xl font-bold text-blue-600">{totalABordo}</p>
-                  <p className="text-[10px] text-muted-foreground">En stand (a bordo)</p>
+                <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
+                  <p className="text-[34px] leading-none font-bold text-foreground tabular-nums">{filtered.length}</p>
+                  <p className="text-[11px] mt-2 text-muted-foreground">Registros</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-lg bg-violet-500/10 text-center">
-                  <p className="text-2xl font-bold text-violet-600">{totalCobros}</p>
-                  <p className="text-[10px] text-muted-foreground">Cobros al bajar</p>
+
+              {/* Fila 2: pasajeros */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border bg-stat-up p-4 text-center">
+                  <p className="text-[28px] leading-none font-bold text-stat-up-foreground tabular-nums">↑{totalSubidos}</p>
+                  <p className="text-[11px] mt-2 text-stat-up-foreground/80">Subieron</p>
                 </div>
-                <div className="p-3 rounded-lg bg-primary/15 text-center">
-                  <p className="text-2xl font-bold text-primary">{fmtMoney(totalCobrado)}</p>
-                  <p className="text-[10px] text-muted-foreground">Importe cobrado</p>
+                <div className="rounded-xl border border-border bg-stat-down p-4 text-center">
+                  <p className="text-[28px] leading-none font-bold text-stat-down-foreground tabular-nums">↓{totalBajados}</p>
+                  <p className="text-[11px] mt-2 text-stat-down-foreground/80">Bajaron</p>
+                </div>
+                <div className="rounded-xl border border-border bg-stat-stand p-4 text-center">
+                  <p className="text-[28px] leading-none font-bold text-stat-stand-foreground tabular-nums">{totalABordo}</p>
+                  <p className="text-[11px] mt-2 text-stat-stand-foreground/80">En stand (a bordo)</p>
+                </div>
+              </div>
+
+              {/* Fila 3: dinero */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-stat-charge p-4 text-center">
+                  <p className="text-[28px] leading-none font-bold text-stat-charge-foreground tabular-nums">{totalCobros}</p>
+                  <p className="text-[11px] mt-2 text-stat-charge-foreground/80">Cobros al bajar</p>
+                </div>
+                <div className="rounded-xl border border-border bg-money p-4 text-center">
+                  <p className="text-[26px] leading-none font-bold text-money-foreground tabular-nums">{fmtMoney(totalCobrado)}</p>
+                  <p className="text-[11px] mt-2 text-money-foreground/80">Importe cobrado</p>
                 </div>
               </div>
 
               {/* Cómo cobra el concesionario — sobre el importe pendiente de este reporte */}
-              <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+              <div className="mt-2 rounded-xl border border-border bg-secondary/60 p-5 space-y-4">
                 <div>
-                  <p className="text-xs font-semibold text-foreground mb-1">Cobra el importe de estos viajes</p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[15px] font-bold text-foreground">Cobra el importe de estos viajes</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">
                     Solo cuenta lo que aún no has cobrado. Al retirar, se marcan como pagados y no se vuelven a incluir.
                   </p>
                 </div>
-                <div className="p-3 rounded-md bg-primary/15 border border-primary/40 text-center">
-                  <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">Bruto por cobrar</p>
-                  <p className="text-2xl font-bold text-primary">{fmtMoney(brutoDisponible)}</p>
+                <div className="rounded-xl bg-money p-5 text-center">
+                  <p className="text-[11px] font-semibold text-money-foreground/80 uppercase tracking-wide">Bruto por cobrar</p>
+                  <p className="text-[40px] leading-none font-bold text-money-foreground tabular-nums mt-2">{fmtMoney(brutoDisponible)}</p>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[12px] text-muted-foreground">
                   Transferir a QaRd: sin comisión · SPEI: 3% de comisión · OXXO: comisión por definir.
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[12px] text-muted-foreground">
                   {viajesDisponibles.length} viaje(s) pendientes de cobrar
                   {yaCobradoNeto > 0 && ` · Ya cobrado en este periodo: ${fmtMoney(yaCobradoNeto)}`}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Button size="sm" variant="outline" className="justify-start"
+                <div className="grid grid-cols-1 gap-2">
+                  <Button
+                    className="h-12 justify-center text-[15px] font-semibold"
                     disabled={brutoDisponible <= 0}
                     onClick={() => openRetiro("qard")}>
                     <ArrowRightLeft className="h-4 w-4 mr-2" /> Transferir a QaRd
                   </Button>
-                  <Button size="sm" variant="outline"
-                    className={`justify-start ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
-                    disabled={brutoDisponible <= 0}
-                    onClick={() => openRetiro("oxxo")}>
-                    <Store className="h-4 w-4 mr-2" /> Cobrar en OXXO
-                    {!RETIROS_STP_ENABLED && <span className="ml-auto text-[10px] text-muted-foreground">Próximamente</span>}
-                  </Button>
-                  <Button size="sm" variant="outline"
-                    className={`justify-start ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
-                    disabled={brutoDisponible <= 0}
-                    onClick={() => openRetiro("spei")}>
-                    <Building2 className="h-4 w-4 mr-2" /> Enviar al banco (SPEI)
-                    {!RETIROS_STP_ENABLED && <span className="ml-auto text-[10px] text-muted-foreground">Próximamente</span>}
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="secondary"
+                      className={`h-11 justify-start relative ${!RETIROS_STP_ENABLED ? "opacity-70" : ""}`}
+                      disabled={brutoDisponible <= 0}
+                      onClick={() => openRetiro("oxxo")}>
+                      <Store className="h-4 w-4 mr-2" /> OXXO
+                      {!RETIROS_STP_ENABLED && (
+                        <span className="absolute top-1 right-1 text-[9px] rounded px-1 bg-stat-stand text-stat-stand-foreground">Próximamente</span>
+                      )}
+                    </Button>
+                    <Button variant="secondary"
+                      className={`h-11 justify-start relative ${!RETIROS_STP_ENABLED ? "opacity-70" : ""}`}
+                      disabled={brutoDisponible <= 0}
+                      onClick={() => openRetiro("spei")}>
+                      <Building2 className="h-4 w-4 mr-2" /> Banco
+                      {!RETIROS_STP_ENABLED && (
+                        <span className="absolute top-1 right-1 text-[9px] rounded px-1 bg-stat-stand text-stat-stand-foreground">Próximamente</span>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -655,6 +667,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           )}
         </CardContent>
       </Card>
+
 
       {/* Desgloses + Exportar */}
       {!loading && filtered.length === 0 && (
@@ -716,23 +729,24 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 const totalImporte = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
                 const totalCobrosB = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
                 return (
-                  <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
-                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">{completados} viajes</Badge>
+                  <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-xl border border-border overflow-hidden bg-card shadow-soft">
+                    <div className="px-4 py-4 flex flex-col gap-2 border-b border-border">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[17px] font-bold text-foreground leading-tight truncate">{b.rutaLabel}</p>
+                        <Badge variant="outline" className="text-[11px] shrink-0">{completados} viajes</Badge>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
+                      <p className="text-[13px] text-muted-foreground truncate">
                         {b.unidadLabel} · {b.choferLabel}
                       </p>
-                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                        <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">↑{totalSuben} subieron</Badge>
-                        <Badge className="text-[10px] bg-amber-100 text-amber-700 border-0">↓{totalBajan} bajaron</Badge>
-                        <Badge className="text-[10px] bg-blue-100 text-blue-700 border-0">{totalStand} en stand</Badge>
-                        <Badge className="text-[10px] bg-violet-100 text-violet-700 border-0">{totalCobrosB} cobros</Badge>
-                        <Badge className="text-[10px] bg-primary/15 text-primary border-0">{fmtMoney(totalImporte)}</Badge>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <Badge className="text-[12px] font-normal bg-stat-up text-stat-up-foreground border-0 hover:bg-stat-up">↑{totalSuben} subieron</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-down text-stat-down-foreground border-0 hover:bg-stat-down">↓{totalBajan} bajaron</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-stand text-stat-stand-foreground border-0 hover:bg-stat-stand">{totalStand} en stand</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-charge text-stat-charge-foreground border-0 hover:bg-stat-charge">{totalCobrosB} cobros</Badge>
+                        <Badge className="text-[12px] font-bold bg-money text-money-foreground border-0 hover:bg-money">{fmtMoney(totalImporte)}</Badge>
                       </div>
                     </div>
+
                     <div className="divide-y divide-border">
                       {b.viajes.map((v) => {
                         const sentido = v.direccion || "—";
@@ -748,70 +762,78 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                             <button
                               type="button"
                               onClick={() => setExpanded((e) => ({ ...e, [v.id]: !e[v.id] }))}
-                              className="w-full px-3 py-2 flex items-center justify-between gap-2 hover:bg-muted/30 text-left"
+                              className="w-full px-4 py-4 flex items-start justify-between gap-3 hover:bg-muted/40 text-left transition-colors"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                 {pax.length > 0 ? (
-                                  <span className="inline-flex items-center gap-0.5 text-primary font-semibold text-[10px] bg-primary/10 rounded px-1.5 py-0.5 shrink-0">
+                                  <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-stat-charge-foreground bg-stat-charge rounded px-1.5 py-0.5 shrink-0">
                                     {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                     {isOpen ? "Ocultar" : `Ver ${pax.length} pasajeros`}
                                   </span>
                                 ) : <span className="w-3" />}
-                                <span className="font-semibold">#{v.numero_viaje}</span>
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
-                                {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
-                                {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[11px] font-bold text-secondary-foreground shrink-0">
+                                  {v.numero_viaje}
+                                </span>
+                                <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0">{sentido}</Badge>
+                                {flagManual && <Badge variant="outline" className="text-[11px] font-normal px-2 py-0">Manual</Badge>}
+                                {enCurso && <Badge className="text-[11px] font-normal px-2 py-0 bg-stat-charge text-stat-charge-foreground border-0 hover:bg-stat-charge">En curso</Badge>}
                                 {v.retirado_at && (
-                                  <Badge className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 border-0 gap-0.5">
+                                  <Badge className="text-[11px] font-normal px-2 py-0 bg-stat-up text-stat-up-foreground border-0 gap-0.5 hover:bg-stat-up">
                                     <CheckCircle2 className="h-2.5 w-2.5" /> Cobrado
                                   </Badge>
                                 )}
-                                <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
+                                <span className="text-[12px] text-muted-foreground">
+                                  <span className="text-stat-up-foreground font-medium">↑{sub}</span>{" "}
+                                  <span className="text-stat-down-foreground font-medium">↓{baj}</span>
+                                  {" · "}{abordo} en stand
+                                </span>
                                 {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                  <span className={`text-[10px] font-semibold ${v.retirado_at ? "text-muted-foreground line-through" : "text-primary"}`}>
+                                  <span className={`text-[13px] font-bold ${v.retirado_at ? "text-muted-foreground line-through" : "text-money-foreground"}`}>
                                     {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
                                   </span>
                                 )}
 
                               </div>
-                              <span className="text-muted-foreground shrink-0 tabular-nums text-right">
-                                <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
+                              <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums text-right">
+                                <span className="block opacity-80">{fmtDate(v.inicio_at || v.fecha)}</span>
                                 {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                               </span>
                             </button>
+
                             {isOpen && pax.length > 0 && (
-                              <div className="bg-muted/20 px-3 py-2 space-y-1">
-                                <p className="text-[10px] text-muted-foreground">
+                              <div className="bg-muted/40 px-4 py-3 space-y-2 border-t border-border">
+                                <p className="text-[12px] text-muted-foreground">
                                   Pasajeros anónimos (sin identificar). Se numeran al subir; al bajar se liga al número de subida.
                                 </p>
-                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-2 gap-y-0.5 text-[11px]">
-                                  <span className="font-semibold">Subida</span>
-                                  <span className="font-semibold">Bajada</span>
-                                  <span className="font-semibold">Coordenadas (sube → baja)</span>
-                                  <span className="font-semibold text-right">Importe</span>
+                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-3 gap-y-1 text-[12px]">
+                                  <span className="font-semibold text-foreground">Subida</span>
+                                  <span className="font-semibold text-foreground">Bajada</span>
+                                  <span className="font-semibold text-foreground">Coordenadas (sube → baja)</span>
+                                  <span className="font-semibold text-foreground text-right">Importe</span>
                                   {pax.map((p, i) => (
                                     <div key={i} className="contents">
-                                      <span className="text-emerald-700">
+                                      <span className="text-stat-up-foreground">
                                         {p.numero_subida != null ? `#${p.numero_subida}` : "—"}
-                                        <span className="opacity-60 ml-1">{fmtTime(p.subida_at)}</span>
+                                        <span className="opacity-70 ml-1">{fmtTime(p.subida_at)}</span>
                                       </span>
-                                      <span className="text-amber-700">
+                                      <span className="text-stat-down-foreground">
                                         {p.numero_bajada != null
                                           ? `Baj#${p.numero_bajada} (era Sub#${p.numero_subida ?? "?"})`
                                           : <span className="text-muted-foreground">a bordo</span>}
-                                        {p.bajada_at && <span className="opacity-60 ml-1">{fmtTime(p.bajada_at)}</span>}
+                                        {p.bajada_at && <span className="opacity-70 ml-1">{fmtTime(p.bajada_at)}</span>}
                                       </span>
                                       <span className="text-muted-foreground tabular-nums truncate">
                                         {p.subida_lat != null ? `${p.subida_lat.toFixed(5)}, ${p.subida_lng?.toFixed(5)}` : "—"}
                                         {" → "}
                                         {p.bajada_lat != null ? `${p.bajada_lat.toFixed(5)}, ${p.bajada_lng?.toFixed(5)}` : "…"}
                                       </span>
-                                      <span className="text-right tabular-nums">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
+                                      <span className="text-right tabular-nums font-bold text-money-foreground">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             )}
+
                           </div>
                         );
                       })}

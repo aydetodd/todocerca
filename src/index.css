@@ -324,6 +324,19 @@ Paleta: Azul marino profundo con acentos brillantes
     --border-soft: 214 32% 91%;
     --balance-green: 160 84% 32%;
 
+    /* Estados operativos (panel concesionario) — modo claro */
+    --stat-up-bg: 138 76% 97%;          /* #F0FFF4 */
+    --stat-up-fg: 145 63% 42%;          /* #38A169 */
+    --stat-down-bg: 33 100% 96%;        /* #FFFAF0 */
+    --stat-down-fg: 24 75% 50%;         /* #DD6B20 */
+    --stat-stand-bg: 210 40% 98%;       /* #F7FAFC */
+    --stat-stand-fg: 214 15% 52%;       /* #718096 */
+    --stat-charge-bg: 205 100% 96%;     /* #EBF8FF */
+    --stat-charge-fg: 210 60% 50%;      /* #3182CE */
+    --money-fg: 145 56% 26%;            /* #276749 */
+    --money-bg: 138 76% 97%;
+
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 21 90% 48%;
@@ -376,6 +389,20 @@ Paleta: Azul marino profundo con acentos brillantes
     --text-secondary: 215 20% 65%;
     --border-soft: 215 25% 27%;
     --balance-green: 160 84% 39%;
+
+    /* Estados operativos (panel concesionario) — modo oscuro */
+    --stat-up-bg: 152 44% 16%;          /* #1C4532 */
+    --stat-up-fg: 141 56% 62%;          /* #68D391 */
+    --stat-down-bg: 28 51% 24%;         /* #5C3A1E */
+    --stat-down-fg: 30 89% 65%;         /* #F6AD55 */
+    --stat-stand-bg: 218 23% 27%;       /* #2D3748 */
+    --stat-stand-fg: 214 20% 69%;       /* #A0AEC0 */
+    --stat-charge-bg: 213 52% 25%;      /* #1E3A5F */
+    --stat-charge-fg: 208 79% 76%;      /* #90CDF4 */
+    --money-fg: 141 63% 75%;            /* #9AE6B4 */
+    --money-bg: 152 44% 16%;
+
+
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;

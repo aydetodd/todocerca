@@ -43,6 +43,27 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        "stat-up": {
+          DEFAULT: "hsl(var(--stat-up-bg))",
+          foreground: "hsl(var(--stat-up-fg))",
+        },
+        "stat-down": {
+          DEFAULT: "hsl(var(--stat-down-bg))",
+          foreground: "hsl(var(--stat-down-fg))",
+        },
+        "stat-stand": {
+          DEFAULT: "hsl(var(--stat-stand-bg))",
+          foreground: "hsl(var(--stat-stand-fg))",
+        },
+        "stat-charge": {
+          DEFAULT: "hsl(var(--stat-charge-bg))",
+          foreground: "hsl(var(--stat-charge-fg))",
+        },
+        money: {
+          DEFAULT: "hsl(var(--money-bg))",
+          foreground: "hsl(var(--money-fg))",
+        },
+
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
