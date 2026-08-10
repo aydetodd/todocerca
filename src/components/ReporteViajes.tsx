@@ -943,7 +943,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
-            <Button onClick={ejecutarRetiro} disabled={retiroLoading || brutoDisponible <= 0}>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || montoRetiro <= 0}>
               {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Cobrar {fmtMoney(netoDisponible)}
             </Button>
