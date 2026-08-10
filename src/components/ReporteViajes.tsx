@@ -801,38 +801,39 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                             </button>
 
                             {isOpen && pax.length > 0 && (
-                              <div className="bg-muted/20 px-3 py-2 space-y-1">
-                                <p className="text-[10px] text-muted-foreground">
+                              <div className="bg-muted/40 px-4 py-3 space-y-2 border-t border-border">
+                                <p className="text-[12px] text-muted-foreground">
                                   Pasajeros anónimos (sin identificar). Se numeran al subir; al bajar se liga al número de subida.
                                 </p>
-                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-2 gap-y-0.5 text-[11px]">
-                                  <span className="font-semibold">Subida</span>
-                                  <span className="font-semibold">Bajada</span>
-                                  <span className="font-semibold">Coordenadas (sube → baja)</span>
-                                  <span className="font-semibold text-right">Importe</span>
+                                <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-3 gap-y-1 text-[12px]">
+                                  <span className="font-semibold text-foreground">Subida</span>
+                                  <span className="font-semibold text-foreground">Bajada</span>
+                                  <span className="font-semibold text-foreground">Coordenadas (sube → baja)</span>
+                                  <span className="font-semibold text-foreground text-right">Importe</span>
                                   {pax.map((p, i) => (
                                     <div key={i} className="contents">
-                                      <span className="text-emerald-700">
+                                      <span className="text-stat-up-foreground">
                                         {p.numero_subida != null ? `#${p.numero_subida}` : "—"}
-                                        <span className="opacity-60 ml-1">{fmtTime(p.subida_at)}</span>
+                                        <span className="opacity-70 ml-1">{fmtTime(p.subida_at)}</span>
                                       </span>
-                                      <span className="text-amber-700">
+                                      <span className="text-stat-down-foreground">
                                         {p.numero_bajada != null
                                           ? `Baj#${p.numero_bajada} (era Sub#${p.numero_subida ?? "?"})`
                                           : <span className="text-muted-foreground">a bordo</span>}
-                                        {p.bajada_at && <span className="opacity-60 ml-1">{fmtTime(p.bajada_at)}</span>}
+                                        {p.bajada_at && <span className="opacity-70 ml-1">{fmtTime(p.bajada_at)}</span>}
                                       </span>
                                       <span className="text-muted-foreground tabular-nums truncate">
                                         {p.subida_lat != null ? `${p.subida_lat.toFixed(5)}, ${p.subida_lng?.toFixed(5)}` : "—"}
                                         {" → "}
                                         {p.bajada_lat != null ? `${p.bajada_lat.toFixed(5)}, ${p.bajada_lng?.toFixed(5)}` : "…"}
                                       </span>
-                                      <span className="text-right tabular-nums">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
+                                      <span className="text-right tabular-nums font-bold text-money-foreground">{p.monto > 0 ? fmtMoney(p.monto) : "—"}</span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             )}
+
                           </div>
                         );
                       })}
