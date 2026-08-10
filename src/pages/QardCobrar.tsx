@@ -47,10 +47,13 @@ export default function QardCobrar() {
     setCobros(rows.filter(r => r.tipo !== "ajuste"));
     const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
     const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
-    setTotalBruto(soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    // Los cobros internos NO llevan comisión: siempre vale el monto completo.
+    const bruto = soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
+    const retirado = soloRetiros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
+    setTotalBruto(bruto);
     setTotalComision(0);
-    setTotalRetirado(soloRetiros.reduce((s, r) => s + Number(r.monto_mxn ?? 0), 0));
-    setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
+    setTotalRetirado(retirado);
+    setTotalNeto(bruto - retirado);
 
   }, []);
 
@@ -312,7 +315,7 @@ export default function QardCobrar() {
           <div className="space-y-1 max-h-72 overflow-y-auto">
             {cobros.map((m) => {
               const esRetiro = String(m.tipo).startsWith("retiro_");
-              const neto = Number(m.neto_comercio_mxn ?? 0);
+              const importe = Math.abs(Number(m.monto_mxn ?? 0));
               return (
                 <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                   <div className="min-w-0 pr-2">
@@ -323,7 +326,7 @@ export default function QardCobrar() {
                   </div>
                   <div className="text-right">
                     <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
-                      {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
+                      {esRetiro ? "−" : "+"}${importe.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -412,7 +415,9 @@ export default function QardCobrar() {
                 
                 className="text-xl h-12"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Mínimo $20. {retiroMetodo === "qard" ? "Sin comisión (0%)." : "Comisión 2% al retirar por este medio."}
+              </p>
             </div>
 
             {retiroMetodo === "spei" && (
