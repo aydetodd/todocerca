@@ -324,6 +324,19 @@ Paleta: Azul marino profundo con acentos brillantes
     --border-soft: 214 32% 91%;
     --balance-green: 160 84% 32%;
 
+    /* Estados operativos (panel concesionario) — modo claro */
+    --stat-up-bg: 138 76% 97%;          /* #F0FFF4 */
+    --stat-up-fg: 145 63% 42%;          /* #38A169 */
+    --stat-down-bg: 33 100% 96%;        /* #FFFAF0 */
+    --stat-down-fg: 24 75% 50%;         /* #DD6B20 */
+    --stat-stand-bg: 210 40% 98%;       /* #F7FAFC */
+    --stat-stand-fg: 214 15% 52%;       /* #718096 */
+    --stat-charge-bg: 205 100% 96%;     /* #EBF8FF */
+    --stat-charge-fg: 210 60% 50%;      /* #3182CE */
+    --money-fg: 145 56% 26%;            /* #276749 */
+    --money-bg: 138 76% 97%;
+
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 21 90% 48%;
