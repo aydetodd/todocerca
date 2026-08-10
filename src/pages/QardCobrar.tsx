@@ -415,7 +415,9 @@ export default function QardCobrar() {
                 
                 className="text-xl h-12"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">Mínimo $20. Sin comisión.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Mínimo $20. {retiroMetodo === "qard" ? "Sin comisión (0%)." : "Comisión 2% al retirar por este medio."}
+              </p>
             </div>
 
             {retiroMetodo === "spei" && (
