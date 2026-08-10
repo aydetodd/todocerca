@@ -33,7 +33,12 @@ serve(async (req) => {
     const metodo = String(body.metodo || "").toLowerCase();
     const destino = String(body.destino || "").trim();
     const cvv = String(body.cvv || "").replace(/\D/g, "");
+    const montoSolicitado = body.monto_mxn != null ? Number(body.monto_mxn) : null;
+    if (montoSolicitado != null && (!isFinite(montoSolicitado) || montoSolicitado <= 0)) {
+      return err("Monto inválido");
+    }
     if (!viajeIds.length) return err("Selecciona al menos un viaje");
+
     if (!["qard", "oxxo", "spei"].includes(metodo)) return err("Método inválido");
     if (!RETIROS_STP_ENABLED && METODOS_RETIRO_BLOQUEADOS.includes(metodo)) {
       return err(MENSAJE_RETIRO_BLOQUEADO);
