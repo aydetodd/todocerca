@@ -6676,6 +6676,7 @@ export type Database = {
           pp: string
         }[]
       }
+      qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
       qard_cvv_verificar: {
         Args: { _cvv: string; _qard_number: string; _tipo?: string }
         Returns: boolean
@@ -6688,6 +6689,15 @@ export type Database = {
       qard_finalize_registration: {
         Args: { _nivel2_id: string }
         Returns: string
+      }
+      qard_limite_cobros: {
+        Args: { _user_id: string }
+        Returns: {
+          disponible: number
+          estado: string
+          tope: number
+          usado: number
+        }[]
       }
       qard_limite_recarga: {
         Args: { _user_id: string }

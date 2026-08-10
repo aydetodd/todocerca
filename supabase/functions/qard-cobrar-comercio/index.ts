@@ -54,7 +54,7 @@ serve(async (req) => {
     //      cuantas transacciones quiera; el tope de $10,000 NO le aplica al pagar.
     //    - El que COBRA (comerciante no aprobado): máximo $10,000 de ENTRADAS acumuladas al mes.
     {
-      const { data: limRaw } = await admin.rpc("qard_limite_recarga" as any, { _user_id: comercio.id });
+      const { data: limRaw } = await admin.rpc("qard_limite_cobros" as any, { _user_id: comercio.id });
       const lim: any = Array.isArray(limRaw) ? limRaw[0] : limRaw;
       const tope = lim?.tope == null ? null : Number(lim.tope);
       const disponible = lim?.disponible == null ? null : Number(lim.disponible);
