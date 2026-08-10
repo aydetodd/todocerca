@@ -315,7 +315,7 @@ export default function QardCobrar() {
           <div className="space-y-1 max-h-72 overflow-y-auto">
             {cobros.map((m) => {
               const esRetiro = String(m.tipo).startsWith("retiro_");
-              const neto = Number(m.neto_comercio_mxn ?? 0);
+              const importe = Math.abs(Number(m.monto_mxn ?? 0));
               return (
                 <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                   <div className="min-w-0 pr-2">
@@ -326,7 +326,7 @@ export default function QardCobrar() {
                   </div>
                   <div className="text-right">
                     <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
-                      {neto >= 0 ? "+" : "−"}${Math.abs(neto).toFixed(2)}
+                      {esRetiro ? "−" : "+"}${importe.toFixed(2)}
                     </div>
                   </div>
                 </div>
