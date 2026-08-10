@@ -47,10 +47,13 @@ export default function QardCobrar() {
     setCobros(rows.filter(r => r.tipo !== "ajuste"));
     const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
     const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
-    setTotalBruto(soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0));
+    // Los cobros internos NO llevan comisión: siempre vale el monto completo.
+    const bruto = soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
+    const retirado = soloRetiros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
+    setTotalBruto(bruto);
     setTotalComision(0);
-    setTotalRetirado(soloRetiros.reduce((s, r) => s + Number(r.monto_mxn ?? 0), 0));
-    setTotalNeto(rows.reduce((s, r) => s + Number(r.neto_comercio_mxn ?? 0), 0));
+    setTotalRetirado(retirado);
+    setTotalNeto(bruto - retirado);
 
   }, []);
 
