@@ -451,10 +451,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     setRetiroMetodo(metodo);
     setRetiroDestino("");
     setRetiroCvv("");
+    setRetiroMonto(brutoDisponible.toFixed(2));
     setRetiroOpen(true);
   };
 
   const ejecutarRetiro = async () => {
+    if (montoRetiro <= 0) {
+      toast({ title: "Monto inválido", description: "Escribe cuánto quieres retirar.", variant: "destructive" });
+      return;
+    }
     setRetiroLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("retirar-viajes-concesionario", {
@@ -463,14 +468,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           metodo: retiroMetodo,
           destino: retiroDestino,
           cvv: retiroCvv,
+          monto_mxn: montoRetiro,
         },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "No se pudo retirar");
       toast({
         title: "Cobro realizado",
-        description: `${data.viajes_cobrados} viaje(s) cobrados. Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}`,
+        description: `Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}${
+          data.restante > 0 ? ` · Queda por cobrar ${fmtMoney(data.restante)}` : ""
+        }`,
       });
+
       setRetiroOpen(false);
       await load();
     } catch (e: any) {
