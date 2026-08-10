@@ -729,23 +729,24 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                 const totalImporte = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.monto || 0), 0);
                 const totalCobrosB = b.viajes.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
                 return (
-                  <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-lg border border-border overflow-hidden">
-                    <div className="bg-muted/40 px-3 py-2 flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold truncate">{b.rutaLabel}</p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">{completados} viajes</Badge>
+                  <div key={`${b.rutaId}-${b.unidadId}-${b.choferId}`} className="rounded-xl border border-border overflow-hidden bg-card shadow-soft">
+                    <div className="px-4 py-4 flex flex-col gap-2 border-b border-border">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[17px] font-bold text-foreground leading-tight truncate">{b.rutaLabel}</p>
+                        <Badge variant="outline" className="text-[11px] shrink-0">{completados} viajes</Badge>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
+                      <p className="text-[13px] text-muted-foreground truncate">
                         {b.unidadLabel} · {b.choferLabel}
                       </p>
-                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                        <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-0">↑{totalSuben} subieron</Badge>
-                        <Badge className="text-[10px] bg-amber-100 text-amber-700 border-0">↓{totalBajan} bajaron</Badge>
-                        <Badge className="text-[10px] bg-blue-100 text-blue-700 border-0">{totalStand} en stand</Badge>
-                        <Badge className="text-[10px] bg-violet-100 text-violet-700 border-0">{totalCobrosB} cobros</Badge>
-                        <Badge className="text-[10px] bg-primary/15 text-primary border-0">{fmtMoney(totalImporte)}</Badge>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <Badge className="text-[12px] font-normal bg-stat-up text-stat-up-foreground border-0 hover:bg-stat-up">↑{totalSuben} subieron</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-down text-stat-down-foreground border-0 hover:bg-stat-down">↓{totalBajan} bajaron</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-stand text-stat-stand-foreground border-0 hover:bg-stat-stand">{totalStand} en stand</Badge>
+                        <Badge className="text-[12px] font-normal bg-stat-charge text-stat-charge-foreground border-0 hover:bg-stat-charge">{totalCobrosB} cobros</Badge>
+                        <Badge className="text-[12px] font-bold bg-money text-money-foreground border-0 hover:bg-money">{fmtMoney(totalImporte)}</Badge>
                       </div>
                     </div>
+
                     <div className="divide-y divide-border">
                       {b.viajes.map((v) => {
                         const sentido = v.direccion || "—";
