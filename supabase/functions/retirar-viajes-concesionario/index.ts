@@ -287,7 +287,9 @@ serve(async (req) => {
         : metodo === "spei"
         ? `SPEI enviado. Referencia ${referencia}`
         : `Transferencia enviada. Referencia ${referencia}`,
-      viajes_cobrados: validos.length,
+      viajes_cobrados: viajesLiquidados.length,
+      restante: +(totalPendiente - bruto).toFixed(2),
+
       bruto, comision, neto, referencia,
       simulado: metodo !== "qard",
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
