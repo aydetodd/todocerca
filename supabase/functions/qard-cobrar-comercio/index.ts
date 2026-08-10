@@ -49,9 +49,27 @@ serve(async (req) => {
       return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
     }
 
-    // 0) El tope mensual de $10,000 aplica SOLO a recargas de la cuenta eje (entradas de dinero externo).
-    //    Los cobros internos entre QaRd NO consumen ese tope: el sub-QR manda con su límite por transacción,
-    //    y se pueden hacer todas las transacciones que su titular permita.
+    // 0) Topes:
+    //    - El que PAGA: su límite es por transacción (lo define el titular del sub-QR). Puede hacer
+    //      cuantas transacciones quiera; el tope de $10,000 NO le aplica al pagar.
+    //    - El que COBRA (comerciante no aprobado): máximo $10,000 de ENTRADAS acumuladas al mes.
+    {
+      const { data: limRaw } = await admin.rpc("qard_limite_recarga" as any, { _user_id: comercio.id });
+      const lim: any = Array.isArray(limRaw) ? limRaw[0] : limRaw;
+      const tope = lim?.tope == null ? null : Number(lim.tope);
+      const disponible = lim?.disponible == null ? null : Number(lim.disponible);
+      if (tope !== null && disponible !== null && monto > disponible) {
+        return jsonErr(
+          disponible <= 0
+            ? `Alcanzaste tu tope de cobros del mes ($${tope.toLocaleString("es-MX")}). Actualiza a Comerciante para cobrar sin límite.`
+            : `Este cobro supera tu tope mensual. Puedes cobrar hasta $${disponible.toFixed(2)} este mes. Actualiza a Comerciante para cobrar sin límite.`,
+          "tope_comerciante",
+          { color: "naranja", tope, disponible }
+        );
+      }
+    }
+
+
 
 
     // 1) Buscar sub-QR
