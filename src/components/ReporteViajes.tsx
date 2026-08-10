@@ -762,37 +762,44 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                             <button
                               type="button"
                               onClick={() => setExpanded((e) => ({ ...e, [v.id]: !e[v.id] }))}
-                              className="w-full px-3 py-2 flex items-center justify-between gap-2 hover:bg-muted/30 text-left"
+                              className="w-full px-4 py-4 flex items-start justify-between gap-3 hover:bg-muted/40 text-left transition-colors"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                 {pax.length > 0 ? (
-                                  <span className="inline-flex items-center gap-0.5 text-primary font-semibold text-[10px] bg-primary/10 rounded px-1.5 py-0.5 shrink-0">
+                                  <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-stat-charge-foreground bg-stat-charge rounded px-1.5 py-0.5 shrink-0">
                                     {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                     {isOpen ? "Ocultar" : `Ver ${pax.length} pasajeros`}
                                   </span>
                                 ) : <span className="w-3" />}
-                                <span className="font-semibold">#{v.numero_viaje}</span>
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sentido}</Badge>
-                                {flagManual && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Manual</Badge>}
-                                {enCurso && <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-0">En curso</Badge>}
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[11px] font-bold text-secondary-foreground shrink-0">
+                                  {v.numero_viaje}
+                                </span>
+                                <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0">{sentido}</Badge>
+                                {flagManual && <Badge variant="outline" className="text-[11px] font-normal px-2 py-0">Manual</Badge>}
+                                {enCurso && <Badge className="text-[11px] font-normal px-2 py-0 bg-stat-charge text-stat-charge-foreground border-0 hover:bg-stat-charge">En curso</Badge>}
                                 {v.retirado_at && (
-                                  <Badge className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 border-0 gap-0.5">
+                                  <Badge className="text-[11px] font-normal px-2 py-0 bg-stat-up text-stat-up-foreground border-0 gap-0.5 hover:bg-stat-up">
                                     <CheckCircle2 className="h-2.5 w-2.5" /> Cobrado
                                   </Badge>
                                 )}
-                                <span className="text-[10px] text-emerald-700 font-medium">↑{sub} ↓{baj} · {abordo} en stand</span>
+                                <span className="text-[12px] text-muted-foreground">
+                                  <span className="text-stat-up-foreground font-medium">↑{sub}</span>{" "}
+                                  <span className="text-stat-down-foreground font-medium">↓{baj}</span>
+                                  {" · "}{abordo} en stand
+                                </span>
                                 {(cobrosPorViaje[v.id]?.cobros ?? 0) > 0 && (
-                                  <span className={`text-[10px] font-semibold ${v.retirado_at ? "text-muted-foreground line-through" : "text-primary"}`}>
+                                  <span className={`text-[13px] font-bold ${v.retirado_at ? "text-muted-foreground line-through" : "text-money-foreground"}`}>
                                     {cobrosPorViaje[v.id].cobros} cobros · {fmtMoney(cobrosPorViaje[v.id].monto)}
                                   </span>
                                 )}
 
                               </div>
-                              <span className="text-muted-foreground shrink-0 tabular-nums text-right">
-                                <span className="block text-[10px] opacity-70">{fmtDate(v.inicio_at || v.fecha)}</span>
+                              <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums text-right">
+                                <span className="block opacity-80">{fmtDate(v.inicio_at || v.fecha)}</span>
                                 {fmtTime(v.inicio_at)} → {enCurso ? "…" : fmtTime(v.fin_at)}
                               </span>
                             </button>
+
                             {isOpen && pax.length > 0 && (
                               <div className="bg-muted/20 px-3 py-2 space-y-1">
                                 <p className="text-[10px] text-muted-foreground">
