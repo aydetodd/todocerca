@@ -91,6 +91,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [retiroMetodo, setRetiroMetodo] = useState<"qard" | "oxxo" | "spei">("qard");
   const [retiroDestino, setRetiroDestino] = useState("");
   const [retiroCvv, setRetiroCvv] = useState("");
+  const [retiroMonto, setRetiroMonto] = useState("");
+
   const [retiroLoading, setRetiroLoading] = useState(false);
 
 
@@ -336,8 +338,11 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   // Comisión según el método de cobro: QaRd 0%, SPEI 3%, OXXO aún por definir.
   const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.03 };
   const comisionPct = COMISION_POR_METODO[retiroMetodo];
-  const comisionDisponible = +(brutoDisponible * comisionPct).toFixed(2);
-  const netoDisponible = +(brutoDisponible - comisionDisponible).toFixed(2);
+  const montoRetiro = Math.min(Number(retiroMonto) || 0, brutoDisponible);
+  const comisionDisponible = +(montoRetiro * comisionPct).toFixed(2);
+  const netoDisponible = +(montoRetiro - comisionDisponible).toFixed(2);
+  const restanteRetiro = +(brutoDisponible - montoRetiro).toFixed(2);
+
 
   // Ya cobrado (histórico, dentro del rango filtrado)
   const yaCobradoNeto = filtered
@@ -446,10 +451,15 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     setRetiroMetodo(metodo);
     setRetiroDestino("");
     setRetiroCvv("");
+    setRetiroMonto(brutoDisponible.toFixed(2));
     setRetiroOpen(true);
   };
 
   const ejecutarRetiro = async () => {
+    if (montoRetiro <= 0) {
+      toast({ title: "Monto inválido", description: "Escribe cuánto quieres retirar.", variant: "destructive" });
+      return;
+    }
     setRetiroLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("retirar-viajes-concesionario", {
@@ -458,14 +468,18 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           metodo: retiroMetodo,
           destino: retiroDestino,
           cvv: retiroCvv,
+          monto_mxn: montoRetiro,
         },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "No se pudo retirar");
       toast({
         title: "Cobro realizado",
-        description: `${data.viajes_cobrados} viaje(s) cobrados. Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}`,
+        description: `Neto: ${fmtMoney(data.neto)} · Ref ${data.referencia}${
+          data.restante > 0 ? ` · Queda por cobrar ${fmtMoney(data.restante)}` : ""
+        }`,
       });
+
       setRetiroOpen(false);
       await load();
     } catch (e: any) {
@@ -859,10 +873,28 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            <div>
+              <Label className="text-xs">¿Cuánto quieres retirar? (disponible {fmtMoney(brutoDisponible)})</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  inputMode="decimal"
+                  value={retiroMonto}
+                  autoFocus
+                  onChange={(e) => setRetiroMonto(e.target.value.replace(/[^\d.]/g, ""))}
+                />
+                <Button type="button" variant="secondary" className="shrink-0"
+                  onClick={() => setRetiroMonto(brutoDisponible.toFixed(2))}>
+                  Todo
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                El resto ({fmtMoney(restanteRetiro > 0 ? restanteRetiro : 0)}) se queda disponible para después.
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2 rounded-md bg-muted/40 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase">Bruto</p>
-                <p className="text-sm font-bold">{fmtMoney(brutoDisponible)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Retiras</p>
+                <p className="text-sm font-bold">{fmtMoney(montoRetiro)}</p>
               </div>
               <div className="p-2 rounded-md bg-muted/40 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase">
@@ -878,8 +910,9 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {viajesDisponibles.length} viaje(s) se marcarán como cobrados.
+              Se cobran los viajes que quepan en ese monto; los demás quedan pendientes.
             </p>
+
 
             {retiroMetodo === "qard" && (
               <>
@@ -910,7 +943,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
-            <Button onClick={ejecutarRetiro} disabled={retiroLoading || brutoDisponible <= 0}>
+            <Button onClick={ejecutarRetiro} disabled={retiroLoading || montoRetiro <= 0}>
               {retiroLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Cobrar {fmtMoney(netoDisponible)}
             </Button>
