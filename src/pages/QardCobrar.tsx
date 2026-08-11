@@ -434,6 +434,15 @@ export default function QardCobrar() {
         </DialogContent>
       </Dialog>
 
+      <NumericKeypadScreen
+        open={manualCvvKeypadOpen}
+        onClose={() => setManualCvvKeypadOpen(false)}
+        onSubmit={() => setManualCvvKeypadOpen(false)}
+        value={manualCvv}
+        onChange={setManualCvv}
+        title="CVV de la tarjeta"
+      />
+
       <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
