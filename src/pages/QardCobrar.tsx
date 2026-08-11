@@ -90,8 +90,17 @@ export default function QardCobrar() {
         { fps: 10, qrbox: 250 },
         async (text) => {
           await stopScan();
-          await procesarCobro(text, m);
+          const clean = String(text).replace(/\D/g, "");
+          if (clean.length !== 16) {
+            setUltimo({ ok: false, mensaje: "QR inválido (no son 16 dígitos)", color: "rojo" });
+            return;
+          }
+          // Todo cobro de comercio pide CVV de la tarjeta (el transporte no lo pide)
+          setPendingQard(clean);
+          setScanCvv("");
+          setCvvOpen(true);
         },
+
         () => {}
       );
     } catch (e: any) {
