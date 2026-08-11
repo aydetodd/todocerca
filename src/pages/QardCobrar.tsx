@@ -18,6 +18,10 @@ export default function QardCobrar() {
   const [manualQard, setManualQard] = useState("");
   const [manualVenc, setManualVenc] = useState("12/99");
   const [manualCvv, setManualCvv] = useState("");
+  const [cvvOpen, setCvvOpen] = useState(false);
+  const [pendingQard, setPendingQard] = useState("");
+  const [scanCvv, setScanCvv] = useState("");
+
   const [ultimo, setUltimo] = useState<any>(null);
   const [cobros, setCobros] = useState<any[]>([]);
   const [totalNeto, setTotalNeto] = useState(0);
@@ -90,8 +94,17 @@ export default function QardCobrar() {
         { fps: 10, qrbox: 250 },
         async (text) => {
           await stopScan();
-          await procesarCobro(text, m);
+          const clean = String(text).replace(/\D/g, "");
+          if (clean.length !== 16) {
+            setUltimo({ ok: false, mensaje: "QR inválido (no son 16 dígitos)", color: "rojo" });
+            return;
+          }
+          // Todo cobro de comercio pide CVV de la tarjeta (el transporte no lo pide)
+          setPendingQard(clean);
+          setScanCvv("");
+          setCvvOpen(true);
         },
+
         () => {}
       );
     } catch (e: any) {
@@ -141,6 +154,14 @@ export default function QardCobrar() {
     if (d.length <= 2) return d;
     return `${d.slice(0, 2)}/${d.slice(2)}`;
   };
+
+  const confirmarCvvEscaneo = async () => {
+    if (!/^\d{3,4}$/.test(scanCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    const m = Number(monto);
+    setCvvOpen(false);
+    await procesarCobro(pendingQard, m, { cvv: scanCvv });
+  };
+
 
   const confirmarManual = async () => {
     const digits = manualQard.replace(/\D/g, "");
@@ -344,7 +365,32 @@ export default function QardCobrar() {
 
 
 
+      <Dialog open={cvvOpen} onOpenChange={setCvvOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Escribe el CVV de la tarjeta</DialogTitle>
+            <DialogDescription>
+              Tarjeta •••• {pendingQard.slice(-4)} · Monto ${Number(monto || 0).toFixed(2)}
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            inputMode="numeric"
+            type="password"
+            value={scanCvv}
+            onChange={(e) => setScanCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            maxLength={4}
+            className="text-2xl tracking-[0.5em] text-center"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCvvOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarCvvEscaneo}>Cobrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Cobro manual</DialogTitle>

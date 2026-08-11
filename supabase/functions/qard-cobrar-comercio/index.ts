@@ -45,9 +45,12 @@ serve(async (req) => {
       return jsonErr("Monto inválido", "invalido");
     }
     console.log("[QARD-COBRAR] payload", { qard: qardNumberRaw.slice(-4), monto, manual, cvvLen: cvvInput?.length ?? 0 });
-    if (manual && (!cvvInput || cvvInput.length < 3)) {
-      return jsonErr("CVV requerido para cobro manual", "cvv_requerido", { color: "rojo" });
+    // Todo cobro de comercio (escaneado o manual) exige CVV. El transporte
+    // (urbano, foráneo, privado y taxi) usa otras funciones y NO pide CVV.
+    if (!cvvInput || cvvInput.length < 3) {
+      return jsonErr("CVV requerido (3 dígitos de la tarjeta)", "cvv_requerido", { color: "rojo" });
     }
+
 
     // 0) Topes:
     //    - El que PAGA: su límite es por transacción (lo define el titular del sub-QR). Puede hacer
