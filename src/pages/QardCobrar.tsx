@@ -155,6 +155,14 @@ export default function QardCobrar() {
     return `${d.slice(0, 2)}/${d.slice(2)}`;
   };
 
+  const confirmarCvvEscaneo = async () => {
+    if (!/^\d{3,4}$/.test(scanCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    const m = Number(monto);
+    setCvvOpen(false);
+    await procesarCobro(pendingQard, m, { cvv: scanCvv });
+  };
+
+
   const confirmarManual = async () => {
     const digits = manualQard.replace(/\D/g, "");
     if (digits.length !== 16) return toast({ title: "El QR debe tener 16 dígitos", variant: "destructive" });
