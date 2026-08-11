@@ -411,14 +411,16 @@ export default function QardCobrar() {
               </div>
               <div>
                 <label className="text-sm font-medium">CVV</label>
-                <Input
-                  inputMode="numeric"
-                  type="password"
-                  value={manualCvv}
-                  onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  
-                  maxLength={4}
-                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start h-11"
+                  onClick={() => setManualCvvKeypadOpen(true)}
+                >
+                  <span className="text-lg tracking-[0.5em]">
+                    {manualCvv ? "•".repeat(manualCvv.length) : "Escribir CVV"}
+                  </span>
+                </Button>
               </div>
             </div>
             <div className="text-sm bg-muted rounded p-2">
