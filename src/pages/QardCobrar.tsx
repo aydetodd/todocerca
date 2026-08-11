@@ -18,6 +18,10 @@ export default function QardCobrar() {
   const [manualQard, setManualQard] = useState("");
   const [manualVenc, setManualVenc] = useState("12/99");
   const [manualCvv, setManualCvv] = useState("");
+  const [cvvOpen, setCvvOpen] = useState(false);
+  const [pendingQard, setPendingQard] = useState("");
+  const [scanCvv, setScanCvv] = useState("");
+
   const [ultimo, setUltimo] = useState<any>(null);
   const [cobros, setCobros] = useState<any[]>([]);
   const [totalNeto, setTotalNeto] = useState(0);
