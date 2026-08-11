@@ -530,6 +530,15 @@ export default function QardCobrar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NumericKeypadScreen
+        open={retiroCvvKeypadOpen}
+        onClose={() => setRetiroCvvKeypadOpen(false)}
+        onSubmit={() => setRetiroCvvKeypadOpen(false)}
+        value={retiroCvv}
+        onChange={setRetiroCvv}
+        title="CVV dinámico del destino"
+      />
     </div>
   );
 }
