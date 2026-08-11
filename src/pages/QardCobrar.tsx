@@ -499,15 +499,16 @@ export default function QardCobrar() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">CVV dinámico del destino (4 dígitos)</label>
-                  <Input
-                    inputMode="numeric"
-                    type="password"
-                    value={retiroCvv}
-                    onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    
-                    maxLength={4}
-                    className="tracking-widest"
-                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start h-11"
+                    onClick={() => setRetiroCvvKeypadOpen(true)}
+                  >
+                    <span className="text-lg tracking-[0.5em]">
+                      {retiroCvv ? "•".repeat(retiroCvv.length) : "Escribir CVV"}
+                    </span>
+                  </Button>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Si mandas a otra persona, pide su CVV dinámico de 4 dígitos. Si es tu propia QaRd, puedes dejarlo vacío.
                   </p>
