@@ -38,6 +38,9 @@ export default function QardCobrar() {
   const [retiroCvv, setRetiroCvv] = useState("");
   const [retiroLoading, setRetiroLoading] = useState(false);
 
+  const [manualCvvKeypadOpen, setManualCvvKeypadOpen] = useState(false);
+  const [retiroCvvKeypadOpen, setRetiroCvvKeypadOpen] = useState(false);
+
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
