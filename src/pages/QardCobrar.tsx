@@ -369,29 +369,15 @@ export default function QardCobrar() {
 
 
 
-      <Dialog open={cvvOpen} onOpenChange={setCvvOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Escribe el CVV de la tarjeta</DialogTitle>
-            <DialogDescription>
-              Tarjeta •••• {pendingQard.slice(-4)} · Monto ${Number(monto || 0).toFixed(2)}
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            autoFocus
-            inputMode="numeric"
-            type="password"
-            value={scanCvv}
-            onChange={(e) => setScanCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            maxLength={4}
-            className="text-2xl tracking-[0.5em] text-center"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCvvOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmarCvvEscaneo}>Cobrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NumericKeypadScreen
+        open={cvvOpen}
+        onClose={() => setCvvOpen(false)}
+        onSubmit={confirmarCvvEscaneo}
+        value={scanCvv}
+        onChange={setScanCvv}
+        title="CVV de la tarjeta"
+        subtitle={`Tarjeta •••• ${pendingQard.slice(-4)} · Monto $${Number(monto || 0).toFixed(2)}`}
+      />
 
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>
 
