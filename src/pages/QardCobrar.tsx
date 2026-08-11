@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 
 export default function QardCobrar() {
@@ -36,6 +37,9 @@ export default function QardCobrar() {
   const [retiroDestino, setRetiroDestino] = useState("");
   const [retiroCvv, setRetiroCvv] = useState("");
   const [retiroLoading, setRetiroLoading] = useState(false);
+
+  const [manualCvvKeypadOpen, setManualCvvKeypadOpen] = useState(false);
+  const [retiroCvvKeypadOpen, setRetiroCvvKeypadOpen] = useState(false);
 
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -365,29 +369,15 @@ export default function QardCobrar() {
 
 
 
-      <Dialog open={cvvOpen} onOpenChange={setCvvOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Escribe el CVV de la tarjeta</DialogTitle>
-            <DialogDescription>
-              Tarjeta •••• {pendingQard.slice(-4)} · Monto ${Number(monto || 0).toFixed(2)}
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            autoFocus
-            inputMode="numeric"
-            type="password"
-            value={scanCvv}
-            onChange={(e) => setScanCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            maxLength={4}
-            className="text-2xl tracking-[0.5em] text-center"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCvvOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmarCvvEscaneo}>Cobrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NumericKeypadScreen
+        open={cvvOpen}
+        onClose={() => setCvvOpen(false)}
+        onSubmit={confirmarCvvEscaneo}
+        value={scanCvv}
+        onChange={setScanCvv}
+        title="CVV de la tarjeta"
+        subtitle={`Tarjeta •••• ${pendingQard.slice(-4)} · Monto $${Number(monto || 0).toFixed(2)}`}
+      />
 
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>
 
@@ -421,14 +411,16 @@ export default function QardCobrar() {
               </div>
               <div>
                 <label className="text-sm font-medium">CVV</label>
-                <Input
-                  inputMode="numeric"
-                  type="password"
-                  value={manualCvv}
-                  onChange={(e) => setManualCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  
-                  maxLength={4}
-                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start h-11"
+                  onClick={() => setManualCvvKeypadOpen(true)}
+                >
+                  <span className="text-lg tracking-[0.5em]">
+                    {manualCvv ? "•".repeat(manualCvv.length) : "Escribir CVV"}
+                  </span>
+                </Button>
               </div>
             </div>
             <div className="text-sm bg-muted rounded p-2">
@@ -441,6 +433,15 @@ export default function QardCobrar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NumericKeypadScreen
+        open={manualCvvKeypadOpen}
+        onClose={() => setManualCvvKeypadOpen(false)}
+        onSubmit={() => setManualCvvKeypadOpen(false)}
+        value={manualCvv}
+        onChange={setManualCvv}
+        title="CVV de la tarjeta"
+      />
 
       <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
         <DialogContent className="max-w-sm">
@@ -498,15 +499,16 @@ export default function QardCobrar() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">CVV dinámico del destino (4 dígitos)</label>
-                  <Input
-                    inputMode="numeric"
-                    type="password"
-                    value={retiroCvv}
-                    onChange={e => setRetiroCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    
-                    maxLength={4}
-                    className="tracking-widest"
-                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start h-11"
+                    onClick={() => setRetiroCvvKeypadOpen(true)}
+                  >
+                    <span className="text-lg tracking-[0.5em]">
+                      {retiroCvv ? "•".repeat(retiroCvv.length) : "Escribir CVV"}
+                    </span>
+                  </Button>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Si mandas a otra persona, pide su CVV dinámico de 4 dígitos. Si es tu propia QaRd, puedes dejarlo vacío.
                   </p>
@@ -528,6 +530,15 @@ export default function QardCobrar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NumericKeypadScreen
+        open={retiroCvvKeypadOpen}
+        onClose={() => setRetiroCvvKeypadOpen(false)}
+        onSubmit={() => setRetiroCvvKeypadOpen(false)}
+        value={retiroCvv}
+        onChange={setRetiroCvv}
+        title="CVV dinámico del destino"
+      />
     </div>
   );
 }
