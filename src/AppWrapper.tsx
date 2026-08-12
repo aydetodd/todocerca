@@ -15,6 +15,7 @@ import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
 import Proximamente from "./pages/Proximamente";
 import Panel from "./pages/Panel";
+import AdminQuickAccess from "./pages/AdminQuickAccess";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -156,6 +157,7 @@ export default function AppWrapper() {
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
           <Route path="/panel" element={<Panel />} />
+          <Route path="/admin" element={<AdminQuickAccess />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/auth" element={<Auth />} />
