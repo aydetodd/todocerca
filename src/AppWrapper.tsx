@@ -15,6 +15,7 @@ import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
 import Proximamente from "./pages/Proximamente";
 import Panel from "./pages/Panel";
+import AdminQuickAccess from "./pages/AdminQuickAccess";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
