@@ -15,6 +15,7 @@ import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
 import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
+import { formatHermosillo } from "@/lib/utils";
 const todocercaLogo = todocercaLogoAsset.url;
 
 
