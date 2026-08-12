@@ -134,7 +134,7 @@ export default function QardCobrar() {
     setUltimo(data);
     if (data.ok) {
       setMonto("");
-      toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}` });
+      toast({ title: data.mensaje });
       await cargarCobros();
       setTimeout(() => { cargarCobros(); }, 1200);
     }
@@ -269,7 +269,7 @@ export default function QardCobrar() {
               )}
               <div className="text-sm mt-2 opacity-90">Sub-QR: {String(ultimo.sub_index).padStart(2, "0")} · {ultimo.alias}</div>
               <div className="mt-3 text-sm">Recibes: <b>${Number(ultimo.neto).toFixed(2)}</b></div>
-              <div className="text-xs mt-1 opacity-75">Saldo del cliente: ${Number(ultimo.saldo_despues).toFixed(2)}</div>
+              
             </>
           )}
 
