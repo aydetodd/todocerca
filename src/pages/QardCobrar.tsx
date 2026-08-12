@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
+import { formatHermosillo } from "@/lib/utils";
 
 export default function QardCobrar() {
   const nav = useNavigate();
