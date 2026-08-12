@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
+import { formatHermosillo } from "@/lib/utils";
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -341,26 +342,41 @@ export default function QardCobrar() {
           <div className="text-xs text-muted-foreground text-center py-3">Sin movimientos aún.</div>
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
-            {cobros.map((m) => {
-              const esRetiro = String(m.tipo).startsWith("retiro_");
-              const importe = Math.abs(Number(m.monto_mxn ?? 0));
-              return (
-                <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
-                  <div className="min-w-0 pr-2">
-                    <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {new Date(m.created_at).toLocaleString()}
+            {(() => {
+              // Saldo acumulado desde cero: recorremos del más viejo al más nuevo
+              const saldos = new Map<string, number>();
+              let acumulado = 0;
+              [...cobros].reverse().forEach((m) => {
+                const esRet = String(m.tipo).startsWith("retiro_");
+                const imp = Math.abs(Number(m.monto_mxn ?? 0));
+                acumulado = +(acumulado + (esRet ? -imp : imp)).toFixed(2);
+                saldos.set(m.id, acumulado);
+              });
+              return cobros.map((m) => {
+                const esRetiro = String(m.tipo).startsWith("retiro_");
+                const importe = Math.abs(Number(m.monto_mxn ?? 0));
+                return (
+                  <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
+                    <div className="min-w-0 pr-2">
+                      <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {formatHermosillo(m.created_at)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
+                        {esRetiro ? "−" : "+"}${importe.toFixed(2)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Saldo ${(saldos.get(m.id) ?? 0).toFixed(2)}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className={`font-semibold ${esRetiro ? "text-destructive" : "text-foreground"}`}>
-                      {esRetiro ? "−" : "+"}${importe.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
+
         )}
       </Card>
 

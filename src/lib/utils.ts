@@ -67,3 +67,10 @@ export function formatShortRouteName(routeName: string | null | undefined): stri
   
   return shortName || 'Ruta';
 }
+
+/**
+ * Formats a date/ISO string in Hermosillo time (UTC-7, no DST) for display.
+ */
+export function formatHermosillo(value: string | number | Date): string {
+  return new Date(value).toLocaleString("es-MX", { timeZone: "America/Hermosillo" });
+}

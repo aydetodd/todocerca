@@ -15,6 +15,7 @@ import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
 import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
+import { formatHermosillo } from "@/lib/utils";
 const todocercaLogo = todocercaLogoAsset.url;
 
 
@@ -782,7 +783,7 @@ export default function Qard() {
         const filas = todas.filter(f => new Date(f.m.created_at).getTime() >= desde);
 
         const mesLabel = (d: string) =>
-          new Date(d).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+          new Date(d).toLocaleDateString("es-MX", { month: "long", year: "numeric", timeZone: "America/Hermosillo" });
         const meses: { label: string; filas: typeof filas }[] = [];
         filas.forEach(f => {
           const lbl = mesLabel(f.m.created_at);
@@ -797,7 +798,7 @@ export default function Qard() {
             ["Fecha", "Concepto", "Ingreso", "Egreso", "Saldo"],
             [
               ...fs.map(f => [
-                new Date(f.m.created_at).toLocaleString("es-MX"),
+                formatHermosillo(f.m.created_at),
                 etiqueta(f.m),
                 f.monto > 0 ? f.monto.toFixed(2) : "",
                 f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "",
@@ -846,7 +847,7 @@ export default function Qard() {
                             <div className="min-w-0">
                               <div className="font-medium text-sm truncate">{etiqueta(f.m)}</div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(f.m.created_at).toLocaleString("es-MX")}
+                                {formatHermosillo(f.m.created_at)}
                               </div>
                             </div>
                             <div className="text-right shrink-0">
@@ -914,7 +915,7 @@ export default function Qard() {
                     <div className="min-w-0">
                       <div className="font-medium text-sm truncate">{label(f.m)}</div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(f.m.created_at).toLocaleString("es-MX")}
+                        {formatHermosillo(f.m.created_at)}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
