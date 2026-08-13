@@ -153,6 +153,7 @@ export default function AppWrapper() {
         {/* Validación única de acceso (dispositivo + sesión única) por correo */}
         <AccessGateProvider />
         <NavigationBar />
+        <AdminFloatingButton />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
