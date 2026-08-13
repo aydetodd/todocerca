@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Ticket, Building2, Radio, AlertTriangle } from 'lucide-react';
+import { Bus, Ticket, Building2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -48,6 +48,23 @@ export default function MainHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
+        {isAdmin && (
+          <Card
+            className="cursor-pointer border-primary transition-all hover:border-primary hover:shadow-lg"
+            onClick={() => navigate('/beto')}
+          >
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="h-7 w-7 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Panel de administrador</h3>
+                <p className="text-sm text-muted-foreground">Autorizar solicitudes y cambios</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
         <DriverProfilePanel />
 
