@@ -158,6 +158,7 @@ export default function AppWrapper() {
           <Route path="/home" element={<MainHome />} />
           <Route path="/panel" element={<Panel />} />
           <Route path="/admin" element={<AdminQuickAccess />} />
+          <Route path="/beto" element={<AdminQuickAccess />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/auth" element={<Auth />} />
