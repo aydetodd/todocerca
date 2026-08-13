@@ -4,7 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-const HIDDEN_PATHS = ['/auth', '/landing', '/', '/beto', '/admin'];
+const HIDDEN_PATHS = ['/auth', '/landing', '/beto', '/admin'];
 
 export const AdminFloatingButton = () => {
   const { user } = useAuth();
