@@ -68,6 +68,7 @@ import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
 import { NavigationBar } from "@/components/NavigationBar";
+import { AdminFloatingButton } from "@/components/AdminFloatingButton";
 import { AccessGate } from "@/components/AccessGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
 import { useSingleSession } from "@/hooks/useSingleSession";
