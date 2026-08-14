@@ -11,6 +11,7 @@ import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
+import { AdminPinGate } from '@/components/AdminPinGate';
 
 type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | null;
 
