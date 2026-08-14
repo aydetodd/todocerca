@@ -3188,6 +3188,7 @@ export type Database = {
           active_transport_type: string | null
           active_unidad_id: string | null
           apodo: string | null
+          clave_universal_migrada: boolean
           codigo_postal: string | null
           consecutive_number: number
           contact_token: string | null
@@ -3209,6 +3210,7 @@ export type Database = {
           route_name: string | null
           tarifa_km: number | null
           telefono: string | null
+          trazabilidad_activa: boolean
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"] | null
@@ -3221,6 +3223,7 @@ export type Database = {
           active_transport_type?: string | null
           active_unidad_id?: string | null
           apodo?: string | null
+          clave_universal_migrada?: boolean
           codigo_postal?: string | null
           consecutive_number?: number
           contact_token?: string | null
@@ -3242,6 +3245,7 @@ export type Database = {
           route_name?: string | null
           tarifa_km?: number | null
           telefono?: string | null
+          trazabilidad_activa?: boolean
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
@@ -3254,6 +3258,7 @@ export type Database = {
           active_transport_type?: string | null
           active_unidad_id?: string | null
           apodo?: string | null
+          clave_universal_migrada?: boolean
           codigo_postal?: string | null
           consecutive_number?: number
           contact_token?: string | null
@@ -3275,6 +3280,7 @@ export type Database = {
           route_name?: string | null
           tarifa_km?: number | null
           telefono?: string | null
+          trazabilidad_activa?: boolean
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
@@ -5141,6 +5147,56 @@ export type Database = {
           },
         ]
       }
+      trazabilidad_puntos: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          lugar: string | null
+          ocurrido_en: string
+          receptor_id: string | null
+          receptor_nombre: string | null
+          sub_qr_id: string | null
+          tipo_evento: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          lugar?: string | null
+          ocurrido_en?: string
+          receptor_id?: string | null
+          receptor_nombre?: string | null
+          sub_qr_id?: string | null
+          tipo_evento?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          lugar?: string | null
+          ocurrido_en?: string
+          receptor_id?: string | null
+          receptor_nombre?: string | null
+          sub_qr_id?: string | null
+          tipo_evento?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trazabilidad_puntos_sub_qr_id_fkey"
+            columns: ["sub_qr_id"]
+            isOneToOne: false
+            referencedRelation: "qard_sub_qr"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trusted_devices: {
         Row: {
           created_at: string
@@ -6835,6 +6891,16 @@ export type Database = {
           _lng: number
           _qard_number: string
           _viaje_id: string
+        }
+        Returns: Json
+      }
+      rpc_registrar_punto_traza: {
+        Args: {
+          _lat: number
+          _lng: number
+          _lugar?: string
+          _target_qard: string
+          _tipo?: string
         }
         Returns: Json
       }
