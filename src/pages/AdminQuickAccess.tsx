@@ -11,6 +11,7 @@ import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
+import { AdminPinGate } from '@/components/AdminPinGate';
 
 type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | null;
 
@@ -66,6 +67,7 @@ export default function AdminQuickAccess() {
   return (
     <div className="min-h-screen bg-background">
       <GlobalHeader title="Administración" />
+      <AdminPinGate>
       <main className="container mx-auto px-4 py-4 pb-40 space-y-4">
         <h1 className="text-xl font-bold">Autorizaciones rápidas</h1>
 
@@ -103,6 +105,7 @@ export default function AdminQuickAccess() {
           Ir al panel completo
         </Button>
       </main>
+      </AdminPinGate>
     </div>
   );
 }

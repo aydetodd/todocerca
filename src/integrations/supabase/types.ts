@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_pin: {
+        Row: {
+          bloqueado_hasta: string | null
+          created_at: string
+          intentos_fallidos: number
+          pin_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bloqueado_hasta?: string | null
+          created_at?: string
+          intentos_fallidos?: number
+          pin_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bloqueado_hasta?: string | null
+          created_at?: string
+          intentos_fallidos?: number
+          pin_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_cron_secret: {
         Row: {
           created_at: string
@@ -6332,6 +6359,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_pin_estado: { Args: never; Returns: boolean }
+      admin_pin_set: {
+        Args: { _pin: string; _pin_actual?: string }
+        Returns: Json
+      }
+      admin_pin_verify: { Args: { _pin: string }; Returns: Json }
       admin_reject_ruta_maestra: {
         Args: { _id: string; _motivo: string }
         Returns: {
