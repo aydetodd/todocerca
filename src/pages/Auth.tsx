@@ -163,15 +163,19 @@ const Auth = () => {
         const loginEmails = phoneLoginEmails(telefono);
         let loginData: any = null;
         let loginError: any = null;
+        const variantes = passwordVariants(password);
         for (const emailToUse of loginEmails) {
           console.log('📧 Trying direct login with:', emailToUse);
-          const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
-          if (!error) {
-            loginData = data;
-            loginError = null;
-            break;
+          for (const pwd of variantes) {
+            const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password: pwd });
+            if (!error) {
+              loginData = data;
+              loginError = null;
+              break;
+            }
+            loginError = error;
           }
-          loginError = error;
+          if (loginData) break;
         }
 
         if (loginError) {
