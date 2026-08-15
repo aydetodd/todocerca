@@ -330,7 +330,7 @@ const Auth = () => {
         // Crear usuario con timeout
         const signUpPromise = supabase.auth.signUp({
           email: finalEmail,
-          password,
+          password: claveToPassword(password),
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
