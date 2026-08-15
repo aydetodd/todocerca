@@ -173,6 +173,7 @@ export default function AppWrapper() {
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
+          <Route path="/mi-trazabilidad" element={<MiTrazabilidad />} />
           <Route path="/mis-productos" element={<MisProductos />} />
           <Route path="/mis-rutas" element={<MisRutas />} />
           <Route path="/gestion-pedidos" element={<GestionPedidos />} />
