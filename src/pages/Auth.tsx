@@ -768,15 +768,19 @@ const Auth = () => {
               />
 
               <div>
-                <Label htmlFor="password">Contraseña *</Label>
+                <Label htmlFor="password">{isLogin ? "Contraseña *" : "Clave de 5 números *"}</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    inputMode={isLogin ? undefined : "numeric"}
+                    maxLength={isLogin ? undefined : CLAVE_LENGTH}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) =>
+                      setPassword(isLogin ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, CLAVE_LENGTH))
+                    }
                     required
-                    className="pr-10"
+                    className={isLogin ? "pr-10" : "pr-10 text-center text-2xl tracking-[0.5em]"}
                   />
                   <button
                     type="button"
@@ -787,6 +791,11 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {!isLogin && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Estos 5 números son tu clave para entrar, abrir geocercas y activar el SOS.
+                  </p>
+                )}
                 {isLogin && (
                   <div className="mt-2 text-right">
                     <button
