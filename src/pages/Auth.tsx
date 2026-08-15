@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import UbicacionSelector, { UbicacionValue } from "@/components/UbicacionSelector";
+import { CLAVE_LENGTH, claveToPassword, esClaveUniversal, passwordVariants } from "@/lib/claveUniversal";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -151,6 +152,17 @@ const Auth = () => {
       });
       return;
     }
+
+    // La clave universal son 5 números
+    if (!isLogin && !esClaveUniversal(password)) {
+      toast({
+        title: "Clave inválida",
+        description: "Tu clave son 5 números, por ejemplo 12345.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     
     setLoading(true);
     setShowIdConsecutivo(false);
@@ -163,15 +175,19 @@ const Auth = () => {
         const loginEmails = phoneLoginEmails(telefono);
         let loginData: any = null;
         let loginError: any = null;
+        const variantes = passwordVariants(password);
         for (const emailToUse of loginEmails) {
           console.log('📧 Trying direct login with:', emailToUse);
-          const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
-          if (!error) {
-            loginData = data;
-            loginError = null;
-            break;
+          for (const pwd of variantes) {
+            const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password: pwd });
+            if (!error) {
+              loginData = data;
+              loginError = null;
+              break;
+            }
+            loginError = error;
           }
-          loginError = error;
+          if (loginData) break;
         }
 
         if (loginError) {
@@ -314,7 +330,7 @@ const Auth = () => {
         // Crear usuario con timeout
         const signUpPromise = supabase.auth.signUp({
           email: finalEmail,
-          password,
+          password: claveToPassword(password),
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
@@ -347,6 +363,7 @@ const Auth = () => {
             await Promise.race([
               supabase.from('profiles').update({
                 telefono,
+                clave_universal_migrada: true,
                 ...(recoveryEmail.trim() ? { recovery_email: recoveryEmail.trim().toLowerCase() } : {}),
               }).eq('user_id', data.user.id),
               new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
@@ -751,15 +768,19 @@ const Auth = () => {
               />
 
               <div>
-                <Label htmlFor="password">Contraseña *</Label>
+                <Label htmlFor="password">{isLogin ? "Contraseña *" : "Clave de 5 números *"}</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    inputMode={isLogin ? undefined : "numeric"}
+                    maxLength={isLogin ? undefined : CLAVE_LENGTH}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) =>
+                      setPassword(isLogin ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, CLAVE_LENGTH))
+                    }
                     required
-                    className="pr-10"
+                    className={isLogin ? "pr-10" : "pr-10 text-center text-2xl tracking-[0.5em]"}
                   />
                   <button
                     type="button"
@@ -770,6 +791,11 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {!isLogin && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Estos 5 números son tu clave para entrar, abrir geocercas y activar el SOS.
+                  </p>
+                )}
                 {isLogin && (
                   <div className="mt-2 text-right">
                     <button

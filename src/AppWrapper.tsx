@@ -69,6 +69,9 @@ import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
 import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
+import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
+import { ClaveUniversalGate } from "@/components/ClaveUniversalGate";
+import MiTrazabilidad from "./pages/MiTrazabilidad";
 import { AccessGate } from "@/components/AccessGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
 import { useSingleSession } from "@/hooks/useSingleSession";
@@ -155,6 +158,8 @@ export default function AppWrapper() {
         <AccessGateProvider />
         <NavigationBar />
         <AdminFloatingButton />
+        <TestigoFloatingButton />
+        <ClaveUniversalGate />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
@@ -168,6 +173,7 @@ export default function AppWrapper() {
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
+          <Route path="/mi-trazabilidad" element={<MiTrazabilidad />} />
           <Route path="/mis-productos" element={<MisProductos />} />
           <Route path="/mis-rutas" element={<MisRutas />} />
           <Route path="/gestion-pedidos" element={<GestionPedidos />} />
