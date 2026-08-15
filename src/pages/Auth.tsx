@@ -152,6 +152,17 @@ const Auth = () => {
       });
       return;
     }
+
+    // La clave universal son 5 números
+    if (!isLogin && !esClaveUniversal(password)) {
+      toast({
+        title: "Clave inválida",
+        description: "Tu clave son 5 números, por ejemplo 12345.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     
     setLoading(true);
     setShowIdConsecutivo(false);
