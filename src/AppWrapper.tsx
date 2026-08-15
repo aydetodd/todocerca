@@ -155,6 +155,8 @@ export default function AppWrapper() {
         <AccessGateProvider />
         <NavigationBar />
         <AdminFloatingButton />
+        <TestigoFloatingButton />
+        <ClaveUniversalGate />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
