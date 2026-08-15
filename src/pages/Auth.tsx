@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import UbicacionSelector, { UbicacionValue } from "@/components/UbicacionSelector";
+import { CLAVE_LENGTH, claveToPassword, esClaveUniversal, passwordVariants } from "@/lib/claveUniversal";
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
