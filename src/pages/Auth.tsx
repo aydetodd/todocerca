@@ -363,6 +363,7 @@ const Auth = () => {
             await Promise.race([
               supabase.from('profiles').update({
                 telefono,
+                clave_universal_migrada: true,
                 ...(recoveryEmail.trim() ? { recovery_email: recoveryEmail.trim().toLowerCase() } : {}),
               }).eq('user_id', data.user.id),
               new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
