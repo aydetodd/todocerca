@@ -768,36 +768,63 @@ const Auth = () => {
               />
 
               <div>
-                <Label htmlFor="password">{isLogin ? "Contraseña *" : "Clave de 5 números *"}</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    inputMode={isLogin ? undefined : "numeric"}
-                    maxLength={isLogin ? undefined : CLAVE_LENGTH}
-                    value={password}
-                    onChange={(e) =>
-                      setPassword(isLogin ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, CLAVE_LENGTH))
-                    }
-                    required
-                    className={isLogin ? "pr-10" : "pr-10 text-center text-2xl tracking-[0.5em]"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <Label htmlFor="password">
+                  {usarClaveLarga ? "Contraseña anterior *" : "Clave de 5 números *"}
+                </Label>
+                {usarClaveLarga ? (
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex justify-center py-2">
+                    <InputOTP
+                      maxLength={CLAVE_LENGTH}
+                      value={password}
+                      onChange={(v) => setPassword(v.replace(/\D/g, "").slice(0, CLAVE_LENGTH))}
+                      inputMode="numeric"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} className="w-12 h-14 text-xl" />
+                        <InputOTPSlot index={1} className="w-12 h-14 text-xl" />
+                        <InputOTPSlot index={2} className="w-12 h-14 text-xl" />
+                        <InputOTPSlot index={3} className="w-12 h-14 text-xl" />
+                        <InputOTPSlot index={4} className="w-12 h-14 text-xl" />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                )}
                 {!isLogin && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Estos 5 números son tu clave para entrar, abrir geocercas y activar el SOS.
                   </p>
                 )}
                 {isLogin && (
-                  <div className="mt-2 text-right">
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUsarClaveLarga(!usarClaveLarga);
+                        setPassword("");
+                      }}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      {usarClaveLarga ? "Usar mi clave de 5 números" : "Tengo mi contraseña anterior"}
+                    </button>
                     <button
                       type="button"
                       onClick={handleForgotPassword}
@@ -808,6 +835,7 @@ const Auth = () => {
                   </div>
                 )}
               </div>
+
 
               {/* Términos Legales - Solo en registro */}
               {!isLogin && (
