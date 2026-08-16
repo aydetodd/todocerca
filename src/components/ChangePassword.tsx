@@ -1,28 +1,28 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, Eye, EyeOff } from "lucide-react";
+import { KeyRound } from "lucide-react";
+import { CLAVE_LENGTH, claveToPassword, esClaveUniversal } from "@/lib/claveUniversal";
 
 const ChangePassword = () => {
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
   const { toast } = useToast();
+
+  const soloDigitos = (v: string) => v.replace(/\D/g, "").slice(0, CLAVE_LENGTH);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newPassword || !confirmPassword) {
+    if (!esClaveUniversal(newPassword)) {
       toast({
-        title: "Error",
-        description: "Completa todos los campos",
+        title: "Clave inválida",
+        description: "Tu clave son 5 números, por ejemplo 12345.",
         variant: "destructive",
       });
       return;
@@ -31,16 +31,7 @@ const ChangePassword = () => {
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
+        description: "Las claves no coinciden",
         variant: "destructive",
       });
       return;
@@ -50,25 +41,31 @@ const ChangePassword = () => {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+        password: claveToPassword(newPassword),
       });
 
       if (error) throw error;
 
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        await supabase
+          .from("profiles")
+          .update({ clave_universal_migrada: true })
+          .eq("user_id", data.user.id);
+      }
+
       toast({
-        title: "¡Contraseña actualizada!",
-        description: "Tu contraseña ha sido cambiada exitosamente",
+        title: "¡Clave actualizada!",
+        description: "Desde ahora entras con tus 5 números.",
       });
 
-      // Limpiar campos
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
       console.error("Error changing password:", error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo cambiar la contraseña",
+        description: error.message || "No se pudo cambiar la clave",
         variant: "destructive",
       });
     } finally {
@@ -81,53 +78,50 @@ const ChangePassword = () => {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <KeyRound className="h-5 w-5" />
-          <span>Cambiar Contraseña</span>
+          <span>Cambiar mi clave</span>
         </CardTitle>
-        <CardDescription>Actualiza tu contraseña de acceso</CardDescription>
+        <CardDescription>Tu clave son 5 números</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <Label htmlFor="newPassword">Nueva contraseña</Label>
-            <div className="relative">
-              <Input
-                id="newPassword"
-                type={showNew ? "text" : "password"}
+            <Label>Nueva clave</Label>
+            <div className="flex justify-center py-2">
+              <InputOTP
+                maxLength={CLAVE_LENGTH}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full"
-                onClick={() => setShowNew(!showNew)}
+                onChange={(v) => setNewPassword(soloDigitos(v))}
+                inputMode="numeric"
               >
-                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+                <InputOTPGroup>
+                  {Array.from({ length: CLAVE_LENGTH }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} className="w-12 h-14 text-xl" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repite la contraseña"
-              required
-            />
+            <Label>Repite tu clave</Label>
+            <div className="flex justify-center py-2">
+              <InputOTP
+                maxLength={CLAVE_LENGTH}
+                value={confirmPassword}
+                onChange={(v) => setConfirmPassword(soloDigitos(v))}
+                inputMode="numeric"
+              >
+                <InputOTPGroup>
+                  {Array.from({ length: CLAVE_LENGTH }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} className="w-12 h-14 text-xl" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
-          >
-            {loading ? "Actualizando..." : "Cambiar Contraseña"}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Actualizando..." : "Guardar mi clave"}
           </Button>
         </form>
       </CardContent>
