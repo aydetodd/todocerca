@@ -229,7 +229,7 @@ export default function MiPerfil() {
             title="Mi trazabilidad"
             className="mt-1 h-11 w-11 shrink-0 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors"
           >
-            <Map className="h-5 w-5" />
+            <MapIcon className="h-5 w-5" />
           </Link>
           <div>
             <h2 className="text-3xl font-bold text-foreground mb-2">
