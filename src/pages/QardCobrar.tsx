@@ -135,6 +135,10 @@ export default function QardCobrar() {
     if (data.ok) {
       setMonto("");
       toast({ title: data.mensaje });
+      // Punto de trazado del comercio (solo si tiene la trazabilidad activa)
+      void registrarPuntoTraza({ tipo: "cobro", receptorId: clean, receptorNombre: data?.pagador_nombre || null });
+      // Punto de trazado en el mapa del pagador (si él la tiene activa)
+      void registrarPuntoTrazaDeTercero(clean, "pago");
       await cargarCobros();
       setTimeout(() => { cargarCobros(); }, 1200);
     }
