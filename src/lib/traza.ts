@@ -85,3 +85,32 @@ export async function registrarPuntoTraza(opts: {
     return false;
   }
 }
+
+/**
+ * Deja un punto en el mapa de OTRA persona (la dueña de esa tarjeta QaRd).
+ * Solo se guarda si esa persona tiene su trazabilidad activa.
+ */
+export async function registrarPuntoTrazaDeTercero(
+  qardNumber: string,
+  tipo: TrazaTipo,
+  lugar?: string | null
+): Promise<boolean> {
+  try {
+    const pos = await getPosicionActual();
+    if (!pos) return false;
+    const { data, error } = await supabase.rpc("rpc_registrar_punto_traza", {
+      _target_qard: qardNumber.replace(/\D/g, ""),
+      _lat: pos.lat,
+      _lng: pos.lng,
+      _tipo: tipo,
+      _lugar: lugar ?? null,
+    });
+    if (error) {
+      console.warn("[traza] tercero:", error.message);
+      return false;
+    }
+    return !!(data as any)?.ok;
+  } catch {
+    return false;
+  }
+}

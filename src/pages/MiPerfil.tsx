@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Briefcase, Trash2, LogOut } from 'lucide-react';
+import { Users, Briefcase, Trash2, LogOut, Map as MapIcon } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Link } from 'react-router-dom';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -221,17 +221,27 @@ export default function MiPerfil() {
       <GlobalHeader />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            <span onClick={() => handleSecretClick('M')} className="cursor-default select-none">M</span>
-            <span>i </span>
-            <span onClick={() => handleSecretClick('P')} className="cursor-default select-none">P</span>
-            <span>erfil</span>
-          </h2>
-          <p className="text-muted-foreground">
-            Información de tu cuenta y estado
-          </p>
+      <main className="container mx-auto px-4 py-8 pb-40">
+        <div className="mb-8 flex items-start gap-3">
+          <Link
+            to="/mi-trazabilidad"
+            aria-label="Mi trazabilidad"
+            title="Mi trazabilidad"
+            className="mt-1 h-11 w-11 shrink-0 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors"
+          >
+            <MapIcon className="h-5 w-5" />
+          </Link>
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              <span onClick={() => handleSecretClick('M')} className="cursor-default select-none">M</span>
+              <span>i </span>
+              <span onClick={() => handleSecretClick('P')} className="cursor-default select-none">P</span>
+              <span>erfil</span>
+            </h2>
+            <p className="text-muted-foreground">
+              Información de tu cuenta y estado
+            </p>
+          </div>
         </div>
 
         <Card className="max-w-2xl">

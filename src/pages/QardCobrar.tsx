@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { formatHermosillo } from "@/lib/utils";
+import { registrarPuntoTraza, registrarPuntoTrazaDeTercero } from "@/lib/traza";
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -135,6 +136,10 @@ export default function QardCobrar() {
     if (data.ok) {
       setMonto("");
       toast({ title: data.mensaje });
+      // Punto de trazado del comercio (solo si tiene la trazabilidad activa)
+      void registrarPuntoTraza({ tipo: "cobro", receptorId: clean, receptorNombre: data?.pagador_nombre || null });
+      // Punto de trazado en el mapa del pagador (si él la tiene activa)
+      void registrarPuntoTrazaDeTercero(clean, "pago");
       await cargarCobros();
       setTimeout(() => { cargarCobros(); }, 1200);
     }
