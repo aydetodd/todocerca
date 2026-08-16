@@ -22,6 +22,8 @@ import { CLAVE_LENGTH, claveToPassword, esClaveUniversal, passwordVariants } fro
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
+  const [usarClaveLarga, setUsarClaveLarga] = useState(false);
+
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
