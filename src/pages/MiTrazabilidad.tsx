@@ -186,14 +186,16 @@ export default function MiTrazabilidad() {
           <div className="flex justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : !activa ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              Activa la trazabilidad para ver tu mapa de puntos.
-            </CardContent>
-          </Card>
         ) : (
           <>
+            {!activa && (
+              <Card className="border-primary/40">
+                <CardContent className="pt-6 text-sm text-muted-foreground">
+                  La trazabilidad está apagada: puedes ver tus puntos anteriores, pero no se
+                  guardarán nuevos hasta que la enciendas.
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Filtros</CardTitle>

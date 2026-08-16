@@ -88,21 +88,31 @@ export const TestigoFloatingButton = () => {
       });
       if (error) throw error;
       const res = data as any;
-      if (!res?.ok) {
-        toast({ title: "No se registró", description: res?.error || "Intenta de nuevo.", variant: "destructive" });
-        return;
-      }
-      // También dejamos el punto en tu propio mapa (si tienes trazabilidad activa)
-      await registrarPuntoTraza({
+
+      // Siempre intentamos dejar el punto en TU propio mapa
+      const enMiMapa = await registrarPuntoTraza({
         tipo: "testigo",
         receptorNombre: res?.nombre || null,
         receptorId: clean,
         lat: pos.lat,
         lng: pos.lng,
       });
+
+      if (!res?.ok && !enMiMapa) {
+        toast({
+          title: "No se registró",
+          description:
+            "Activa tu trazabilidad en Perfil → Mi trazabilidad para guardar estos puntos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Presencia registrada",
-        description: `Quedó constancia de ${res?.nombre || "esa persona"} con hora y ubicación.`,
+        description: res?.ok
+          ? `Quedó constancia de ${res?.nombre || "esa persona"} con hora y ubicación.`
+          : "Se guardó en tu mapa. Esa persona tiene su trazabilidad apagada, así que no queda en el suyo.",
       });
       setOpen(false);
     } catch (e: any) {
