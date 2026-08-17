@@ -49,12 +49,18 @@ export async function registrarPuntoTraza(opts: {
   subQrId?: string | null;
   lat?: number;
   lng?: number;
+  /** Guarda el punto aunque la trazabilidad esté apagada (y la enciende). */
+  force?: boolean;
 }): Promise<boolean> {
   try {
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth.user?.id;
     if (!uid) return false;
-    if (!(await trazabilidadActiva(uid))) return false;
+    if (!(await trazabilidadActiva(uid))) {
+      if (!opts.force) return false;
+      await supabase.from("profiles").update({ trazabilidad_activa: true }).eq("user_id", uid);
+    }
+
 
     let lat = opts.lat;
     let lng = opts.lng;
