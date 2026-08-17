@@ -62,12 +62,11 @@ export const TestigoFloatingButton = () => {
   }, [open]);
 
   async function registrarTestigo(text: string) {
-    const clean = text.replace(/\D/g, "");
-    if (clean.length !== 16) {
-      toast({ title: "QR no válido", description: "Escanea una tarjeta QaRd.", variant: "destructive" });
-      lockRef.current = false;
-      return;
-    }
+    // Acepta cualquier QR: si trae 16 dígitos (tarjeta QaRd) los usamos,
+    // si no, guardamos el contenido como referencia.
+    const digits = (text.match(/\d/g) || []).join("");
+    const qard = digits.length >= 16 ? digits.slice(0, 16) : null;
+
     setProcesando(true);
     try {
       const pos = await getPosicionActual();
@@ -79,30 +78,34 @@ export const TestigoFloatingButton = () => {
         });
         return;
       }
-      const { data, error } = await supabase.rpc("rpc_registrar_punto_traza", {
-        _target_qard: clean,
-        _lat: pos.lat,
-        _lng: pos.lng,
-        _tipo: "testigo",
-        _lugar: null,
-      });
-      if (error) throw error;
-      const res = data as any;
 
-      // Siempre intentamos dejar el punto en TU propio mapa
+      let nombre: string | null = null;
+      if (qard) {
+        const { data } = await supabase.rpc("rpc_registrar_punto_traza", {
+          _target_qard: qard,
+          _lat: pos.lat,
+          _lng: pos.lng,
+          _tipo: "testigo",
+          _lugar: null,
+        });
+        nombre = (data as any)?.nombre || null;
+      }
+
+      // Siempre dejamos el punto en TU propio mapa (enciende tu trazabilidad si está apagada)
       const enMiMapa = await registrarPuntoTraza({
         tipo: "testigo",
-        receptorNombre: res?.nombre || null,
-        receptorId: clean,
+        receptorNombre: nombre,
+        receptorId: qard,
+        lugar: qard ? null : text.slice(0, 120),
         lat: pos.lat,
         lng: pos.lng,
+        force: true,
       });
 
-      if (!res?.ok && !enMiMapa) {
+      if (!enMiMapa) {
         toast({
-          title: "No se registró",
-          description:
-            "Activa tu trazabilidad en Perfil → Mi trazabilidad para guardar estos puntos.",
+          title: "No se pudo guardar",
+          description: "Intenta de nuevo en unos segundos.",
           variant: "destructive",
         });
         return;
@@ -110,9 +113,7 @@ export const TestigoFloatingButton = () => {
 
       toast({
         title: "Presencia registrada",
-        description: res?.ok
-          ? `Quedó constancia de ${res?.nombre || "esa persona"} con hora y ubicación.`
-          : "Se guardó en tu mapa. Esa persona tiene su trazabilidad apagada, así que no queda en el suyo.",
+        description: `Quedó constancia de ${nombre || (qard ? "esa tarjeta" : "ese código")} con hora y ubicación.`,
       });
       setOpen(false);
     } catch (e: any) {
@@ -122,6 +123,7 @@ export const TestigoFloatingButton = () => {
       setTimeout(() => (lockRef.current = false), 1500);
     }
   }
+
 
   if (!user) return null;
   if (HIDDEN_PATHS.includes(location.pathname)) return null;
