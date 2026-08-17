@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
+
 import { ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -86,28 +88,30 @@ export const ClaveUniversalGate = () => {
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="clave-nueva">Tu clave de 5 números</Label>
-            <Input
-              id="clave-nueva"
-              inputMode="numeric"
-              autoFocus
-              maxLength={CLAVE_LENGTH}
-              value={clave}
-              onChange={(e) => setClave(soloDigitos(e.target.value))}
-              className="text-center text-2xl tracking-[0.5em]"
-            />
+            <Label>Tu clave de 5 números</Label>
+            <div className="flex justify-center py-2">
+              <InputOTP maxLength={CLAVE_LENGTH} value={clave} onChange={(v) => setClave(soloDigitos(v))} inputMode="numeric" autoFocus>
+                <InputOTPGroup>
+                  {Array.from({ length: CLAVE_LENGTH }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} className="w-12 h-14 text-xl" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
           </div>
           <div>
-            <Label htmlFor="clave-confirmar">Repite tu clave</Label>
-            <Input
-              id="clave-confirmar"
-              inputMode="numeric"
-              maxLength={CLAVE_LENGTH}
-              value={confirmar}
-              onChange={(e) => setConfirmar(soloDigitos(e.target.value))}
-              className="text-center text-2xl tracking-[0.5em]"
-            />
+            <Label>Repite tu clave</Label>
+            <div className="flex justify-center py-2">
+              <InputOTP maxLength={CLAVE_LENGTH} value={confirmar} onChange={(v) => setConfirmar(soloDigitos(v))} inputMode="numeric">
+                <InputOTPGroup>
+                  {Array.from({ length: CLAVE_LENGTH }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} className="w-12 h-14 text-xl" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
           </div>
+
           <Button className="w-full" onClick={guardar} disabled={guardando}>
             {guardando ? "Guardando..." : "Guardar mi clave"}
           </Button>
