@@ -214,14 +214,24 @@ const Auth = () => {
               p_user_id: userProfile.user_id
             });
             
-            if (userData && !loginEmails.includes(userData)) {
-              // Reintentar con el email correcto
-              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-                email: userData,
-                password,
-              });
-              
-              if (retryError) {
+            if (userData) {
+              // Reintentar con el email real de la cuenta, probando clave nueva y anterior
+              let retryData: any = null;
+              let retryError: any = null;
+              for (const pwd of variantes) {
+                const { data: d, error: e } = await supabase.auth.signInWithPassword({
+                  email: userData,
+                  password: pwd,
+                });
+                if (!e) {
+                  retryData = d;
+                  retryError = null;
+                  break;
+                }
+                retryError = e;
+              }
+
+              if (retryError || !retryData) {
                 throw new Error('Teléfono o contraseña incorrectos');
               }
               loginData = retryData;
