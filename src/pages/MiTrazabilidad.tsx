@@ -32,6 +32,7 @@ interface Punto {
   lat: number;
   lng: number;
   tipo_evento: string;
+  receptor_id: string | null;
   receptor_nombre: string | null;
   lugar: string | null;
   ocurrido_en: string;
@@ -133,7 +134,7 @@ export default function MiTrazabilidad() {
       supabase.from("profiles").select("trazabilidad_activa").eq("user_id", user.id).maybeSingle(),
       supabase
         .from("trazabilidad_puntos")
-        .select("id, lat, lng, tipo_evento, receptor_nombre, lugar, ocurrido_en")
+        .select("id, lat, lng, tipo_evento, receptor_id, receptor_nombre, lugar, ocurrido_en")
         .eq("user_id", user.id)
         .order("ocurrido_en", { ascending: true }),
     ]);
