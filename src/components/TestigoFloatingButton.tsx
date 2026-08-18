@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import { Scale, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const HIDDEN_PATHS = ["/auth", "/landing", "/"];
 export const TestigoFloatingButton = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [procesando, setProcesando] = useState(false);
@@ -113,9 +114,10 @@ export const TestigoFloatingButton = () => {
 
       toast({
         title: "Presencia registrada",
-        description: `Quedó constancia de ${nombre || (qard ? "esa tarjeta" : "ese código")} con hora y ubicación.`,
+        description: `Quedó constancia de ${nombre || (qard ? "esa tarjeta" : "ese código")} con hora y ubicación. Abriendo tu mapa…`,
       });
       setOpen(false);
+      navigate("/mi-trazabilidad");
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "No se pudo registrar", variant: "destructive" });
     } finally {
