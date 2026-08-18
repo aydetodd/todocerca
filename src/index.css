@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+.testigo-map-marker {
+  align-items: center;
+  background: hsl(var(--primary));
+  border: 3px solid hsl(var(--background));
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.28);
+  display: flex;
+  font-size: 22px;
+  justify-content: center;
+  line-height: 1;
+}
+
 /* ============================================
    COMBINACIONES DE COLORES PARA LA APP
    Descomenta la opción que prefieras

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, CircleMarker, Polyline, Popup } from "react-leaflet";
+import L from "leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,13 +25,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { TRAZA_LABELS } from "@/lib/traza";
-import { MapPin, Route, Trash2, Loader2 } from "lucide-react";
+import { Handshake, MapPin, Route, Trash2, Loader2, RefreshCw } from "lucide-react";
 
 interface Punto {
   id: string;
   lat: number;
   lng: number;
   tipo_evento: string;
+  receptor_id: string | null;
   receptor_nombre: string | null;
   lugar: string | null;
   ocurrido_en: string;
@@ -61,6 +63,28 @@ const colorPorTipo = (tipo: string) => {
   }
 };
 
+const testigoIcon = L.divIcon({
+  className: "testigo-map-marker",
+  html: '<span aria-hidden="true">🤝</span>',
+  iconSize: [42, 42],
+  iconAnchor: [21, 21],
+  popupAnchor: [0, -22],
+});
+
+function AjustarMapa({ puntos }: { puntos: Punto[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (puntos.length === 0) return;
+    const bounds = L.latLngBounds(puntos.map((p) => [p.lat, p.lng] as [number, number]));
+    if (puntos.length === 1) map.setView(bounds.getCenter(), 16);
+    else map.fitBounds(bounds, { padding: [36, 36], maxZoom: 17 });
+    window.setTimeout(() => map.invalidateSize(), 100);
+  }, [map, puntos]);
+
+  return null;
+}
+
 export default function MiTrazabilidad() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -69,6 +93,7 @@ export default function MiTrazabilidad() {
   const [activa, setActiva] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState("");
   const [puntos, setPuntos] = useState<Punto[]>([]);
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -84,17 +109,38 @@ export default function MiTrazabilidad() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`mi-trazabilidad-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trazabilidad_puntos", filter: `user_id=eq.${user.id}` },
+        () => void cargar()
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   async function cargar() {
     if (!user) return;
     setLoading(true);
-    const [{ data: prof }, { data: pts }] = await Promise.all([
+    setErrorCarga("");
+    const [{ data: prof, error: profError }, { data: pts, error: puntosError }] = await Promise.all([
       supabase.from("profiles").select("trazabilidad_activa").eq("user_id", user.id).maybeSingle(),
       supabase
         .from("trazabilidad_puntos")
-        .select("id, lat, lng, tipo_evento, receptor_nombre, lugar, ocurrido_en")
+        .select("id, lat, lng, tipo_evento, receptor_id, receptor_nombre, lugar, ocurrido_en")
         .eq("user_id", user.id)
         .order("ocurrido_en", { ascending: true }),
     ]);
+    if (profError || puntosError) {
+      setErrorCarga(puntosError?.message || profError?.message || "No se pudo cargar el mapa.");
+    }
     setActiva(!!prof?.trazabilidad_activa);
     setPuntos((pts as Punto[]) || []);
     setLoading(false);
@@ -156,6 +202,7 @@ export default function MiTrazabilidad() {
 
   const linea = filtrados.map((p) => [p.lat, p.lng] as [number, number]);
   const centro: [number, number] = linea.length ? linea[linea.length - 1] : [29.0729, -110.9559];
+  const testigos = filtrados.filter((p) => p.tipo_evento === "testigo");
 
   return (
     <div className="min-h-screen bg-background">
@@ -196,6 +243,21 @@ export default function MiTrazabilidad() {
                 </CardContent>
               </Card>
             )}
+            {errorCarga && (
+              <div className="rounded-md border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+                <p className="font-semibold">No se pudieron mostrar tus puntos</p>
+                <p className="mt-1">{errorCarga}</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => void cargar()}>
+                  <RefreshCw className="h-4 w-4" /> Volver a cargar
+                </Button>
+              </div>
+            )}
+            <div className="flex items-center justify-between rounded-md border bg-card px-4 py-3">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Handshake className="h-5 w-5 text-primary" /> Testigos virtuales
+              </span>
+              <Badge>{testigos.length}</Badge>
+            </div>
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Filtros</CardTitle>
@@ -217,30 +279,42 @@ export default function MiTrazabilidad() {
             </Card>
 
             <Card className="overflow-hidden">
-              <div className="h-80 w-full">
+              <div className="h-[52vh] min-h-[360px] w-full">
                 <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom>
+                  <AjustarMapa puntos={filtrados} />
                   <TileLayer
                     attribution='&copy; OpenStreetMap'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   {linea.length > 1 && <Polyline positions={linea} pathOptions={{ color: "#dc2626", weight: 3 }} />}
-                  {filtrados.map((p) => (
-                    <CircleMarker
-                      key={p.id}
-                      center={[p.lat, p.lng]}
-                      radius={7}
-                      pathOptions={{ color: colorPorTipo(p.tipo_evento), fillOpacity: 0.9 }}
-                    >
+                  {filtrados.map((p) => {
+                    const contenido = (
                       <Popup>
                         <div className="text-xs space-y-1">
                           <p className="font-semibold">{TRAZA_LABELS[p.tipo_evento] || p.tipo_evento}</p>
                           <p>{fmtFecha(p.ocurrido_en)}</p>
                           {p.lugar && <p>{p.lugar}</p>}
                           {p.receptor_nombre && <p>Con: {p.receptor_nombre}</p>}
+                          {!p.receptor_nombre && p.receptor_id && <p>QaRd: {p.receptor_id}</p>}
                         </div>
                       </Popup>
-                    </CircleMarker>
-                  ))}
+                    );
+
+                    return p.tipo_evento === "testigo" ? (
+                      <Marker key={p.id} position={[p.lat, p.lng]} icon={testigoIcon}>
+                        {contenido}
+                      </Marker>
+                    ) : (
+                      <CircleMarker
+                        key={p.id}
+                        center={[p.lat, p.lng]}
+                        radius={7}
+                        pathOptions={{ color: colorPorTipo(p.tipo_evento), fillOpacity: 0.9 }}
+                      >
+                        {contenido}
+                      </CircleMarker>
+                    );
+                  })}
                 </MapContainer>
               </div>
             </Card>
