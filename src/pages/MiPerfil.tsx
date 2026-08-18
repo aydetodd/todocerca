@@ -326,7 +326,7 @@ export default function MiPerfil() {
           </CardContent>
         </Card>
 
-        <Button asChild variant="outline" className="mt-6 w-full max-w-2xl">
+        <Button asChild className="mt-6 min-h-12 w-full max-w-2xl text-base">
           <Link to="/mi-trazabilidad">
             <MapIcon className="h-4 w-4 mr-2" />
             Ver mi mapa de trazabilidad

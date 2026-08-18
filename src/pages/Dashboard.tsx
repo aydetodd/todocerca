@@ -532,8 +532,8 @@ const Dashboard = () => {
                     )}
 
                     <Button
-                      variant="outline"
-                      className="w-full"
+                      variant="default"
+                      className="w-full min-h-12 text-base"
                       onClick={() => navigate("/mi-trazabilidad")}
                     >
                       <MapIcon className="h-4 w-4 mr-2" />
