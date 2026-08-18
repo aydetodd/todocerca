@@ -326,6 +326,13 @@ export default function MiPerfil() {
           </CardContent>
         </Card>
 
+        <Button asChild variant="outline" className="mt-6 w-full max-w-2xl">
+          <Link to="/mi-trazabilidad">
+            <MapIcon className="h-4 w-4 mr-2" />
+            Ver mi mapa de trazabilidad
+          </Link>
+        </Button>
+
         {/* Cambiar contraseña */}
         <div className="mt-6">
           <ChangePassword />

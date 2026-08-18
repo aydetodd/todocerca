@@ -531,6 +531,15 @@ const Dashboard = () => {
                       </div>
                     )}
 
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate("/mi-trazabilidad")}
+                    >
+                      <MapIcon className="h-4 w-4 mr-2" />
+                      Ver mi mapa de trazabilidad
+                    </Button>
+
                     {isProvider && userSpecificData?.id && (
                       <div className="pt-4">
                         <QRCodeGenerator
