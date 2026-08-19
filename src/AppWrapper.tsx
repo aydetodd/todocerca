@@ -71,6 +71,7 @@ import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
 import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
 import { ClaveUniversalGate } from "@/components/ClaveUniversalGate";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MiTrazabilidad from "./pages/MiTrazabilidad";
 import { AccessGate } from "@/components/AccessGate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
