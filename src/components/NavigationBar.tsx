@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Share2, LayoutGrid, MessageCircle, Heart, Sparkles, Map as MapIcon } from "lucide-react";
+import { Home, Share2, LayoutGrid, MessageCircle, Heart, Map as MapIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -68,21 +68,21 @@ export const NavigationBar = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/mi-trazabilidad')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/mi-trazabilidad') ? 'text-primary' : 'text-muted-foreground'}`}
+          onClick={() => navigate('/favoritos')}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/favoritos') ? 'text-primary' : 'text-muted-foreground'}`}
         >
-          <MapIcon className="h-5 w-5" />
-          <span className="text-[9px] leading-tight truncate max-w-full">Mi mapa</span>
+          <Heart className={`h-5 w-5 ${isActive('/favoritos') ? 'fill-current' : ''}`} />
+          <span className="text-[9px] leading-tight truncate max-w-full">Favoritos</span>
         </Button>
 
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/proximamente')}
-          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/proximamente') ? 'text-primary' : 'text-muted-foreground'}`}
+          onClick={() => navigate('/mi-trazabilidad')}
+          className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${isActive('/mi-trazabilidad') ? 'text-primary' : 'text-muted-foreground'}`}
         >
-          <Sparkles className="h-5 w-5" />
-          <span className="text-[9px] leading-tight truncate max-w-full">Próximamente</span>
+          <MapIcon className="h-5 w-5" />
+          <span className="text-[9px] leading-tight truncate max-w-full">Mi mapa</span>
         </Button>
 
         <Button
