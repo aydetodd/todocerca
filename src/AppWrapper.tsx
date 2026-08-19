@@ -173,7 +173,21 @@ export default function AppWrapper() {
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mi-perfil" element={<MiPerfil />} />
-          <Route path="/mi-trazabilidad" element={<MiTrazabilidad />} />
+          <Route
+            path="/mi-trazabilidad"
+            element={
+              <ErrorBoundary
+                name="MiTrazabilidad"
+                fallback={
+                  <div className="min-h-screen flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                    No se pudo abrir tu mapa de trazabilidad. Recarga la página e inténtalo de nuevo.
+                  </div>
+                }
+              >
+                <MiTrazabilidad />
+              </ErrorBoundary>
+            }
+          />
           <Route path="/mis-productos" element={<MisProductos />} />
           <Route path="/mis-rutas" element={<MisRutas />} />
           <Route path="/gestion-pedidos" element={<GestionPedidos />} />
