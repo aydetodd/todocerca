@@ -258,26 +258,6 @@ export default function MiTrazabilidad() {
               </span>
               <Badge>{testigos.length}</Badge>
             </div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Filtros</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="desde">Desde</Label>
-                  <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="hasta">Hasta</Label>
-                  <Input id="hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="lugar">Lugar o persona</Label>
-                  <Input id="lugar" value={lugar} onChange={(e) => setLugar(e.target.value)} />
-                </div>
-              </CardContent>
-            </Card>
-
             <Card className="overflow-hidden">
               <div className="h-[52vh] min-h-[360px] w-full">
                 <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom>
@@ -321,6 +301,26 @@ export default function MiTrazabilidad() {
 
             <Card>
               <CardHeader>
+                <CardTitle className="text-base">Filtros</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="desde">Desde</Label>
+                  <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="hasta">Hasta</Label>
+                  <Input id="hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="lugar">Lugar o persona</Label>
+                  <Input id="lugar" value={lugar} onChange={(e) => setLugar(e.target.value)} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Lugares más visitados</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -347,7 +347,10 @@ export default function MiTrazabilidad() {
                 {[...filtrados].reverse().map((p) => (
                   <div key={p.id} className="text-sm border-b last:border-0 py-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{TRAZA_LABELS[p.tipo_evento] || p.tipo_evento}</span>
+                      <span className="flex items-center gap-2 font-medium">
+                        {p.tipo_evento === "testigo" && <span aria-hidden="true" className="text-lg">🤝</span>}
+                        {TRAZA_LABELS[p.tipo_evento] || p.tipo_evento}
+                      </span>
                       <span className="text-muted-foreground">{fmtFecha(p.ocurrido_en)}</span>
                     </div>
                     {(p.lugar || p.receptor_nombre) && (
