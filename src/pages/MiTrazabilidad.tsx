@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { TRAZA_LABELS } from "@/lib/traza";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Handshake, MapPin, Route, Trash2, Loader2, RefreshCw } from "lucide-react";
 
 interface Punto {
@@ -130,6 +131,7 @@ export default function MiTrazabilidad() {
     if (!user) return;
     setLoading(true);
     setErrorCarga("");
+    try {
     const [{ data: prof, error: profError }, { data: pts, error: puntosError }] = await Promise.all([
       supabase.from("profiles").select("trazabilidad_activa").eq("user_id", user.id).maybeSingle(),
       supabase
@@ -143,7 +145,11 @@ export default function MiTrazabilidad() {
     }
     setActiva(!!prof?.trazabilidad_activa);
     setPuntos((pts as Punto[]) || []);
-    setLoading(false);
+    } catch (e: any) {
+      setErrorCarga(e?.message || "No se pudo cargar el mapa.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggle(v: boolean) {
@@ -203,6 +209,11 @@ export default function MiTrazabilidad() {
   const linea = filtrados.map((p) => [p.lat, p.lng] as [number, number]);
   const centro: [number, number] = linea.length ? linea[linea.length - 1] : [29.0729, -110.9559];
   const testigos = filtrados.filter((p) => p.tipo_evento === "testigo");
+  const [mapaListo, setMapaListo] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setMapaListo(true), 150);
+    return () => window.clearTimeout(t);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,7 +271,16 @@ export default function MiTrazabilidad() {
             </div>
             <Card className="overflow-hidden">
               <div className="h-[52vh] min-h-[360px] w-full">
-                <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom>
+                <ErrorBoundary
+                  name="MiTrazabilidadMapa"
+                  fallback={
+                    <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
+                      No se pudo dibujar el mapa. Vuelve a entrar a esta pantalla.
+                    </div>
+                  }
+                >
+                {mapaListo && (
+                <MapContainer key="traza-map" center={centro} zoom={13} className="h-full w-full" scrollWheelZoom>
                   <AjustarMapa puntos={filtrados} />
                   <TileLayer
                     attribution='&copy; OpenStreetMap'
@@ -296,6 +316,8 @@ export default function MiTrazabilidad() {
                     );
                   })}
                 </MapContainer>
+                )}
+                </ErrorBoundary>
               </div>
             </Card>
 
