@@ -99,6 +99,45 @@ export default function MiTrazabilidad() {
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [lugar, setLugar] = useState("");
+  const [rango, setRango] = useState<"hoy" | "semana" | "mes" | "todo" | "dia" | "custom">("hoy");
+
+  function ymdHermosillo(d: Date) {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Hermosillo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
+  }
+
+  function aplicarRango(r: "hoy" | "semana" | "mes" | "todo") {
+    setRango(r);
+    const hoy = new Date();
+    const hoyStr = ymdHermosillo(hoy);
+    if (r === "todo") {
+      setDesde("");
+      setHasta("");
+      return;
+    }
+    if (r === "hoy") {
+      setDesde(hoyStr);
+      setHasta(hoyStr);
+      return;
+    }
+    if (r === "semana") {
+      const ini = new Date(hoy.getTime() - 6 * 24 * 60 * 60 * 1000);
+      setDesde(ymdHermosillo(ini));
+      setHasta(hoyStr);
+      return;
+    }
+    setDesde(`${hoyStr.slice(0, 8)}01`);
+    setHasta(hoyStr);
+  }
+
+  useEffect(() => {
+    aplicarRango("hoy");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -325,18 +364,48 @@ export default function MiTrazabilidad() {
               <CardHeader>
                 <CardTitle className="text-base">Filtros</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant={rango === "hoy" ? "default" : "outline"} onClick={() => aplicarRango("hoy")}>
+                    Hoy
+                  </Button>
+                  <Button size="sm" variant={rango === "semana" ? "default" : "outline"} onClick={() => aplicarRango("semana")}>
+                    Esta semana
+                  </Button>
+                  <Button size="sm" variant={rango === "mes" ? "default" : "outline"} onClick={() => aplicarRango("mes")}>
+                    Este mes
+                  </Button>
+                  <Button size="sm" variant={rango === "todo" ? "default" : "outline"} onClick={() => aplicarRango("todo")}>
+                    Todo
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="dia">Día específico</Label>
+                  <Input
+                    id="dia"
+                    type="date"
+                    value={desde && desde === hasta ? desde : ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setRango("dia");
+                      setDesde(v);
+                      setHasta(v);
+                    }}
+                  />
+                </div>
                 <div>
                   <Label htmlFor="desde">Desde</Label>
-                  <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                  <Input id="desde" type="date" value={desde} onChange={(e) => { setRango("custom"); setDesde(e.target.value); }} />
                 </div>
                 <div>
                   <Label htmlFor="hasta">Hasta</Label>
-                  <Input id="hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+                  <Input id="hasta" type="date" value={hasta} onChange={(e) => { setRango("custom"); setHasta(e.target.value); }} />
                 </div>
                 <div>
                   <Label htmlFor="lugar">Lugar o persona</Label>
                   <Input id="lugar" value={lugar} onChange={(e) => setLugar(e.target.value)} />
+                </div>
                 </div>
               </CardContent>
             </Card>
