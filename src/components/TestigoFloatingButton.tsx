@@ -35,6 +35,12 @@ export const TestigoFloatingButton = () => {
           (text) => {
             if (lockRef.current) return;
             lockRef.current = true;
+            // Apagamos la cámara de inmediato: un solo escaneo por vez
+            const s2 = scannerRef.current;
+            scannerRef.current = null;
+            if (s2) {
+              s2.stop().then(() => s2.clear()).catch(() => {});
+            }
             void registrarTestigo(String(text));
           },
           () => {}
