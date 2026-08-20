@@ -22,6 +22,7 @@ export const TestigoFloatingButton = () => {
 
   useEffect(() => {
     if (!open) return;
+    lockRef.current = false;
     let cancelled = false;
 
     (async () => {
@@ -128,7 +129,7 @@ export const TestigoFloatingButton = () => {
       toast({ title: "Error", description: e.message || "No se pudo registrar", variant: "destructive" });
     } finally {
       setProcesando(false);
-      setTimeout(() => (lockRef.current = false), 1500);
+      setOpen(false);
     }
   }
 
