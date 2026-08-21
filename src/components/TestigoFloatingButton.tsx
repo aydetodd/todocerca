@@ -19,6 +19,8 @@ export const TestigoFloatingButton = () => {
   const [procesando, setProcesando] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lockRef = useRef(false);
+  const ultimoScanRef = useRef<{ clave: string; ts: number } | null>(null);
+
 
   useEffect(() => {
     if (!open) return;
