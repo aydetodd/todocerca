@@ -1314,6 +1314,342 @@ export type Database = {
         }
         Relationships: []
       }
+      ev_escaneos: {
+        Row: {
+          created_at: string
+          escaneado_en: string
+          evento_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          offline: boolean
+          pase_id: string | null
+          resultado: string
+          tipo: string
+          validador_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          escaneado_en?: string
+          evento_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          offline?: boolean
+          pase_id?: string | null
+          resultado?: string
+          tipo?: string
+          validador_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          escaneado_en?: string
+          evento_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          offline?: boolean
+          pase_id?: string | null
+          resultado?: string
+          tipo?: string
+          validador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_escaneos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "ev_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_escaneos_pase_id_fkey"
+            columns: ["pase_id"]
+            isOneToOne: false
+            referencedRelation: "ev_pases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_escaneos_validador_id_fkey"
+            columns: ["validador_id"]
+            isOneToOne: false
+            referencedRelation: "ev_validadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_eventos: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          estado: string
+          fondo_url: string | null
+          id: string
+          inicia_en: string | null
+          lugar_id: string | null
+          nombre: string
+          owner_id: string
+          sorteo_salida: boolean
+          termina_en: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fondo_url?: string | null
+          id?: string
+          inicia_en?: string | null
+          lugar_id?: string | null
+          nombre: string
+          owner_id: string
+          sorteo_salida?: boolean
+          termina_en?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fondo_url?: string | null
+          id?: string
+          inicia_en?: string | null
+          lugar_id?: string | null
+          nombre?: string
+          owner_id?: string
+          sorteo_salida?: boolean
+          termina_en?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_eventos_lugar_id_fkey"
+            columns: ["lugar_id"]
+            isOneToOne: false
+            referencedRelation: "ev_lugares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_grupos: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          nombre: string
+          pases_total: number
+          telefono: string | null
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          nombre: string
+          pases_total?: number
+          telefono?: string | null
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          nombre?: string
+          pases_total?: number
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_grupos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "ev_eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_lugares: {
+        Row: {
+          ciudad: string | null
+          created_at: string
+          direccion: string | null
+          id: string
+          logo_url: string | null
+          nombre: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          ciudad?: string | null
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          logo_url?: string | null
+          nombre: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          ciudad?: string | null
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          logo_url?: string | null
+          nombre?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ev_pases: {
+        Row: {
+          codigo: string
+          created_at: string
+          entrada_en: string | null
+          estado: string
+          evento_id: string
+          grupo_id: string | null
+          id: string
+          nombre_invitado: string | null
+          personas: number
+          precio_mxn: number
+          premio: string | null
+          salida_en: string | null
+          telefono: string | null
+        }
+        Insert: {
+          codigo?: string
+          created_at?: string
+          entrada_en?: string | null
+          estado?: string
+          evento_id: string
+          grupo_id?: string | null
+          id?: string
+          nombre_invitado?: string | null
+          personas?: number
+          precio_mxn?: number
+          premio?: string | null
+          salida_en?: string | null
+          telefono?: string | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          entrada_en?: string | null
+          estado?: string
+          evento_id?: string
+          grupo_id?: string | null
+          id?: string
+          nombre_invitado?: string | null
+          personas?: number
+          precio_mxn?: number
+          premio?: string | null
+          salida_en?: string | null
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_pases_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "ev_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_pases_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "ev_grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_slots: {
+        Row: {
+          created_at: string
+          estado: string
+          id: string
+          inicia_en: string
+          lugar_id: string
+          owner_id: string
+          pagado_en: string | null
+          precio_mxn: number
+          vence_en: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          id?: string
+          inicia_en?: string
+          lugar_id: string
+          owner_id: string
+          pagado_en?: string | null
+          precio_mxn?: number
+          vence_en?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          id?: string
+          inicia_en?: string
+          lugar_id?: string
+          owner_id?: string
+          pagado_en?: string | null
+          precio_mxn?: number
+          vence_en?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_slots_lugar_id_fkey"
+            columns: ["lugar_id"]
+            isOneToOne: false
+            referencedRelation: "ev_lugares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_validadores: {
+        Row: {
+          activo: boolean
+          created_at: string
+          evento_id: string
+          id: string
+          invite_token: string | null
+          nombre: string | null
+          telefono: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          evento_id: string
+          id?: string
+          invite_token?: string | null
+          nombre?: string | null
+          telefono?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          evento_id?: string
+          id?: string
+          invite_token?: string | null
+          nombre?: string | null
+          telefono?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_validadores_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "ev_eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favoritos: {
         Row: {
           created_at: string
@@ -6484,6 +6820,22 @@ export type Database = {
           id: string
         }[]
       }
+      ev_get_pase_publico: {
+        Args: { _codigo: string }
+        Returns: {
+          codigo: string
+          estado: string
+          evento_fondo: string
+          evento_inicia: string
+          evento_nombre: string
+          lugar_direccion: string
+          lugar_nombre: string
+          nombre_invitado: string
+          personas: number
+        }[]
+      }
+      ev_is_owner: { Args: { _evento_id: string }; Returns: boolean }
+      ev_is_validador: { Args: { _evento_id: string }; Returns: boolean }
       find_qr_ticket_by_short_code: {
         Args: { p_short_code: string }
         Returns: {
