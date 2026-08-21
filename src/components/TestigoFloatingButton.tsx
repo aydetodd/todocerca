@@ -75,6 +75,20 @@ export const TestigoFloatingButton = () => {
     const digits = (text.match(/\d/g) || []).join("");
     const qard = digits.length >= 16 ? digits.slice(0, 16) : null;
 
+    // Anti-duplicado: mismo código en menos de 30 segundos se ignora
+    const clave = qard || text.slice(0, 120);
+    const ahora = Date.now();
+    const ultimo = ultimoScanRef.current;
+    if (ultimo && ultimo.clave === clave && ahora - ultimo.ts < 30000) {
+      toast({
+        title: "Ya lo registré",
+        description: "Ese mismo código se acaba de guardar hace unos segundos.",
+      });
+      setOpen(false);
+      return;
+    }
+    ultimoScanRef.current = { clave, ts: ahora };
+
     setProcesando(true);
     try {
       const pos = await getPosicionActual();
@@ -87,7 +101,8 @@ export const TestigoFloatingButton = () => {
         return;
       }
 
-      let nombre: string | null = null;
+      let etiqueta: string | null = null;
+      let esMio = false;
       if (qard) {
         const { data } = await supabase.rpc("rpc_registrar_punto_traza", {
           _target_qard: qard,
@@ -96,32 +111,37 @@ export const TestigoFloatingButton = () => {
           _tipo: "testigo",
           _lugar: null,
         });
-        nombre = (data as any)?.nombre || null;
+        const r = data as any;
+        etiqueta = r?.etiqueta || r?.nombre || null;
+        esMio = !!r?.es_mio && !!r?.ok;
       }
 
-      // Siempre dejamos el punto en TU propio mapa (enciende tu trazabilidad si está apagada)
-      const enMiMapa = await registrarPuntoTraza({
-        tipo: "testigo",
-        receptorNombre: nombre,
-        receptorId: qard,
-        lugar: qard ? null : text.slice(0, 120),
-        lat: pos.lat,
-        lng: pos.lng,
-        force: true,
-      });
-
-      if (!enMiMapa) {
-        toast({
-          title: "No se pudo guardar",
-          description: "Intenta de nuevo en unos segundos.",
-          variant: "destructive",
+      // Si la tarjeta escaneada es MÍA, el RPC ya dejó el punto en mi mapa:
+      // no lo insertamos otra vez para no duplicar.
+      if (!esMio) {
+        const enMiMapa = await registrarPuntoTraza({
+          tipo: "testigo",
+          receptorNombre: etiqueta,
+          receptorId: qard,
+          lugar: qard ? null : text.slice(0, 120),
+          lat: pos.lat,
+          lng: pos.lng,
+          force: true,
         });
-        return;
+
+        if (!enMiMapa) {
+          toast({
+            title: "No se pudo guardar",
+            description: "Intenta de nuevo en unos segundos.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       toast({
         title: "Presencia registrada",
-        description: `Quedó constancia de ${nombre || (qard ? "esa tarjeta" : "ese código")} con hora y ubicación. Abriendo tu mapa…`,
+        description: `Quedó constancia de ${etiqueta || (qard ? "esa tarjeta" : "ese código")} con hora y ubicación. Abriendo tu mapa…`,
       });
       setOpen(false);
       navigate("/mi-trazabilidad");
@@ -132,6 +152,7 @@ export const TestigoFloatingButton = () => {
       setOpen(false);
     }
   }
+
 
 
   if (!user) return null;
