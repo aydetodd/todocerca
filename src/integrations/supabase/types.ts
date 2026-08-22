@@ -6820,6 +6820,20 @@ export type Database = {
           id: string
         }[]
       }
+      ev_crear_grupo_pase: {
+        Args: {
+          _evento_id: string
+          _nombre: string
+          _personas?: number
+          _telefono?: string
+        }
+        Returns: {
+          codigo: string
+          grupo_id: string
+          pase_id: string
+          saldo_despues: number
+        }[]
+      }
       ev_get_pase_publico: {
         Args: { _codigo: string }
         Returns: {

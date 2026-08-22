@@ -67,6 +67,8 @@ import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
+import Eventos from "./pages/Eventos";
+import PaseEvento from "./pages/PaseEvento";
 import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
 import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
@@ -85,7 +87,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona"];
+const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/"];
 
 const AccessGateProvider = () => {
   const location = useLocation();
@@ -169,6 +171,8 @@ export default function AppWrapper() {
           <Route path="/beto" element={<AdminQuickAccess />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/eventos" element={<Eventos />} />
+          <Route path="/pase/:codigo" element={<PaseEvento />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
