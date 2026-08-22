@@ -67,6 +67,8 @@ import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
+import Eventos from "./pages/Eventos";
+import PaseEvento from "./pages/PaseEvento";
 import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
 import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
