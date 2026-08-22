@@ -171,6 +171,8 @@ export default function AppWrapper() {
           <Route path="/beto" element={<AdminQuickAccess />} />
           <Route path="/landing" element={<Index />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/eventos" element={<Eventos />} />
+          <Route path="/pase/:codigo" element={<PaseEvento />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
