@@ -16,8 +16,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, CalendarPlus, Loader2, Plus, QrCode, Share2, Users } from "lucide-react";
+import { Building2, CalendarPlus, Loader2, Plus, QrCode, ScanLine, Share2, UserCheck, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+
+interface Validador {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  activo: boolean;
+  invite_token: string;
+}
 
 interface Lugar {
   id: string;
@@ -87,6 +95,50 @@ export default function Eventos() {
   const [guardando, setGuardando] = useState(false);
 
   const [paseQr, setPaseQr] = useState<Pase | null>(null);
+
+  const [validadores, setValidadores] = useState<Validador[]>([]);
+  const [openValidador, setOpenValidador] = useState(false);
+  const [valNombre, setValNombre] = useState("");
+  const [valTel, setValTel] = useState("");
+
+  const cargarValidadores = useCallback(async (eventoId: string) => {
+    const { data } = await supabase
+      .from("ev_validadores")
+      .select("id,nombre,telefono,activo,invite_token")
+      .eq("evento_id", eventoId)
+      .order("created_at");
+    setValidadores((data as Validador[]) || []);
+  }, []);
+
+  const invitarValidador = async () => {
+    if (!eventoActivo || !valNombre.trim()) return;
+    setGuardando(true);
+    const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const { error } = await supabase.from("ev_validadores").insert({
+      evento_id: eventoActivo.id,
+      nombre: valNombre.trim(),
+      telefono: valTel.trim() || null,
+      invite_token: token,
+      activo: false,
+    });
+    setGuardando(false);
+    if (error) {
+      toast({ title: "No se creó la invitación", description: error.message, variant: "destructive" });
+      return;
+    }
+    const link = `${window.location.origin}/validar-evento?t=${token}`;
+    const texto = `Hola ${valNombre.trim()}, serás validador de accesos para ${eventoActivo.nombre}. Abre este enlace e inicia sesión: ${link}`;
+    const tel = valTel.replace(/\D/g, "");
+    window.open(
+      tel ? `https://wa.me/${tel}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`,
+      "_blank"
+    );
+    setOpenValidador(false);
+    setValNombre("");
+    setValTel("");
+    toast({ title: "Invitación lista", description: "Se abrió WhatsApp para enviar el enlace." });
+    cargarValidadores(eventoActivo.id);
+  };
 
   const cargar = useCallback(async () => {
     if (!user) return;
