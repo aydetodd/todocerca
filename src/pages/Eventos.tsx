@@ -375,6 +375,39 @@ export default function Eventos() {
             </CardContent>
           </Card>
         )}
+
+        {/* Validadores del evento activo */}
+        {eventoActivo && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ScanLine className="h-4 w-4" /> Validadores · {eventoActivo.nombre}
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setOpenValidador(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Invitar
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {validadores.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Invita a quien estará en la puerta escaneando. Recibirá un enlace por WhatsApp y podrá trabajar sin internet.
+                </p>
+              )}
+              {validadores.map((v) => (
+                <div key={v.id} className="rounded-lg border p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{v.nombre}</p>
+                      <p className="text-xs text-muted-foreground">{v.telefono || "Sin teléfono"}</p>
+                    </div>
+                  </div>
+                  <Badge variant={v.activo ? "secondary" : "outline"}>{v.activo ? "Activo" : "Pendiente"}</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Dialog salón */}
