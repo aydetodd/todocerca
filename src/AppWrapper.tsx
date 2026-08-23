@@ -69,6 +69,7 @@ import ReportesCiudadanos from "./pages/ReportesCiudadanos";
 import ComoFunciona from "./pages/ComoFunciona";
 import Eventos from "./pages/Eventos";
 import PaseEvento from "./pages/PaseEvento";
+import ValidarEvento from "./pages/ValidarEvento";
 import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
 import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
@@ -173,6 +174,7 @@ export default function AppWrapper() {
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/eventos" element={<Eventos />} />
           <Route path="/pase/:codigo" element={<PaseEvento />} />
+          <Route path="/validar-evento" element={<ValidarEvento />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           

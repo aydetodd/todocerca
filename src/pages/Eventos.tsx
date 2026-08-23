@@ -16,8 +16,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, CalendarPlus, Loader2, Plus, QrCode, Share2, Users } from "lucide-react";
+import { Building2, CalendarPlus, Loader2, Plus, QrCode, ScanLine, Share2, UserCheck, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+
+interface Validador {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  activo: boolean;
+  invite_token: string;
+}
 
 interface Lugar {
   id: string;
@@ -88,6 +96,50 @@ export default function Eventos() {
 
   const [paseQr, setPaseQr] = useState<Pase | null>(null);
 
+  const [validadores, setValidadores] = useState<Validador[]>([]);
+  const [openValidador, setOpenValidador] = useState(false);
+  const [valNombre, setValNombre] = useState("");
+  const [valTel, setValTel] = useState("");
+
+  const cargarValidadores = useCallback(async (eventoId: string) => {
+    const { data } = await supabase
+      .from("ev_validadores")
+      .select("id,nombre,telefono,activo,invite_token")
+      .eq("evento_id", eventoId)
+      .order("created_at");
+    setValidadores((data as Validador[]) || []);
+  }, []);
+
+  const invitarValidador = async () => {
+    if (!eventoActivo || !valNombre.trim()) return;
+    setGuardando(true);
+    const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const { error } = await supabase.from("ev_validadores").insert({
+      evento_id: eventoActivo.id,
+      nombre: valNombre.trim(),
+      telefono: valTel.trim() || null,
+      invite_token: token,
+      activo: false,
+    });
+    setGuardando(false);
+    if (error) {
+      toast({ title: "No se creó la invitación", description: error.message, variant: "destructive" });
+      return;
+    }
+    const link = `${window.location.origin}/validar-evento?t=${token}`;
+    const texto = `Hola ${valNombre.trim()}, serás validador de accesos para ${eventoActivo.nombre}. Abre este enlace e inicia sesión: ${link}`;
+    const tel = valTel.replace(/\D/g, "");
+    window.open(
+      tel ? `https://wa.me/${tel}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`,
+      "_blank"
+    );
+    setOpenValidador(false);
+    setValNombre("");
+    setValTel("");
+    toast({ title: "Invitación lista", description: "Se abrió WhatsApp para enviar el enlace." });
+    cargarValidadores(eventoActivo.id);
+  };
+
   const cargar = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -117,8 +169,11 @@ export default function Eventos() {
   }, []);
 
   useEffect(() => {
-    if (eventoActivo) cargarPases(eventoActivo.id);
-  }, [eventoActivo, cargarPases]);
+    if (eventoActivo) {
+      cargarPases(eventoActivo.id);
+      cargarValidadores(eventoActivo.id);
+    }
+  }, [eventoActivo, cargarPases, cargarValidadores]);
 
   const crearLugar = async () => {
     if (!user || !lugarNombre.trim()) return;
@@ -320,6 +375,39 @@ export default function Eventos() {
             </CardContent>
           </Card>
         )}
+
+        {/* Validadores del evento activo */}
+        {eventoActivo && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ScanLine className="h-4 w-4" /> Validadores · {eventoActivo.nombre}
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setOpenValidador(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Invitar
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {validadores.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Invita a quien estará en la puerta escaneando. Recibirá un enlace por WhatsApp y podrá trabajar sin internet.
+                </p>
+              )}
+              {validadores.map((v) => (
+                <div key={v.id} className="rounded-lg border p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{v.nombre}</p>
+                      <p className="text-xs text-muted-foreground">{v.telefono || "Sin teléfono"}</p>
+                    </div>
+                  </div>
+                  <Badge variant={v.activo ? "secondary" : "outline"}>{v.activo ? "Activo" : "Pendiente"}</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Dialog salón */}
@@ -426,6 +514,33 @@ export default function Eventos() {
           <DialogFooter>
             <Button onClick={crearPase} disabled={guardando || !paseNombre.trim()}>
               {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Generar y cobrar $1
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog validador */}
+      <Dialog open={openValidador} onOpenChange={setOpenValidador}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invitar validador</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nombre</Label>
+              <Input autoFocus value={valNombre} onChange={(e) => setValNombre(e.target.value)} />
+            </div>
+            <div>
+              <Label>WhatsApp (10 dígitos)</Label>
+              <Input inputMode="numeric" value={valTel} onChange={(e) => setValTel(e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Se abrirá WhatsApp con el enlace de acceso. La persona entra con su cuenta TodoCerca y queda ligada a este evento.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={invitarValidador} disabled={guardando || !valNombre.trim()}>
+              {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Crear y enviar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -6820,6 +6820,25 @@ export type Database = {
           id: string
         }[]
       }
+      ev_aceptar_validador: {
+        Args: { _token: string }
+        Returns: {
+          activo: boolean
+          created_at: string
+          evento_id: string
+          id: string
+          invite_token: string | null
+          nombre: string | null
+          telefono: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ev_validadores"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       ev_crear_grupo_pase: {
         Args: {
           _evento_id: string
