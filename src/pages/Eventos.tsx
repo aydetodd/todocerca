@@ -519,6 +519,33 @@ export default function Eventos() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog validador */}
+      <Dialog open={openValidador} onOpenChange={setOpenValidador}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invitar validador</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nombre</Label>
+              <Input autoFocus value={valNombre} onChange={(e) => setValNombre(e.target.value)} />
+            </div>
+            <div>
+              <Label>WhatsApp (10 dígitos)</Label>
+              <Input inputMode="numeric" value={valTel} onChange={(e) => setValTel(e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Se abrirá WhatsApp con el enlace de acceso. La persona entra con su cuenta TodoCerca y queda ligada a este evento.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={invitarValidador} disabled={guardando || !valNombre.trim()}>
+              {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Crear y enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* QR grande */}
       <Dialog open={!!paseQr} onOpenChange={(o) => !o && setPaseQr(null)}>
         <DialogContent className="max-w-sm">
