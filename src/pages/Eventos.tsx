@@ -169,8 +169,11 @@ export default function Eventos() {
   }, []);
 
   useEffect(() => {
-    if (eventoActivo) cargarPases(eventoActivo.id);
-  }, [eventoActivo, cargarPases]);
+    if (eventoActivo) {
+      cargarPases(eventoActivo.id);
+      cargarValidadores(eventoActivo.id);
+    }
+  }, [eventoActivo, cargarPases, cargarValidadores]);
 
   const crearLugar = async () => {
     if (!user || !lugarNombre.trim()) return;
