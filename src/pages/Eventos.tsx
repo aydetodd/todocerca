@@ -101,6 +101,13 @@ export default function Eventos() {
   const [valNombre, setValNombre] = useState("");
   const [valTel, setValTel] = useState("");
 
+  // slots anuales ($500 c/u, pago por Stripe)
+  const [openSlots, setOpenSlots] = useState(false);
+  const [slotLugar, setSlotLugar] = useState<{ id: string; nombre: string } | null>(null);
+  const [slotCantidad, setSlotCantidad] = useState(1);
+  const [pagandoSlots, setPagandoSlots] = useState(false);
+  const [slotsPorLugar, setSlotsPorLugar] = useState<Record<string, { total: number; vence: string | null }>>({});
+
   const cargarValidadores = useCallback(async (eventoId: string) => {
     const { data } = await supabase
       .from("ev_validadores")
@@ -143,21 +150,66 @@ export default function Eventos() {
   const cargar = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: lg }, { data: ev }] = await Promise.all([
+    const [{ data: lg }, { data: ev }, { data: sl }] = await Promise.all([
       supabase.from("ev_lugares").select("id,nombre,direccion,ciudad").order("created_at"),
       supabase
         .from("ev_eventos")
         .select("id,nombre,tipo,descripcion,inicia_en,lugar_id,estado")
         .order("created_at", { ascending: false }),
+      supabase.from("ev_slots").select("lugar_id,vence_en,estado").eq("estado", "active"),
     ]);
     setLugares((lg as Lugar[]) || []);
     setEventos((ev as Evento[]) || []);
+    const agg: Record<string, { total: number; vence: string | null }> = {};
+    (sl || []).forEach((s: { lugar_id: string; vence_en: string | null }) => {
+      const cur = agg[s.lugar_id] || { total: 0, vence: null as string | null };
+      cur.total += 1;
+      if (!cur.vence || (s.vence_en && s.vence_en > cur.vence)) cur.vence = s.vence_en;
+      agg[s.lugar_id] = cur;
+    });
+    const formateado: Record<string, { total: number; vence: string | null }> = {};
+    Object.entries(agg).forEach(([k, v]) => {
+      formateado[k] = {
+        total: v.total,
+        vence: v.vence
+          ? new Date(v.vence).toLocaleDateString("es-MX", { timeZone: "America/Hermosillo" })
+          : null,
+      };
+    });
+    setSlotsPorLugar(formateado);
     setLoading(false);
   }, [user]);
 
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  // Regreso de Stripe tras pagar slots
+  useEffect(() => {
+    const sessionId = new URLSearchParams(window.location.search).get("slot_session");
+    if (!sessionId || !user) return;
+    (async () => {
+      const { data, error } = await supabase.functions.invoke("verify-slot-payment", {
+        body: { session_id: sessionId },
+      });
+      if (error || data?.error) {
+        toast({
+          title: "No se pudieron activar los slots",
+          description: error?.message || data?.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Pago confirmado",
+          description: data?.yaExistia
+            ? "Este pago ya se había registrado."
+            : `Se activaron ${data?.creados} slot(s) por 1 año.`,
+        });
+      }
+      window.history.replaceState({}, "", "/eventos");
+      cargar();
+    })();
+  }, [user, cargar, toast]);
 
   const cargarPases = useCallback(async (eventoId: string) => {
     const { data } = await supabase
@@ -178,12 +230,16 @@ export default function Eventos() {
   const crearLugar = async () => {
     if (!user || !lugarNombre.trim()) return;
     setGuardando(true);
-    const { error } = await supabase.from("ev_lugares").insert({
-      owner_id: user.id,
-      nombre: lugarNombre.trim(),
-      direccion: lugarDireccion.trim() || null,
-      ciudad: lugarCiudad.trim() || null,
-    });
+    const { data: nuevo, error } = await supabase
+      .from("ev_lugares")
+      .insert({
+        owner_id: user.id,
+        nombre: lugarNombre.trim(),
+        direccion: lugarDireccion.trim() || null,
+        ciudad: lugarCiudad.trim() || null,
+      })
+      .select("id,nombre")
+      .single();
     setGuardando(false);
     if (error) {
       toast({ title: "No se pudo guardar", description: error.message, variant: "destructive" });
@@ -195,6 +251,30 @@ export default function Eventos() {
     setLugarCiudad("");
     toast({ title: "Salón guardado" });
     cargar();
+    // Flujo: después de registrar el lugar, preguntar cuántos slots ocupa y mandar a Stripe
+    if (nuevo) {
+      setSlotLugar({ id: nuevo.id, nombre: nuevo.nombre });
+      setSlotCantidad(1);
+      setOpenSlots(true);
+    }
+  };
+
+  const pagarSlots = async () => {
+    if (!slotLugar) return;
+    setPagandoSlots(true);
+    const { data, error } = await supabase.functions.invoke("create-slot-checkout", {
+      body: { lugar_id: slotLugar.id, cantidad: slotCantidad },
+    });
+    setPagandoSlots(false);
+    if (error || !data?.url) {
+      toast({
+        title: "No se pudo abrir el pago",
+        description: error?.message || data?.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    window.location.href = data.url;
   };
 
   const crearEvento = async () => {
@@ -288,14 +368,40 @@ export default function Eventos() {
                 Registra tu salón o recinto. Cada lugar paga $500 al año para usar los accesos.
               </p>
             )}
-            {lugares.map((l) => (
-              <div key={l.id} className="rounded-lg border p-3">
-                <p className="font-medium">{l.nombre}</p>
-                <p className="text-xs text-muted-foreground">
-                  {[l.direccion, l.ciudad].filter(Boolean).join(" · ") || "Sin dirección"}
-                </p>
-              </div>
-            ))}
+            {lugares.map((l) => {
+              const s = slotsPorLugar[l.id];
+              return (
+                <div key={l.id} className="rounded-lg border p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{l.nombre}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSlotLugar({ id: l.id, nombre: l.nombre });
+                        setSlotCantidad(1);
+                        setOpenSlots(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Slots
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {[l.direccion, l.ciudad].filter(Boolean).join(" · ") || "Sin dirección"}
+                  </p>
+                  <p className="text-xs">
+                    {s ? (
+                      <>
+                        <Badge variant="secondary">{s.total} slot(s) activos</Badge>{" "}
+                        <span className="text-muted-foreground">vence {s.vence}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Sin slots activos</span>
+                    )}
+                  </p>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -541,6 +647,40 @@ export default function Eventos() {
           <DialogFooter>
             <Button onClick={invitarValidador} disabled={guardando || !valNombre.trim()}>
               {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Crear y enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog slots (pago Stripe) */}
+      <Dialog open={openSlots} onOpenChange={setOpenSlots}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Slots para {slotLugar?.nombre}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>¿Cuántos slots ocupa este lugar?</Label>
+              <Input
+                autoFocus
+                type="number"
+                min={1}
+                max={50}
+                value={slotCantidad}
+                onChange={(e) => setSlotCantidad(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cada slot cuesta $500 MXN al año y permite un evento con accesos QR. Hoy se paga con
+              cupón del 100% de descuento.
+            </p>
+            <p className="text-sm font-medium">
+              Total: ${(slotCantidad * 500).toLocaleString("es-MX")} MXN → $0 con cupón
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={pagarSlots} disabled={pagandoSlots}>
+              {pagandoSlots && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Pagar en Stripe
             </Button>
           </DialogFooter>
         </DialogContent>
