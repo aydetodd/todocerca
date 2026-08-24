@@ -1575,6 +1575,7 @@ export type Database = {
           owner_id: string
           pagado_en: string | null
           precio_mxn: number
+          stripe_session_id: string | null
           vence_en: string
         }
         Insert: {
@@ -1586,6 +1587,7 @@ export type Database = {
           owner_id: string
           pagado_en?: string | null
           precio_mxn?: number
+          stripe_session_id?: string | null
           vence_en?: string
         }
         Update: {
@@ -1597,6 +1599,7 @@ export type Database = {
           owner_id?: string
           pagado_en?: string | null
           precio_mxn?: number
+          stripe_session_id?: string | null
           vence_en?: string
         }
         Relationships: [

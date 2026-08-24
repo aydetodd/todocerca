@@ -139,3 +139,9 @@ verify_jwt = false
 [functions.qard-pagar-servicio]
 verify_jwt = false
 
+[functions.create-slot-checkout]
+verify_jwt = false
+
+[functions.verify-slot-payment]
+verify_jwt = false
+
