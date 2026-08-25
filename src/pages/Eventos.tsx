@@ -92,7 +92,10 @@ export default function Eventos() {
   const [paseNombre, setPaseNombre] = useState("");
   const [paseTel, setPaseTel] = useState("");
   const [pasePersonas, setPasePersonas] = useState(1);
+  const [openMasivo, setOpenMasivo] = useState(false);
+  const [masivoCantidad, setMasivoCantidad] = useState(200);
   const [guardando, setGuardando] = useState(false);
+
 
   const [paseQr, setPaseQr] = useState<Pase | null>(null);
 
