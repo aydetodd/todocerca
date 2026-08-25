@@ -444,8 +444,11 @@ export default function Eventos() {
                         <span className="text-muted-foreground">vence {s.vence}</span>
                       </>
                     ) : (
-                      <span className="text-muted-foreground">Sin slots activos</span>
+                      <span className="text-destructive font-medium">
+                        Sin slot pagado · paga $500 al año para usar este lugar
+                      </span>
                     )}
+
                   </p>
                 </div>
               );
