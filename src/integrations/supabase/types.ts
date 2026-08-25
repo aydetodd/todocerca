@@ -6856,6 +6856,14 @@ export type Database = {
           saldo_despues: number
         }[]
       }
+      ev_crear_pases_masivos: {
+        Args: { _cantidad: number; _evento_id: string }
+        Returns: {
+          costo: number
+          creados: number
+          saldo_despues: number
+        }[]
+      }
       ev_get_pase_publico: {
         Args: { _codigo: string }
         Returns: {
