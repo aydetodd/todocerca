@@ -279,6 +279,29 @@ export default function Eventos() {
 
   const crearEvento = async () => {
     if (!user || !evNombre.trim()) return;
+    if (!evLugar) {
+      toast({
+        title: "Elige el salón",
+        description: "Cada evento necesita un lugar con slot pagado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!slotsPorLugar[evLugar]?.total) {
+      const l = lugares.find((x) => x.id === evLugar);
+      toast({
+        title: "Este lugar no tiene slot pagado",
+        description: "Paga el slot anual de $500 para poder crear eventos aquí.",
+        variant: "destructive",
+      });
+      setOpenEvento(false);
+      if (l) {
+        setSlotLugar({ id: l.id, nombre: l.nombre });
+        setSlotCantidad(1);
+        setOpenSlots(true);
+      }
+      return;
+    }
     setGuardando(true);
     const { error } = await supabase.from("ev_eventos").insert({
       owner_id: user.id,
@@ -325,6 +348,28 @@ export default function Eventos() {
     toast({ title: "Pase generado", description: `Se cobró $1 QaRd peso. Código ${row?.codigo}` });
     cargarPases(eventoActivo.id);
   };
+
+  const crearPasesMasivos = async () => {
+    if (!eventoActivo || masivoCantidad < 1) return;
+    setGuardando(true);
+    const { data, error } = await supabase.rpc("ev_crear_pases_masivos", {
+      _evento_id: eventoActivo.id,
+      _cantidad: masivoCantidad,
+    });
+    setGuardando(false);
+    if (error) {
+      toast({ title: "No se generaron las invitaciones", description: error.message, variant: "destructive" });
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    setOpenMasivo(false);
+    toast({
+      title: `${row?.creados} invitaciones QR listas`,
+      description: `Se cobraron $${Number(row?.costo || 0).toLocaleString("es-MX")} QaRd pesos.`,
+    });
+    cargarPases(eventoActivo.id);
+  };
+
 
   const linkPase = (codigo: string) => `${window.location.origin}/pase/${codigo}`;
 
