@@ -492,25 +492,37 @@ export default function Eventos() {
         {/* Invitados del evento activo */}
         {eventoActivo && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="space-y-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Users className="h-4 w-4" /> Invitados · {eventoActivo.nombre}
               </CardTitle>
-              <Button size="sm" onClick={() => setOpenPase(true)}>
-                <QrCode className="h-4 w-4 mr-1" /> Generar pase ($1)
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setOpenMasivo(true)}>
+                  <QrCode className="h-4 w-4 mr-1" /> Generar invitaciones por cantidad
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setOpenPase(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Con nombre ($1)
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {pases.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Cada pase QR cuesta $1 QaRd peso y sirve para todo el grupo (familia o mesa).
+                  Pide la cantidad completa de invitados (por ejemplo 200) y se generan 200 QR
+                  verificables por $200 QaRd pesos. Los nombres se pueden asignar después.
                 </p>
               )}
+              {pases.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {pases.length} invitaciones generadas · $1 por cada QR
+                </p>
+              )}
+
               {pases.map((p) => (
                 <div key={p.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{p.nombre_invitado}</p>
+                      <p className="font-medium">{p.nombre_invitado || "Invitación sin nombre"}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.personas} {p.personas === 1 ? "persona" : "personas"} · código {p.codigo}
                       </p>
@@ -676,6 +688,46 @@ export default function Eventos() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog invitaciones por cantidad */}
+      <Dialog open={openMasivo} onOpenChange={setOpenMasivo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Para cuántos invitados?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Cantidad de invitaciones QR</Label>
+              <Input
+                autoFocus
+                type="number"
+                min={1}
+                max={2000}
+                inputMode="numeric"
+                value={masivoCantidad}
+                onChange={(e) =>
+                  setMasivoCantidad(Math.max(1, Math.min(2000, Number(e.target.value) || 1)))
+                }
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cada QR verificable cuesta $1 QaRd peso. Se generan sin nombre y después puedes
+              asignarlos a tu listado de invitados.
+            </p>
+            <p className="text-sm font-medium">
+              Total a cobrar: ${masivoCantidad.toLocaleString("es-MX")} QaRd pesos
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={crearPasesMasivos} disabled={guardando || masivoCantidad < 1}>
+              {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Generar {masivoCantidad} QR y
+              cobrar ${masivoCantidad.toLocaleString("es-MX")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* Dialog validador */}
       <Dialog open={openValidador} onOpenChange={setOpenValidador}>
         <DialogContent>
@@ -741,7 +793,7 @@ export default function Eventos() {
       <Dialog open={!!paseQr} onOpenChange={(o) => !o && setPaseQr(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{paseQr?.nombre_invitado}</DialogTitle>
+            <DialogTitle>{paseQr?.nombre_invitado || "Invitación"}</DialogTitle>
           </DialogHeader>
           {paseQr && (
             <div className="flex flex-col items-center gap-3 py-2">
