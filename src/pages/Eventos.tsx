@@ -688,6 +688,46 @@ export default function Eventos() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog invitaciones por cantidad */}
+      <Dialog open={openMasivo} onOpenChange={setOpenMasivo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Para cuántos invitados?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Cantidad de invitaciones QR</Label>
+              <Input
+                autoFocus
+                type="number"
+                min={1}
+                max={2000}
+                inputMode="numeric"
+                value={masivoCantidad}
+                onChange={(e) =>
+                  setMasivoCantidad(Math.max(1, Math.min(2000, Number(e.target.value) || 1)))
+                }
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cada QR verificable cuesta $1 QaRd peso. Se generan sin nombre y después puedes
+              asignarlos a tu listado de invitados.
+            </p>
+            <p className="text-sm font-medium">
+              Total a cobrar: ${masivoCantidad.toLocaleString("es-MX")} QaRd pesos
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={crearPasesMasivos} disabled={guardando || masivoCantidad < 1}>
+              {guardando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Generar {masivoCantidad} QR y
+              cobrar ${masivoCantidad.toLocaleString("es-MX")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* Dialog validador */}
       <Dialog open={openValidador} onOpenChange={setOpenValidador}>
         <DialogContent>
