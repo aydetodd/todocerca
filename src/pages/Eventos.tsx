@@ -522,7 +522,7 @@ export default function Eventos() {
                 <div key={p.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{p.nombre_invitado}</p>
+                      <p className="font-medium">{p.nombre_invitado || "Invitación sin nombre"}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.personas} {p.personas === 1 ? "persona" : "personas"} · código {p.codigo}
                       </p>
