@@ -753,7 +753,7 @@ export default function Eventos() {
       <Dialog open={!!paseQr} onOpenChange={(o) => !o && setPaseQr(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{paseQr?.nombre_invitado}</DialogTitle>
+            <DialogTitle>{paseQr?.nombre_invitado || "Invitación"}</DialogTitle>
           </DialogHeader>
           {paseQr && (
             <div className="flex flex-col items-center gap-3 py-2">
