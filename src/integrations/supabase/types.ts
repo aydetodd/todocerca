@@ -1091,6 +1091,7 @@ export type Database = {
           attempts: number
           code: string
           created_at: string
+          destination_email: string | null
           device_fingerprint: string
           expires_at: string
           id: string
@@ -1102,6 +1103,7 @@ export type Database = {
           attempts?: number
           code: string
           created_at?: string
+          destination_email?: string | null
           device_fingerprint: string
           expires_at?: string
           id?: string
@@ -1113,6 +1115,7 @@ export type Database = {
           attempts?: number
           code?: string
           created_at?: string
+          destination_email?: string | null
           device_fingerprint?: string
           expires_at?: string
           id?: string
