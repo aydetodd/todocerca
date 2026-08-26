@@ -492,20 +492,32 @@ export default function Eventos() {
         {/* Invitados del evento activo */}
         {eventoActivo && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="space-y-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Users className="h-4 w-4" /> Invitados · {eventoActivo.nombre}
               </CardTitle>
-              <Button size="sm" onClick={() => setOpenPase(true)}>
-                <QrCode className="h-4 w-4 mr-1" /> Generar pase ($1)
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setOpenMasivo(true)}>
+                  <QrCode className="h-4 w-4 mr-1" /> Generar invitaciones por cantidad
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setOpenPase(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Con nombre ($1)
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {pases.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Cada pase QR cuesta $1 QaRd peso y sirve para todo el grupo (familia o mesa).
+                  Pide la cantidad completa de invitados (por ejemplo 200) y se generan 200 QR
+                  verificables por $200 QaRd pesos. Los nombres se pueden asignar después.
                 </p>
               )}
+              {pases.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {pases.length} invitaciones generadas · $1 por cada QR
+                </p>
+              )}
+
               {pases.map((p) => (
                 <div key={p.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
