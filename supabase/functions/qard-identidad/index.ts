@@ -197,8 +197,6 @@ serve(async (req) => {
       });
       if (insErr) return json({ error: "No se pudo generar el token" }, 500);
 
-      await admin.from("profiles").update({ email }).eq("user_id", user.id);
-
       const enviado = await enviarCorreo(
         email,
         "Código para verificar tu correo — QaRd",
@@ -226,9 +224,21 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (!row) return json({ error: "Código inválido o vencido" }, 400);
+      const emailConfirmado = String(row.email || "").trim().toLowerCase();
+      const { error: authEmailError } = await admin.auth.admin.updateUserById(user.id, {
+        email: emailConfirmado,
+        email_confirm: true,
+      });
+      if (authEmailError) {
+        const ocupado = authEmailError.message.toLowerCase().includes("already") || authEmailError.message.toLowerCase().includes("registered");
+        return json({ error: ocupado ? "Ese correo ya pertenece a otra cuenta." : "No se pudo guardar tu correo de acceso." }, 400);
+      }
       await admin.from("email_verification_tokens")
         .update({ used_at: new Date().toISOString() }).eq("id", row.id);
       await admin.from("qard_identidad").update({ email_verified: true }).eq("user_id", user.id);
+      await admin.from("profiles")
+        .update({ email: emailConfirmado, recovery_email: emailConfirmado })
+        .eq("user_id", user.id);
       return json({ success: true });
     }
 

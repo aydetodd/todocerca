@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 
-import { ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,11 @@ export const ClaveUniversalGate = () => {
   const [clave, setClave] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [correo, setCorreo] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [correoVerificado, setCorreoVerificado] = useState(false);
+  const [requiereCorreo, setRequiereCorreo] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -29,10 +34,17 @@ export const ClaveUniversalGate = () => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("clave_universal_migrada")
+        .select("clave_universal_migrada, email, recovery_email")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!cancelado && data && data.clave_universal_migrada === false) setOpen(true);
+      if (!cancelado && data && data.clave_universal_migrada === false) {
+        const authUsaCorreoInterno = !!user.email?.toLowerCase().endsWith("@todocerca.app");
+        const correoReal = data.recovery_email || (data.email?.toLowerCase().endsWith("@todocerca.app") ? "" : data.email) || "";
+        setCorreo(correoReal);
+        setCorreoVerificado(!authUsaCorreoInterno && !!correoReal);
+        setRequiereCorreo(authUsaCorreoInterno || !correoReal);
+        setOpen(true);
+      }
     })();
     return () => {
       cancelado = true;
@@ -41,8 +53,44 @@ export const ClaveUniversalGate = () => {
 
   const soloDigitos = (v: string) => v.replace(/\D/g, "").slice(0, CLAVE_LENGTH);
 
+  async function enviarCodigo() {
+    const limpio = correo.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio) || limpio.endsWith("@todocerca.app")) {
+      toast({ title: "Correo inválido", description: "Escribe el correo real que usarás para entrar y recuperar tu cuenta.", variant: "destructive" });
+      return;
+    }
+    setEnviando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("qard-identidad", { body: { accion: "enviar_correo", email: limpio } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: "Código enviado", description: "Revisa tu correo." });
+    } catch (e: any) {
+      toast({ title: "No se pudo enviar", description: e.message, variant: "destructive" });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function verificarCorreo() {
+    setEnviando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("qard-identidad", { body: { accion: "verificar_correo", code: codigo } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      setCorreoVerificado(true);
+      toast({ title: "Correo guardado", description: "Este será tu correo de acceso y recuperación." });
+    } catch (e: any) {
+      toast({ title: "Código incorrecto", description: e.message, variant: "destructive" });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   async function guardar() {
     if (!user) return;
+    if (requiereCorreo && !correoVerificado) {
+      toast({ title: "Falta verificar el correo", description: "Primero confirma el código que te enviamos.", variant: "destructive" });
+      return;
+    }
     if (!esClaveUniversal(clave)) {
       toast({ title: "Clave incompleta", description: "Deben ser 5 números.", variant: "destructive" });
       return;
@@ -87,6 +135,24 @@ export const ClaveUniversalGate = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {requiereCorreo && !correoVerificado && (
+            <div className="space-y-3 border border-border rounded-lg p-3">
+              <div>
+                <Label htmlFor="correo-migracion">Correo que usarás en esta cuenta</Label>
+                <Input id="correo-migracion" type="email" inputMode="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} autoFocus />
+              </div>
+              <Button type="button" variant="outline" className="w-full" onClick={enviarCodigo} disabled={enviando}>
+                <Mail className="h-4 w-4 mr-2" /> {enviando ? "Enviando..." : "Enviar código"}
+              </Button>
+              <div>
+                <Label htmlFor="codigo-correo-migracion">Código recibido</Label>
+                <Input id="codigo-correo-migracion" inputMode="numeric" maxLength={6} value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+              </div>
+              <Button type="button" className="w-full" onClick={verificarCorreo} disabled={enviando || codigo.length !== 6}>
+                Confirmar correo
+              </Button>
+            </div>
+          )}
           <div>
             <Label>Tu clave de 5 números</Label>
             <div className="flex justify-center py-2">
