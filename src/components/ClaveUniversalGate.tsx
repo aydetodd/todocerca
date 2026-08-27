@@ -38,10 +38,11 @@ export const ClaveUniversalGate = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!cancelado && data && data.clave_universal_migrada === false) {
+        const authUsaCorreoInterno = !!user.email?.toLowerCase().endsWith("@todocerca.app");
         const correoReal = data.recovery_email || (data.email?.toLowerCase().endsWith("@todocerca.app") ? "" : data.email) || "";
         setCorreo(correoReal);
-        setCorreoVerificado(!!correoReal);
-        setRequiereCorreo(!correoReal);
+        setCorreoVerificado(!authUsaCorreoInterno && !!correoReal);
+        setRequiereCorreo(authUsaCorreoInterno || !correoReal);
         setOpen(true);
       }
     })();
