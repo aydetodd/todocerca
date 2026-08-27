@@ -113,27 +113,6 @@ const Auth = () => {
       return;
     }
 
-    // Email obligatorio en registro (es el único método de recuperación de contraseña)
-    if (!isLogin) {
-      if (!recoveryEmail.trim()) {
-        toast({
-          title: "Correo electrónico requerido",
-          description: "El correo es obligatorio para poder recuperar tu contraseña.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(recoveryEmail.trim())) {
-        toast({
-          title: "Email inválido",
-          description: "Ingresa un correo electrónico válido (ej. nombre@ejemplo.com)",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
     // Validar términos en registro
     if (!isLogin && (!acceptedTerms || !acceptedProhibitedContent)) {
       console.log('❌ Terms not accepted');
@@ -377,7 +356,6 @@ const Auth = () => {
               supabase.from('profiles').update({
                 telefono,
                 clave_universal_migrada: true,
-                ...(recoveryEmail.trim() ? { recovery_email: recoveryEmail.trim().toLowerCase() } : {}),
               }).eq('user_id', data.user.id),
               new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
             ]);
@@ -740,22 +718,6 @@ const Auth = () => {
                       type="text"
                       value={apodo}
                       onChange={(e) => setApodo(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="recoveryEmail">
-                      Correo electrónico * <span className="text-xs font-normal text-muted-foreground">(para recuperar contraseña)</span>
-                    </Label>
-                    <Input
-                      id="recoveryEmail"
-                      type="email"
-                      inputMode="email"
-                      autoComplete="email"
-                      placeholder="tucorreo@ejemplo.com"
-                      value={recoveryEmail}
-                      onChange={(e) => setRecoveryEmail(e.target.value)}
                       required
                     />
                   </div>

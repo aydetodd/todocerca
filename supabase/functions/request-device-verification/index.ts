@@ -63,24 +63,17 @@ serve(async (req) => {
       return json({ error: "Fingerprint inválido" }, 400);
     }
 
-    // Correo destino: el de la cuenta, el del perfil o el que escriba el usuario
+    // Correo destino: solo usamos correos reales. Los @todocerca.app son identificadores internos.
     const { data: profile } = await supabase
       .from("profiles")
       .select("telefono, email")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Prioridad: el correo que el usuario acaba de escribir > el guardado en su perfil > el de la cuenta
-    const destino = correoManual || (profile as any)?.email || user.email || null;
-
-    // Si escribió un correo nuevo, se guarda como su correo oficial para no volver a preguntarlo
-    if (correoManual && correoManual !== (profile as any)?.email) {
-      const { error: upErr } = await supabase
-        .from("profiles")
-        .update({ email: correoManual })
-        .eq("user_id", user.id);
-      if (upErr) console.error("no se pudo guardar el correo del perfil", upErr);
-    }
+    const candidatos = [correoManual, (profile as any)?.email, user.email]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .filter((value) => value.includes("@") && !value.endsWith("@todocerca.app"));
+    const destino = candidatos[0] || null;
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!destino) return json({ error: "No tienes un correo registrado. Escribe tu correo para recibir el código." }, 400);
@@ -102,6 +95,7 @@ serve(async (req) => {
         device_fingerprint: deviceFingerprint,
         code,
         phone: (profile as any)?.telefono || destino,
+        destination_email: destino,
       });
 
     if (insertErr) {

@@ -95,6 +95,34 @@ serve(async (req) => {
       });
     }
 
+    const destino = String(codeRow.destination_email || "").trim().toLowerCase();
+    if (destino && !destino.endsWith("@todocerca.app")) {
+      const { error: authEmailError } = await supabase.auth.admin.updateUserById(user.id, {
+        email: destino,
+        email_confirm: true,
+      });
+      if (authEmailError) {
+        const ocupado = authEmailError.message.toLowerCase().includes("already") || authEmailError.message.toLowerCase().includes("registered");
+        return new Response(JSON.stringify({
+          error: ocupado ? "Ese correo ya pertenece a otra cuenta." : "No se pudo guardar tu correo de acceso.",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: profileEmailError } = await supabase
+        .from("profiles")
+        .update({ email: destino, recovery_email: destino })
+        .eq("user_id", user.id);
+      if (profileEmailError) {
+        console.error("profile email sync err", profileEmailError);
+        return new Response(JSON.stringify({ error: "No se pudo guardar tu correo en el perfil" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Marcar código como usado
     await supabase
       .from("device_verification_codes")

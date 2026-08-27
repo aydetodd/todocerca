@@ -54,6 +54,7 @@ export function AccessGate({ motivo, sesionEn, onVerified }: Props) {
             .maybeSingle();
           if ((data as any)?.email) correo = (data as any).email;
         }
+        if (correo?.toLowerCase().endsWith("@todocerca.app")) correo = null;
         if (!activo) return;
         setEmailGuardado(correo);
         setEmailManual(correo || "");
