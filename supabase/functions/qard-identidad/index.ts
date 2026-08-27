@@ -197,8 +197,6 @@ serve(async (req) => {
       });
       if (insErr) return json({ error: "No se pudo generar el token" }, 500);
 
-      await admin.from("profiles").update({ email }).eq("user_id", user.id);
-
       const enviado = await enviarCorreo(
         email,
         "Código para verificar tu correo — QaRd",
