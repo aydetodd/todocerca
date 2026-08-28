@@ -225,6 +225,13 @@ serve(async (req) => {
     const recibe = +(monto - comisionRetiro).toFixed(2);
     const saldoDespues = +(disponible - monto).toFixed(2);
 
+    // Debitar la billetera (partida doble: el retiro saca dinero real de la bóveda)
+    await admin.from("qard_wallets").update({ saldo_mxn: saldoDespues }).eq("id", wallet.id);
+    await admin.from("qard_sub_qr")
+      .update({ saldo_mxn: saldoDespues })
+      .eq("wallet_id", wallet.id)
+      .eq("sub_index", 0);
+
     const { error: insErr } = await admin.from("qard_movimientos").insert({
       wallet_id: wallet.id,
       titular_user_id: user.id,
@@ -238,6 +245,7 @@ serve(async (req) => {
       metadata,
     });
     if (insErr) throw insErr;
+
 
     return new Response(JSON.stringify({
       ok: true,
