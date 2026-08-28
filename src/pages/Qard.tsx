@@ -748,17 +748,17 @@ export default function Qard() {
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
         const ejeMov = mov.filter(m =>
-          !m.comercio_user_id && (
-            !m.sub_qr_id || m.sub_qr_id === titularId ||
-            m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
-          )
+          m.tipo === "cobro_recibido" ||
+          !m.sub_qr_id || m.sub_qr_id === titularId ||
+          m.tipo === "transfer_a_sub" || m.tipo === "transfer_desde_sub" || m.tipo === "recarga"
         );
         const esPositivo = (t: string) =>
-          t === "recarga" || t === "transfer_desde_sub" || t === "transferencia_p2p_in";
+          t === "recarga" || t === "transfer_desde_sub" || t === "transferencia_p2p_in" || t === "cobro_recibido";
         const etiqueta = (m: Movimiento) => {
           const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
           return m.tipo === "recarga" ? "Recarga" :
             m.tipo === "cobro_comercio" ? `Pago ${m.comercio_nombre ?? ""}` :
+            m.tipo === "cobro_recibido" ? "Cobro recibido" :
             m.tipo === "transfer_a_sub" ? `Transferir a ${aliasFromDesc}` :
             m.tipo === "transfer_desde_sub" ? `Devolver de ${aliasFromDesc}` :
             m.tipo === "retiro_qard" ? "Transferencia enviada" :
@@ -768,6 +768,7 @@ export default function Qard() {
             m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
             m.tipo;
         };
+
 
         // Saldo corrido: partimos del saldo actual y caminamos hacia atrás
         let corrido = Number(wallet?.saldo_mxn ?? 0);

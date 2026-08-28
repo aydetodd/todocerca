@@ -177,7 +177,7 @@ serve(async (req) => {
       if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
     }
 
-    // 5) Sin comisión interna: neto = monto
+    // 5) Sin comisión interna: neto = monto (la comisión solo existe al retirar por SPEI/OXXO)
     const comision = +(monto * COMISION_PCT).toFixed(2);
     const neto = +(monto - comision).toFixed(2);
 
@@ -186,7 +186,11 @@ serve(async (req) => {
       .from("profiles").select("apodo, nombre").eq("user_id", comercio.id).maybeSingle();
     const comercioNombre = comProfile?.apodo || comProfile?.nombre || "Comercio";
 
-    // 6) Registrar movimiento
+    // Nombre de quien paga (para el renglón del comercio)
+    const { data: pagadorNombre } = await admin.rpc("qard_nombre_legal", { _user_id: sub.titular_user_id });
+
+    // 6) LEDGER DE PARTIDA DOBLE
+    // 6.a) CARGO al pagador (su tarjeta o sub-QR)
     await admin.from("qard_movimientos").insert({
       wallet_id: wallet.id,
       titular_user_id: sub.titular_user_id,
@@ -196,11 +200,41 @@ serve(async (req) => {
       saldo_despues: saldoDespues,
       comercio_user_id: comercio.id,
       comercio_nombre: comercioNombre,
-      comision_mxn: comision,
-      neto_comercio_mxn: neto,
+      comision_mxn: 0,
+      neto_comercio_mxn: 0,
       descripcion: `Cobro en ${comercioNombre}`,
-      metadata: { sub_index: sub.sub_index, alias: sub.alias },
+      metadata: { sub_index: sub.sub_index, alias: sub.alias, lado: "cargo" },
     });
+
+    // 6.b) ABONO al comercio: el dinero entra de inmediato a su billetera eje
+    try { await admin.rpc("qard_ensure_wallet", { _user_id: comercio.id }); } catch (_) {}
+    const { data: wCom } = await admin
+      .from("qard_wallets").select("id, saldo_mxn").eq("titular_user_id", comercio.id).maybeSingle();
+
+    if (wCom) {
+      const saldoComDespues = +(Number(wCom.saldo_mxn ?? 0) + neto).toFixed(2);
+      await admin.from("qard_wallets").update({ saldo_mxn: saldoComDespues }).eq("id", wCom.id);
+      // Espejo en el sub-QR eje (sub_index = 0) para que la tarjeta muestre el mismo saldo
+      await admin.from("qard_sub_qr")
+        .update({ saldo_mxn: saldoComDespues })
+        .eq("wallet_id", wCom.id)
+        .eq("sub_index", 0);
+
+      await admin.from("qard_movimientos").insert({
+        wallet_id: wCom.id,
+        titular_user_id: comercio.id,
+        tipo: "cobro_recibido",
+        monto_mxn: neto,
+        saldo_despues: saldoComDespues,
+        comercio_user_id: comercio.id,
+        comercio_nombre: comercioNombre,
+        comision_mxn: 0,
+        neto_comercio_mxn: neto,
+        descripcion: `Cobro recibido de ${pagadorNombre ?? "cliente"}`,
+        metadata: { lado: "abono", pagador_sub_index: sub.sub_index },
+      });
+    }
+
 
     // 7) La liquidación al CLABE del comercio se calcula por lote diario a partir
     //    de qard_movimientos.neto_comercio_mxn (job separado — Fase 1 solo acumula).

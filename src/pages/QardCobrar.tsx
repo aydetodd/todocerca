@@ -50,12 +50,12 @@ export default function QardCobrar() {
       .from("qard_movimientos" as any)
       .select("*")
       .eq("comercio_user_id", user.id)
-      .in("tipo", ["cobro_comercio", "ajuste", "retiro_oxxo", "retiro_spei", "retiro_qard"])
+      .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard"])
       .order("created_at", { ascending: false })
       .limit(80);
     const rows = (data as any[]) ?? [];
-    setCobros(rows.filter(r => r.tipo !== "ajuste"));
-    const soloCobros = rows.filter(r => r.tipo === "cobro_comercio");
+    setCobros(rows);
+    const soloCobros = rows.filter(r => r.tipo === "cobro_recibido");
     const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
     // Los cobros internos NO llevan comisión: siempre vale el monto completo.
     const bruto = soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
@@ -64,6 +64,7 @@ export default function QardCobrar() {
     setTotalComision(0);
     setTotalRetirado(retirado);
     setTotalNeto(bruto - retirado);
+
 
   }, []);
 
