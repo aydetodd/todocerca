@@ -4223,6 +4223,7 @@ export type Database = {
           cvv_dinamico: string | null
           estado: string
           id: string
+          saldo_comercio_mxn: number
           saldo_mxn: number
           telefono_lock: string | null
           titular_user_id: string
@@ -4233,6 +4234,7 @@ export type Database = {
           cvv_dinamico?: string | null
           estado?: string
           id?: string
+          saldo_comercio_mxn?: number
           saldo_mxn?: number
           telefono_lock?: string | null
           titular_user_id: string
@@ -4243,6 +4245,7 @@ export type Database = {
           cvv_dinamico?: string | null
           estado?: string
           id?: string
+          saldo_comercio_mxn?: number
           saldo_mxn?: number
           telefono_lock?: string | null
           titular_user_id?: string
@@ -7226,6 +7229,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_pasar_cobros_a_eje: { Args: { _monto: number }; Returns: Json }
       qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
       qard_rate_limit_check: {
         Args: {
