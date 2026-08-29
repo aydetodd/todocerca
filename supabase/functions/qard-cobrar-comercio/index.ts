@@ -206,19 +206,15 @@ serve(async (req) => {
       metadata: { sub_index: sub.sub_index, alias: sub.alias, lado: "cargo" },
     });
 
-    // 6.b) ABONO al comercio: el dinero entra de inmediato a su billetera eje
+    // 6.b) ABONO al comercio: entra a su BOLSA DE COBROS (separada de la cuenta eje).
+    //      Para usarla en la app debe traspasarla a su cuenta eje (gratis) o retirarla.
     try { await admin.rpc("qard_ensure_wallet", { _user_id: comercio.id }); } catch (_) {}
     const { data: wCom } = await admin
-      .from("qard_wallets").select("id, saldo_mxn").eq("titular_user_id", comercio.id).maybeSingle();
+      .from("qard_wallets").select("id, saldo_comercio_mxn").eq("titular_user_id", comercio.id).maybeSingle();
 
     if (wCom) {
-      const saldoComDespues = +(Number(wCom.saldo_mxn ?? 0) + neto).toFixed(2);
-      await admin.from("qard_wallets").update({ saldo_mxn: saldoComDespues }).eq("id", wCom.id);
-      // Espejo en el sub-QR eje (sub_index = 0) para que la tarjeta muestre el mismo saldo
-      await admin.from("qard_sub_qr")
-        .update({ saldo_mxn: saldoComDespues })
-        .eq("wallet_id", wCom.id)
-        .eq("sub_index", 0);
+      const saldoComDespues = +(Number((wCom as any).saldo_comercio_mxn ?? 0) + neto).toFixed(2);
+      await admin.from("qard_wallets").update({ saldo_comercio_mxn: saldoComDespues }).eq("id", wCom.id);
 
       await admin.from("qard_movimientos").insert({
         wallet_id: wCom.id,
@@ -231,9 +227,10 @@ serve(async (req) => {
         comision_mxn: 0,
         neto_comercio_mxn: neto,
         descripcion: `Cobro recibido de ${pagadorNombre ?? "cliente"}`,
-        metadata: { lado: "abono", pagador_sub_index: sub.sub_index },
+        metadata: { lado: "abono", bolsa: "comercio", pagador_sub_index: sub.sub_index },
       });
     }
+
 
 
     // 7) La liquidación al CLABE del comercio se calcula por lote diario a partir
