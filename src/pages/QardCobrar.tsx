@@ -75,7 +75,9 @@ export default function QardCobrar() {
     cargarCobros();
     const ch = supabase.channel("qard-cobros-comercio")
       .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos" }, () => cargarCobros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_wallets" }, () => cargarCobros())
       .subscribe();
+
     return () => { supabase.removeChannel(ch); };
   }, [cargarCobros]);
   const scannerRef = useRef<Html5Qrcode | null>(null);
