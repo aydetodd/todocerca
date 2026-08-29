@@ -46,13 +46,16 @@ export default function QardCobrar() {
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase
-      .from("qard_movimientos" as any)
-      .select("*")
-      .eq("comercio_user_id", user.id)
-      .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard"])
-      .order("created_at", { ascending: false })
-      .limit(80);
+    const [{ data }, { data: w }] = await Promise.all([
+      supabase
+        .from("qard_movimientos" as any)
+        .select("*")
+        .eq("comercio_user_id", user.id)
+        .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard"])
+        .order("created_at", { ascending: false })
+        .limit(80),
+      supabase.from("qard_wallets" as any).select("saldo_mxn").eq("titular_user_id", user.id).maybeSingle(),
+    ]);
     const rows = (data as any[]) ?? [];
     setCobros(rows);
     const soloCobros = rows.filter(r => r.tipo === "cobro_recibido");
@@ -63,10 +66,10 @@ export default function QardCobrar() {
     setTotalBruto(bruto);
     setTotalComision(0);
     setTotalRetirado(retirado);
-    setTotalNeto(bruto - retirado);
-
-
+    // Disponible real = saldo de la bóveda (recargas + cobros − pagos − retiros)
+    setTotalNeto(Number((w as any)?.saldo_mxn ?? 0));
   }, []);
+
 
   useEffect(() => {
     cargarCobros();
