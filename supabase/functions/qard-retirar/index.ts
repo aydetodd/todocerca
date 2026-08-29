@@ -36,6 +36,7 @@ serve(async (req) => {
     const monto = Number(body.monto_mxn);
     const destino = String(body.destino || "").trim();
     const cvv = String(body.cvv || "").replace(/\D/g, "");
+    const origen = String(body.origen || "comercio").toLowerCase() === "eje" ? "eje" : "comercio";
 
     if (!["oxxo", "spei", "qard"].includes(metodo)) return err("Método inválido");
     if (!RETIROS_STP_ENABLED && METODOS_RETIRO_BLOQUEADOS.includes(metodo)) {
@@ -60,22 +61,26 @@ serve(async (req) => {
     // Asegurar wallet del comercio (usa RPC, y si no existe la crea directo)
     try { await admin.rpc("qard_ensure_wallet", { _user_id: user.id }); } catch (_) {}
     let { data: wallet } = await admin
-      .from("qard_wallets").select("id, saldo_mxn").eq("titular_user_id", user.id).maybeSingle();
+      .from("qard_wallets").select("id, saldo_mxn, saldo_comercio_mxn").eq("titular_user_id", user.id).maybeSingle();
     if (!wallet) {
       // Fallback: crear wallet mínima si el RPC falló
       const cvv4 = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join("");
       const ins = await admin.from("qard_wallets").insert({
         titular_user_id: user.id,
         cvv_dinamico: cvv4, saldo_mxn: 0, estado: "activa",
-      }).select("id, saldo_mxn").single();
+      }).select("id, saldo_mxn, saldo_comercio_mxn").single();
       if (ins.error) throw new Error(`No se pudo crear la billetera: ${ins.error.message}`);
       wallet = ins.data as any;
       if (!wallet) throw new Error("No se pudo crear la billetera");
     }
 
-    // Ledger de partida doble: el dinero cobrado ya vive en la billetera.
-    const disponible = Number(wallet.saldo_mxn ?? 0);
-    if (monto > disponible + 0.001) return err(`Saldo insuficiente. Disponible $${disponible.toFixed(2)}`);
+    // Dos bolsas separadas: "comercio" (cobros recibidos) y "eje" (cuenta principal)
+    const disponible = origen === "eje"
+      ? Number((wallet as any).saldo_mxn ?? 0)
+      : Number((wallet as any).saldo_comercio_mxn ?? 0);
+    if (monto > disponible + 0.001) {
+      return err(`Saldo insuficiente en ${origen === "eje" ? "tu cuenta eje" : "tus cobros"}. Disponible $${disponible.toFixed(2)}`);
+    }
 
 
     let descripcion = "";
@@ -225,12 +230,17 @@ serve(async (req) => {
     const recibe = +(monto - comisionRetiro).toFixed(2);
     const saldoDespues = +(disponible - monto).toFixed(2);
 
-    // Debitar la billetera (partida doble: el retiro saca dinero real de la bóveda)
-    await admin.from("qard_wallets").update({ saldo_mxn: saldoDespues }).eq("id", wallet.id);
-    await admin.from("qard_sub_qr")
-      .update({ saldo_mxn: saldoDespues })
-      .eq("wallet_id", wallet.id)
-      .eq("sub_index", 0);
+    // Debitar la bolsa de origen
+    if (origen === "eje") {
+      await admin.from("qard_wallets").update({ saldo_mxn: saldoDespues }).eq("id", wallet.id);
+      await admin.from("qard_sub_qr")
+        .update({ saldo_mxn: saldoDespues })
+        .eq("wallet_id", wallet.id)
+        .eq("sub_index", 0);
+    } else {
+      await admin.from("qard_wallets").update({ saldo_comercio_mxn: saldoDespues }).eq("id", wallet.id);
+    }
+    metadata.origen = origen;
 
     const { error: insErr } = await admin.from("qard_movimientos").insert({
       wallet_id: wallet.id,
