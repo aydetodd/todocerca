@@ -522,11 +522,35 @@ export default function QardCobrar() {
               {retiroMetodo === "qard" && "Transferir a otra QaRd"}
             </DialogTitle>
             <DialogDescription>
-              Disponible: <b>${totalNeto.toFixed(2)}</b>{retiroMetodo !== "qard" ? " · Simulación (sin dinero real)." : ""}
+              Disponible: <b>${(retiroOrigen === "eje" ? saldoEje : totalNeto).toFixed(2)}</b>{retiroMetodo !== "qard" ? " · Simulación (sin dinero real)." : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
+              <label className="text-sm font-medium">¿De cuál bolsa?</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant={retiroOrigen === "comercio" ? "default" : "outline"}
+                  className="h-auto py-2 flex-col gap-0.5"
+                  onClick={() => setRetiroOrigen("comercio")}
+                >
+                  <span className="text-[11px]">Mis cobros</span>
+                  <span className="text-sm font-bold">${totalNeto.toFixed(2)}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={retiroOrigen === "eje" ? "default" : "outline"}
+                  className="h-auto py-2 flex-col gap-0.5"
+                  onClick={() => setRetiroOrigen("eje")}
+                >
+                  <span className="text-[11px]">Cuenta eje</span>
+                  <span className="text-sm font-bold">${saldoEje.toFixed(2)}</span>
+                </Button>
+              </div>
+            </div>
+            <div>
+
               <label className="text-sm font-medium">Monto (MXN)</label>
               <Input
                 type="number" step="0.01" min="20"
