@@ -13,6 +13,5 @@ export const MODULOS_OCULTOS = {
   votaciones: true,
   sos: true,
   tv: true,
-  domotica: true,
   reportesCiudadanos: true,
 };
