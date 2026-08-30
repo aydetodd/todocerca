@@ -513,9 +513,42 @@ export default function QardCobrar() {
         title="CVV de la tarjeta"
       />
 
+      <Dialog open={traspasoOpen} onOpenChange={setTraspasoOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pasar cobros a mi cuenta eje</DialogTitle>
+            <DialogDescription>
+              Sin comisión. En cobros tienes <b>${totalNeto.toFixed(2)}</b>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Monto a pasar (MXN)</label>
+              <Input
+                type="number" step="0.01" min="1"
+                value={traspasoMonto}
+                onChange={e => setTraspasoMonto(e.target.value)}
+                className="text-xl h-12"
+                autoFocus
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setTraspasoMonto(String(totalNeto.toFixed(2)))}>
+              Pasar todo
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTraspasoOpen(false)} disabled={traspasoLoading}>Cancelar</Button>
+            <Button onClick={confirmarTraspaso} disabled={traspasoLoading}>
+              {traspasoLoading ? "Procesando…" : "Pasar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
+
             <DialogTitle>
               {retiroMetodo === "oxxo" && "Retirar efectivo en OXXO"}
               {retiroMetodo === "spei" && "Enviar SPEI a mi banco"}
