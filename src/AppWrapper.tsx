@@ -43,7 +43,7 @@ import VotacionDetalle from "./pages/VotacionDetalle";
 import Privacidad from "./pages/Privacidad";
 import EliminarCuenta from "./pages/EliminarCuenta";
 import NotFound from "./pages/NotFound";
-import Domotica from "./pages/Domotica";
+
 import GpsLocationPage from "./pages/GpsLocationPage";
 import SOSView from "./pages/SOSView";
 import AcceptDriverInvite from "./pages/AcceptDriverInvite";
@@ -222,7 +222,7 @@ export default function AppWrapper() {
           <Route path="/sos/:token" element={<Navigate to="/proximamente" replace />} />
           <Route path="/tv" element={<Navigate to="/proximamente" replace />} />
           <Route path="/reportes-ciudadanos" element={<Navigate to="/proximamente" replace />} />
-          <Route path="/domotica" element={<Navigate to="/proximamente" replace />} />
+          
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
           <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />

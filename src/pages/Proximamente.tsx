@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Car, Megaphone, Store, Home as HomeIcon, Sparkles } from 'lucide-react';
+import { ArrowLeft, Car, Tv, Vote, Sparkles } from 'lucide-react';
 
 const FASES = [
   {
@@ -12,22 +12,16 @@ const FASES = [
     desc: 'Pedir taxi desde la app igual que las rutas públicas: ves el carro en el mapa, el nombre del chofer y pagas con tu tarjeta QaRd. Todo el viaje queda registrado.',
   },
   {
-    icon: Megaphone,
-    titulo: 'Reportes ciudadanos',
+    icon: Tv,
+    titulo: 'TodoCerca TV',
     fase: 'Fase 3',
-    desc: 'Avisar de un bache, una luminaria apagada o basura acumulada con foto y ubicación. El reporte se envía a la autoridad y tú puedes seguir su avance.',
+    desc: 'Canal de video con contenido local: avisos, eventos y promociones de tu ciudad, directo en la app.',
   },
   {
-    icon: Store,
-    titulo: 'Buscar bienes y servicios',
+    icon: Vote,
+    titulo: 'Votaciones',
     fase: 'Fase 3',
-    desc: 'Buscar tiendas, talleres, doctores o cualquier proveedor cerca de ti, ver su catálogo, precios y apartar o agendar desde la app.',
-  },
-  {
-    icon: HomeIcon,
-    titulo: 'Domótica (casa inteligente)',
-    fase: 'Fase 4',
-    desc: 'Prender y apagar luces, portones o cámaras de tu casa o negocio desde el teléfono, con avisos cuando algo se activa.',
+    desc: 'Encuestas y votaciones ciudadanas y privadas con resultados en tiempo real, verificadas con tu cuenta.',
   },
 ];
 
