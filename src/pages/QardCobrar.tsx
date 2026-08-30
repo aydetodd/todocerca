@@ -3,7 +3,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet, Banknote, Building2, CreditCard } from "lucide-react";
+import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet, Banknote, Building2, CreditCard, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -31,6 +31,13 @@ export default function QardCobrar() {
   const [totalBruto, setTotalBruto] = useState(0);
   const [totalComision, setTotalComision] = useState(0);
   const [totalRetirado, setTotalRetirado] = useState(0);
+  const [saldoEje, setSaldoEje] = useState(0);
+
+  // Traspaso de la bolsa de cobros a la cuenta eje (gratis)
+  const [traspasoOpen, setTraspasoOpen] = useState(false);
+  const [traspasoMonto, setTraspasoMonto] = useState("");
+  const [traspasoLoading, setTraspasoLoading] = useState(false);
+  const [retiroOrigen, setRetiroOrigen] = useState<"comercio" | "eje">("comercio");
 
   // Retiro
   const [retiroOpen, setRetiroOpen] = useState(false);
@@ -51,10 +58,10 @@ export default function QardCobrar() {
         .from("qard_movimientos" as any)
         .select("*")
         .eq("comercio_user_id", user.id)
-        .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard"])
+        .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard", "traspaso_cobros_out"])
         .order("created_at", { ascending: false })
         .limit(80),
-      supabase.from("qard_wallets" as any).select("saldo_mxn").eq("titular_user_id", user.id).maybeSingle(),
+      supabase.from("qard_wallets" as any).select("saldo_mxn, saldo_comercio_mxn").eq("titular_user_id", user.id).maybeSingle(),
     ]);
     const rows = (data as any[]) ?? [];
     setCobros(rows);
@@ -66,8 +73,9 @@ export default function QardCobrar() {
     setTotalBruto(bruto);
     setTotalComision(0);
     setTotalRetirado(retirado);
-    // Disponible real = saldo de la bóveda (recargas + cobros − pagos − retiros)
-    setTotalNeto(Number((w as any)?.saldo_mxn ?? 0));
+    // Disponible = bolsa de COBROS (separada de la cuenta eje)
+    setTotalNeto(Number((w as any)?.saldo_comercio_mxn ?? 0));
+    setSaldoEje(Number((w as any)?.saldo_mxn ?? 0));
   }, []);
 
 
@@ -193,7 +201,8 @@ export default function QardCobrar() {
     if (!RETIROS_STP_ENABLED && (metodo === "oxxo" || metodo === "spei")) {
       return toast({ title: "Próximamente", description: MENSAJE_RETIRO_PROXIMAMENTE });
     }
-    if (totalNeto <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
+    if (totalNeto <= 0 && saldoEje <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
+    setRetiroOrigen(totalNeto > 0 ? "comercio" : "eje");
     setRetiroMetodo(metodo);
     setRetiroMonto("");
     setRetiroDestino("");
@@ -204,7 +213,8 @@ export default function QardCobrar() {
   const confirmarRetiro = async () => {
     const m = Number(retiroMonto);
     if (!m || m < 20) return toast({ title: "Monto mínimo $20", variant: "destructive" });
-    if (m > totalNeto) return toast({ title: "Excede tu saldo disponible", variant: "destructive" });
+    const disponibleOrigen = retiroOrigen === "eje" ? saldoEje : totalNeto;
+    if (m > disponibleOrigen) return toast({ title: "Excede el saldo de esa bolsa", variant: "destructive" });
     if (retiroMetodo === "qard") {
       const d = retiroDestino.replace(/\D/g, "");
       if (d.length !== 16) {
@@ -220,7 +230,7 @@ export default function QardCobrar() {
     }
     setRetiroLoading(true);
     const { data, error } = await supabase.functions.invoke("qard-retirar", {
-      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino, cvv: retiroCvv },
+      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino, cvv: retiroCvv, origen: retiroOrigen },
     });
     setRetiroLoading(false);
     if (error || !data?.ok) {
@@ -228,6 +238,23 @@ export default function QardCobrar() {
     }
     setRetiroOpen(false);
     toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}${data.simulado ? " · Simulado" : ""}` });
+    cargarCobros();
+  };
+
+  const confirmarTraspaso = async () => {
+    const m = Number(traspasoMonto);
+    if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
+    if (m > totalNeto) return toast({ title: "Excede tu saldo de cobros", variant: "destructive" });
+    setTraspasoLoading(true);
+    const { data, error } = await supabase.rpc("qard_pasar_cobros_a_eje" as any, { _monto: m });
+    setTraspasoLoading(false);
+    const res: any = data;
+    if (error || !res?.ok) {
+      return toast({ title: "No se pudo traspasar", description: (res?.error || error?.message) ?? "", variant: "destructive" });
+    }
+    setTraspasoOpen(false);
+    setTraspasoMonto("");
+    toast({ title: `Pasaste $${m.toFixed(2)} a tu cuenta eje`, description: "Sin comisión" });
     cargarCobros();
   };
 
@@ -296,16 +323,32 @@ export default function QardCobrar() {
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-center mb-3">
+        <div className="grid grid-cols-3 gap-2 text-center mb-3">
           <div className="rounded bg-muted p-2">
             <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
             <div className="font-bold text-foreground">${totalBruto.toFixed(2)}</div>
           </div>
           <div className="rounded-xl bg-primary p-2 shadow-[var(--shadow-button)]">
-            <div className="text-[10px] text-primary-foreground/90 uppercase">Disponible</div>
-            <div className="font-bold text-primary-foreground text-[22px] leading-tight">${totalNeto.toFixed(2)}</div>
+            <div className="text-[10px] text-primary-foreground/90 uppercase">En cobros</div>
+            <div className="font-bold text-primary-foreground text-[20px] leading-tight">${totalNeto.toFixed(2)}</div>
+          </div>
+          <div className="rounded bg-muted p-2">
+            <div className="text-[10px] text-muted-foreground uppercase">Cuenta eje</div>
+            <div className="font-bold text-foreground">${saldoEje.toFixed(2)}</div>
           </div>
         </div>
+
+        <Button
+          variant="secondary"
+          className="w-full mb-3"
+          onClick={() => {
+            if (totalNeto <= 0) return toast({ title: "No tienes saldo en cobros", variant: "destructive" });
+            setTraspasoMonto(String(totalNeto.toFixed(2)));
+            setTraspasoOpen(true);
+          }}
+        >
+          <ArrowRightLeft className="h-4 w-4 mr-2" /> Pasar cobros a mi cuenta eje (gratis)
+        </Button>
 
 
         <div className="rounded-lg bg-muted p-3 mb-3">
@@ -358,13 +401,13 @@ export default function QardCobrar() {
               const saldos = new Map<string, number>();
               let acumulado = 0;
               [...cobros].reverse().forEach((m) => {
-                const esRet = String(m.tipo).startsWith("retiro_");
+                const esRet = String(m.tipo).startsWith("retiro_") || m.tipo === "traspaso_cobros_out";
                 const imp = Math.abs(Number(m.monto_mxn ?? 0));
                 acumulado = +(acumulado + (esRet ? -imp : imp)).toFixed(2);
                 saldos.set(m.id, acumulado);
               });
               return cobros.map((m) => {
-                const esRetiro = String(m.tipo).startsWith("retiro_");
+                const esRetiro = String(m.tipo).startsWith("retiro_") || m.tipo === "traspaso_cobros_out";
                 const importe = Math.abs(Number(m.monto_mxn ?? 0));
                 return (
                   <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
