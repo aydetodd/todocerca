@@ -624,9 +624,15 @@ export default function Qard() {
       {/* Sub-QR familiares */}
       <Card className="p-4">
         <div className="font-semibold mb-3">Sub-QR familiares</div>
-        <div className="flex gap-2 mb-3">
-          <Input value={newAlias} onChange={e => setNewAlias(e.target.value)} />
-          <Input type="number" value={newLimite} onChange={e => setNewLimite(e.target.value)} />
+        <div className="flex gap-2 mb-3 items-end">
+          <div className="flex-1">
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre</label>
+            <Input value={newAlias} onChange={e => setNewAlias(e.target.value)} />
+          </div>
+          <div className="w-28">
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Máx por cobro</label>
+            <Input type="number" value={newLimite} onChange={e => setNewLimite(e.target.value)} />
+          </div>
           <Button onClick={crearSub}><Plus className="h-4 w-4" /></Button>
         </div>
         <div className="space-y-2">
