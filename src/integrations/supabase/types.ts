@@ -20,6 +20,7 @@ export type Database = {
           device_fingerprint: string
           device_name: string | null
           device_type: string | null
+          es_rescate: boolean
           id: string
           last_seen_at: string
           user_agent: string | null
@@ -30,6 +31,7 @@ export type Database = {
           device_fingerprint: string
           device_name?: string | null
           device_type?: string | null
+          es_rescate?: boolean
           id?: string
           last_seen_at?: string
           user_agent?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           device_fingerprint?: string
           device_name?: string | null
           device_type?: string | null
+          es_rescate?: boolean
           id?: string
           last_seen_at?: string
           user_agent?: string | null
@@ -3530,11 +3533,14 @@ export type Database = {
           active_transport_type: string | null
           active_unidad_id: string | null
           apodo: string | null
+          bloqueada_en: string | null
+          bloqueada_motivo: string | null
           clave_universal_migrada: boolean
           codigo_postal: string | null
           consecutive_number: number
           contact_token: string | null
           created_at: string
+          cuenta_bloqueada: boolean
           email: string | null
           estado: Database["public"]["Enums"]["user_status"] | null
           id: string
@@ -3565,11 +3571,14 @@ export type Database = {
           active_transport_type?: string | null
           active_unidad_id?: string | null
           apodo?: string | null
+          bloqueada_en?: string | null
+          bloqueada_motivo?: string | null
           clave_universal_migrada?: boolean
           codigo_postal?: string | null
           consecutive_number?: number
           contact_token?: string | null
           created_at?: string
+          cuenta_bloqueada?: boolean
           email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
@@ -3600,11 +3609,14 @@ export type Database = {
           active_transport_type?: string | null
           active_unidad_id?: string | null
           apodo?: string | null
+          bloqueada_en?: string | null
+          bloqueada_motivo?: string | null
           clave_universal_migrada?: boolean
           codigo_postal?: string | null
           consecutive_number?: number
           contact_token?: string | null
           created_at?: string
+          cuenta_bloqueada?: boolean
           email?: string | null
           estado?: Database["public"]["Enums"]["user_status"] | null
           id?: string
@@ -4455,6 +4467,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rescate_intentos: {
+        Row: {
+          accion: string
+          creado_en: string
+          id: string
+          ip: string | null
+          resultado: string
+          telefono: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accion: string
+          creado_en?: string
+          id?: string
+          ip?: string | null
+          resultado: string
+          telefono?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accion?: string
+          creado_en?: string
+          id?: string
+          ip?: string | null
+          resultado?: string
+          telefono?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       road_closures: {
         Row: {
@@ -6823,6 +6865,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cuenta_esta_bloqueada: { Args: { _user_id: string }; Returns: boolean }
       delete_private_route_trace: {
         Args: { _producto_id: string }
         Returns: {
