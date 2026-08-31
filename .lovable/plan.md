@@ -34,12 +34,12 @@ Cuando recuperes o repongas tu teléfono: entras normal (teléfono + clave), pid
 
 - Nueva columna en `profiles`: `cuenta_bloqueada` (bool), `bloqueada_en`, `bloqueada_motivo`.
 - Nueva tabla `rescate_intentos` (user_id, ip/fingerprint, creado, resultado) para el límite por hora. Con GRANTs y RLS: solo service_role escribe.
-- Nueva Edge Function `rescate-cuenta` con acciones: `solicitar_codigo` (valida teléfono + clave contra Auth, manda código por Resend), `verificar_codigo` (devuelve sesión temporal), `bloquear`, `cerrar_todo`, `desbloquear`.
+- Nueva Edge Function `rescate-cuenta` con acciones: `entrar` (valida teléfono + clave de 5 dígitos contra Auth, devuelve sesión temporal), `bloquear`, `cerrar_todo`, `desbloquear`. Solo `desbloquear` (ya con teléfono recuperado) manda código al correo por Resend.
 - La sesión de rescate se guarda en `sessionStorage` (no `localStorage`) y no crea fila en `trusted_devices`; en `active_sessions` se marca `es_rescate = true` para excluirla del bloqueo de sesión única.
 - Guard global: si `cuenta_bloqueada` es verdadero, RLS y las funciones de pago (`qard_transfer_p2p`, `qard-cobrar-comercio`, `qard-retirar`, validación de QR) rechazan la operación con un mensaje claro.
-- Componentes nuevos: `RescateModeButton` (perfil + pantalla de login), `RescateFlow` (teléfono → clave → código → acciones), banner de cuenta bloqueada.
+- Componentes nuevos: `RescateModeButton` (perfil + pantalla de login), `RescateFlow` (teléfono + clave → acciones), banner de cuenta bloqueada.
 
 ## Fuera de alcance por ahora
 
-- Recuperación sin acceso al correo (requeriría soporte humano y verificación de identidad).
+- Recuperación de la clave de 5 dígitos si también la olvidaste (requeriría soporte humano y verificación de identidad).
 - SMS como segundo canal (hoy solo funciona correo).
