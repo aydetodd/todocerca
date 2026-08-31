@@ -24,10 +24,10 @@ Cuando recuperes o repongas tu teléfono: entras normal (teléfono + clave), pid
 ## Mejoras sobre tu idea
 
 - El botón no vive escondido: aparece también en la **pantalla de inicio de sesión** ("¿Perdiste tu teléfono?"), por si el amigo no tiene cuenta abierta.
-- Se agrega **código al correo** además de la clave: si alguien te vio teclear los 5 números, no le basta.
-- **Bloqueo primero, sesión completa después**: en modo rescate solo puedes proteger la cuenta, no gastar. Si el que "perdió el teléfono" fuera un impostor, no puede sacarte dinero.
+- **Solo teléfono + clave de 5 dígitos**: nadie más conoce tu clave, así que no se pide código de correo (además, tu correo está en el teléfono perdido).
+- **Bloqueo primero, sesión completa después**: en modo rescate solo puedes proteger la cuenta, no gastar. Si el que "perdió el teléfono" fuera un impostor, no puede sacarte dinero ni ver tus datos financieros.
 - **Aviso al correo** cada vez que se usa modo rescate, con la hora y la ciudad aproximada.
-- **Límite anti-abuso**: 3 intentos de rescate por cuenta cada hora; después espera 30 minutos.
+- **Límite anti-abuso**: 5 intentos fallidos de clave = espera de 15 minutos; 3 rescates por cuenta cada hora.
 - El teléfono prestado queda **limpio**: sesión temporal en memoria, no en el almacenamiento permanente.
 
 ## Detalles técnicos
