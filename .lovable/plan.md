@@ -6,9 +6,8 @@ Objetivo: si pierdes tu teléfono, puedes entrar desde CUALQUIER teléfono prest
 
 1. Le pides el teléfono a alguien. En la app de esa persona, en su perfil, hay un botón: **"¿Perdiste tu teléfono? Entrar en modo rescate"**.
 2. Al tocarlo, la app abre una pantalla limpia (modo invitado). **No cierra la sesión del dueño del teléfono**: su sesión queda guardada y regresa sola cuando terminas.
-3. Te pide **teléfono + tu clave de 5 números**.
-4. Te llega un **código de 6 dígitos a tu correo** (el correo verificado de tu cuenta). Lo escribes.
-5. Entras en **sesión temporal de rescate**:
+3. Te pide **teléfono + tu clave de 5 números**. Eso es todo: **sin código de correo** (tu correo está en el teléfono perdido, así que no se exige).
+4. Entras en **sesión temporal de rescate**:
    - Dura **15 minutos**, con contador visible.
    - El teléfono prestado **nunca queda como dispositivo de confianza**.
    - Se muestra un banner rojo: "Sesión de rescate en teléfono prestado. Se cerrará sola en 14:32".
