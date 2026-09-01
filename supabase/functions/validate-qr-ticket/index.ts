@@ -197,6 +197,21 @@ serve(async (req) => {
       });
     }
 
+    // 1.5 Cuenta bloqueada (modo rescate): el QR no valida
+    if (ticket.user_id) {
+      const { data: bloq } = await supabaseAdmin.rpc("cuenta_esta_bloqueada", { _user_id: ticket.user_id });
+      if (bloq === true) {
+        return new Response(JSON.stringify({
+          valid: false,
+          error_type: "blocked",
+          message: "CUENTA BLOQUEADA por el titular (teléfono reportado perdido)",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
     // 2. Check if already used → FRAUD ALERT
     if (ticket.status === "used") {
       // Get original usage details
