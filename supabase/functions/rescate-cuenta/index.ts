@@ -120,7 +120,7 @@ serve(async (req) => {
       // También el correo real del perfil por si migró
       const { data: prof } = await admin
         .from("profiles")
-        .select("email, full_name")
+        .select("email, nombre")
         .eq("user_id", userId)
         .maybeSingle();
       if (prof?.email && !emailCandidatos.includes(prof.email)) emailCandidatos.push(prof.email);
@@ -147,7 +147,7 @@ serve(async (req) => {
 
       // Marcar sesión de rescate: no toca trusted_devices ni la sesión única
       await registrarIntento(admin, userId, telefono, "entrar", "ok", ip);
-      const nombre = prof?.full_name || "usuario";
+      const nombre = prof?.nombre || "usuario";
       await enviarCorreo(
         emailCandidatos.find((e) => !e.endsWith("@todocerca.app")) || "",
         "Se usó el modo rescate en tu cuenta TodoCerca",
@@ -219,7 +219,7 @@ serve(async (req) => {
     if (accion === "solicitar_codigo_desbloqueo") {
       const { data: prof } = await admin
         .from("profiles")
-        .select("email, full_name")
+        .select("email, nombre")
         .eq("user_id", user.id)
         .maybeSingle();
       const destino = prof?.email;
@@ -243,7 +243,7 @@ serve(async (req) => {
       await enviarCorreo(
         destino,
         "Tu código para desbloquear tu cuenta TodoCerca",
-        `<p>Hola ${prof?.full_name || "usuario"},</p><p>Tu código de desbloqueo es:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px">${codigo}</p><p>Vence en 10 minutos.</p>`
+        `<p>Hola ${prof?.nombre || "usuario"},</p><p>Tu código de desbloqueo es:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px">${codigo}</p><p>Vence en 10 minutos.</p>`
       );
       await registrarIntento(admin, user.id, "", "solicitar_codigo_desbloqueo", "ok", ip);
       return json({ ok: true, email_mask: destino.replace(/^(.{2}).+(@.+)$/, "$1***$2") });

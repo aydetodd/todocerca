@@ -32,6 +32,9 @@ serve(async (req) => {
     const comercio = userData.user;
     if (!comercio) throw new Error("No autenticado");
 
+    const { data: comercioBloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: comercio.id });
+    if (comercioBloq === true) return jsonErr("Tu cuenta está bloqueada por seguridad. Desbloquéala desde tu teléfono.", "bloqueada", { color: "rojo" });
+
     const body = await req.json();
     const qardNumberRaw = String(body.qard_number || "").replace(/\D/g, "");
     const monto = Number(body.monto_mxn);
@@ -83,6 +86,10 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!sub) return jsonErr("Tarjeta no encontrada", "no_existe");
+    const { data: pagadorBloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: sub.titular_user_id });
+    if (pagadorBloq === true) {
+      return jsonErr("CUENTA BLOQUEADA por el titular (teléfono reportado perdido)", "bloqueada", { color: "rojo" });
+    }
     if (sub.estado === "cancelada") {
       return jsonErr("TARJETA CANCELADA", "cancelada", { color: "rojo" });
     }
