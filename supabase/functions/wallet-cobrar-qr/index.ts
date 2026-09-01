@@ -90,6 +90,10 @@ serve(async (req) => {
     const nuevoSaldo = saldoActual - monto;
     const nowIso = new Date().toISOString();
     const titularId = isEje ? ejeWallet.user_id : sub.titular_user_id;
+    const { data: titularBloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: titularId });
+    if (titularBloq === true) {
+      throw new Error("CUENTA BLOQUEADA por el titular (teléfono reportado perdido)");
+    }
     const walletId = isEje ? ejeWallet.id : sub.wallet_id;
     const aliasLog = isEje ? `Cuenta Eje (${ejeWallet.folio_corto})` : `${sub.alias} (${sub.folio_corto})`;
 

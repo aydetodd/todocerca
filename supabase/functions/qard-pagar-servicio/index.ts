@@ -41,6 +41,9 @@ serve(async (req) => {
     const user = userData.user;
     if (!user) throw new Error("No autenticado");
 
+    const { data: bloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: user.id });
+    if (bloq === true) throw new Error("Tu cuenta está bloqueada por seguridad. Desbloquéala desde tu teléfono.");
+
     const body = await req.json();
     const servicioId = String(body.servicio_id || "").trim();
     const referencia = String(body.referencia || "").trim();

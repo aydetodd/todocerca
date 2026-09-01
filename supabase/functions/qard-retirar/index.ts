@@ -31,6 +31,9 @@ serve(async (req) => {
     const user = userData.user;
     if (!user) throw new Error("No autenticado");
 
+    const { data: bloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: user.id });
+    if (bloq === true) return err("Tu cuenta está bloqueada por seguridad. Desbloquéala desde tu teléfono.");
+
     const body = await req.json();
     const metodo = String(body.metodo || "").toLowerCase();
     const monto = Number(body.monto_mxn);
