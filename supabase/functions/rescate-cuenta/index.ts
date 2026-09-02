@@ -18,6 +18,14 @@ const json = (data: unknown, status = 200) =>
 
 const normalizePhone = (p: string) => p.replace(/\D/g, "");
 
+// Formato canónico TodoCerca: clave de país + 10 dígitos (México: +52XXXXXXXXXX)
+const toCanonical = (digits: string, defaultCc = "52"): string => {
+  if (digits.length === 10) return `${defaultCc}${digits}`;
+  if (digits.length === 13 && digits.startsWith(`${defaultCc}1`)) return `${defaultCc}${digits.slice(3)}`;
+  if (digits.length === 12 && digits.startsWith(defaultCc)) return digits;
+  return digits;
+};
+
 const claveToPassword = (clave: string) => `QaRd-${clave}-TC`;
 
 async function enviarCorreo(to: string, subject: string, html: string): Promise<void> {
@@ -76,10 +84,12 @@ serve(async (req) => {
         userId = String((found as Record<string, unknown>).user_id);
       }
       if (!userId) {
-        // El teléfono puede estar guardado en varios formatos: 6621234567, 5266..., +5266...
+        // Formato oficial: clave país + 10 dígitos (México: +52XXXXXXXXXX).
+        // Se prioriza el canónico; las variantes legacy son fallback para datos viejos.
         const last10 = telefono.slice(-10);
+        const canon = toCanonical(telefono);
         const variantes = Array.from(
-          new Set([telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `+52${last10}`, `521${last10}`, `+521${last10}`])
+          new Set([`+${canon}`, canon, telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `521${last10}`, `+521${last10}`])
         );
         const filtro = variantes
           .flatMap((v) => [`phone.eq.${v}`, `telefono.eq.${v}`])
