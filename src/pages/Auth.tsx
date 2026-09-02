@@ -964,6 +964,13 @@ const Auth = () => {
             </form>
           </CardContent>
         </Card>
+        <Button
+          variant="link"
+          className="w-full text-muted-foreground text-sm"
+          onClick={() => navigate("/rescate")}
+        >
+          ¿Perdiste tu teléfono? Bloquea tu cuenta
+        </Button>
       </div>
     </div>
   );
