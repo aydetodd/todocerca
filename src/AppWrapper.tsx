@@ -77,6 +77,8 @@ import { ClaveUniversalGate } from "@/components/ClaveUniversalGate";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MiTrazabilidad from "./pages/MiTrazabilidad";
 import { AccessGate } from "@/components/AccessGate";
+import { CuentaBloqueadaGate } from "@/components/CuentaBloqueadaGate";
+import Rescate from "./pages/Rescate";
 import { useDeviceVerification } from "@/hooks/useDeviceVerification";
 import { useSingleSession } from "@/hooks/useSingleSession";
 
@@ -88,7 +90,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/"];
+const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/"];
 
 const AccessGateProvider = () => {
   const location = useLocation();
@@ -164,6 +166,8 @@ export default function AppWrapper() {
         <AdminFloatingButton />
         <TestigoFloatingButton />
         <ClaveUniversalGate />
+        {/* Candado global si la cuenta fue bloqueada desde modo rescate */}
+        <CuentaBloqueadaGate />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<MainHome />} />
@@ -176,6 +180,7 @@ export default function AppWrapper() {
           <Route path="/pase/:codigo" element={<PaseEvento />} />
           <Route path="/validar-evento" element={<ValidarEvento />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/rescate" element={<Rescate />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route path="/dashboard" element={<Dashboard />} />
