@@ -84,10 +84,12 @@ serve(async (req) => {
         userId = String((found as Record<string, unknown>).user_id);
       }
       if (!userId) {
-        // El teléfono puede estar guardado en varios formatos: 6621234567, 5266..., +5266...
+        // Formato oficial: clave país + 10 dígitos (México: +52XXXXXXXXXX).
+        // Se prioriza el canónico; las variantes legacy son fallback para datos viejos.
         const last10 = telefono.slice(-10);
+        const canon = toCanonical(telefono);
         const variantes = Array.from(
-          new Set([telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `+52${last10}`, `521${last10}`, `+521${last10}`])
+          new Set([`+${canon}`, canon, telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `521${last10}`, `+521${last10}`])
         );
         const filtro = variantes
           .flatMap((v) => [`phone.eq.${v}`, `telefono.eq.${v}`])
