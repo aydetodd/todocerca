@@ -18,6 +18,14 @@ const json = (data: unknown, status = 200) =>
 
 const normalizePhone = (p: string) => p.replace(/\D/g, "");
 
+// Formato canónico TodoCerca: clave de país + 10 dígitos (México: +52XXXXXXXXXX)
+const toCanonical = (digits: string, defaultCc = "52"): string => {
+  if (digits.length === 10) return `${defaultCc}${digits}`;
+  if (digits.length === 13 && digits.startsWith(`${defaultCc}1`)) return `${defaultCc}${digits.slice(3)}`;
+  if (digits.length === 12 && digits.startsWith(defaultCc)) return digits;
+  return digits;
+};
+
 const claveToPassword = (clave: string) => `QaRd-${clave}-TC`;
 
 async function enviarCorreo(to: string, subject: string, html: string): Promise<void> {
