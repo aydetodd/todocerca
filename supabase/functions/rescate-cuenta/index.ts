@@ -76,14 +76,23 @@ serve(async (req) => {
         userId = String((found as Record<string, unknown>).user_id);
       }
       if (!userId) {
+        // El teléfono puede estar guardado en varios formatos: 6621234567, 5266..., +5266...
+        const last10 = telefono.slice(-10);
+        const variantes = Array.from(
+          new Set([telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `+52${last10}`, `521${last10}`, `+521${last10}`])
+        );
+        const filtro = variantes
+          .flatMap((v) => [`phone.eq.${v}`, `telefono.eq.${v}`])
+          .join(",");
         const { data: prof } = await admin
           .from("profiles")
           .select("user_id")
-          .or(`phone.eq.${telefono},telefono.eq.${telefono}`)
+          .or(filtro)
           .limit(1)
           .maybeSingle();
         userId = prof?.user_id ?? null;
       }
+
       if (!userId) {
         await registrarIntento(admin, null, telefono, "entrar", "telefono_no_existe", ip);
         return json({ error: "No encontramos una cuenta con ese teléfono" }, 404);
@@ -113,10 +122,15 @@ serve(async (req) => {
 
       // Email sintético por teléfono (mismo patrón que el login)
       const digits = telefono;
-      emailCandidatos = [`${digits}@todocerca.app`];
-      if (digits.startsWith("52") && digits.length > 10) {
-        emailCandidatos.push(`${digits.slice(2)}@todocerca.app`);
-      }
+      const last10digits = digits.slice(-10);
+      emailCandidatos = Array.from(
+        new Set([
+          `${digits}@todocerca.app`,
+          `${last10digits}@todocerca.app`,
+          `52${last10digits}@todocerca.app`,
+        ])
+      );
+
       // También el correo real del perfil por si migró
       const { data: prof } = await admin
         .from("profiles")
