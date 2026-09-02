@@ -122,10 +122,15 @@ serve(async (req) => {
 
       // Email sintético por teléfono (mismo patrón que el login)
       const digits = telefono;
-      emailCandidatos = [`${digits}@todocerca.app`];
-      if (digits.startsWith("52") && digits.length > 10) {
-        emailCandidatos.push(`${digits.slice(2)}@todocerca.app`);
-      }
+      const last10digits = digits.slice(-10);
+      emailCandidatos = Array.from(
+        new Set([
+          `${digits}@todocerca.app`,
+          `${last10digits}@todocerca.app`,
+          `52${last10digits}@todocerca.app`,
+        ])
+      );
+
       // También el correo real del perfil por si migró
       const { data: prof } = await admin
         .from("profiles")
