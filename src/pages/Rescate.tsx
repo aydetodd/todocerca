@@ -121,7 +121,7 @@ const Rescate = () => {
             <form onSubmit={entrar} className="space-y-4">
               <div className="space-y-2">
                 <Label>Tu teléfono</Label>
-                <PhoneInput value={telefono} onChange={setTelefono} autoFocus />
+                <PhoneInput value={telefono} onChange={setTelefono} />
               </div>
               <div className="space-y-2">
                 <Label>Tu clave de 5 números</Label>
