@@ -76,14 +76,23 @@ serve(async (req) => {
         userId = String((found as Record<string, unknown>).user_id);
       }
       if (!userId) {
+        // El teléfono puede estar guardado en varios formatos: 6621234567, 5266..., +5266...
+        const last10 = telefono.slice(-10);
+        const variantes = Array.from(
+          new Set([telefono, `+${telefono}`, last10, `+${last10}`, `52${last10}`, `+52${last10}`, `521${last10}`, `+521${last10}`])
+        );
+        const filtro = variantes
+          .flatMap((v) => [`phone.eq.${v}`, `telefono.eq.${v}`])
+          .join(",");
         const { data: prof } = await admin
           .from("profiles")
           .select("user_id")
-          .or(`phone.eq.${telefono},telefono.eq.${telefono}`)
+          .or(filtro)
           .limit(1)
           .maybeSingle();
         userId = prof?.user_id ?? null;
       }
+
       if (!userId) {
         await registrarIntento(admin, null, telefono, "entrar", "telefono_no_existe", ip);
         return json({ error: "No encontramos una cuenta con ese teléfono" }, 404);
