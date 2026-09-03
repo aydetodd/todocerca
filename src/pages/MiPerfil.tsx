@@ -339,6 +339,15 @@ export default function MiPerfil() {
           </Link>
         </Button>
 
+        <Button asChild variant="outline" className="mt-3 min-h-12 w-full max-w-2xl text-base">
+          <Link to="/suscripciones">
+            <MapIcon className="h-4 w-4 mr-2" />
+            Mis suscripciones
+          </Link>
+        </Button>
+
+
+
         {/* Cambiar contraseña */}
         <div className="mt-6">
           <ChangePassword />
