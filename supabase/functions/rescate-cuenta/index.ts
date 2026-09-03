@@ -243,7 +243,7 @@ serve(async (req) => {
     if (accion === "solicitar_codigo_desbloqueo") {
       const { data: prof } = await admin
         .from("profiles")
-        .select("email, nombre")
+        .select("email, nombre, telefono")
         .eq("user_id", user.id)
         .maybeSingle();
       const destino = prof?.email;
@@ -256,14 +256,21 @@ serve(async (req) => {
         .update({ used: true })
         .eq("user_id", user.id)
         .eq("device_fingerprint", "desbloqueo");
-      await admin.from("device_verification_codes").insert({
+      const { error: insErr } = await admin.from("device_verification_codes").insert({
         user_id: user.id,
         device_fingerprint: "desbloqueo",
         code: codigo,
+        phone: prof?.telefono || "",
+        destination_email: destino,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
         used: false,
         attempts: 0,
       });
+      if (insErr) {
+        console.error("insert codigo desbloqueo", insErr.message);
+        return json({ error: "No se pudo generar el código. Intenta de nuevo." }, 500);
+      }
+
       await enviarCorreo(
         destino,
         "Tu código para desbloquear tu cuenta TodoCerca",
