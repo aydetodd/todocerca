@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Briefcase, Trash2, LogOut, Map as MapIcon, ShieldAlert } from 'lucide-react';
+import { Users, Briefcase, Trash2, LogOut, Map as MapIcon, ShieldAlert, CreditCard } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Link } from 'react-router-dom';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -341,7 +341,7 @@ export default function MiPerfil() {
 
         <Button asChild variant="outline" className="mt-3 min-h-12 w-full max-w-2xl text-base">
           <Link to="/suscripciones">
-            <MapIcon className="h-4 w-4 mr-2" />
+            <CreditCard className="h-4 w-4 mr-2" />
             Mis suscripciones
           </Link>
         </Button>
