@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
 import Proximamente from "./pages/Proximamente";
+import Suscripciones from "./pages/Suscripciones";
 import Panel from "./pages/Panel";
 import AdminQuickAccess from "./pages/AdminQuickAccess";
 import Index from "./pages/Index";
@@ -250,6 +251,7 @@ export default function AppWrapper() {
           <Route path="/flota-monitoreo" element={<FlotaMonitoreo />} />
           <Route path="/panel-maquiladora" element={<PanelMaquiladora />} />
           <Route path="/proximamente" element={<Proximamente />} />
+          <Route path="/suscripciones" element={<Suscripciones />} />
           <Route path="/:consecutiveNumber" element={<ProviderProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
