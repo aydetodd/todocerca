@@ -324,7 +324,6 @@ export default function MiTrazabilidad() {
                 <MapContainer key="traza-map" center={centro} zoom={13} className="h-full w-full" scrollWheelZoom>
                   <AjustarMapa puntos={filtrados} />
                   <TileLayer
-                    attribution='&copy; OpenStreetMap'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   {linea.length > 1 && <Polyline positions={linea} pathOptions={{ color: "#dc2626", weight: 3 }} />}

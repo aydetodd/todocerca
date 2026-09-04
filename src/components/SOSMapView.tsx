@@ -44,7 +44,6 @@ const SOSMapView = ({ latitude, longitude, senderName }: SOSMapViewProps) => {
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Marker

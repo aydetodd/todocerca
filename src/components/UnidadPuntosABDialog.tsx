@@ -69,7 +69,7 @@ export default function UnidadPuntosABDialog({ open, onOpenChange, unidadId, uni
     // Pequeño delay para asegurar que el contenedor tenga tamaño
     const t = setTimeout(() => {
       if (!containerRef.current || mapRef.current) return;
-      const map = L.map(containerRef.current, { center: [23.6345, -102.5528], zoom: 5 });
+      const map = L.map(containerRef.current, { center: [23.6345, -102.5528], zoom: 5, attributionControl: false });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       if (navigator.geolocation && !stateRef.current.puntoA && !stateRef.current.puntoB) {
