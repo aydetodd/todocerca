@@ -36,6 +36,7 @@ export function ContractGeofencePicker({ origen, destino, radio, onChange }: Con
     const map = L.map(containerRef.current, {
       center: [23.6345, -102.5528],
       zoom: 5,
+      attributionControl: false,
     });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
     mapRef.current = map;

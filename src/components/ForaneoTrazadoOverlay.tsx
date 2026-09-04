@@ -70,9 +70,8 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
   // Inicializar mapa
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
-    const map = L.map(mapRef.current, { zoomControl: true }).setView([23.6345, -102.5528], 5);
+    const map = L.map(mapRef.current, { zoomControl: true, attributionControl: false }).setView([23.6345, -102.5528], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
       maxZoom: 19,
     }).addTo(map);
     mapInstance.current = map;
