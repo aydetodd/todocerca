@@ -147,8 +147,7 @@ export default function MainHome() {
                 <p className="text-sm text-muted-foreground">Crea eventos y valida boletos QR</p>
               </div>
             </CardContent>
-          </Card>
-        )}
+        </Card>
 
       </main>
 
