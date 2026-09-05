@@ -134,11 +134,10 @@ export default function MainHome() {
           </Card>
         )}
 
-        {isEmpresaTransporte && (
-          <Card
-            className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-            onClick={() => navigate('/eventos')}
-          >
+        <Card
+          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+          onClick={() => navigate('/eventos')}
+        >
             <CardContent className="p-5 flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Calendar className="h-7 w-7 text-primary" />
