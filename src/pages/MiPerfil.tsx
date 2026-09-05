@@ -244,6 +244,30 @@ export default function MiPerfil() {
           </div>
         </div>
 
+        <nav aria-label="Servicios del perfil" className="mb-6 grid max-w-2xl grid-cols-2 gap-3">
+          <Link
+            to="/eventos"
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-4 text-center transition-colors hover:bg-primary/10"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Calendar className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <span className="font-semibold text-foreground">Eventos y accesos</span>
+            <span className="text-xs text-muted-foreground">Registrar o administrar</span>
+          </Link>
+
+          <Link
+            to="/suscripciones"
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card p-4 text-center transition-colors hover:bg-accent"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground">
+              <CreditCard className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <span className="font-semibold text-foreground">Mis suscripciones</span>
+            <span className="text-xs text-muted-foreground">Ver estado y activar</span>
+          </Link>
+        </nav>
+
         <Card className="max-w-2xl">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -338,22 +362,6 @@ export default function MiPerfil() {
             Ver mi mapa de trazabilidad
           </Link>
         </Button>
-
-        <Button asChild variant="outline" className="mt-3 min-h-12 w-full max-w-2xl text-base">
-          <Link to="/suscripciones">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Mis suscripciones
-          </Link>
-        </Button>
-
-        <Button asChild variant="outline" className="mt-3 min-h-12 w-full max-w-2xl text-base">
-          <Link to="/eventos">
-            <Calendar className="h-4 w-4 mr-2" />
-            Eventos y accesos
-          </Link>
-        </Button>
-
-
 
         {/* Cambiar contraseña */}
         <div className="mt-6">
