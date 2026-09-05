@@ -134,20 +134,8 @@ export default function MainHome() {
           </Card>
         )}
 
-        <Card
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/eventos')}
-        >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Calendar className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Eventos y accesos</h3>
-                <p className="text-sm text-muted-foreground">Crea eventos y valida boletos QR</p>
-              </div>
-            </CardContent>
-        </Card>
+
+
 
       </main>
 
