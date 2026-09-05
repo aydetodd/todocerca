@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Ticket, Building2, ShieldCheck, Calendar } from 'lucide-react';
+import { Bus, Ticket, Building2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -134,20 +134,8 @@ export default function MainHome() {
           </Card>
         )}
 
-        <Card
-          className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
-          onClick={() => navigate('/eventos')}
-        >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Calendar className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">Eventos y accesos</h3>
-                <p className="text-sm text-muted-foreground">Crea eventos y valida boletos QR</p>
-              </div>
-            </CardContent>
-        </Card>
+
+
 
       </main>
 
