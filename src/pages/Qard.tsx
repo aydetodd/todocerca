@@ -549,6 +549,14 @@ export default function Qard() {
           <Input type="number" min={300} step={50} value={monto} disabled={!activa} onChange={e => setMonto(e.target.value)} />
           <Button onClick={recargar} disabled={!activa || Number(monto) < 300}><Plus className="h-4 w-4 mr-1" /> Recargar QaRd pesos</Button>
         </div>
+        <Button
+          variant="outline"
+          className="w-full mt-2"
+          disabled={!activa}
+          onClick={() => nav("/qard/recargar")}
+        >
+          <Landmark className="h-4 w-4 mr-2" /> Recargar por transferencia (SPEI)
+        </Button>
         <div className="text-xs text-muted-foreground mt-1">El mínimo de recarga es de 300 pesos por 300 QaRd pesos. 1 QaRd peso = 1 peso mexicano.</div>
         {activa && limite && limite.tope !== null && (
           <div className="mt-3">
