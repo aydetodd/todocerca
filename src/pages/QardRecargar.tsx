@@ -22,9 +22,9 @@ type Deposito = {
   monto_mxn: number;
   concepto: string | null;
   clave_rastreo: string | null;
-  ordenante_nombre: string | null;
+  nombre_ordenante: string | null;
   estado: string;
-  motivo_rechazo: string | null;
+  motivo: string | null;
   created_at: string;
 };
 
@@ -59,7 +59,7 @@ export default function QardRecargar() {
     }
     const { data: deps } = await supabase
       .from("stp_depositos")
-      .select("id, monto_mxn, concepto, clave_rastreo, ordenante_nombre, estado, motivo_rechazo, created_at")
+      .select("id, monto_mxn, concepto, clave_rastreo, nombre_ordenante, estado, motivo, created_at")
       .order("created_at", { ascending: false })
       .limit(20);
     setDepositos((deps as Deposito[]) ?? []);
@@ -203,15 +203,15 @@ export default function QardRecargar() {
                         <div className={`text-xs font-medium ${est.cls}`}>{est.label}</div>
                         <div className="text-[11px] text-muted-foreground truncate">
                           {formatHermosillo(d.created_at)}
-                          {d.ordenante_nombre ? ` · ${d.ordenante_nombre}` : ""}
+                          {d.nombre_ordenante ? ` · ${d.nombre_ordenante}` : ""}
                         </div>
                         {d.clave_rastreo && (
                           <div className="text-[10px] text-muted-foreground font-mono truncate">
                             Rastreo: {d.clave_rastreo}
                           </div>
                         )}
-                        {d.estado === "rechazado" && d.motivo_rechazo && (
-                          <div className="text-[11px] text-destructive">{d.motivo_rechazo}</div>
+                        {d.estado === "rechazado" && d.motivo && (
+                          <div className="text-[11px] text-destructive">{d.motivo}</div>
                         )}
                       </div>
                       <div className="text-sm font-semibold whitespace-nowrap">${d.monto_mxn.toFixed(2)}</div>
