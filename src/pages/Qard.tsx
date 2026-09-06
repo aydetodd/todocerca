@@ -11,13 +11,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadCSV } from "@/lib/csvExport";
-import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
+
 import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
 import { formatHermosillo } from "@/lib/utils";
-const todocercaLogo = todocercaLogoAsset.url;
+const todocercaLogo = "/icon-512.png";
 
 
 

@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
-import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
+const todocercaLogoUrl = "/icon-512.png";
 
 // ISO/IEC 7810 ID-1: 85.60 × 53.98 mm
 const CARD_W = 85.6;
@@ -94,7 +94,7 @@ async function qrDataUrl(value: string, rotated: boolean) {
 
 async function loadLogo(): Promise<string | null> {
   try {
-    const res = await fetch((todocercaLogoAsset as any).url);
+    const res = await fetch(todocercaLogoUrl);
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
       const fr = new FileReader();
