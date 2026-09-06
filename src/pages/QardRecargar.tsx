@@ -22,9 +22,9 @@ type Deposito = {
   monto_mxn: number;
   concepto: string | null;
   clave_rastreo: string | null;
-  ordenante_nombre: string | null;
+  nombre_ordenante: string | null;
   estado: string;
-  motivo_rechazo: string | null;
+  motivo: string | null;
   created_at: string;
 };
 
