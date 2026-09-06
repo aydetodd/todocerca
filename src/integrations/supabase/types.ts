@@ -5011,6 +5011,137 @@ export type Database = {
         }
         Relationships: []
       }
+      stp_config: {
+        Row: {
+          beneficiario: string | null
+          clabe_maestra: string | null
+          created_at: string
+          id: boolean
+          last_reconciliation: string | null
+          stp_balance: number
+          updated_at: string
+          valor_udi_mxn: number
+        }
+        Insert: {
+          beneficiario?: string | null
+          clabe_maestra?: string | null
+          created_at?: string
+          id?: boolean
+          last_reconciliation?: string | null
+          stp_balance?: number
+          updated_at?: string
+          valor_udi_mxn?: number
+        }
+        Update: {
+          beneficiario?: string | null
+          clabe_maestra?: string | null
+          created_at?: string
+          id?: boolean
+          last_reconciliation?: string | null
+          stp_balance?: number
+          updated_at?: string
+          valor_udi_mxn?: number
+        }
+        Relationships: []
+      }
+      stp_depositos: {
+        Row: {
+          banco_ordenante: string | null
+          clabe_destino: string | null
+          clabe_ordenante: string | null
+          clave_rastreo: string
+          concepto: string | null
+          created_at: string
+          estado: string
+          id: string
+          monto_mxn: number
+          motivo: string | null
+          nombre_ordenante: string | null
+          procesado_at: string | null
+          qard_number: string | null
+          stp_response: Json
+          updated_at: string
+          user_id: string | null
+          webhook_received_at: string
+        }
+        Insert: {
+          banco_ordenante?: string | null
+          clabe_destino?: string | null
+          clabe_ordenante?: string | null
+          clave_rastreo: string
+          concepto?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_mxn: number
+          motivo?: string | null
+          nombre_ordenante?: string | null
+          procesado_at?: string | null
+          qard_number?: string | null
+          stp_response?: Json
+          updated_at?: string
+          user_id?: string | null
+          webhook_received_at?: string
+        }
+        Update: {
+          banco_ordenante?: string | null
+          clabe_destino?: string | null
+          clabe_ordenante?: string | null
+          clave_rastreo?: string
+          concepto?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_mxn?: number
+          motivo?: string | null
+          nombre_ordenante?: string | null
+          procesado_at?: string | null
+          qard_number?: string | null
+          stp_response?: Json
+          updated_at?: string
+          user_id?: string | null
+          webhook_received_at?: string
+        }
+        Relationships: []
+      }
+      stp_webhook_log: {
+        Row: {
+          created_at: string
+          deposito_id: string | null
+          firma_valida: boolean
+          id: string
+          ip: string | null
+          payload: Json
+          resultado: string | null
+        }
+        Insert: {
+          created_at?: string
+          deposito_id?: string | null
+          firma_valida?: boolean
+          id?: string
+          ip?: string | null
+          payload?: Json
+          resultado?: string | null
+        }
+        Update: {
+          created_at?: string
+          deposito_id?: string | null
+          firma_valida?: boolean
+          id?: string
+          ip?: string | null
+          payload?: Json
+          resultado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stp_webhook_log_deposito_id_fkey"
+            columns: ["deposito_id"]
+            isOneToOne: false
+            referencedRelation: "stp_depositos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sub_qr_saldo: {
         Row: {
           alias: string
@@ -7441,6 +7572,20 @@ export type Database = {
           id: string
         }[]
       }
+      stp_procesar_deposito: {
+        Args: {
+          _banco_ordenante?: string
+          _clabe_destino?: string
+          _clabe_ordenante?: string
+          _clave_rastreo: string
+          _concepto: string
+          _monto: number
+          _nombre_ordenante?: string
+          _payload?: Json
+        }
+        Returns: Json
+      }
+      stp_tope_mensual: { Args: { _user_id: string }; Returns: number }
       unaccent: { Args: { "": string }; Returns: string }
       unlink_producto_from_ruta_maestra: {
         Args: { _producto_id: string }
