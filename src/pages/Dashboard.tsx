@@ -49,6 +49,7 @@ type DashboardSection =
   | "perfil"
   | "suscripcion"
   | "tracking"
+  | "eventos"
   | "productos"
   | "rutas_privadas"
   | "apartados"
@@ -72,7 +73,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
@@ -85,7 +86,7 @@ const Dashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
       window.history.replaceState({}, '', '/dashboard');
@@ -375,6 +376,12 @@ const Dashboard = () => {
           visible: true,
         },
         {
+          key: "eventos" as const,
+          label: "Eventos y accesos",
+          icon: Calendar,
+          visible: true,
+        },
+        {
           key: "empresa" as const,
           label: "Empresa Transporte",
           icon: Building2,
@@ -561,6 +568,26 @@ const Dashboard = () => {
                       </Button>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "eventos" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Eventos y accesos
+                  </CardTitle>
+                  <CardDescription>
+                    Registra un evento o administra tus accesos y boletaje
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full min-h-12 text-base" onClick={() => navigate("/eventos")}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Abrir Eventos y accesos
+                  </Button>
                 </CardContent>
               </Card>
             )}
