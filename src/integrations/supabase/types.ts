@@ -3728,11 +3728,16 @@ export type Database = {
           email_verified: boolean
           estado: string
           id: string
+          monthly_limit_udis: number
           moral_estado: string | null
           nombre_completo: string | null
           phone_verified: boolean
           updated_at: string
           user_id: string
+          verificamex_data_enc: string | null
+          verificamex_status: string | null
+          verification_level: number
+          verified_at: string | null
         }
         Insert: {
           activated_at?: string | null
@@ -3741,11 +3746,16 @@ export type Database = {
           email_verified?: boolean
           estado?: string
           id?: string
+          monthly_limit_udis?: number
           moral_estado?: string | null
           nombre_completo?: string | null
           phone_verified?: boolean
           updated_at?: string
           user_id: string
+          verificamex_data_enc?: string | null
+          verificamex_status?: string | null
+          verification_level?: number
+          verified_at?: string | null
         }
         Update: {
           activated_at?: string | null
@@ -3754,11 +3764,16 @@ export type Database = {
           email_verified?: boolean
           estado?: string
           id?: string
+          monthly_limit_udis?: number
           moral_estado?: string | null
           nombre_completo?: string | null
           phone_verified?: boolean
           updated_at?: string
           user_id?: string
+          verificamex_data_enc?: string | null
+          verificamex_status?: string | null
+          verification_level?: number
+          verified_at?: string | null
         }
         Relationships: []
       }
@@ -6143,6 +6158,36 @@ export type Database = {
           tipo?: string
           updated_at?: string
           url_credencial?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verificamex_logs: {
+        Row: {
+          created_at: string
+          exito: boolean
+          http_status: number | null
+          id: string
+          mensaje: string | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exito?: boolean
+          http_status?: number | null
+          id?: string
+          mensaje?: string | null
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exito?: boolean
+          http_status?: number | null
+          id?: string
+          mensaje?: string | null
+          tipo?: string
           user_id?: string
         }
         Relationships: []
