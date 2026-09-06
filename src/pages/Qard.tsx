@@ -14,6 +14,7 @@ import { downloadCSV } from "@/lib/csvExport";
 import todocercaLogoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
 import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
+import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
 import { formatHermosillo } from "@/lib/utils";
 const todocercaLogo = todocercaLogoAsset.url;
@@ -113,6 +114,8 @@ export default function Qard() {
   const { identidad, limite, activa, recargarDatos } = useQardIdentidad();
   const [activarOpen, setActivarOpen] = useState(false);
   const [moralOpen, setMoralOpen] = useState(false);
+  const [verificarOpen, setVerificarOpen] = useState(false);
+  const nivelVerificacion = identidad?.verification_level ?? 0;
   const estadoUi = ESTADO_UI[identidad?.estado ?? "inactive"];
   const pedirActivacion = () => {
     toast({
@@ -375,6 +378,11 @@ export default function Qard() {
                     <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold tracking-widest ${estadoUi.clase}`}>
                       {estadoUi.label}
                     </span>
+                    {nivelVerificacion > 0 && (
+                      <span className="mt-1 ml-1 inline-block rounded-full border border-emerald-300/60 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-emerald-100">
+                        NIVEL {nivelVerificacion}
+                      </span>
+                    )}
 
                   </div>
                 </div>
@@ -1074,7 +1082,20 @@ export default function Qard() {
         emailVerified={!!identidad?.email_verified}
         onActivada={() => { recargarDatos(); cargar(); }}
       />
+      <VerificarIdentidadDialog
+        open={verificarOpen}
+        onOpenChange={setVerificarOpen}
+        onVerificada={() => { recargarDatos(); cargar(); }}
+      />
       <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
+
+      <Button variant="outline" className="w-full" onClick={() => setVerificarOpen(true)}>
+        {nivelVerificacion === 0
+          ? "Validar mi identidad (CURP)"
+          : nivelVerificacion === 1
+            ? "Subir mi límite a 3,000 UDIS (INE)"
+            : "Identidad verificada · Nivel 2"}
+      </Button>
 
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
