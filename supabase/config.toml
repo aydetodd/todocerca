@@ -145,3 +145,14 @@ verify_jwt = false
 [functions.verify-slot-payment]
 verify_jwt = false
 
+[functions.stp-webhook]
+verify_jwt = false
+
+[functions.stp-referencia]
+verify_jwt = false
+
+[functions.stp-conciliar]
+verify_jwt = false
+
+[functions.stp-consultar-operacion]
+verify_jwt = false
