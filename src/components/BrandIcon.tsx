@@ -1,13 +1,11 @@
-import logoAsset from "@/assets/todocerca-logo.jpeg.asset.json";
-
 interface BrandIconProps {
   className?: string;
 }
 
-/** Icono oficial de TodoCerca (mismo logotipo que la tarjeta QaRd). */
+/** Icono oficial de TodoCerca (pin con bolsa sobre fondo blanco). */
 export const BrandIcon = ({ className = "h-8 w-8" }: BrandIconProps) => (
   <img
-    src={logoAsset.url}
+    src="/icon-512.png"
     alt="TodoCerca"
     className={`${className} rounded-full object-cover bg-white shadow-[var(--shadow-card)]`}
     loading="eager"
