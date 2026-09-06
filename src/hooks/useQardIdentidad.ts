@@ -9,6 +9,8 @@ export type QardIdentidad = {
   curp: string | null;
   phone_verified: boolean;
   email_verified: boolean;
+  verification_level: number;
+  monthly_limit_udis: number;
 };
 
 export type LimiteRecarga = {
@@ -36,10 +38,17 @@ export function useQardIdentidad() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setCargando(false); return; }
 
-    const [{ data: ident }, { data: lim }] = await Promise.all([
+    const [{ data: ident }, { data: lim }, { data: verif }] = await Promise.all([
       supabase.rpc("qard_mi_identidad" as any),
       supabase.rpc("qard_limite_recarga" as any, { _user_id: user.id }),
+      supabase
+        .from("qard_identidad")
+        .select("verification_level, monthly_limit_udis")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
+    const nivel = Number((verif as any)?.verification_level ?? 0);
+    const udis = Number((verif as any)?.monthly_limit_udis ?? 0);
 
     const fila = Array.isArray(ident) ? (ident[0] as any) : (ident as any);
     setIdentidad(
@@ -50,8 +59,10 @@ export function useQardIdentidad() {
             curp: fila.curp ?? null,
             phone_verified: !!fila.phone_verified,
             email_verified: !!fila.email_verified,
+            verification_level: nivel,
+            monthly_limit_udis: udis,
           }
-        : { estado: "inactive", nombre_completo: null, curp: null, phone_verified: false, email_verified: false },
+        : { estado: "inactive", nombre_completo: null, curp: null, phone_verified: false, email_verified: false, verification_level: nivel, monthly_limit_udis: udis },
     );
 
     const filaLim = Array.isArray(lim) ? (lim[0] as any) : (lim as any);
