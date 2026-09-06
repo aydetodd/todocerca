@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, CalendarPlus, Loader2, Plus, QrCode, ScanLine, Share2, UserCheck, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface Validador {
   id: string;
@@ -662,12 +663,8 @@ export default function Eventos() {
               <Input autoFocus value={paseNombre} onChange={(e) => setPaseNombre(e.target.value)} />
             </div>
             <div>
-              <Label>WhatsApp (10 dígitos)</Label>
-              <Input
-                inputMode="numeric"
-                value={paseTel}
-                onChange={(e) => setPaseTel(e.target.value.replace(/\D/g, ""))}
-              />
+              <Label>WhatsApp</Label>
+              <PhoneInput id="pase-telefono" value={paseTel} onChange={setPaseTel} />
             </div>
             <div>
               <Label>Personas que entran con este QR</Label>
@@ -740,8 +737,8 @@ export default function Eventos() {
               <Input autoFocus value={valNombre} onChange={(e) => setValNombre(e.target.value)} />
             </div>
             <div>
-              <Label>WhatsApp (10 dígitos)</Label>
-              <Input inputMode="numeric" value={valTel} onChange={(e) => setValTel(e.target.value.replace(/\D/g, ""))} />
+              <Label>WhatsApp</Label>
+              <PhoneInput id="validador-telefono" value={valTel} onChange={setValTel} />
             </div>
             <p className="text-xs text-muted-foreground">
               Se abrirá WhatsApp con el enlace de acceso. La persona entra con su cuenta TodoCerca y queda ligada a este evento.
