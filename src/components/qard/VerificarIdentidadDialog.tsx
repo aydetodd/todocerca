@@ -208,10 +208,29 @@ export default function VerificarIdentidadDialog({
 
         {paso === "ine" && (
           <div className="space-y-3">
+            {(persona || nombreGuardado || curpGuardada) && (
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm space-y-1">
+                <div className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
+                  <BadgeCheck className="h-4 w-4" /> CURP ya validada
+                </div>
+                <div><span className="text-muted-foreground">Nombre: </span>
+                  {persona
+                    ? [persona.nombres, persona.primerApellido, persona.segundoApellido].filter(Boolean).join(" ")
+                    : nombreGuardado}
+                </div>
+                <div><span className="text-muted-foreground">CURP: </span>
+                  <span className="font-mono">{persona?.curp ?? curpGuardada}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Solo comparamos tu INE con estos datos. No necesitas escribirla otra vez.
+                </div>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
               Toma la foto del frente y del reverso de tu INE. Deben ser JPG o PNG, entre 1 MB y 5 MB,
               con buena luz y sin reflejos.
             </p>
+
             <CapturaFoto titulo="Frente de la INE" valor={frente} onCambio={setFrente} />
             <CapturaFoto titulo="Reverso de la INE" valor={reverso} onCambio={setReverso} />
             <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIneAhora}>
