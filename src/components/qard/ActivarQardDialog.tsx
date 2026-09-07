@@ -375,7 +375,11 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
         {paso === 5 && (
           <div className="space-y-3 text-sm">
-            <p className="font-semibold">📸 Validar tu INE para subir a Nivel 2</p>
+            <p className="font-semibold">📸 Cuenta Titular: valida tu INE</p>
+            <p className="text-muted-foreground">
+              Necesitamos fotos de tu INE para validar tu identidad. Al validarla, tu límite sube a
+              3,000 UDIS (~$24,500 pesos al mes).
+            </p>
             <div className="rounded-lg border p-3 space-y-1">
               <p className="text-muted-foreground text-xs">Tus datos ya están validados:</p>
               <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
@@ -384,28 +388,31 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
             <CapturaFotoIne titulo="Paso 1: foto del FRENTE de tu INE" valor={frente} onCambio={setFrente} />
             <CapturaFotoIne titulo="Paso 2: foto del REVERSO de tu INE" valor={reverso} onCambio={setReverso} />
-            <p className="text-xs text-muted-foreground">Cada foto debe pesar entre 1 MB y 5 MB, en JPG o PNG.</p>
+            <p className="text-xs text-muted-foreground">Cada foto debe ser JPG o PNG y pesar máximo 5 MB.</p>
 
             {errorIne && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
                 <p className="text-sm text-destructive flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {errorIne}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Puedes volver a tomar las fotos (hasta 3 intentos) o continuar con la Cuenta Básica de $10.
+                </p>
               </div>
             )}
 
             <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
               {ocupado
-                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE con Verificamex...</>)
-                : "Enviar para validación"}
+                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE...</>)
+                : "Validar INE ($25 pesos, se cobran en tu primera recarga)"}
             </Button>
             <Button variant="ghost" className="w-full" disabled={ocupado}
               onClick={() => {
-                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Nivel 1. Puedes subir a Nivel 2 después." });
+                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Cuenta Básica ($10). Puedes subir después." });
                 onOpenChange(false);
                 navigate("/qard/recargar");
               }}>
-              Omitir y continuar con Nivel 1
+              Continuar con Cuenta Básica ($10)
             </Button>
           </div>
         )}
