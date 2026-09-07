@@ -7,18 +7,15 @@ const corsHeaders = {
 };
 
 const RUTAS = [
-  "/v2/mx/ine/ocr",
-  "/v2/ocr/ine",
-  "/v2/mx/ine",
-  "/v1/mx/ine/ocr",
-  "/v1/ocr",
-  "/v2/ocr",
-  "/v1/ine",
-  "/v2/mx/cedula",
-  "/v1/ocr/ine-obverse",
   "/v1/scraping/ine",
-  "/v1/documents/ine-obverse",
-  "/v1/kyc/ine-obverse"
+  "/v1/scraping/ine-obverse",
+  "/v1/scraping/ocr-ine",
+  "/v1/scraping/ocr/ine-obverse",
+  "/v1/ocr-ine",
+  "/v1/ine-obverse",
+  "/v1/scraping/lista-nominal",
+  "/v1/scraping/foo-bar-inexistente",
+  "/v1/scraping/renapo-inexistente"
 ];
 
 serve(async (req) => {
