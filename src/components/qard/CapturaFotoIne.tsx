@@ -129,7 +129,6 @@ export default function CapturaFotoIne({
               className="h-[60vh] w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="absolute inset-0 bg-foreground/60" />
               <div className="relative z-10 w-[88%] aspect-[1.586/1] rounded-lg border-4 border-primary ring-2 ring-background shadow-[0_0_0_9999px_hsl(var(--foreground)/0.6)]" />
             </div>
             <p className="absolute left-0 right-0 top-3 z-20 px-4 text-center text-sm font-semibold text-background">
