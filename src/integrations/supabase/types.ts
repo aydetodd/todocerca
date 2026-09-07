@@ -698,6 +698,56 @@ export type Database = {
           },
         ]
       }
+      commission_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          master_qard_id: string
+          original_amount: number | null
+          percentage: number | null
+          qard_number: string | null
+          spei_tracking_key: string | null
+          transaction_type: Database["public"]["Enums"]["commission_type"]
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          master_qard_id: string
+          original_amount?: number | null
+          percentage?: number | null
+          qard_number?: string | null
+          spei_tracking_key?: string | null
+          transaction_type: Database["public"]["Enums"]["commission_type"]
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          master_qard_id?: string
+          original_amount?: number | null
+          percentage?: number | null
+          qard_number?: string | null
+          spei_tracking_key?: string | null
+          transaction_type?: Database["public"]["Enums"]["commission_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_transactions_master_qard_id_fkey"
+            columns: ["master_qard_id"]
+            isOneToOne: false
+            referencedRelation: "master_qard_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteo_pasajeros_alertas: {
         Row: {
           created_at: string
@@ -2832,6 +2882,60 @@ export type Database = {
           },
         ]
       }
+      master_qard_account: {
+        Row: {
+          admin_only: boolean
+          created_at: string
+          current_balance: number
+          description: string
+          id: string
+          is_immutable: boolean
+          is_system_account: boolean
+          last_reconciliation: string | null
+          name: string
+          qard_number: string
+          total_account_openings: number
+          total_commissions_earned: number
+          total_reload_fees: number
+          total_withdrawal_fees: number
+          updated_at: string
+        }
+        Insert: {
+          admin_only?: boolean
+          created_at?: string
+          current_balance?: number
+          description?: string
+          id?: string
+          is_immutable?: boolean
+          is_system_account?: boolean
+          last_reconciliation?: string | null
+          name?: string
+          qard_number?: string
+          total_account_openings?: number
+          total_commissions_earned?: number
+          total_reload_fees?: number
+          total_withdrawal_fees?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_only?: boolean
+          created_at?: string
+          current_balance?: number
+          description?: string
+          id?: string
+          is_immutable?: boolean
+          is_system_account?: boolean
+          last_reconciliation?: string | null
+          name?: string
+          qard_number?: string
+          total_account_openings?: number
+          total_commissions_earned?: number
+          total_reload_fees?: number
+          total_withdrawal_fees?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string | null
@@ -3722,6 +3826,8 @@ export type Database = {
       }
       qard_identidad: {
         Row: {
+          account_opening_fee_amount: number
+          account_opening_fee_pending: boolean
           activated_at: string | null
           created_at: string
           curp_enc: string | null
@@ -3734,12 +3840,16 @@ export type Database = {
           phone_verified: boolean
           updated_at: string
           user_id: string
+          verificamex_curp_validated: boolean
           verificamex_data_enc: string | null
+          verificamex_ine_validated: boolean
           verificamex_status: string | null
           verification_level: number
           verified_at: string | null
         }
         Insert: {
+          account_opening_fee_amount?: number
+          account_opening_fee_pending?: boolean
           activated_at?: string | null
           created_at?: string
           curp_enc?: string | null
@@ -3752,12 +3862,16 @@ export type Database = {
           phone_verified?: boolean
           updated_at?: string
           user_id: string
+          verificamex_curp_validated?: boolean
           verificamex_data_enc?: string | null
+          verificamex_ine_validated?: boolean
           verificamex_status?: string | null
           verification_level?: number
           verified_at?: string | null
         }
         Update: {
+          account_opening_fee_amount?: number
+          account_opening_fee_pending?: boolean
           activated_at?: string | null
           created_at?: string
           curp_enc?: string | null
@@ -3770,7 +3884,9 @@ export type Database = {
           phone_verified?: boolean
           updated_at?: string
           user_id?: string
+          verificamex_curp_validated?: boolean
           verificamex_data_enc?: string | null
+          verificamex_ine_validated?: boolean
           verificamex_status?: string | null
           verification_level?: number
           verified_at?: string | null
@@ -7386,7 +7502,24 @@ export type Database = {
           pp: string
         }[]
       }
+      qard_cobrar_comision: {
+        Args: {
+          _amount: number
+          _clave_rastreo?: string
+          _descripcion?: string
+          _original?: number
+          _percentage?: number
+          _qard_number?: string
+          _tipo: Database["public"]["Enums"]["commission_type"]
+          _user_id: string
+        }
+        Returns: string
+      }
       qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
+      qard_comision_retiro: {
+        Args: { _clave_rastreo?: string; _monto: number; _user_id: string }
+        Returns: number
+      }
       qard_cvv_verificar: {
         Args: { _cvv: string; _qard_number: string; _tipo?: string }
         Returns: boolean
@@ -7604,6 +7737,7 @@ export type Database = {
         | "semaforo"
       citizen_report_status: "active" | "resolved" | "hidden"
       citizen_vote_type: "confirm" | "resolve"
+      commission_type: "account_opening" | "reload_fee" | "withdrawal_fee"
       provider_type: "taxi" | "ruta"
       ruta_solicitud_estado: "pending" | "approved" | "rejected"
       ruta_solicitud_tipo:
@@ -7755,6 +7889,7 @@ export const Constants = {
       ],
       citizen_report_status: ["active", "resolved", "hidden"],
       citizen_vote_type: ["confirm", "resolve"],
+      commission_type: ["account_opening", "reload_fee", "withdrawal_fee"],
       provider_type: ["taxi", "ruta"],
       ruta_solicitud_estado: ["pending", "approved", "rejected"],
       ruta_solicitud_tipo: [
