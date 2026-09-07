@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Camera, Upload, X } from "lucide-react";
@@ -41,17 +41,26 @@ export default function CapturaFotoIne({
   const respaldo = useRef<HTMLInputElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
+  const analisis = useRef<number | null>(null);
+  const luminanciaAnterior = useRef<number[] | null>(null);
+  const cuadrosEstables = useRef(0);
   const [camaraAbierta, setCamaraAbierta] = useState(false);
   const [camaraLista, setCamaraLista] = useState(false);
+  const [estadoMarco, setEstadoMarco] = useState<"acomoda" | "quieto" | "listo">("acomoda");
 
-  const cerrarCamara = () => {
+  const cerrarCamara = useCallback(() => {
+    if (analisis.current !== null) window.clearInterval(analisis.current);
+    analisis.current = null;
     stream.current?.getTracks().forEach(t => t.stop());
     stream.current = null;
+    luminanciaAnterior.current = null;
+    cuadrosEstables.current = 0;
+    setEstadoMarco("acomoda");
     setCamaraLista(false);
     setCamaraAbierta(false);
-  };
+  }, []);
 
-  useEffect(() => () => { stream.current?.getTracks().forEach(t => t.stop()); }, []);
+  useEffect(() => cerrarCamara, [cerrarCamara]);
 
   const abrirCamara = async () => {
     try {
@@ -67,7 +76,7 @@ export default function CapturaFotoIne({
     }
   };
 
-  const tomarFoto = () => {
+  const tomarFoto = useCallback(() => {
     const v = video.current;
     if (!v || !v.videoWidth) return;
     // Recortamos justo el recuadro guía (tamaño de tarjeta, 85.6 x 54 mm)
@@ -84,7 +93,51 @@ export default function CapturaFotoIne({
     const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     cerrarCamara();
     onCambio(dataUrl);
-  };
+  }, [cerrarCamara, onCambio]);
+
+  const iniciarCapturaAutomatica = useCallback(() => {
+    if (analisis.current !== null) window.clearInterval(analisis.current);
+    const canvas = document.createElement("canvas");
+    canvas.width = 96;
+    canvas.height = 60;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
+    analisis.current = window.setInterval(() => {
+      const v = video.current;
+      if (!v || v.readyState < 2 || !v.videoWidth) return;
+      ctx.drawImage(v, v.videoWidth * 0.06, v.videoHeight * 0.18, v.videoWidth * 0.88, v.videoHeight * 0.64, 0, 0, 96, 60);
+      const pixeles = ctx.getImageData(0, 0, 96, 60).data;
+      const grises: number[] = [];
+      let suma = 0;
+      for (let i = 0; i < pixeles.length; i += 16) {
+        const gris = pixeles[i] * 0.299 + pixeles[i + 1] * 0.587 + pixeles[i + 2] * 0.114;
+        grises.push(gris);
+        suma += gris;
+      }
+      const promedio = suma / grises.length;
+      let detalle = 0;
+      for (let i = 1; i < grises.length; i++) detalle += Math.abs(grises[i] - grises[i - 1]);
+      detalle /= Math.max(1, grises.length - 1);
+      const anterior = luminanciaAnterior.current;
+      const movimiento = anterior
+        ? grises.reduce((total, gris, i) => total + Math.abs(gris - anterior[i]), 0) / grises.length
+        : Number.POSITIVE_INFINITY;
+      luminanciaAnterior.current = grises;
+
+      const bienIluminada = promedio > 55 && promedio < 225;
+      const enfocada = detalle > 12;
+      const estable = movimiento < 5;
+      cuadrosEstables.current = bienIluminada && enfocada && estable ? cuadrosEstables.current + 1 : 0;
+      setEstadoMarco(cuadrosEstables.current >= 2 ? "quieto" : "acomoda");
+      if (cuadrosEstables.current >= 4) {
+        setEstadoMarco("listo");
+        window.clearInterval(analisis.current ?? undefined);
+        analisis.current = null;
+        window.setTimeout(tomarFoto, 250);
+      }
+    }, 350);
+  }, [tomarFoto]);
 
   const procesar = async (file?: File | null) => {
     if (!file) return;
@@ -149,22 +202,27 @@ export default function CapturaFotoIne({
                   void node.play().catch(() => undefined);
                 }
               }}
-              onLoadedMetadata={() => setCamaraLista(true)}
+              onLoadedMetadata={() => {
+                setCamaraLista(true);
+                iniciarCapturaAutomatica();
+              }}
               playsInline
               muted
               className="h-[60vh] w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="relative z-10 w-[88%] aspect-[1.586/1] rounded-lg border-4 border-primary ring-2 ring-background shadow-[0_0_0_9999px_hsl(var(--foreground)/0.6)]" />
+               <div className={`relative z-10 w-[88%] aspect-[1.586/1] rounded-lg border-4 ring-2 ring-background shadow-[0_0_0_9999px_hsl(var(--foreground)/0.6)] transition-colors ${estadoMarco === "acomoda" ? "border-primary" : "border-success"}`} />
             </div>
             <p className="absolute left-0 right-0 top-3 z-20 px-4 text-center text-sm font-semibold text-background">
-              Acomoda tu {titulo.toLowerCase()} dentro del recuadro
+               {estadoMarco === "acomoda" && `Acomoda tu ${titulo.toLowerCase()} dentro del recuadro`}
+               {estadoMarco === "quieto" && "No te muevas..."}
+               {estadoMarco === "listo" && "Foto tomada"}
             </p>
           </div>
           <div className="p-3 flex gap-2">
             <Button type="button" variant="outline" className="flex-1" onClick={cerrarCamara}>Cancelar</Button>
             <Button type="button" className="flex-1" disabled={!camaraLista} onClick={tomarFoto}>
-              {camaraLista ? "Tomar foto" : "Abriendo cámara..."}
+               {camaraLista ? "Tomar ahora" : "Abriendo cámara..."}
             </Button>
           </div>
         </DialogContent>
