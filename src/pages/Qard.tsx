@@ -510,6 +510,13 @@ export default function Qard() {
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Titular (nombre legal)</div>
           <div className="font-semibold">{identidad?.nombre_completo ?? "—"}</div>
+
+          {nivelVerificacion === 1 && (
+            <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setVerificarOpen(true)}>
+              Subir mi límite a 3,000 UDIS (INE)
+            </Button>
+          )}
+
           {identidad?.estado === "moral_review" && (
             <div className="text-xs text-amber-600 mt-2">
               Tu solicitud de empresa está en revisión (24 a 48 horas).
