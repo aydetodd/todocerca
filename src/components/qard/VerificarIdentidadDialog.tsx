@@ -106,7 +106,9 @@ function CapturaFoto({
   );
 }
 
-export default function VerificarIdentidadDialog({ open, onOpenChange, onVerificada }: Props) {
+export default function VerificarIdentidadDialog({
+  open, onOpenChange, onVerificada, nivelActual = 0, nombreGuardado, curpGuardada,
+}: Props) {
   const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "listo">("curp");
   const [ocupado, setOcupado] = useState(false);
   const [curp, setCurp] = useState("");
@@ -114,6 +116,16 @@ export default function VerificarIdentidadDialog({ open, onOpenChange, onVerific
   const [nivel, setNivel] = useState(0);
   const [frente, setFrente] = useState<string | null>(null);
   const [reverso, setReverso] = useState<string | null>(null);
+
+  // Si la CURP ya quedó validada (Nivel 1+), pasamos directo a la INE: no la volvemos a pedir.
+  useEffect(() => {
+    if (!open) return;
+    setNivel(nivelActual);
+    setPaso(nivelActual >= 2 ? "listo" : nivelActual >= 1 ? "ine" : "curp");
+    setFrente(null);
+    setReverso(null);
+  }, [open, nivelActual]);
+
 
   const ejecutar = async (fn: () => Promise<void>) => {
     setOcupado(true);
