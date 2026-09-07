@@ -54,6 +54,8 @@ import Qard from "./pages/Qard";
 import QardCobrar from "./pages/QardCobrar";
 import QardServicios from "./pages/QardServicios";
 import QardRecargar from "./pages/QardRecargar";
+import QardMaestra from "./pages/QardMaestra";
+
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
 import HistorialBoletos from "./pages/HistorialBoletos";
