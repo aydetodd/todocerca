@@ -43,7 +43,7 @@ function mismoNombre(a: string, b: string) {
   const pa = norm(a).split(" ").filter(p => p.length > 2);
   const pb = norm(b).split(" ").filter(p => p.length > 2);
   if (!pa.length || !pb.length) return false;
-  const coinciden = pa.filter(p => pb.includes(p)).length;
+  const coinciden = [...new Set(pa)].filter(p => pb.includes(p)).length;
   return coinciden >= Math.min(2, Math.min(pa.length, pb.length));
 }
 
@@ -58,6 +58,29 @@ function extraerCurp(obj: unknown): string {
   const directa = buscar(obj, ["curp"]);
   if (directa) return directa.toUpperCase().replace(/[^A-Z0-9]/g, "");
   return textoProfundo(obj).toUpperCase().match(/[A-Z][AEIOUX][A-Z]{2}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/)?.[0] ?? "";
+}
+
+function normalizarCurp(v: unknown): string {
+  return String(v ?? "").toUpperCase().replace(/[^A-ZÑ0-9]/g, "");
+}
+
+/** El OCR suele confundir O/0, I/1, S/5 y B/8 en las posiciones numéricas de la CURP. */
+function corregirCurpOcr(v: string): string {
+  const chars = normalizarCurp(v).split("");
+  const posicionesNumericas = new Set([4, 5, 6, 7, 8, 9, 17]);
+  const aNumero: Record<string, string> = { O: "0", Q: "0", D: "0", I: "1", L: "1", Z: "2", S: "5", G: "6", B: "8" };
+  return chars.map((c, i) => posicionesNumericas.has(i) ? (aNumero[c] ?? c) : c).join("");
+}
+
+function curpVisibleEnOcr(obj: unknown, curpEsperada: string): boolean {
+  const esperada = corregirCurpOcr(curpEsperada);
+  if (esperada.length !== 18) return false;
+  const texto = normalizarCurp(textoProfundo(obj));
+  if (texto.includes(esperada)) return true;
+  for (let i = 0; i <= texto.length - 18; i++) {
+    if (corregirCurpOcr(texto.slice(i, i + 18)) === esperada) return true;
+  }
+  return false;
 }
 
 function limpiarBase64(v: string) {
@@ -135,7 +158,11 @@ serve(async (req) => {
     if (intentos >= MAX_INTENTOS) {
       return json({ error: "Ya intentaste validar tu INE 3 veces. Tu cuenta sigue activa en Nivel 1. Escríbenos para ayudarte." }, 429);
     }
-    const { data: curpRenapo } = await admin.rpc("qard_dec" as any, { _v: (ident as any).curp_enc });
+    const { data: curpRenapo, error: curpError } = await admin.rpc("qard_dec" as any, { _v: (ident as any).curp_enc });
+    if (curpError || !curpRenapo) {
+      console.error("[INE] No se pudo recuperar la CURP validada", curpError?.message);
+      return json({ error: "No pudimos recuperar tu CURP ya validada. Intenta nuevamente." }, 500);
+    }
     const nombreRenapo = (ident as any).nombre_completo ?? "";
 
     // Guardamos las fotos en el bucket privado (solo auditoría CNBV/UIF)
@@ -194,13 +221,18 @@ serve(async (req) => {
       return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, 400);
     }
 
-    const curpCoincide = !!curpIne && !!curpRenapo && curpIne === String(curpRenapo).toUpperCase();
-    const nombreCoincide = mismoNombre(nombreIne || textoProfundo(ob.data), nombreRenapo);
+    const respuestaCompleta = { obverse: ob.data, reverse: rev.data };
+    const curpEsperada = normalizarCurp(curpRenapo);
+    const curpCoincide = corregirCurpOcr(curpIne) === corregirCurpOcr(curpEsperada)
+      || curpVisibleEnOcr(respuestaCompleta, curpEsperada);
+    // Comparamos contra toda la lectura OCR. Antes un campo genérico llamado "name"
+    // podía impedir que se encontrara el nombre real impreso en la credencial.
+    const nombreCoincide = mismoNombre(textoProfundo(respuestaCompleta), nombreRenapo);
 
     if (!curpCoincide && !nombreCoincide) {
       await admin.from("verificamex_logs").insert({
         user_id: userId, tipo: "ine", exito: false, http_status: 200,
-        mensaje: "Los datos de la INE no coinciden con la CURP validada",
+        mensaje: `No coincidió INE/CURP (curp_extraida=${curpIne.length === 18}, curp_coincide=${curpCoincide}, nombre_extraido=${nombreIne.length > 0}, nombre_coincide=${nombreCoincide})`,
       });
       await admin.from("qard_identidad").update({ verificamex_status: "failed" }).eq("user_id", userId);
       return json({
