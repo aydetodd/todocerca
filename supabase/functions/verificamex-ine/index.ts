@@ -244,7 +244,7 @@ serve(async (req) => {
       await admin.from("qard_identidad").update({ ocr_intentos: intentos + 1 }).eq("user_id", userId);
       crudo = { obverse: ob.data, reverse: rev.data };
       curpIne = extraerCurp(ob.data) || extraerCurp(rev.data)
-        || (buscarPorTipo(respuestaCompleta, ["curp"]) ?? "");
+        || (buscarPorTipo({ obverse: ob.data, reverse: rev.data }, ["curp"]) ?? "");
       nombreIne = [
         buscarPorTipo(ob.data, ["name", "nombre"]) ?? buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
         buscarPorTipo(ob.data, ["fathersurname", "surname", "apellido paterno"]) ?? buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
