@@ -1095,8 +1095,12 @@ export default function Qard() {
       <VerificarIdentidadDialog
         open={verificarOpen}
         onOpenChange={setVerificarOpen}
+        nivelActual={nivelVerificacion}
+        nombreGuardado={identidad?.nombre_completo ?? null}
+        curpGuardada={identidad?.curp ?? null}
         onVerificada={() => { recargarDatos(); cargar(); }}
       />
+
       <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
 
       <Button variant="outline" className="w-full" onClick={() => setVerificarOpen(true)}>
