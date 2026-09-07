@@ -272,12 +272,13 @@ serve(async (req) => {
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
     } else {
       const respuestaNoOcr = !ob.respuestaValida || !rev.respuestaValida;
-      const msg = ob.data?.message || rev.data?.message || (respuestaNoOcr
-        ? "Verificamex no devolvió una lectura OCR válida. No se descontaron intentos; inténtalo nuevamente."
-        : "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
+      const detalleServicio = String(ob.data?.message ?? rev.data?.message ?? ob.texto ?? "").slice(0, 300);
+      const msg = respuestaNoOcr
+        ? "Verificamex no devolvió la lectura de tu INE. No se descontaron intentos; inténtalo nuevamente."
+        : (ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
       await admin.from("verificamex_logs").insert({
         user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
-        mensaje: String(msg).slice(0, 500),
+        mensaje: `frente=${ob.status} reverso=${rev.status} :: ${detalleServicio}`.slice(0, 500),
       });
       return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, respuestaNoOcr ? 502 : 400);
     }
