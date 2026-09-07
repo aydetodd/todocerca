@@ -105,26 +105,93 @@ serve(async (req) => {
     const { data: curpRenapo } = await admin.rpc("qard_dec" as any, { _v: (ident as any).curp_enc });
     const nombreRenapo = (ident as any).nombre_completo ?? "";
 
-    const [ob, rev] = await Promise.all([
-      ocr(base, token, "/v1/ocr/ine-obverse", frente),
-      ocr(base, token, "/v1/ocr/ine-reverse", reverso),
-    ]);
+    // 1) Intentamos el OCR de Verificamex (varias rutas posibles según el plan contratado)
+    const RUTAS_FRENTE = ["/v1/ocr/ine-obverse", "/v1/ocr/ine/obverse", "/v1/ocr/ine-front"];
+    const RUTAS_REVERSO = ["/v1/ocr/ine-reverse", "/v1/ocr/ine/reverse", "/v1/ocr/ine-back"];
 
-    if (!ob.ok || !rev.ok) {
-      const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.";
-      await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
-        mensaje: String(msg).slice(0, 500),
-      });
-      return json({ error: msg }, 400);
+    async function ocrPrimeraQueSirva(rutas: string[], img: string) {
+      let ultimo: Awaited<ReturnType<typeof ocr>> | null = null;
+      for (const r of rutas) {
+        const res = await ocr(base, token!, r, img);
+        ultimo = res;
+        if (res.ok) return res;
+        if (res.status !== 404) return res;
+      }
+      return ultimo!;
     }
 
-    const curpIne = (buscar(ob.data, ["curp"]) ?? buscar(rev.data, ["curp"]) ?? "").toUpperCase();
-    const nombreIne = [
-      buscar(ob.data, ["nombres", "nombre"]) ?? "",
-      buscar(ob.data, ["primerapellido", "apellidopaterno"]) ?? "",
-      buscar(ob.data, ["segundoapellido", "apellidomaterno"]) ?? "",
-    ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto"]) ?? "");
+    let curpIne = "";
+    let nombreIne = "";
+    let fuente = "verificamex";
+    let crudo: unknown = null;
+
+    const [ob, rev] = await Promise.all([
+      ocrPrimeraQueSirva(RUTAS_FRENTE, frente),
+      ocrPrimeraQueSirva(RUTAS_REVERSO, reverso),
+    ]);
+
+    if (ob.ok && rev.ok) {
+      crudo = { obverse: ob.data, reverse: rev.data };
+      curpIne = (buscar(ob.data, ["curp"]) ?? buscar(rev.data, ["curp"]) ?? "").toUpperCase();
+      nombreIne = [
+        buscar(ob.data, ["nombres", "nombre"]) ?? "",
+        buscar(ob.data, ["primerapellido", "apellidopaterno"]) ?? "",
+        buscar(ob.data, ["segundoapellido", "apellidomaterno"]) ?? "",
+      ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto"]) ?? "");
+    } else {
+      // 2) Respaldo: leemos la credencial con lectura visual propia (el OCR de Verificamex no está habilitado)
+      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+      if (!lovableKey) {
+        const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE.";
+        await admin.from("verificamex_logs").insert({
+          user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
+          mensaje: String(msg).slice(0, 500),
+        });
+        return json({ error: msg }, 400);
+      }
+
+      const ai = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.7-flash",
+          messages: [{
+            role: "user",
+            content: [
+              { type: "text", text: "Lee esta credencial para votar (INE) mexicana, frente y reverso. Responde SOLO un JSON con las llaves: curp, nombre_completo, clave_elector. Si un dato no se ve, deja el texto vacío." },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${frente}` } },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${reverso}` } },
+            ],
+          }],
+        }),
+      });
+      const aiTxt = await ai.text();
+      if (!ai.ok) {
+        await admin.from("verificamex_logs").insert({
+          user_id: userId, tipo: "ine", exito: false, http_status: ai.status,
+          mensaje: `Lectura de respaldo falló: ${aiTxt.slice(0, 400)}`,
+        });
+        return json({ error: "No pudimos leer tu INE en este momento. Inténtalo de nuevo en unos minutos." }, ai.status === 429 ? 429 : 400);
+      }
+      let contenido = "";
+      try { contenido = JSON.parse(aiTxt)?.choices?.[0]?.message?.content ?? ""; } catch { contenido = ""; }
+      const limpio = contenido.replace(/```json|```/g, "").trim();
+      let leido: any = {};
+      try { leido = JSON.parse(limpio); } catch { leido = {}; }
+      curpIne = String(leido.curp ?? "").toUpperCase().trim();
+      nombreIne = String(leido.nombre_completo ?? leido.nombre ?? "").trim();
+      fuente = "lectura_visual";
+      crudo = leido;
+
+      if (!curpIne && !nombreIne) {
+        await admin.from("verificamex_logs").insert({
+          user_id: userId, tipo: "ine", exito: false, http_status: 200,
+          mensaje: "No se leyeron datos en las fotos de la INE",
+        });
+        return json({ error: "No pudimos leer los datos de tu INE. Toma las fotos con buena luz, sin reflejos y que la credencial llene el recuadro." }, 400);
+      }
+    }
+
 
     const curpCoincide = !!curpIne && !!curpRenapo && curpIne === String(curpRenapo).toUpperCase();
     const nombreCoincide = mismoNombre(nombreIne, nombreRenapo);
