@@ -119,24 +119,31 @@ serve(async (req) => {
     const nivel = Math.max(nivelActual, 1);
     const limite = nivel >= 2 ? 3000 : 1000;
 
-    const campos = {
+    // solo_validar = true: se guarda la validación pero la tarjeta NO se activa todavía
+    const soloValidar = body?.solo_validar === true;
+
+    const campos: Record<string, unknown> = {
       user_id: userId,
       nombre_completo: nombreCompleto || null,
       curp_enc: curpEnc,
       verification_level: nivel,
       monthly_limit_udis: limite,
       verificamex_status: "verified",
+      verificamex_curp_validated: true,
       verificamex_data_enc: datosEnc,
       verified_at: new Date().toISOString(),
-      estado: "active",
-      activated_at: new Date().toISOString(),
     };
+    if (!soloValidar) {
+      campos.estado = "active";
+      campos.activated_at = new Date().toISOString();
+    }
 
     if (existente) {
       await admin.from("qard_identidad").update(campos).eq("user_id", userId);
     } else {
       await admin.from("qard_identidad").insert(campos);
     }
+
 
     await admin.from("verificamex_logs").insert({
       user_id: userId, tipo: "curp", exito: true, http_status: res.status, mensaje: "CURP validada en RENAPO",
