@@ -140,7 +140,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
       setErrorIne(e.message || "No pudimos validar tu INE.");
       return;
     }
-    toast({ title: "¡INE validada!", description: "Tu límite ahora es de 3,000 UDIS al mes." });
+    toast({ title: "¡INE validada!", description: "Cuenta Titular: 3,000 UDIS al mes. Se cobrarán $25 en tu primera recarga." });
     onActivada();
     onOpenChange(false);
     navigate("/qard/recargar");
@@ -179,16 +179,17 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Costos claros desde el inicio</p>
-              <p className="text-muted-foreground">• $10 pesos — Apertura de cuenta QaRd (una sola vez, se cobra en tu primera recarga)</p>
+              <p className="text-muted-foreground">• $10 pesos — Cuenta Básica (solo CURP, una sola vez)</p>
+              <p className="text-muted-foreground">• $25 pesos — Cuenta Titular (validación de INE, una sola vez)</p>
               <p className="text-muted-foreground">• $5 pesos — Comisión por cada recarga</p>
               <p className="text-muted-foreground">• 2% — Comisión por retiro a banco</p>
-              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85.</p>
+              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85 (Básica) o $70 (Titular).</p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Límites mensuales</p>
-              <p className="text-muted-foreground">• Nivel 1 (con CURP): 1,000 UDIS (~$8,150 pesos)</p>
-              <p className="text-muted-foreground">• Nivel 2 (con INE): 3,000 UDIS (~$24,500 pesos)</p>
+              <p className="text-muted-foreground">• Cuenta Básica (CURP): 1,000 UDIS (~$8,150 pesos)</p>
+              <p className="text-muted-foreground">• Cuenta Titular (INE): 3,000 UDIS (~$24,500 pesos)</p>
             </div>
 
             <p className="text-emerald-600 font-medium">✅ Las transferencias entre QaRds no tienen comisión.</p>
@@ -360,7 +361,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
             <div className="rounded-lg border p-3 space-y-1">
               <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
               <p className="font-mono"><span className="text-muted-foreground font-sans">CURP:</span> {curp}</p>
-              <p><span className="text-muted-foreground">Nivel:</span> 1 (1,000 UDIS al mes)</p>
+              <p><span className="text-muted-foreground">Tipo:</span> Cuenta Básica (1,000 UDIS al mes)</p>
               <p><span className="text-muted-foreground">Costos:</span> $10 apertura + $5 recarga = $15 en tu primera recarga</p>
             </div>
             <Button className="w-full" disabled={ocupado || nombre.trim().length < 5 || !validarCurp(curp)}
