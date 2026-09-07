@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import BackButton from "@/components/BackButton";
+import { BackButton } from "@/components/BackButton";
 import { downloadCSV } from "@/lib/csvExport";
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
