@@ -32,6 +32,39 @@ function buscar(obj: unknown, llaves: string[]): string | null {
   return null;
 }
 
+/** Verificamex entrega los campos OCR como [{ Name, Type, Value, Source }]. */
+function buscarPorTipo(obj: unknown, tipos: string[]): string | null {
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      if (item && typeof item === "object") {
+        const registro = item as Record<string, unknown>;
+        const tipo = String(registro.Type ?? registro.type ?? "").toLowerCase();
+        const nombre = String(registro.Name ?? registro.name ?? "").toLowerCase();
+        const valor = registro.Value ?? registro.value;
+        if (tipos.includes(tipo) || tipos.includes(nombre)) {
+          if (typeof valor === "string" || typeof valor === "number") return String(valor).trim();
+        }
+      }
+      const anidado = buscarPorTipo(item, tipos);
+      if (anidado) return anidado;
+    }
+    return null;
+  }
+  if (obj && typeof obj === "object") {
+    for (const valor of Object.values(obj as Record<string, unknown>)) {
+      const anidado = buscarPorTipo(valor, tipos);
+      if (anidado) return anidado;
+    }
+  }
+  return null;
+}
+
+function esRespuestaOcr(obj: unknown): boolean {
+  if (!obj || typeof obj !== "object") return false;
+  const texto = JSON.stringify(obj);
+  return /"(DocumentData|documentData|parse_ocr|ocr|mrz)"\s*:/.test(texto);
+}
+
 /** Normaliza para comparar nombres: sin acentos, sin comas, mayúsculas. */
 function norm(s: string) {
   return (s || "")
@@ -104,10 +137,12 @@ async function ocr(base: string, token: string, ruta: string, image: string) {
       body: JSON.stringify({ image }),
       signal: controller.signal,
     });
+    const contentType = res.headers.get("content-type") ?? "";
     const texto = await res.text();
     let data: any = null;
     try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
-    return { ok: res.ok, status: res.status, data };
+    const respuestaValida = contentType.toLowerCase().includes("application/json") && esRespuestaOcr(data);
+    return { ok: res.ok && respuestaValida, status: res.status, data, respuestaValida };
   } finally {
     clearTimeout(timeout);
   }
@@ -141,7 +176,9 @@ serve(async (req) => {
       if (kb > 5120) return json({ error: `La foto del ${nombre} pesa más de 5 MB. Usa una foto más ligera.` }, 400);
     }
 
-    const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
+    // La API de identidad vive bajo /identity. La ruta anterior sin este prefijo
+    // devolvía el sitio web en HTML con HTTP 200 y nunca consumía tokens OCR.
+    const base = "https://api.verificamex.com/identity";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
     if (!token) return json({ error: "Falta configurar el servicio de verificación." }, 500);
 
@@ -206,19 +243,23 @@ serve(async (req) => {
     if (ob.ok && rev.ok) {
       await admin.from("qard_identidad").update({ ocr_intentos: intentos + 1 }).eq("user_id", userId);
       crudo = { obverse: ob.data, reverse: rev.data };
-      curpIne = extraerCurp(ob.data) || extraerCurp(rev.data);
+      curpIne = extraerCurp(ob.data) || extraerCurp(rev.data)
+        || (buscarPorTipo({ obverse: ob.data, reverse: rev.data }, ["curp"]) ?? "");
       nombreIne = [
-        buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
-        buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
-        buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
+        buscarPorTipo(ob.data, ["name", "nombre"]) ?? buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
+        buscarPorTipo(ob.data, ["fathersurname", "surname", "apellido paterno"]) ?? buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
+        buscarPorTipo(ob.data, ["mothersurname", "secondsurname", "apellido materno", "segundo apellido"]) ?? buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
     } else {
-      const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.";
+      const respuestaNoOcr = !ob.respuestaValida || !rev.respuestaValida;
+      const msg = ob.data?.message || rev.data?.message || (respuestaNoOcr
+        ? "Verificamex no devolvió una lectura OCR válida. No se descontaron intentos; inténtalo nuevamente."
+        : "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
       await admin.from("verificamex_logs").insert({
         user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
         mensaje: String(msg).slice(0, 500),
       });
-      return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, 400);
+      return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, respuestaNoOcr ? 502 : 400);
     }
 
     const respuestaCompleta = { obverse: ob.data, reverse: rev.data };
