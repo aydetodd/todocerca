@@ -7,16 +7,18 @@ const corsHeaders = {
 };
 
 const RUTAS = [
+  "/v2/mx/ine/ocr",
+  "/v2/ocr/ine",
+  "/v2/mx/ine",
+  "/v1/mx/ine/ocr",
+  "/v1/ocr",
+  "/v2/ocr",
+  "/v1/ine",
+  "/v2/mx/cedula",
   "/v1/ocr/ine-obverse",
-  "/v1/ocr/ine/obverse",
-  "/v1/ocr/ine-front",
-  "/v1/ocr/ine-anverso",
-  "/v1/ocr/ine",
-  "/v1/ocr/ine-obverse/",
-  "/v1/ine/ocr-obverse",
-  "/v1/ine/obverse",
-  "/api/v1/ocr/ine-obverse",
-  "/v1/scraping/renapo",
+  "/v1/scraping/ine",
+  "/v1/documents/ine-obverse",
+  "/v1/kyc/ine-obverse"
 ];
 
 serve(async (req) => {
