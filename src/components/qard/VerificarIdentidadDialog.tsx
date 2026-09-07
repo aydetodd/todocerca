@@ -12,7 +12,12 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onVerificada?: () => void;
+  /** Nivel ya alcanzado (1 = CURP validada). Si es >= 1 no volvemos a pedir la CURP. */
+  nivelActual?: number;
+  nombreGuardado?: string | null;
+  curpGuardada?: string | null;
 };
+
 
 type Persona = {
   curp: string;
