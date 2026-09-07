@@ -7,10 +7,28 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 const MIN_BYTES = 150 * 1024;
 const MAX_BYTES = 5 * 1024 * 1024;
 
-function leerArchivo(file: File): Promise<string> {
+function prepararImagen(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const lector = new FileReader();
-    lector.onload = () => resolve(String(lector.result));
+    lector.onload = () => {
+      const imagen = new Image();
+      imagen.onload = () => {
+        const maximo = 1800;
+        const escala = Math.min(1, maximo / Math.max(imagen.naturalWidth, imagen.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(imagen.naturalWidth * escala);
+        canvas.height = Math.round(imagen.naturalHeight * escala);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("No pudimos preparar la foto."));
+          return;
+        }
+        ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+      imagen.onerror = () => reject(new Error("No pudimos abrir la foto."));
+      imagen.src = String(lector.result);
+    };
     lector.onerror = () => reject(new Error("No pudimos leer la foto."));
     lector.readAsDataURL(file);
   });
@@ -82,7 +100,15 @@ export default function CapturaFotoIne({
       toast({ title: "Foto muy grande", description: "Debe pesar máximo 5 MB.", variant: "destructive" });
       return;
     }
-    onCambio(await leerArchivo(file));
+    try {
+      onCambio(await prepararImagen(file));
+    } catch (error) {
+      toast({
+        title: "No pudimos preparar la foto",
+        description: error instanceof Error ? error.message : "Intenta tomarla nuevamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
