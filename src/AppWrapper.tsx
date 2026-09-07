@@ -246,6 +246,8 @@ export default function AppWrapper() {
           <Route path="/qard/cobrar" element={<QardCobrar />} />
           <Route path="/qard/servicios" element={<QardServicios />} />
           <Route path="/qard/recargar" element={<QardRecargar />} />
+          <Route path="/panel/qard-maestra" element={<QardMaestra />} />
+
           <Route path="/wallet/qr-boletos/validar" element={<ValidarQr />} />
           <Route path="/wallet/qr-boletos/descuento" element={<SolicitudDescuento />} />
           <Route path="/panel-concesionario" element={<PanelConcesionarioHub />} />
