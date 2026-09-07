@@ -1110,14 +1110,6 @@ export default function Qard() {
 
       <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
 
-      <Button variant="outline" className="w-full" onClick={() => setVerificarOpen(true)}>
-        {nivelVerificacion === 0
-          ? "Validar mi identidad (CURP)"
-          : nivelVerificacion === 1
-            ? "Subir mi límite a 3,000 UDIS (INE)"
-            : "Identidad verificada · Nivel 2"}
-      </Button>
-
       <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
         Soy comercio · Cobrar a un QR
       </Button>
