@@ -116,8 +116,15 @@ function curpVisibleEnOcr(obj: unknown, curpEsperada: string): boolean {
   return false;
 }
 
-function limpiarBase64(v: string) {
-  return String(v || "").replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
+function normalizarImagen(v: string) {
+  const imagen = String(v || "").trim();
+  if (!imagen) return "";
+  // Verificamex exige el Data URL completo, no solamente los bytes base64.
+  return imagen.startsWith("data:image/") ? imagen : `data:image/jpeg;base64,${imagen}`;
+}
+
+function base64Puro(v: string) {
+  return v.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
 }
 
 function bytesDeBase64(b64: string) {
@@ -155,19 +162,6 @@ async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Recor
   }
 }
 
-/** Probamos los nombres de campo documentados hasta obtener una lectura OCR real. */
-async function ocr(base: string, token: string, ruta: string, image: string, campos: string[]) {
-  let ultimo: Awaited<ReturnType<typeof pedirOcr>> | null = null;
-  for (const campo of campos) {
-    const r = await pedirOcr(base, token, ruta, { [campo]: image });
-    if (r.ok) return r;
-    ultimo = r;
-    // 401/403/5xx: no tiene caso probar otro nombre de campo
-    if (r.status === 401 || r.status === 403 || r.status >= 500) break;
-  }
-  return ultimo!;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -185,11 +179,11 @@ serve(async (req) => {
     userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
-    const frente = limpiarBase64(body?.frente ?? body?.obverse ?? "");
-    const reverso = limpiarBase64(body?.reverso ?? body?.reverse ?? "");
+    const frente = normalizarImagen(body?.frente ?? body?.obverse ?? "");
+    const reverso = normalizarImagen(body?.reverso ?? body?.reverse ?? "");
     if (!frente || !reverso) return json({ error: "Necesitamos la foto del frente y del reverso de tu INE." }, 400);
 
-    const peso = (b: string) => Math.floor((b.length * 3) / 4);
+    const peso = (b: string) => Math.floor((base64Puro(b).length * 3) / 4);
     for (const [nombre, img] of [["frente", frente], ["reverso", reverso]] as const) {
       const kb = peso(img) / 1024;
       if (kb < 150) return json({ error: `La foto del ${nombre} está muy borrosa o muy pequeña. Tómala otra vez llenando el recuadro.` }, 400);
@@ -230,7 +224,7 @@ serve(async (req) => {
       const subir = async (nombre: string, b64: string) => {
         const ruta = `${userId}/${sello}-${nombre}.jpg`;
         const { error } = await admin.storage.from("ine-documentos")
-          .upload(ruta, bytesDeBase64(b64), { contentType: "image/jpeg", upsert: true });
+          .upload(ruta, bytesDeBase64(base64Puro(b64)), { contentType: "image/jpeg", upsert: true });
         return error ? null : ruta;
       };
       urlFrente = await subir("frente", frente);
@@ -246,9 +240,11 @@ serve(async (req) => {
     let ob: Awaited<ReturnType<typeof ocr>>;
     let rev: Awaited<ReturnType<typeof ocr>>;
     try {
+      // Estos son los nombres exactos exigidos por Verificamex. Probar nombres
+      // alternos primero provocaba 422 al frente y 500 al reverso, sin ejecutar OCR.
       [ob, rev] = await Promise.all([
-        ocr(base, token, "/v1/ocr/obverse", frente, ["image", "ine_front", "obverse", "base64"]),
-        ocr(base, token, "/v1/ocr/reverse", reverso, ["image", "ine_back", "reverse", "base64"]),
+        pedirOcr(base, token, "/v1/ocr/obverse", { ine_front: frente }),
+        pedirOcr(base, token, "/v1/ocr/reverse", { ine_back: reverso }),
       ]);
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
@@ -303,9 +299,13 @@ serve(async (req) => {
       }, 400);
     }
 
-    const { data: datosEnc } = await admin.rpc("qard_enc" as any, {
+    const { data: datosEnc, error: encError } = await admin.rpc("qard_enc" as any, {
       _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne }, fuente, crudo }),
     });
+    if (encError || !datosEnc) {
+      console.error("[INE] No se pudieron cifrar los datos", encError?.message);
+      return json({ error: "La INE fue leída, pero no pudimos guardar la verificación. Intenta nuevamente." }, 500);
+    }
 
     // Solo cobramos los $25 si la apertura sigue pendiente
     const aperturaPendiente = (ident as any).account_opening_fee_pending !== false;
@@ -322,7 +322,16 @@ serve(async (req) => {
     };
     if (aperturaPendiente) cambios.account_opening_fee_amount = 25.00;
 
-    await admin.from("qard_identidad").update(cambios).eq("user_id", userId);
+    const { data: identidadActualizada, error: updateError } = await admin
+      .from("qard_identidad")
+      .update(cambios)
+      .eq("user_id", userId)
+      .select("verification_level, monthly_limit_udis")
+      .single();
+    if (updateError || Number(identidadActualizada?.verification_level) !== 2) {
+      console.error("[INE] No se pudo guardar Nivel 2", updateError?.message);
+      return json({ error: "La INE fue validada, pero no pudimos subir tu cuenta a Nivel 2. Intenta nuevamente." }, 500);
+    }
 
     await admin.from("verificamex_logs").insert({
       user_id: userId, tipo: "ine", exito: true, http_status: 200,
