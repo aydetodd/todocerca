@@ -419,10 +419,22 @@ export default function Panel() {
                       <AdminSolicitudesCambioRutas />
                     </div>
 
+                    {/* QaRd Maestra (comisiones) */}
+                    <div className="pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate('/panel/qard-maestra')}
+                      >
+                        QaRd Maestra · Comisiones
+                      </Button>
+                    </div>
+
                     {/* Solicitudes de Persona Moral (QaRd) */}
                     <div className="pt-3 border-t">
                       <AdminSolicitudesMoral />
                     </div>
+
 
                   </>
                 )}

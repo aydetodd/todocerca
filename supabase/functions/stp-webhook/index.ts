@@ -123,14 +123,22 @@ serve(async (req) => {
   // Aviso al usuario en su buzón
   try {
     if (res?.ok === true && !res?.duplicado && res?.user_id) {
+      const bruto = Number(res.monto ?? 0);
+      const apertura = Number(res.apertura ?? 0);
+      const comision = Number(res.comision_recarga ?? 0);
+      const neto = Number(res.neto ?? bruto);
+      const desglose = apertura > 0
+        ? `✅ Recibiste $${neto.toFixed(2)} en tu QaRd\n\nDesglose:\n• Transferencia: $${bruto.toFixed(2)}\n• Apertura de cuenta QaRd: -$${apertura.toFixed(2)}\n• Comisión por recarga: -$${comision.toFixed(2)}\n• Saldo acreditado: $${neto.toFixed(2)}\n\nLas siguientes recargas solo tendrán $${comision.toFixed(2)} de comisión.`
+        : `✅ Recibiste $${neto.toFixed(2)} en tu QaRd\n\nDesglose:\n• Transferencia: $${bruto.toFixed(2)}\n• Comisión por recarga: -$${comision.toFixed(2)}\n• Saldo acreditado: $${neto.toFixed(2)}`;
       await admin.from("messages").insert({
         sender_id: SYSTEM,
         receiver_id: res.user_id as string,
-        message: `💰 Recibiste $${Number(res.monto).toFixed(2)} en tu QaRd por transferencia SPEI.\nSaldo actual: $${Number(res.saldo).toFixed(2)}`,
+        message: `${desglose}\n\nSaldo actual: $${Number(res.saldo).toFixed(2)}`,
         is_panic: false,
         is_read: false,
       });
     }
+
     // Alerta al administrador cuando el depósito no se pudo acreditar
     if (res?.ok === false) {
       const { data: adminProf } = await admin

@@ -1089,7 +1089,9 @@ export default function Qard() {
         phoneVerified={!!identidad?.phone_verified}
         emailVerified={!!identidad?.email_verified}
         onActivada={() => { recargarDatos(); cargar(); }}
+        onQuiereIne={() => setVerificarOpen(true)}
       />
+
       <VerificarIdentidadDialog
         open={verificarOpen}
         onOpenChange={setVerificarOpen}

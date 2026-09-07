@@ -146,9 +146,11 @@ serve(async (req) => {
       verification_level: 2,
       monthly_limit_udis: 3000,
       verificamex_status: "verified",
+      verificamex_ine_validated: true,
       verificamex_data_enc: datosEnc,
       verified_at: new Date().toISOString(),
     }).eq("user_id", userId);
+
 
     await admin.from("verificamex_logs").insert({
       user_id: userId, tipo: "ine", exito: true, http_status: 200, mensaje: "INE validada y coincidente",
