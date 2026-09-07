@@ -83,7 +83,14 @@ serve(async (req) => {
     let data: any = null;
     try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
 
-    const ok = res.ok && (data?.status === true || data?.status === "true" || data?.success === true);
+    // Verificamex responde anidado: { data: { citizen: { status, codigo, registros: [...] } } }
+    const citizen = data?.data?.citizen ?? data?.citizen ?? null;
+    const registro = Array.isArray(citizen?.registros) ? citizen.registros[0] : null;
+    const ok = res.ok && (
+      registro != null ||
+      citizen?.status === true || citizen?.status === "true" ||
+      data?.status === true || data?.status === "true" || data?.success === true
+    );
 
     if (!ok) {
       await admin.from("verificamex_logs").insert({
@@ -96,14 +103,15 @@ serve(async (req) => {
       }, 400);
     }
 
+    const fuente = registro ?? data;
     const persona = {
-      curp: buscar(data, ["curp"]) ?? curp,
-      nombres: buscar(data, ["nombres", "nombre"]) ?? "",
-      primerApellido: buscar(data, ["primerapellido", "apellidopaterno"]) ?? "",
-      segundoApellido: buscar(data, ["segundoapellido", "apellidomaterno"]) ?? "",
-      sexo: buscar(data, ["sexo", "genero"]) ?? "",
-      fechaNacimiento: buscar(data, ["fechanacimiento", "fechadenacimiento"]) ?? "",
-      entidad: buscar(data, ["entidad", "entidadnacimiento", "estadonacimiento"]) ?? "",
+      curp: buscar(fuente, ["curp"]) ?? curp,
+      nombres: buscar(fuente, ["nombres", "nombre"]) ?? "",
+      primerApellido: buscar(fuente, ["primerapellido", "apellidopaterno"]) ?? "",
+      segundoApellido: buscar(fuente, ["segundoapellido", "apellidomaterno"]) ?? "",
+      sexo: buscar(fuente, ["sexo", "genero"]) ?? "",
+      fechaNacimiento: buscar(fuente, ["fechanacimiento", "fechadenacimiento"]) ?? "",
+      entidad: buscar(fuente, ["entidad", "entidadnacimiento", "estadonacimiento"]) ?? "",
     };
 
     const nombreCompleto = [persona.nombres, persona.primerApellido, persona.segundoApellido]
