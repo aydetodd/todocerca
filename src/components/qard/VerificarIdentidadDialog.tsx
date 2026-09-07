@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,12 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onVerificada?: () => void;
+  /** Nivel ya alcanzado (1 = CURP validada). Si es >= 1 no volvemos a pedir la CURP. */
+  nivelActual?: number;
+  nombreGuardado?: string | null;
+  curpGuardada?: string | null;
 };
+
 
 type Persona = {
   curp: string;
@@ -101,7 +106,9 @@ function CapturaFoto({
   );
 }
 
-export default function VerificarIdentidadDialog({ open, onOpenChange, onVerificada }: Props) {
+export default function VerificarIdentidadDialog({
+  open, onOpenChange, onVerificada, nivelActual = 0, nombreGuardado, curpGuardada,
+}: Props) {
   const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "listo">("curp");
   const [ocupado, setOcupado] = useState(false);
   const [curp, setCurp] = useState("");
@@ -109,6 +116,16 @@ export default function VerificarIdentidadDialog({ open, onOpenChange, onVerific
   const [nivel, setNivel] = useState(0);
   const [frente, setFrente] = useState<string | null>(null);
   const [reverso, setReverso] = useState<string | null>(null);
+
+  // Si la CURP ya quedó validada (Nivel 1+), pasamos directo a la INE: no la volvemos a pedir.
+  useEffect(() => {
+    if (!open) return;
+    setNivel(nivelActual);
+    setPaso(nivelActual >= 2 ? "listo" : nivelActual >= 1 ? "ine" : "curp");
+    setFrente(null);
+    setReverso(null);
+  }, [open, nivelActual]);
+
 
   const ejecutar = async (fn: () => Promise<void>) => {
     setOcupado(true);
@@ -191,10 +208,29 @@ export default function VerificarIdentidadDialog({ open, onOpenChange, onVerific
 
         {paso === "ine" && (
           <div className="space-y-3">
+            {(persona || nombreGuardado || curpGuardada) && (
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm space-y-1">
+                <div className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
+                  <BadgeCheck className="h-4 w-4" /> CURP ya validada
+                </div>
+                <div><span className="text-muted-foreground">Nombre: </span>
+                  {persona
+                    ? [persona.nombres, persona.primerApellido, persona.segundoApellido].filter(Boolean).join(" ")
+                    : nombreGuardado}
+                </div>
+                <div><span className="text-muted-foreground">CURP: </span>
+                  <span className="font-mono">{persona?.curp ?? curpGuardada}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Solo comparamos tu INE con estos datos. No necesitas escribirla otra vez.
+                </div>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
               Toma la foto del frente y del reverso de tu INE. Deben ser JPG o PNG, entre 1 MB y 5 MB,
               con buena luz y sin reflejos.
             </p>
+
             <CapturaFoto titulo="Frente de la INE" valor={frente} onCambio={setFrente} />
             <CapturaFoto titulo="Reverso de la INE" valor={reverso} onCambio={setReverso} />
             <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIneAhora}>
