@@ -1,4 +1,5 @@
 // Verificamex — Lectura de INE (OCR frente y reverso) y comparación con RENAPO (Nivel 2)
+// Rutas oficiales: POST /v1/ocr/obverse y POST /v1/ocr/reverse (5 tokens cada una)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -6,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const MAX_INTENTOS = 3;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -48,6 +51,13 @@ function limpiarBase64(v: string) {
   return String(v || "").replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
 }
 
+function bytesDeBase64(b64: string) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
 async function ocr(base: string, token: string, ruta: string, image: string) {
   const res = await fetch(`${base}${ruta}`, {
     method: "POST",
@@ -81,7 +91,6 @@ serve(async (req) => {
     const reverso = limpiarBase64(body?.reverso ?? body?.reverse ?? "");
     if (!frente || !reverso) return json({ error: "Necesitamos la foto del frente y del reverso de tu INE." }, 400);
 
-    // Tamaño aproximado del archivo a partir del base64 (1 MB a 5 MB)
     const peso = (b: string) => Math.floor((b.length * 3) / 4);
     for (const [nombre, img] of [["frente", frente], ["reverso", reverso]] as const) {
       const kb = peso(img) / 1024;
@@ -89,46 +98,52 @@ serve(async (req) => {
       if (kb > 5120) return json({ error: `La foto del ${nombre} pesa más de 5 MB. Usa una foto más ligera.` }, 400);
     }
 
-
     const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
     if (!token) return json({ error: "Falta configurar el servicio de verificación." }, 500);
 
     const { data: ident } = await admin
       .from("qard_identidad")
-      .select("verification_level, nombre_completo, curp_enc, verificamex_data_enc")
+      .select("verification_level, nombre_completo, curp_enc, ocr_intentos, account_opening_fee_pending")
       .eq("user_id", userId).maybeSingle();
 
     if (!ident || Number((ident as any).verification_level ?? 0) < 1) {
       return json({ error: "Primero valida tu CURP para poder verificar tu INE." }, 400);
     }
 
+    const intentos = Number((ident as any).ocr_intentos ?? 0);
+    if (intentos >= MAX_INTENTOS) {
+      return json({ error: "Ya intentaste validar tu INE 3 veces. Tu cuenta sigue activa en Nivel 1. Escríbenos para ayudarte." }, 429);
+    }
+    await admin.from("qard_identidad").update({ ocr_intentos: intentos + 1 }).eq("user_id", userId);
+
     const { data: curpRenapo } = await admin.rpc("qard_dec" as any, { _v: (ident as any).curp_enc });
     const nombreRenapo = (ident as any).nombre_completo ?? "";
 
-    // 1) Intentamos el OCR de Verificamex (varias rutas posibles según el plan contratado)
-    const RUTAS_FRENTE = ["/v1/ocr/ine-obverse", "/v1/ocr/ine/obverse", "/v1/ocr/ine-front"];
-    const RUTAS_REVERSO = ["/v1/ocr/ine-reverse", "/v1/ocr/ine/reverse", "/v1/ocr/ine-back"];
+    // Guardamos las fotos en el bucket privado (solo auditoría CNBV/UIF)
+    let urlFrente: string | null = null;
+    let urlReverso: string | null = null;
+    try {
+      const sello = Date.now();
+      const subir = async (nombre: string, b64: string) => {
+        const ruta = `${userId}/${sello}-${nombre}.jpg`;
+        const { error } = await admin.storage.from("ine-documentos")
+          .upload(ruta, bytesDeBase64(b64), { contentType: "image/jpeg", upsert: true });
+        return error ? null : ruta;
+      };
+      urlFrente = await subir("frente", frente);
+      urlReverso = await subir("reverso", reverso);
+    } catch (e) { console.error("[INE] guardar fotos", e); }
 
-    async function ocrPrimeraQueSirva(rutas: string[], img: string) {
-      let ultimo: Awaited<ReturnType<typeof ocr>> | null = null;
-      for (const r of rutas) {
-        const res = await ocr(base, token!, r, img);
-        ultimo = res;
-        if (res.ok) return res;
-        if (res.status !== 404) return res;
-      }
-      return ultimo!;
-    }
-
+    // OCR de Verificamex
     let curpIne = "";
     let nombreIne = "";
     let fuente = "verificamex";
     let crudo: unknown = null;
 
     const [ob, rev] = await Promise.all([
-      ocrPrimeraQueSirva(RUTAS_FRENTE, frente),
-      ocrPrimeraQueSirva(RUTAS_REVERSO, reverso),
+      ocr(base, token, "/v1/ocr/obverse", frente),
+      ocr(base, token, "/v1/ocr/reverse", reverso),
     ]);
 
     if (ob.ok && rev.ok) {
@@ -140,59 +155,13 @@ serve(async (req) => {
         buscar(ob.data, ["segundoapellido", "apellidomaterno"]) ?? "",
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto"]) ?? "");
     } else {
-      // 2) Respaldo: leemos la credencial con lectura visual propia (el OCR de Verificamex no está habilitado)
-      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-      if (!lovableKey) {
-        const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE.";
-        await admin.from("verificamex_logs").insert({
-          user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
-          mensaje: String(msg).slice(0, 500),
-        });
-        return json({ error: msg }, 400);
-      }
-
-      const ai = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-3.7-flash",
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: "Lee esta credencial para votar (INE) mexicana, frente y reverso. Responde SOLO un JSON con las llaves: curp, nombre_completo, clave_elector. Si un dato no se ve, deja el texto vacío." },
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${frente}` } },
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${reverso}` } },
-            ],
-          }],
-        }),
+      const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.";
+      await admin.from("verificamex_logs").insert({
+        user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
+        mensaje: String(msg).slice(0, 500),
       });
-      const aiTxt = await ai.text();
-      if (!ai.ok) {
-        await admin.from("verificamex_logs").insert({
-          user_id: userId, tipo: "ine", exito: false, http_status: ai.status,
-          mensaje: `Lectura de respaldo falló: ${aiTxt.slice(0, 400)}`,
-        });
-        return json({ error: "No pudimos leer tu INE en este momento. Inténtalo de nuevo en unos minutos." }, ai.status === 429 ? 429 : 400);
-      }
-      let contenido = "";
-      try { contenido = JSON.parse(aiTxt)?.choices?.[0]?.message?.content ?? ""; } catch { contenido = ""; }
-      const limpio = contenido.replace(/```json|```/g, "").trim();
-      let leido: any = {};
-      try { leido = JSON.parse(limpio); } catch { leido = {}; }
-      curpIne = String(leido.curp ?? "").toUpperCase().trim();
-      nombreIne = String(leido.nombre_completo ?? leido.nombre ?? "").trim();
-      fuente = "lectura_visual";
-      crudo = leido;
-
-      if (!curpIne && !nombreIne) {
-        await admin.from("verificamex_logs").insert({
-          user_id: userId, tipo: "ine", exito: false, http_status: 200,
-          mensaje: "No se leyeron datos en las fotos de la INE",
-        });
-        return json({ error: "No pudimos leer los datos de tu INE. Toma las fotos con buena luz, sin reflejos y que la credencial llene el recuadro." }, 400);
-      }
+      return json({ error: msg, intentos_restantes: MAX_INTENTOS - (intentos + 1) }, 400);
     }
-
 
     const curpCoincide = !!curpIne && !!curpRenapo && curpIne === String(curpRenapo).toUpperCase();
     const nombreCoincide = mismoNombre(nombreIne, nombreRenapo);
@@ -203,41 +172,47 @@ serve(async (req) => {
         mensaje: "Los datos de la INE no coinciden con la CURP validada",
       });
       await admin.from("qard_identidad").update({ verificamex_status: "failed" }).eq("user_id", userId);
-      return json({ error: "Los datos de tu INE no coinciden con la CURP que validaste. Revisa las fotos e inténtalo otra vez." }, 400);
+      return json({
+        error: "Los datos de tu INE no coinciden con tu CURP. Puedes intentarlo otra vez o continuar con Nivel 1 ($10).",
+        intentos_restantes: MAX_INTENTOS - (intentos + 1),
+      }, 400);
     }
 
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, {
       _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne }, fuente, crudo }),
     });
 
-    await admin.from("qard_identidad").update({
+    // Solo cobramos los $25 si la apertura sigue pendiente
+    const aperturaPendiente = (ident as any).account_opening_fee_pending !== false;
+    const cambios: Record<string, unknown> = {
       verification_level: 2,
       monthly_limit_udis: 3000,
+      validation_type: "ocr_full",
       verificamex_status: "verified",
       verificamex_ine_validated: true,
       verificamex_data_enc: datosEnc,
       verified_at: new Date().toISOString(),
-    }).eq("user_id", userId);
+      ine_front_image_url: urlFrente,
+      ine_back_image_url: urlReverso,
+    };
+    if (aperturaPendiente) cambios.account_opening_fee_amount = 25.00;
 
+    await admin.from("qard_identidad").update(cambios).eq("user_id", userId);
 
     await admin.from("verificamex_logs").insert({
-      user_id: userId, tipo: "ine", exito: true, http_status: 200, mensaje: `INE validada y coincidente (${fuente})`,
+      user_id: userId, tipo: "ine", exito: true, http_status: 200,
+      mensaje: `INE validada (${fuente}). Nivel 2, 3000 UDIS.`,
     });
-
 
     return json({
       ok: true,
       verification_level: 2,
       monthly_limit_udis: 3000,
-      ine: { curp: curpIne, nombre: nombreIne },
+      validation_type: "ocr_full",
+      costo_apertura: aperturaPendiente ? 25 : 0,
     });
-  } catch (e) {
-    console.error("verificamex-ine error", e);
-    if (userId) {
-      await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "ine", exito: false, mensaje: String((e as Error).message).slice(0, 500),
-      });
-    }
-    return json({ error: "Ocurrió un problema al validar tu INE. Inténtalo de nuevo." }, 500);
+  } catch (e: any) {
+    console.error("[verificamex-ine]", e);
+    return json({ error: e?.message ?? "Error inesperado al validar tu INE." }, 500);
   }
 });

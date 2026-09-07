@@ -127,8 +127,11 @@ serve(async (req) => {
       const apertura = Number(res.apertura ?? 0);
       const comision = Number(res.comision_recarga ?? 0);
       const neto = Number(res.neto ?? bruto);
+      const titular = apertura >= 25;
+      const concepto = titular ? "Validación INE completa" : "Activación cuenta básica";
+      const extra = titular ? "\n\n¡Tu límite mensual es 3,000 UDIS (~$24,500 pesos)!" : "";
       const desglose = apertura > 0
-        ? `✅ Recibiste $${neto.toFixed(2)} en tu QaRd\n\nDesglose:\n• Transferencia: $${bruto.toFixed(2)}\n• Apertura de cuenta QaRd: -$${apertura.toFixed(2)}\n• Comisión por recarga: -$${comision.toFixed(2)}\n• Saldo acreditado: $${neto.toFixed(2)}\n\nLas siguientes recargas solo tendrán $${comision.toFixed(2)} de comisión.`
+        ? `✅ Recibiste $${neto.toFixed(2)} en tu QaRd\n\nDesglose:\n• Transferencia: $${bruto.toFixed(2)}\n• ${concepto}: -$${apertura.toFixed(2)}\n• Comisión por recarga: -$${comision.toFixed(2)}\n• Saldo acreditado: $${neto.toFixed(2)}${extra}\n\nLas siguientes recargas solo tendrán $${comision.toFixed(2)} de comisión.`
         : `✅ Recibiste $${neto.toFixed(2)} en tu QaRd\n\nDesglose:\n• Transferencia: $${bruto.toFixed(2)}\n• Comisión por recarga: -$${comision.toFixed(2)}\n• Saldo acreditado: $${neto.toFixed(2)}`;
       await admin.from("messages").insert({
         sender_id: SYSTEM,

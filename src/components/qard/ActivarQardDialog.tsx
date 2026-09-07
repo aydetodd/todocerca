@@ -140,7 +140,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
       setErrorIne(e.message || "No pudimos validar tu INE.");
       return;
     }
-    toast({ title: "¡INE validada!", description: "Tu límite ahora es de 3,000 UDIS al mes." });
+    toast({ title: "¡INE validada!", description: "Cuenta Titular: 3,000 UDIS al mes. Se cobrarán $25 en tu primera recarga." });
     onActivada();
     onOpenChange(false);
     navigate("/qard/recargar");
@@ -179,16 +179,17 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Costos claros desde el inicio</p>
-              <p className="text-muted-foreground">• $10 pesos — Apertura de cuenta QaRd (una sola vez, se cobra en tu primera recarga)</p>
+              <p className="text-muted-foreground">• $10 pesos — Cuenta Básica (solo CURP, una sola vez)</p>
+              <p className="text-muted-foreground">• $25 pesos — Cuenta Titular (validación de INE, una sola vez)</p>
               <p className="text-muted-foreground">• $5 pesos — Comisión por cada recarga</p>
               <p className="text-muted-foreground">• 2% — Comisión por retiro a banco</p>
-              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85.</p>
+              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85 (Básica) o $70 (Titular).</p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Límites mensuales</p>
-              <p className="text-muted-foreground">• Nivel 1 (con CURP): 1,000 UDIS (~$8,150 pesos)</p>
-              <p className="text-muted-foreground">• Nivel 2 (con INE): 3,000 UDIS (~$24,500 pesos)</p>
+              <p className="text-muted-foreground">• Cuenta Básica (CURP): 1,000 UDIS (~$8,150 pesos)</p>
+              <p className="text-muted-foreground">• Cuenta Titular (INE): 3,000 UDIS (~$24,500 pesos)</p>
             </div>
 
             <p className="text-emerald-600 font-medium">✅ Las transferencias entre QaRds no tienen comisión.</p>
@@ -321,30 +322,34 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               </p>
             </div>
 
-            <p className="font-medium">Elige tu nivel de activación:</p>
+            <p className="font-medium">Elige el tipo de cuenta:</p>
 
             <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">Nivel 1 (con tu CURP)</p>
-              <p className="text-muted-foreground">• Límite: 1,000 UDIS (~$8,150 pesos) al mes</p>
-              <p className="text-muted-foreground">• Suficiente para la mayoría de las personas</p>
+              <p className="font-semibold">Cuenta Básica — $10 pesos</p>
+              <p className="text-muted-foreground">• Ideal para: menores de edad, adultos mayores y familiares</p>
+              <p className="text-muted-foreground">• Validación: solo tu CURP</p>
+              <p className="text-muted-foreground">• Límite: 1,000 UDIS (~$8,150 pesos al mes)</p>
+              <p className="text-muted-foreground">• Se cobran $10 en tu primera recarga</p>
               <Button className="w-full mt-2" onClick={() => setPaso(4)}>
-                Activar mi QaRd con Nivel 1
+                Seleccionar Cuenta Básica
               </Button>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">🚀 Nivel 2 (con tu INE)</p>
-              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos) al mes</p>
-              <p className="text-muted-foreground">• Ideal si manejas montos más altos</p>
-              <p className="text-muted-foreground">• Solo toma 2 minutos más</p>
+              <p className="font-semibold">🚀 Cuenta Titular — $25 pesos</p>
+              <p className="text-muted-foreground">• Ideal para: adultos que manejan más dinero</p>
+              <p className="text-muted-foreground">• Validación: INE completa (frente y reverso)</p>
+              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos al mes)</p>
+              <p className="text-muted-foreground">• Se cobran $25 en tu primera recarga</p>
               <Button variant="outline" className="w-full mt-2" disabled={ocupado} onClick={irAIne}>
-                {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Validar INE para subir a Nivel 2"}
+                {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seleccionar Cuenta Titular"}
               </Button>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Recordatorio de costos</p>
-              <p className="text-muted-foreground">• Primera recarga: $15 ($10 apertura + $5 recarga)</p>
+              <p className="text-muted-foreground">• Primera recarga Básica: $15 ($10 apertura + $5 recarga)</p>
+              <p className="text-muted-foreground">• Primera recarga Titular: $30 ($25 validación INE + $5 recarga)</p>
               <p className="text-muted-foreground">• Recargas siguientes: $5</p>
             </div>
           </div>
@@ -356,7 +361,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
             <div className="rounded-lg border p-3 space-y-1">
               <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
               <p className="font-mono"><span className="text-muted-foreground font-sans">CURP:</span> {curp}</p>
-              <p><span className="text-muted-foreground">Nivel:</span> 1 (1,000 UDIS al mes)</p>
+              <p><span className="text-muted-foreground">Tipo:</span> Cuenta Básica (1,000 UDIS al mes)</p>
               <p><span className="text-muted-foreground">Costos:</span> $10 apertura + $5 recarga = $15 en tu primera recarga</p>
             </div>
             <Button className="w-full" disabled={ocupado || nombre.trim().length < 5 || !validarCurp(curp)}
@@ -371,7 +376,11 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
         {paso === 5 && (
           <div className="space-y-3 text-sm">
-            <p className="font-semibold">📸 Validar tu INE para subir a Nivel 2</p>
+            <p className="font-semibold">📸 Cuenta Titular: valida tu INE</p>
+            <p className="text-muted-foreground">
+              Necesitamos fotos de tu INE para validar tu identidad. Al validarla, tu límite sube a
+              3,000 UDIS (~$24,500 pesos al mes).
+            </p>
             <div className="rounded-lg border p-3 space-y-1">
               <p className="text-muted-foreground text-xs">Tus datos ya están validados:</p>
               <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
@@ -380,28 +389,31 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
             <CapturaFotoIne titulo="Paso 1: foto del FRENTE de tu INE" valor={frente} onCambio={setFrente} />
             <CapturaFotoIne titulo="Paso 2: foto del REVERSO de tu INE" valor={reverso} onCambio={setReverso} />
-            <p className="text-xs text-muted-foreground">Cada foto debe pesar entre 1 MB y 5 MB, en JPG o PNG.</p>
+            <p className="text-xs text-muted-foreground">Cada foto debe ser JPG o PNG y pesar máximo 5 MB.</p>
 
             {errorIne && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
                 <p className="text-sm text-destructive flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {errorIne}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Puedes volver a tomar las fotos (hasta 3 intentos) o continuar con la Cuenta Básica de $10.
+                </p>
               </div>
             )}
 
             <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
               {ocupado
-                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE con Verificamex...</>)
-                : "Enviar para validación"}
+                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE...</>)
+                : "Validar INE ($25 pesos, se cobran en tu primera recarga)"}
             </Button>
             <Button variant="ghost" className="w-full" disabled={ocupado}
               onClick={() => {
-                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Nivel 1. Puedes subir a Nivel 2 después." });
+                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Cuenta Básica ($10). Puedes subir después." });
                 onOpenChange(false);
                 navigate("/qard/recargar");
               }}>
-              Omitir y continuar con Nivel 1
+              Continuar con Cuenta Básica ($10)
             </Button>
           </div>
         )}
