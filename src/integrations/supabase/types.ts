@@ -3834,12 +3834,16 @@ export type Database = {
           email_verified: boolean
           estado: string
           id: string
+          ine_back_image_url: string | null
+          ine_front_image_url: string | null
           monthly_limit_udis: number
           moral_estado: string | null
           nombre_completo: string | null
+          ocr_intentos: number
           phone_verified: boolean
           updated_at: string
           user_id: string
+          validation_type: string
           verificamex_curp_validated: boolean
           verificamex_data_enc: string | null
           verificamex_ine_validated: boolean
@@ -3856,12 +3860,16 @@ export type Database = {
           email_verified?: boolean
           estado?: string
           id?: string
+          ine_back_image_url?: string | null
+          ine_front_image_url?: string | null
           monthly_limit_udis?: number
           moral_estado?: string | null
           nombre_completo?: string | null
+          ocr_intentos?: number
           phone_verified?: boolean
           updated_at?: string
           user_id: string
+          validation_type?: string
           verificamex_curp_validated?: boolean
           verificamex_data_enc?: string | null
           verificamex_ine_validated?: boolean
@@ -3878,12 +3886,16 @@ export type Database = {
           email_verified?: boolean
           estado?: string
           id?: string
+          ine_back_image_url?: string | null
+          ine_front_image_url?: string | null
           monthly_limit_udis?: number
           moral_estado?: string | null
           nombre_completo?: string | null
+          ocr_intentos?: number
           phone_verified?: boolean
           updated_at?: string
           user_id?: string
+          validation_type?: string
           verificamex_curp_validated?: boolean
           verificamex_data_enc?: string | null
           verificamex_ine_validated?: boolean
