@@ -206,7 +206,7 @@ serve(async (req) => {
     }
 
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, {
-      _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne }, obverse: ob.data, reverse: rev.data }),
+      _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne }, fuente, crudo }),
     });
 
     await admin.from("qard_identidad").update({
@@ -220,8 +220,9 @@ serve(async (req) => {
 
 
     await admin.from("verificamex_logs").insert({
-      user_id: userId, tipo: "ine", exito: true, http_status: 200, mensaje: "INE validada y coincidente",
+      user_id: userId, tipo: "ine", exito: true, http_status: 200, mensaje: `INE validada y coincidente (${fuente})`,
     });
+
 
     return json({
       ok: true,
