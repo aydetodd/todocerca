@@ -127,14 +127,21 @@ function bytesDeBase64(b64: string) {
   return arr;
 }
 
-async function ocr(base: string, token: string, ruta: string, image: string) {
+async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Record<string, string>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
+    // Accept: application/json es indispensable. Sin él, Verificamex responde con
+    // una redirección HTML a su panel ("Bienvenido a Verificamex") en vez del JSON.
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ image }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(cuerpo),
+      redirect: "manual",
       signal: controller.signal,
     });
     const contentType = res.headers.get("content-type") ?? "";
@@ -142,10 +149,23 @@ async function ocr(base: string, token: string, ruta: string, image: string) {
     let data: any = null;
     try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
     const respuestaValida = contentType.toLowerCase().includes("application/json") && esRespuestaOcr(data);
-    return { ok: res.ok && respuestaValida, status: res.status, data, respuestaValida };
+    return { ok: res.ok && respuestaValida, status: res.status, data, respuestaValida, texto };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** Probamos los nombres de campo documentados hasta obtener una lectura OCR real. */
+async function ocr(base: string, token: string, ruta: string, image: string, campos: string[]) {
+  let ultimo: Awaited<ReturnType<typeof pedirOcr>> | null = null;
+  for (const campo of campos) {
+    const r = await pedirOcr(base, token, ruta, { [campo]: image });
+    if (r.ok) return r;
+    ultimo = r;
+    // 401/403/5xx: no tiene caso probar otro nombre de campo
+    if (r.status === 401 || r.status === 403 || r.status >= 500) break;
+  }
+  return ultimo!;
 }
 
 serve(async (req) => {
@@ -227,8 +247,8 @@ serve(async (req) => {
     let rev: Awaited<ReturnType<typeof ocr>>;
     try {
       [ob, rev] = await Promise.all([
-        ocr(base, token, "/v1/ocr/obverse", frente),
-        ocr(base, token, "/v1/ocr/reverse", reverso),
+        ocr(base, token, "/v1/ocr/obverse", frente, ["image", "ine_front", "obverse", "base64"]),
+        ocr(base, token, "/v1/ocr/reverse", reverso, ["image", "ine_back", "reverse", "base64"]),
       ]);
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
@@ -252,12 +272,13 @@ serve(async (req) => {
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
     } else {
       const respuestaNoOcr = !ob.respuestaValida || !rev.respuestaValida;
-      const msg = ob.data?.message || rev.data?.message || (respuestaNoOcr
-        ? "Verificamex no devolvió una lectura OCR válida. No se descontaron intentos; inténtalo nuevamente."
-        : "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
+      const detalleServicio = String(ob.data?.message ?? rev.data?.message ?? ob.texto ?? "").slice(0, 300);
+      const msg = respuestaNoOcr
+        ? "Verificamex no devolvió la lectura de tu INE. No se descontaron intentos; inténtalo nuevamente."
+        : (ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
       await admin.from("verificamex_logs").insert({
         user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
-        mensaje: String(msg).slice(0, 500),
+        mensaje: `frente=${ob.status} reverso=${rev.status} :: ${detalleServicio}`.slice(0, 500),
       });
       return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, respuestaNoOcr ? 502 : 400);
     }
