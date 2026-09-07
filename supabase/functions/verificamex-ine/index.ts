@@ -116,8 +116,15 @@ function curpVisibleEnOcr(obj: unknown, curpEsperada: string): boolean {
   return false;
 }
 
-function limpiarBase64(v: string) {
-  return String(v || "").replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
+function normalizarImagen(v: string) {
+  const imagen = String(v || "").trim();
+  if (!imagen) return "";
+  // Verificamex exige el Data URL completo, no solamente los bytes base64.
+  return imagen.startsWith("data:image/") ? imagen : `data:image/jpeg;base64,${imagen}`;
+}
+
+function base64Puro(v: string) {
+  return v.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
 }
 
 function bytesDeBase64(b64: string) {
@@ -172,11 +179,11 @@ serve(async (req) => {
     userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
-    const frente = limpiarBase64(body?.frente ?? body?.obverse ?? "");
-    const reverso = limpiarBase64(body?.reverso ?? body?.reverse ?? "");
+    const frente = normalizarImagen(body?.frente ?? body?.obverse ?? "");
+    const reverso = normalizarImagen(body?.reverso ?? body?.reverse ?? "");
     if (!frente || !reverso) return json({ error: "Necesitamos la foto del frente y del reverso de tu INE." }, 400);
 
-    const peso = (b: string) => Math.floor((b.length * 3) / 4);
+    const peso = (b: string) => Math.floor((base64Puro(b).length * 3) / 4);
     for (const [nombre, img] of [["frente", frente], ["reverso", reverso]] as const) {
       const kb = peso(img) / 1024;
       if (kb < 150) return json({ error: `La foto del ${nombre} está muy borrosa o muy pequeña. Tómala otra vez llenando el recuadro.` }, 400);
@@ -217,7 +224,7 @@ serve(async (req) => {
       const subir = async (nombre: string, b64: string) => {
         const ruta = `${userId}/${sello}-${nombre}.jpg`;
         const { error } = await admin.storage.from("ine-documentos")
-          .upload(ruta, bytesDeBase64(b64), { contentType: "image/jpeg", upsert: true });
+          .upload(ruta, bytesDeBase64(base64Puro(b64)), { contentType: "image/jpeg", upsert: true });
         return error ? null : ruta;
       };
       urlFrente = await subir("frente", frente);

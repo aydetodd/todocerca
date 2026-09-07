@@ -7,6 +7,22 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 const MIN_BYTES = 150 * 1024;
 const MAX_BYTES = 5 * 1024 * 1024;
 
+function obtenerRecorte(v: HTMLVideoElement) {
+  const vistaAncho = v.clientWidth;
+  const vistaAlto = v.clientHeight;
+  const escala = Math.max(vistaAncho / v.videoWidth, vistaAlto / v.videoHeight);
+  const desbordeX = (v.videoWidth * escala - vistaAncho) / 2;
+  const desbordeY = (v.videoHeight * escala - vistaAlto) / 2;
+  const marcoAncho = vistaAncho * 0.88;
+  const marcoAlto = marcoAncho / 1.586;
+  return {
+    x: Math.max(0, (vistaAncho * 0.06 + desbordeX) / escala),
+    y: Math.max(0, ((vistaAlto - marcoAlto) / 2 + desbordeY) / escala),
+    ancho: Math.min(v.videoWidth, marcoAncho / escala),
+    alto: Math.min(v.videoHeight, marcoAlto / escala),
+  };
+}
+
 function prepararImagen(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const lector = new FileReader();
@@ -80,10 +96,7 @@ export default function CapturaFotoIne({
     const v = video.current;
     if (!v || !v.videoWidth) return;
     // Recortamos justo el recuadro guía (tamaño de tarjeta, 85.6 x 54 mm)
-    const anchoRec = v.videoWidth * 0.88;
-    const altoRec = anchoRec / 1.586;
-    const x = (v.videoWidth - anchoRec) / 2;
-    const y = (v.videoHeight - altoRec) / 2;
+    const { x, y, ancho: anchoRec, alto: altoRec } = obtenerRecorte(v);
     const canvas = document.createElement("canvas");
     canvas.width = anchoRec;
     canvas.height = altoRec;
@@ -106,7 +119,8 @@ export default function CapturaFotoIne({
     analisis.current = window.setInterval(() => {
       const v = video.current;
       if (!v || v.readyState < 2 || !v.videoWidth) return;
-      ctx.drawImage(v, v.videoWidth * 0.06, v.videoHeight * 0.18, v.videoWidth * 0.88, v.videoHeight * 0.64, 0, 0, 96, 60);
+      const recorte = obtenerRecorte(v);
+      ctx.drawImage(v, recorte.x, recorte.y, recorte.ancho, recorte.alto, 0, 0, 96, 60);
       const pixeles = ctx.getImageData(0, 0, 96, 60).data;
       const grises: number[] = [];
       let suma = 0;
