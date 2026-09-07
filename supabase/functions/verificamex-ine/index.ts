@@ -127,14 +127,21 @@ function bytesDeBase64(b64: string) {
   return arr;
 }
 
-async function ocr(base: string, token: string, ruta: string, image: string) {
+async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Record<string, string>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
+    // Accept: application/json es indispensable. Sin él, Verificamex responde con
+    // una redirección HTML a su panel ("Bienvenido a Verificamex") en vez del JSON.
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ image }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(cuerpo),
+      redirect: "manual",
       signal: controller.signal,
     });
     const contentType = res.headers.get("content-type") ?? "";
@@ -142,10 +149,23 @@ async function ocr(base: string, token: string, ruta: string, image: string) {
     let data: any = null;
     try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
     const respuestaValida = contentType.toLowerCase().includes("application/json") && esRespuestaOcr(data);
-    return { ok: res.ok && respuestaValida, status: res.status, data, respuestaValida };
+    return { ok: res.ok && respuestaValida, status: res.status, data, respuestaValida, texto };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** Probamos los nombres de campo documentados hasta obtener una lectura OCR real. */
+async function ocr(base: string, token: string, ruta: string, image: string, campos: string[]) {
+  let ultimo: Awaited<ReturnType<typeof pedirOcr>> | null = null;
+  for (const campo of campos) {
+    const r = await pedirOcr(base, token, ruta, { [campo]: image });
+    if (r.ok) return r;
+    ultimo = r;
+    // 401/403/5xx: no tiene caso probar otro nombre de campo
+    if (r.status === 401 || r.status === 403 || r.status >= 500) break;
+  }
+  return ultimo!;
 }
 
 serve(async (req) => {
