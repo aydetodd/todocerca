@@ -402,12 +402,12 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               </div>
             )}
 
-            <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
+            <Button type="button" className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
               {ocupado
                 ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE...</>)
                 : "Validar INE ($25 pesos, se cobran en tu primera recarga)"}
             </Button>
-            <Button variant="ghost" className="w-full" disabled={ocupado}
+            <Button type="button" variant="ghost" className="w-full" disabled={ocupado}
               onClick={() => {
                 toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Cuenta Básica ($10). Puedes subir después." });
                 onOpenChange(false);

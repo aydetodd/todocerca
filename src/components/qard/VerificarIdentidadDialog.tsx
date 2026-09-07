@@ -190,10 +190,10 @@ export default function VerificarIdentidadDialog({
                 </p>
               </div>
             )}
-            <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIneAhora}>
+            <Button type="button" className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIneAhora}>
               {ocupado ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Validando con Verificamex...</> : "Enviar y validar INE"}
             </Button>
-            <Button variant="ghost" className="w-full" disabled={ocupado} onClick={() => onOpenChange(false)}>Lo hago después</Button>
+            <Button type="button" variant="ghost" className="w-full" disabled={ocupado} onClick={() => onOpenChange(false)}>Lo hago después</Button>
           </div>
         )}
 
