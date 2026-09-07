@@ -85,9 +85,10 @@ serve(async (req) => {
     const peso = (b: string) => Math.floor((b.length * 3) / 4);
     for (const [nombre, img] of [["frente", frente], ["reverso", reverso]] as const) {
       const kb = peso(img) / 1024;
-      if (kb < 1024) return json({ error: `La foto del ${nombre} pesa menos de 1 MB. Toma la foto con mejor calidad.` }, 400);
+      if (kb < 150) return json({ error: `La foto del ${nombre} está muy borrosa o muy pequeña. Tómala otra vez llenando el recuadro.` }, 400);
       if (kb > 5120) return json({ error: `La foto del ${nombre} pesa más de 5 MB. Usa una foto más ligera.` }, 400);
     }
+
 
     const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
