@@ -247,8 +247,8 @@ serve(async (req) => {
     let rev: Awaited<ReturnType<typeof ocr>>;
     try {
       [ob, rev] = await Promise.all([
-        ocr(base, token, "/v1/ocr/obverse", frente),
-        ocr(base, token, "/v1/ocr/reverse", reverso),
+        ocr(base, token, "/v1/ocr/obverse", frente, ["image", "ine_front", "obverse", "base64"]),
+        ocr(base, token, "/v1/ocr/reverse", reverso, ["image", "ine_back", "reverse", "base64"]),
       ]);
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
