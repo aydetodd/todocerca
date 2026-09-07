@@ -259,6 +259,16 @@ serve(async (req) => {
     });
     if (insErr) throw insErr;
 
+    // La comisión del 2% se abona a la QaRd Maestra de TodoCerca
+    if (comisionRetiro > 0) {
+      const { error: comErr } = await admin.rpc("qard_comision_retiro" as any, {
+        _user_id: user.id, _monto: monto, _clave_rastreo: referencia,
+      });
+      if (comErr) console.error("[QARD-RETIRAR] comisión maestra", comErr);
+    }
+
+
+
 
     return new Response(JSON.stringify({
       ok: true,
