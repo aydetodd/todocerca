@@ -24,10 +24,12 @@ export default function CapturaFotoIne({
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const [camaraAbierta, setCamaraAbierta] = useState(false);
+  const [camaraLista, setCamaraLista] = useState(false);
 
   const cerrarCamara = () => {
     stream.current?.getTracks().forEach(t => t.stop());
     stream.current = null;
+    setCamaraLista(false);
     setCamaraAbierta(false);
   };
 
@@ -41,12 +43,6 @@ export default function CapturaFotoIne({
       });
       stream.current = s;
       setCamaraAbierta(true);
-      setTimeout(() => {
-        if (video.current) {
-          video.current.srcObject = s;
-          video.current.play().catch(() => {});
-        }
-      }, 50);
     } catch {
       // Si el navegador no da permiso, usamos la cámara del sistema
       respaldo.current?.click();
@@ -94,19 +90,19 @@ export default function CapturaFotoIne({
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium">{titulo}</span>
         {valor && (
-          <button onClick={() => onCambio(null)} className="text-muted-foreground" aria-label="Quitar foto">
+          <Button type="button" variant="ghost" size="icon" onClick={() => onCambio(null)} className="h-8 w-8 text-muted-foreground" aria-label="Quitar foto">
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
       {valor ? (
         <img src={valor} alt={titulo} className="w-full rounded-md object-cover max-h-44" />
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" onClick={abrirCamara}>
+          <Button type="button" variant="outline" size="sm" onClick={abrirCamara}>
             <Camera className="h-4 w-4 mr-1" /> Tomar foto
           </Button>
-          <Button variant="outline" size="sm" onClick={() => galeria.current?.click()}>
+          <Button type="button" variant="outline" size="sm" onClick={() => galeria.current?.click()}>
             <Upload className="h-4 w-4 mr-1" /> Galería
           </Button>
         </div>
@@ -118,19 +114,33 @@ export default function CapturaFotoIne({
 
       <Dialog open={camaraAbierta} onOpenChange={(o) => { if (!o) cerrarCamara(); }}>
         <DialogContent className="p-0 max-w-md overflow-hidden">
-          <div className="relative bg-black">
-            <video ref={video} playsInline muted className="w-full h-[60vh] object-cover" />
-            {/* Recuadro guía con la forma de la credencial */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[88%] aspect-[1.586/1] rounded-xl border-4 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]" />
+          <div className="relative overflow-hidden bg-foreground">
+            <video
+              ref={(node) => {
+                video.current = node;
+                if (node && stream.current) {
+                  node.srcObject = stream.current;
+                  void node.play().catch(() => undefined);
+                }
+              }}
+              onLoadedMetadata={() => setCamaraLista(true)}
+              playsInline
+              muted
+              className="h-[60vh] w-full object-cover"
+            />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 bg-foreground/60" />
+              <div className="relative z-10 w-[88%] aspect-[1.586/1] rounded-lg border-4 border-primary ring-2 ring-background shadow-[0_0_0_9999px_hsl(var(--foreground)/0.6)]" />
             </div>
-            <p className="absolute top-3 left-0 right-0 text-center text-white text-sm px-4">
+            <p className="absolute left-0 right-0 top-3 z-20 px-4 text-center text-sm font-semibold text-background">
               Acomoda tu {titulo.toLowerCase()} dentro del recuadro
             </p>
           </div>
           <div className="p-3 flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={cerrarCamara}>Cancelar</Button>
-            <Button className="flex-1" onClick={tomarFoto}>Tomar foto</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrarCamara}>Cancelar</Button>
+            <Button type="button" className="flex-1" disabled={!camaraLista} onClick={tomarFoto}>
+              {camaraLista ? "Tomar foto" : "Abriendo cámara..."}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

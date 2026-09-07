@@ -59,15 +59,22 @@ function bytesDeBase64(b64: string) {
 }
 
 async function ocr(base: string, token: string, ruta: string, image: string) {
-  const res = await fetch(`${base}${ruta}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ image }),
-  });
-  const texto = await res.text();
-  let data: any = null;
-  try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
-  return { ok: res.ok, status: res.status, data };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
+    const res = await fetch(`${base}${ruta}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ image }),
+      signal: controller.signal,
+    });
+    const texto = await res.text();
+    let data: any = null;
+    try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 serve(async (req) => {
@@ -141,10 +148,22 @@ serve(async (req) => {
     let fuente = "verificamex";
     let crudo: unknown = null;
 
-    const [ob, rev] = await Promise.all([
-      ocr(base, token, "/v1/ocr/obverse", frente),
-      ocr(base, token, "/v1/ocr/reverse", reverso),
-    ]);
+    let ob: Awaited<ReturnType<typeof ocr>>;
+    let rev: Awaited<ReturnType<typeof ocr>>;
+    try {
+      [ob, rev] = await Promise.all([
+        ocr(base, token, "/v1/ocr/obverse", frente),
+        ocr(base, token, "/v1/ocr/reverse", reverso),
+      ]);
+    } catch (error) {
+      const mensaje = error instanceof DOMException && error.name === "AbortError"
+        ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
+        : "No pudimos comunicarnos con Verificamex. Intenta nuevamente.";
+      await admin.from("verificamex_logs").insert({
+        user_id: userId, tipo: "ine", exito: false, http_status: 504, mensaje,
+      });
+      return json({ error: mensaje, intentos_restantes: MAX_INTENTOS - (intentos + 1) }, 504);
+    }
 
     if (ob.ok && rev.ok) {
       crudo = { obverse: ob.data, reverse: rev.data };

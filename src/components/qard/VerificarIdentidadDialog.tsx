@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { BadgeCheck, Camera, ExternalLink, Loader2, ShieldCheck, Upload, X } from "lucide-react";
+import { AlertCircle, BadgeCheck, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
+import CapturaFotoIne from "./CapturaFotoIne";
 
 type Props = {
   open: boolean;
@@ -29,11 +30,12 @@ type Persona = {
   entidad: string;
 };
 
-const MIN_BYTES = 1 * 1024 * 1024;
-const MAX_BYTES = 5 * 1024 * 1024;
-
 async function invocar(fn: string, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke(fn, { body });
+  const peticion = supabase.functions.invoke(fn, { body });
+  const limite = new Promise<never>((_, reject) => {
+    window.setTimeout(() => reject(new Error("La validación tardó demasiado. Revisa tu conexión e intenta otra vez.")), 60000);
+  });
+  const { data, error } = await Promise.race([peticion, limite]);
   if (error) {
     const detalle = (error as any)?.context?.text ? await (error as any).context.text() : error.message;
     let msg = detalle;
@@ -42,68 +44,6 @@ async function invocar(fn: string, body: Record<string, unknown>) {
   }
   if ((data as any)?.error) throw new Error((data as any).error);
   return data as any;
-}
-
-function leerArchivo(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const lector = new FileReader();
-    lector.onload = () => resolve(String(lector.result));
-    lector.onerror = () => reject(new Error("No pudimos leer la foto."));
-    lector.readAsDataURL(file);
-  });
-}
-
-function CapturaFoto({
-  titulo, valor, onCambio,
-}: { titulo: string; valor: string | null; onCambio: (v: string | null) => void }) {
-  const camara = useRef<HTMLInputElement>(null);
-  const galeria = useRef<HTMLInputElement>(null);
-
-  const procesar = async (file?: File | null) => {
-    if (!file) return;
-    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
-      toast({ title: "Formato no válido", description: "La foto debe ser JPG o PNG.", variant: "destructive" });
-      return;
-    }
-    if (file.size < MIN_BYTES) {
-      toast({ title: "Foto muy pequeña", description: "Debe pesar al menos 1 MB. Tómala con mejor calidad.", variant: "destructive" });
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      toast({ title: "Foto muy grande", description: "Debe pesar máximo 5 MB.", variant: "destructive" });
-      return;
-    }
-    onCambio(await leerArchivo(file));
-  };
-
-  return (
-    <div className="rounded-lg border p-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium">{titulo}</span>
-        {valor && (
-          <button onClick={() => onCambio(null)} className="text-muted-foreground" aria-label="Quitar foto">
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      {valor ? (
-        <img src={valor} alt={titulo} className="w-full rounded-md object-cover max-h-44" />
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" onClick={() => camara.current?.click()}>
-            <Camera className="h-4 w-4 mr-1" /> Cámara
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => galeria.current?.click()}>
-            <Upload className="h-4 w-4 mr-1" /> Galería
-          </Button>
-        </div>
-      )}
-      <input ref={camara} type="file" accept="image/jpeg,image/png" capture="environment" className="hidden"
-        onChange={e => procesar(e.target.files?.[0])} />
-      <input ref={galeria} type="file" accept="image/jpeg,image/png" className="hidden"
-        onChange={e => procesar(e.target.files?.[0])} />
-    </div>
-  );
 }
 
 export default function VerificarIdentidadDialog({
@@ -116,6 +56,7 @@ export default function VerificarIdentidadDialog({
   const [nivel, setNivel] = useState(0);
   const [frente, setFrente] = useState<string | null>(null);
   const [reverso, setReverso] = useState<string | null>(null);
+  const [errorIne, setErrorIne] = useState<string | null>(null);
 
   // Si la CURP ya quedó validada (Nivel 1+), pasamos directo a la INE: no la volvemos a pedir.
   useEffect(() => {
@@ -124,6 +65,7 @@ export default function VerificarIdentidadDialog({
     setPaso(nivelActual >= 2 ? "listo" : nivelActual >= 1 ? "ine" : "curp");
     setFrente(null);
     setReverso(null);
+    setErrorIne(null);
   }, [open, nivelActual]);
 
 
@@ -143,10 +85,17 @@ export default function VerificarIdentidadDialog({
   });
 
   const validarIneAhora = () => ejecutar(async () => {
-    const r = await invocar("verificamex-ine", { frente, reverso });
-    setNivel(r.verification_level ?? 2);
-    setPaso("listo");
-    onVerificada?.();
+    setErrorIne(null);
+    try {
+      const r = await invocar("verificamex-ine", { frente, reverso });
+      setNivel(r.verification_level ?? 2);
+      setPaso("listo");
+      onVerificada?.();
+    } catch (e: unknown) {
+      const mensaje = e instanceof Error ? e.message : "No pudimos validar tu INE.";
+      setErrorIne(mensaje);
+      throw e;
+    }
   });
 
   return (
@@ -227,16 +176,24 @@ export default function VerificarIdentidadDialog({
               </div>
             )}
             <p className="text-sm text-muted-foreground">
-              Toma la foto del frente y del reverso de tu INE. Deben ser JPG o PNG, entre 1 MB y 5 MB,
+              Toma la foto del frente y del reverso de tu INE. Deben ser JPG o PNG, entre 150 KB y 5 MB,
               con buena luz y sin reflejos.
             </p>
 
-            <CapturaFoto titulo="Frente de la INE" valor={frente} onCambio={setFrente} />
-            <CapturaFoto titulo="Reverso de la INE" valor={reverso} onCambio={setReverso} />
+            <CapturaFotoIne titulo="Frente de la INE" valor={frente} onCambio={setFrente} />
+            <CapturaFotoIne titulo="Reverso de la INE" valor={reverso} onCambio={setReverso} />
+            {errorIne && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                <p className="flex items-start gap-2 text-sm text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {errorIne}
+                </p>
+              </div>
+            )}
             <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIneAhora}>
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar y validar INE"}
+              {ocupado ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Validando con Verificamex...</> : "Enviar y validar INE"}
             </Button>
-            <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>Lo hago después</Button>
+            <Button variant="ghost" className="w-full" disabled={ocupado} onClick={() => onOpenChange(false)}>Lo hago después</Button>
           </div>
         )}
 
