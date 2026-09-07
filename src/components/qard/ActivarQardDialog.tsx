@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Check, ShieldCheck, Loader2, ExternalLink, BadgeCheck, AlertCircle, RefreshCw } from "lucide-react";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
+import CapturaFotoIne from "./CapturaFotoIne";
 
 type Props = {
   open: boolean;
@@ -15,7 +16,7 @@ type Props = {
   phoneVerified: boolean;
   emailVerified: boolean;
   onActivada: () => void;
-  /** Se llama cuando el usuario quiere subir su INE para Nivel 2 */
+  /** Compatibilidad: ya no se usa, el INE se valida dentro de este mismo flujo */
   onQuiereIne?: () => void;
 };
 
@@ -48,9 +49,11 @@ function nombrePersona(p: Persona) {
   return [p.nombres, p.primerApellido, p.segundoApellido].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
 
-export default function ActivarQardDialog({ open, onOpenChange, emailVerified, onActivada, onQuiereIne }: Props) {
+type Paso = 0 | 1 | 2 | 3 | 4 | 5;
+
+export default function ActivarQardDialog({ open, onOpenChange, emailVerified, onActivada }: Props) {
   const navigate = useNavigate();
-  const [paso, setPaso] = useState<1 | 2 | 3 | 4>(emailVerified ? 2 : 1);
+  const [paso, setPaso] = useState<Paso>(0);
   const [ocupado, setOcupado] = useState(false);
   const [correo, setCorreo] = useState("");
   const [codigoCorreo, setCodigoCorreo] = useState("");
@@ -61,9 +64,21 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
   const [persona, setPersona] = useState<Persona | null>(null);
   const [errorCurp, setErrorCurp] = useState<string | null>(null);
 
+  // Nivel 2 (INE)
+  const [frente, setFrente] = useState<string | null>(null);
+  const [reverso, setReverso] = useState<string | null>(null);
+  const [errorIne, setErrorIne] = useState<string | null>(null);
+  const [activada, setActivada] = useState(false);
+
   useEffect(() => {
-    if (open) setPaso(emailVerified ? 2 : 1);
-  }, [open, emailVerified]);
+    if (open) {
+      setPaso(0);
+      setErrorIne(null);
+      setActivada(false);
+      setFrente(null);
+      setReverso(null);
+    }
+  }, [open]);
 
   const ejecutar = async (fn: () => Promise<void>) => {
     setOcupado(true);
@@ -97,17 +112,41 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
     if (limpio.length === 18 && validarCurp(limpio)) void validarConRenapo(limpio);
   };
 
-  const activar = (irAIne: boolean) => ejecutar(async () => {
+  /** Activa la QaRd en Nivel 1 (idempotente dentro de este flujo). */
+  const asegurarActivada = async () => {
+    if (activada) return;
     await llamar("activar", { nombre_completo: nombre.trim(), curp });
-    toast({
-      title: "¡Tu QaRd está activa!",
-      description: "Recarga saldo para comenzar.",
-    });
+    setActivada(true);
+    onActivada();
+  };
+
+  const terminarNivel1 = () => ejecutar(async () => {
+    await asegurarActivada();
+    toast({ title: "¡Tu QaRd está activa!", description: "Recarga saldo para comenzar." });
+    onOpenChange(false);
+    navigate("/qard/recargar");
+  });
+
+  const irAIne = () => ejecutar(async () => {
+    await asegurarActivada();
+    setPaso(5);
+  });
+
+  const validarIne = () => ejecutar(async () => {
+    setErrorIne(null);
+    try {
+      await invocar("verificamex-ine", { frente, reverso });
+    } catch (e: any) {
+      setErrorIne(e.message || "No pudimos validar tu INE.");
+      return;
+    }
+    toast({ title: "¡INE validada!", description: "Tu límite ahora es de 3,000 UDIS al mes." });
     onActivada();
     onOpenChange(false);
-    if (irAIne) onQuiereIne?.();
-    else navigate("/qard/recargar");
+    navigate("/qard/recargar");
   });
+
+  const totalPasos = 4;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,11 +157,52 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 mb-2">
-          {[1, 2, 3, 4].map(n => (
-            <div key={n} className={`h-1.5 flex-1 rounded-full ${paso >= n ? "bg-primary" : "bg-muted"}`} />
-          ))}
-        </div>
+        {paso > 0 && (
+          <div className="flex items-center gap-2 mb-2">
+            {[1, 2, 3, 4].map(n => (
+              <div key={n} className={`h-1.5 flex-1 rounded-full ${Math.min(paso, totalPasos) >= n ? "bg-primary" : "bg-muted"}`} />
+            ))}
+          </div>
+        )}
+
+        {paso === 0 && (
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Para activar tu tarjeta QaRd y poder mover dinero (recargar, pagar y transferir),
+              necesitamos:
+            </p>
+            <div className="rounded-lg border p-3 space-y-1">
+              <p>✅ Verificar tu correo electrónico</p>
+              <p>✅ Validar tu identidad con RENAPO (CURP)</p>
+              <p>✅ Opcional: validar tu INE para tener un límite más alto</p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-1">
+              <p className="font-semibold">Costos claros desde el inicio</p>
+              <p className="text-muted-foreground">• $10 pesos — Apertura de cuenta QaRd (una sola vez, se cobra en tu primera recarga)</p>
+              <p className="text-muted-foreground">• $5 pesos — Comisión por cada recarga</p>
+              <p className="text-muted-foreground">• 2% — Comisión por retiro a banco</p>
+              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85.</p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-1">
+              <p className="font-semibold">Límites mensuales</p>
+              <p className="text-muted-foreground">• Nivel 1 (con CURP): 1,000 UDIS (~$8,150 pesos)</p>
+              <p className="text-muted-foreground">• Nivel 2 (con INE): 3,000 UDIS (~$24,500 pesos)</p>
+            </div>
+
+            <p className="text-emerald-600 font-medium">✅ Las transferencias entre QaRds no tienen comisión.</p>
+
+            <div className="space-y-2 pt-1">
+              <Button className="w-full" onClick={() => setPaso(emailVerified ? 2 : 1)}>
+                Entendido, activar mi QaRd
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
+                Seguir usando mi apodo (sin activar)
+              </Button>
+            </div>
+          </div>
+        )}
 
         {paso === 1 && (
           <div className="space-y-3">
@@ -241,34 +321,31 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               </p>
             </div>
 
+            <p className="font-medium">Elige tu nivel de activación:</p>
+
             <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">Nivel 1 activado</p>
+              <p className="font-semibold">Nivel 1 (con tu CURP)</p>
               <p className="text-muted-foreground">• Límite: 1,000 UDIS (~$8,150 pesos) al mes</p>
-              <p className="text-muted-foreground">• Puedes recargar, pagar y transferir</p>
-            </div>
-
-            <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">Costos</p>
-              <p className="text-muted-foreground">• $10 pesos — Apertura de cuenta QaRd (una sola vez)</p>
-              <p className="text-muted-foreground">• $5 pesos — Comisión por recarga</p>
-              <p className="font-medium">• Total en tu PRIMERA recarga: $15 pesos</p>
-              <p className="text-muted-foreground">• Recargas siguientes: solo $5 pesos</p>
-            </div>
-
-            <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">🚀 ¿Quieres más capacidad?</p>
-              <p className="text-muted-foreground">Valida tu INE para subir a Nivel 2:</p>
-              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos) al mes</p>
-              <p className="text-muted-foreground">• Solo toma 2 minutos</p>
-            </div>
-
-            <div className="space-y-2">
-              <Button className="w-full" onClick={() => setPaso(4)}>
+              <p className="text-muted-foreground">• Suficiente para la mayoría de las personas</p>
+              <Button className="w-full mt-2" onClick={() => setPaso(4)}>
                 Activar mi QaRd con Nivel 1
               </Button>
-              <Button variant="outline" className="w-full" disabled={ocupado} onClick={() => activar(true)}>
-                Validar INE para Nivel 2
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-1">
+              <p className="font-semibold">🚀 Nivel 2 (con tu INE)</p>
+              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos) al mes</p>
+              <p className="text-muted-foreground">• Ideal si manejas montos más altos</p>
+              <p className="text-muted-foreground">• Solo toma 2 minutos más</p>
+              <Button variant="outline" className="w-full mt-2" disabled={ocupado} onClick={irAIne}>
+                {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Validar INE para subir a Nivel 2"}
               </Button>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-1">
+              <p className="font-semibold">Recordatorio de costos</p>
+              <p className="text-muted-foreground">• Primera recarga: $15 ($10 apertura + $5 recarga)</p>
+              <p className="text-muted-foreground">• Recargas siguientes: $5</p>
             </div>
           </div>
         )}
@@ -283,11 +360,48 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               <p><span className="text-muted-foreground">Costos:</span> $10 apertura + $5 recarga = $15 en tu primera recarga</p>
             </div>
             <Button className="w-full" disabled={ocupado || nombre.trim().length < 5 || !validarCurp(curp)}
-              onClick={() => activar(false)}>
+              onClick={terminarNivel1}>
               {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : (<><Check className="h-4 w-4 mr-1" /> Confirmar y activar</>)}
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => setPaso(3)} disabled={ocupado}>
               Regresar
+            </Button>
+          </div>
+        )}
+
+        {paso === 5 && (
+          <div className="space-y-3 text-sm">
+            <p className="font-semibold">📸 Validar tu INE para subir a Nivel 2</p>
+            <div className="rounded-lg border p-3 space-y-1">
+              <p className="text-muted-foreground text-xs">Tus datos ya están validados:</p>
+              <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
+              <p className="font-mono"><span className="text-muted-foreground font-sans">CURP:</span> {curp}</p>
+            </div>
+
+            <CapturaFotoIne titulo="Paso 1: foto del FRENTE de tu INE" valor={frente} onCambio={setFrente} />
+            <CapturaFotoIne titulo="Paso 2: foto del REVERSO de tu INE" valor={reverso} onCambio={setReverso} />
+            <p className="text-xs text-muted-foreground">Cada foto debe pesar entre 1 MB y 5 MB, en JPG o PNG.</p>
+
+            {errorIne && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                <p className="text-sm text-destructive flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {errorIne}
+                </p>
+              </div>
+            )}
+
+            <Button className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
+              {ocupado
+                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE con Verificamex...</>)
+                : "Enviar para validación"}
+            </Button>
+            <Button variant="ghost" className="w-full" disabled={ocupado}
+              onClick={() => {
+                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Nivel 1. Puedes subir a Nivel 2 después." });
+                onOpenChange(false);
+                navigate("/qard/recargar");
+              }}>
+              Omitir y continuar con Nivel 1
             </Button>
           </div>
         )}
