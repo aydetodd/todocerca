@@ -321,30 +321,34 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               </p>
             </div>
 
-            <p className="font-medium">Elige tu nivel de activación:</p>
+            <p className="font-medium">Elige el tipo de cuenta:</p>
 
             <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">Nivel 1 (con tu CURP)</p>
-              <p className="text-muted-foreground">• Límite: 1,000 UDIS (~$8,150 pesos) al mes</p>
-              <p className="text-muted-foreground">• Suficiente para la mayoría de las personas</p>
+              <p className="font-semibold">Cuenta Básica — $10 pesos</p>
+              <p className="text-muted-foreground">• Ideal para: menores de edad, adultos mayores y familiares</p>
+              <p className="text-muted-foreground">• Validación: solo tu CURP</p>
+              <p className="text-muted-foreground">• Límite: 1,000 UDIS (~$8,150 pesos al mes)</p>
+              <p className="text-muted-foreground">• Se cobran $10 en tu primera recarga</p>
               <Button className="w-full mt-2" onClick={() => setPaso(4)}>
-                Activar mi QaRd con Nivel 1
+                Seleccionar Cuenta Básica
               </Button>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
-              <p className="font-semibold">🚀 Nivel 2 (con tu INE)</p>
-              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos) al mes</p>
-              <p className="text-muted-foreground">• Ideal si manejas montos más altos</p>
-              <p className="text-muted-foreground">• Solo toma 2 minutos más</p>
+              <p className="font-semibold">🚀 Cuenta Titular — $25 pesos</p>
+              <p className="text-muted-foreground">• Ideal para: adultos que manejan más dinero</p>
+              <p className="text-muted-foreground">• Validación: INE completa (frente y reverso)</p>
+              <p className="text-muted-foreground">• Límite: 3,000 UDIS (~$24,500 pesos al mes)</p>
+              <p className="text-muted-foreground">• Se cobran $25 en tu primera recarga</p>
               <Button variant="outline" className="w-full mt-2" disabled={ocupado} onClick={irAIne}>
-                {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Validar INE para subir a Nivel 2"}
+                {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seleccionar Cuenta Titular"}
               </Button>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Recordatorio de costos</p>
-              <p className="text-muted-foreground">• Primera recarga: $15 ($10 apertura + $5 recarga)</p>
+              <p className="text-muted-foreground">• Primera recarga Básica: $15 ($10 apertura + $5 recarga)</p>
+              <p className="text-muted-foreground">• Primera recarga Titular: $30 ($25 validación INE + $5 recarga)</p>
               <p className="text-muted-foreground">• Recargas siguientes: $5</p>
             </div>
           </div>
