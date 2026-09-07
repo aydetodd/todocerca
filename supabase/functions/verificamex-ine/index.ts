@@ -47,6 +47,19 @@ function mismoNombre(a: string, b: string) {
   return coinciden >= Math.min(2, Math.min(pa.length, pb.length));
 }
 
+function textoProfundo(obj: unknown): string {
+  if (typeof obj === "string" || typeof obj === "number") return String(obj);
+  if (Array.isArray(obj)) return obj.map(textoProfundo).join(" ");
+  if (obj && typeof obj === "object") return Object.values(obj as Record<string, unknown>).map(textoProfundo).join(" ");
+  return "";
+}
+
+function extraerCurp(obj: unknown): string {
+  const directa = buscar(obj, ["curp"]);
+  if (directa) return directa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return textoProfundo(obj).toUpperCase().match(/[A-Z][AEIOUX][A-Z]{2}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/)?.[0] ?? "";
+}
+
 function limpiarBase64(v: string) {
   return String(v || "").replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
 }
@@ -166,12 +179,12 @@ serve(async (req) => {
     if (ob.ok && rev.ok) {
       await admin.from("qard_identidad").update({ ocr_intentos: intentos + 1 }).eq("user_id", userId);
       crudo = { obverse: ob.data, reverse: rev.data };
-      curpIne = (buscar(ob.data, ["curp"]) ?? buscar(rev.data, ["curp"]) ?? "").toUpperCase();
+      curpIne = extraerCurp(ob.data) || extraerCurp(rev.data);
       nombreIne = [
-        buscar(ob.data, ["nombres", "nombre"]) ?? "",
-        buscar(ob.data, ["primerapellido", "apellidopaterno"]) ?? "",
-        buscar(ob.data, ["segundoapellido", "apellidomaterno"]) ?? "",
-      ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto"]) ?? "");
+        buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
+        buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
+        buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
+      ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
     } else {
       const msg = ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.";
       await admin.from("verificamex_logs").insert({
@@ -182,7 +195,7 @@ serve(async (req) => {
     }
 
     const curpCoincide = !!curpIne && !!curpRenapo && curpIne === String(curpRenapo).toUpperCase();
-    const nombreCoincide = mismoNombre(nombreIne, nombreRenapo);
+    const nombreCoincide = mismoNombre(nombreIne || textoProfundo(ob.data), nombreRenapo);
 
     if (!curpCoincide && !nombreCoincide) {
       await admin.from("verificamex_logs").insert({
