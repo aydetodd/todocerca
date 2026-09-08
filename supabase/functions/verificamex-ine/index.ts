@@ -292,15 +292,14 @@ serve(async (req) => {
     let ob: Awaited<ReturnType<typeof pedirOcr>>;
     let rev: Awaited<ReturnType<typeof pedirOcr>>;
     try {
-      // Aunque las rutas separan frente y reverso, el servicio KYC exige que ambas
-      // imágenes viajen juntas. Omitir una produjo el error confirmado HTTP 400.
-      const imagenesIne = { ine_front: frente, ine_back: reverso };
-      ob = await pedirOcr(base, token, "/v1/ocr/obverse", imagenesIne);
+      // El servicio KYC exige que ambas imágenes viajen juntas; probamos las
+      // formas de envío conocidas hasta obtener una lectura OCR real.
+      ob = await pedirOcr(base, token, "/v1/ocr/obverse", frente, reverso);
       if (!ob.ok) {
-        const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 300);
+        const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 250);
         await admin.from("verificamex_logs").insert({
           user_id: userId, tipo: "ine", exito: false, http_status: ob.status,
-          mensaje: `frente=${ob.status} :: ${detalleServicio}`.slice(0, 500),
+          mensaje: `frente=${ob.status} variante=${(ob as any).variante} :: ${detalleServicio}`.slice(0, 500),
         });
         return json({
           error: ob.respuestaValida
@@ -309,7 +308,8 @@ serve(async (req) => {
           intentos_restantes: MAX_INTENTOS - intentos,
         }, ob.respuestaValida ? 400 : 502);
       }
-      rev = await pedirOcr(base, token, "/v1/ocr/reverse", imagenesIne);
+      rev = await pedirOcr(base, token, "/v1/ocr/reverse", frente, reverso);
+
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
         ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
