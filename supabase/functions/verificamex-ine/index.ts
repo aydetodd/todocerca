@@ -62,7 +62,26 @@ function buscarPorTipo(obj: unknown, tipos: string[]): string | null {
 function esRespuestaOcr(obj: unknown): boolean {
   if (!obj || typeof obj !== "object") return false;
   const texto = JSON.stringify(obj);
-  return /"(DocumentData|documentData|parse_ocr|ocr|mrz)"\s*:/.test(texto);
+  if (/"(DocumentData|documentData|parse_ocr|ocr|mrz)"\s*:/.test(texto)) return true;
+  // Algunas respuestas envuelven los campos sin conservar el nombre DocumentData.
+  // Aceptamos únicamente arreglos con la estructura real Name/Type/Value para no
+  // confundir nuevamente la página de bienvenida con una lectura OCR.
+  const contieneCamposOcr = (valor: unknown): boolean => {
+    if (Array.isArray(valor)) {
+      return valor.some((item) => {
+        if (!item || typeof item !== "object") return contieneCamposOcr(item);
+        const registro = item as Record<string, unknown>;
+        const tieneEtiqueta = "Name" in registro || "name" in registro || "Type" in registro || "type" in registro;
+        const tieneValor = "Value" in registro || "value" in registro;
+        return (tieneEtiqueta && tieneValor) || contieneCamposOcr(item);
+      });
+    }
+    if (valor && typeof valor === "object") {
+      return Object.values(valor as Record<string, unknown>).some(contieneCamposOcr);
+    }
+    return false;
+  };
+  return contieneCamposOcr(obj);
 }
 
 /** Normaliza para comparar nombres: sin acentos, sin comas, mayúsculas. */
@@ -238,8 +257,10 @@ serve(async (req) => {
     let ob: Awaited<ReturnType<typeof pedirOcr>>;
     let rev: Awaited<ReturnType<typeof pedirOcr>>;
     try {
-      // Verificamex exige el Data URL completo dentro de JSON.
-      ob = await pedirOcr(base, token, "/v1/ocr/obverse", { ine_front: frente });
+      // Aunque las rutas separan frente y reverso, el servicio KYC exige que ambas
+      // imágenes viajen juntas. Omitir una produjo el error confirmado HTTP 400.
+      const imagenesIne = { ine_front: frente, ine_back: reverso };
+      ob = await pedirOcr(base, token, "/v1/ocr/obverse", imagenesIne);
       if (!ob.ok) {
         const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 300);
         await admin.from("verificamex_logs").insert({
@@ -249,11 +270,11 @@ serve(async (req) => {
         return json({
           error: ob.respuestaValida
             ? (ob.data?.message || "No pudimos leer el frente de tu INE. Toma la foto con buena luz y sin reflejos.")
-            : "Verificamex no devolvió la lectura del frente de tu INE. No se descontaron intentos; inténtalo nuevamente.",
+            : "Verificamex recibió tus fotos, pero no devolvió la lectura del frente. No vuelvas a enviarlas por ahora.",
           intentos_restantes: MAX_INTENTOS - intentos,
         }, ob.respuestaValida ? 400 : 502);
       }
-      rev = await pedirOcr(base, token, "/v1/ocr/reverse", { ine_back: reverso });
+      rev = await pedirOcr(base, token, "/v1/ocr/reverse", imagenesIne);
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
         ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
@@ -278,7 +299,7 @@ serve(async (req) => {
       const respuestaNoOcr = !rev.respuestaValida;
       const detalleServicio = String(rev.data?.message ?? rev.texto ?? "").slice(0, 300);
       const msg = respuestaNoOcr
-        ? "Verificamex no devolvió la lectura de tu INE. No se descontaron intentos; inténtalo nuevamente."
+        ? "Verificamex recibió tus fotos, pero no devolvió una lectura utilizable. No vuelvas a enviarlas por ahora."
         : (ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
       await admin.from("verificamex_logs").insert({
         user_id: userId, tipo: "ine", exito: false, http_status: rev.status,

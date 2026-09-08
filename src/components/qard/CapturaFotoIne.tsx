@@ -139,12 +139,14 @@ export default function CapturaFotoIne({
         : Number.POSITIVE_INFINITY;
       luminanciaAnterior.current = grises;
 
-      const bienIluminada = promedio > 55 && promedio < 225;
-      const enfocada = detalle > 12;
-      const estable = movimiento < 5;
+      // La cámara móvil suaviza bastante la imagen mientras termina de enfocar.
+      // Estos límites esperan estabilidad real sin exigir una nitidez imposible.
+      const bienIluminada = promedio > 40 && promedio < 235;
+      const enfocada = detalle > 5;
+      const estable = movimiento < 10;
       cuadrosEstables.current = bienIluminada && enfocada && estable ? cuadrosEstables.current + 1 : 0;
-      setEstadoMarco(cuadrosEstables.current >= 2 ? "quieto" : "acomoda");
-      if (cuadrosEstables.current >= 4) {
+      setEstadoMarco(cuadrosEstables.current >= 1 ? "quieto" : "acomoda");
+      if (cuadrosEstables.current >= 3) {
         setEstadoMarco("listo");
         window.clearInterval(analisis.current ?? undefined);
         analisis.current = null;
