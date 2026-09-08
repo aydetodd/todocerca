@@ -153,18 +153,19 @@ function bytesDeBase64(b64: string) {
   return arr;
 }
 
-async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Record<string, string>) {
+async function enviarOcr(base: string, token: string, ruta: string, body: BodyInit, contentTypeJson: boolean) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    };
+    if (contentTypeJson) headers["Content-Type"] = "application/json";
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(cuerpo),
+      headers,
+      body,
       redirect: "manual",
       signal: controller.signal,
     });
@@ -178,6 +179,40 @@ async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Recor
     clearTimeout(timeout);
   }
 }
+
+/**
+ * Verificamex ha rechazado los cuerpos JSON con "requiere imagen frontal y trasera".
+ * Probamos las formas conocidas del servicio y nos quedamos con la primera que
+ * devuelva una lectura OCR real. Los rechazos (400/422) no consumen tokens.
+ */
+async function pedirOcr(base: string, token: string, ruta: string, frente: string, reverso: string) {
+  const frenteB64 = base64Puro(frente);
+  const reversoB64 = base64Puro(reverso);
+
+  const multipart = () => {
+    const fd = new FormData();
+    fd.append("ine_front", new Blob([bytesDeBase64(frenteB64)], { type: "image/jpeg" }), "frente.jpg");
+    fd.append("ine_back", new Blob([bytesDeBase64(reversoB64)], { type: "image/jpeg" }), "reverso.jpg");
+    return fd;
+  };
+
+  const variantes: { nombre: string; body: BodyInit; json: boolean }[] = [
+    { nombre: "multipart", body: multipart(), json: false },
+    { nombre: "json_b64", body: JSON.stringify({ ine_front: frenteB64, ine_back: reversoB64 }), json: true },
+    { nombre: "json_dataurl", body: JSON.stringify({ ine_front: frente, ine_back: reverso }), json: true },
+  ];
+
+  let ultimo: Awaited<ReturnType<typeof enviarOcr>> & { variante?: string } = {
+    ok: false, status: 0, data: null, respuestaValida: false, texto: "",
+  };
+  for (const v of variantes) {
+    const r = await enviarOcr(base, token, ruta, v.body, v.json);
+    ultimo = { ...r, variante: v.nombre };
+    if (r.ok) return ultimo;
+  }
+  return ultimo;
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -257,15 +292,14 @@ serve(async (req) => {
     let ob: Awaited<ReturnType<typeof pedirOcr>>;
     let rev: Awaited<ReturnType<typeof pedirOcr>>;
     try {
-      // Aunque las rutas separan frente y reverso, el servicio KYC exige que ambas
-      // imágenes viajen juntas. Omitir una produjo el error confirmado HTTP 400.
-      const imagenesIne = { ine_front: frente, ine_back: reverso };
-      ob = await pedirOcr(base, token, "/v1/ocr/obverse", imagenesIne);
+      // El servicio KYC exige que ambas imágenes viajen juntas; probamos las
+      // formas de envío conocidas hasta obtener una lectura OCR real.
+      ob = await pedirOcr(base, token, "/v1/ocr/obverse", frente, reverso);
       if (!ob.ok) {
-        const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 300);
+        const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 250);
         await admin.from("verificamex_logs").insert({
           user_id: userId, tipo: "ine", exito: false, http_status: ob.status,
-          mensaje: `frente=${ob.status} :: ${detalleServicio}`.slice(0, 500),
+          mensaje: `frente=${ob.status} variante=${(ob as any).variante} :: ${detalleServicio}`.slice(0, 500),
         });
         return json({
           error: ob.respuestaValida
@@ -274,7 +308,8 @@ serve(async (req) => {
           intentos_restantes: MAX_INTENTOS - intentos,
         }, ob.respuestaValida ? 400 : 502);
       }
-      rev = await pedirOcr(base, token, "/v1/ocr/reverse", imagenesIne);
+      rev = await pedirOcr(base, token, "/v1/ocr/reverse", frente, reverso);
+
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
         ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
