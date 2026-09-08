@@ -138,8 +138,6 @@ async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Recor
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
-    // Accept: application/json es indispensable. Sin él, Verificamex responde con
-    // una redirección HTML a su panel ("Bienvenido a Verificamex") en vez del JSON.
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
       headers: {
@@ -237,15 +235,25 @@ serve(async (req) => {
     let fuente = "verificamex";
     let crudo: unknown = null;
 
-    let ob: Awaited<ReturnType<typeof ocr>>;
-    let rev: Awaited<ReturnType<typeof ocr>>;
+    let ob: Awaited<ReturnType<typeof pedirOcr>>;
+    let rev: Awaited<ReturnType<typeof pedirOcr>>;
     try {
-      // Estos son los nombres exactos exigidos por Verificamex. Probar nombres
-      // alternos primero provocaba 422 al frente y 500 al reverso, sin ejecutar OCR.
-      [ob, rev] = await Promise.all([
-        pedirOcr(base, token, "/v1/ocr/obverse", { ine_front: frente }),
-        pedirOcr(base, token, "/v1/ocr/reverse", { ine_back: reverso }),
-      ]);
+      // Verificamex exige el Data URL completo dentro de JSON.
+      ob = await pedirOcr(base, token, "/v1/ocr/obverse", { ine_front: frente });
+      if (!ob.ok) {
+        const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 300);
+        await admin.from("verificamex_logs").insert({
+          user_id: userId, tipo: "ine", exito: false, http_status: ob.status,
+          mensaje: `frente=${ob.status} :: ${detalleServicio}`.slice(0, 500),
+        });
+        return json({
+          error: ob.respuestaValida
+            ? (ob.data?.message || "No pudimos leer el frente de tu INE. Toma la foto con buena luz y sin reflejos.")
+            : "Verificamex no devolvió la lectura del frente de tu INE. No se descontaron intentos; inténtalo nuevamente.",
+          intentos_restantes: MAX_INTENTOS - intentos,
+        }, ob.respuestaValida ? 400 : 502);
+      }
+      rev = await pedirOcr(base, token, "/v1/ocr/reverse", { ine_back: reverso });
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
         ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
@@ -256,7 +264,7 @@ serve(async (req) => {
       return json({ error: mensaje, intentos_restantes: MAX_INTENTOS - intentos }, 504);
     }
 
-    if (ob.ok && rev.ok) {
+    if (rev.ok) {
       await admin.from("qard_identidad").update({ ocr_intentos: intentos + 1 }).eq("user_id", userId);
       crudo = { obverse: ob.data, reverse: rev.data };
       curpIne = extraerCurp(ob.data) || extraerCurp(rev.data)
@@ -267,13 +275,13 @@ serve(async (req) => {
         buscarPorTipo(ob.data, ["mothersurname", "secondsurname", "apellido materno", "segundo apellido"]) ?? buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
     } else {
-      const respuestaNoOcr = !ob.respuestaValida || !rev.respuestaValida;
-      const detalleServicio = String(ob.data?.message ?? rev.data?.message ?? ob.texto ?? "").slice(0, 300);
+      const respuestaNoOcr = !rev.respuestaValida;
+      const detalleServicio = String(rev.data?.message ?? rev.texto ?? "").slice(0, 300);
       const msg = respuestaNoOcr
         ? "Verificamex no devolvió la lectura de tu INE. No se descontaron intentos; inténtalo nuevamente."
         : (ob.data?.message || rev.data?.message || "No pudimos leer tu INE. Toma las fotos con buena luz y sin reflejos.");
       await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "ine", exito: false, http_status: ob.ok ? rev.status : ob.status,
+        user_id: userId, tipo: "ine", exito: false, http_status: rev.status,
         mensaje: `frente=${ob.status} reverso=${rev.status} :: ${detalleServicio}`.slice(0, 500),
       });
       return json({ error: msg, intentos_restantes: MAX_INTENTOS - intentos }, respuestaNoOcr ? 502 : 400);
