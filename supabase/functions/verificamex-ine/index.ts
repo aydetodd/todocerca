@@ -134,28 +134,18 @@ function bytesDeBase64(b64: string) {
   return arr;
 }
 
-function archivoDesdeDataUrl(dataUrl: string, nombre: string) {
-  const coincidencia = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-  if (!coincidencia) throw new Error("La foto no tiene un formato válido.");
-  const mime = coincidencia[1];
-  const contenido = coincidencia[2];
-  const extension = mime === "image/png" ? "png" : "jpg";
-  return new File([bytesDeBase64(contenido)], `${nombre}.${extension}`, { type: mime });
-}
-
-async function pedirOcr(base: string, token: string, ruta: string, campo: string, imagen: string) {
+async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Record<string, string>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
-    const cuerpo = new FormData();
-    cuerpo.append(campo, archivoDesdeDataUrl(imagen, campo));
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: cuerpo,
+      body: JSON.stringify(cuerpo),
       redirect: "manual",
       signal: controller.signal,
     });
@@ -248,9 +238,8 @@ serve(async (req) => {
     let ob: Awaited<ReturnType<typeof pedirOcr>>;
     let rev: Awaited<ReturnType<typeof pedirOcr>>;
     try {
-      // Verificamex recibe archivos multipart. Enviar base64 dentro de JSON hacía
-      // que su validador respondiera 422: "El campo ine front es obligatorio".
-      ob = await pedirOcr(base, token, "/v1/ocr/obverse", "ine_front", frente);
+      // Verificamex exige el Data URL completo dentro de JSON.
+      ob = await pedirOcr(base, token, "/v1/ocr/obverse", { ine_front: frente });
       if (!ob.ok) {
         const detalleServicio = String(ob.data?.message ?? ob.texto ?? "").slice(0, 300);
         await admin.from("verificamex_logs").insert({
@@ -264,7 +253,7 @@ serve(async (req) => {
           intentos_restantes: MAX_INTENTOS - intentos,
         }, ob.respuestaValida ? 400 : 502);
       }
-      rev = await pedirOcr(base, token, "/v1/ocr/reverse", "ine_back", reverso);
+      rev = await pedirOcr(base, token, "/v1/ocr/reverse", { ine_back: reverso });
     } catch (error) {
       const mensaje = error instanceof DOMException && error.name === "AbortError"
         ? "Verificamex tardó demasiado en responder. Intenta nuevamente."
