@@ -153,18 +153,19 @@ function bytesDeBase64(b64: string) {
   return arr;
 }
 
-async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Record<string, string>) {
+async function enviarOcr(base: string, token: string, ruta: string, body: BodyInit, contentTypeJson: boolean) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    };
+    if (contentTypeJson) headers["Content-Type"] = "application/json";
     const res = await fetch(`${base}${ruta}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(cuerpo),
+      headers,
+      body,
       redirect: "manual",
       signal: controller.signal,
     });
@@ -178,6 +179,40 @@ async function pedirOcr(base: string, token: string, ruta: string, cuerpo: Recor
     clearTimeout(timeout);
   }
 }
+
+/**
+ * Verificamex ha rechazado los cuerpos JSON con "requiere imagen frontal y trasera".
+ * Probamos las formas conocidas del servicio y nos quedamos con la primera que
+ * devuelva una lectura OCR real. Los rechazos (400/422) no consumen tokens.
+ */
+async function pedirOcr(base: string, token: string, ruta: string, frente: string, reverso: string) {
+  const frenteB64 = base64Puro(frente);
+  const reversoB64 = base64Puro(reverso);
+
+  const multipart = () => {
+    const fd = new FormData();
+    fd.append("ine_front", new Blob([bytesDeBase64(frenteB64)], { type: "image/jpeg" }), "frente.jpg");
+    fd.append("ine_back", new Blob([bytesDeBase64(reversoB64)], { type: "image/jpeg" }), "reverso.jpg");
+    return fd;
+  };
+
+  const variantes: { nombre: string; body: BodyInit; json: boolean }[] = [
+    { nombre: "multipart", body: multipart(), json: false },
+    { nombre: "json_b64", body: JSON.stringify({ ine_front: frenteB64, ine_back: reversoB64 }), json: true },
+    { nombre: "json_dataurl", body: JSON.stringify({ ine_front: frente, ine_back: reverso }), json: true },
+  ];
+
+  let ultimo: Awaited<ReturnType<typeof enviarOcr>> & { variante?: string } = {
+    ok: false, status: 0, data: null, respuestaValida: false, texto: "",
+  };
+  for (const v of variantes) {
+    const r = await enviarOcr(base, token, ruta, v.body, v.json);
+    ultimo = { ...r, variante: v.nombre };
+    if (r.ok) return ultimo;
+  }
+  return ultimo;
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
