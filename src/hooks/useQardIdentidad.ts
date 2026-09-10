@@ -19,8 +19,6 @@ export type LimiteRecarga = {
   disponible: number | null;
 };
 
-export const TOPE_MENSUAL_RECARGA = 10000;
-
 export const ESTADO_UI: Record<EstadoQard, { label: string; clase: string }> = {
   inactive: { label: "INACTIVA", clase: "bg-muted text-muted-foreground border-border" },
   active: { label: "ACTIVA", clase: "bg-emerald-500 text-white border-emerald-600" },
@@ -73,7 +71,7 @@ export function useQardIdentidad() {
             usado: Number(filaLim.usado ?? 0),
             disponible: filaLim.disponible === null ? null : Number(filaLim.disponible),
           }
-        : { tope: TOPE_MENSUAL_RECARGA, usado: 0, disponible: TOPE_MENSUAL_RECARGA },
+        : null,
     );
     setCargando(false);
   }, []);
