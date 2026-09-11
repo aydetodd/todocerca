@@ -397,7 +397,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {errorIne}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Puedes volver a tomar las fotos (hasta 3 intentos) o continuar con la Cuenta Básica de $10.
+                  Puedes volver a tomar las fotos (hasta 3 intentos) o continuar con la Cuenta Básica.
                 </p>
               </div>
             )}
