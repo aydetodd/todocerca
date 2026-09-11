@@ -409,7 +409,7 @@ serve(async (req) => {
       verification_level: 2,
       monthly_limit_udis: 3000,
       validation_type: "ocr_full",
-      costo_apertura: aperturaPendiente ? 25 : 0,
+      costo_apertura: aperturaPendiente ? 20 : 0,
     });
   } catch (e: any) {
     console.error("[verificamex-ine]", e);
