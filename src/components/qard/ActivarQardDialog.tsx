@@ -140,7 +140,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
       setErrorIne(e.message || "No pudimos validar tu INE.");
       return;
     }
-    toast({ title: "¡INE validada!", description: "Cuenta Titular: 3,000 UDIS al mes. Se cobrarán $25 en tu primera recarga." });
+    toast({ title: "¡INE validada!", description: "Cuenta Titular: 3,000 UDIS al mes. Sin costo extra: la activación de $20 ya está incluida." });
     onActivada();
     onOpenChange(false);
     navigate("/qard/recargar");
