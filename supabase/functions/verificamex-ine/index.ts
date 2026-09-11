@@ -371,7 +371,7 @@ serve(async (req) => {
       return json({ error: "La INE fue leída, pero no pudimos guardar la verificación. Intenta nuevamente." }, 500);
     }
 
-    // Solo cobramos los $25 si la apertura sigue pendiente
+    // Activación única de $20. Si ya se pagó, subir a Nivel 2 es gratis.
     const aperturaPendiente = (ident as any).account_opening_fee_pending !== false;
     const cambios: Record<string, unknown> = {
       verification_level: 2,
