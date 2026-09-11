@@ -38,6 +38,13 @@ type Movimiento = {
   id: string; tipo: string; monto_mxn: number; saldo_despues: number;
   descripcion: string | null; created_at: string; comercio_nombre: string | null;
   sub_qr_id: string | null; comercio_user_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+type MovimientoEstadoCuenta = Movimiento & {
+  idEstadoCuenta: string;
+  etiquetaEstadoCuenta?: string;
+  montoEstadoCuenta?: number;
 };
 
 function formatNumero(n?: string | null) {
@@ -783,7 +790,8 @@ export default function Qard() {
         );
         const esPositivo = (t: string) =>
           t === "recarga" || t === "transfer_desde_sub" || t === "transferencia_p2p_in" || t === "cobro_recibido";
-        const etiqueta = (m: Movimiento) => {
+        const etiqueta = (m: MovimientoEstadoCuenta) => {
+          if (m.etiquetaEstadoCuenta) return m.etiquetaEstadoCuenta;
           const aliasFromDesc = (m.descripcion || "").replace(/^(Asignado a sub-QR |Retirado de sub-QR )/, "");
           return m.tipo === "recarga" ? "Recarga" :
             m.tipo === "cobro_comercio" ? `Pago ${m.comercio_nombre ?? ""}` :
@@ -795,15 +803,64 @@ export default function Qard() {
             m.tipo === "retiro_spei" ? "Envío SPEI" :
             m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
             m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
+            m.tipo === "ajuste" ? (m.descripcion || "Movimiento de saldo").replace(/ajuste/gi, "Movimiento") :
             m.tipo;
         };
 
+        const movimientosDesglosados: MovimientoEstadoCuenta[] = ejeMov.flatMap(m => {
+          const metadata = m.metadata ?? {};
+          const apertura = Number(metadata.apertura ?? 0);
+          const comisionRecarga = Number(metadata.comision_recarga ?? 0);
+          const montoTransferido = Number(metadata.monto_transferido ?? 0);
 
-        // Saldo corrido: partimos del saldo actual y caminamos hacia atrás
+          if (m.tipo === "recarga" && montoTransferido > 0 && (apertura > 0 || comisionRecarga > 0)) {
+            return [
+              ...(apertura > 0 ? [{
+                ...m,
+                idEstadoCuenta: `${m.id}-apertura`,
+                etiquetaEstadoCuenta: "Comisión por apertura de cuenta",
+                montoEstadoCuenta: -apertura,
+              }] : []),
+              ...(comisionRecarga > 0 ? [{
+                ...m,
+                idEstadoCuenta: `${m.id}-recarga-fee`,
+                etiquetaEstadoCuenta: "Comisión por recarga",
+                montoEstadoCuenta: -comisionRecarga,
+              }] : []),
+              {
+                ...m,
+                idEstadoCuenta: `${m.id}-recarga`,
+                etiquetaEstadoCuenta: "Recarga",
+                montoEstadoCuenta: montoTransferido,
+              },
+            ];
+          }
+
+          if (m.tipo === "ajuste" && apertura > 0 && comisionRecarga > 0) {
+            return [
+              {
+                ...m,
+                idEstadoCuenta: `${m.id}-apertura`,
+                etiquetaEstadoCuenta: "Comisión por apertura de cuenta",
+                montoEstadoCuenta: -apertura,
+              },
+              {
+                ...m,
+                idEstadoCuenta: `${m.id}-recarga-fee`,
+                etiquetaEstadoCuenta: "Comisión por recarga",
+                montoEstadoCuenta: -comisionRecarga,
+              },
+            ];
+          }
+
+          return [{ ...m, idEstadoCuenta: m.id }];
+        });
+
+        // Saldo corrido: partimos del saldo actual y caminamos hacia atrás.
+        // Las recargas se presentan con su importe bruto y cada comisión por separado.
         let corrido = Number(wallet?.saldo_mxn ?? 0);
-        const todas = ejeMov.map(m => {
-          const signo = esPositivo(m.tipo) ? 1 : -1;
-          const monto = Math.abs(Number(m.monto_mxn)) * signo;
+        const todas = movimientosDesglosados.map(m => {
+          const monto = m.montoEstadoCuenta ?? (Math.abs(Number(m.monto_mxn)) * (esPositivo(m.tipo) ? 1 : -1));
           const saldoDespues = corrido;
           corrido = +(corrido - monto).toFixed(2);
           return { m, monto, saldoDespues: +saldoDespues.toFixed(2), saldoAntes: corrido };
@@ -873,7 +930,7 @@ export default function Qard() {
                       </div>
                       <div className="divide-y">
                         {mes.filas.map(f => (
-                          <div key={f.m.id} className="flex justify-between items-center gap-2 py-2">
+                           <div key={f.m.idEstadoCuenta} className="flex justify-between items-center gap-2 py-2">
                             <div className="min-w-0">
                               <div className="font-medium text-sm truncate">{etiqueta(f.m)}</div>
                               <div className="text-xs text-muted-foreground">
