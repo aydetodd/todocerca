@@ -371,7 +371,7 @@ serve(async (req) => {
       return json({ error: "La INE fue leída, pero no pudimos guardar la verificación. Intenta nuevamente." }, 500);
     }
 
-    // Solo cobramos los $25 si la apertura sigue pendiente
+    // Activación única de $20. Si ya se pagó, subir a Nivel 2 es gratis.
     const aperturaPendiente = (ident as any).account_opening_fee_pending !== false;
     const cambios: Record<string, unknown> = {
       verification_level: 2,
@@ -384,7 +384,9 @@ serve(async (req) => {
       ine_front_image_url: urlFrente,
       ine_back_image_url: urlReverso,
     };
-    if (aperturaPendiente) cambios.account_opening_fee_amount = 25.00;
+    // La activación cuesta $20 una sola vez (se cobra en la primera recarga).
+    // Subir a Nivel 2 con INE NO agrega ningún costo extra.
+    if (aperturaPendiente) cambios.account_opening_fee_amount = 20.00;
 
     const { data: identidadActualizada, error: updateError } = await admin
       .from("qard_identidad")
@@ -407,7 +409,7 @@ serve(async (req) => {
       verification_level: 2,
       monthly_limit_udis: 3000,
       validation_type: "ocr_full",
-      costo_apertura: aperturaPendiente ? 25 : 0,
+      costo_apertura: aperturaPendiente ? 20 : 0,
     });
   } catch (e: any) {
     console.error("[verificamex-ine]", e);
