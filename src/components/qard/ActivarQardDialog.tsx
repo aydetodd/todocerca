@@ -362,7 +362,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
               <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
               <p className="font-mono"><span className="text-muted-foreground font-sans">CURP:</span> {curp}</p>
               <p><span className="text-muted-foreground">Tipo:</span> Cuenta Básica (1,000 UDIS al mes)</p>
-              <p><span className="text-muted-foreground">Costos:</span> $10 apertura + $5 recarga = $15 en tu primera recarga</p>
+              <p><span className="text-muted-foreground">Costos:</span> $20 activación + $5 recarga = $25 en tu primera recarga</p>
             </div>
             <Button className="w-full" disabled={ocupado || nombre.trim().length < 5 || !validarCurp(curp)}
               onClick={terminarNivel1}>
