@@ -179,11 +179,11 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
 
             <div className="rounded-lg border p-3 space-y-1">
               <p className="font-semibold">Costos claros desde el inicio</p>
-              <p className="text-muted-foreground">• $10 pesos — Cuenta Básica (solo CURP, una sola vez)</p>
-              <p className="text-muted-foreground">• $25 pesos — Cuenta Titular (validación de INE, una sola vez)</p>
+              <p className="text-muted-foreground">• $20 pesos — Activación de tu QaRd (una sola vez, con tu CURP)</p>
+              <p className="text-muted-foreground">• $0 pesos — Validar tu INE después: es gratis</p>
               <p className="text-muted-foreground">• $5 pesos — Comisión por cada recarga</p>
               <p className="text-muted-foreground">• 2% — Comisión por retiro a banco</p>
-              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $85 (Básica) o $70 (Titular).</p>
+              <p className="font-medium pt-1">Ejemplo: si depositas $100 en tu primera recarga, te acreditamos $75 ($20 de activación + $5 de recarga).</p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1">
