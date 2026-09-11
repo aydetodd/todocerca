@@ -74,30 +74,22 @@ serve(async (req) => {
         const montoMxn = parseFloat(session.metadata.monto_mxn || "0");
         if (!userId || montoMxn <= 0) throw new Error("QaRd recarga: metadata inválida");
 
-        await supabaseAdmin.rpc("qard_ensure_wallet", { _user_id: userId });
-
-        const { data: w } = await supabaseAdmin
-          .from("qard_wallets").select("id, saldo_mxn").eq("titular_user_id", userId).single();
-        const nuevoSaldo = Number(w!.saldo_mxn) + montoMxn;
-
-        await supabaseAdmin.from("qard_wallets")
-          .update({ saldo_mxn: nuevoSaldo }).eq("id", w!.id);
-
-        await supabaseAdmin.from("qard_movimientos").insert({
-          wallet_id: w!.id,
-          titular_user_id: userId,
-          tipo: "recarga",
-          monto_mxn: montoMxn,
-          saldo_despues: nuevoSaldo,
-          descripcion: `Recarga vía Stripe $${montoMxn.toFixed(2)} MXN`,
-          metadata: { stripe_payment_id: session.payment_intent },
+        // Misma lógica de comisiones que SPEI: $20 activación (solo la 1ª) + $5 por recarga
+        const { data: res, error: errRec } = await supabaseAdmin.rpc("qard_aplicar_recarga", {
+          _user_id: userId,
+          _monto: montoMxn,
+          _origen: "Stripe",
+          _referencia: String(session.payment_intent ?? session.id),
+          _metadata: { stripe_payment_id: session.payment_intent, stripe_session_id: session.id },
         });
+        if (errRec) throw errRec;
 
-        console.log(`[WEBHOOK-TICKETS] QaRd recarga +$${montoMxn} user ${userId}, saldo ${nuevoSaldo}`);
-        return new Response(JSON.stringify({ received: true }), {
+        console.log(`[WEBHOOK-TICKETS] QaRd recarga`, JSON.stringify(res));
+        return new Response(JSON.stringify({ received: true, resultado: res }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
 
       // ============ WALLET FAMILIAR — RECARGA (legacy, mantener por compatibilidad) ============
       if (session.metadata?.type === "wallet_recarga") {

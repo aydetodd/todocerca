@@ -7506,6 +7506,16 @@ export type Database = {
       }
       normalize_phone: { Args: { phone: string }; Returns: string }
       normalize_route_name: { Args: { _nombre: string }; Returns: string }
+      qard_aplicar_recarga: {
+        Args: {
+          _metadata?: Json
+          _monto: number
+          _origen: string
+          _referencia?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       qard_bucket_for_user: {
         Args: { _user_id: string }
         Returns: {
