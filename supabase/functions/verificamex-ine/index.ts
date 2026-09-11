@@ -384,7 +384,9 @@ serve(async (req) => {
       ine_front_image_url: urlFrente,
       ine_back_image_url: urlReverso,
     };
-    if (aperturaPendiente) cambios.account_opening_fee_amount = 25.00;
+    // La activación cuesta $20 una sola vez (se cobra en la primera recarga).
+    // Subir a Nivel 2 con INE NO agrega ningún costo extra.
+    if (aperturaPendiente) cambios.account_opening_fee_amount = 20.00;
 
     const { data: identidadActualizada, error: updateError } = await admin
       .from("qard_identidad")
