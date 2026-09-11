@@ -146,7 +146,7 @@ export default function VerificarIdentidadDialog({
               <div className="text-xs text-muted-foreground">Límite: 1,000 UDIS al mes</div>
             </div>
             <p className="text-sm">
-              ¿Quieres validar tu INE para subir tu límite a 3,000 UDIS al mes? (Cuenta Titular: $25 pesos, se cobran en tu primera recarga)
+              ¿Quieres validar tu INE para subir tu límite a 3,000 UDIS al mes? Es gratis: la activación de $20 ya se cobra una sola vez.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Ahora no</Button>
