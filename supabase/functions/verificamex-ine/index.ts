@@ -443,65 +443,83 @@ serve(async (req) => {
     // podía impedir que se encontrara el nombre real impreso en la credencial.
     const nombreCoincide = mismoNombre(textoProfundo(respuestaCompleta), nombreRenapo);
 
-    if (!curpCoincide && !nombreCoincide) {
-      await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "ine", exito: false, http_status: 200,
-        mensaje: `No coincidió INE/CURP (curp_extraida=${curpIne.length === 18}, curp_coincide=${curpCoincide}, nombre_extraido=${nombreIne.length > 0}, nombre_coincide=${nombreCoincide})`,
-      });
-      await admin.from("qard_identidad").update({ verificamex_status: "failed" }).eq("user_id", userId);
-      return json({
-        error: "Los datos de tu INE no coinciden con tu CURP. Puedes intentarlo otra vez o continuar con Nivel 1 ($10).",
-        intentos_restantes: MAX_INTENTOS - (intentos + 1),
-      }, 400);
-    }
+    // Regla estricta: la CURP leída de la INE DEBE coincidir con la ya validada en RENAPO.
+    const coincidencia = curpCoincide;
 
-    const { data: datosEnc, error: encError } = await admin.rpc("qard_enc" as any, {
-      _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne }, fuente, crudo }),
+    const { data: datosEnc } = await admin.rpc("qard_enc" as any, {
+      _v: JSON.stringify({ ine: { curp: curpIne, nombre: nombreIne, clave: claveElector, nacimiento: fechaNacimiento }, fuente, crudo }),
     });
-    if (encError || !datosEnc) {
-      console.error("[INE] No se pudieron cifrar los datos", encError?.message);
-      return json({ error: "La INE fue leída, pero no pudimos guardar la verificación. Intenta nuevamente." }, 500);
-    }
 
-    // Activación única de $20. Si ya se pagó, subir a Nivel 2 es gratis.
-    const aperturaPendiente = (ident as any).account_opening_fee_pending !== false;
-    const cambios: Record<string, unknown> = {
-      verification_level: 2,
-      monthly_limit_udis: 3000,
-      validation_type: "ocr_full",
-      verificamex_status: "verified",
-      verificamex_ine_validated: true,
-      verificamex_data_enc: datosEnc,
-      verified_at: new Date().toISOString(),
-      ine_front_image_url: urlFrente,
-      ine_back_image_url: urlReverso,
-    };
-    // La activación cuesta $20 una sola vez (se cobra en la primera recarga).
-    // Subir a Nivel 2 con INE NO agrega ningún costo extra.
-    if (aperturaPendiente) cambios.account_opening_fee_amount = 20.00;
-
-    const { data: identidadActualizada, error: updateError } = await admin
-      .from("qard_identidad")
-      .update(cambios)
-      .eq("user_id", userId)
-      .select("verification_level, monthly_limit_udis")
+    const { data: validacion, error: errorValidacion } = await admin
+      .from("ine_validaciones")
+      .insert({
+        user_id: userId,
+        ine_nombre_extraido: nombreIne || null,
+        ine_curp_extraido: curpIne || null,
+        ine_numero_credencial: claveElector || null,
+        ine_fecha_nacimiento: fechaNacimiento || null,
+        curp_renapo: curpEsperada,
+        nombre_renapo: nombreRenapo || null,
+        coincidencia,
+        estado: coincidencia ? "pendiente" : "no_coincide",
+        raw_response_enc: datosEnc ?? null,
+        ine_front_image_url: urlFrente,
+        ine_back_image_url: urlReverso,
+      })
+      .select("id")
       .single();
-    if (updateError || Number(identidadActualizada?.verification_level) !== 2) {
-      console.error("[INE] No se pudo guardar Nivel 2", updateError?.message);
-      return json({ error: "La INE fue validada, pero no pudimos subir tu cuenta a Nivel 2. Intenta nuevamente." }, 500);
+    if (errorValidacion) {
+      console.error("[INE] No se pudo guardar la lectura", errorValidacion.message);
+      return json({ error: "Leímos tu INE, pero no pudimos guardar la lectura. Intenta nuevamente." }, 500);
     }
 
     await admin.from("verificamex_logs").insert({
-      user_id: userId, tipo: "ine", exito: true, http_status: 200,
-      mensaje: `INE validada (${fuente}). Nivel 2, 3000 UDIS.`,
+      user_id: userId,
+      tipo: "ocr_ine",
+      exito: coincidencia,
+      http_status: 200,
+      mensaje: coincidencia
+        ? "Lectura de INE guardada. Falta la confirmación del usuario."
+        : "La CURP leída de la INE no coincide con la validada en RENAPO.",
+      datos_extraidos: {
+        nombre_completo: nombreIne,
+        curp: curpIne,
+        numero_credencial: claveElector,
+        fecha_nacimiento: fechaNacimiento,
+        nombre_coincide: nombreCoincide,
+      },
+      coincidencia,
+      accion_tomada: coincidencia ? "pendiente_confirmacion" : "validacion_rechazada",
     });
+
+    if (!coincidencia) {
+      await admin.from("qard_identidad").update({ verificamex_status: "failed" }).eq("user_id", userId);
+      return json({
+        ok: false,
+        coincidencia: false,
+        validacion_id: validacion.id,
+        curp_ine: curpIne,
+        curp_renapo: curpEsperada,
+        intentos_restantes: MAX_INTENTOS - (intentos + 1),
+        error: "La CURP de tu INE no coincide con la que validamos anteriormente.",
+      }, 200);
+    }
+
+    await admin.from("qard_identidad")
+      .update({ verificamex_status: "pending_confirmation", verificamex_data_enc: datosEnc ?? null })
+      .eq("user_id", userId);
 
     return json({
       ok: true,
-      verification_level: 2,
-      monthly_limit_udis: 3000,
-      validation_type: "ocr_full",
-      costo_apertura: aperturaPendiente ? 20 : 0,
+      coincidencia: true,
+      pendiente_confirmacion: true,
+      validacion_id: validacion.id,
+      datos: {
+        nombre_completo: nombreIne,
+        curp: curpIne || curpEsperada,
+        numero_credencial: claveElector,
+        fecha_nacimiento: fechaNacimiento,
+      },
     });
   } catch (e: any) {
     console.error("[verificamex-ine]", e);
