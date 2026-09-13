@@ -10,6 +10,12 @@ const corsHeaders = {
 
 const MAX_INTENTOS = 3;
 
+/** Llaves con las que Verificamex puede devolver la clave de elector y la fecha de nacimiento. */
+const LLAVES_CLAVE = ["clavedeelector", "claveelector", "voterkey", "votercode", "cic", "ocr", "idmex", "electorkey"];
+const LLAVES_NACIMIENTO = ["fechadenacimiento", "fechanacimiento", "birthdate", "dateofbirth", "dob", "birth"];
+
+const respuestaOcr = (ob: { data: unknown }, rev: { data: unknown }) => ({ obverse: ob.data, reverse: rev.data });
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -366,6 +372,8 @@ serve(async (req) => {
     // OCR de Verificamex
     let curpIne = "";
     let nombreIne = "";
+    let claveElector = "";
+    let fechaNacimiento = "";
     let fuente = "verificamex";
     let crudo: unknown = null;
 
