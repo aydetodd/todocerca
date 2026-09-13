@@ -96,16 +96,39 @@ export default function VerificarIdentidadDialog({
 
   const validarIneAhora = () => ejecutar(async () => {
     setErrorIne(null);
+    setPaso("procesando");
     try {
       const r = await invocar("verificamex-ine", { frente, reverso });
-      setNivel(r.verification_level ?? 2);
-      setPaso("listo");
-      onVerificada?.();
+      setValidacionId(r.validacion_id ?? null);
+      if (r.coincidencia === false) {
+        setCurpsDistintas({ ine: r.curp_ine || "No se pudo leer", renapo: r.curp_renapo || "" });
+        setPaso("nocoincide");
+        return;
+      }
+      setLeido(r.datos as DatosIne);
+      setPaso("revisar");
     } catch (e: unknown) {
       const mensaje = e instanceof Error ? e.message : "No pudimos validar tu INE.";
       setErrorIne(mensaje);
+      setPaso("ine");
       throw e;
     }
+  });
+
+  const confirmarDatos = () => ejecutar(async () => {
+    const r = await invocar("verificamex-ine", { accion: "confirmar", validacion_id: validacionId });
+    setNivel(r.verification_level ?? 2);
+    setPaso("listo");
+    onVerificada?.();
+  });
+
+  const reportarError = () => ejecutar(async () => {
+    await invocar("verificamex-ine", { accion: "reportar", validacion_id: validacionId });
+    toast({ title: "Gracias", description: "Revisaremos la lectura de tu INE. Puedes intentarlo otra vez con mejor luz." });
+    setFrente(null);
+    setReverso(null);
+    setLeido(null);
+    setPaso("ine");
   });
 
   return (
