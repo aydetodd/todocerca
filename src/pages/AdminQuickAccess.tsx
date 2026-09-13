@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, GraduationCap, Building2, Route, GitPullRequest } from 'lucide-react';
+import { Loader2, ShieldCheck, GraduationCap, Building2, Route, GitPullRequest, IdCard } from 'lucide-react';
+import AdminValidacionesIne from '@/components/qard/AdminValidacionesIne';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
@@ -13,7 +14,7 @@ import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRuta
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
 import { AdminPinGate } from '@/components/AdminPinGate';
 
-type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | null;
+type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | 'ine' | null;
 
 const ATAJOS: { id: Exclude<Seccion, null>; titulo: string; texto: string; Icon: any }[] = [
   { id: 'descuentos', titulo: 'Descuentos', texto: 'Estudiante y tercera edad', Icon: GraduationCap },
@@ -21,6 +22,7 @@ const ATAJOS: { id: Exclude<Seccion, null>; titulo: string; texto: string; Icon:
   { id: 'verificaciones', titulo: 'Verificaciones', texto: 'Documentos de concesionarios', Icon: ShieldCheck },
   { id: 'rutas', titulo: 'Rutas maestras', texto: 'Altas de rutas foráneas', Icon: Route },
   { id: 'cambios', titulo: 'Cambios de ruta', texto: 'Solicitudes de ajuste', Icon: GitPullRequest },
+  { id: 'ine', titulo: 'Validaciones de INE', texto: 'Lecturas y confirmaciones', Icon: IdCard },
 ];
 
 export default function AdminQuickAccess() {
@@ -96,6 +98,7 @@ export default function AdminQuickAccess() {
         {seccion === 'verificaciones' && <AdminVerificaciones />}
         {seccion === 'rutas' && <AdminRutasMaestras />}
         {seccion === 'cambios' && <AdminSolicitudesCambioRutas />}
+        {seccion === 'ine' && <AdminValidacionesIne />}
 
         {!seccion && (
           <p className="text-sm text-muted-foreground">Toca una tarjeta para abrir sus solicitudes pendientes.</p>
