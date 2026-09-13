@@ -76,6 +76,9 @@ export default function VerificarIdentidadDialog({
     setFrente(null);
     setReverso(null);
     setErrorIne(null);
+    setValidacionId(null);
+    setLeido(null);
+    setCurpsDistintas(null);
   }, [open, nivelActual]);
 
 
