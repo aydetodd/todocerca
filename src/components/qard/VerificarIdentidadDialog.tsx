@@ -20,6 +20,13 @@ type Props = {
 };
 
 
+type DatosIne = {
+  nombre_completo: string;
+  curp: string;
+  numero_credencial: string;
+  fecha_nacimiento: string;
+};
+
 type Persona = {
   curp: string;
   nombres: string;
@@ -49,7 +56,7 @@ async function invocar(fn: string, body: Record<string, unknown>) {
 export default function VerificarIdentidadDialog({
   open, onOpenChange, onVerificada, nivelActual = 0, nombreGuardado, curpGuardada,
 }: Props) {
-  const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "listo">("curp");
+  const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "procesando" | "revisar" | "nocoincide" | "listo">("curp");
   const [ocupado, setOcupado] = useState(false);
   const [curp, setCurp] = useState("");
   const [persona, setPersona] = useState<Persona | null>(null);
@@ -57,6 +64,9 @@ export default function VerificarIdentidadDialog({
   const [frente, setFrente] = useState<string | null>(null);
   const [reverso, setReverso] = useState<string | null>(null);
   const [errorIne, setErrorIne] = useState<string | null>(null);
+  const [validacionId, setValidacionId] = useState<string | null>(null);
+  const [leido, setLeido] = useState<DatosIne | null>(null);
+  const [curpsDistintas, setCurpsDistintas] = useState<{ ine: string; renapo: string } | null>(null);
 
   // Si la CURP ya quedó validada (Nivel 1+), pasamos directo a la INE: no la volvemos a pedir.
   useEffect(() => {
