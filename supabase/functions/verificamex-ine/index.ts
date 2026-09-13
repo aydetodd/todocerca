@@ -11,8 +11,8 @@ const corsHeaders = {
 const MAX_INTENTOS = 3;
 
 /** Llaves con las que Verificamex puede devolver la clave de elector y la fecha de nacimiento. */
-const LLAVES_CLAVE = ["clavedeelector", "claveelector", "voterkey", "votercode", "cic", "ocr", "idmex", "electorkey"];
-const LLAVES_NACIMIENTO = ["fechadenacimiento", "fechanacimiento", "birthdate", "dateofbirth", "dob", "birth"];
+const LLAVES_CLAVE = ["clavedeelector", "claveelector", "voterkey", "votercode", "cic", "ocr", "idmex", "electorkey", "clave de elector", "voter key"];
+const LLAVES_NACIMIENTO = ["fechadenacimiento", "fechanacimiento", "birthdate", "dateofbirth", "dob", "birth", "fecha de nacimiento", "date of birth"];
 
 const respuestaOcr = (ob: { data: unknown }, rev: { data: unknown }) => ({ obverse: ob.data, reverse: rev.data });
 
