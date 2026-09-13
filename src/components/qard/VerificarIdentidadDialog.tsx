@@ -233,6 +233,74 @@ export default function VerificarIdentidadDialog({
           </div>
         )}
 
+        {paso === "procesando" && (
+          <div className="space-y-3 py-8 text-center">
+            <Loader2 className="h-10 w-10 mx-auto animate-spin text-primary" />
+            <div className="font-semibold">Validación de INE en proceso</div>
+            <p className="text-sm text-muted-foreground">
+              Estamos leyendo tu credencial. No cierres esta ventana.
+            </p>
+          </div>
+        )}
+
+        {paso === "revisar" && leido && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+              <BadgeCheck className="h-4 w-4" /> Leímos tu INE correctamente
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Revisa que estos datos sean iguales a los de tu credencial:
+            </p>
+            <div className="space-y-2">
+              {[
+                { etiqueta: "Nombre", valor: leido.nombre_completo },
+                { etiqueta: "CURP", valor: leido.curp },
+                { etiqueta: "Número de credencial", valor: leido.numero_credencial },
+                { etiqueta: "Fecha de nacimiento", valor: leido.fecha_nacimiento },
+              ].map(({ etiqueta, valor }) => (
+                <div key={etiqueta} className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">{etiqueta}</div>
+                  <div className="font-medium break-words">{valor || "No se pudo leer"}</div>
+                </div>
+              ))}
+            </div>
+            <Button className="w-full" disabled={ocupado} onClick={confirmarDatos}>
+              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar que son correctos"}
+            </Button>
+            <Button variant="outline" className="w-full" disabled={ocupado} onClick={reportarError}>
+              Reportar error
+            </Button>
+          </div>
+        )}
+
+        {paso === "nocoincide" && curpsDistintas && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <p className="flex items-start gap-2 text-sm text-destructive font-medium">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                La CURP de tu INE no coincide con la que validamos anteriormente.
+              </p>
+            </div>
+            <div className="rounded-lg border p-3 text-sm space-y-2">
+              <div>
+                <div className="text-xs text-muted-foreground">CURP leída de tu INE</div>
+                <div className="font-mono break-all">{curpsDistintas.ine}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">CURP que ya habíamos validado</div>
+                <div className="font-mono break-all">{curpsDistintas.renapo}</div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Tu cuenta sigue activa en Nivel 1. Puedes intentar con fotos más claras o escribirnos a hola@todocerca.mx.
+            </p>
+            <Button className="w-full" onClick={() => { setFrente(null); setReverso(null); setCurpsDistintas(null); setPaso("ine"); }}>
+              Intentar otra vez
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>Cerrar</Button>
+          </div>
+        )}
+
         {paso === "listo" && (
           <div className="space-y-3 text-center">
             <BadgeCheck className="h-12 w-12 mx-auto text-emerald-500" />
