@@ -231,6 +231,86 @@ serve(async (req) => {
     userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
+    const accion = String(body?.accion ?? "leer");
+
+    // --- Confirmación / reporte de una lectura ya hecha (no consume tokens OCR) ---
+    if (accion === "confirmar" || accion === "reportar") {
+      const validacionId = String(body?.validacion_id ?? "");
+      if (!validacionId) return json({ error: "Falta la validación a confirmar." }, 400);
+
+      const { data: val } = await admin
+        .from("ine_validaciones")
+        .select("*")
+        .eq("id", validacionId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!val) return json({ error: "No encontramos esa validación." }, 404);
+
+      if (accion === "reportar") {
+        await admin.from("ine_validaciones")
+          .update({ estado: "rechazado", ine_confirmed: false })
+          .eq("id", validacionId);
+        await admin.from("verificamex_logs").insert({
+          user_id: userId, tipo: "ocr_ine", exito: false, http_status: 200,
+          mensaje: "El usuario reportó un error en la lectura de su INE.",
+          coincidencia: (val as any).coincidencia,
+          accion_tomada: "validacion_rechazada",
+        });
+        return json({ ok: true, estado: "rechazado" });
+      }
+
+      if ((val as any).estado !== "pendiente" || !(val as any).coincidencia) {
+        return json({ error: "Esta validación no se puede confirmar." }, 400);
+      }
+
+      const { data: identConf } = await admin
+        .from("qard_identidad")
+        .select("account_opening_fee_pending")
+        .eq("user_id", userId).maybeSingle();
+      const aperturaPendienteConf = (identConf as any)?.account_opening_fee_pending !== false;
+
+      const cambiosConf: Record<string, unknown> = {
+        verification_level: 2,
+        monthly_limit_udis: 3000,
+        validation_type: "ocr_full",
+        verificamex_status: "verified",
+        verificamex_ine_validated: true,
+        verified_at: new Date().toISOString(),
+        ine_front_image_url: (val as any).ine_front_image_url,
+        ine_back_image_url: (val as any).ine_back_image_url,
+      };
+      if (aperturaPendienteConf) cambiosConf.account_opening_fee_amount = 20.00;
+
+      const { data: identActual, error: errConf } = await admin
+        .from("qard_identidad")
+        .update(cambiosConf)
+        .eq("user_id", userId)
+        .select("verification_level, monthly_limit_udis")
+        .single();
+      if (errConf || Number(identActual?.verification_level) !== 2) {
+        console.error("[INE] No se pudo guardar Nivel 2", errConf?.message);
+        return json({ error: "No pudimos subir tu cuenta a Nivel 2. Intenta nuevamente." }, 500);
+      }
+
+      await admin.from("ine_validaciones")
+        .update({ estado: "confirmado", ine_confirmed: true })
+        .eq("id", validacionId);
+      await admin.from("verificamex_logs").insert({
+        user_id: userId, tipo: "ocr_ine", exito: true, http_status: 200,
+        mensaje: "El usuario confirmó los datos leídos de su INE. Nivel 2, 3000 UDIS.",
+        coincidencia: true,
+        accion_tomada: "nivel_2_activado",
+      });
+
+      return json({
+        ok: true,
+        verification_level: 2,
+        monthly_limit_udis: 3000,
+        validation_type: "ocr_full",
+        costo_apertura: aperturaPendienteConf ? 20 : 0,
+      });
+    }
+
     const frente = normalizarImagen(body?.frente ?? body?.obverse ?? "");
     const reverso = normalizarImagen(body?.reverso ?? body?.reverse ?? "");
     if (!frente || !reverso) return json({ error: "Necesitamos la foto del frente y del reverso de tu INE." }, 400);
