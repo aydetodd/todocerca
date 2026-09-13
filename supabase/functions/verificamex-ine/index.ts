@@ -410,6 +410,10 @@ serve(async (req) => {
         buscarPorTipo(ob.data, ["fathersurname", "surname", "apellido paterno"]) ?? buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
         buscarPorTipo(ob.data, ["mothersurname", "secondsurname", "apellido materno", "segundo apellido"]) ?? buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
       ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
+      claveElector = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_CLAVE)
+        ?? buscar(respuestaOcr(ob, rev), LLAVES_CLAVE) ?? "";
+      fechaNacimiento = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_NACIMIENTO)
+        ?? buscar(respuestaOcr(ob, rev), LLAVES_NACIMIENTO) ?? "";
     } else {
       const respuestaNoOcr = !rev.respuestaValida;
       const detalleServicio = String(rev.data?.message ?? rev.texto ?? "").slice(0, 300);
