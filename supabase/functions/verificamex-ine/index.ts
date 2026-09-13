@@ -501,7 +501,7 @@ serve(async (req) => {
         curp_ine: curpIne,
         curp_renapo: curpEsperada,
         intentos_restantes: MAX_INTENTOS - (intentos + 1),
-        error: "La CURP de tu INE no coincide con la que validamos anteriormente.",
+        mensaje: "La CURP de tu INE no coincide con la que validamos anteriormente.",
       }, 200);
     }
 
