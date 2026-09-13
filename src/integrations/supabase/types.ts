@@ -2448,6 +2448,66 @@ export type Database = {
           },
         ]
       }
+      ine_validaciones: {
+        Row: {
+          coincidencia: boolean
+          created_at: string
+          curp_renapo: string | null
+          estado: string
+          id: string
+          ine_back_image_url: string | null
+          ine_confirmed: boolean
+          ine_curp_extraido: string | null
+          ine_fecha_extraccion: string
+          ine_fecha_nacimiento: string | null
+          ine_front_image_url: string | null
+          ine_nombre_extraido: string | null
+          ine_numero_credencial: string | null
+          nombre_renapo: string | null
+          raw_response_enc: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coincidencia?: boolean
+          created_at?: string
+          curp_renapo?: string | null
+          estado?: string
+          id?: string
+          ine_back_image_url?: string | null
+          ine_confirmed?: boolean
+          ine_curp_extraido?: string | null
+          ine_fecha_extraccion?: string
+          ine_fecha_nacimiento?: string | null
+          ine_front_image_url?: string | null
+          ine_nombre_extraido?: string | null
+          ine_numero_credencial?: string | null
+          nombre_renapo?: string | null
+          raw_response_enc?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coincidencia?: boolean
+          created_at?: string
+          curp_renapo?: string | null
+          estado?: string
+          id?: string
+          ine_back_image_url?: string | null
+          ine_confirmed?: boolean
+          ine_curp_extraido?: string | null
+          ine_fecha_extraccion?: string
+          ine_fecha_nacimiento?: string | null
+          ine_front_image_url?: string | null
+          ine_nombre_extraido?: string | null
+          ine_numero_credencial?: string | null
+          nombre_renapo?: string | null
+          raw_response_enc?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       intentos_fraude: {
         Row: {
           accion_tomada: string | null
@@ -6423,7 +6483,10 @@ export type Database = {
       }
       verificamex_logs: {
         Row: {
+          accion_tomada: string | null
+          coincidencia: boolean | null
           created_at: string
+          datos_extraidos: Json | null
           exito: boolean
           http_status: number | null
           id: string
@@ -6432,7 +6495,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accion_tomada?: string | null
+          coincidencia?: boolean | null
           created_at?: string
+          datos_extraidos?: Json | null
           exito?: boolean
           http_status?: number | null
           id?: string
@@ -6441,7 +6507,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accion_tomada?: string | null
+          coincidencia?: boolean | null
           created_at?: string
+          datos_extraidos?: Json | null
           exito?: boolean
           http_status?: number | null
           id?: string

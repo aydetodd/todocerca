@@ -20,6 +20,13 @@ type Props = {
 };
 
 
+type DatosIne = {
+  nombre_completo: string;
+  curp: string;
+  numero_credencial: string;
+  fecha_nacimiento: string;
+};
+
 type Persona = {
   curp: string;
   nombres: string;
@@ -49,7 +56,7 @@ async function invocar(fn: string, body: Record<string, unknown>) {
 export default function VerificarIdentidadDialog({
   open, onOpenChange, onVerificada, nivelActual = 0, nombreGuardado, curpGuardada,
 }: Props) {
-  const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "listo">("curp");
+  const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "procesando" | "revisar" | "nocoincide" | "listo">("curp");
   const [ocupado, setOcupado] = useState(false);
   const [curp, setCurp] = useState("");
   const [persona, setPersona] = useState<Persona | null>(null);
@@ -57,6 +64,9 @@ export default function VerificarIdentidadDialog({
   const [frente, setFrente] = useState<string | null>(null);
   const [reverso, setReverso] = useState<string | null>(null);
   const [errorIne, setErrorIne] = useState<string | null>(null);
+  const [validacionId, setValidacionId] = useState<string | null>(null);
+  const [leido, setLeido] = useState<DatosIne | null>(null);
+  const [curpsDistintas, setCurpsDistintas] = useState<{ ine: string; renapo: string } | null>(null);
 
   // Si la CURP ya quedó validada (Nivel 1+), pasamos directo a la INE: no la volvemos a pedir.
   useEffect(() => {
@@ -66,6 +76,9 @@ export default function VerificarIdentidadDialog({
     setFrente(null);
     setReverso(null);
     setErrorIne(null);
+    setValidacionId(null);
+    setLeido(null);
+    setCurpsDistintas(null);
   }, [open, nivelActual]);
 
 
@@ -86,16 +99,39 @@ export default function VerificarIdentidadDialog({
 
   const validarIneAhora = () => ejecutar(async () => {
     setErrorIne(null);
+    setPaso("procesando");
     try {
       const r = await invocar("verificamex-ine", { frente, reverso });
-      setNivel(r.verification_level ?? 2);
-      setPaso("listo");
-      onVerificada?.();
+      setValidacionId(r.validacion_id ?? null);
+      if (r.coincidencia === false) {
+        setCurpsDistintas({ ine: r.curp_ine || "No se pudo leer", renapo: r.curp_renapo || "" });
+        setPaso("nocoincide");
+        return;
+      }
+      setLeido(r.datos as DatosIne);
+      setPaso("revisar");
     } catch (e: unknown) {
       const mensaje = e instanceof Error ? e.message : "No pudimos validar tu INE.";
       setErrorIne(mensaje);
+      setPaso("ine");
       throw e;
     }
+  });
+
+  const confirmarDatos = () => ejecutar(async () => {
+    const r = await invocar("verificamex-ine", { accion: "confirmar", validacion_id: validacionId });
+    setNivel(r.verification_level ?? 2);
+    setPaso("listo");
+    onVerificada?.();
+  });
+
+  const reportarError = () => ejecutar(async () => {
+    await invocar("verificamex-ine", { accion: "reportar", validacion_id: validacionId });
+    toast({ title: "Gracias", description: "Revisaremos la lectura de tu INE. Puedes intentarlo otra vez con mejor luz." });
+    setFrente(null);
+    setReverso(null);
+    setLeido(null);
+    setPaso("ine");
   });
 
   return (
@@ -194,6 +230,74 @@ export default function VerificarIdentidadDialog({
               {ocupado ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Validando con Verificamex...</> : "Enviar y validar INE"}
             </Button>
             <Button type="button" variant="ghost" className="w-full" disabled={ocupado} onClick={() => onOpenChange(false)}>Lo hago después</Button>
+          </div>
+        )}
+
+        {paso === "procesando" && (
+          <div className="space-y-3 py-8 text-center">
+            <Loader2 className="h-10 w-10 mx-auto animate-spin text-primary" />
+            <div className="font-semibold">Validación de INE en proceso</div>
+            <p className="text-sm text-muted-foreground">
+              Estamos leyendo tu credencial. No cierres esta ventana.
+            </p>
+          </div>
+        )}
+
+        {paso === "revisar" && leido && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+              <BadgeCheck className="h-4 w-4" /> Leímos tu INE correctamente
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Revisa que estos datos sean iguales a los de tu credencial:
+            </p>
+            <div className="space-y-2">
+              {[
+                { etiqueta: "Nombre", valor: leido.nombre_completo },
+                { etiqueta: "CURP", valor: leido.curp },
+                { etiqueta: "Número de credencial", valor: leido.numero_credencial },
+                { etiqueta: "Fecha de nacimiento", valor: leido.fecha_nacimiento },
+              ].map(({ etiqueta, valor }) => (
+                <div key={etiqueta} className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">{etiqueta}</div>
+                  <div className="font-medium break-words">{valor || "No se pudo leer"}</div>
+                </div>
+              ))}
+            </div>
+            <Button className="w-full" disabled={ocupado} onClick={confirmarDatos}>
+              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar que son correctos"}
+            </Button>
+            <Button variant="outline" className="w-full" disabled={ocupado} onClick={reportarError}>
+              Reportar error
+            </Button>
+          </div>
+        )}
+
+        {paso === "nocoincide" && curpsDistintas && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <p className="flex items-start gap-2 text-sm text-destructive font-medium">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                La CURP de tu INE no coincide con la que validamos anteriormente.
+              </p>
+            </div>
+            <div className="rounded-lg border p-3 text-sm space-y-2">
+              <div>
+                <div className="text-xs text-muted-foreground">CURP leída de tu INE</div>
+                <div className="font-mono break-all">{curpsDistintas.ine}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">CURP que ya habíamos validado</div>
+                <div className="font-mono break-all">{curpsDistintas.renapo}</div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Tu cuenta sigue activa en Nivel 1. Puedes intentar con fotos más claras o escribirnos a hola@todocerca.mx.
+            </p>
+            <Button className="w-full" onClick={() => { setFrente(null); setReverso(null); setCurpsDistintas(null); setPaso("ine"); }}>
+              Intentar otra vez
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>Cerrar</Button>
           </div>
         )}
 
