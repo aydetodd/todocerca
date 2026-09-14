@@ -4285,6 +4285,9 @@ export type Database = {
         Row: {
           alias: string
           created_at: string
+          curp_enc: string | null
+          curp_hash: string | null
+          curp_verificada: boolean
           cvv: string
           cvv_dinamico: string | null
           cvv_updated_at: string
@@ -4294,16 +4297,22 @@ export type Database = {
           horario_inicio: string | null
           id: string
           limite_por_transaccion: number | null
+          nombre_completo: string | null
           qard_number: string
           saldo_mxn: number
           sub_index: number
           titular_user_id: string
           updated_at: string
+          verificacion_costo: number
+          verificada_at: string | null
           wallet_id: string
         }
         Insert: {
           alias?: string
           created_at?: string
+          curp_enc?: string | null
+          curp_hash?: string | null
+          curp_verificada?: boolean
           cvv?: string
           cvv_dinamico?: string | null
           cvv_updated_at?: string
@@ -4313,16 +4322,22 @@ export type Database = {
           horario_inicio?: string | null
           id?: string
           limite_por_transaccion?: number | null
+          nombre_completo?: string | null
           qard_number: string
           saldo_mxn?: number
           sub_index: number
           titular_user_id: string
           updated_at?: string
+          verificacion_costo?: number
+          verificada_at?: string | null
           wallet_id: string
         }
         Update: {
           alias?: string
           created_at?: string
+          curp_enc?: string | null
+          curp_hash?: string | null
+          curp_verificada?: boolean
           cvv?: string
           cvv_dinamico?: string | null
           cvv_updated_at?: string
@@ -4332,11 +4347,14 @@ export type Database = {
           horario_inicio?: string | null
           id?: string
           limite_por_transaccion?: number | null
+          nombre_completo?: string | null
           qard_number?: string
           saldo_mxn?: number
           sub_index?: number
           titular_user_id?: string
           updated_at?: string
+          verificacion_costo?: number
+          verificada_at?: string | null
           wallet_id?: string
         }
         Relationships: [
@@ -7710,6 +7728,19 @@ export type Database = {
         Args: { _monto_mxn: number; _sub_qr_id: string }
         Returns: {
           saldo_sub: number
+          saldo_wallet: number
+        }[]
+      }
+      qard_verificar_sub_qr: {
+        Args: {
+          _curp_enc: string
+          _curp_hash: string
+          _nombre: string
+          _sub_qr_id: string
+          _user_id: string
+        }
+        Returns: {
+          costo: number
           saldo_wallet: number
         }[]
       }

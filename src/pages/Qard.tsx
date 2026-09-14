@@ -16,6 +16,7 @@ import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
+import VerificarSubQrDialog from "@/components/qard/VerificarSubQrDialog";
 import { formatHermosillo } from "@/lib/utils";
 const todocercaLogo = "/icon-512.png";
 
@@ -32,6 +33,8 @@ type SubQR = {
   fecha_vencimiento: string | null;
   cvv: string | null;
   cvv_dinamico: string | null;
+  curp_verificada?: boolean | null;
+  nombre_completo?: string | null;
 };
 type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: string | null };
 type Movimiento = {
@@ -302,6 +305,8 @@ export default function Qard() {
   };
 
 
+
+  const [subVerificar, setSubVerificar] = useState<SubQR | null>(null);
 
   const crearSub = async () => {
     if (!newAlias.trim()) return toast({ title: "Escribe un alias", variant: "destructive" });
@@ -707,8 +712,18 @@ export default function Qard() {
                   <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
                   {s.estado === "apagada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">APAGADA</span>}
                   {s.estado === "cancelada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-200 text-red-800 font-semibold">CANCELADA</span>}
+                  {s.curp_verificada
+                    ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">VERIFICADA</span>
+                    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">SIN VERIFICAR</span>}
                 </div>
                 <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
+                {s.curp_verificada
+                  ? s.nombre_completo && <div className="text-[11px] text-muted-foreground truncate">{s.nombre_completo}</div>
+                  : s.estado !== "cancelada" && (
+                    <Button size="sm" variant="outline" className="h-7 px-2 mt-1 text-[11px]" onClick={() => setSubVerificar(s)}>
+                      Verificar ($20)
+                    </Button>
+                  )}
                 <div className="flex items-center gap-3 mt-1">
                   <div className="text-sm">
                     <span className="text-muted-foreground text-[11px]">Saldo</span>{" "}
@@ -779,6 +794,14 @@ export default function Qard() {
           })()}
         </div>
       </Card>
+
+      <VerificarSubQrDialog
+        abierto={!!subVerificar}
+        onOpenChange={(v) => { if (!v) setSubVerificar(null); }}
+        subQr={subVerificar}
+        saldoTitular={Number(wallet?.saldo_mxn ?? 0)}
+        onVerificado={cargar}
+      />
 
       {/* Estado de cuenta estilo banco (2 meses) — se abre con icono */}
       {(() => {
