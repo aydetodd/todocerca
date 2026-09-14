@@ -306,6 +306,8 @@ export default function Qard() {
 
 
 
+  const [subVerificar, setSubVerificar] = useState<SubQR | null>(null);
+
   const crearSub = async () => {
     if (!newAlias.trim()) return toast({ title: "Escribe un alias", variant: "destructive" });
     const { data: { user } } = await supabase.auth.getUser();
