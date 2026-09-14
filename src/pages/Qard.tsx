@@ -16,6 +16,7 @@ import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
+import VerificarSubQrDialog from "@/components/qard/VerificarSubQrDialog";
 import { formatHermosillo } from "@/lib/utils";
 const todocercaLogo = "/icon-512.png";
 
@@ -32,6 +33,8 @@ type SubQR = {
   fecha_vencimiento: string | null;
   cvv: string | null;
   cvv_dinamico: string | null;
+  curp_verificada?: boolean | null;
+  nombre_completo?: string | null;
 };
 type WalletRow = { id: string; saldo_mxn: number; estado: string; cvv_dinamico: string | null };
 type Movimiento = {
