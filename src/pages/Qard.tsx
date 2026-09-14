@@ -712,8 +712,18 @@ export default function Qard() {
                   <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
                   {s.estado === "apagada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">APAGADA</span>}
                   {s.estado === "cancelada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-200 text-red-800 font-semibold">CANCELADA</span>}
+                  {s.curp_verificada
+                    ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">VERIFICADA</span>
+                    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">SIN VERIFICAR</span>}
                 </div>
                 <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
+                {s.curp_verificada
+                  ? s.nombre_completo && <div className="text-[11px] text-muted-foreground truncate">{s.nombre_completo}</div>
+                  : s.estado !== "cancelada" && (
+                    <Button size="sm" variant="outline" className="h-7 px-2 mt-1 text-[11px]" onClick={() => setSubVerificar(s)}>
+                      Verificar ($20)
+                    </Button>
+                  )}
                 <div className="flex items-center gap-3 mt-1">
                   <div className="text-sm">
                     <span className="text-muted-foreground text-[11px]">Saldo</span>{" "}
