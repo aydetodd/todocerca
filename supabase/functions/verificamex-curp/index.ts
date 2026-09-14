@@ -139,7 +139,7 @@ serve(async (req) => {
       });
 
       await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "curp_sub_qr", exito: !errSub, http_status: res_status(errSub),
+        user_id: userId, tipo: "curp_sub_qr", exito: !errSub, http_status: errSub ? 400 : 200,
         mensaje: errSub ? String(errSub.message).slice(0, 500) : "CURP de sub-QR validada en RENAPO",
       });
 
