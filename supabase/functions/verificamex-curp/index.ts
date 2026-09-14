@@ -69,6 +69,47 @@ serve(async (req) => {
     const curp = String(body?.curp ?? "").toUpperCase().replace(/[^A-ZÑ0-9]/g, "");
     if (!validarCurp(curp)) return json({ error: "La CURP no tiene un formato válido (18 caracteres)." }, 400);
 
+    // ---- Candado anti doble verificación: la CURP solo se consulta a RENAPO una vez ----
+    const subQrId = typeof body?.sub_qr_id === "string" ? body.sub_qr_id : null;
+
+    if (subQrId) {
+      // Sub-QR: si ya está verificada, no consultamos ni cobramos de nuevo.
+      const { data: subPrevia } = await admin
+        .from("qard_sub_qr").select("id, alias, curp_verificada")
+        .eq("id", subQrId).eq("titular_user_id", userId).maybeSingle();
+      if (!subPrevia) return json({ error: "No encontramos esa sub-QR en tu cuenta." }, 404);
+      if ((subPrevia as any).curp_verificada) {
+        return json({ error: `La sub-QR "${(subPrevia as any).alias}" ya estaba verificada. No se cobró nada.` }, 400);
+      }
+    } else {
+      // Cuenta principal: si ya tiene CURP verificada, NO volvemos a llamar a RENAPO.
+      const { data: previa } = await admin
+        .from("qard_identidad")
+        .select("verification_level, nombre_completo, curp_enc, verificamex_curp_validated, verificamex_data_enc")
+        .eq("user_id", userId).maybeSingle();
+
+      if (previa?.verificamex_curp_validated) {
+        const { data: curpGuardada } = await admin.rpc("qard_dec" as any, { _v: (previa as any).curp_enc });
+        if (curpGuardada && String(curpGuardada).toUpperCase() !== curp) {
+          return json({ error: "Esta cuenta ya tiene otra CURP verificada. Si necesitas corregirla, escríbenos a hola@todocerca.mx." }, 400);
+        }
+        // Ya estaba verificada: devolvemos los datos guardados sin pagar otra consulta.
+        let personaGuardada: Record<string, unknown> | null = null;
+        try {
+          const { data: datosDec } = await admin.rpc("qard_dec" as any, { _v: (previa as any).verificamex_data_enc });
+          personaGuardada = datosDec ? JSON.parse(String(datosDec)).persona : null;
+        } catch { /* si no se puede leer, devolvemos lo mínimo */ }
+        const nivelPrevio = Number((previa as any).verification_level ?? 1);
+        return json({
+          ok: true,
+          ya_verificada: true,
+          persona: personaGuardada ?? { curp, nombres: "", primerApellido: "", segundoApellido: "", sexo: "", fechaNacimiento: "", entidad: "" },
+          verification_level: Math.max(nivelPrevio, 1),
+          monthly_limit_udis: nivelPrevio >= 2 ? 3000 : 1000,
+        });
+      }
+    }
+
     const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
     if (!token) return json({ error: "Falta configurar el servicio de verificación." }, 500);
@@ -121,7 +162,6 @@ serve(async (req) => {
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
 
     // ---- Verificación de una sub-QR familiar (Nivel 1, cobra $20 al titular) ----
-    const subQrId = typeof body?.sub_qr_id === "string" ? body.sub_qr_id : null;
     if (subQrId) {
       const nombreEnviado = String(body?.nombre_completo ?? "").trim();
       if (nombreEnviado.length < 5) {
