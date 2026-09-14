@@ -120,6 +120,42 @@ serve(async (req) => {
     const { data: curpEnc } = await admin.rpc("qard_enc" as any, { _v: persona.curp });
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
 
+    // ---- Verificación de una sub-QR familiar (Nivel 1, cobra $20 al titular) ----
+    const subQrId = typeof body?.sub_qr_id === "string" ? body.sub_qr_id : null;
+    if (subQrId) {
+      const nombreEnviado = String(body?.nombre_completo ?? "").trim();
+      if (nombreEnviado.length < 5) {
+        return json({ error: "Escribe el nombre completo de la persona." }, 400);
+      }
+      const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(persona.curp)));
+      const curpHash = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      const { data: res, error: errSub } = await admin.rpc("qard_verificar_sub_qr" as any, {
+        _sub_qr_id: subQrId,
+        _user_id: userId,
+        _nombre: nombreCompleto || nombreEnviado,
+        _curp_enc: curpEnc,
+        _curp_hash: curpHash,
+      });
+
+      await admin.from("verificamex_logs").insert({
+        user_id: userId, tipo: "curp_sub_qr", exito: !errSub, http_status: res_status(errSub),
+        mensaje: errSub ? String(errSub.message).slice(0, 500) : "CURP de sub-QR validada en RENAPO",
+      });
+
+      if (errSub) return json({ error: errSub.message }, 400);
+
+      const fila = Array.isArray(res) ? (res as any[])[0] : (res as any);
+      return json({
+        ok: true,
+        sub_qr: true,
+        persona,
+        nombre_renapo: nombreCompleto,
+        saldo_wallet: Number(fila?.saldo_wallet ?? 0),
+        costo: Number(fila?.costo ?? 20),
+      });
+    }
+
     const { data: existente } = await admin
       .from("qard_identidad").select("id, verification_level").eq("user_id", userId).maybeSingle();
 
