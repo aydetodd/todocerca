@@ -9,3 +9,4 @@
 - [qard-fase-1](mem://features/qard-fase-1) — Número universal de 16 dígitos, wallet y cobro comercio 94/6
 - [qard-identidad-dual](mem://features/qard-identidad-dual) — Activación de tarjeta, tope $10,000/mes, Persona Moral y semáforo de estados
 - [fintoc-pagos](mem://negocio/fintoc-pagos) — Proveedor de pagos
+- [verificacion-sub-qr](mem://features/verificacion-sub-qr) — Sub-QR se verifican con CURP (Nivel 1), $20 del saldo del titular, sin Nivel 2
