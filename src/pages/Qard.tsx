@@ -795,6 +795,14 @@ export default function Qard() {
         </div>
       </Card>
 
+      <VerificarSubQrDialog
+        abierto={!!subVerificar}
+        onOpenChange={(v) => { if (!v) setSubVerificar(null); }}
+        subQr={subVerificar}
+        saldoTitular={Number(wallet?.saldo_mxn ?? 0)}
+        onVerificado={cargar}
+      />
+
       {/* Estado de cuenta estilo banco (2 meses) — se abre con icono */}
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
