@@ -49,6 +49,27 @@ function buscar(obj: unknown, llaves: string[]): string | null {
   return null;
 }
 
+/** Une nombres y apellidos sin repetir palabras (RENAPO a veces duplica el segundo apellido). */
+function unirNombre(partes: (string | null | undefined)[]): string {
+  const vistas = new Set<string>();
+  const salida: string[] = [];
+  for (const parte of partes) {
+    for (const palabra of String(parte ?? "").replace(/\s+/g, " ").trim().split(" ")) {
+      if (!palabra) continue;
+      const clave = palabra.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      if (vistas.has(clave)) continue;
+      vistas.add(clave);
+      salida.push(palabra);
+    }
+  }
+  return salida.join(" ");
+}
+
+async function hashCurp(curp: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(curp)));
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
