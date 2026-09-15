@@ -93,7 +93,13 @@ export default function VerificarIdentidadDialog({
     const r = await invocar("verificamex-curp", { curp });
     setPersona(r.persona as Persona);
     setNivel(r.verification_level ?? 1);
-    setPaso("datos");
+    if (r.ya_verificada) {
+      // Candado: la CURP ya estaba validada, no se pagó de nuevo. Vamos directo a la INE.
+      toast({ title: "Tu CURP ya estaba verificada", description: "No se cobró de nuevo. Continúa con la foto de tu INE." });
+      setPaso("ine");
+    } else {
+      setPaso("datos");
+    }
     onVerificada?.();
   });
 
