@@ -3891,6 +3891,7 @@ export type Database = {
           activated_at: string | null
           created_at: string
           curp_enc: string | null
+          curp_hash: string | null
           email_verified: boolean
           estado: string
           id: string
@@ -3917,6 +3918,7 @@ export type Database = {
           activated_at?: string | null
           created_at?: string
           curp_enc?: string | null
+          curp_hash?: string | null
           email_verified?: boolean
           estado?: string
           id?: string
@@ -3943,6 +3945,7 @@ export type Database = {
           activated_at?: string | null
           created_at?: string
           curp_enc?: string | null
+          curp_hash?: string | null
           email_verified?: boolean
           estado?: string
           id?: string
