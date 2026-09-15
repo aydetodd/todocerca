@@ -239,6 +239,7 @@ serve(async (req) => {
       user_id: userId,
       nombre_completo: nombreCompleto || null,
       curp_enc: curpEnc,
+      curp_hash: await hashCurp(persona.curp),
       verification_level: nivel,
       monthly_limit_udis: limite,
       verificamex_status: "verified",
