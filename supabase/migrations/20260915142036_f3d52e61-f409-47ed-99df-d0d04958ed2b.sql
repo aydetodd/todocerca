@@ -1,0 +1,2 @@
+ALTER TABLE public.qard_identidad ADD COLUMN IF NOT EXISTS curp_hash text;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_qard_identidad_curp_hash ON public.qard_identidad (curp_hash) WHERE curp_hash IS NOT NULL;

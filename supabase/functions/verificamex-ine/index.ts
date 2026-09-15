@@ -97,6 +97,22 @@ function norm(s: string) {
     .toUpperCase().replace(/[^A-ZÑ0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Une nombre y apellidos sin repetir palabras (el OCR a veces duplica el segundo apellido). */
+function unirNombre(partes: (string | null | undefined)[]): string {
+  const vistas = new Set<string>();
+  const salida: string[] = [];
+  for (const parte of partes) {
+    for (const palabra of String(parte ?? "").replace(/\s+/g, " ").trim().split(" ")) {
+      if (!palabra) continue;
+      const clave = palabra.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      if (vistas.has(clave)) continue;
+      vistas.add(clave);
+      salida.push(palabra);
+    }
+  }
+  return salida.join(" ");
+}
+
 function mismoNombre(a: string, b: string) {
   const pa = norm(a).split(" ").filter(p => p.length > 2);
   const pb = norm(b).split(" ").filter(p => p.length > 2);
@@ -413,11 +429,11 @@ serve(async (req) => {
       crudo = { obverse: ob.data, reverse: rev.data };
       curpIne = extraerCurp(ob.data) || extraerCurp(rev.data)
         || (buscarPorTipo({ obverse: ob.data, reverse: rev.data }, ["curp"]) ?? "");
-      nombreIne = [
+      nombreIne = unirNombre([
         buscarPorTipo(ob.data, ["name", "nombre"]) ?? buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
         buscarPorTipo(ob.data, ["fathersurname", "surname", "apellido paterno"]) ?? buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
         buscarPorTipo(ob.data, ["mothersurname", "secondsurname", "apellido materno", "segundo apellido"]) ?? buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
-      ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
+      ]) || unirNombre([buscar(ob.data, ["nombrecompleto", "fullname"]) ?? ""]);
       claveElector = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_CLAVE)
         ?? buscar(respuestaOcr(ob, rev), LLAVES_CLAVE) ?? "";
       fechaNacimiento = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_NACIMIENTO)

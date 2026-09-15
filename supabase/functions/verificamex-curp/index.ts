@@ -49,6 +49,27 @@ function buscar(obj: unknown, llaves: string[]): string | null {
   return null;
 }
 
+/** Une nombres y apellidos sin repetir palabras (RENAPO a veces duplica el segundo apellido). */
+function unirNombre(partes: (string | null | undefined)[]): string {
+  const vistas = new Set<string>();
+  const salida: string[] = [];
+  for (const parte of partes) {
+    for (const palabra of String(parte ?? "").replace(/\s+/g, " ").trim().split(" ")) {
+      if (!palabra) continue;
+      const clave = palabra.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      if (vistas.has(clave)) continue;
+      vistas.add(clave);
+      salida.push(palabra);
+    }
+  }
+  return salida.join(" ");
+}
+
+async function hashCurp(curp: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(curp)));
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -108,7 +129,17 @@ serve(async (req) => {
           monthly_limit_udis: nivelPrevio >= 2 ? 3000 : 1000,
         });
       }
+
+      // Y si esa misma CURP ya está verificada en OTRA cuenta, tampoco consultamos ni cobramos.
+      const huella = await hashCurp(curp);
+      const { data: enOtraCuenta } = await admin
+        .from("qard_identidad").select("user_id")
+        .eq("curp_hash", huella).neq("user_id", userId).maybeSingle();
+      if (enOtraCuenta) {
+        return json({ error: "Esta CURP ya está registrada y verificada en otra cuenta. No se cobró nada. Si es tuya, escríbenos a hola@todocerca.mx." }, 400);
+      }
     }
+
 
     const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
@@ -155,8 +186,7 @@ serve(async (req) => {
       entidad: buscar(fuente, ["entidad", "entidadnacimiento", "estadonacimiento"]) ?? "",
     };
 
-    const nombreCompleto = [persona.nombres, persona.primerApellido, persona.segundoApellido]
-      .filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    const nombreCompleto = unirNombre([persona.nombres, persona.primerApellido, persona.segundoApellido]);
 
     const { data: curpEnc } = await admin.rpc("qard_enc" as any, { _v: persona.curp });
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
@@ -167,8 +197,7 @@ serve(async (req) => {
       if (nombreEnviado.length < 5) {
         return json({ error: "Escribe el nombre completo de la persona." }, 400);
       }
-      const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(persona.curp)));
-      const curpHash = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const curpHash = await hashCurp(persona.curp);
 
       const { data: res, error: errSub } = await admin.rpc("qard_verificar_sub_qr" as any, {
         _sub_qr_id: subQrId,
@@ -210,6 +239,7 @@ serve(async (req) => {
       user_id: userId,
       nombre_completo: nombreCompleto || null,
       curp_enc: curpEnc,
+      curp_hash: await hashCurp(persona.curp),
       verification_level: nivel,
       monthly_limit_udis: limite,
       verificamex_status: "verified",
