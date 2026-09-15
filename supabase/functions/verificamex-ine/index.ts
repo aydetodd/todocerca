@@ -97,6 +97,22 @@ function norm(s: string) {
     .toUpperCase().replace(/[^A-ZÑ0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Une nombre y apellidos sin repetir palabras (el OCR a veces duplica el segundo apellido). */
+function unirNombre(partes: (string | null | undefined)[]): string {
+  const vistas = new Set<string>();
+  const salida: string[] = [];
+  for (const parte of partes) {
+    for (const palabra of String(parte ?? "").replace(/\s+/g, " ").trim().split(" ")) {
+      if (!palabra) continue;
+      const clave = palabra.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      if (vistas.has(clave)) continue;
+      vistas.add(clave);
+      salida.push(palabra);
+    }
+  }
+  return salida.join(" ");
+}
+
 function mismoNombre(a: string, b: string) {
   const pa = norm(a).split(" ").filter(p => p.length > 2);
   const pb = norm(b).split(" ").filter(p => p.length > 2);
