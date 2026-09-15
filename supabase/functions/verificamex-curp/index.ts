@@ -129,7 +129,17 @@ serve(async (req) => {
           monthly_limit_udis: nivelPrevio >= 2 ? 3000 : 1000,
         });
       }
+
+      // Y si esa misma CURP ya está verificada en OTRA cuenta, tampoco consultamos ni cobramos.
+      const huella = await hashCurp(curp);
+      const { data: enOtraCuenta } = await admin
+        .from("qard_identidad").select("user_id")
+        .eq("curp_hash", huella).neq("user_id", userId).maybeSingle();
+      if (enOtraCuenta) {
+        return json({ error: "Esta CURP ya está registrada y verificada en otra cuenta. No se cobró nada. Si es tuya, escríbenos a hola@todocerca.mx." }, 400);
+      }
     }
+
 
     const base = Deno.env.get("VERIFICAMEX_BASE_URL") ?? "https://api.verificamex.com";
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
