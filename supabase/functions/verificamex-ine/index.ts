@@ -429,11 +429,11 @@ serve(async (req) => {
       crudo = { obverse: ob.data, reverse: rev.data };
       curpIne = extraerCurp(ob.data) || extraerCurp(rev.data)
         || (buscarPorTipo({ obverse: ob.data, reverse: rev.data }, ["curp"]) ?? "");
-      nombreIne = [
+      nombreIne = unirNombre([
         buscarPorTipo(ob.data, ["name", "nombre"]) ?? buscar(ob.data, ["nombres", "nombre", "name", "firstname", "givennames"]) ?? "",
         buscarPorTipo(ob.data, ["fathersurname", "surname", "apellido paterno"]) ?? buscar(ob.data, ["primerapellido", "apellidopaterno", "firstsurname", "paternalsurname", "lastname"]) ?? "",
         buscarPorTipo(ob.data, ["mothersurname", "secondsurname", "apellido materno", "segundo apellido"]) ?? buscar(ob.data, ["segundoapellido", "apellidomaterno", "secondsurname", "maternalsurname"]) ?? "",
-      ].filter(Boolean).join(" ").trim() || (buscar(ob.data, ["nombrecompleto", "fullname"]) ?? "");
+      ]) || unirNombre([buscar(ob.data, ["nombrecompleto", "fullname"]) ?? ""]);
       claveElector = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_CLAVE)
         ?? buscar(respuestaOcr(ob, rev), LLAVES_CLAVE) ?? "";
       fechaNacimiento = buscarPorTipo(respuestaOcr(ob, rev), LLAVES_NACIMIENTO)
