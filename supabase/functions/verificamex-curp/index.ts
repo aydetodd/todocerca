@@ -197,8 +197,7 @@ serve(async (req) => {
       if (nombreEnviado.length < 5) {
         return json({ error: "Escribe el nombre completo de la persona." }, 400);
       }
-      const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(persona.curp)));
-      const curpHash = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const curpHash = await hashCurp(persona.curp);
 
       const { data: res, error: errSub } = await admin.rpc("qard_verificar_sub_qr" as any, {
         _sub_qr_id: subQrId,
