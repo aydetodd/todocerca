@@ -138,6 +138,30 @@ serve(async (req) => {
       if (enOtraCuenta) {
         return json({ error: "Esta CURP ya está registrada y verificada en otra cuenta. No se cobró nada. Si es tuya, escríbenos a hola@todocerca.mx." }, 400);
       }
+
+      // Tampoco si esa persona ya está verificada como sub-QR dentro de otra cuenta eje:
+      // primero deben eliminar esa sub-QR para que pueda tener su propia cuenta.
+      const { data: enSubQr } = await admin
+        .from("qard_sub_qr")
+        .select("alias, titular_user_id, qard_number")
+        .eq("curp_hash", huella).eq("curp_verificada", true)
+        .neq("titular_user_id", userId)
+        .maybeSingle();
+      if (enSubQr) {
+        let titular = "";
+        try {
+          const { data: perfil } = await admin
+            .from("profiles").select("full_name, phone")
+            .eq("user_id", (enSubQr as any).titular_user_id).maybeSingle();
+          titular = String((perfil as any)?.full_name ?? "").trim();
+        } catch { /* sin nombre del titular, damos el mensaje general */ }
+        return json({
+          error: `Esta CURP ya está registrada y verificada como sub-QR${(enSubQr as any).alias ? ` ("${(enSubQr as any).alias}")` : ""} dentro de otra cuenta${titular ? ` de ${titular}` : ""}. No se cobró nada. Para tener tu propia cuenta, el titular debe eliminar primero esa sub-QR.`,
+          motivo: "curp_en_sub_qr",
+          sub_qr_alias: (enSubQr as any).alias ?? null,
+        }, 400);
+      }
+
     }
 
 
