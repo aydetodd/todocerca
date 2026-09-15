@@ -186,8 +186,7 @@ serve(async (req) => {
       entidad: buscar(fuente, ["entidad", "entidadnacimiento", "estadonacimiento"]) ?? "",
     };
 
-    const nombreCompleto = [persona.nombres, persona.primerApellido, persona.segundoApellido]
-      .filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    const nombreCompleto = unirNombre([persona.nombres, persona.primerApellido, persona.segundoApellido]);
 
     const { data: curpEnc } = await admin.rpc("qard_enc" as any, { _v: persona.curp });
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
