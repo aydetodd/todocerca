@@ -151,9 +151,9 @@ serve(async (req) => {
         let titular = "";
         try {
           const { data: perfil } = await admin
-            .from("profiles").select("full_name, phone")
+            .from("profiles").select("nombre")
             .eq("user_id", (enSubQr as any).titular_user_id).maybeSingle();
-          titular = String((perfil as any)?.full_name ?? "").trim();
+          titular = String((perfil as any)?.nombre ?? "").trim();
         } catch { /* sin nombre del titular, damos el mensaje general */ }
         return json({
           error: `Esta CURP ya está registrada y verificada como sub-QR${(enSubQr as any).alias ? ` ("${(enSubQr as any).alias}")` : ""} dentro de otra cuenta${titular ? ` de ${titular}` : ""}. No se cobró nada. Para tener tu propia cuenta, el titular debe eliminar primero esa sub-QR.`,
