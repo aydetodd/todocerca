@@ -52,7 +52,6 @@ import QrBoletos from "./pages/QrBoletos";
 import WalletFamiliar from "./pages/WalletFamiliar";
 import Qard from "./pages/Qard";
 import QardCobrar from "./pages/QardCobrar";
-import QardServicios from "./pages/QardServicios";
 import QardRecargar from "./pages/QardRecargar";
 import QardMaestra from "./pages/QardMaestra";
 
@@ -244,7 +243,6 @@ export default function AppWrapper() {
           {/* QaRd — Billetera universal */}
           <Route path="/qard" element={<Qard />} />
           <Route path="/qard/cobrar" element={<QardCobrar />} />
-          <Route path="/qard/servicios" element={<QardServicios />} />
           <Route path="/qard/recargar" element={<QardRecargar />} />
           <Route path="/panel/qard-maestra" element={<QardMaestra />} />
 
