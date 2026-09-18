@@ -812,6 +812,7 @@ export default function Qard() {
             m.tipo === "retiro_spei" ? "Envío SPEI" :
             m.tipo === "transferencia_p2p_in" ? "Transferencia recibida" :
             m.tipo === "transferencia_p2p_out" ? "Transferencia enviada" :
+            m.tipo === "comision" ? (m.descripcion || "Comisión") :
             m.tipo === "ajuste" ? (m.descripcion || "Movimiento de saldo").replace(/ajuste/gi, "Movimiento") :
             m.tipo;
         };
