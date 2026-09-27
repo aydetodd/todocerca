@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_set_cvv_default() FROM PUBLIC, anon, authenticated;
