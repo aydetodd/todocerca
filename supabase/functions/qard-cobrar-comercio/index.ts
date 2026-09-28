@@ -106,7 +106,6 @@ serve(async (req) => {
       const { data: cvvPlano } = await admin.rpc("qard_dec" as any, { _v: sub.cvv });
       const cvvGuardado = String(cvvPlano ?? "").replace(/\D/g, "").trim();
       const cvvRecibido = String(cvvInput ?? "").replace(/\D/g, "").trim();
-      console.log("[QARD-COBRAR] cvv match?", { esperado_len: cvvGuardado.length, recibido_len: cvvRecibido.length, ok: cvvGuardado === cvvRecibido });
       if (cvvGuardado !== cvvRecibido) {
         return jsonErr("CVV incorrecto", "cvv_invalido", { color: "rojo" });
       }
