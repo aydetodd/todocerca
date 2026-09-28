@@ -650,9 +650,9 @@ export default function QardCobrar() {
                     type="button"
                     variant="outline"
                     className="w-full justify-start h-11"
-                    onClick={() => setRetiroCvvKeypadOpen(true)}
+                     onClick={abrirTecladoCvvRetiro}
                   >
-                    <span className="text-lg tracking-[0.5em]">
+                     <span className={retiroCvv ? "text-lg tracking-[0.5em]" : "text-sm whitespace-nowrap"}>
                       {retiroCvv ? "•".repeat(retiroCvv.length) : "Escribir CVV"}
                     </span>
                   </Button>
