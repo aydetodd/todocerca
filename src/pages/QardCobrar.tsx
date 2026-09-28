@@ -168,6 +168,26 @@ export default function QardCobrar() {
     setManualOpen(true);
   };
 
+  const abrirTecladoCvvManual = () => {
+    setManualOpen(false);
+    setManualCvvKeypadOpen(true);
+  };
+
+  const cerrarTecladoCvvManual = () => {
+    setManualCvvKeypadOpen(false);
+    setManualOpen(true);
+  };
+
+  const abrirTecladoCvvRetiro = () => {
+    setRetiroOpen(false);
+    setRetiroCvvKeypadOpen(true);
+  };
+
+  const cerrarTecladoCvvRetiro = () => {
+    setRetiroCvvKeypadOpen(false);
+    setRetiroOpen(true);
+  };
+
   const formatQardInput = (v: string) => {
     const d = v.replace(/\D/g, "").slice(0, 16);
     return d.replace(/(.{4})/g, "$1 ").trim();
@@ -485,9 +505,9 @@ export default function QardCobrar() {
                   type="button"
                   variant="outline"
                   className="w-full justify-start h-11"
-                  onClick={() => setManualCvvKeypadOpen(true)}
+                   onClick={abrirTecladoCvvManual}
                 >
-                  <span className="text-lg tracking-[0.5em]">
+                   <span className={manualCvv ? "text-lg tracking-[0.5em]" : "text-sm whitespace-nowrap"}>
                     {manualCvv ? "•".repeat(manualCvv.length) : "Escribir CVV"}
                   </span>
                 </Button>
@@ -506,8 +526,8 @@ export default function QardCobrar() {
 
       <NumericKeypadScreen
         open={manualCvvKeypadOpen}
-        onClose={() => setManualCvvKeypadOpen(false)}
-        onSubmit={() => setManualCvvKeypadOpen(false)}
+        onClose={cerrarTecladoCvvManual}
+        onSubmit={cerrarTecladoCvvManual}
         value={manualCvv}
         onChange={setManualCvv}
         title="CVV de la tarjeta"
@@ -630,9 +650,9 @@ export default function QardCobrar() {
                     type="button"
                     variant="outline"
                     className="w-full justify-start h-11"
-                    onClick={() => setRetiroCvvKeypadOpen(true)}
+                     onClick={abrirTecladoCvvRetiro}
                   >
-                    <span className="text-lg tracking-[0.5em]">
+                     <span className={retiroCvv ? "text-lg tracking-[0.5em]" : "text-sm whitespace-nowrap"}>
                       {retiroCvv ? "•".repeat(retiroCvv.length) : "Escribir CVV"}
                     </span>
                   </Button>
@@ -660,8 +680,8 @@ export default function QardCobrar() {
 
       <NumericKeypadScreen
         open={retiroCvvKeypadOpen}
-        onClose={() => setRetiroCvvKeypadOpen(false)}
-        onSubmit={() => setRetiroCvvKeypadOpen(false)}
+        onClose={cerrarTecladoCvvRetiro}
+        onSubmit={cerrarTecladoCvvRetiro}
         value={retiroCvv}
         onChange={setRetiroCvv}
         title="CVV dinámico del destino"
