@@ -1,0 +1,2 @@
+ALTER TABLE public.qard_movimientos DROP CONSTRAINT qard_movimientos_tipo_check;
+ALTER TABLE public.qard_movimientos ADD CONSTRAINT qard_movimientos_tipo_check CHECK (tipo IN ('recarga','cobro_comercio','cobro_recibido','devolucion','ajuste','comision','transfer_a_sub','transfer_desde_sub','transferencia_p2p_out','transferencia_p2p_in','retiro_oxxo','retiro_spei','retiro_qard','traspaso_cobros_out','traspaso_cobros_in'));
