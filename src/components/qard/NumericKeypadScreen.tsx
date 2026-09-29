@@ -37,7 +37,7 @@ export function NumericKeypadScreen({
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col p-4">
+    <div className="fixed inset-0 z-[10000] bg-background flex flex-col p-4">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Cerrar">
