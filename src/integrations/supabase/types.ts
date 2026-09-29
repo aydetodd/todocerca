@@ -4030,11 +4030,13 @@ export type Database = {
       }
       qard_movimientos: {
         Row: {
+          ambito: string | null
           comercio_nombre: string | null
           comercio_user_id: string | null
           comision_mxn: number | null
           created_at: string
           descripcion: string | null
+          direccion: string | null
           id: string
           metadata: Json | null
           monto_mxn: number
@@ -4046,11 +4048,13 @@ export type Database = {
           wallet_id: string
         }
         Insert: {
+          ambito?: string | null
           comercio_nombre?: string | null
           comercio_user_id?: string | null
           comision_mxn?: number | null
           created_at?: string
           descripcion?: string | null
+          direccion?: string | null
           id?: string
           metadata?: Json | null
           monto_mxn: number
@@ -4062,11 +4066,13 @@ export type Database = {
           wallet_id: string
         }
         Update: {
+          ambito?: string | null
           comercio_nombre?: string | null
           comercio_user_id?: string | null
           comision_mxn?: number | null
           created_at?: string
           descripcion?: string | null
+          direccion?: string | null
           id?: string
           metadata?: Json | null
           monto_mxn?: number
