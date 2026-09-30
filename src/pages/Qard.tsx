@@ -18,6 +18,7 @@ import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
 import VerificarSubQrDialog from "@/components/qard/VerificarSubQrDialog";
 import { formatHermosillo } from "@/lib/utils";
+import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito } from "@/lib/qardEtiquetas";
 const todocercaLogo = "/icon-512.png";
 
 
@@ -98,10 +99,11 @@ export default function Qard() {
   const [cvvDinVisible, setCvvDinVisible] = useState(false);
   const [filtroGrupo, setFiltroGrupo] = useState<"activa" | "apagada" | "cancelada">("activa");
   const [subMovOpen, setSubMovOpen] = useState<SubQR | null>(null);
-  const [subMovs, setSubMovs] = useState<Movimiento[]>([]);
   const [ejeOpen, setEjeOpen] = useState(false);
   const [periodoEje, setPeriodoEje] = useState<number>(30);
   const [periodoSub, setPeriodoSub] = useState<number>(30);
+  const [cobrosOpen, setCobrosOpen] = useState(false);
+  const [periodoCobros, setPeriodoCobros] = useState<number>(30);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
   const [printSel, setPrintSel] = useState<string[]>(["titular"]);
@@ -138,18 +140,7 @@ export default function Qard() {
 
 
 
-  const abrirMovsSub = async (sub: SubQR) => {
-    setSubMovOpen(sub);
-    setSubMovs([]);
-    const { data } = await supabase
-      .from("qard_movimientos" as any)
-      .select("*")
-      .eq("sub_qr_id", sub.id)
-      .gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString())
-      .order("created_at", { ascending: false })
-      .limit(500);
-    setSubMovs((data as any) ?? []);
-  };
+  const abrirMovsSub = (sub: SubQR) => setSubMovOpen(sub);
 
   const rotarCvv = (id: string) => {
     setCvvRotarId(id);
@@ -166,7 +157,7 @@ export default function Qard() {
     const { data, error } = await supabase.rpc("qard_sub_qr_rotar_cvv" as any, {
       _sub_qr_id: cvvRotarId, _nuevo_cvv: custom || null,
     });
-    if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "No se pudo cambiar", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     toast({ title: "CVV actualizado", description: `Nuevo CVV: ${data}` });
     setCvvVisible(v => ({ ...v, [cvvRotarId]: true }));
     setCvvRotarOpen(false);
@@ -240,7 +231,7 @@ export default function Qard() {
     const { error } = await supabase.rpc("qard_transferir_a_sub" as any, {
       _sub_qr_id: subTransferTarget.id, _monto_mxn: m * subTransferSigno,
     });
-    if (error) return toast({ title: "No se pudo transferir", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "No se pudo transferir", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     toast({ title: subTransferSigno > 0 ? "Saldo asignado" : "Saldo devuelto", description: `$${m.toFixed(2)}` });
     setSubTransferOpen(false);
     setSubTransferMonto("");
@@ -253,7 +244,7 @@ export default function Qard() {
     const { error } = await supabase.rpc("qard_sub_set_estado" as any, {
       _sub_qr_id: sub.id, _estado: nuevo,
     });
-    if (error) return toast({ title: "No se pudo cambiar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "No se pudo cambiar", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     toast({ title: nuevo === "activa" ? "QaRd encendida" : "QaRd apagada" });
     cargar();
   };
@@ -270,7 +261,7 @@ export default function Qard() {
       });
     }
     const { data, error } = await supabase.functions.invoke("qard-recargar", { body: { monto_mxn: m } });
-    if (error || !data?.url) return toast({ title: "Error al recargar", description: error?.message, variant: "destructive" });
+    if (error || !data?.url) return toast({ title: "Error al recargar", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     window.location.href = data.url;
   };
 
@@ -296,9 +287,9 @@ export default function Qard() {
       _from_numero16: desde, _to_numero16: hacia, _cvv: mismoDueno ? "" : cvv, _monto: m,
     });
     setP2pEnviando(false);
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Error", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     const res = data as any;
-    if (!res?.ok) return toast({ title: "No se pudo enviar", description: res?.error ?? "Error desconocido", variant: "destructive" });
+    if (!res?.ok) return toast({ title: "No se pudo enviar", description: res?.error ?? MENSAJE_ERROR_AMABLE, variant: "destructive" });
     toast({ title: "Transferencia enviada", description: `$${m.toFixed(2)} MXN a •••• ${hacia.slice(-4)}` });
     setP2pTo(""); setP2pCvv(""); setP2pMonto("");
     cargar();
@@ -327,7 +318,7 @@ export default function Qard() {
       alias: newAlias.trim(),
       limite_por_transaccion: newLimite ? Number(newLimite) : null,
     });
-    if (error) return toast({ title: "No se pudo crear", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "No se pudo crear", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     setNewAlias(""); setNewLimite("");
     toast({ title: "Sub-QR creado", description: formatNumero(numero) });
     cargar();
@@ -336,7 +327,7 @@ export default function Qard() {
   const cancelarSub = async (id: string) => {
     if (!confirm("¿Cancelar este sub-QR?")) return;
     const { error } = await supabase.from("qard_sub_qr" as any).update({ estado: "cancelada" }).eq("id", id);
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Error", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
     toast({ title: "Cancelado" });
     cargar();
   };

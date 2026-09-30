@@ -143,7 +143,8 @@ export default function QardCobrar() {
       body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual },
     });
     if (error) {
-      setUltimo({ ok: false, mensaje: error.message, color: "rojo" });
+      console.error("cobro", error);
+      setUltimo({ ok: false, mensaje: "No se pudo completar en este momento; intenta de nuevo", color: "rojo" });
       return;
     }
     setUltimo(data);
@@ -270,7 +271,7 @@ export default function QardCobrar() {
     setTraspasoLoading(false);
     const res: any = data;
     if (error || !res?.ok) {
-      return toast({ title: "No se pudo traspasar", description: (res?.error || error?.message) ?? "", variant: "destructive" });
+      return toast({ title: "No se pudo traspasar", description: res?.error || "No se pudo completar en este momento; intenta de nuevo", variant: "destructive" });
     }
     setTraspasoOpen(false);
     setTraspasoMonto("");
