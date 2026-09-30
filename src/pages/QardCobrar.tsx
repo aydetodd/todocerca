@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { etiquetaMovimiento } from "@/lib/qardEtiquetas";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +144,8 @@ export default function QardCobrar() {
       body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual },
     });
     if (error) {
-      setUltimo({ ok: false, mensaje: error.message, color: "rojo" });
+      console.error("cobro", error);
+      setUltimo({ ok: false, mensaje: "No se pudo completar en este momento; intenta de nuevo", color: "rojo" });
       return;
     }
     setUltimo(data);
@@ -270,7 +272,7 @@ export default function QardCobrar() {
     setTraspasoLoading(false);
     const res: any = data;
     if (error || !res?.ok) {
-      return toast({ title: "No se pudo traspasar", description: (res?.error || error?.message) ?? "", variant: "destructive" });
+      return toast({ title: "No se pudo traspasar", description: res?.error || "No se pudo completar en este momento; intenta de nuevo", variant: "destructive" });
     }
     setTraspasoOpen(false);
     setTraspasoMonto("");
@@ -432,7 +434,7 @@ export default function QardCobrar() {
                 return (
                   <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                     <div className="min-w-0 pr-2">
-                      <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                      <div className="font-medium truncate text-foreground">{etiquetaMovimiento("cobros", m.tipo)}</div>
                       <div className="text-[11px] text-muted-foreground">
                         {formatHermosillo(m.created_at)}
                       </div>
