@@ -104,8 +104,6 @@ export default function Qard() {
   const [periodoSub, setPeriodoSub] = useState<number>(30);
   const [cobrosOpen, setCobrosOpen] = useState(false);
   const [periodoCobros, setPeriodoCobros] = useState<number>(30);
-  const [cobrosOpen, setCobrosOpen] = useState(false);
-  const [periodoCobros, setPeriodoCobros] = useState<number>(30);
   const [qrFullscreen, setQrFullscreen] = useState<{ value: string; label: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
   const [printSel, setPrintSel] = useState<string[]>(["titular"]);
