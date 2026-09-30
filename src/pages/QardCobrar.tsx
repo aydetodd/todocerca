@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { etiquetaMovimiento } from "@/lib/qardEtiquetas";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -433,7 +434,7 @@ export default function QardCobrar() {
                 return (
                   <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                     <div className="min-w-0 pr-2">
-                      <div className="font-medium truncate text-foreground">{m.descripcion || (esRetiro ? "Retiro" : "Cobro QaRd")}</div>
+                      <div className="font-medium truncate text-foreground">{etiquetaMovimiento("cobros", m.tipo)}</div>
                       <div className="text-[11px] text-muted-foreground">
                         {formatHermosillo(m.created_at)}
                       </div>
