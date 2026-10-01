@@ -591,6 +591,7 @@ export type Database = {
           estado: string
           fuente: string
           id: string
+          pagado_mxn: number
           parada_bajada_id: string | null
           parada_subida_id: string | null
           pasajero_user_id: string | null
@@ -617,6 +618,7 @@ export type Database = {
           estado?: string
           fuente?: string
           id?: string
+          pagado_mxn?: number
           parada_bajada_id?: string | null
           parada_subida_id?: string | null
           pasajero_user_id?: string | null
@@ -643,6 +645,7 @@ export type Database = {
           estado?: string
           fuente?: string
           id?: string
+          pagado_mxn?: number
           parada_bajada_id?: string | null
           parada_subida_id?: string | null
           pasajero_user_id?: string | null
@@ -4392,6 +4395,7 @@ export type Database = {
           monto_cobrado_mxn: number | null
           numero_bajada: number | null
           numero_subida: number | null
+          pagado_mxn: number
           producto_id: string
           qard_number: string
           retirado_at: string | null
@@ -4416,6 +4420,7 @@ export type Database = {
           monto_cobrado_mxn?: number | null
           numero_bajada?: number | null
           numero_subida?: number | null
+          pagado_mxn?: number
           producto_id: string
           qard_number: string
           retirado_at?: string | null
@@ -4440,6 +4445,7 @@ export type Database = {
           monto_cobrado_mxn?: number | null
           numero_bajada?: number | null
           numero_subida?: number | null
+          pagado_mxn?: number
           producto_id?: string
           qard_number?: string
           retirado_at?: string | null
@@ -7504,6 +7510,10 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      qard_cobrar_stand: {
+        Args: { _etiqueta?: string; _pasajero_id: string }
+        Returns: Json
       }
       qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
       qard_comision_retiro: {
