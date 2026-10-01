@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2, CheckCircle2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getHermosilloToday } from "@/lib/utils";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { downloadCSV } from "@/lib/csvExport";
@@ -74,7 +74,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [customEnd, setCustomEnd] = useState("");
   const [filterUnidad, setFilterUnidad] = useState("all");
   const [filterChofer, setFilterChofer] = useState("all");
-  const [filterRuta, setFilterRuta] = useState("all");
+  const [rutaParams] = useSearchParams();
+  const [filterRuta, setFilterRuta] = useState(rutaParams.get("ruta") || "all");
   const [viajes, setViajes] = useState<ViajeRow[]>([]);
   const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
   // Importe aún NO retirado por viaje (los cobros se marcan uno por uno al retirar)
