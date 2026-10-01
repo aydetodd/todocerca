@@ -18,6 +18,8 @@ import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
 import VerificarSubQrDialog from "@/components/qard/VerificarSubQrDialog";
 import { formatHermosillo } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useIngresosTransporte, panelDeRuta } from "@/hooks/useIngresosTransporte";
 import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito } from "@/lib/qardEtiquetas";
 const todocercaLogo = "/icon-512.png";
 
@@ -87,6 +89,9 @@ function PeriodoSelector({ valor, onChange }: { valor: number; onChange: (d: num
 export default function Qard() {
   const nav = useNavigate();
   const [params] = useSearchParams();
+  const { user: authUser } = useAuth();
+  const rutasIngreso = useIngresosTransporte(authUser?.id);
+  const [verTodasRutas, setVerTodasRutas] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [subs, setSubs] = useState<SubQR[]>([]);
@@ -786,7 +791,11 @@ export default function Qard() {
         const saldoEje = Number(wallet?.saldo_mxn ?? 0);
         const saldoCobros = Number((wallet as any)?.saldo_comercio_mxn ?? 0);
         const subsActivas = subs.filter(s => s.sub_index > 0 && s.estado === "activa");
-        const total = saldoEje + saldoCobros + subsActivas.reduce((a, s) => a + Number(s.saldo_mxn ?? 0), 0);
+        const pozoRutas = (rutasIngreso || []).reduce((a, r) => a + r.pozo, 0);
+        const total = saldoEje + saldoCobros + subsActivas.reduce((a, s) => a + Number(s.saldo_mxn ?? 0), 0) + pozoRutas;
+        const rutasOrden = [...(rutasIngreso || [])].sort((a, b) => b.pozo + b.standN - (a.pozo + a.standN));
+        const conMov = rutasOrden.filter(r => r.pozo > 0 || r.standN > 0).length;
+        const rutasVisibles = conMov > 3 && !verTodasRutas ? rutasOrden.slice(0, 3) : rutasOrden;
 
         const Estado = ({ titulo, ambito, saldoVivo, subId, periodo, setPeriodo }: {
           titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void;
@@ -870,6 +879,25 @@ export default function Qard() {
                   <button className="underline-offset-2 hover:underline" onClick={() => setCobrosOpen(true)}>Cobros</button>
                   <b>${saldoCobros.toFixed(2)}</b>
                 </div>
+                {rutasIngreso && rutasIngreso.length > 0 && (
+                  <div className="py-2">
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">Ingresos de transporte · por cobrar</div>
+                    {rutasVisibles.map(r => (
+                      <button key={r.id} className="w-full text-left py-1.5" onClick={() => nav(panelDeRuta(r))}>
+                        <div className="flex justify-between">
+                          <span className="truncate underline-offset-2 hover:underline">{r.nombre}</span>
+                          <b>${r.pozo.toFixed(2)}</b>
+                        </div>
+                        {r.standN > 0 && (
+                          <div className="text-xs text-muted-foreground">+ {r.standN} en stand se cobrará al cierre del día (${r.standMonto.toFixed(2)})</div>
+                        )}
+                      </button>
+                    ))}
+                    {conMov > 3 && !verTodasRutas && (
+                      <button className="text-xs text-primary underline mt-1" onClick={() => setVerTodasRutas(true)}>Ver todas las rutas</button>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between py-2 text-base">
                   <span className="font-semibold">Total de tu dinero</span>
                   <b className="text-primary">${total.toFixed(2)}</b>
