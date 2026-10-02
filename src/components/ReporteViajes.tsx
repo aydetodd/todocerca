@@ -581,7 +581,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       <Card className="border border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-[15px] flex items-center gap-2">
-            <Calendar className="h-4 w-4" /> Hoy (12:00 am – 11:59 pm)
+            <Calendar className="h-4 w-4" /> {({ hoy: "Hoy (12:00 am – 11:59 pm)", ayer: "Ayer", semana: "Últimos 7 días", mes: "Últimos 30 días" } as Record<string, string>)[periodo] ?? (customStart && customEnd ? `Del ${customStart} al ${customEnd}` : "Rango personalizado")}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">

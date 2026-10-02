@@ -145,7 +145,7 @@ serve(async (req) => {
     const batchId = crypto.randomUUID();
     let referencia = "";
     let descripcion = "";
-    const metadata: Record<string, unknown> = { metodo, batch_id: batchId, viajes: validosIds.length, bruto, comision };
+    const metadata: Record<string, unknown> = { bolsa: "rutas", metodo, batch_id: batchId, viajes: validosIds.length, bruto, comision };
 
     if (metodo === "qard") {
       const d = destino.replace(/\D/g, "");
@@ -199,7 +199,8 @@ serve(async (req) => {
         tipo: "transferencia_p2p_in",
         monto_mxn: neto,
         saldo_despues: saldoDestinoDespues,
-        descripcion: `Cobro de pasajes recibido •••• ${d.slice(-4)}`,
+        descripcion: "Transferencia recibida de rutas",
+        metadata: { bolsa: "rutas" },
         comercio_nombre: "Cobro de viajes",
       });
 
