@@ -188,6 +188,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
     const contratoIds = (contratos || []).map((c: any) => c.id);
     const choferIds = (choferesProv || []).map((c: any) => c.id);
     const productoIds = (productosProv || []).map((p: any) => p.id);
+    // Pozo por cobrar: misma fuente y ventana (60 días) que "Mi dinero", sin importar el periodo
+    cargarPozoViajes(productoIds).then(({ pendientePorViaje, viajeRuta }) => setPozo({ pendientePorViaje, viajeRuta }));
     if (contratoIds.length === 0 && choferIds.length === 0 && productoIds.length === 0) { setViajes([]); setLoading(false); return; }
 
     // Ampliamos 1 día atrás para capturar viajes en_curso iniciados antes de medianoche
@@ -272,8 +274,6 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       });
     }
     setPendientePorViaje(pendientes);
-    // Pozo por cobrar: misma fuente y ventana (60 días) que "Mi dinero", sin importar el periodo
-    cargarPozoViajes(productoIds).then(({ pendientePorViaje, viajeRuta }) => setPozo({ pendientePorViaje, viajeRuta }));
     // Ordenar pasajeros por número de subida
     Object.keys(pasajeros).forEach((k) => {
       pasajeros[k].sort((a, b) => (a.numero_subida ?? 999) - (b.numero_subida ?? 999));
