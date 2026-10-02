@@ -110,6 +110,11 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         push("eje", abs, `Saldo devuelto de ${alias(m.descripcion) || "sub-QR"}`, "-eje");
         break;
       case "transferencia_p2p_in":
+        if (m.comercio_nombre === "Cobro de viajes" || md.bolsa === "rutas") {
+          push(esSub ? "sub_qr" : "eje", abs, "Transferencia recibida de rutas", "", esSub ? m.sub_qr_id : null);
+          break;
+        }
+      // falls through
       case "transferencia_p2p_out":
       case "cobro_comercio":
       case "devolucion": {
@@ -130,7 +135,9 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         push("eje", abs, ETIQUETAS.eje.traspaso_cobros_in);
         break;
       default:
-        if (m.tipo.startsWith("retiro_")) {
+        if (m.tipo.startsWith("retiro_") && (md.bolsa === "rutas" || md.batch_id)) {
+          // Salida del pozo de rutas: solo vive en el libro de la ruta, nunca en eje ni cobros.
+        } else if (m.tipo.startsWith("retiro_")) {
           const amb: Ambito = m.ambito === "cobros" || md.bolsa === "comercio" ? "cobros" : "eje";
           push(amb, -abs, etiquetaMovimiento(amb, m.tipo));
         } else {
