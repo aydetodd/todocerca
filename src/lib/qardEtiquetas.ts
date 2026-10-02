@@ -116,7 +116,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         const positivo = m.tipo === "transferencia_p2p_in" || m.tipo === "devolucion";
         const amb: Ambito = esSub ? "sub_qr" : "eje";
         let et = etiquetaMovimiento(amb, m.tipo);
-        if (m.tipo === "cobro_comercio" && m.comercio_nombre) et = `${et} · ${m.comercio_nombre}`;
+        if (m.tipo === "cobro_comercio" && m.comercio_nombre) et = m.comercio_nombre.startsWith("Cobro automático") ? m.comercio_nombre : `${et} · ${m.comercio_nombre}`;
         push(amb, positivo ? abs : -abs, et, "", esSub ? m.sub_qr_id : null);
         break;
       }

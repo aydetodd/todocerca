@@ -794,8 +794,8 @@ export default function Qard() {
         const pozoRutas = (rutasIngreso || []).reduce((a, r) => a + r.pozo, 0);
         const total = saldoEje + saldoCobros + subsActivas.reduce((a, s) => a + Number(s.saldo_mxn ?? 0), 0) + pozoRutas;
         const rutasOrden = [...(rutasIngreso || [])].sort((a, b) => b.pozo + b.standN - (a.pozo + a.standN));
-        const conMov = rutasOrden.filter(r => r.pozo > 0 || r.standN > 0).length;
-        const rutasVisibles = conMov > 3 && !verTodasRutas ? rutasOrden.slice(0, 3) : rutasOrden;
+        const conDinero = rutasOrden.filter(r => r.pozo > 0 || r.standN > 0 || r.sinSaldoN > 0);
+        const rutasVisibles = verTodasRutas ? rutasOrden : conDinero;
 
         const Estado = ({ titulo, ambito, saldoVivo, subId, periodo, setPeriodo }: {
           titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void;
@@ -879,7 +879,7 @@ export default function Qard() {
                   <button className="underline-offset-2 hover:underline" onClick={() => setCobrosOpen(true)}>Cobros</button>
                   <b>${saldoCobros.toFixed(2)}</b>
                 </div>
-                {rutasIngreso && rutasIngreso.length > 0 && (
+                {rutasIngreso && rutasIngreso.length > 0 && (conDinero.length > 0 || verTodasRutas) && (
                   <div className="py-2">
                     <div className="text-xs font-semibold text-muted-foreground mb-1">Ingresos de transporte · por cobrar</div>
                     {rutasVisibles.map(r => (
@@ -891,12 +891,16 @@ export default function Qard() {
                         {r.standN > 0 && (
                           <div className="text-xs text-muted-foreground">+ {r.standN} en stand se cobrará al cierre del día (${r.standMonto.toFixed(2)})</div>
                         )}
+                        {r.sinSaldoN > 0 && (
+                          <div className="text-xs text-destructive">{r.sinSaldoN} sin saldo, pendiente aparte (${r.sinSaldoMonto.toFixed(2)})</div>
+                        )}
                       </button>
                     ))}
-                    {conMov > 3 && !verTodasRutas && (
-                      <button className="text-xs text-primary underline mt-1" onClick={() => setVerTodasRutas(true)}>Ver todas las rutas</button>
-                    )}
+                    <button className="text-xs text-muted-foreground underline mt-1" onClick={() => setVerTodasRutas(v => !v)}>{verTodasRutas ? "Ocultar rutas en cero" : "Ver todas las rutas"}</button>
                   </div>
+                )}
+                {rutasIngreso && rutasIngreso.length > 0 && conDinero.length === 0 && !verTodasRutas && (
+                  <div className="py-1"><button className="text-xs text-muted-foreground underline" onClick={() => setVerTodasRutas(true)}>Ver todas las rutas</button></div>
                 )}
                 <div className="flex justify-between py-2 text-base">
                   <span className="font-semibold">Total de tu dinero</span>

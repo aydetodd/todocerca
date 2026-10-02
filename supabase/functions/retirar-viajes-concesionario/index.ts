@@ -12,8 +12,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Comisión por método: QaRd sin comisión, SPEI 3%, OXXO aún por definir (0 por ahora).
-const COMISION_POR_METODO: Record<string, number> = { qard: 0, oxxo: 0, spei: 0.03 };
+// Comisión por método: QaRd sin comisión, SPEI 2% (mínimo $500), OXXO aún por definir (0 por ahora).
+const COMISION_POR_METODO: Record<string, number> = { qard: 0, oxxo: 0, spei: 0.02 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -87,48 +87,46 @@ serve(async (req) => {
     // 2) Calcular bruto SOLO con los cobros que aún no han sido retirados.
     //    (Un viaje en curso puede seguir sumando cobros después de un retiro previo.)
     const [{ data: qvp }, { data: cqt }] = await Promise.all([
-      admin.from("qard_viajes_pasajero").select("id, viaje_id, monto_cobrado_mxn")
+      admin.from("qard_viajes_pasajero").select("id, viaje_id, monto_cobrado_mxn, pagado_mxn, bajada_at, subida_at")
         .in("viaje_id", validosIds).is("retirado_at", null),
-      admin.from("cobros_qr_tramo").select("id, viaje_id, precio_real")
+      admin.from("cobros_qr_tramo").select("id, viaje_id, precio_real, pagado_mxn, created_at")
         .in("viaje_id", validosIds).is("retirado_at", null),
     ]);
-    // Cobros pendientes (unificados). Si el usuario pidió un monto parcial,
-    // se toman cobros de menor a mayor hasta llegar lo más cerca posible sin pasarse.
-    type Pend = { id: string; viaje_id: string; monto: number; tabla: "qvp" | "cqt" };
+    // Cobros pendientes (lo que falta = monto - pagado). Se pagan del más antiguo al más nuevo;
+    // el último que no alcance queda pagado en parte con su resto pendiente.
+    type Pend = { id: string; viaje_id: string; monto: number; pagado: number; resto: number; t: string; tabla: "qvp" | "cqt" };
+    const mk = (id: string, viaje_id: string, monto: number, pagado: number, t: string, tabla: "qvp" | "cqt"): Pend =>
+      ({ id, viaje_id, monto, pagado, resto: +(monto - pagado).toFixed(2), t, tabla });
     const pendientes: Pend[] = [
-      ...(qvp || []).map((r: any) => ({ id: r.id, viaje_id: r.viaje_id, monto: Number(r.monto_cobrado_mxn) || 0, tabla: "qvp" as const })),
-      ...(cqt || []).map((r: any) => ({ id: r.id, viaje_id: r.viaje_id, monto: Number(r.precio_real) || 0, tabla: "cqt" as const })),
-    ].filter((r) => r.monto > 0);
+      ...(qvp || []).map((r: any) => mk(r.id, r.viaje_id, Number(r.monto_cobrado_mxn) || 0, Number(r.pagado_mxn) || 0, r.bajada_at || r.subida_at || "", "qvp")),
+      ...(cqt || []).map((r: any) => mk(r.id, r.viaje_id, Number(r.precio_real) || 0, Number(r.pagado_mxn) || 0, r.created_at || "", "cqt")),
+    ].filter((r) => r.resto > 0).sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
 
-    const totalPendiente = +pendientes.reduce((s, r) => s + r.monto, 0).toFixed(2);
+    const totalPendiente = +pendientes.reduce((s, r) => s + r.resto, 0).toFixed(2);
     if (totalPendiente <= 0) return err("Los viajes seleccionados no tienen importe pendiente de cobrar");
 
-    let elegidos: Pend[] = pendientes;
-    if (montoSolicitado != null && montoSolicitado < totalPendiente - 0.001) {
-      const orden = [...pendientes].sort((a, b) => a.monto - b.monto);
-      elegidos = [];
-      let acum = 0;
-      for (const r of orden) {
-        if (acum + r.monto <= montoSolicitado + 0.001) { elegidos.push(r); acum += r.monto; }
-      }
-      if (!elegidos.length) {
-        const min = Math.min(...pendientes.map((r) => r.monto));
-        return err(`El monto es menor que el cobro más pequeño ($${min.toFixed(2)}). Retira al menos esa cantidad.`);
-      }
-    }
+    const pedir = montoSolicitado == null ? totalPendiente : Math.round(montoSolicitado * 100) / 100;
+    if (!(pedir >= 0.01)) return err("Escribe un monto desde $0.01");
+    if (pedir > totalPendiente + 0.001) return err(`Solo tienes $${totalPendiente.toFixed(2)} por cobrar`);
 
-    const qvpIds = elegidos.filter((r) => r.tabla === "qvp").map((r) => r.id);
-    const cqtIds = elegidos.filter((r) => r.tabla === "cqt").map((r) => r.id);
-    const bruto = +elegidos.reduce((s, r) => s + r.monto, 0).toFixed(2);
+    const pagos: { r: Pend; paga: number }[] = [];
+    let falta = pedir;
+    for (const r of pendientes) {
+      if (falta <= 0.0001) break;
+      const paga = +Math.min(r.resto, falta).toFixed(2);
+      pagos.push({ r, paga });
+      falta = +(falta - paga).toFixed(2);
+    }
+    const bruto = +pagos.reduce((s, p) => s + p.paga, 0).toFixed(2);
     if (bruto <= 0) return err("Los viajes seleccionados no tienen importe pendiente de cobrar");
-    // Viajes que quedan totalmente cobrados (sin pendientes tras este retiro)
-    const idsElegidos = new Set(elegidos.map((r) => r.id));
-    const viajesConResto = new Set(pendientes.filter((r) => !idsElegidos.has(r.id)).map((r) => r.viaje_id));
+    const completos = new Set(pagos.filter((p) => p.paga >= p.r.resto - 0.001).map((p) => p.r.id));
+    const viajesConResto = new Set(pendientes.filter((r) => !completos.has(r.id)).map((r) => r.viaje_id));
     const viajesLiquidados = validosIds.filter((id: string) => !viajesConResto.has(id));
+    if (metodo === "spei" && bruto < 500) return err("El retiro mínimo por SPEI es de $500");
 
     const comision = +(bruto * (COMISION_POR_METODO[metodo] ?? 0)).toFixed(2);
     const neto = +(bruto - comision).toFixed(2);
-    if (neto < 1) return err("Neto insuficiente para retirar");
+    if (neto < 0.01) return err("Neto insuficiente para retirar");
 
     // 3) Asegurar wallet del comercio
     try { await admin.rpc("qard_ensure_wallet", { _user_id: user.id }); } catch (_) {}
@@ -256,15 +254,11 @@ serve(async (req) => {
 
     // 6) Marcar cada cobro como retirado (control fino) y el viaje como pagado
     const nowIso = new Date().toISOString();
-    if (qvpIds.length) {
-      await admin.from("qard_viajes_pasajero")
-        .update({ retirado_at: nowIso, retiro_referencia: referencia })
-        .in("id", qvpIds);
-    }
-    if (cqtIds.length) {
-      await admin.from("cobros_qr_tramo")
-        .update({ retirado_at: nowIso, retiro_referencia: referencia })
-        .in("id", cqtIds);
+    for (const { r, paga } of pagos) {
+      const nuevoPagado = +(r.pagado + paga).toFixed(2);
+      const upd: Record<string, unknown> = { pagado_mxn: nuevoPagado, retiro_referencia: referencia };
+      if (completos.has(r.id)) upd.retirado_at = nowIso;
+      await admin.from(r.tabla === "qvp" ? "qard_viajes_pasajero" : "cobros_qr_tramo").update(upd).eq("id", r.id);
     }
     if (viajesLiquidados.length) {
       await admin.from("viajes_realizados")
