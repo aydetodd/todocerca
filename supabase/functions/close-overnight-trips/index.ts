@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       .from("viajes_realizados")
       .select("id, fecha, inicio_at")
       .eq("estado", "en_curso")
-      .lt("fecha", today);
+      .lte("fecha", today);
 
     if (selErr) throw selErr;
 
@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
           fin_manual: true,
           closed_overnight: true,
         })
-        .eq("id", t.id);
+        .eq("id", t.id)
+        .eq("estado", "en_curso"); // idempotente: solo cierra una vez
       if (!updErr) closed++;
     }
 
