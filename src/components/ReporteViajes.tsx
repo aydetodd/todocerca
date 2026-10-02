@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Calendar, Filter, RefreshCw, Download, ChevronDown, ChevronRight, ArrowRightLeft, Store, Building2, CheckCircle2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { cargarPozoViajes } from "@/hooks/useIngresosTransporte";
 import { getHermosilloToday } from "@/lib/utils";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { downloadCSV } from "@/lib/csvExport";
@@ -80,6 +81,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const [cobrosPorViaje, setCobrosPorViaje] = useState<Record<string, { monto: number; cobros: number }>>({});
   // Importe aún NO retirado por viaje (los cobros se marcan uno por uno al retirar)
   const [pendientePorViaje, setPendientePorViaje] = useState<Record<string, number>>({});
+  const [pozo, setPozo] = useState<{ pendientePorViaje: Record<string, number>; viajeRuta: Record<string, string> }>({ pendientePorViaje: {}, viajeRuta: {} });
   const [pasajerosPorViaje, setPasajerosPorViaje] = useState<Record<string, PasajeroRow[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [asignaciones, setAsignaciones] = useState<any[]>([]);
@@ -270,6 +272,8 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
       });
     }
     setPendientePorViaje(pendientes);
+    // Pozo por cobrar: misma fuente y ventana (60 días) que "Mi dinero", sin importar el periodo
+    cargarPozoViajes(productoIds).then(({ pendientePorViaje, viajeRuta }) => setPozo({ pendientePorViaje, viajeRuta }));
     // Ordenar pasajeros por número de subida
     Object.keys(pasajeros).forEach((k) => {
       pasajeros[k].sort((a, b) => (a.numero_subida ?? 999) - (b.numero_subida ?? 999));
@@ -334,10 +338,12 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
   const totalCobros = filtered.reduce((s, v) => s + (cobrosPorViaje[v.id]?.cobros || 0), 0);
 
   // Disponible para retirar: se cuenta cobro por cobro (un viaje en curso puede seguir sumando)
-  const viajesDisponibles = filtered.filter((v) => (pendientePorViaje[v.id] || 0) > 0);
-  const brutoDisponible = +viajesDisponibles.reduce((s, v) => s + (pendientePorViaje[v.id] || 0), 0).toFixed(2);
-  // Comisión según el método de cobro: QaRd 0%, SPEI 3%, OXXO aún por definir.
-  const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.03 };
+  const viajesDisponibles = Object.keys(pozo.pendientePorViaje)
+    .filter((id) => filterRuta === "all" || pozo.viajeRuta[id] === filterRuta)
+    .map((id) => ({ id }));
+  const brutoDisponible = +viajesDisponibles.reduce((s, v) => s + (pozo.pendientePorViaje[v.id] || 0), 0).toFixed(2);
+  // Comisión según el método de cobro: QaRd 0%, SPEI 2% (mínimo $500), OXXO aún por definir.
+  const COMISION_POR_METODO: Record<"qard" | "oxxo" | "spei", number> = { qard: 0, oxxo: 0, spei: 0.02 };
   const comisionPct = COMISION_POR_METODO[retiroMetodo];
   const montoRetiro = Math.min(Number(retiroMonto) || 0, brutoDisponible);
   const comisionDisponible = +(montoRetiro * comisionPct).toFixed(2);
@@ -621,7 +627,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border bg-stat-charge p-4 text-center">
                   <p className="text-[28px] leading-none font-bold text-stat-charge-foreground tabular-nums">{totalCobros}</p>
-                  <p className="text-[11px] mt-2 text-stat-charge-foreground/80">Cobros al bajar</p>
+                  <p className="text-[11px] mt-2 text-stat-charge-foreground/80">{totalCobros} aplicados · {totalABordo} por aplicar al cierre</p>
                 </div>
                 <div className="rounded-xl border border-border bg-money p-4 text-center">
                   <p className="text-[26px] leading-none font-bold text-money-foreground tabular-nums">{fmtMoney(totalCobrado)}</p>
@@ -642,7 +648,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
                   <p className="text-[40px] leading-none font-bold text-money-foreground tabular-nums mt-2">{fmtMoney(brutoDisponible)}</p>
                 </div>
                 <p className="text-[12px] text-muted-foreground">
-                  Transferir a QaRd: sin comisión · SPEI: 3% de comisión · OXXO: comisión por definir.
+                  Transferir a QaRd: sin comisión · SPEI: 2% de comisión, retiro mínimo $500 · OXXO: comisión por definir.
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {viajesDisponibles.length} viaje(s) pendientes de cobrar
@@ -899,7 +905,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               </div>
               <div className="p-2 rounded-md bg-muted/40 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase">
-                  {retiroMetodo === "spei" ? "Comisión 3%" : retiroMetodo === "qard" ? "Sin comisión" : "Comisión"}
+                  {retiroMetodo === "spei" ? "Comisión 2%" : retiroMetodo === "qard" ? "Sin comisión" : "Comisión"}
                 </p>
                 <p className="text-sm font-bold text-muted-foreground">
                   {retiroMetodo === "oxxo" ? "Por definir" : `−${fmtMoney(comisionDisponible)}`}
@@ -911,7 +917,7 @@ export function ReporteViajes({ proveedorId, routeFilterType = 'privada' }: Repo
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Se cobran los viajes que quepan en ese monto; los demás quedan pendientes.
+              Se pagan los viajes en orden; el último que no alcance queda pendiente por el resto.
             </p>
 
 
