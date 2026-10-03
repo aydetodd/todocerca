@@ -64,7 +64,8 @@ export default function QardCobrar() {
         .limit(80),
       supabase.from("qard_wallets" as any).select("saldo_mxn, saldo_comercio_mxn").eq("titular_user_id", user.id).maybeSingle(),
     ]);
-    const rows = (data as any[]) ?? [];
+    // Las salidas del pozo de rutas no son de "Mis cobros" (solo comercio)
+    const rows = ((data as any[]) ?? []).filter(r => !(r.metadata?.bolsa === "rutas" || r.metadata?.batch_id));
     setCobros(rows);
     const soloCobros = rows.filter(r => r.tipo === "cobro_recibido");
     const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
