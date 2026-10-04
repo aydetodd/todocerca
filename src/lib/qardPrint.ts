@@ -332,6 +332,7 @@ export type QardCardPrint = {
   alias?: string | null;
   subtitle?: string;
   copias?: number;
+  saldoUrl?: string;
 };
 
 export async function generarPdfTarjetasQard(
@@ -409,6 +410,28 @@ export async function generarPdfTarjetasQard(
   }
 
 
+
+  // Página de "Consultar saldo": un QR por tarjeta con código secreto (no adivinable)
+  const conSaldo = cards.filter((c) => c.saldoUrl);
+  if (conSaldo.length) {
+    doc.addPage();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(40);
+    doc.text("Consultar saldo QaRd · recorta y pega junto a tu tarjeta", pageW / 2, 18, { align: "center" });
+    const size = 40;
+    for (let i = 0; i < conSaldo.length; i++) {
+      const c = conSaldo[i];
+      const col = i % 3, row = Math.floor(i / 3) % 4;
+      if (i > 0 && i % 12 === 0) doc.addPage();
+      const x = 20 + col * 60, y = 30 + row * 62;
+      const img = await QRCode.toDataURL(c.saldoUrl!, { errorCorrectionLevel: "M", margin: 1, width: 400 });
+      doc.addImage(img, "PNG", x, y, size, size);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(`Saldo · terminación ${c.qardNumber.replace(/\D/g, "").slice(-4)}`, x + size / 2, y + size + 5, { align: "center" });
+    }
+  }
 
   // Pie
   doc.setFont("helvetica", "normal");

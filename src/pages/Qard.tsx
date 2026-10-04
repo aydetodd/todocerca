@@ -1038,6 +1038,11 @@ export default function Qard() {
                 };
               });
               setPrintOpen(false);
+              try {
+                const { data } = await supabase.functions.invoke("qard-saldo-publico", { body: { action: "token", numeros: cards.map(c => c.qardNumber) } });
+                const tokens = ((data as any)?.tokens ?? {}) as Record<string, string>;
+                cards.forEach((c: any) => { const t = tokens[(c.qardNumber || "").replace(/\D/g, "")]; if (t) c.saldoUrl = `https://todocerca.mx/saldo?k=${t}`; });
+              } catch { /* si falla, se imprime sin QR de saldo */ }
               await generarPdfTarjetasQard(cards);
             }}
           >
