@@ -111,10 +111,10 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
       setLastResult(res);
       if (!res.ok) {
         beep("error");
-        toast.error(res.error || "No se pudo procesar");
+        toast.error("SIN SALDO · subida no registrada");
       } else if (res.tipo === "sube") {
         beep("sube");
-        toast.success(`Sube · ${res.geocerca} · saldo $${Number(res.saldo ?? 0).toFixed(2)}`);
+        toast.success(`SUBE · ${res.geocerca} · autorizado`);
       } else {
         beep("baja");
         toast.success(`Baja · ${res.geocerca} · cobrado $${Number(res.monto ?? 0).toFixed(2)}`);
@@ -265,13 +265,13 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
                       </div>
                       <div className="text-xs opacity-90">
                         {lastResult.tipo === "sube"
-                          ? `Saldo $${Number(lastResult.saldo ?? 0).toFixed(2)} · standby`
+                          ? "autorizado"
                           : `Cobrado $${Number(lastResult.monto ?? 0).toFixed(2)}`}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm font-semibold">⚠ {lastResult.error}</div>
+                  <div className="font-bold text-base">SIN SALDO · subida no registrada</div>
                 )}
               </div>
             )}

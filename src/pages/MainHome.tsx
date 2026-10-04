@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bus, Ticket, Building2, ShieldCheck } from 'lucide-react';
+import { Bus, Ticket, Building2, ShieldCheck, Search } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -111,6 +111,18 @@ export default function MainHome() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg">QaRd saldo digital</h3>
               <p className="text-sm text-muted-foreground">Tu tarjeta universal recargable de 16 dígitos</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-lg" onClick={() => navigate('/saldo')}>
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Search className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Consultar saldo</h3>
+              <p className="text-sm text-muted-foreground">Escanea el QR de saldo de una tarjeta impresa</p>
             </div>
           </CardContent>
         </Card>

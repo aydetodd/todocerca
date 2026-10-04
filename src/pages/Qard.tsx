@@ -20,7 +20,7 @@ import VerificarSubQrDialog from "@/components/qard/VerificarSubQrDialog";
 import { formatHermosillo } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useIngresosTransporte, panelDeRuta } from "@/hooks/useIngresosTransporte";
-import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito } from "@/lib/qardEtiquetas";
+import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type InfoPasaje } from "@/lib/qardEtiquetas";
 const todocercaLogo = "/icon-512.png";
 
 
@@ -93,6 +93,8 @@ export default function Qard() {
   const rutasIngreso = useIngresosTransporte(authUser?.id);
   const [verTodasRutas, setVerTodasRutas] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pasajes, setPasajes] = useState<Map<string, InfoPasaje>>(new Map());
+  const [nombrePerfil, setNombrePerfil] = useState("");
   const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [subs, setSubs] = useState<SubQR[]>([]);
   const [mov, setMov] = useState<Movimiento[]>([]);
@@ -173,6 +175,34 @@ export default function Qard() {
 
 
 
+  // Empata cada cobro de transporte con su viaje para mostrar "Pasaje · Ruta X".
+  const cargarPasajes = async (movs: any[], numeros: string[]) => {
+    const cobros = movs.filter(x => x.tipo === "cobro_comercio" && /^(Transporte|Cobro automático)/.test(x.comercio_nombre || ""));
+    if (!cobros.length || !numeros.length) { setPasajes(new Map()); return; }
+    const { data: vs } = await supabase.from("qard_viajes_pasajero" as any)
+      .select("id, producto_id, subida_at, bajada_at, estado, monto_cobrado_mxn")
+      .in("qard_number", numeros).in("estado", ["cerrado", "auto_cerrado"]).order("bajada_at", { ascending: true }).limit(500);
+    const viajes = ((vs as any[]) ?? []);
+    const ids = [...new Set(viajes.map(v => v.producto_id).filter(Boolean))];
+    const { data: ps } = ids.length ? await supabase.from("productos").select("id, nombre").in("id", ids) : { data: [] as any[] };
+    const nombre = new Map(((ps as any[]) ?? []).map(p => [p.id, p.nombre as string]));
+    const usados = new Set<string>();
+    const mapa = new Map<string, InfoPasaje>();
+    for (const c of [...cobros].sort((a, b) => a.created_at < b.created_at ? -1 : 1)) {
+      const t = new Date(c.created_at).getTime();
+      const auto = (c.comercio_nombre || "").startsWith("Cobro automático");
+      const candidatos = viajes.filter(v => !usados.has(v.id) && (auto ? v.estado === "auto_cerrado" : v.estado === "cerrado")
+        && Math.abs(Number(v.monto_cobrado_mxn) - Math.abs(Number(c.monto_mxn))) < 0.01
+        && v.bajada_at && new Date(v.bajada_at).getTime() <= t + 5000);
+      const v = auto ? candidatos[0] : candidatos.find(x => Math.abs(new Date(x.bajada_at).getTime() - t) < 60000);
+      const rutaTexto = (c.comercio_nombre || "").split("·")[1]?.trim();
+      if (v) usados.add(v.id);
+      const ruta = (v && nombre.get(v.producto_id)) || rutaTexto;
+      if (ruta) mapa.set(c.id, { ruta, viajeAt: v?.subida_at ?? null, auto });
+    }
+    setPasajes(mapa);
+  };
+
   const cargar = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -182,12 +212,14 @@ export default function Qard() {
     await supabase.rpc("qard_ensure_wallet" as any, { _user_id: user.id });
 
     const [{ data: prof }, { data: w }, { data: s }, { data: m }] = await Promise.all([
-      supabase.from("profiles").select("qard_number").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("qard_number, nombre").eq("user_id", user.id).maybeSingle(),
       supabase.from("qard_wallets" as any).select("*").eq("titular_user_id", user.id).maybeSingle(),
       supabase.from("qard_sub_qr" as any).select("*").eq("titular_user_id", user.id).order("sub_index"),
       supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString()).order("created_at", { ascending: false }).limit(500),
     ]);
     setQardNumber((prof as any)?.qard_number ?? "");
+    setNombrePerfil((prof as any)?.nombre ?? "");
+    void cargarPasajes(((m as any[]) ?? []), [(prof as any)?.qard_number, ...(((s as any[]) ?? []).map(r => r.qard_number))].filter(Boolean));
 
     // Los CVV viven cifrados en la base. Solo el dueño los ve en claro vía RPC segura.
     const { data: cvvs } = await supabase.rpc("qard_mis_cvv" as any);
@@ -444,7 +476,7 @@ export default function Qard() {
                 <div>
                   <div className="text-[8px] uppercase tracking-widest text-white/50">Titular</div>
                   <div className="text-xs font-semibold uppercase tracking-wide truncate max-w-[150px]">
-                    {titular?.alias || "TITULAR QaRd"}
+                    {nombrePerfil || titular?.alias || "TITULAR QaRd"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -787,7 +819,7 @@ export default function Qard() {
 
       {(() => {
         const titularId = subs.find(s => s.sub_index === 0)?.id;
-        const libro = construirLibro(mov as any, titularId);
+        const libro = construirLibro(mov as any, titularId, pasajes);
         const saldoEje = Number(wallet?.saldo_mxn ?? 0);
         const saldoCobros = Number((wallet as any)?.saldo_comercio_mxn ?? 0);
         const subsActivas = subs.filter(s => s.sub_index > 0 && s.estado === "activa");
@@ -837,6 +869,7 @@ export default function Qard() {
                         <div key={f.r.key} className="flex justify-between items-center gap-2 py-2">
                           <div className="min-w-0">
                             <div className="font-medium text-sm truncate">{f.r.etiqueta}</div>
+                            {f.r.detalle && <div className="text-xs text-muted-foreground">{f.r.detalle}</div>}
                             <div className="text-xs text-muted-foreground">{formatHermosillo(f.r.created_at)}</div>
                           </div>
                           <div className="text-right shrink-0">
@@ -1005,6 +1038,11 @@ export default function Qard() {
                 };
               });
               setPrintOpen(false);
+              try {
+                const { data } = await supabase.functions.invoke("qard-saldo-publico", { body: { action: "token", numeros: cards.map(c => c.qardNumber) } });
+                const tokens = ((data as any)?.tokens ?? {}) as Record<string, string>;
+                cards.forEach((c: any) => { const t = tokens[(c.qardNumber || "").replace(/\D/g, "")]; if (t) c.saldoUrl = `https://todocerca.mx/saldo?k=${t}`; });
+              } catch { /* si falla, se imprime sin QR de saldo */ }
               await generarPdfTarjetasQard(cards);
             }}
           >

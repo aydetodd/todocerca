@@ -54,6 +54,7 @@ import Qard from "./pages/Qard";
 import QardCobrar from "./pages/QardCobrar";
 import QardRecargar from "./pages/QardRecargar";
 import QardMaestra from "./pages/QardMaestra";
+import ConsultarSaldo from "./pages/ConsultarSaldo";
 
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
@@ -93,7 +94,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/"];
+const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/", "/saldo"];
 
 const AccessGateProvider = () => {
   const location = useLocation();
@@ -241,6 +242,7 @@ export default function AppWrapper() {
           {/* GenerarQr route removed - QR codes generated automatically on purchase */}
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           {/* QaRd — Billetera universal */}
+          <Route path="/saldo" element={<ConsultarSaldo />} />
           <Route path="/qard" element={<Qard />} />
           <Route path="/qard/cobrar" element={<QardCobrar />} />
           <Route path="/qard/recargar" element={<QardRecargar />} />

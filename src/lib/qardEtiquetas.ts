@@ -22,8 +22,22 @@ export type RenglonLibro = {
   subQrId: string | null; // solo cuando ambito = sub_qr
   monto: number; // con signo
   etiqueta: string;
+  detalle?: string;
   created_at: string;
 };
+
+export type InfoPasaje = { ruta: string; viajeAt: string | null; auto: boolean };
+
+const fechaLarga = (iso: string) =>
+  new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "America/Hermosillo" }).format(new Date(iso));
+
+/** "Pasaje · Ruta 3" y, si fue cobro automático, "viaje del X, aplicado el Y". */
+export function etiquetaPasaje(info: InfoPasaje, aplicadoAt: string): { etiqueta: string; detalle?: string } {
+  const etiqueta = `Pasaje · ${info.ruta}`;
+  if (!info.auto) return { etiqueta };
+  const viaje = info.viajeAt ? `viaje del ${fechaLarga(info.viajeAt)}, ` : "";
+  return { etiqueta, detalle: `${viaje}aplicado el ${fechaLarga(aplicadoAt)}` };
+}
 
 export const MENSAJE_ERROR_AMABLE = "No se pudo completar en este momento; intenta de nuevo";
 
@@ -71,7 +85,7 @@ const alias = (d: string | null) =>
  * Convierte movimientos crudos en renglones de libro por cubeta.
  * Los que cruzan cubetas (eje <-> sub-QR) salen en dos renglones con signo opuesto.
  */
-export function construirLibro(movs: MovBase[], titularSubId: string | null | undefined): RenglonLibro[] {
+export function construirLibro(movs: MovBase[], titularSubId: string | null | undefined, pasajes?: Map<string, InfoPasaje>): RenglonLibro[] {
   const out: RenglonLibro[] = [];
   for (const m of movs) {
     const abs = Math.abs(Number(m.monto_mxn ?? 0));
@@ -120,6 +134,12 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
       case "devolucion": {
         const positivo = m.tipo === "transferencia_p2p_in" || m.tipo === "devolucion";
         const amb: Ambito = esSub ? "sub_qr" : "eje";
+        const pj = m.tipo === "cobro_comercio" ? pasajes?.get(m.id) : undefined;
+        if (pj) {
+          const { etiqueta, detalle } = etiquetaPasaje(pj, m.created_at);
+          out.push({ key: m.id, ambito: amb, subQrId: esSub ? m.sub_qr_id : null, monto: -abs, etiqueta, detalle, created_at: m.created_at });
+          break;
+        }
         let et = etiquetaMovimiento(amb, m.tipo);
         if (m.tipo === "cobro_comercio" && m.comercio_nombre) et = m.comercio_nombre.startsWith("Cobro automático") ? m.comercio_nombre : `${et} · ${m.comercio_nombre}`;
         push(amb, positivo ? abs : -abs, et, "", esSub ? m.sub_qr_id : null);
