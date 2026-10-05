@@ -701,6 +701,36 @@ export type Database = {
           },
         ]
       }
+      codigos_descuento_proveedor: {
+        Row: {
+          codigo: string
+          creado_en: string
+          expira_en: string | null
+          id: string
+          usado: boolean
+          usado_en: string | null
+          usado_por: string | null
+        }
+        Insert: {
+          codigo: string
+          creado_en?: string
+          expira_en?: string | null
+          id?: string
+          usado?: boolean
+          usado_en?: string | null
+          usado_por?: string | null
+        }
+        Update: {
+          codigo?: string
+          creado_en?: string
+          expira_en?: string | null
+          id?: string
+          usado?: boolean
+          usado_en?: string | null
+          usado_por?: string | null
+        }
+        Relationships: []
+      }
       commission_transactions: {
         Row: {
           amount: number
@@ -3726,6 +3756,8 @@ export type Database = {
           recovery_email: string | null
           role: Database["public"]["Enums"]["user_role"]
           route_name: string | null
+          suscripcion_activa: boolean
+          suscripcion_expira_en: string | null
           tarifa_km: number | null
           telefono: string | null
           tipo_proveedor: string | null
@@ -3765,6 +3797,8 @@ export type Database = {
           recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
+          suscripcion_activa?: boolean
+          suscripcion_expira_en?: string | null
           tarifa_km?: number | null
           telefono?: string | null
           tipo_proveedor?: string | null
@@ -3804,6 +3838,8 @@ export type Database = {
           recovery_email?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           route_name?: string | null
+          suscripcion_activa?: boolean
+          suscripcion_expira_en?: string | null
           tarifa_km?: number | null
           telefono?: string | null
           tipo_proveedor?: string | null
@@ -7013,6 +7049,10 @@ export type Database = {
       }
     }
     Functions: {
+      activar_proveedor_interno: {
+        Args: { _tipo: string; _uid: string }
+        Returns: undefined
+      }
       add_bidirectional_contact: {
         Args: { p_contact_user_id: string; p_nickname?: string }
         Returns: boolean
@@ -7145,6 +7185,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      canjear_codigo_proveedor: {
+        Args: { _codigo: string; _tipo: string }
+        Returns: Json
       }
       cuenta_esta_bloqueada: { Args: { _user_id: string }; Returns: boolean }
       delete_private_route_trace: {
@@ -7483,6 +7527,10 @@ export type Database = {
       }
       normalize_phone: { Args: { phone: string }; Returns: string }
       normalize_route_name: { Args: { _nombre: string }; Returns: string }
+      proveedor_suscripcion_activa: {
+        Args: { _proveedor_id: string }
+        Returns: boolean
+      }
       qard_aplicar_recarga: {
         Args: {
           _metadata?: Json
@@ -7642,6 +7690,7 @@ export type Database = {
         Args: { proveedor_id_param: string }
         Returns: undefined
       }
+      revisar_codigo_proveedor: { Args: { _codigo: string }; Returns: Json }
       rpc_cobro_qr_scan: {
         Args: {
           _fuente?: string
