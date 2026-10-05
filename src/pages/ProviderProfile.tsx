@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, ArrowLeft, Plus, Users, ShoppingCart, X, CalendarCheck } from 'lucide-react';
+import { Package, ArrowLeft, Plus, Users, ShoppingCart, X, CalendarCheck, Network } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -546,7 +546,7 @@ const ProviderProfile = () => {
         <div className="max-w-6xl mx-auto">
           {/* Tabs for switching between Pedido and Cita */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pedido" className="flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4" />
                 Hacer Pedido
@@ -554,6 +554,11 @@ const ProviderProfile = () => {
               <TabsTrigger value="cita" className="flex items-center gap-2">
                 <CalendarCheck className="h-4 w-4" />
                 Agendar Cita
+              </TabsTrigger>
+              {/* Base para el Modelo de Terminales (empleados y permisos) */}
+              <TabsTrigger value="terminales" className="flex items-center gap-2">
+                <Network className="h-4 w-4" />
+                Terminales
               </TabsTrigger>
             </TabsList>
             
@@ -702,6 +707,19 @@ const ProviderProfile = () => {
                   proveedorTelefono={provider.telefono || provider.business_phone}
                 />
               )}
+            </TabsContent>
+
+            {/* Gestión de Terminales: interfaz base, sin lógica todavía */}
+            <TabsContent value="terminales" className="mt-6">
+              <Card>
+                <CardContent className="p-8 text-center space-y-2">
+                  <Network className="h-10 w-10 mx-auto text-muted-foreground" />
+                  <h3 className="font-semibold text-lg">Gestión de Terminales</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Próximamente: el dueño del negocio podrá invitar empleados y darles permisos.
+                  </p>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 

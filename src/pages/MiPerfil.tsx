@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import ChangePassword from '@/components/ChangePassword';
+import ProveedorTipoSelector, { etiquetaTipoProveedor } from '@/components/ProveedorTipoSelector';
 
 export default function MiPerfil() {
   const [profile, setProfile] = useState<any>(null);
@@ -298,8 +299,11 @@ export default function MiPerfil() {
                 <span className="text-sm font-medium">Rol:</span>
                 <p className="text-sm text-muted-foreground">
                   {isProvider ? "Proveedor" : "Cliente"}
+                  {etiquetaTipoProveedor(profile?.tipo_proveedor) ? ` · ${etiquetaTipoProveedor(profile?.tipo_proveedor)}` : ""}
                 </p>
               </div>
+              {/* Cambiar a Proveedor / elegir tipo (Modelo de Terminales) */}
+              <ProveedorTipoSelector actual={profile?.tipo_proveedor} onGuardado={() => window.location.reload()} />
               {userSpecificData?.telefono && (
                 <div>
                   <span className="text-sm font-medium">Teléfono:</span>

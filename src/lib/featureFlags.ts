@@ -15,3 +15,6 @@ export const MODULOS_OCULTOS = {
   tv: true,
   reportesCiudadanos: true,
 };
+
+/** Búsqueda general de productos/servicios y marketplace: activos (Protocolo 1 levantado). Taxi sigue oculto. */
+export const BUSQUEDA_GENERAL_ENABLED = true;
