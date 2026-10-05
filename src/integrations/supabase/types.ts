@@ -3728,6 +3728,7 @@ export type Database = {
           route_name: string | null
           tarifa_km: number | null
           telefono: string | null
+          tipo_proveedor: string | null
           trazabilidad_activa: boolean
           updated_at: string
           user_id: string
@@ -3766,6 +3767,7 @@ export type Database = {
           route_name?: string | null
           tarifa_km?: number | null
           telefono?: string | null
+          tipo_proveedor?: string | null
           trazabilidad_activa?: boolean
           updated_at?: string
           user_id: string
@@ -3804,6 +3806,7 @@ export type Database = {
           route_name?: string | null
           tarifa_km?: number | null
           telefono?: string | null
+          tipo_proveedor?: string | null
           trazabilidad_activa?: boolean
           updated_at?: string
           user_id?: string
@@ -7718,6 +7721,7 @@ export type Database = {
           id: string
         }[]
       }
+      set_tipo_proveedor: { Args: { _tipo: string }; Returns: undefined }
       unaccent: { Args: { "": string }; Returns: string }
       unlink_producto_from_ruta_maestra: {
         Args: { _producto_id: string }
