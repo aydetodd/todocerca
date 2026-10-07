@@ -5,13 +5,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, GraduationCap, Building2, Route, GitPullRequest, IdCard } from 'lucide-react';
+import { Loader2, ShieldCheck, GraduationCap, Building2, Route, GitPullRequest, IdCard, Ticket } from 'lucide-react';
 import AdminValidacionesIne from '@/components/qard/AdminValidacionesIne';
 import AdminVerificaciones from '@/components/AdminVerificaciones';
 import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
+import AdminCodigosDescuento from '@/components/AdminCodigosDescuento';
 import { AdminPinGate } from '@/components/AdminPinGate';
 
 type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | 'ine' | null;
