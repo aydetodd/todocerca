@@ -15,7 +15,7 @@ import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
 import AdminCodigosDescuento from '@/components/AdminCodigosDescuento';
 import { AdminPinGate } from '@/components/AdminPinGate';
 
-type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | 'ine' | null;
+type Seccion = 'descuentos' | 'comerciantes' | 'verificaciones' | 'rutas' | 'cambios' | 'ine' | 'codigos' | null;
 
 const ATAJOS: { id: Exclude<Seccion, null>; titulo: string; texto: string; Icon: any }[] = [
   { id: 'descuentos', titulo: 'Descuentos', texto: 'Estudiante y tercera edad', Icon: GraduationCap },
@@ -24,6 +24,7 @@ const ATAJOS: { id: Exclude<Seccion, null>; titulo: string; texto: string; Icon:
   { id: 'rutas', titulo: 'Rutas maestras', texto: 'Altas de rutas foráneas', Icon: Route },
   { id: 'cambios', titulo: 'Cambios de ruta', texto: 'Solicitudes de ajuste', Icon: GitPullRequest },
   { id: 'ine', titulo: 'Validaciones de INE', texto: 'Lecturas y confirmaciones', Icon: IdCard },
+  { id: 'codigos', titulo: 'Códigos proveedor', texto: 'Descuentos del 100%', Icon: Ticket },
 ];
 
 export default function AdminQuickAccess() {
@@ -100,6 +101,7 @@ export default function AdminQuickAccess() {
         {seccion === 'rutas' && <AdminRutasMaestras />}
         {seccion === 'cambios' && <AdminSolicitudesCambioRutas />}
         {seccion === 'ine' && <AdminValidacionesIne />}
+        {seccion === 'codigos' && <AdminCodigosDescuento />}
 
         {!seccion && (
           <p className="text-sm text-muted-foreground">Toca una tarjeta para abrir sus solicitudes pendientes.</p>
