@@ -669,10 +669,18 @@ const ProductSearch = () => {
         }
 
         const rows = data || [];
+        // Special providers retain their dedicated image flow; standard catalogs are text-only.
+        const providerUserIds = [...new Set(rows.map((row) => row.proveedores?.user_id).filter((id): id is string => typeof id === "string"))];
+        const { data: providerProfiles } = providerUserIds.length
+          ? await supabase.from("profiles").select("user_id, tipo_proveedor").in("user_id", providerUserIds)
+          : { data: [] };
+        const specialProviderUsers = new Set((providerProfiles || [])
+          .filter((profile) => ["concesionario", "anexo_escuela", "gasolinera", "penitenciaria"].includes(profile.tipo_proveedor ?? ""))
+          .map((profile) => profile.user_id));
         // Add fotos field for consistency with listings
         const transformedRows = rows.map((producto: any) => ({
           ...producto,
-          fotos: producto.fotos_productos,
+          fotos: specialProviderUsers.has(producto.proveedores?.user_id) ? producto.fotos_productos : [],
         }));
         setResults(transformedRows);
 
