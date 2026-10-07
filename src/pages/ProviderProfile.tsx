@@ -59,6 +59,8 @@ const ProviderProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const { sendMessage } = useRealtimeMessages();
   const [provider, setProvider] = useState<ProviderData | null>(null);
+  // null = revisando; false = sin suscripción anual vigente (no se muestran productos/servicios)
+  const [suscripcionOk, setSuscripcionOk] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
@@ -248,6 +250,9 @@ const ProviderProfile = () => {
       }
       
       setProvider(finalProviderData);
+      // Valida la suscripción anual del proveedor antes de mostrar su catálogo
+      supabase.rpc("proveedor_suscripcion_activa" as any, { _proveedor_id: finalProviderData.id })
+        .then(({ data }) => setSuscripcionOk(data === true));
 
       // Cargar productos del proveedor
       const { data: productsData, error: productsError } = await supabase
@@ -545,6 +550,13 @@ const ProviderProfile = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Tabs for switching between Pedido and Cita */}
+          {suscripcionOk === false ? (
+            <Card className="mb-6">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                Este proveedor aún no ha activado su suscripción
+              </CardContent>
+            </Card>
+          ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pedido" className="flex items-center gap-2">
@@ -722,6 +734,7 @@ const ProviderProfile = () => {
               </Card>
             </TabsContent>
           </Tabs>
+          )}
 
         {/* Checkout Dialog */}
         <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
