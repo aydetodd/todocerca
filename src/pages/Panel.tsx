@@ -190,11 +190,8 @@ export default function Panel() {
   const menuItems: { id: TabType; icon: any; title: string; providerOnly?: boolean; taxiOnly?: boolean }[] = [
     { id: 'perfil', icon: User, title: 'Perfil' },
     { id: 'tracking', icon: Navigation, title: 'GPS' },
-    { id: 'productos', icon: Package, title: 'Productos', providerOnly: true },
-    { id: 'apartados', icon: ClipboardList, title: 'Apartados', providerOnly: true },
-    { id: 'citas', icon: Calendar, title: 'Citas', providerOnly: true },
-    { id: 'horarios', icon: Clock, title: 'Horarios', providerOnly: true },
-    { id: 'terminales', icon: Users, title: 'Equipo', providerOnly: true },
+    // Regla: Productos, Apartados, Citas, Horarios y Equipo viven en el panel del USUARIO (/dashboard),
+    // no en este panel del administrador.
     // Protocolo 2: Taxi oculto
     // { id: 'taxi', icon: Car, title: 'Taxi', taxiOnly: true },
   ];
