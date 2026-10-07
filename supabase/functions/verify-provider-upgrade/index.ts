@@ -40,7 +40,7 @@ serve(async (req) => {
     // Obtener perfil actual
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('role')
+      .select('role, suscripcion_activa, suscripcion_expira_en')
       .eq('user_id', user.id)
       .single();
 
@@ -48,7 +48,8 @@ serve(async (req) => {
     logStep("Profile found", { role: profile.role });
 
     // Si ya es proveedor, retornar success
-    if (profile.role === 'proveedor') {
+    const vigente = (profile as any).suscripcion_activa && (!(profile as any).suscripcion_expira_en || new Date((profile as any).suscripcion_expira_en) > new Date());
+    if (profile.role === 'proveedor' && vigente) {
       logStep("User is already a provider");
       return new Response(JSON.stringify({ 
         upgraded: true, 
@@ -80,7 +81,9 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const UPGRADE_PRICE_ID = "price_1SDaOLGyH05pxWZzSeqEjiE1";
+    // $500 MXN anual (nuevo) y $200 (anterior, por compatibilidad)
+    const UPGRADE_PRICE_IDS = ["price_1UMztcGyH05pxWZzmIEAMrV8", "price_1SDaOLGyH05pxWZzSeqEjiE1"];
+    const UPGRADE_PRICE_ID = UPGRADE_PRICE_IDS[0];
 
     // Preferimos verificar por suscripción activa (funciona también cuando el total fue $0 y no existe un charge)
     logStep("Checking Stripe subscriptions for upgrade", { upgradePriceId: UPGRADE_PRICE_ID });
@@ -93,7 +96,7 @@ serve(async (req) => {
 
     const upgradeSubscription = subscriptions.data.find((sub: any) => {
       const statusOk = sub.status === "active" || sub.status === "trialing";
-      const hasPrice = sub.items.data.some((item: any) => item.price?.id === UPGRADE_PRICE_ID);
+      const hasPrice = sub.items.data.some((item: any) => UPGRADE_PRICE_IDS.includes(item.price?.id));
       return statusOk && hasPrice;
     });
 
@@ -155,6 +158,11 @@ serve(async (req) => {
 
     if (updateError) throw new Error(`Error updating role: ${updateError.message}`);
     logStep("Role updated to proveedor");
+
+    // Activa la suscripción anual (+1 año) y guarda el tipo de proveedor elegido
+    const tipoElegido = (upgradeSubscription as any)?.metadata?.tipo_proveedor || "otro";
+    const { error: actError } = await supabaseClient.rpc("activar_proveedor_interno", { _uid: user.id, _tipo: tipoElegido });
+    if (actError) logStep("Error activando suscripción", { error: actError.message });
 
     // Crear o actualizar registro de suscripción
     if (upgradeSubscription) {

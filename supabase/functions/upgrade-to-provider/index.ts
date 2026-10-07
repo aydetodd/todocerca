@@ -39,9 +39,11 @@ serve(async (req) => {
 
     // Parse request body for optional coupon code
     let couponCode: string | undefined;
+    let tipoProveedor = "otro";
     try {
       const body = await req.json();
       couponCode = body.couponCode;
+      if (typeof body.tipo === "string" && ["concesionario","anexo_escuela","oficios","gasolinera","otro"].includes(body.tipo)) tipoProveedor = body.tipo;
       if (couponCode) logStep("Coupon code provided", { couponCode });
     } catch {
       // No body or invalid JSON, continue without coupon
@@ -50,12 +52,12 @@ serve(async (req) => {
     // Verificar que el usuario sea cliente
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('role')
+      .select('role, suscripcion_activa')
       .eq('user_id', user.id)
       .single();
 
     if (profileError) throw new Error(`Error getting profile: ${profileError.message}`);
-    if (profile.role !== 'cliente') throw new Error("Solo los clientes pueden cambiar a proveedor");
+    if ((profile as any).suscripcion_activa) throw new Error("Tu suscripción de proveedor ya está activa");
     logStep("User is a client, proceeding with upgrade");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
@@ -76,11 +78,12 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1SDaOLGyH05pxWZzSeqEjiE1", // $200 MXN anual
+          price: "price_1UMztcGyH05pxWZzmIEAMrV8", // $500 MXN anual
           quantity: 1,
         },
       ],
       mode: "subscription",
+      subscription_data: { metadata: { tipo_proveedor: tipoProveedor, user_id: user.id } },
       success_url: `${req.headers.get("origin")}/mi-perfil?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/mi-perfil?upgrade=cancelled`,
     };
