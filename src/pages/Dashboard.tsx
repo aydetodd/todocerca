@@ -76,7 +76,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','terminales','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
@@ -566,6 +566,7 @@ const Dashboard = () => {
                       <ProveedorTipoSelector
                         actual={profile?.tipo_proveedor}
                         suscripcionActiva={!!profile?.suscripcion_activa && (!profile?.suscripcion_expira_en || new Date(profile.suscripcion_expira_en) > new Date())}
+                        expiraEn={profile?.suscripcion_expira_en}
                         nombreUsuario={profile?.nombre}
                         onGuardado={() => getProfile()}
                       />

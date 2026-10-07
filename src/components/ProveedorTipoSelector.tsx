@@ -1,9 +1,11 @@
-// Selector del tipo de proveedor (Modelo de Terminales) + Suscripción Anual de Proveedor.
-// Flujo:
-//  1. El usuario elige su tipo y toca "Guardar".
-//  2. Si ya tiene suscripción vigente → solo se cambia el tipo (set_tipo_proveedor).
-//  3. Si no → pantalla de suscripción: pagar ($500 MXN/año vía Stripe), pedir código del 100%
-//     por mensaje interno, o canjear un código (canjear_codigo_proveedor).
+// Selector del tipo de proveedor (Modelo de Terminales).
+// Dos familias:
+//  - ESPECIALES (flujo propio): concesionario → registro de transporte ($800/unidad);
+//    anexo/escuela, gasolinera, penitenciaría → "próximamente, contacta a TodoCerca".
+//  - STANDARD ($500 MXN/año): oficios y otro servicio profesional → pago Stripe,
+//    solicitar código del 100% o canjear código.
+// Si ya es proveedor standard: con suscripción vigente muestra su tipo y vigencia;
+// sin suscripción vigente va directo a la pantalla de $500.
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, Check, MessageSquare, Ticket } from "lucide-react";
@@ -13,15 +15,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export const TIPOS_PROVEEDOR = [
-  { value: "concesionario", label: "Concesionario de transporte" },
-  { value: "anexo_escuela", label: "Anexo o Escuela" },
-  { value: "oficios", label: "Mecánico, Plomero o Electricista" },
-  { value: "gasolinera", label: "Gasolinera" },
-  { value: "otro", label: "Otro servicio profesional" },
+  { value: "concesionario", label: "Concesionario de transporte", familia: "especial" },
+  { value: "anexo_escuela", label: "Anexo o Escuela", familia: "especial" },
+  { value: "gasolinera", label: "Gasolinera", familia: "especial" },
+  { value: "penitenciaria", label: "Penitenciaría", familia: "especial" },
+  { value: "oficios", label: "Mecánico, Plomero o Electricista", familia: "standard" },
+  { value: "otro", label: "Otro servicio profesional", familia: "standard" },
 ] as const;
 
 export const etiquetaTipoProveedor = (v?: string | null) =>
   TIPOS_PROVEEDOR.find((t) => t.value === v)?.label ?? null;
+
+const esStandard = (v?: string | null) =>
+  TIPOS_PROVEEDOR.some((t) => t.value === v && t.familia === "standard");
 
 /** Canal oficial de TodoCerca en la mensajería interna. */
 const TODOCERCA_SISTEMA_ID = "00000000-0000-0000-0000-000000000001";
@@ -35,15 +41,25 @@ const BENEFICIOS = [
   "Y más beneficios en camino",
 ];
 
+const MENSAJE_PROXIMAMENTE: Record<string, string> = {
+  anexo_escuela: "El registro de escuelas y anexos estará disponible próximamente. Por ahora, contacta a TodoCerca para activar tu cuenta.",
+  gasolinera: "El registro de gasolineras estará disponible próximamente. Por ahora, contacta a TodoCerca para activar tu cuenta.",
+  penitenciaria: "El registro de penitenciarías estará disponible próximamente. Por ahora, contacta a TodoCerca para activar tu cuenta.",
+};
+
+type Paso = "cerrado" | "tipo" | "suscripcion" | "especial";
+
 type Props = {
   actual?: string | null;
   suscripcionActiva?: boolean;
+  expiraEn?: string | null;
   nombreUsuario?: string | null;
   onGuardado?: () => void;
 };
 
-export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombreUsuario, onGuardado }: Props) {
-  const [paso, setPaso] = useState<"cerrado" | "tipo" | "suscripcion">("cerrado");
+export default function ProveedorTipoSelector({ actual, suscripcionActiva, expiraEn, nombreUsuario, onGuardado }: Props) {
+  const yaStandard = esStandard(actual);
+  const [paso, setPaso] = useState<Paso>("cerrado");
   const [tipo, setTipo] = useState<string>(actual ?? "");
   const [ocupado, setOcupado] = useState(false);
   const [codigo, setCodigo] = useState("");
@@ -57,13 +73,28 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
     toast({ title: "Listo", description: texto });
     setPaso("cerrado");
     onGuardado?.();
-    if (tipo === "concesionario") navigate("/dashboard");
   };
 
-  // Paso 1 → Guardar
-  const guardarTipo = async () => {
+  const enviarMensaje = async (mensaje: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const { error } = await supabase.from("messages").insert({
+      sender_id: user.id, receiver_id: TODOCERCA_SISTEMA_ID, message: mensaje, is_panic: false, is_read: false,
+    });
+    return !error;
+  };
+
+  // Paso 1 → Continuar según la familia del tipo elegido
+  const continuar = async () => {
     if (!tipo) return;
+    if (tipo === "concesionario") {
+      // Flujo existente de concesionario ($800/año por unidad)
+      window.location.assign("/dashboard?section=rutas_privadas");
+      return;
+    }
+    if (!esStandard(tipo)) return setPaso("especial");
     if (!suscripcionActiva) return setPaso("suscripcion");
+    // Ya tiene suscripción: solo cambia entre tipos standard
     setOcupado(true);
     const { error } = await supabase.rpc("set_tipo_proveedor" as any, { _tipo: tipo });
     setOcupado(false);
@@ -71,7 +102,14 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
     terminar(`Tu tipo de proveedor ahora es: ${etiquetaTipoProveedor(tipo)}`);
   };
 
-  // Pago con el flujo de Stripe existente (al volver, Mi Perfil verifica el pago)
+  const contactarTodoCerca = async () => {
+    setOcupado(true);
+    const ok = await enviarMensaje(`Hola, soy ${nombreUsuario || "un usuario de TodoCerca"}. Quiero activar mi cuenta como: ${etiquetaTipoProveedor(tipo)}.`);
+    setOcupado(false);
+    if (!ok) return toast({ title: "No se pudo enviar", description: "Intenta de nuevo", variant: "destructive" });
+    navigate("/mensajes");
+  };
+
   const pagar = async () => {
     setOcupado(true);
     const { data, error } = await supabase.functions.invoke("upgrade-to-provider", { body: { tipo } });
@@ -83,22 +121,15 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
     toast({ title: "Redirigiendo a pago", description: "Al terminar, regresa a Mi Perfil para activar tu cuenta." });
   };
 
-  // Solicitud del código del 100% por mensaje interno a TodoCerca
   const solicitarCodigo = async () => {
     setOcupado(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setOcupado(false); return; }
-    const mensaje = `Hola, soy ${nombreUsuario || "un usuario de TodoCerca"}. Solicito un código de descuento del 100% para activar mi cuenta de Proveedor. Mi rol seleccionado es: ${etiquetaTipoProveedor(tipo)}.`;
-    const { error } = await supabase.from("messages").insert({
-      sender_id: user.id, receiver_id: TODOCERCA_SISTEMA_ID, message: mensaje, is_panic: false, is_read: false,
-    });
+    const ok = await enviarMensaje(`Hola, soy ${nombreUsuario || "un usuario de TodoCerca"}. Solicito un código de descuento del 100% para activar mi cuenta de Proveedor. Mi rol seleccionado es: ${etiquetaTipoProveedor(tipo)}.`);
     setOcupado(false);
-    if (error) return toast({ title: "No se pudo enviar", description: "Intenta de nuevo", variant: "destructive" });
+    if (!ok) return toast({ title: "No se pudo enviar", description: "Intenta de nuevo", variant: "destructive" });
     setSolicitudEnviada(true);
     toast({ title: "Solicitud enviada", description: "TodoCerca te enviará un código de descuento por mensaje interno en las próximas horas." });
   };
 
-  // Revisa el código sin gastarlo; si es válido, desbloquea "Activar sin pago"
   const revisarCodigo = async () => {
     setCodigoError(""); setCodigoOk(false);
     if (!codigo.trim()) return;
@@ -109,7 +140,6 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
     setCodigoOk(true);
   };
 
-  // Canjea el código: lo marca usado y activa la suscripción (1 año)
   const activarSinPago = async () => {
     setOcupado(true);
     const { data, error } = await supabase.rpc("canjear_codigo_proveedor" as any, { _codigo: codigo.trim(), _tipo: tipo });
@@ -121,16 +151,38 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
     terminar(`Ya eres proveedor: ${etiquetaTipoProveedor(tipo)}. Tu suscripción vence en 1 año.`);
   };
 
+  // ── Pantalla cerrada ──
   if (paso === "cerrado") {
+    // Caso 5: proveedor standard con suscripción vigente
+    if (yaStandard && suscripcionActiva) {
+      return (
+        <div className="space-y-2 rounded-lg border p-3">
+          <p className="text-sm"><span className="font-medium">Tipo de proveedor:</span> {etiquetaTipoProveedor(actual)}</p>
+          {expiraEn && (
+            <p className="text-sm"><span className="font-medium">Suscripción vigente hasta:</span>{" "}
+              {new Date(expiraEn).toLocaleDateString("es-MX", { timeZone: "America/Hermosillo" })}</p>
+          )}
+          <Button variant="outline" className="w-full" onClick={() => setPaso("tipo")}>
+            <Briefcase className="h-4 w-4 mr-2" /> Cambiar tipo de proveedor
+          </Button>
+        </div>
+      );
+    }
+    // Caso 6: proveedor standard sin suscripción → directo a $500
     return (
-      <Button variant="outline" className="w-full" onClick={() => setPaso("tipo")}>
+      <Button variant="outline" className="w-full" onClick={() => setPaso(yaStandard ? "suscripcion" : "tipo")}>
         <Briefcase className="h-4 w-4 mr-2" />
-        {actual && suscripcionActiva ? "Cambiar tipo de proveedor" : "Cambiar mi cuenta a Proveedor"}
+        {yaStandard ? "Renovar mi suscripción de Proveedor" : "Cambiar mi cuenta a Proveedor"}
       </Button>
     );
   }
 
+  // ── Selector de tipo ──
   if (paso === "tipo") {
+    // Si ya es standard con suscripción, solo puede cambiar entre tipos standard
+    const opciones = yaStandard && suscripcionActiva
+      ? TIPOS_PROVEEDOR.filter((t) => t.familia === "standard")
+      : TIPOS_PROVEEDOR;
     return (
       <div className="space-y-3 rounded-lg border p-3">
         <p className="text-sm font-medium">¿Qué tipo de proveedor eres?</p>
@@ -141,21 +193,35 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
           onChange={(e) => setTipo(e.target.value)}
         >
           <option value="">Elige una opción…</option>
-          {TIPOS_PROVEEDOR.map((t) => (
+          {opciones.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
         <div className="flex gap-2">
           <Button variant="ghost" className="flex-1" onClick={() => setPaso("cerrado")}>Cancelar</Button>
-          <Button className="flex-1" disabled={!tipo || ocupado} onClick={guardarTipo}>
-            {ocupado ? "Guardando…" : "Guardar"}
+          <Button className="flex-1" disabled={!tipo || ocupado} onClick={continuar}>
+            {ocupado ? "Guardando…" : "Continuar"}
           </Button>
         </div>
       </div>
     );
   }
 
-  // Pantalla intermedia: Suscripción Anual de Proveedor
+  // ── Especiales sin flujo todavía (escuela, gasolinera, penitenciaría) ──
+  if (paso === "especial") {
+    return (
+      <div className="space-y-3 rounded-lg border border-primary/40 p-4">
+        <p className="text-xs text-muted-foreground">{etiquetaTipoProveedor(tipo)}</p>
+        <p className="text-sm">{MENSAJE_PROXIMAMENTE[tipo]}</p>
+        <Button className="w-full" disabled={ocupado} onClick={contactarTodoCerca}>
+          <MessageSquare className="h-4 w-4 mr-2" /> Contactar a TodoCerca
+        </Button>
+        <Button variant="ghost" className="w-full" onClick={() => setPaso("tipo")}>Regresar</Button>
+      </div>
+    );
+  }
+
+  // ── Suscripción standard $500/año ──
   return (
     <div className="space-y-4 rounded-lg border border-primary/40 p-4">
       <div>
@@ -185,7 +251,6 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
         </div>
       )}
 
-      {/* Código de descuento */}
       <div className="space-y-2 border-t pt-3">
         <p className="text-sm font-medium flex items-center gap-2"><Ticket className="h-4 w-4" /> Tengo un código de descuento</p>
         <div className="flex gap-2">
@@ -197,7 +262,7 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, nombr
         <Button className="w-full" disabled={!codigoOk || ocupado} onClick={activarSinPago}>Activar sin pago</Button>
       </div>
 
-      <Button variant="ghost" className="w-full" onClick={() => setPaso("tipo")}>Regresar</Button>
+      <Button variant="ghost" className="w-full" onClick={() => setPaso(yaStandard ? "cerrado" : "tipo")}>Regresar</Button>
     </div>
   );
 }

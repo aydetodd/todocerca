@@ -306,6 +306,7 @@ export default function MiPerfil() {
               <ProveedorTipoSelector
                 actual={profile?.tipo_proveedor}
                 suscripcionActiva={!!profile?.suscripcion_activa && (!profile?.suscripcion_expira_en || new Date(profile.suscripcion_expira_en) > new Date())}
+                expiraEn={profile?.suscripcion_expira_en}
                 nombreUsuario={profile?.nombre}
                 onGuardado={() => window.location.reload()}
               />
