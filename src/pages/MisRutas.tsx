@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Bus, CarFront, Truck, Car, ArrowLeft, Loader2 } from 'lucide-react';
+import { Bus, CarFront, Truck, Car, CarTaxiFront, ArrowLeft, Loader2 } from 'lucide-react';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 
-type TransportType = 'publico' | 'foraneo' | 'privado';
+type TransportType = 'publico' | 'foraneo' | 'taxi_colectivo' | 'privado';
 
 const TRANSPORT_CONFIG: Record<TransportType, {
   label: string;
@@ -19,14 +19,17 @@ const TRANSPORT_CONFIG: Record<TransportType, {
   color: string;
   bgColor: string;
   price: string;
+  /** Panel nuevo (flujo pulido de Foráneo). Si existe, la tarjeta abre ese panel. */
+  to?: string;
 }> = {
   publico: {
-    label: 'Transporte Público',
-    description: 'Rutas urbanas de transporte público',
+    label: 'Transporte Urbano',
+    description: 'Rutas urbanas con trazado, geocercas, choferes y reportes',
     icon: Bus,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     price: '$800 MXN/unidad/año',
+    to: '/panel-concesionario/urbano',
   },
   foraneo: {
     label: 'Transporte Foráneo',
@@ -35,6 +38,16 @@ const TRANSPORT_CONFIG: Record<TransportType, {
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-100',
     price: '$800 MXN/unidad/año',
+    to: '/panel-concesionario/foraneo',
+  },
+  taxi_colectivo: {
+    label: 'Taxi Colectivo',
+    description: 'Taxis colectivos sobre trazado fijo, con geocercas, choferes y reportes',
+    icon: CarTaxiFront,
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-100',
+    price: '$800 MXN/unidad/año',
+    to: '/panel-concesionario/taxi-colectivo',
   },
   privado: {
     label: 'Transporte Privado',
@@ -131,6 +144,11 @@ export default function MisRutas() {
   }
 
   // If a transport type is selected, show management view
+  // Tipos con panel nuevo: redirigir siempre al panel nuevo (evita el flujo viejo)
+  if (activeType && TRANSPORT_CONFIG[activeType]?.to) {
+    return <Navigate to={TRANSPORT_CONFIG[activeType].to!} replace />;
+  }
+
   if (activeType && TRANSPORT_CONFIG[activeType]) {
     const config = TRANSPORT_CONFIG[activeType];
     const Icon = config.icon;
@@ -200,7 +218,7 @@ export default function MisRutas() {
               <Card
                 key={type}
                 className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => setSearchParams({ tipo: type })}
+                onClick={() => (config.to ? navigate(config.to) : setSearchParams({ tipo: type }))}
               >
                 <CardContent className="p-5">
                   <div className="flex items-center gap-4">
