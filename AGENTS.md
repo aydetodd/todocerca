@@ -1,3 +1,4 @@
 - QaRd ledger: qard_movimientos has ambito (eje|sub_qr|cobros) + direccion, filled by trigger trg_qard_mov_ambito; all statements/labels come from src/lib/qardEtiquetas.ts (construirLibro/estadoDeCuenta) — one place, no raw slugs, statements are read-only.
 - qard_movimientos_tipo_check (migration 2026-09-29) covers all live flows incl. traspaso_cobros_in/out.
 - Product imagery is gated by the provider family from profiles.tipo_proveedor, with transport category preserved in ProductManagement; this keeps standard catalogs text-only without changing special-provider flows.
+- Concesionario: Foráneo, Urbano y Taxi Colectivo comparten PanelConcesionarioForaneo (prop tipo) y el flujo esTrazado de PrivateRouteManagement; productos.route_type distingue foranea/urbana/taxi_colectivo — un solo flujo pulido evita divergencias. Cupos Stripe fijos por tipo vía subscription metadata plan_type.
