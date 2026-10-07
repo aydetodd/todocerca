@@ -82,6 +82,7 @@ const createTaxiIcon = (providerStatus: string, rotation: number = 0) => {
 const getBusColor = (routeType?: string | null, isPrivate?: boolean): { fill: string; stroke: string } => {
   if (isPrivate || routeType === 'privada') return { fill: '#FDB813', stroke: '#D4960A' }; // Yellow
   if (routeType === 'foranea') return { fill: '#3B82F6', stroke: '#2563EB' }; // Blue
+  if (routeType === 'taxi_colectivo') return { fill: '#8B5CF6', stroke: '#6D28D9' }; // Violeta
   return { fill: '#FFFFFF', stroke: '#cccccc' }; // White (default/urbana)
 };
 

@@ -272,7 +272,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           .from('productos')
           .select('id, nombre, route_geojson, route_type, is_private')
           .in('nombre', missingNames)
-          .in('route_type', ['urbana', 'foranea', 'privada'])
+          .in('route_type', ['urbana', 'foranea', 'privada', 'taxi_colectivo'])
           .eq('is_private', false);
         if (cancelled) return;
         const byName = new Map<string, any>();
@@ -325,7 +325,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '');
       const targetName = normalizeName(privateRouteNameProp);
-      const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea';
+      const isPublicView = viewingRouteType === 'urbana' || viewingRouteType === 'foranea' || viewingRouteType === 'taxi_colectivo';
       // STRICT: solo aparece la unidad cuya RUTA ACTIVA actual coincide con la buscada.
       // No usamos all_assignments (asignaciones históricas) porque mostraría al chofer en
       // todas sus rutas a la vez aunque la tenga "Apagada".
@@ -532,8 +532,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           iconSize = [24, 36];
           iconAnchor = [12, 18];
         } else {
-        const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : '#FFFFFF');
-        const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : '#999999');
+        const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : effectiveRouteType === 'taxi_colectivo' ? '#8B5CF6' : '#FFFFFF');
+        const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : effectiveRouteType === 'taxi_colectivo' ? '#6D28D9' : '#999999');
         const busLabel = routeLabel || location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
         const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
         const textColor = busBodyColor === '#FFFFFF' ? '#111827' : '#FFFFFF';
@@ -652,8 +652,8 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           // Show as bus with correct color based on route type
           const effectiveRouteType = location.route_type;
           const effectiveIsPrivate = isPrivateRoute || isPrivateDriver;
-          const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : '#FFFFFF');
-          const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : '#999999');
+          const busBodyColor = effectiveIsPrivate ? '#FDB813' : (effectiveRouteType === 'foranea' ? '#3B82F6' : effectiveRouteType === 'taxi_colectivo' ? '#8B5CF6' : '#FFFFFF');
+          const busStrokeColor = effectiveIsPrivate ? '#D4960A' : (effectiveRouteType === 'foranea' ? '#2563EB' : effectiveRouteType === 'taxi_colectivo' ? '#6D28D9' : '#999999');
           const busLabel = routeLabel || location.profiles.route_name || (isPrivateDriver ? 'PRIV' : 'RUTA');
           const labelTruncated = busLabel.length > 6 ? busLabel.substring(0, 6) : busLabel;
           const textColor = busBodyColor === '#FFFFFF' ? '#111827' : '#FFFFFF';
@@ -736,7 +736,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const effectiveRouteTypeForLabel = isFleetMode && fleetTransportType 
         ? (fleetTransportType === 'publico' ? 'urbana' : fleetTransportType === 'foraneo' ? 'foranea' : fleetTransportType === 'privado' ? 'privada' : 'taxi')
         : (privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type);
-      const busTypeLabel = isTaxi ? 'Taxi' : (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : 'Ruta de Transporte');
+      const busTypeLabel = isTaxi ? 'Taxi' : (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : effectiveRouteTypeForLabel === 'taxi_colectivo' ? 'Taxi Colectivo' : 'Ruta Urbana');
       
       // Build favorite button HTML — use escaped double quotes for onclick
       // Use the resolved route producto_id (from matching assignment when viewing a specific route)

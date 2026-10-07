@@ -57,7 +57,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const locationsMapRef = useRef<Map<string, ProveedorLocation>>(new Map());
 
   const fetchRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
-    const isRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada'].includes(viewingRouteType || '');
+    const isRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
     if (!isRouteView) return [];
 
     const { data, error } = await (supabase as any).rpc('get_route_live_units', {
@@ -132,7 +132,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     ]);
 
     const activeProfiles = profilesResult.data;
-    const isSpecificRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada'].includes(viewingRouteType || '');
+    const isSpecificRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
 
     // En vista de una ruta específica, la única fuente válida son las unidades reales
     // devueltas por get_route_live_units. No mezclar ubicaciones genéricas de proveedores,

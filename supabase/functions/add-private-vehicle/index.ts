@@ -19,6 +19,7 @@ const ROUTE_PRICE_IDS: Record<string, string> = {
   urbana: UNIT_PRICE_ID,
   foranea: UNIT_PRICE_ID,
   taxi: UNIT_PRICE_ID,
+  taxi_colectivo: UNIT_PRICE_ID,
 };
 
 serve(async (req) => {
@@ -78,6 +79,8 @@ serve(async (req) => {
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: { plan_type: `ruta_${routeType}`, user_id: user.id },
+        // Cupos fijos por tipo: la suscripción guarda su tipo de servicio.
+        subscription_data: { metadata: { plan_type: `ruta_${routeType}`, user_id: user.id } },
         allow_promotion_codes: true,
       };
 
@@ -136,7 +139,9 @@ serve(async (req) => {
 
       for (const sub of subscriptions.data) {
         for (const item of sub.items.data) {
-          if (item.price.id === priceId) {
+          // Cupos fijos por tipo. Suscripciones antiguas sin tipo se siguen contando como antes.
+          const subTipo = (sub.metadata as any)?.plan_type;
+          if (item.price.id === priceId && (!subTipo || subTipo === `ruta_${routeType}`)) {
             totalQuantity += item.quantity || 1;
             const endTime = sub.current_period_end;
             if (!earliestEnd || endTime < earliestEnd) {
