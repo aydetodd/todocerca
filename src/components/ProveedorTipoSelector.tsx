@@ -47,7 +47,7 @@ const MENSAJE_PROXIMAMENTE: Record<string, string> = {
   penitenciaria: "El registro de penitenciarías estará disponible próximamente. Por ahora, contacta a TodoCerca para activar tu cuenta.",
 };
 
-type Paso = "cerrado" | "tipo" | "suscripcion" | "especial";
+type Paso = "cerrado" | "tipo" | "suscripcion" | "especial" | "concesionario";
 
 type Props = {
   actual?: string | null;
