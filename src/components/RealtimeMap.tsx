@@ -734,7 +734,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       const visibilityColor = estado === 'offline' ? '#ef4444' : '#22c55e';
 
       const effectiveRouteTypeForLabel = isFleetMode && fleetTransportType 
-        ? (fleetTransportType === 'publico' ? 'urbana' : fleetTransportType === 'foraneo' ? 'foranea' : fleetTransportType === 'privado' ? 'privada' : 'taxi')
+        ? (fleetTransportType === 'publico' ? 'urbana' : fleetTransportType === 'foraneo' ? 'foranea' : fleetTransportType === 'privado' ? 'privada' : fleetTransportType === 'taxi_colectivo' ? 'taxi_colectivo' : 'taxi')
         : (privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type);
       const busTypeLabel = isTaxi ? 'Taxi' : (effectiveRouteTypeForLabel === 'privada' || isPrivateRoute) ? 'Transporte Privado' : (effectiveRouteTypeForLabel === 'foranea' ? 'Ruta Foránea' : effectiveRouteTypeForLabel === 'taxi_colectivo' ? 'Taxi Colectivo' : 'Ruta Urbana');
       
