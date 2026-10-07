@@ -15,8 +15,8 @@ type Codigo = {
   id: string;
   codigo: string;
   usado: boolean;
-  fecha_creacion: string;
-  fecha_expiracion: string;
+  creado_en: string;
+  expira_en: string;
 };
 
 // Genera un código tipo TODO-XXXXXX (6 caracteres alfanuméricos, sin caracteres ambiguos)
@@ -35,7 +35,7 @@ const fechaPorDefecto = () => {
 
 const estadoDe = (c: Codigo): "Usado" | "Expirado" | "Activo" => {
   if (c.usado) return "Usado";
-  if (new Date(c.fecha_expiracion).getTime() < Date.now()) return "Expirado";
+  if (new Date(c.expira_en).getTime() < Date.now()) return "Expirado";
   return "Activo";
 };
 
@@ -51,8 +51,8 @@ export default function AdminCodigosDescuento() {
     setCargando(true);
     const { data, error } = await supabase
       .from("codigos_descuento_proveedor")
-      .select("id, codigo, usado, fecha_creacion, fecha_expiracion")
-      .order("fecha_creacion", { ascending: false });
+      .select("id, codigo, usado, creado_en, expira_en")
+      .order("creado_en", { ascending: false });
     setCargando(false);
     if (error) {
       toast({ title: "No se pudieron cargar los códigos", variant: "destructive" });
@@ -70,7 +70,7 @@ export default function AdminCodigosDescuento() {
     const { error } = await supabase.from("codigos_descuento_proveedor").insert({
       codigo: limpio,
       usado: false,
-      fecha_expiracion: new Date(`${expira}T23:59:59-07:00`).toISOString(),
+      expira_en: new Date(`${expira}T23:59:59-07:00`).toISOString(),
     });
     setCreando(false);
     if (error) {
@@ -135,7 +135,7 @@ export default function AdminCodigosDescuento() {
                   <div>
                     <p className="font-mono font-medium">{c.codigo}</p>
                     <p className="text-xs text-muted-foreground">
-                      Creado: {formatHermosillo(c.fecha_creacion)} · Expira: {formatHermosillo(c.fecha_expiracion)}
+                      Creado: {formatHermosillo(c.creado_en)} · Expira: {formatHermosillo(c.expira_en)}
                     </p>
                   </div>
                   <Badge variant={estado === "Activo" ? "default" : estado === "Usado" ? "secondary" : "destructive"}>
