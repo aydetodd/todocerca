@@ -20,7 +20,7 @@ import { toast } from "@/hooks/use-toast";
 interface ReporteViajesProps {
   proveedorId?: string;
   /** 'privada' (default) o 'foranea' — define qué tipo de rutas se incluyen y aísla el reporte. */
-  routeFilterType?: 'privada' | 'foranea';
+  routeFilterType?: 'privada' | 'foranea' | 'urbana' | 'taxi_colectivo';
 }
 
 type Periodo = "hoy" | "ayer" | "semana" | "mes" | "custom";

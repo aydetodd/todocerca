@@ -8,6 +8,8 @@ import { Loader2, Layers } from 'lucide-react';
 
 interface Props {
   proveedorId: string;
+  routeType?: string;
+  etiqueta?: string;
 }
 
 interface RutaItem {
@@ -25,7 +27,7 @@ const PALETTE = [
   '#a9a9a9', '#ffd8b1', '#aaffc3', '#ffe119', '#000000',
 ];
 
-export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
+export default function ForaneoTrazadoOverlay({ proveedorId, routeType = 'foranea', etiqueta = 'foráneas' }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const layersRef = useRef<Record<string, L.LayerGroup>>({});
@@ -41,7 +43,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
         .from('productos')
         .select('id, nombre, route_geojson')
         .eq('proveedor_id', proveedorId)
-        .eq('route_type', 'foranea')
+        .eq('route_type', routeType)
         .not('route_geojson', 'is', null);
 
       if (error) {
@@ -65,7 +67,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
       setVisibles(vis);
       setLoading(false);
     })();
-  }, [proveedorId]);
+  }, [proveedorId, routeType]);
 
   // Inicializar mapa
   useEffect(() => {
@@ -160,7 +162,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
           <Layers className="h-4 w-4" /> Trazado / Segmentación
         </CardTitle>
         <CardDescription className="text-xs">
-          Todas tus rutas foráneas encimadas en un mismo mapa. Cada ruta con un color distinto para ver dónde se traslapan y planear hubs / segmentos.
+          Todas tus rutas {etiqueta} encimadas en un mismo mapa. Cada ruta con un color distinto para ver dónde se traslapan y planear hubs / segmentos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -170,7 +172,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId }: Props) {
           </div>
         ) : rutas.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
-            Aún no tienes rutas foráneas con trazado. Sube el KML/KMZ/GPX/GeoJSON desde "Catálogo Maestro" o "Unidades / Choferes / Rutas".
+            Aún no tienes rutas {etiqueta} con trazado. Sube el KML/KMZ/GPX/GeoJSON desde "Unidades / Choferes / Rutas".
           </p>
         ) : (
           <>
