@@ -11,9 +11,9 @@ type Producto = { id: string; nombre: string };
 type Geocerca = { id: string; producto_id: string; nombre: string; lat: number; lng: number; radio_m: number; orden: number };
 type Tarifa = { id?: string; producto_id: string; desde_geocerca_id: string; hasta_geocerca_id: string; precio_mxn: number };
 
-interface Props { proveedorId: string }
+interface Props { proveedorId: string; routeType?: string }
 
-export default function ForaneoTarifasManager({ proveedorId }: Props) {
+export default function ForaneoTarifasManager({ proveedorId, routeType = 'foranea' }: Props) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,13 +29,13 @@ export default function ForaneoTarifasManager({ proveedorId }: Props) {
         .from('productos')
         .select('id, nombre')
         .eq('proveedor_id', proveedorId)
-        .eq('route_type', 'foranea')
+        .eq('route_type', routeType)
         .order('nombre');
       setProductos((data as any) || []);
       if (data && data[0]) setProductoId(data[0].id);
       setLoading(false);
     })();
-  }, [proveedorId]);
+  }, [proveedorId, routeType]);
 
   useEffect(() => {
     if (!productoId) return;

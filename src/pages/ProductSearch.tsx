@@ -65,7 +65,7 @@ interface AvailableRoute {
 
 const ALL_MUNICIPIOS_VALUE = "__ALL__";
 
-type RouteTypeFilter = "publico" | "foraneo" | "privado" | null;
+type RouteTypeFilter = "publico" | "foraneo" | "taxi_colectivo" | "privado" | null;
 
 const ProductSearch = () => {
   const [searchParams] = useSearchParams();
@@ -320,7 +320,7 @@ const ProductSearch = () => {
           return;
         }
 
-        const rpcRouteType = selectedRouteType === 'foraneo' ? 'foranea' : 'urbana';
+        const rpcRouteType = selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'taxi_colectivo' ? 'taxi_colectivo' : 'urbana';
         const { data, error } = await (supabase as any).rpc('get_public_routes_with_live_units', {
           _estado: searchEstado || null,
           _ciudad: searchCiudad && searchCiudad !== ALL_MUNICIPIOS_VALUE ? searchCiudad : null,
@@ -917,7 +917,7 @@ const ProductSearch = () => {
                   setPrivateRouteLink('');
                 }}
               >
-                🚌 Público
+                🚌 Urbano
               </Badge>
               <Badge
                 variant={selectedRouteType === 'foraneo' ? "default" : "outline"}
@@ -928,6 +928,16 @@ const ProductSearch = () => {
                 }}
               >
                 🚐 Foráneo
+              </Badge>
+              <Badge
+                variant={selectedRouteType === 'taxi_colectivo' ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+                onClick={() => {
+                  setSelectedRouteType(selectedRouteType === 'taxi_colectivo' ? null : 'taxi_colectivo');
+                  setPrivateRouteLink('');
+                }}
+              >
+                🚕 Taxi Colectivo
               </Badge>
               <Badge
                 variant={selectedRouteType === 'privado' ? "default" : "outline"}
@@ -1143,7 +1153,7 @@ const ProductSearch = () => {
                     routeOverlayId={isRutasCategory && selectedRoute ? routeNameToId(selectedRoute) : null}
                     routeProductoId={isRutasCategory ? selectedRouteProductoId : null}
                     routeName={isRutasCategory ? selectedRoute : null}
-                    routeType={selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'privado' ? 'privada' : selectedRouteType === 'publico' ? 'urbana' : null}
+                    routeType={selectedRouteType === 'foraneo' ? 'foranea' : selectedRouteType === 'taxi_colectivo' ? 'taxi_colectivo' : selectedRouteType === 'privado' ? 'privada' : selectedRouteType === 'publico' ? 'urbana' : null}
                   />
                 </div>
               </section>

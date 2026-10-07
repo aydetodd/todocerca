@@ -14,7 +14,21 @@ import RutasMaestrasManager from '@/components/RutasMaestrasManager';
 import ForaneoTarifasManager from '@/components/ForaneoTarifasManager';
 import ForaneoTrazadoOverlay from '@/components/ForaneoTrazadoOverlay';
 
-export default function PanelConcesionarioForaneo() {
+// Configuración por tipo de servicio. Los tres comparten el flujo pulido de Foráneo.
+export type TipoServicio = 'foraneo' | 'urbano' | 'taxi_colectivo';
+const CONFIG: Record<TipoServicio, {
+  titulo: string; subtitulo: string; plural: string;
+  routeType: 'foranea' | 'urbana' | 'taxi_colectivo';
+  transportType: 'foraneo' | 'publico' | 'taxi_colectivo';
+  catalogoMaestro: boolean;
+}> = {
+  foraneo: { titulo: 'Mis Rutas Foráneas', subtitulo: 'Rutas foráneas con GPS público. Viajes contados por geocercas A y B.', plural: 'foráneas', routeType: 'foranea', transportType: 'foraneo', catalogoMaestro: true },
+  urbano: { titulo: 'Mis Rutas Urbanas', subtitulo: 'Rutas urbanas con trazado, GPS público y cobro por QR o efectivo.', plural: 'urbanas', routeType: 'urbana', transportType: 'publico', catalogoMaestro: false },
+  taxi_colectivo: { titulo: 'Mis Taxis Colectivos', subtitulo: 'Taxis colectivos sobre trazado fijo, con GPS público y cobro por QR o efectivo.', plural: 'de taxi colectivo', routeType: 'taxi_colectivo', transportType: 'taxi_colectivo', catalogoMaestro: false },
+};
+
+export default function PanelConcesionarioForaneo({ tipo = 'foraneo' }: { tipo?: TipoServicio }) {
+  const cfg = CONFIG[tipo];
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -101,22 +115,24 @@ export default function PanelConcesionarioForaneo() {
             <Truck className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Concesionario Foráneo</h1>
+            <h1 className="text-2xl font-bold">{cfg.titulo}</h1>
             <p className="text-sm text-muted-foreground">
-              Rutas foráneas con GPS público. Viajes contados por geocercas A y B.
+              {cfg.subtitulo}
             </p>
           </div>
         </div>
 
-        <Tabs defaultValue="reportes" className="w-full">
+        <Tabs key={tipo} defaultValue="reportes" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4">
             <TabsList className="inline-flex w-auto min-w-full">
               <TabsTrigger value="reportes" className="text-xs">
                 <Route className="h-3 w-3 mr-1" /> Reportes por Viaje
               </TabsTrigger>
-              <TabsTrigger value="catalogo" className="text-xs">
-                <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
-              </TabsTrigger>
+              {cfg.catalogoMaestro && (
+                <TabsTrigger value="catalogo" className="text-xs">
+                  <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
+                </TabsTrigger>
+              )}
               <TabsTrigger value="tarifas" className="text-xs">
                 <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
               </TabsTrigger>
@@ -133,28 +149,28 @@ export default function PanelConcesionarioForaneo() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Route className="h-4 w-4" /> Viajes foráneos
+                  <Route className="h-4 w-4" /> Viajes {cfg.plural}
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Viajes contados automáticamente cuando la unidad entra a la geocerca de origen y llega a la de destino.
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-2 sm:px-6">
-                <ReporteViajes proveedorId={proveedor.id} routeFilterType="foranea" />
+                <ReporteViajes proveedorId={proveedor.id} routeFilterType={cfg.routeType} />
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="catalogo" className="space-y-3 mt-4">
-            <RutasMaestrasManager proveedorId={proveedor.id} />
+            {cfg.catalogoMaestro && <RutasMaestrasManager proveedorId={proveedor.id} />}
           </TabsContent>
 
           <TabsContent value="tarifas" className="space-y-3 mt-4">
-            <ForaneoTarifasManager proveedorId={proveedor.id} />
+            <ForaneoTarifasManager proveedorId={proveedor.id} routeType={cfg.routeType} />
           </TabsContent>
 
           <TabsContent value="trazado" className="space-y-3 mt-4">
-            <ForaneoTrazadoOverlay proveedorId={proveedor.id} />
+            <ForaneoTrazadoOverlay proveedorId={proveedor.id} routeType={cfg.routeType} etiqueta={cfg.plural} />
           </TabsContent>
 
 
@@ -163,7 +179,7 @@ export default function PanelConcesionarioForaneo() {
             <PrivateRouteManagement
               proveedorId={proveedor.id}
               businessName={proveedor.nombre || profile?.apodo || profile?.nombre || 'Mi Empresa'}
-              transportType="foraneo"
+              transportType={cfg.transportType}
             />
           </TabsContent>
         </Tabs>

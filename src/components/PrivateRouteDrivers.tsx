@@ -56,7 +56,7 @@ interface PrivateRouteDriversProps {
   productoId: string;
   vehicleName: string;
   businessName: string;
-  transportType?: 'publico' | 'foraneo' | 'privado' | 'taxi';
+  transportType?: 'publico' | 'foraneo' | 'privado' | 'taxi' | 'taxi_colectivo';
   onDriversChanged?: () => void;
 }
 
