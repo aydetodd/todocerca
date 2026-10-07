@@ -30,7 +30,9 @@ import {
   Briefcase,
   Trash2,
   ClipboardList,
+  Users,
 } from "lucide-react";
+import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
@@ -55,6 +57,7 @@ type DashboardSection =
   | "apartados"
   | "citas"
   | "horarios"
+  | "terminales"
   | "taxi"
   | "empresa";
 
@@ -387,10 +390,12 @@ const Dashboard = () => {
           icon: Building2,
           visible: true,
         },
-        // Protocolo 1: Apartados, Citas y Horarios ocultos
-        // { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
-        // { key: "citas" as const, label: "Citas", icon: Calendar, visible: isProvider },
-        // { key: "horarios" as const, label: "Horarios", icon: Clock, visible: isProvider },
+        // Secciones de proveedor (panel del usuario, no del administrador)
+        { key: "productos" as const, label: "Productos", icon: Package, visible: isProvider },
+        { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
+        { key: "citas" as const, label: "Citas", icon: ClipboardList, visible: isProvider },
+        { key: "horarios" as const, label: "Horarios", icon: Clock, visible: isProvider },
+        { key: "terminales" as const, label: "Mi Equipo y Terminales", icon: Users, visible: isProvider },
         // Protocolo 2: Taxi oculto
         // {
         //   key: "taxi" as const,
@@ -555,6 +560,16 @@ const Dashboard = () => {
                         />
                       </div>
                     )}
+
+                    {/* Cambiar cuenta a Proveedor (5 roles + suscripción $500/año) */}
+                    <div className="pt-4 border-t">
+                      <ProveedorTipoSelector
+                        actual={profile?.tipo_proveedor}
+                        suscripcionActiva={!!profile?.suscripcion_activa && (!profile?.suscripcion_expira_en || new Date(profile.suscripcion_expira_en) > new Date())}
+                        nombreUsuario={profile?.nombre}
+                        onGuardado={() => getProfile()}
+                      />
+                    </div>
 
                     {/* Acciones de cuenta */}
                     <div className="pt-4 border-t space-y-3">
@@ -787,6 +802,24 @@ const Dashboard = () => {
                   </Card>
                 )}
               </div>
+            )}
+
+            {/* Mi Equipo y Terminales: interfaz base (próximamente) */}
+            {activeSection === "terminales" && isProvider && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Mi Equipo y Terminales
+                  </CardTitle>
+                  <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                    <p className="font-medium text-foreground">Próximamente</p>
+                    <p className="text-sm mt-1">Aquí podrás agregar empleados y sus terminales.</p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {activeSection === "taxi" && (
