@@ -62,6 +62,7 @@ const ProviderProfile = () => {
   // null = revisando; false = sin suscripción anual vigente (no se muestran productos/servicios)
   const [suscripcionOk, setSuscripcionOk] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [showProductPhotos, setShowProductPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -249,6 +250,12 @@ const ProviderProfile = () => {
         }
       }
       
+      const { data: providerProfile } = await supabase
+        .from("profiles")
+        .select("tipo_proveedor")
+        .eq("user_id", providerData.user_id)
+        .maybeSingle();
+      setShowProductPhotos(["concesionario", "anexo_escuela", "gasolinera", "penitenciaria"].includes(providerProfile?.tipo_proveedor ?? ""));
       setProvider(finalProviderData);
       // Valida la suscripción anual del proveedor antes de mostrar su catálogo
       supabase.rpc("proveedor_suscripcion_activa" as any, { _proveedor_id: finalProviderData.id })
@@ -638,6 +645,7 @@ const ProviderProfile = () => {
                             <ProductCard
                               key={product.id}
                               product={product}
+                              showPhotos={showProductPhotos}
                               selectedPersonIndex={selectedPersonIndex}
                               onAddToCart={addToCart}
                             />

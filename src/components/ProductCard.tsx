@@ -22,6 +22,7 @@ interface Product {
 
 interface ProductCardProps {
   product: Product;
+  showPhotos?: boolean;
   selectedPersonIndex: number;
   onAddToCart: (item: {
     id: string;
@@ -38,7 +39,7 @@ interface ProductPhoto {
   alt_text: string | null;
 }
 
-export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: ProductCardProps) => {
+export const ProductCard = ({ product, showPhotos = false, selectedPersonIndex, onAddToCart }: ProductCardProps) => {
   const [photo, setPhoto] = useState<ProductPhoto | null>(null);
   const [loadingPhoto, setLoadingPhoto] = useState(true);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -49,8 +50,9 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
   const hasLongDescription = product.descripcion && product.descripcion.length > MAX_DESCRIPTION_LENGTH;
 
   useEffect(() => {
-    loadPhoto();
-  }, [product.id]);
+    if (showPhotos) loadPhoto();
+    else { setPhoto(null); setLoadingPhoto(false); }
+  }, [product.id, showPhotos]);
 
   const loadPhoto = async () => {
     try {
@@ -103,7 +105,7 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
         <CardContent className="p-4">
           <div className="flex gap-4">
             {/* Foto pequeña del producto */}
-            <div 
+            {showPhotos && <div 
               className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-muted cursor-pointer"
               onClick={() => photo && setIsLightboxOpen(true)}
             >
@@ -121,12 +123,12 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
                   <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* Información del producto */}
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-start justify-between gap-1">
-                <h3 className="text-base font-semibold line-clamp-2 flex-1 min-w-0">{product.nombre}</h3>
+                <h3 className="text-xl font-semibold break-words flex-1 min-w-0">{product.nombre}</h3>
                 <div className="flex items-center flex-shrink-0">
                   <Button
                     variant="ghost"
@@ -174,11 +176,14 @@ export const ProductCard = ({ product, selectedPersonIndex, onAddToCart }: Produ
                 </div>
               )}
 
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Badge variant={product.stock > 0 ? 'default' : 'secondary'}>
                   Stock: {product.stock}
                 </Badge>
-                {product.stock > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {product.is_available && product.stock > 0 ? "Disponible" : "Agotado"}
+                </span>
+                {product.is_available && product.stock > 0 && (
                   <Button
                     onClick={() => onAddToCart({
                       id: product.id,
