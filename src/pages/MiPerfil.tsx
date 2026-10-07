@@ -303,7 +303,17 @@ export default function MiPerfil() {
                 </p>
               </div>
               {/* Cambiar a Proveedor / elegir tipo (Modelo de Terminales) */}
-              <ProveedorTipoSelector actual={profile?.tipo_proveedor} onGuardado={() => window.location.reload()} />
+              <ProveedorTipoSelector
+                actual={profile?.tipo_proveedor}
+                suscripcionActiva={!!profile?.suscripcion_activa && (!profile?.suscripcion_expira_en || new Date(profile.suscripcion_expira_en) > new Date())}
+                nombreUsuario={profile?.nombre}
+                onGuardado={() => window.location.reload()}
+              />
+              {profile?.suscripcion_activa && profile?.suscripcion_expira_en && (
+                <p className="text-xs text-muted-foreground">
+                  Suscripción de proveedor vigente hasta {new Date(profile.suscripcion_expira_en).toLocaleDateString("es-MX", { timeZone: "America/Hermosillo" })}
+                </p>
+              )}
               {userSpecificData?.telefono && (
                 <div>
                   <span className="text-sm font-medium">Teléfono:</span>
