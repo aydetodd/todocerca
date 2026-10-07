@@ -206,6 +206,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isSpecialProvider, setIsSpecialProvider] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<string>('');
@@ -250,6 +251,10 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
   const isRutasCategory = categories.find(c => c.id === formData.category_id)?.name === 'Rutas de Transporte';
   const isProfesionesCategory = categories.find(c => c.id === formData.category_id)?.name === 'Profesiones y oficios';
   const rutasCategoryId = categories.find(c => c.name === 'Rutas de Transporte')?.id;
+  // Preserve dedicated special-provider and transport flows.
+  const supportsPhotos = isSpecialProvider || isRutasCategory;
+  const productSupportsPhotos = (product: Product) =>
+    isSpecialProvider || product.category_id === rutasCategoryId;
 
   // Contar variantes por número de ruta (globalmente)
   const routeVariantCount = AVAILABLE_ROUTES.reduce((acc, route) => {
@@ -315,11 +320,12 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, tipo_proveedor')
         .eq('user_id', user.id)
         .single();
 
       setUserRole(profile?.role || null);
+      setIsSpecialProvider(['concesionario', 'anexo_escuela', 'gasolinera', 'penitenciaria'].includes(profile?.tipo_proveedor ?? ''));
     } catch (error) {
       console.error('Error checking user role:', error);
     }
@@ -504,7 +510,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
 
   const handleSaveProduct = async () => {
     try {
-      if (!formData.nombre || !formData.descripcion || !formData.category_id) {
+      if (!formData.nombre || (supportsPhotos && !formData.descripcion) || !formData.category_id) {
         toast({
           title: "Error",
           description: "Por favor completa todos los campos obligatorios",
@@ -525,7 +531,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         if (error) throw error;
 
         // Si hay nuevas fotos, subirlas
-        if (selectedFiles.length > 0) {
+        if (supportsPhotos && selectedFiles.length > 0) {
           await uploadProductPhotos(selectedFiles, editingProduct.id, false);
         }
 
@@ -548,7 +554,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         productId = data.id;
 
         // Si hay fotos, subirlas
-        if (selectedFiles.length > 0 && productId) {
+        if (supportsPhotos && selectedFiles.length > 0 && productId) {
           await uploadProductPhotos(selectedFiles, productId, true);
         }
 
@@ -1034,7 +1040,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   {/* Campo de descripción del servicio */}
                   {selectedProfesion && (
                     <div>
-                      <Label htmlFor="descripcionServicio">Descripción de tus servicios *</Label>
+                      <Label htmlFor="descripcionServicio">Descripción de tus servicios{supportsPhotos ? " *" : " (opcional)"}</Label>
                       <Textarea
                         id="descripcionServicio"
                         value={formData.descripcion}
@@ -1079,7 +1085,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
               {/* Descripción para productos normales */}
               {(!isRutasCategory && !isProfesionesCategory || editingProduct) && (
                 <div>
-                  <Label htmlFor="descripcion">Descripción *</Label>
+                  <Label htmlFor="descripcion">Descripción{supportsPhotos ? " *" : " (opcional)"}</Label>
                   <Textarea
                     id="descripcion"
                     value={formData.descripcion}
@@ -1248,7 +1254,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   Este producto se vende en ubicación móvil (vendedor ambulante)
                 </Label>
               </div>
-              <div>
+              {supportsPhotos && <div>
                 <Label htmlFor="photos">Foto del Producto</Label>
                 <div className="space-y-2 mt-2">
                   {/* Show existing photo for editing with delete button */}
@@ -1312,7 +1318,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   <p>📷 <strong>Máximo 500KB</strong>. Formatos: JPG, PNG, WEBP.</p>
                   <p>💡 <strong>Tip:</strong> Toma la foto del producto, luego haz un <em>screenshot</em> (captura de pantalla) de esa foto para reducir su tamaño automáticamente. Solo se permite <strong>1 foto por artículo</strong>.</p>
                 </div>
-              </div>
+              </div>}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="stock">Stock</Label>
@@ -1341,9 +1347,9 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                 <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={handleSaveProduct} disabled={uploadingPhoto}>
+              <Button onClick={handleSaveProduct} disabled={supportsPhotos && uploadingPhoto}>
                 <Save className="h-4 w-4 mr-2" />
-                {uploadingPhoto ? 'Subiendo foto...' : 'Guardar'}
+                {supportsPhotos && uploadingPhoto ? 'Subiendo foto...' : 'Guardar'}
               </Button>
             </div>
           </DialogContent>
@@ -1364,7 +1370,7 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden">
-              {product.foto_url && (
+              {productSupportsPhotos(product) && product.foto_url && (
                 <div className="w-full h-48 bg-muted relative">
                   <img 
                     src={product.foto_url} 
@@ -1373,39 +1379,41 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   />
                 </div>
               )}
-              {!product.foto_url && (
+              {productSupportsPhotos(product) && !product.foto_url && (
                 <div className="w-full h-48 bg-muted flex items-center justify-center">
                   <Image className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="truncate">{product.nombre}</span>
-                  <div className="flex space-x-1">
+                <CardTitle className="space-y-3">
+                  <span className="block text-xl break-words">{product.nombre}</span>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleOpenDialog(product)}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setDeleteProductId(product.id)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                      Eliminar
                     </Button>
                   </div>
                 </CardTitle>
-                <CardDescription>
-                  ${product.precio.toFixed(2)} / {product.unit}
+                <CardDescription className="text-lg font-semibold text-foreground">
+                  {product.is_price_from ? "Desde " : ""}${product.precio.toFixed(2)} / {product.unit}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                {product.descripcion && <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                   {product.descripcion}
-                </p>
+                </p>}
                 {/* Show copy link button for private routes */}
                 {(product as any).is_private && (product as any).invite_token && (
                   <div className="mb-2">
@@ -1442,8 +1450,10 @@ export default function ProductManagement({ proveedorId }: ProductManagementProp
                   </div>
                 )}
                 <div className="flex items-center justify-between text-xs">
-                  <span className={product.is_available ? 'text-green-600' : 'text-red-600'}>
-                    {product.is_available ? '● Disponible' : '● No disponible'}
+                  <span className={product.is_available && (productSupportsPhotos(product) || product.stock > 0) ? 'text-foreground' : 'text-destructive'}>
+                    {productSupportsPhotos(product)
+                      ? (product.is_available ? '● Disponible' : '● No disponible')
+                      : (product.is_available && product.stock > 0 ? '● Disponible' : '● Agotado')}
                   </span>
                   {(product as any).is_private && (
                     <span className="text-orange-500">🔒 Privada</span>
