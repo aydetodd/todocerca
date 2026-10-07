@@ -86,10 +86,19 @@ const formatCobroTipo = (value: Unit['cobro_tipo']) => {
 interface PrivateRouteManagementProps {
   proveedorId: string;
   businessName: string;
-  transportType?: 'publico' | 'foraneo' | 'privado' | 'taxi';
+  transportType?: 'publico' | 'foraneo' | 'privado' | 'taxi' | 'taxi_colectivo';
 }
 
+// Mapa UI → route_type de productos. 'publico' = Transporte Urbano.
+const ROUTE_TYPE_DB: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi', taxi_colectivo: 'taxi_colectivo' };
+const ETIQUETA_TIPO: Record<string, string> = { publico: 'Ruta urbana', foraneo: 'Ruta foránea', privado: 'Ruta privada', taxi: 'Taxi', taxi_colectivo: 'Taxi colectivo' };
+// El flujo antiguo de "Transporte Público" (línea UNE) fue sustituido por el flujo foráneo.
+const LEGACY_PUBLICO = false;
+
 export default function PrivateRouteManagement({ proveedorId, businessName, transportType = 'privado' }: PrivateRouteManagementProps) {
+  // Urbano, Foráneo y Taxi Colectivo comparten el mismo flujo (trazado, geocercas A/B, catálogo por municipio).
+  const esTrazado = transportType === 'foraneo' || transportType === 'publico' || transportType === 'taxi_colectivo';
+  const routeTypeDb = ROUTE_TYPE_DB[transportType] || 'privada';
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<PrivateVehicle[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -140,7 +149,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   
   // Fetch route catalog names for the selected city
   useEffect(() => {
-    if (transportType === 'publico' && selectedCiudad && selectedEstado) {
+    if (LEGACY_PUBLICO && selectedCiudad && selectedEstado) {
       supabase
         .from('rutas_catalogo')
         .select('*')
@@ -154,7 +163,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   // Load local route data (UNE Hermosillo, etc.) for dynamic line/name filtering
   useEffect(() => {
-    if (transportType === 'publico' && selectedCiudad) {
+    if (LEGACY_PUBLICO && selectedCiudad) {
       const citySlug = selectedCiudad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
       fetch(`/data/rutas/rutas-une-${citySlug}.json`)
         .then(r => r.ok ? r.json() : null)
@@ -173,14 +182,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   // Catálogo compartido por municipio para rutas foráneas
   useEffect(() => {
-    if (transportType !== 'foraneo' || !selectedEstado || !selectedCiudad) {
+    if (!esTrazado || !selectedEstado || !selectedCiudad) {
       setCatalogoForaneo([]);
       return;
     }
     supabase
       .from('productos')
       .select('nombre')
-      .eq('route_type', 'foranea')
+      .eq('route_type', routeTypeDb)
       .eq('estado', selectedEstado)
       .eq('ciudad', selectedCiudad)
       .not('nombre', 'is', null)
@@ -262,7 +271,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const checkSubscription = async () => {
     try {
       setCheckingSubscription(true);
-      const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
+      const routeTypeMap = ROUTE_TYPE_DB;
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
         body: { action: 'status', transportType: routeTypeMap[transportType] || 'privada' }
       });
@@ -288,12 +297,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   const fetchVehicles = async () => {
     try {
-      const routeTypeMap: Record<string, string> = {
-        publico: 'urbana',
-        foraneo: 'foranea',
-        privado: 'privada',
-        taxi: 'taxi',
-      };
+      const routeTypeMap = ROUTE_TYPE_DB;
       const routeType = routeTypeMap[transportType] || 'privada';
       
       // First get the transport category to filter properly
@@ -363,7 +367,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
   const handleBuySlots = async (qty: number) => {
     try {
       setAddingUnit(true);
-      const routeTypeMap2: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
+      const routeTypeMap2 = ROUTE_TYPE_DB;
       const { data, error } = await supabase.functions.invoke('add-private-vehicle', {
         body: {
           action: 'add',
@@ -557,7 +561,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
 
   const handleCreateRoute = async () => {
     // Validation based on transport type
-    if (transportType === 'publico') {
+    if (LEGACY_PUBLICO) {
       if (!selectedLinea || !selectedPais || !selectedEstado || !selectedCiudad) {
         toast({ title: "Error", description: "Selecciona país, estado, ciudad y número de línea", variant: "destructive" });
         return;
@@ -634,13 +638,13 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
         .from('productos')
         .insert({
           nombre: newVehicle.nombre,
-          descripcion: newVehicle.descripcion || `${transportType === 'taxi' ? 'Taxi' : transportType === 'foraneo' ? 'Ruta foránea' : 'Ruta privada'} - ${businessName}`,
+          descripcion: newVehicle.descripcion || `${ETIQUETA_TIPO[transportType] || 'Ruta'} - ${businessName}`,
           precio: 0,
           stock: 1,
           unit: 'viaje',
           proveedor_id: proveedorId,
           category_id: category.id,
-          route_type: transportType === 'foraneo' ? 'foranea' : transportType === 'taxi' ? 'taxi' : 'privada',
+          route_type: routeTypeDb,
           is_private: transportType === 'privado',
           is_mobile: true,
           is_available: true,
@@ -1036,7 +1040,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                               {vehicle.descripcion}
                             </p>
                           )}
-                          {(transportType === 'privado' || transportType === 'foraneo') && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
+                          {(transportType === 'privado' || esTrazado) && vehicle.route_origin_lat != null && vehicle.route_destination_lat != null && (
                             <p className="text-[11px] text-muted-foreground mt-1 ml-6">
                               ✓ Inicio y final configurados (radio {vehicle.route_geofence_radius_m ?? 50} m)
                             </p>
@@ -1055,7 +1059,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                         </div>
                       </div>
 
-                      {(transportType === 'privado' || transportType === 'foraneo') && (
+                      {(transportType === 'privado' || esTrazado) && (
                         <>
                           <Button
                             type="button"
@@ -1333,14 +1337,14 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
           <DialogHeader>
             <DialogTitle>Agregar Ruta</DialogTitle>
             <DialogDescription>
-              {transportType === 'publico'
+              {LEGACY_PUBLICO
                 ? 'Selecciona la ubicación y línea de transporte público.'
                 : 'Registra una nomenclatura o nombre de ruta. Las rutas son ilimitadas.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Geography selectors for public and foraneo */}
-            {(transportType === 'publico' || transportType === 'foraneo') && (
+            {(LEGACY_PUBLICO || esTrazado) && (
               <>
                 <div>
                   <Label>País *</Label>
@@ -1385,7 +1389,7 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             )}
 
             {/* Public transport: Línea number + route name dropdowns */}
-            {transportType === 'publico' && (
+            {LEGACY_PUBLICO && (
               <>
                 <div>
                   <Label>Número de Línea *</Label>
@@ -1450,10 +1454,10 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
             )}
 
             {/* Foráneo and Privado: free text name */}
-            {transportType !== 'publico' && (
+            {true && (
               <div>
                 <Label htmlFor="routeName">Nombre / Nomenclatura *</Label>
-                {transportType === 'foraneo' && selectedCiudad && catalogoForaneo.length > 0 && !foraneoNuevaModo ? (
+                {esTrazado && selectedCiudad && catalogoForaneo.length > 0 && !foraneoNuevaModo ? (
                   <>
                     <select
                       value={newVehicle.nombre}
@@ -1483,9 +1487,9 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                       id="routeName"
                       value={newVehicle.nombre}
                       onChange={(e) => setNewVehicle({ ...newVehicle, nombre: e.target.value })}
-                      placeholder={transportType === 'foraneo' ? 'Ej: Hermosillo - Guaymas, Express Norte...' : 'Ej: Ruta 2, Ruta Sur, Express Norte...'}
+                      placeholder={esTrazado ? 'Ej: Hermosillo - Guaymas, Express Norte...' : 'Ej: Ruta 2, Ruta Sur, Express Norte...'}
                     />
-                    {transportType === 'foraneo' && catalogoForaneo.length > 0 && foraneoNuevaModo && (
+                    {esTrazado && catalogoForaneo.length > 0 && foraneoNuevaModo && (
                       <button
                         type="button"
                         onClick={() => { setForaneoNuevaModo(false); setNewVehicle({ ...newVehicle, nombre: '' }); }}
