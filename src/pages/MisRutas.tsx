@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -146,8 +146,7 @@ export default function MisRutas() {
   // If a transport type is selected, show management view
   // Tipos con panel nuevo: redirigir siempre al panel nuevo (evita el flujo viejo)
   if (activeType && TRANSPORT_CONFIG[activeType]?.to) {
-    navigate(TRANSPORT_CONFIG[activeType].to!, { replace: true });
-    return null;
+    return <Navigate to={TRANSPORT_CONFIG[activeType].to!} replace />;
   }
 
   if (activeType && TRANSPORT_CONFIG[activeType]) {
