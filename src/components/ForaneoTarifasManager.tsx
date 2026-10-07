@@ -35,7 +35,7 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
       if (data && data[0]) setProductoId(data[0].id);
       setLoading(false);
     })();
-  }, [proveedorId]);
+  }, [proveedorId, routeType]);
 
   useEffect(() => {
     if (!productoId) return;

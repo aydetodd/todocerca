@@ -3,10 +3,10 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Bus, Truck, CarFront, Lock, Activity } from 'lucide-react';
+import { ArrowLeft, Bus, Truck, CarFront, CarTaxiFront, Lock, Activity } from 'lucide-react';
 
 type PanelOption = {
-  key: 'publico' | 'foraneo' | 'privado' | 'flota';
+  key: 'urbano' | 'foraneo' | 'taxi_colectivo' | 'privado' | 'flota';
   label: string;
   description: string;
   icon: typeof Bus;
@@ -18,22 +18,31 @@ type PanelOption = {
 
 const OPTIONS: PanelOption[] = [
   {
-    key: 'publico',
-    label: 'Concesionario Público',
-    description: 'Ingresos QR, liquidaciones Stripe, choferes y unidades urbanas.',
-    icon: Bus,
+    key: 'foraneo',
+    label: 'Mis Rutas Foráneas',
+    description: 'Rutas foráneas con GPS público, geocercas A/B, tarifas QR y reportes por viaje.',
+    icon: Truck,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
-    to: '/panel-concesionario/publico',
+    to: '/panel-concesionario/foraneo',
   },
   {
-    key: 'foraneo',
-    label: 'Concesionario Foráneo',
-    description: 'Rutas foráneas con GPS público, geocercas A/B y reportes por viaje.',
-    icon: Truck,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-100',
-    to: '/panel-concesionario/foraneo',
+    key: 'urbano',
+    label: 'Mis Rutas Urbanas',
+    description: 'Mismo flujo que Foráneo: unidades, choferes, trazado, geocercas y reportes.',
+    icon: Bus,
+    color: 'text-slate-600',
+    bgColor: 'bg-slate-100',
+    to: '/panel-concesionario/urbano',
+  },
+  {
+    key: 'taxi_colectivo',
+    label: 'Mis Taxis Colectivos',
+    description: 'Taxis colectivos sobre trazado fijo: unidades, choferes, geocercas y reportes.',
+    icon: CarTaxiFront,
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-100',
+    to: '/panel-concesionario/taxi-colectivo',
   },
   {
     key: 'privado',
@@ -67,7 +76,7 @@ export default function PanelConcesionarioHub() {
         </Button>
         <h1 className="text-2xl font-bold mb-1">Panel de Concesionario</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Elige el tipo de operación que deseas administrar.
+          Elige el tipo de servicio que deseas administrar. Cada tipo tiene sus propias unidades ($800 al año cada una).
         </p>
 
         <div className="grid gap-3">
