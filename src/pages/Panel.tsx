@@ -17,7 +17,8 @@ import {
   Briefcase,
   Trash2,
   FileText,
-  Send
+  Send,
+  Users
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,7 +41,7 @@ import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
 
 import ProviderRegistration from '@/components/ProviderRegistration';
 
-type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'taxi';
+type TabType = 'perfil' | 'tracking' | 'productos' | 'apartados' | 'citas' | 'horarios' | 'terminales' | 'taxi';
 
 export default function Panel() {
   const [profile, setProfile] = useState<any>(null);
@@ -193,6 +194,7 @@ export default function Panel() {
     { id: 'apartados', icon: ClipboardList, title: 'Apartados', providerOnly: true },
     { id: 'citas', icon: Calendar, title: 'Citas', providerOnly: true },
     { id: 'horarios', icon: Clock, title: 'Horarios', providerOnly: true },
+    { id: 'terminales', icon: Users, title: 'Equipo', providerOnly: true },
     // Protocolo 2: Taxi oculto
     // { id: 'taxi', icon: Car, title: 'Taxi', taxiOnly: true },
   ];
@@ -505,6 +507,25 @@ export default function Panel() {
           <p className="text-muted-foreground">Cargando horarios...</p>
         );
       
+      case 'terminales':
+        // Interfaz base: aquí el dueño invitará empleados y les dará permisos
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" /> Mi Equipo y Terminales
+              </CardTitle>
+              <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                <p className="font-medium text-foreground">Próximamente</p>
+                <p className="text-sm mt-1">Aquí podrás agregar empleados y sus terminales.</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
       case 'taxi':
         return <TaxiDriverRequests />;
       
