@@ -87,11 +87,7 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, expir
   // Paso 1 → Continuar según la familia del tipo elegido
   const continuar = async () => {
     if (!tipo) return;
-    if (tipo === "concesionario") {
-      // Flujo existente de concesionario ($800/año por unidad)
-      window.location.assign("/dashboard?section=rutas_privadas");
-      return;
-    }
+    if (tipo === "concesionario") return setPaso("concesionario");
     if (!esStandard(tipo)) return setPaso("especial");
     if (!suscripcionActiva) return setPaso("suscripcion");
     // Ya tiene suscripción: solo cambia entre tipos standard
@@ -203,6 +199,26 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, expir
             {ocupado ? "Guardando…" : "Continuar"}
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // ── Concesionario: elegir subtipo (Foráneo / Urbano / Taxi Colectivo) ──
+  if (paso === "concesionario") {
+    const subtipos = [
+      { label: "🚐 Foráneo", to: "/panel-concesionario/foraneo" },
+      { label: "🚌 Urbano", to: "/panel-concesionario/urbano" },
+      { label: "🚕 Taxi Colectivo", to: "/panel-concesionario/taxi-colectivo" },
+    ];
+    return (
+      <div className="space-y-3 rounded-lg border p-3">
+        <p className="text-sm font-medium">¿Qué tipo de concesionario eres?</p>
+        {subtipos.map((s) => (
+          <Button key={s.to} variant="outline" className="w-full justify-start" onClick={() => navigate(s.to)}>
+            {s.label}
+          </Button>
+        ))}
+        <Button variant="ghost" className="w-full" onClick={() => setPaso("tipo")}>Regresar</Button>
       </div>
     );
   }
