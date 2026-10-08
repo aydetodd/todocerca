@@ -1,0 +1,2 @@
+UPDATE public.productos SET descripcion = replace(descripcion, 'Ruta foránea', 'Taxi colectivo') WHERE route_type = 'taxi_colectivo' AND descripcion LIKE 'Ruta foránea%';
+UPDATE public.productos SET descripcion = replace(descripcion, 'Ruta foránea', 'Ruta urbana') WHERE route_type = 'urbana' AND descripcion LIKE 'Ruta foránea%';
