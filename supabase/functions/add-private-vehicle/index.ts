@@ -82,6 +82,8 @@ serve(async (req) => {
         // Cupos fijos por tipo: la suscripción guarda su tipo de servicio.
         subscription_data: { metadata: { plan_type: `ruta_${routeType}`, user_id: user.id } },
         allow_promotion_codes: true,
+        // Con código del 100% (ej. QARDTEST) el total es $0: no pedir tarjeta.
+        payment_method_collection: "if_required",
       };
 
       // If customer exists, use their ID instead of email
