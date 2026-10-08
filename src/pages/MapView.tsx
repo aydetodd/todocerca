@@ -24,7 +24,7 @@ export default function MapView() {
   const publicRouteProductoId = searchParams.get('producto');
   const asChofer = searchParams.get('as') === 'chofer';
   const fleetParam = searchParams.get('fleet') === 'true';
-  const fleetTypeParam = searchParams.get('fleetType') as 'publico' | 'foraneo' | 'privado' | 'taxi' | null;
+  const fleetTypeParam = searchParams.get('fleetType') as 'publico' | 'foraneo' | 'privado' | 'taxi' | 'taxi_colectivo' | null;
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | undefined>();
   const [selectedReceiverName, setSelectedReceiverName] = useState<string | undefined>();
@@ -186,7 +186,7 @@ export default function MapView() {
 
         if (proveedor) {
           if (fleetMode) {
-            const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi' };
+            const routeTypeMap: Record<string, string> = { publico: 'urbana', foraneo: 'foranea', privado: 'privada', taxi: 'taxi', taxi_colectivo: 'taxi_colectivo' };
             const { data: tracedRoutes } = await supabase
               .from('productos')
               .select('id, nombre, route_geojson, route_group')
@@ -480,7 +480,7 @@ export default function MapView() {
         asChofer
           ? 'Mi ubicación como chofer'
           : fleetMode 
-          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Público' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : 'Taxi'}` : ''}`
+          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Urbano' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : fleetTypeParam === 'taxi_colectivo' ? 'Taxi Colectivo' : 'Taxi'}` : ''}`
           :
         filterType === 'taxi' ? 'Taxis Disponibles' : 
         filterType === 'ruta' ? 'Rutas de Transporte' : 
