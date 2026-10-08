@@ -5191,6 +5191,7 @@ export type Database = {
           route_origin_lat: number | null
           route_origin_lng: number | null
           tiene_cambio_pendiente: boolean
+          tipo: string
           updated_at: string
         }
         Insert: {
@@ -5211,6 +5212,7 @@ export type Database = {
           route_origin_lat?: number | null
           route_origin_lng?: number | null
           tiene_cambio_pendiente?: boolean
+          tipo?: string
           updated_at?: string
         }
         Update: {
@@ -5231,6 +5233,7 @@ export type Database = {
           route_origin_lat?: number | null
           route_origin_lng?: number | null
           tiene_cambio_pendiente?: boolean
+          tipo?: string
           updated_at?: string
         }
         Relationships: []
@@ -7086,6 +7089,7 @@ export type Database = {
           route_origin_lat: number | null
           route_origin_lng: number | null
           tiene_cambio_pendiente: boolean
+          tipo: string
           updated_at: string
         }
         SetofOptions: {
@@ -7149,6 +7153,7 @@ export type Database = {
           route_origin_lat: number | null
           route_origin_lng: number | null
           tiene_cambio_pendiente: boolean
+          tipo: string
           updated_at: string
         }
         SetofOptions: {

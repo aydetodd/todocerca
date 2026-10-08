@@ -95,6 +95,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       supabase
         .from('rutas_foraneas_maestras' as any)
         .select('*')
+        .eq('tipo', 'foranea')
         .order('estado', { ascending: true })
         .order('nombre', { ascending: true }),
       supabase

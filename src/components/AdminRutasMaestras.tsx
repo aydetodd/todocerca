@@ -150,6 +150,9 @@ export default function AdminRutasMaestras() {
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
                   <span className="font-medium text-sm">{m.nombre}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {(m as any).tipo === 'urbana' ? '🚌 Urbana' : (m as any).tipo === 'taxi_colectivo' ? '🚕 Taxi Colectivo' : '🚐 Foránea'}
+                  </span>
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {new Date(m.created_at).toLocaleDateString()}
