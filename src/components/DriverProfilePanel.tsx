@@ -12,6 +12,7 @@ import { Navigation, Share2, Bus, Loader2, QrCode, Users, MapPin, Map as MapIcon
 import { getTaxiSvg, getTaxiColorByStatus } from '@/lib/vehicleIcons';
 import RouteQRModal from '@/components/RouteQRModal';
 import { useAutoTripGeofence } from '@/hooks/useAutoTripGeofence';
+import { getRouteTypesForTransport, getTransportLabel } from '@/lib/transportRouteTypes';
 
 const getBusSvg = (routeType?: string | null, isPrivate?: boolean) => {
   let fill = '#FFFFFF'; let stroke = '#cccccc';
@@ -495,6 +496,7 @@ function SingleDriverPanel({
   };
 
   const handleSelectRoute = async (vehicleId: string) => {
+    if (!data.vehicles.some(v => v.id === vehicleId)) return;
     try {
       setAssigning(true);
 
@@ -607,6 +609,9 @@ function SingleDriverPanel({
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-foreground leading-tight">
               {data.driver.businessName}
+            </p>
+            <p className="text-xs font-medium text-primary leading-tight">
+              {getTransportLabel(data.driver.transport_type)}
             </p>
             <p className="text-xs text-muted-foreground leading-tight truncate">
               Chofer: {driverName}
@@ -813,34 +818,23 @@ export default function DriverProfilePanel() {
             .eq('is_mobile', true)
             .eq('is_available', true)
             .neq('route_type', 'taxi')
+            .in('route_type', getRouteTypesForTransport(driver.transport_type))
             .order('nombre');
-
-          // Use driver's transport_type to filter vehicles
-          // Public routes are stored as 'urbana' in DB
-          const allowedRouteTypesMap: Record<string, string[]> = {
-            publico: ['urbana', 'publica'],
-            foraneo: ['foranea'],
-            privado: ['privada'],
-            taxi: ['taxi'],
-          };
-          const allowedRouteTypes = allowedRouteTypesMap[(driver as any).transport_type] || null;
 
           // Get the LATEST assignment (permanent — not date-scoped)
           let { data: assignment } = await supabase
             .from('asignaciones_chofer')
-            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(id, nombre, descripcion, placas, cobro_tipo, esp32_configurado)')
+            .select('id, producto_id, asignado_por, unidad_id, fecha, productos(nombre), unidades_empresa(id, nombre, descripcion, placas, cobro_tipo, esp32_configurado, transport_type)')
             .eq('chofer_id', driver.id)
             .order('fecha', { ascending: false })
             .limit(1)
             .maybeSingle();
 
           // Filter vehicles by the driver's transport type
-          let filteredVehicles = (vehicleList || []) as Vehicle[];
-          if (allowedRouteTypes) {
-            filteredVehicles = filteredVehicles.filter(v => v.route_type && allowedRouteTypes.includes(v.route_type));
-          }
-
-          let unitData = assignment?.unidades_empresa as any;
+          const filteredVehicles = (vehicleList || []) as Vehicle[];
+          if (assignment && !filteredVehicles.some(v => v.id === assignment.producto_id)) assignment = null;
+          const assignedUnit = assignment?.unidades_empresa as any;
+          const unitData = assignedUnit?.transport_type === driver.transport_type ? assignedUnit : null;
 
           companiesData.push({
             driver: {

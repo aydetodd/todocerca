@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Trash2, Send, Loader2, User, Pencil, Bus, MapPin, ArrowRight, MessageSquare } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { getRouteTypesForTransport } from '@/lib/transportRouteTypes';
 
 interface Driver {
   id: string;
@@ -90,7 +91,7 @@ export default function PrivateRouteDrivers({
 
     // Subscribe to realtime changes on assignments
     const channel = supabase
-      .channel(`realtime-assignments-drivers-${proveedorId}`)
+      .channel(`realtime-assignments-drivers-${proveedorId}-${transportType}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'asignaciones_chofer' },
@@ -104,7 +105,7 @@ export default function PrivateRouteDrivers({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [proveedorId]);
+  }, [proveedorId, transportType]);
 
   const fetchAll = async () => {
     try {
@@ -118,20 +119,13 @@ export default function PrivateRouteDrivers({
           .eq('transport_type', transportType)
           .order('created_at', { ascending: true }),
         (() => {
-          const routeTypeMap: Record<string, string> = {
-            publico: 'urbana',
-            foraneo: 'foranea',
-            privado: 'privada',
-            taxi: 'taxi',
-          };
-          const routeType = routeTypeMap[transportType] || 'privada';
           let q = supabase
             .from('productos')
             .select('id, nombre')
             .eq('proveedor_id', proveedorId)
             .eq('is_available', true)
             .eq('is_mobile', true)
-            .eq('route_type', routeType)
+            .in('route_type', getRouteTypesForTransport(transportType))
             .order('nombre');
           if (transportType === 'privado') {
             q = q.eq('is_private', true);
@@ -167,12 +161,14 @@ export default function PrivateRouteDrivers({
         const latestByDriver = new Map<string, TodayAssignment>();
         const todayByDriver = new Map<string, TodayAssignment>();
         (allAssign || []).forEach((row: any) => {
+          if (!(routesRes.data || []).some(r => r.id === row.producto_id)) return;
+          const validUnitId = (unitsRes.data || []).some(u => u.id === row.unidad_id) ? row.unidad_id : null;
           if (!latestByDriver.has(row.chofer_id)) {
             latestByDriver.set(row.chofer_id, {
               id: row.id,
               chofer_id: row.chofer_id,
               producto_id: row.producto_id,
-              unidad_id: row.unidad_id,
+              unidad_id: validUnitId,
             });
           }
           if (row.fecha === today && !todayByDriver.has(row.chofer_id)) {
@@ -180,7 +176,7 @@ export default function PrivateRouteDrivers({
               id: row.id,
               chofer_id: row.chofer_id,
               producto_id: row.producto_id,
-              unidad_id: row.unidad_id,
+              unidad_id: validUnitId,
             });
           }
         });
@@ -221,6 +217,10 @@ export default function PrivateRouteDrivers({
 
     if (!merged.producto_id) {
       throw new Error('Selecciona ruta primero');
+    }
+    if (!routes.some(r => r.id === merged.producto_id) ||
+        (merged.unidad_id && !units.some(u => u.id === merged.unidad_id))) {
+      throw new Error('La ruta y la unidad deben ser del mismo tipo de transporte');
     }
 
     if (todayRow) {
