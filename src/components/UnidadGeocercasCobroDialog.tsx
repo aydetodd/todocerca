@@ -223,7 +223,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       zonas[s].forEach((z, idx) => {
         const color = COLORS[s];
         L.circle([z.lat, z.lng], {
-          radius: z.radio_m,
+          radius: z.radio_m || 50,
           color,
           weight: isActive ? 3 : 1,
           fillOpacity: isActive ? 0.25 : 0.05,
@@ -275,7 +275,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
           nombre: z.nombre,
           lat: z.lat,
           lng: z.lng,
-          radio_m: z.radio_m,
+          radio_m: Math.max(50, Math.min(99999, z.radio_m || 200)),
           precio_mxn: z.precio_mxn,
         }));
         const rpcName = productoId ? "rpc_producto_set_geocercas_cobro" : "rpc_unidad_set_geocercas_cobro";
@@ -357,7 +357,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
                         <Input
                           type="number" min={50} max={99999}
                           value={z.radio_m}
-                          onChange={(e) => updateZona(sentido, idx, { radio_m: Math.max(50, Math.min(99999, parseInt(e.target.value) || 200)) })}
+                          onChange={(e) => updateZona(sentido, idx, { radio_m: e.target.value === '' ? 0 : Math.min(99999, Math.max(0, parseInt(e.target.value) || 0)) })}
                           className="h-8 text-sm"
                         />
                       </label>
