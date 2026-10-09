@@ -1,4 +1,6 @@
 # Productos estándar sin fotos
+- [x] Abrir el lector QaRd de Foráneo también en Urbano y Taxi Colectivo, respetando el tipo del chofer.
+- [ ] Verificar un cobro real en Urbano y Taxi Colectivo: Supabase externo sin sesión autenticada disponible.
 - [x] Corregir aislamiento de rutas y unidades en invitaciones y perfiles de chofer Taxi Colectivo.
 - [x] Verificar filtros por tipo y aceptación guardada en datos reales.
 - [ ] Probar selección y activación con la cuenta de Martin: Supabase externo sin sesión autenticada disponible.

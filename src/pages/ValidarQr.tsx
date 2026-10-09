@@ -14,6 +14,7 @@ import { getHermosilloToday, getHermosilloTodayStart } from "@/lib/utils";
 import { Html5Qrcode } from "html5-qrcode";
 import { DriverMiniMap } from "@/components/DriverMiniMap";
 import { DriverTripPanel } from "@/components/DriverTripPanel";
+import { getRouteTypesForTransport, getTransportLabel } from "@/lib/transportRouteTypes";
 
 type ValidationResult = {
   valid: boolean;
@@ -112,6 +113,7 @@ export default function ValidarQr() {
   const [dailyPersonalCount, setDailyPersonalCount] = useState(0);
   const [assignedUnitId, setAssignedUnitId] = useState<string | null>(null);
   const [assignedRouteId, setAssignedRouteId] = useState<string | null>(null);
+  const [assignmentLoading, setAssignmentLoading] = useState(true);
   const [isPrivateRoute, setIsPrivateRoute] = useState(false);
   const [tripContract, setTripContract] = useState<{
     contratoId: string;
@@ -142,7 +144,7 @@ export default function ValidarQr() {
       setTimeout(() => inputRef.current?.focus(), 300);
       loadDriverAssignment();
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, choferParam]);
 
   // Realtime passenger count updates
   useEffect(() => {
@@ -178,13 +180,17 @@ export default function ValidarQr() {
 
   const loadDriverAssignment = async () => {
     if (!user) return;
+    setAssignmentLoading(true);
+    setTripContract(null);
+    setIsPrivateRoute(false);
+    setScanMode("boleto");
     try {
       const todayStr = getHermosilloToday();
       const todayStart = getHermosilloTodayStart();
 
       const { data: choferes } = await supabase
         .from("choferes_empresa")
-        .select("id, proveedor_id")
+        .select("id, proveedor_id, transport_type")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
@@ -218,8 +224,14 @@ export default function ValidarQr() {
               .single();
             const choferActivo = choferesDisponibles.find((c: any) => c.id === asignacionActiva.chofer_id) || choferesDisponibles[0];
             const p: any = producto;
-            const isForanea = producto?.route_type === "foranea" && !producto?.is_private;
-            const isPrivada = producto?.route_type === "privada" || producto?.is_private;
+            if (!producto || !getRouteTypesForTransport(choferActivo.transport_type).includes(producto.route_type ?? "")) {
+              setAssignedUnitId(null);
+              setAssignedRouteId(null);
+              toast.error("La ruta asignada no corresponde a este perfil de chofer. Selecciona una ruta de su tipo.");
+              return;
+            }
+            const isQaRdRoute = ["foranea", "urbana", "publica", "taxi_colectivo"].includes(producto.route_type ?? "");
+            const isPrivada = !isQaRdRoute && (producto.route_type === "privada" || producto.is_private);
 
             if (isPrivada) {
               setIsPrivateRoute(true);
@@ -265,15 +277,15 @@ export default function ValidarQr() {
                   autoMode: false,
                 });
               }
-            } else if (isForanea) {
-              // Foránea → siempre usa el lector QaRd por geocercas de cobro.
+            } else if (isQaRdRoute) {
+              // Foráneo, Urbano y Taxi Colectivo comparten el lector QaRd por geocercas.
               // Algunas rutas no tienen Punto A/B clásico, pero sí geocercas de cobro por tramo.
               setTripContract({
                 contratoId: asignacionActiva.producto_id,
                 choferEmpresaId: choferActivo.id,
                 unidadId: asignacionActiva.unidad_id,
                 routeProductId: asignacionActiva.producto_id,
-                empresaNombre: "Ruta foránea",
+                empresaNombre: getTransportLabel(choferActivo.transport_type),
                 origenLat: p.route_origin_lat ?? null,
                 origenLng: p.route_origin_lng ?? null,
                 destinoLat: p.route_destination_lat ?? null,
@@ -310,6 +322,8 @@ export default function ValidarQr() {
       setDailyPersonalCount(personalCount ?? 0);
     } catch (err) {
       console.error("Error loading driver assignment:", err);
+    } finally {
+      setAssignmentLoading(false);
     }
   };
 
@@ -465,14 +479,14 @@ export default function ValidarQr() {
   // Auto-start camera when component is ready (and not in trip-only mode).
   // En rutas foráneas / por_viaje (tripContract) NO se necesita cámara, solo GPS.
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || assignmentLoading || !user) return;
     if (tripContract) return; // por_viaje: sin escáner
     const t = setTimeout(() => { startContinuousCamera(); }, 500);
     return () => {
       clearTimeout(t);
       stopContinuousCamera();
     };
-  }, [authLoading, user, tripContract, startContinuousCamera, stopContinuousCamera]);
+  }, [authLoading, assignmentLoading, user, tripContract, startContinuousCamera, stopContinuousCamera]);
 
   const startFlashing = useCallback(() => {
     setFlashing(true);
@@ -616,6 +630,10 @@ export default function ValidarQr() {
   const isPersonalMode = scanMode === "personal";
 
   // Modo "por viaje": el chofer no escanea QR, solo registra inicio/fin de viaje
+  if (assignmentLoading && user) {
+    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Cargando ruta asignada…</div>;
+  }
+
   if (tripContract) {
     return (
       <DriverTripPanel
