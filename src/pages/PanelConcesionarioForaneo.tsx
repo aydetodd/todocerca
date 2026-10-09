@@ -23,8 +23,8 @@ const CONFIG: Record<TipoServicio, {
   catalogoMaestro: boolean;
 }> = {
   foraneo: { titulo: 'Mis Rutas Foráneas', subtitulo: 'Rutas foráneas con GPS público. Viajes contados por geocercas A y B.', plural: 'foráneas', routeType: 'foranea', transportType: 'foraneo', catalogoMaestro: true },
-  urbano: { titulo: 'Mis Rutas Urbanas', subtitulo: 'Rutas urbanas con trazado, GPS público y cobro por QR o efectivo.', plural: 'urbanas', routeType: 'urbana', transportType: 'publico', catalogoMaestro: false },
-  taxi_colectivo: { titulo: 'Mis Taxis Colectivos', subtitulo: 'Taxis colectivos sobre trazado fijo, con GPS público y cobro por QR o efectivo.', plural: 'de taxi colectivo', routeType: 'taxi_colectivo', transportType: 'taxi_colectivo', catalogoMaestro: false },
+  urbano: { titulo: 'Mis Rutas Urbanas', subtitulo: 'Rutas urbanas con trazado, GPS público y cobro por QR o efectivo.', plural: 'urbanas', routeType: 'urbana', transportType: 'publico', catalogoMaestro: true },
+  taxi_colectivo: { titulo: 'Mis Taxis Colectivos', subtitulo: 'Taxis colectivos sobre trazado fijo, con GPS público y cobro por QR o efectivo.', plural: 'de taxi colectivo', routeType: 'taxi_colectivo', transportType: 'taxi_colectivo', catalogoMaestro: true },
 };
 
 export default function PanelConcesionarioForaneo({ tipo = 'foraneo' }: { tipo?: TipoServicio }) {
@@ -162,7 +162,7 @@ export default function PanelConcesionarioForaneo({ tipo = 'foraneo' }: { tipo?:
           </TabsContent>
 
           <TabsContent value="catalogo" className="space-y-3 mt-4">
-            {cfg.catalogoMaestro && <RutasMaestrasManager proveedorId={proveedor.id} />}
+            {cfg.catalogoMaestro && <RutasMaestrasManager proveedorId={proveedor.id} routeType={cfg.routeType} />}
           </TabsContent>
 
           <TabsContent value="tarifas" className="space-y-3 mt-4">
