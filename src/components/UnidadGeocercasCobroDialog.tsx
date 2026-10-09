@@ -275,7 +275,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
           nombre: z.nombre,
           lat: z.lat,
           lng: z.lng,
-          radio_m: z.radio_m,
+          radio_m: Math.max(50, Math.min(99999, z.radio_m || 200)),
           precio_mxn: z.precio_mxn,
         }));
         const rpcName = productoId ? "rpc_producto_set_geocercas_cobro" : "rpc_unidad_set_geocercas_cobro";
