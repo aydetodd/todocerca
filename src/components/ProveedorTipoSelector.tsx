@@ -214,7 +214,13 @@ export default function ProveedorTipoSelector({ actual, suscripcionActiva, expir
       <div className="space-y-3 rounded-lg border p-3">
         <p className="text-sm font-medium">¿Qué tipo de concesionario eres?</p>
         {subtipos.map((s) => (
-          <Button key={s.to} variant="outline" className="w-full justify-start" onClick={() => navigate(s.to)}>
+          <Button key={s.to} variant="outline" className="w-full justify-start" disabled={ocupado} onClick={async () => {
+            setOcupado(true);
+            const { error } = await supabase.rpc("registrar_concesionario" as any);
+            setOcupado(false);
+            if (error) return toast({ title: "No se pudo registrar", description: error.message, variant: "destructive" });
+            navigate(s.to);
+          }}>
             {s.label}
           </Button>
         ))}

@@ -7691,6 +7691,7 @@ export type Database = {
           saldo_wallet: number
         }[]
       }
+      registrar_concesionario: { Args: never; Returns: undefined }
       reset_order_sequence: {
         Args: { proveedor_id_param: string }
         Returns: undefined
