@@ -67,9 +67,13 @@ interface ProductoForaneo {
 
 interface Props {
   proveedorId: string;
+  routeType?: 'foranea' | 'urbana' | 'taxi_colectivo';
 }
 
-export default function RutasMaestrasManager({ proveedorId }: Props) {
+const ETIQUETA: Record<string, string> = { foranea: 'foráneas', urbana: 'urbanas', taxi_colectivo: 'de taxi colectivo' };
+
+export default function RutasMaestrasManager({ proveedorId, routeType = 'foranea' }: Props) {
+  const etiqueta = ETIQUETA[routeType];
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -95,14 +99,14 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       supabase
         .from('rutas_foraneas_maestras' as any)
         .select('*')
-        .eq('tipo', 'foranea')
+        .eq('tipo', routeType)
         .order('estado', { ascending: true })
         .order('nombre', { ascending: true }),
       supabase
         .from('productos')
         .select('id, nombre, ruta_maestra_id')
         .eq('proveedor_id', proveedorId)
-        .eq('route_type', 'foranea'),
+        .eq('route_type', routeType),
       user
         ? supabase
             .from('ruta_maestra_solicitudes' as any)
@@ -123,12 +127,12 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       setPermisos(map);
     }
     setLoading(false);
-  }, [proveedorId, user]);
+  }, [proveedorId, user, routeType]);
 
   useEffect(() => {
     load();
     const ch = supabase
-      .channel('rutas-maestras-' + proveedorId)
+      .channel('rutas-maestras-' + routeType + proveedorId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rutas_foraneas_maestras' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'productos', filter: `proveedor_id=eq.${proveedorId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ruta_maestra_solicitudes' }, load)
@@ -208,6 +212,7 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       route_geofence_radius_m: propRadius,
       created_by_user_id: user?.id,
       created_by_proveedor_id: proveedorId,
+      tipo: routeType,
     });
     setBusy(false);
     if (error) {
@@ -244,17 +249,17 @@ export default function RutasMaestrasManager({ proveedorId }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <MapPin className="h-4 w-4" /> Catálogo compartido de rutas foráneas
+            <MapPin className="h-4 w-4" /> Catálogo compartido de rutas {etiqueta}
           </CardTitle>
           <CardDescription className="text-xs">
-            Vincula cada una de tus rutas foráneas al catálogo maestro. Así todos los concesionarios
+            Vincula cada una de tus rutas {etiqueta} al catálogo maestro. Así todos los concesionarios
             que operan la misma ruta usan exactamente el mismo trazado y las mismas geocercas A y B.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {productos.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aún no tienes rutas foráneas registradas. Créalas primero desde la pestaña de Unidades /
+              Aún no tienes rutas {etiqueta} registradas. Créalas primero desde la pestaña de Unidades /
               Choferes / Rutas.
             </p>
           ) : (
