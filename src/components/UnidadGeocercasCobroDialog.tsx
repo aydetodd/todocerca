@@ -357,7 +357,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
                         <Input
                           type="number" min={50} max={99999}
                           value={z.radio_m}
-                          onChange={(e) => updateZona(sentido, idx, { radio_m: Math.max(50, Math.min(99999, parseInt(e.target.value) || 200)) })}
+                          onChange={(e) => updateZona(sentido, idx, { radio_m: e.target.value === '' ? 0 : Math.min(99999, Math.max(0, parseInt(e.target.value) || 0)) })}
                           className="h-8 text-sm"
                         />
                       </label>
