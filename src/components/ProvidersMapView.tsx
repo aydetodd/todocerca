@@ -89,6 +89,37 @@ const getBusColor = (routeType?: string | null, isPrivate?: boolean): { fill: st
 // Create bus icon (colored by route type) - longer design with side windows
 const createBusIcon = (routeName: string, rotation: number = 0, routeType?: string | null, isPrivate?: boolean) => {
   const { fill, stroke } = getBusColor(routeType, isPrivate);
+  if (routeType === 'taxi_colectivo' && !isPrivate) {
+    // Taxi Colectivo: carro chico blanco con el número/nombre de la ruta
+    const carLabel = (routeName || '').replace(/^Ruta\s+/i, '').substring(0, 4);
+    const carSvg = `
+    <svg width="18" height="30" viewBox="0 0 36 60" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="18" cy="57" rx="11" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+      <ellipse cx="7.5" cy="15" rx="3" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="7.5" cy="15" rx="1.6" ry="2.8" fill="#4a4a4a"/>
+      <ellipse cx="28.5" cy="15" rx="3" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="28.5" cy="15" rx="1.6" ry="2.8" fill="#4a4a4a"/>
+      <ellipse cx="7.5" cy="43" rx="3" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="7.5" cy="43" rx="1.6" ry="2.8" fill="#4a4a4a"/>
+      <ellipse cx="28.5" cy="43" rx="3" ry="4.5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+      <ellipse cx="28.5" cy="43" rx="1.6" ry="2.8" fill="#4a4a4a"/>
+      <path d="M 10.5 7 Q 18 3 25.5 7 L 26.5 14 L 27 22 L 27 38 Q 27 47 26 51 Q 18 56.5 10 51 Q 9 47 9 38 L 9 22 L 9.5 14 Z" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <path d="M 12.5 12 Q 18 9.5 23.5 12 L 23.5 19 L 12.5 19 Z" fill="#87CEEB" opacity="0.85" stroke="#555" stroke-width="0.5"/>
+      <path d="M 12.5 47 L 23.5 47 L 23.5 42 Q 18 44 12.5 42 Z" fill="#87CEEB" opacity="0.75" stroke="#555" stroke-width="0.5"/>
+      <circle cx="13.5" cy="6.5" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+      <circle cx="22.5" cy="6.5" r="1.3" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+      <rect x="11.5" y="51" width="3" height="1.8" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      <rect x="21.5" y="51" width="3" height="1.8" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+      ${carLabel ? `<text x="18" y="34" font-family="Arial, sans-serif" font-size="6" font-weight="700" fill="#111827" text-anchor="middle">${carLabel}</text>` : ''}
+    </svg>
+  `;
+    return L.divIcon({
+      html: `<div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(${rotation}deg); transition: transform 0.3s ease-out;">${carSvg}</div>`,
+      className: 'custom-bus-marker',
+      iconSize: [18, 30],
+      iconAnchor: [9, 15]
+    });
+  }
   const busSvg = `
     <svg width="18" height="40" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
       <!-- Shadow -->
