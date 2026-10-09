@@ -24,6 +24,8 @@ export default function AcceptDriverInvite() {
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const verifiedFor = useRef<string | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -36,23 +38,32 @@ export default function AcceptDriverInvite() {
     }
 
     if (token) {
+      // Verificar solo una vez por usuario+token (evita bucles de "Verificando...")
+      const key = `${user.id}:${token}`;
+      if (verifiedFor.current === key) return;
+      verifiedFor.current = key;
       verifyInvitation();
     } else {
       setStatus('error');
       setErrorMsg('No se encontró el token de invitación');
     }
-  }, [user, authLoading, token]);
+  }, [user?.id, authLoading, token]);
+
+  const withTimeout = <T,>(p: PromiseLike<T>, ms = 12000): Promise<T> =>
+    Promise.race([
+      Promise.resolve(p),
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+    ]);
 
   const verifyInvitation = async () => {
     try {
       setStatus('loading');
 
-      // Find the driver record by invite_token (read-only check)
-      const { data: driver, error: driverError } = await supabase
-        .from('choferes_empresa')
-        .select('id, nombre, telefono, user_id, is_active, proveedor_id')
-        .eq('invite_token', token!)
-        .maybeSingle();
+      // Lectura por función segura (el invitado aún no tiene permiso de leer la tabla)
+      const { data: rows, error: driverError } = await withTimeout(
+        (supabase as any).rpc('get_chofer_by_invite_token', { p_token: token })
+      ) as any;
+      const driver = Array.isArray(rows) ? rows[0] : rows;
 
       if (driverError || !driver) {
         setStatus('error');
@@ -66,45 +77,11 @@ export default function AcceptDriverInvite() {
         return;
       }
 
-      // Check if already linked to this user
-      if (driver.user_id === user!.id) {
-        const { data: proveedor } = await supabase
-          .from('proveedores')
-          .select('nombre')
-          .eq('id', driver.proveedor_id)
-          .single();
+      const { data: proveedor } = await withTimeout(
+        supabase.from('proveedores').select('nombre').eq('id', driver.proveedor_id).maybeSingle()
+      ) as any;
 
-        setDriverInfo({
-          nombre: driver.nombre || 'Chofer',
-          businessName: proveedor?.nombre || 'Empresa',
-          vehicleNames: [],
-        });
-        setStatus('already');
-        return;
-      }
-
-      // Check if already linked to another user
-      if (driver.user_id && driver.user_id !== user!.id) {
-        setStatus('error');
-        setErrorMsg('Esta invitación ya fue aceptada por otro usuario');
-        return;
-      }
-
-      // Get business name and vehicles
-      const { data: proveedor } = await supabase
-        .from('proveedores')
-        .select('nombre')
-        .eq('id', driver.proveedor_id)
-        .single();
-
-      const { data: vehicles } = await supabase
-        .from('productos')
-        .select('nombre')
-        .eq('proveedor_id', driver.proveedor_id)
-        .eq('is_private', true)
-        .eq('route_type', 'privada')
-        .eq('is_available', true)
-        .order('nombre');
+      const { data: vehicles } = { data: [] as { nombre: string }[] };
 
       setDriverInfo({
         nombre: driver.nombre || 'Chofer',
