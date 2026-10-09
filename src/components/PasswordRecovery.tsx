@@ -34,28 +34,8 @@ const PasswordRecovery = ({ onBack }: PasswordRecoveryProps) => {
 
     setLoading(true);
     try {
-      // 1) Buscar el user_id real a partir del recovery_email registrado
-      const { data: profileMatch, error: searchError } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("recovery_email", cleanEmail)
-        .maybeSingle();
+      // Quien no ha entrado no puede leer perfiles; se envía directo.
 
-      if (searchError) {
-        console.error("[Recovery] Error buscando perfil:", searchError);
-      }
-
-      if (!profileMatch?.user_id) {
-        // Por seguridad, no revelamos si existe o no — pero damos pista útil
-        toast({
-          title: "Correo no registrado",
-          description:
-            "No encontramos una cuenta con ese correo. Verifica que sea el mismo que registraste.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
 
       // 2) Enviar el correo de recuperación al email real (Supabase Auth)
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
