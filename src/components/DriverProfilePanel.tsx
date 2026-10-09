@@ -442,7 +442,7 @@ function SingleDriverPanel({
           await supabase.from('asignaciones_chofer').insert({
             chofer_id: data.driver.id,
             producto_id: data.todayAssignment.producto_id,
-            unidad_id: lastWithUnit?.unidad_id || null,
+            unidad_id: data.todayAssignment.unit?.id || null,
             asignado_por: lastWithUnit?.asignado_por || user.id,
             fecha: today,
           });
@@ -537,7 +537,7 @@ function SingleDriverPanel({
         const { error } = await supabase.from('asignaciones_chofer').insert({
           chofer_id: data.driver.id,
           producto_id: vehicleId,
-          unidad_id: lastWithUnit?.unidad_id || null,
+          unidad_id: data.todayAssignment.unit?.id || null,
           asignado_por: lastWithUnit?.asignado_por || user.id,
           fecha: today,
         });
