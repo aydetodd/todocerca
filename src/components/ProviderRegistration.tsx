@@ -273,7 +273,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         console.log('🏢 Provider record already exists, updating...');
         const providerDataWithUserId = {
           nombre: providerData.nombre || apodo,
-          email: userData.email,
           telefono: providerData.telefono,
           business_address: providerData.business_address,
           description: providerData.description,
@@ -299,7 +298,6 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
         console.log('🏢 Creating new provider record...');
         const providerDataWithUserId = {
           nombre: providerData.nombre || apodo,
-          email: userData.email,
           telefono: providerData.telefono,
           business_address: providerData.business_address,
           description: providerData.description,

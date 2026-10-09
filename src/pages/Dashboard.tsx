@@ -310,7 +310,6 @@ const Dashboard = () => {
       const providerPayload = {
         user_id: user!.id,
         nombre: concesionarioForm.nombre.trim(),
-        email: user?.email || '',
         telefono: concesionarioForm.telefono.trim(),
         business_address: concesionarioForm.direccion.trim() || null,
         description: concesionarioForm.descripcion.trim() || 'Concesionario de transporte',
