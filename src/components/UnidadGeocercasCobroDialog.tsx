@@ -223,7 +223,7 @@ export default function UnidadGeocercasCobroDialog({ open, onOpenChange, unidadI
       zonas[s].forEach((z, idx) => {
         const color = COLORS[s];
         L.circle([z.lat, z.lng], {
-          radius: z.radio_m,
+          radius: z.radio_m || 50,
           color,
           weight: isActive ? 3 : 1,
           fillOpacity: isActive ? 0.25 : 0.05,
