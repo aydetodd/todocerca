@@ -3,3 +3,4 @@
 - Product imagery is gated by the provider family from profiles.tipo_proveedor, with transport category preserved in ProductManagement; this keeps standard catalogs text-only without changing special-provider flows.
 - Concesionario: Foráneo, Urbano y Taxi Colectivo comparten PanelConcesionarioForaneo (prop tipo) y el flujo esTrazado de PrivateRouteManagement; productos.route_type distingue foranea/urbana/taxi_colectivo — un solo flujo pulido evita divergencias. Cupos Stripe fijos por tipo vía subscription metadata plan_type.
 - Driver and concessionaire assignment selectors use src/lib/transportRouteTypes.ts and reject out-of-family routes/units; unknown types expose no routes, preventing private-route fallbacks.
+- Driver QR collection uses the same DriverTripPanel/ForaneoScanner flow for foreign, urban, and collective routes, selected only after the driver's matching route loads; this prevents old ticket-reader fallbacks and cross-family maps.
