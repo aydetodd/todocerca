@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.save_route_endpoints(uuid, double precision, double precision, double precision, double precision, integer) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.save_route_endpoints(uuid, double precision, double precision, double precision, double precision, integer) TO authenticated, service_role;
