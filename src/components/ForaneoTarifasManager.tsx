@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,11 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
   const [geocercas, setGeocercas] = useState<Geocerca[]>([]);
   const [tarifas, setTarifas] = useState<Record<string, number>>({}); // key: `${desde}|${hasta}` -> precio
   const [nueva, setNueva] = useState({ nombre: '', lat: '', lng: '', radio_m: '150' });
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const nuevaRef = useRef(nueva);
+  nuevaRef.current = nueva;
 
   useEffect(() => {
     (async () => {
