@@ -40,6 +40,62 @@ function abMarkerIcon(letter: 'A' | 'B') {
   });
 }
 
+const CAR_HTML = `
+  <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+    <svg width="26" height="39" viewBox="0 0 36 60" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="7.5" cy="15" rx="3" ry="4.5" fill="#1a1a1a"/><ellipse cx="28.5" cy="15" rx="3" ry="4.5" fill="#1a1a1a"/>
+      <ellipse cx="7.5" cy="43" rx="3" ry="4.5" fill="#1a1a1a"/><ellipse cx="28.5" cy="43" rx="3" ry="4.5" fill="#1a1a1a"/>
+      <path d="M 10.5 7 Q 18 3 25.5 7 L 26.5 14 L 27 22 L 27 38 Q 27 47 26 51 Q 18 56.5 10 51 Q 9 47 9 38 L 9 22 L 9.5 14 Z" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <path d="M 12.5 12 Q 18 9.5 23.5 12 L 23.5 19 L 12.5 19 Z" fill="#87CEEB" opacity="0.85"/>
+      <path d="M 12.5 47 L 23.5 47 L 23.5 42 Q 18 44 12.5 42 Z" fill="#87CEEB" opacity="0.75"/>
+    </svg>
+  </div>`;
+
+function vehicleIcon(routeType: string | null): L.DivIcon {
+  if (routeType === 'taxi_colectivo') {
+    return L.divIcon({ className: '', html: CAR_HTML, iconSize: [26, 39], iconAnchor: [13, 20] });
+  }
+  const isPriv = routeType === 'privada' || !routeType;
+  const busBodyColor = isPriv ? '#FDB813' : routeType === 'foranea' ? '#3B82F6' : '#FFFFFF';
+  const busStrokeColor = isPriv ? '#D4960A' : routeType === 'foranea' ? '#2563EB' : '#999999';
+  const labelTruncated = isPriv ? 'PRIV' : 'RUTA';
+  const textColor = isPriv || routeType === 'foranea' ? '#FFFFFF' : '#111827';
+  const busHtml = `
+    <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+      <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+        <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+        <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+        <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+        <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
+        <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+        <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+        <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+        <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
+        <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
+        <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
+        <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
+        <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
+        <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
+        <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+        <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
+        <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+        <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
+        <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">${labelTruncated}</text>
+      </svg>
+    </div>`;
+  return L.divIcon({ className: '', html: busHtml, iconSize: [32, 52], iconAnchor: [16, 26] });
+}
+
 export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat, destinoLng }: DriverMiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +104,9 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
   const [routeName, setRouteName] = useState<string | null>(null);
   const [inlineGeoJSON, setInlineGeoJSON] = useState<any | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [routeType, setRouteType] = useState<string | null>(null);
+  const routeTypeRef = useRef<string | null>(null);
+  routeTypeRef.current = routeType;
 
   // Load route info (name + uploaded geojson trace)
   useEffect(() => {
@@ -58,12 +117,13 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
     }
     supabase
       .from('productos')
-      .select('nombre, route_geojson')
+      .select('nombre, route_geojson, route_type')
       .eq('id', routeProductId)
       .single()
       .then(({ data }) => {
         if (data) {
           setRouteName(data.nombre);
+          setRouteType((data as any).route_type || null);
           setInlineGeoJSON((data as any).route_geojson || null);
         }
       });
@@ -88,53 +148,12 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const latlng: L.LatLngExpression = [pos.coords.latitude, pos.coords.longitude];
-        const busBodyColor = '#FDB813';
-        const busStrokeColor = '#D4960A';
-        const labelTruncated = 'PRIV';
-        const textColor = '#FFFFFF';
-        const busHtml = `
-          <div style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-            <svg width="32" height="52" viewBox="0 0 36 80" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="18" cy="76" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-              <ellipse cx="7" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="7" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
-              <ellipse cx="29" cy="66" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="29" cy="66" rx="2" ry="3" fill="#4a4a4a"/>
-              <rect x="5" y="8" width="26" height="64" rx="4" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
-              <ellipse cx="7" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="7" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
-              <ellipse cx="29" cy="18" rx="4" ry="5" fill="#1a1a1a" stroke="#333" stroke-width="0.6"/>
-              <ellipse cx="29" cy="18" rx="2" ry="3" fill="#4a4a4a"/>
-              <rect x="9" y="10" width="18" height="56" rx="2" fill="${busBodyColor}" stroke="${busStrokeColor}" stroke-width="0.5"/>
-              <rect x="5" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="5" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="16" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="26" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="36" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="46" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <rect x="27" y="56" width="4" height="8" rx="1" fill="#87CEEB" stroke="#666" stroke-width="0.5"/>
-              <path d="M 9 10 L 9 14 L 27 14 L 27 10 Q 18 8 9 10 Z" fill="#87CEEB" opacity="0.9" stroke="#666" stroke-width="0.5"/>
-              <rect x="11" y="66" width="14" height="4" rx="1" fill="#87CEEB" opacity="0.7" stroke="#666" stroke-width="0.5"/>
-              <circle cx="11" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
-              <circle cx="25" cy="9" r="1.5" fill="#FFFF99" stroke="#666" stroke-width="0.4"/>
-              <rect x="10" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-              <rect x="23" y="70" width="3" height="2" rx="0.5" fill="#FF4444" stroke="#333" stroke-width="0.3"/>
-              <text x="18" y="42" font-family="Arial" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">${labelTruncated}</text>
-            </svg>
-          </div>`;
         if (posMarkerRef.current) {
           posMarkerRef.current.setLatLng(latlng);
+          posMarkerRef.current.setIcon(vehicleIcon(routeTypeRef.current));
         } else {
           posMarkerRef.current = L.marker(latlng, {
-            icon: L.divIcon({
-              className: '',
-              html: busHtml,
-              iconSize: [32, 52],
-              iconAnchor: [16, 26],
-            }),
+            icon: vehicleIcon(routeTypeRef.current),
           }).addTo(map);
         }
       },
@@ -150,6 +169,20 @@ export function DriverMiniMap({ routeProductId, origenLat, origenLng, destinoLat
       initRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    posMarkerRef.current?.setIcon(vehicleIcon(routeType));
+  }, [routeType]);
+
+  // Encajar la vista al trazado de la ruta
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !inlineGeoJSON) return;
+    try {
+      const b = L.geoJSON(inlineGeoJSON).getBounds();
+      if (b.isValid()) setTimeout(() => map.fitBounds(b, { padding: [30, 30], maxZoom: 15 }), 300);
+    } catch { /* ignore */ }
+  }, [inlineGeoJSON]);
 
   // Recalcular tamaño cuando cambia fullscreen
   useEffect(() => {
