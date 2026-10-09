@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bus, Check, Loader2, MapPin } from 'lucide-react';
+import { getRouteTypesForTransport } from '@/lib/transportRouteTypes';
 
 interface Route {
   id: string;
@@ -166,13 +167,7 @@ export default function DriverRouteSelector() {
       const driverTransportType = driverData.transport_type || null;
 
       // Map transport_type to allowed route_types (public routes are 'urbana' in DB)
-      const allowedRouteTypesMap: Record<string, string[]> = {
-        publico: ['urbana', 'publica'],
-        foraneo: ['foranea'],
-        privado: ['privada'],
-        taxi: ['taxi'],
-      };
-      const allowedRouteTypes = driverTransportType ? allowedRouteTypesMap[driverTransportType] || null : null;
+      const allowedRouteTypes = getRouteTypesForTransport(driverTransportType);
 
       // Fetch routes filtered by transport type, and units in parallel
       let routesQuery = supabase
@@ -180,11 +175,8 @@ export default function DriverRouteSelector() {
         .select('id, nombre, descripcion')
         .eq('proveedor_id', driverData.proveedor_id)
         .eq('is_available', true)
-        .eq('is_mobile', true);
-
-      if (allowedRouteTypes) {
-        routesQuery = routesQuery.in('route_type', allowedRouteTypes);
-      }
+        .eq('is_mobile', true)
+        .in('route_type', allowedRouteTypes);
 
       const [routesRes, unitsRes] = await Promise.all([
         routesQuery.order('nombre'),
@@ -193,6 +185,7 @@ export default function DriverRouteSelector() {
           .select('id, nombre, placas, descripcion')
           .eq('proveedor_id', driverData.proveedor_id)
           .eq('is_active', true)
+          .eq('transport_type', driverTransportType ?? '')
           .order('nombre'),
       ]);
 
@@ -208,7 +201,8 @@ export default function DriverRouteSelector() {
         .limit(1)
         .maybeSingle();
 
-      if (assignment) {
+      const validAssignment = assignment && (routesRes.data || []).some(r => r.id === assignment.producto_id);
+      if (assignment && validAssignment) {
         // Get unit name if assigned
         let unitName: string | null = null;
         if (assignment.unidad_id) {
@@ -219,16 +213,16 @@ export default function DriverRouteSelector() {
         setTodayAssignment({
           id: assignment.id,
           producto_id: assignment.producto_id,
-          unidad_id: assignment.unidad_id,
+          unidad_id: (unitsRes.data || []).some(u => u.id === assignment.unidad_id) ? assignment.unidad_id : null,
           routeName: formatShortRouteName((assignment.productos as any)?.nombre) || 'Ruta',
           unitName,
         });
         setSelectedRoute(assignment.producto_id);
-        setSelectedUnit(assignment.unidad_id || '');
+        setSelectedUnit((unitsRes.data || []).some(u => u.id === assignment.unidad_id) ? assignment.unidad_id || '' : '');
       }
 
       // Only show popup if there's NO assignment at all
-      if (!assignment) {
+      if (!validAssignment) {
         setIsOpen(true);
       }
       setChecked(true);
@@ -242,6 +236,10 @@ export default function DriverRouteSelector() {
 
   const handleAssign = async () => {
     if (!driverInfo || !selectedRoute) return;
+    if (!routes.some(r => r.id === selectedRoute) || (selectedUnit && !units.some(u => u.id === selectedUnit))) {
+      toast({ title: 'Selección inválida', description: 'Elige ruta y unidad del mismo tipo de transporte', variant: 'destructive' });
+      return;
+    }
 
     try {
       setAssigning(true);
