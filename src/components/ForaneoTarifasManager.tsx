@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,11 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
   const [geocercas, setGeocercas] = useState<Geocerca[]>([]);
   const [tarifas, setTarifas] = useState<Record<string, number>>({}); // key: `${desde}|${hasta}` -> precio
   const [nueva, setNueva] = useState({ nombre: '', lat: '', lng: '', radio_m: '150' });
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const nuevaRef = useRef(nueva);
+  nuevaRef.current = nueva;
 
   useEffect(() => {
     (async () => {
@@ -55,6 +62,63 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
       setTarifas(map);
     })();
   }, [productoId]);
+
+  // Mapa para elegir el punto de la geocerca con un toque
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+    const map = L.map(mapContainerRef.current, { center: [29.0729, -110.9559], zoom: 12, attributionControl: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    mapRef.current = map;
+    layerRef.current = L.layerGroup().addTo(map);
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      setNueva((n) => ({ ...n, lat: e.latlng.lat.toFixed(6), lng: e.latlng.lng.toFixed(6) }));
+    });
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { try { map.setView([pos.coords.latitude, pos.coords.longitude], 14); } catch {} },
+        () => {}
+      );
+    }
+    [0, 200, 600].forEach((d) => setTimeout(() => map.invalidateSize(), d));
+    return () => { map.remove(); mapRef.current = null; layerRef.current = null; };
+  }, [loading]);
+
+  // Dibujar trazado de la ruta, geocercas existentes y el punto nuevo
+  useEffect(() => {
+    const map = mapRef.current, layer = layerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+    const all: [number, number][] = [];
+    (async () => {
+      if (productoId) {
+        const { data: pd } = await supabase.from('productos').select('route_geojson').eq('id', productoId).maybeSingle();
+        const gj = (pd as any)?.route_geojson;
+        if (gj?.geometry?.coordinates) {
+          const draw = (coords: number[][]) => {
+            const pts = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+            L.polyline(pts, { color: '#0066CC', weight: 4, opacity: 0.7 }).addTo(layer);
+            pts.forEach((p) => all.push(p));
+          };
+          const c = gj.geometry.coordinates;
+          if (gj.geometry.type === 'LineString') draw(c);
+          else if (gj.geometry.type === 'MultiLineString') c.forEach(draw);
+        }
+      }
+      geocercas.forEach((g, i) => {
+        L.circle([g.lat, g.lng], { radius: g.radio_m, color: '#16a34a', weight: 2, fillOpacity: 0.15 }).addTo(layer);
+        L.marker([g.lat, g.lng], {
+          icon: L.divIcon({ className: '', html: `<div style="background:#16a34a;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff">${i + 1}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
+        }).addTo(layer);
+        all.push([g.lat, g.lng]);
+      });
+      const lat = parseFloat(nueva.lat), lng = parseFloat(nueva.lng), radio = parseInt(nueva.radio_m);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        L.circle([lat, lng], { radius: isNaN(radio) ? 150 : radio, color: '#ea580c', weight: 2, dashArray: '6 4', fillOpacity: 0.2 }).addTo(layer);
+        all.push([lat, lng]);
+      }
+      if (all.length > 1) map.fitBounds(L.latLngBounds(all), { padding: [40, 40] });
+    })();
+  }, [geocercas, nueva.lat, nueva.lng, nueva.radio_m, productoId]);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return toast({ title: 'GPS no disponible', variant: 'destructive' });
@@ -194,6 +258,8 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
           ))}
           <div className="border-t pt-3 space-y-2">
             <p className="text-xs font-medium">Agregar nueva</p>
+            <p className="text-[11px] text-muted-foreground">Toca el mapa donde quieres el punto de cobro; el círculo naranja muestra el radio.</p>
+            <div ref={mapContainerRef} className="w-full h-56 rounded-md border z-0" />
             <Input placeholder="Nombre (ej. Central Obregón)" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} />
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Latitud" value={nueva.lat} onChange={(e) => setNueva({ ...nueva, lat: e.target.value })} />
