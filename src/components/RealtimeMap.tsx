@@ -756,6 +756,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
           `;
           iconSize = [32, 52];
           iconAnchor = [16, 26];
+          }
         } else {
           iconHtml = `
             <svg width="30" height="30" viewBox="0 0 30 30" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
