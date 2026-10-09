@@ -1,0 +1,3 @@
+DROP FUNCTION IF EXISTS public.save_route_endpoints(uuid, numeric, numeric, numeric, numeric, integer);
+REVOKE ALL ON FUNCTION public.save_route_endpoints(uuid, double precision, double precision, double precision, double precision, integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.save_route_endpoints(uuid, double precision, double precision, double precision, double precision, integer) TO authenticated, service_role;
