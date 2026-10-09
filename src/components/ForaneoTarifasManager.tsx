@@ -258,6 +258,8 @@ export default function ForaneoTarifasManager({ proveedorId, routeType = 'forane
           ))}
           <div className="border-t pt-3 space-y-2">
             <p className="text-xs font-medium">Agregar nueva</p>
+            <p className="text-[11px] text-muted-foreground">Toca el mapa donde quieres el punto de cobro; el círculo naranja muestra el radio.</p>
+            <div ref={mapContainerRef} className="w-full h-56 rounded-md border z-0" />
             <Input placeholder="Nombre (ej. Central Obregón)" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} />
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Latitud" value={nueva.lat} onChange={(e) => setNueva({ ...nueva, lat: e.target.value })} />
