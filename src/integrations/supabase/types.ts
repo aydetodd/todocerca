@@ -7762,31 +7762,17 @@ export type Database = {
           id: string
         }[]
       }
-      save_route_endpoints:
-        | {
-            Args: {
-              _destination_lat: number
-              _destination_lng: number
-              _origin_lat: number
-              _origin_lng: number
-              _producto_id: string
-              _radius_m?: number
-            }
-            Returns: string[]
-          }
-        | {
-            Args: {
-              _destination_lat: number
-              _destination_lng: number
-              _origin_lat: number
-              _origin_lng: number
-              _producto_id: string
-              _radius_m: number
-            }
-            Returns: {
-              id: string
-            }[]
-          }
+      save_route_endpoints: {
+        Args: {
+          _destination_lat: number
+          _destination_lng: number
+          _origin_lat: number
+          _origin_lng: number
+          _producto_id: string
+          _radius_m?: number
+        }
+        Returns: string[]
+      }
       set_tipo_proveedor: { Args: { _tipo: string }; Returns: undefined }
       unaccent: { Args: { "": string }; Returns: string }
       unlink_producto_from_ruta_maestra: {
