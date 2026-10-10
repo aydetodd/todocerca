@@ -18,3 +18,24 @@ export function getTransportLabel(transportType: string | null | undefined): str
   };
   return transportType ? labels[transportType] ?? 'Sin tipo' : 'Sin tipo';
 }
+
+// Presentation only: product route types are not driver transport types.
+export const ROUTE_PRESENTATIONS = [
+  { type: 'urbana', label: 'Urbana', group: 'Rutas urbanas' },
+  { type: 'foranea', label: 'Foránea', group: 'Rutas foráneas' },
+  { type: 'taxi_colectivo', label: 'Taxi Colectivo', group: 'Taxi Colectivo' },
+  { type: 'privada', label: 'Privada', group: 'Rutas privadas' },
+  { type: 'otra', label: 'Sin tipo', group: 'Otras rutas' },
+] as const;
+
+export function getRoutePresentation(routeType: string | null | undefined) {
+  const type = routeType === 'publica' ? 'urbana' : routeType;
+  return ROUTE_PRESENTATIONS.find(p => p.type === type) ?? ROUTE_PRESENTATIONS[4];
+}
+
+export function groupRoutesByType<T>(routes: T[], getType: (route: T) => string | null | undefined) {
+  return ROUTE_PRESENTATIONS.map(presentation => ({
+    ...presentation,
+    routes: routes.filter(route => getRoutePresentation(getType(route)).type === presentation.type),
+  })).filter(group => group.routes.length > 0);
+}

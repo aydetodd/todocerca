@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Trash2, MapPin, Bus, Lock } from 'lucide-react';
+import { Heart, Trash2, MapPin } from 'lucide-react';
+import { RouteTypeBadge, RouteTypeIcon } from '@/components/RouteTypeBadge';
+import { groupRoutesByType } from '@/lib/transportRouteTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Favoritos() {
@@ -25,6 +27,8 @@ export default function Favoritos() {
           (f.tipo === 'ruta' ||
             f.producto.route_type === 'urbana' ||
             f.producto.route_type === 'foranea' ||
+            f.producto.route_type === 'taxi_colectivo' ||
+            f.producto.route_type === 'publica' ||
             f.producto.route_type === 'privada' ||
             f.producto.is_private === true)
       ),
@@ -35,13 +39,13 @@ export default function Favoritos() {
   useEffect(() => {
     const privadas = rutas.filter((r) => r.producto?.is_private || r.producto?.route_type === 'privada');
     if (privadas.length === 0 || !userId) {
-      setAccessibleRouteIds(new Set(rutas.map((r) => r.producto!.id)));
+      setAccessibleRouteIds(new Set(rutas.map((r) => r.producto?.id ?? "")));
       return;
     }
 
-    const ids = privadas.map((r) => r.producto!.id);
+    const ids = privadas.map((r) => r.producto?.id ?? "");
     const proveedorIds = Array.from(
-      new Set(privadas.map((r) => r.producto!.proveedor_id).filter(Boolean))
+      new Set(privadas.map((r) => r.producto?.proveedor_id ?? "").filter(Boolean))
     );
 
     Promise.all([
@@ -58,23 +62,22 @@ export default function Favoritos() {
     ]).then(([accessRes, ownerRes]) => {
       const accessible = new Set<string>(
         rutas
-          .filter((r) => !r.producto!.is_private && r.producto!.route_type !== 'privada')
-          .map((r) => r.producto!.id)
+          .filter((r) => !r.producto?.is_private && r.producto?.route_type !== 'privada')
+          .map((r) => r.producto?.id ?? "")
       );
       (accessRes.data || []).forEach((row: any) => accessible.add(row.producto_id));
       const ownedProvIds = new Set((ownerRes.data || []).map((r: any) => r.id));
       privadas.forEach((r) => {
-        if (ownedProvIds.has(r.producto!.proveedor_id)) {
-          accessible.add(r.producto!.id);
+        if (ownedProvIds.has(r.producto?.proveedor_id ?? "")) {
+          accessible.add(r.producto?.id ?? "");
         }
       });
       setAccessibleRouteIds(accessible);
     });
   }, [rutas, userId]);
 
-  const visibles = rutas.filter((r) => accessibleRouteIds.has(r.producto!.id));
-  const privadas = visibles.filter((r) => r.producto!.is_private || r.producto!.route_type === 'privada');
-  const publicas = visibles.filter((r) => !r.producto!.is_private && r.producto!.route_type !== 'privada');
+  const visibles = rutas.filter((r) => accessibleRouteIds.has(r.producto?.id ?? ""));
+  const grupos = groupRoutesByType(visibles, r => r.producto?.is_private ? 'privada' : r.producto?.route_type);
 
   if (!userId) {
     return (
@@ -127,57 +130,27 @@ export default function Favoritos() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {privadas.length > 0 && (
-              <section>
+            {grupos.map(grupo => (
+              <section key={grupo.type} aria-label={grupo.group}>
                 <div className="flex items-center gap-2 mb-3">
-                  <Lock className="h-4 w-4 text-orange-500" />
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Rutas privadas
-                  </h2>
-                  <Badge variant="secondary" className="ml-auto">{privadas.length}</Badge>
+                  <RouteTypeIcon routeType={grupo.type} />
+                  <h2 className="text-base font-semibold">{grupo.group}</h2>
+                  <Badge variant="secondary" className="ml-auto">{grupo.routes.length}</Badge>
                 </div>
                 <div className="space-y-2">
-                  {privadas.map((fav) => (
-                    <RutaCard
-                      key={fav.id}
-                      favorito={fav}
-                      privada
+                  {grupo.routes.map(fav => (
+                    <RutaCard key={fav.id} favorito={fav} privada={grupo.type === 'privada'}
                       onOpen={() => {
-                        const token = fav.producto!.invite_token;
-                        if (token) navigate(`/mapa?type=ruta&token=${token}`);
-                        else navigate(`/mapa?type=ruta&producto=${fav.producto!.id}`);
+                        const producto = fav.producto;
+                        if (!producto) return;
+                        if (grupo.type === 'privada' && producto.invite_token) navigate(`/mapa?type=ruta&token=${producto.invite_token}`);
+                        else navigate(`/mapa?type=ruta&producto=${producto.id}`);
                       }}
-                      onRemove={() => removeFavorito(fav.id)}
-                    />
+                      onRemove={() => removeFavorito(fav.id)} />
                   ))}
                 </div>
               </section>
-            )}
-
-            {publicas.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Bus className="h-4 w-4 text-primary" />
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Rutas públicas
-                  </h2>
-                  <Badge variant="secondary" className="ml-auto">{publicas.length}</Badge>
-                </div>
-                <div className="space-y-2">
-                  {publicas.map((fav) => (
-                    <RutaCard
-                      key={fav.id}
-                      favorito={fav}
-                      privada={false}
-                      onOpen={() =>
-                        navigate(`/mapa?type=ruta&producto=${fav.producto!.id}`)
-                      }
-                      onRemove={() => removeFavorito(fav.id)}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -196,12 +169,9 @@ function RutaCard({
   onOpen: () => void;
   onRemove: () => void;
 }) {
-  const p = favorito.producto!;
-  const tipoLabel = privada
-    ? 'Privada'
-    : p.route_type === 'foranea'
-    ? 'Foránea'
-    : 'Urbana';
+  const p = favorito.producto;
+  if (!p) return null;
+  const routeType = privada ? 'privada' : p.route_type;
   const ubicacion = [p.ciudad, p.estado].filter(Boolean).join(', ');
 
   return (
@@ -210,19 +180,13 @@ function RutaCard({
       onClick={onOpen}
     >
       <CardContent className="p-4 flex items-center gap-3">
-        <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-            privada ? 'bg-orange-500/10 text-orange-500' : 'bg-primary/10 text-primary'
-          }`}
-        >
-          {privada ? <Lock className="h-5 w-5" /> : <Bus className="h-5 w-5" />}
+        <div className="w-12 h-12 rounded-lg bg-muted text-foreground flex items-center justify-center shrink-0">
+          <RouteTypeIcon routeType={routeType} className="h-6 w-6" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
             <h3 className="font-semibold break-words flex-1 min-w-0">{p.nombre}</h3>
-            <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
-              {tipoLabel}
-            </Badge>
+            <RouteTypeBadge routeType={routeType} />
           </div>
           {ubicacion && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
@@ -230,7 +194,7 @@ function RutaCard({
               <span className="truncate">{ubicacion}</span>
             </div>
           )}
-          <div className="text-xs text-primary mt-1">Toca para ver el camión en vivo</div>
+          <div className="text-xs text-primary mt-1">Ver unidades en vivo</div>
         </div>
         <Button
           variant="ghost"

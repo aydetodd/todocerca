@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { RouteTypeBadge } from '@/components/RouteTypeBadge';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -17,6 +18,7 @@ import { Loader2, CheckCircle2, XCircle, Clock, Eye, MapPin } from 'lucide-react
 interface Maestra {
   id: string;
   nombre: string;
+  tipo?: string | null;
   estado: 'pending' | 'approved' | 'rejected';
   created_by_user_id: string;
   created_at: string;
@@ -141,7 +143,7 @@ export default function AdminRutasMaestras() {
           filtered.map((m) => (
             <div key={m.id} className="border rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   {m.estado === 'approved' ? (
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   ) : m.estado === 'pending' ? (
@@ -149,10 +151,8 @@ export default function AdminRutasMaestras() {
                   ) : (
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                  <span className="font-medium text-sm">{m.nombre}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {(m as any).tipo === 'urbana' ? '🚌 Urbana' : (m as any).tipo === 'taxi_colectivo' ? '🚕 Taxi Colectivo' : '🚐 Foránea'}
-                  </span>
+                  <span className="font-medium text-sm break-words">{m.nombre}</span>
+                  <RouteTypeBadge routeType={m.tipo} />
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {new Date(m.created_at).toLocaleDateString()}
