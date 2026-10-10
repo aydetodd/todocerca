@@ -7317,6 +7317,13 @@ export type Database = {
       }
       gen_cvv3: { Args: never; Returns: string }
       gen_cvv4: { Args: never; Returns: string }
+      get_aforo_colectivo: {
+        Args: never
+        Returns: {
+          a_bordo: number
+          user_id: string
+        }[]
+      }
       get_chofer_by_invite_token: {
         Args: { p_token: string }
         Returns: {
