@@ -56,10 +56,12 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const aforo = useColectivoAforo();
+  // Solo los taxis colectivos llevan globito de aforo
+  const markerRouteTypeRef = useRef<{ [key: string]: string | null }>({});
   const applyAforo = (uid: string) => {
     const m = markersRef.current[uid];
     if (!m) return;
-    applyColectivoAforo(m, aforo[uid]);
+    applyColectivoAforo(m, markerRouteTypeRef.current[uid] === 'taxi_colectivo' ? aforo[uid] : undefined);
   };
   useEffect(() => {
     Object.keys(markersRef.current).forEach(applyAforo);
@@ -407,6 +409,9 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
       
       const newLatLng = L.latLng(Number(location.latitude), Number(location.longitude));
       const existingMarker = markersRef.current[location.user_id];
+      markerRouteTypeRef.current[location.user_id] = isFleetMode && fleetTransportType
+        ? (fleetTransportType === 'taxi_colectivo' ? 'taxi_colectivo' : fleetTransportType)
+        : (privateRouteProductoId ? (viewingRouteType || location.route_type) : location.route_type) || null;
       
       // Build composite state key — recreate marker when any popup-visible data changes
       let routeLabel = location.profiles.route_name || '';
