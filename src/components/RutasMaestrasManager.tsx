@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle, PencilLine } from 'lucide-react';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle, PencilLine, Upload } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
 import SolicitarCambioRutaDialog from '@/components/SolicitarCambioRutaDialog';
 import EditarRutaMaestraDialog from '@/components/EditarRutaMaestraDialog';
