@@ -1,5 +1,5 @@
 # Productos estándar sin fotos
-- [ ] Agrandar y dar color a los botones de aforo; respuesta inmediata y guardado ordenado de toques rápidos.
+- [x] Agrandar y dar color a los botones de aforo; probar respuesta inmediata, toques rápidos, límites y recuperación ante fallos.
 - [x] Unificar etiquetas de transporte y separar Favoritos y Mi dinero por tipo de ruta; comprobar grupos, importes intactos y páginas sin errores.
 - [ ] Revisar Favoritos y Mi dinero con cuenta real: Supabase externo sin sesión autenticada disponible.
 - [x] Mostrar aforo vivo también en el mapa de búsqueda y agrandar globo y controles del chofer.
