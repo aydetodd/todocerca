@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle, PencilLine } from 'lucide-react';
+import { Loader2, Plus, Link as LinkIcon, Unlink, MapPin, Clock, XCircle, Edit3, AlertTriangle, PencilLine, Upload } from 'lucide-react';
 import { parseRouteTraceFile } from '@/lib/routeTraceParser';
 import SolicitarCambioRutaDialog from '@/components/SolicitarCambioRutaDialog';
 import EditarRutaMaestraDialog from '@/components/EditarRutaMaestraDialog';
@@ -144,6 +144,45 @@ export default function RutasMaestrasManager({ proveedorId, routeType = 'foranea
 
   const aprobadas = maestras.filter((m) => m.estado === 'approved');
   const misPendientes = maestras.filter((m) => m.estado !== 'approved' && m.created_by_user_id === user?.id);
+
+  const handleSubirAMaestra = async (productoId: string, maestra: Maestra) => {
+    if (!confirm(`¿Subir el trazado, puntos A/B y radio de tu ruta a "${maestra.nombre}"? Todos los concesionarios vinculados verán el cambio y quedará registrado que lo hiciste tú.`)) return;
+    setBusy(true);
+    const { data: prod, error: e1 } = await supabase
+      .from('productos')
+      .select('route_geojson, route_origin_lat, route_origin_lng, route_destination_lat, route_destination_lng, route_geofence_radius_m' as any)
+      .eq('id', productoId)
+      .maybeSingle();
+    if (e1 || !prod) {
+      setBusy(false);
+      toast({ title: 'No se pudo leer tu ruta', description: e1?.message, variant: 'destructive' });
+      return;
+    }
+    const p = prod as any;
+    if (!p.route_geojson) {
+      setBusy(false);
+      toast({ title: 'Tu ruta no tiene trazado', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase
+      .from('rutas_foraneas_maestras' as any)
+      .update({
+        route_geojson: p.route_geojson,
+        route_origin_lat: p.route_origin_lat,
+        route_origin_lng: p.route_origin_lng,
+        route_destination_lat: p.route_destination_lat,
+        route_destination_lng: p.route_destination_lng,
+        route_geofence_radius_m: p.route_geofence_radius_m,
+      })
+      .eq('id', maestra.id);
+    setBusy(false);
+    if (error) {
+      toast({ title: 'No se pudo subir', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Ruta maestra actualizada', description: 'Todos los concesionarios vinculados ya ven tu corrección.' });
+    load();
+  };
 
   const handleLink = async (productoId: string, maestraId: string) => {
     setBusy(true);
@@ -301,13 +340,24 @@ export default function RutasMaestrasManager({ proveedorId, routeType = 'foranea
                         </Badge>
                       )}
                       {permisos[maestra.id] ? (
-                        <Button
-                          size="sm"
-                          className="w-full h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => setEditTarget(maestra)}
-                        >
-                          <PencilLine className="h-3 w-3 mr-1" /> Editar ahora (autorizado)
-                        </Button>
+                        <div className="space-y-2">
+                          <Button
+                            size="sm"
+                            className="w-full h-10 text-xs bg-primary"
+                            disabled={busy}
+                            onClick={() => handleSubirAMaestra(p.id, maestra)}
+                          >
+                            <Upload className="h-3 w-3 mr-1" /> Subir mi ruta editada a la ruta maestra
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-8 text-xs"
+                            onClick={() => setEditTarget(maestra)}
+                          >
+                            <PencilLine className="h-3 w-3 mr-1" /> Editar la maestra directamente
+                          </Button>
+                        </div>
                       ) : (
                         <Button
                           size="sm"

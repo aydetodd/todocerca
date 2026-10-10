@@ -5181,6 +5181,8 @@ export type Database = {
           created_by_user_id: string
           estado: string
           id: string
+          last_edited_at: string | null
+          last_edited_by_user_id: string | null
           nombre: string
           nombre_normalizado: string
           rechazo_motivo: string | null
@@ -5202,6 +5204,8 @@ export type Database = {
           created_by_user_id: string
           estado?: string
           id?: string
+          last_edited_at?: string | null
+          last_edited_by_user_id?: string | null
           nombre: string
           nombre_normalizado: string
           rechazo_motivo?: string | null
@@ -5223,6 +5227,8 @@ export type Database = {
           created_by_user_id?: string
           estado?: string
           id?: string
+          last_edited_at?: string | null
+          last_edited_by_user_id?: string | null
           nombre?: string
           nombre_normalizado?: string
           rechazo_motivo?: string | null
@@ -7091,6 +7097,8 @@ export type Database = {
           created_by_user_id: string
           estado: string
           id: string
+          last_edited_at: string | null
+          last_edited_by_user_id: string | null
           nombre: string
           nombre_normalizado: string
           rechazo_motivo: string | null
@@ -7155,6 +7163,8 @@ export type Database = {
           created_by_user_id: string
           estado: string
           id: string
+          last_edited_at: string | null
+          last_edited_by_user_id: string | null
           nombre: string
           nombre_normalizado: string
           rechazo_motivo: string | null
