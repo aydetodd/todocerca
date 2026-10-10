@@ -55,6 +55,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const [watchId, setWatchId] = useState<string | null>(null);
   const isMounted = useRef(true);
   const locationsMapRef = useRef<Map<string, ProveedorLocation>>(new Map());
+  const routeUnitIdsRef = useRef<Set<string>>(new Set());
 
   const fetchRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
     const isRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
