@@ -55,6 +55,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
   const [watchId, setWatchId] = useState<string | null>(null);
   const isMounted = useRef(true);
   const locationsMapRef = useRef<Map<string, ProveedorLocation>>(new Map());
+  const routeUnitIdsRef = useRef<Set<string>>(new Set());
 
   const fetchRouteLiveUnits = useCallback(async (): Promise<ProveedorLocation[]> => {
     const isRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
@@ -494,6 +495,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
       newLocationsMap.set(loc.user_id, location);
     }
 
+    routeUnitIdsRef.current = new Set(routeUnits.map((u) => u.user_id));
     routeUnits.forEach((routeUnit) => {
       const existing = newLocationsMap.get(routeUnit.user_id);
       newLocationsMap.set(routeUnit.user_id, existing ? { ...existing, ...routeUnit } : routeUnit);
@@ -537,11 +539,11 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
       fetchRouteLiveUnits(),
     ]);
     
-    if (!locationsData?.length && routeUnits.length === 0) return;
+    if (!locationsData?.length && routeUnits.length === 0 && routeUnitIdsRef.current.size === 0) return;
     
     let hasChanges = false;
     
-    for (const loc of locationsData) {
+    for (const loc of locationsData || []) {
       const existing = locationsMapRef.current.get(loc.user_id);
       if (existing) {
         if (Math.abs(existing.latitude - loc.latitude) > 0.000001 || 
@@ -553,6 +555,19 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
         }
       }
     }
+
+    // Semáforo en rojo: la unidad deja de venir en la lista viva → quitarla del mapa al instante
+    const liveIds = new Set(routeUnits.map((u) => u.user_id));
+    for (const [uid, loc] of locationsMapRef.current) {
+      if (routeUnitIdsRef.current.has(uid) && !liveIds.has(uid)) {
+        locationsMapRef.current.delete(uid);
+        hasChanges = true;
+      } else if (loc.profiles?.estado === 'offline') {
+        locationsMapRef.current.delete(uid);
+        hasChanges = true;
+      }
+    }
+    routeUnitIdsRef.current = liveIds;
 
     for (const routeUnit of routeUnits) {
       const existing = locationsMapRef.current.get(routeUnit.user_id);
@@ -578,8 +593,18 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
         (payload: any) => {
           const newData = payload.new;
           const oldData = payload.old;
-          if (newData?.role !== 'proveedor') return;
-          // Refresh on estado change OR route_name change
+          if (!newData?.user_id) return;
+          const existing = locationsMapRef.current.get(newData.user_id);
+          // Semáforo: rojo = fuera del mapa al instante; verde/amarillo = actualizar color al instante
+          if (newData.estado === 'offline') {
+            if (existing) {
+              locationsMapRef.current.delete(newData.user_id);
+              if (isMounted.current) setLocations(Array.from(locationsMapRef.current.values()));
+            }
+          } else if (existing?.profiles && existing.profiles.estado !== newData.estado) {
+            locationsMapRef.current.set(newData.user_id, { ...existing, profiles: { ...existing.profiles, estado: newData.estado } });
+            if (isMounted.current) setLocations(Array.from(locationsMapRef.current.values()));
+          }
           if (oldData?.estado !== newData?.estado || oldData?.route_name !== newData?.route_name) {
             console.log(`🔄 [Profile] ${newData.apodo}: estado=${newData.estado}, route=${newData.route_name}`);
             fetchFullData();
