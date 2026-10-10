@@ -110,10 +110,25 @@ export function DriverTripPanel({
   const [viajeActivo, setViajeActivo] = useState<Viaje | null>(null);
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
   const [cobroDirecto, setCobroDirecto] = useState(false);
+  const [esColectivo, setEsColectivo] = useState(false);
+  const [aforoBusy, setAforoBusy] = useState(false);
+  const cambiarAforo = async (delta: 1 | -1) => {
+    if (!viajeActivo || aforoBusy) return;
+    setAforoBusy(true);
+    const { data, error } = await supabase.rpc("rpc_aforo_manual" as any, { _viaje_id: viajeActivo.id, _delta: delta });
+    setAforoBusy(false);
+    const r = data as any;
+    if (error || !r?.ok) { toast.error(r?.error || error?.message || "No se pudo"); return; }
+    setViajesHoy(prev => prev.map(v => v.id === viajeActivo.id ? { ...v, pasajeros_a_bordo: r.a_bordo, pasajeros_subidos: (v.pasajeros_subidos ?? 0) + (delta > 0 ? 1 : 0) } as any : v));
+  };
   useEffect(() => {
     if (!routeProductId) { setCobroDirecto(false); return; }
     supabase.from("productos").select("route_type").eq("id", routeProductId).maybeSingle()
-      .then(({ data }) => setCobroDirecto(["urbana", "publica", "taxi_colectivo"].includes((data as any)?.route_type)));
+      .then(({ data }) => {
+        const t = (data as any)?.route_type;
+        setCobroDirecto(["urbana", "publica", "taxi_colectivo"].includes(t));
+        setEsColectivo(t === "taxi_colectivo");
+      });
   }, [routeProductId]);
   const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -719,8 +734,22 @@ export function DriverTripPanel({
                 <CardContent className="p-3 text-center">
                   <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">Viaje en curso · cobro directo</p>
                   <p className="text-[10px] text-muted-foreground mb-1">Viaje #{viajeActivo.numero_viaje}</p>
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Pasajeros cobrados</p>
-                  <p className="text-3xl font-bold text-emerald-600">{viajeActivo.pasajeros_subidos ?? 0}</p>
+                  {esColectivo ? (
+                    <>
+                      <p className="text-[10px] text-muted-foreground uppercase">Pasajeros a bordo</p>
+                      <div className="flex items-center justify-center gap-4 my-1">
+                        <Button size="lg" variant="outline" className="h-14 w-14 text-2xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) <= 0} onClick={() => cambiarAforo(-1)}>−</Button>
+                        <p className="text-4xl font-bold text-foreground">{viajeActivo.pasajeros_a_bordo ?? 0}<span className="text-lg text-muted-foreground"> de 4</span></p>
+                        <Button size="lg" className="h-14 w-14 text-2xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) >= 4} onClick={() => cambiarAforo(1)}>+</Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Toca + cuando sube alguien y − cuando baja · Subieron hoy en este viaje: {viajeActivo.pasajeros_subidos ?? 0}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Pasajeros cobrados</p>
+                      <p className="text-3xl font-bold text-emerald-600">{viajeActivo.pasajeros_subidos ?? 0}</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             );
