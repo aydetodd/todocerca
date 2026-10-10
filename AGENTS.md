@@ -7,3 +7,4 @@
 - Passenger search and driver maps use useColectivoAforo and applyColectivoAforo for occupancy snapshots, live broadcasts and labels, so counts remain consistent without refreshing or recreating maps.
 - Manual occupancy taps use AforoTapQueue for immediate local feedback and sequential confirmed saves; only saved counts are broadcast, preventing lost rapid taps and unconfirmed public occupancy.
 - Product route labels and grouping use getRoutePresentation/groupRoutesByType in transportRouteTypes and RouteTypeBadge, separately from driver transport types, to avoid mislabeling collective routes without altering financial or access logic.
+- The shared trace/segmentation map initializes only after its conditional container mounts and frames route bounds, not GPS, so all transport families display their loaded traces reliably.

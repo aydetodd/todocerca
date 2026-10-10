@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Recuperar mapa y trazos de Trazado / Segmentación en Urbanas, Foráneas y Taxi Colectivo; verificar carga y controles.
 - [x] Agrandar y dar color a los botones de aforo; probar respuesta inmediata, toques rápidos, límites y recuperación ante fallos.
 - [x] Unificar etiquetas de transporte y separar Favoritos y Mi dinero por tipo de ruta; comprobar grupos, importes intactos y páginas sin errores.
 - [ ] Revisar Favoritos y Mi dinero con cuenta real: Supabase externo sin sesión autenticada disponible.
