@@ -455,6 +455,25 @@ Paleta: Azul marino profundo con acentos brillantes
   overflow: visible !important;
 }
 
+.leaflet-tooltip.aforo-tooltip {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 2px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow: var(--shadow-elevated);
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.aforo-tooltip strong { font-size: 20px; font-weight: 800; }
+.aforo-tooltip .aforo-full { color: hsl(var(--destructive)); font-weight: 800; }
+.leaflet-tooltip-top.aforo-tooltip::before { border-top-color: hsl(var(--card)); }
+
 /* Ensure Leaflet panes have correct z-index */
 .leaflet-marker-pane {
   z-index: 600 !important;

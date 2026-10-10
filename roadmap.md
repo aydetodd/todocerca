@@ -1,4 +1,6 @@
 # Productos estándar sin fotos
+- [x] Mostrar aforo vivo también en el mapa de búsqueda y agrandar globo y controles del chofer.
+- [ ] Verificar cambio de aforo entre dos cuentas reales: Supabase externo sin sesión autenticada disponible.
 - [x] Abrir el lector QaRd de Foráneo también en Urbano y Taxi Colectivo, respetando el tipo del chofer.
 - [ ] Verificar un cobro real en Urbano y Taxi Colectivo: Supabase externo sin sesión autenticada disponible.
 - [x] Corregir aislamiento de rutas y unidades en invitaciones y perfiles de chofer Taxi Colectivo.
