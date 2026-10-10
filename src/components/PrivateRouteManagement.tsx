@@ -845,6 +845,25 @@ export default function PrivateRouteManagement({ proveedorId, businessName, tran
                 {units.map((unit) => (
                   <Card key={unit.id} className="border">
                     <CardContent className="p-3">
+                      {transportType === 'taxi_colectivo' && (
+                        <div className="mb-2 rounded-md bg-muted/40 p-2">
+                          <p className="text-xs font-medium text-foreground">¿Cuántos pasajeros le caben a tu taxi? <span className="text-muted-foreground">(sin contar al chofer, que ya tiene su lugar)</span></p>
+                          <div className="mt-1 flex items-center gap-2">
+                            {[3, 4, 5, 6].map((n) => {
+                              const actual = Number((unit as any).capacidad_pasajeros) || 4;
+                              return (
+                                <Button key={n} type="button" size="sm" variant={actual === n ? 'default' : 'outline'} className="h-9 w-12 text-base"
+                                  onClick={async () => {
+                                    const { error } = await supabase.from('unidades_empresa').update({ capacidad_pasajeros: n } as any).eq('id', unit.id);
+                                    if (error) { toast({ title: 'No se pudo guardar', description: error.message, variant: 'destructive' }); return; }
+                                    setUnits((prev) => prev.map((u) => u.id === unit.id ? ({ ...u, capacidad_pasajeros: n } as any) : u));
+                                    toast({ title: `Listo: le caben ${n} pasajeros` });
+                                  }}>{n}</Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       {editingUnitId === unit.id ? (
                         <div className="space-y-2">
                           <div className="grid grid-cols-3 gap-2">

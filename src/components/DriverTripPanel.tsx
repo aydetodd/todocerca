@@ -112,6 +112,13 @@ export function DriverTripPanel({
   const [cobroDirecto, setCobroDirecto] = useState(false);
   const [esColectivo, setEsColectivo] = useState(false);
   const [aforoBusy, setAforoBusy] = useState(false);
+  const [capacidad, setCapacidad] = useState(4);
+  const unidadViajeId = (viajeActivo as any)?.unidad_id as string | undefined;
+  useEffect(() => {
+    if (!unidadViajeId) { setCapacidad(4); return; }
+    supabase.from("unidades_empresa").select("capacidad_pasajeros" as any).eq("id", unidadViajeId).maybeSingle()
+      .then(({ data }) => setCapacidad(Number((data as any)?.capacidad_pasajeros) || 4));
+  }, [unidadViajeId]);
   const cambiarAforo = async (delta: 1 | -1) => {
     if (!viajeActivo || aforoBusy) return;
     setAforoBusy(true);
@@ -119,12 +126,13 @@ export function DriverTripPanel({
     setAforoBusy(false);
     const r = data as any;
     if (error || !r?.ok) { toast.error(r?.error || error?.message || "No se pudo"); return; }
+    if (r.capacidad) setCapacidad(Number(r.capacidad));
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const ch = supabase.channel('aforo-colectivo');
       ch.subscribe((st) => {
         if (st === 'SUBSCRIBED') {
-          ch.send({ type: 'broadcast', event: 'aforo', payload: { user_id: user.id, a_bordo: r.a_bordo } })
+          ch.send({ type: 'broadcast', event: 'aforo', payload: { user_id: user.id, a_bordo: r.a_bordo, capacidad: r.capacidad ?? capacidad } })
             .finally(() => setTimeout(() => supabase.removeChannel(ch), 500));
         }
       });

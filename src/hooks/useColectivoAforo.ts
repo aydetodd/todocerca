@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-/** Same live occupancy source for passenger search and driver maps. */
+export interface AforoColectivo { n: number; cap: number }
+
+/** Same live occupancy source for passenger search and driver maps. Taxi Colectivo only. */
 export function useColectivoAforo() {
-  const [aforo, setAforo] = useState<Record<string, number>>({});
+  const [aforo, setAforo] = useState<Record<string, AforoColectivo>>({});
   useEffect(() => {
     let alive = true;
     let revision = 0;
@@ -13,23 +15,24 @@ export function useColectivoAforo() {
       const id = ++request;
       const { data, error } = await supabase.rpc('get_aforo_colectivo' as any);
       if (!alive || error || startedAt !== revision || id !== request) return;
-      const next: Record<string, number> = {};
-      for (const row of (data || []) as { user_id: string; a_bordo: number }[]) {
-        const count = Number(row.a_bordo);
-        if (row.user_id && Number.isFinite(count)) next[row.user_id] = count;
+      const next: Record<string, AforoColectivo> = {};
+      for (const row of (data || []) as { user_id: string; a_bordo: number; capacidad?: number }[]) {
+        const n = Number(row.a_bordo);
+        const cap = Number(row.capacidad) || 4;
+        if (row.user_id && Number.isFinite(n)) next[row.user_id] = { n, cap };
       }
       setAforo(next);
     };
     const channel = supabase.channel('aforo-colectivo')
       .on('broadcast', { event: 'aforo' }, ({ payload }) => {
         if (typeof payload?.user_id !== 'string') return;
-        const count = Number(payload.a_bordo);
-        if (payload.a_bordo !== null && !Number.isFinite(count)) return;
+        const n = Number(payload.a_bordo);
+        if (payload.a_bordo !== null && !Number.isFinite(n)) return;
         revision++;
         setAforo(previous => {
           const next = { ...previous };
           if (payload.a_bordo === null) delete next[payload.user_id];
-          else next[payload.user_id] = count;
+          else next[payload.user_id] = { n, cap: Number(payload.capacidad) || previous[payload.user_id]?.cap || 4 };
           return next;
         });
       })
