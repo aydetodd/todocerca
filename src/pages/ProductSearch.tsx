@@ -29,6 +29,7 @@ import { useHispanoamerica } from "@/hooks/useHispanoamerica";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCity } from "@/hooks/useCurrentCity";
 import { useFavoritos } from "@/hooks/useFavoritos";
+import { getTransportLabel } from "@/lib/transportRouteTypes";
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -994,18 +995,18 @@ const ProductSearch = () => {
               <>
                 {!searchCiudad || searchCiudad === ALL_MUNICIPIOS_VALUE ? (
                   <p className="text-sm text-muted-foreground">
-                    Selecciona una ciudad/municipio para ver las rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} disponibles.
+                    Selecciona una ciudad/municipio para ver las rutas {getTransportLabel(selectedRouteType)} disponibles.
                   </p>
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con unidades disponibles en {searchCiudad}, {searchEstado}:
+                      Rutas {getTransportLabel(selectedRouteType)} con unidades disponibles en {searchCiudad}, {searchEstado}:
                     </p>
                     {loadingRoutes ? (
                       <p className="text-sm text-muted-foreground">Cargando rutas...</p>
                     ) : availableRoutes.length === 0 ? (
                       <p className="text-sm text-destructive">
-                        No hay rutas {selectedRouteType === 'publico' ? 'públicas' : 'foráneas'} con chofer y unidad disponibles en esta ubicación.
+                        No hay rutas {getTransportLabel(selectedRouteType)} con chofer y unidad disponibles en esta ubicación.
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">

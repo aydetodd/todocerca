@@ -7,6 +7,8 @@ import { StatusControl } from '@/components/StatusControl';
 
 import MapSearchBar from '@/components/MapSearchBar';
 import { supabase } from '@/integrations/supabase/client';
+import { getRoutePresentation, getTransportLabel } from '@/lib/transportRouteTypes';
+import { RouteTypeBadge } from '@/components/RouteTypeBadge';
 import { getHermosilloToday } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -83,7 +85,7 @@ export default function MapView() {
           setPrivateRouteName(producto.nombre);
           setPrivateRouteProductoId(producto.id);
           setViewingRouteType(rt || 'urbana');
-          setRouteTypeLabel(rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública');
+          setRouteTypeLabel(getRoutePresentation(rt).label);
           if ((producto as any).route_geojson) {
             setActiveRouteGeoJSON((producto as any).route_geojson);
             setActiveRouteOverlay(null);
@@ -151,7 +153,7 @@ export default function MapView() {
         
         const rt = (producto as any).route_type;
         setViewingRouteType(rt || 'privada');
-        const label = rt === 'foranea' ? 'foránea' : rt === 'privada' ? 'privada' : 'pública';
+        const label = getRoutePresentation(rt).label;
         setRouteTypeLabel(label);
         
         toast({
@@ -480,7 +482,7 @@ export default function MapView() {
         asChofer
           ? 'Mi ubicación como chofer'
           : fleetMode 
-          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${fleetTypeParam === 'publico' ? 'Urbano' : fleetTypeParam === 'foraneo' ? 'Foráneo' : fleetTypeParam === 'privado' ? 'Privado' : fleetTypeParam === 'taxi_colectivo' ? 'Taxi Colectivo' : 'Taxi'}` : ''}`
+          ? `Mi flota en tiempo real${fleetTypeParam ? ` - ${getTransportLabel(fleetTypeParam)}` : ''}`
           :
         filterType === 'taxi' ? 'Taxis Disponibles' : 
         filterType === 'ruta' ? 'Rutas de Transporte' : 
@@ -541,7 +543,7 @@ export default function MapView() {
                 Ruta: {privateRouteName}
               </span>
               <span className="text-xs text-muted-foreground truncate">
-                Ubicación de la ruta {routeTypeLabel}
+                <RouteTypeBadge routeType={viewingRouteType} />
               </span>
             </div>
             {privateRouteProductoId && !isRouteFav && (

@@ -21,6 +21,8 @@ import { formatHermosillo } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useIngresosTransporte, panelDeRuta } from "@/hooks/useIngresosTransporte";
 import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type InfoPasaje } from "@/lib/qardEtiquetas";
+import { groupRoutesByType } from "@/lib/transportRouteTypes";
+import { RouteTypeBadge, RouteTypeIcon } from "@/components/RouteTypeBadge";
 const todocercaLogo = "/icon-512.png";
 
 
@@ -915,19 +917,31 @@ export default function Qard() {
                 {rutasIngreso && rutasIngreso.length > 0 && (conDinero.length > 0 || verTodasRutas) && (
                   <div className="py-2">
                     <div className="text-xs font-semibold text-muted-foreground mb-1">Ingresos de transporte · por cobrar</div>
-                    {rutasVisibles.map(r => (
-                      <button key={r.id} className="w-full text-left py-1.5" onClick={() => nav(panelDeRuta(r))}>
-                        <div className="flex justify-between">
-                          <span className="truncate underline-offset-2 hover:underline">{r.nombre}</span>
-                          <b>${r.pozo.toFixed(2)}</b>
+                    {groupRoutesByType(rutasVisibles, r => r.routeType).map(grupo => (
+                      <section key={grupo.type} aria-label={grupo.group} className="mt-3">
+                        <div className="flex items-center gap-2 border-b pb-1.5 text-sm font-semibold">
+                          <RouteTypeIcon routeType={grupo.type} />
+                          <span>{grupo.group}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">{grupo.routes.length}</span>
                         </div>
-                        {r.standN > 0 && (
-                          <div className="text-xs text-muted-foreground">+ {r.standN} en stand se cobrará al cierre del día (${r.standMonto.toFixed(2)})</div>
-                        )}
-                        {r.sinSaldoN > 0 && (
-                          <div className="text-xs text-destructive">{r.sinSaldoN} sin saldo, pendiente aparte (${r.sinSaldoMonto.toFixed(2)})</div>
-                        )}
-                      </button>
+                        {grupo.routes.map(r => (
+                          <Button key={r.id} variant="ghost" className="w-full h-auto px-0 py-2 justify-start text-left font-normal whitespace-normal" onClick={() => nav(panelDeRuta(r))}>
+                            <div className="w-full min-w-0">
+                              <div className="flex justify-between items-start gap-3">
+                                <span className="min-w-0 break-words">{r.nombre}</span>
+                                <b className="shrink-0">${r.pozo.toFixed(2)}</b>
+                              </div>
+                              <div className="mt-1"><RouteTypeBadge routeType={r.routeType} /></div>
+                              {r.standN > 0 && (
+                                <div className="text-xs text-muted-foreground mt-1">+ {r.standN} en stand se cobrará al cierre del día (${r.standMonto.toFixed(2)})</div>
+                              )}
+                              {r.sinSaldoN > 0 && (
+                                <div className="text-xs text-destructive mt-1">{r.sinSaldoN} sin saldo, pendiente aparte (${r.sinSaldoMonto.toFixed(2)})</div>
+                              )}
+                            </div>
+                          </Button>
+                        ))}
+                      </section>
                     ))}
                     <button className="text-xs text-muted-foreground underline mt-1" onClick={() => setVerTodasRutas(v => !v)}>{verTodasRutas ? "Ocultar rutas en cero" : "Ver todas las rutas"}</button>
                   </div>
