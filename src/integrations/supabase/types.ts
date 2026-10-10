@@ -7706,6 +7706,10 @@ export type Database = {
         Returns: undefined
       }
       revisar_codigo_proveedor: { Args: { _codigo: string }; Returns: Json }
+      rpc_aforo_manual: {
+        Args: { _delta: number; _viaje_id: string }
+        Returns: Json
+      }
       rpc_cobro_qr_scan: {
         Args: {
           _fuente?: string
