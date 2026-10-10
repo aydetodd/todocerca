@@ -7052,6 +7052,15 @@ export type Database = {
       }
     }
     Functions: {
+      _rpc_qard_scan_tramo: {
+        Args: {
+          _lat: number
+          _lng: number
+          _qard_number: string
+          _viaje_id: string
+        }
+        Returns: Json
+      }
       activar_proveedor_interno: {
         Args: { _tipo: string; _uid: string }
         Returns: undefined

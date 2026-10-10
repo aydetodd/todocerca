@@ -109,6 +109,12 @@ export function DriverTripPanel({
   const [loading, setLoading] = useState(true);
   const [viajeActivo, setViajeActivo] = useState<Viaje | null>(null);
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
+  const [cobroDirecto, setCobroDirecto] = useState(false);
+  useEffect(() => {
+    if (!routeProductId) { setCobroDirecto(false); return; }
+    supabase.from("productos").select("route_type").eq("id", routeProductId).maybeSingle()
+      .then(({ data }) => setCobroDirecto(["urbana", "publica", "taxi_colectivo"].includes((data as any)?.route_type)));
+  }, [routeProductId]);
   const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   // Diálogo para elegir dirección AB / BA antes de iniciar
@@ -706,6 +712,19 @@ export function DriverTripPanel({
               independiente — no importa cuánto quede a bordo al final.
             - FUERA de las geocercas: una sola tarjeta con el viaje en curso. */}
         {(() => {
+          if (cobroDirecto) {
+            if (!viajeActivo) return null;
+            return (
+              <Card className="border-primary/40 bg-primary/5">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">Viaje en curso · cobro directo</p>
+                  <p className="text-[10px] text-muted-foreground mb-1">Viaje #{viajeActivo.numero_viaje}</p>
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Pasajeros cobrados</p>
+                  <p className="text-3xl font-bold text-emerald-600">{viajeActivo.pasajeros_subidos ?? 0}</p>
+                </CardContent>
+              </Card>
+            );
+          }
           const enGeocerca = insideA || insideB;
           const viajeAnterior = viajesHoy.find(v => v.id !== viajeActivo?.id && v.estado === "completado");
 
