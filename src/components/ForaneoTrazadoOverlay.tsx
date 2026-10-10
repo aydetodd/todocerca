@@ -34,6 +34,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId, routeType = 'forane
   const [loading, setLoading] = useState(true);
   const [rutas, setRutas] = useState<RutaItem[]>([]);
   const [visibles, setVisibles] = useState<Record<string, boolean>>({});
+  const mostrarMapa = !loading && rutas.length > 0;
 
   // Cargar rutas foráneas del concesionario con trazado
   useEffect(() => {
@@ -71,25 +72,22 @@ export default function ForaneoTrazadoOverlay({ proveedorId, routeType = 'forane
 
   // Inicializar mapa
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+    if (!mostrarMapa || !mapRef.current || mapInstance.current) return;
     const map = L.map(mapRef.current, { zoomControl: true, attributionControl: false }).setView([23.6345, -102.5528], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
     }).addTo(map);
     mapInstance.current = map;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { try { mapInstance.current?.setView([pos.coords.latitude, pos.coords.longitude], 12); } catch {} },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-      );
-    }
+    // El contenedor aparece después de cargar las rutas; ajustar también al abrir la pestaña.
+    const resizeObserver = new ResizeObserver(() => map.invalidateSize());
+    resizeObserver.observe(mapRef.current);
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapInstance.current = null;
       layersRef.current = {};
     };
-  }, []);
+  }, [mostrarMapa]);
 
   // Dibujar rutas
   useEffect(() => {
@@ -130,7 +128,7 @@ export default function ForaneoTrazadoOverlay({ proveedorId, routeType = 'forane
         map.fitBounds(L.latLngBounds(allCoords), { padding: [30, 30] });
       } catch {}
     }
-  }, [rutas]);
+  }, [rutas, mostrarMapa]);
 
   // Toggle visibilidad
   useEffect(() => {
