@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Unificar etiquetas de transporte y separar Favoritos y Mi dinero por tipo de ruta.
 - [x] Mostrar aforo vivo también en el mapa de búsqueda y agrandar globo y controles del chofer.
 - [ ] Verificar cambio de aforo entre dos cuentas reales: Supabase externo sin sesión autenticada disponible.
 - [x] Abrir el lector QaRd de Foráneo también en Urbano y Taxi Colectivo, respetando el tipo del chofer.
