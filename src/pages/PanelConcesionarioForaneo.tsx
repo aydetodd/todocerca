@@ -4,14 +4,13 @@ import { GlobalHeader } from '@/components/GlobalHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Loader2, Truck, Route, Settings, DollarSign } from 'lucide-react';
+import { ArrowLeft, Loader2, Truck, Route, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ReporteViajes } from '@/components/ReporteViajes';
 import PrivateRouteManagement from '@/components/PrivateRouteManagement';
 import RutasMaestrasManager from '@/components/RutasMaestrasManager';
-import ForaneoTarifasManager from '@/components/ForaneoTarifasManager';
 import ForaneoTrazadoOverlay from '@/components/ForaneoTrazadoOverlay';
 
 // Configuración por tipo de servicio. Los tres comparten el flujo pulido de Foráneo.
@@ -133,9 +132,6 @@ export default function PanelConcesionarioForaneo({ tipo = 'foraneo' }: { tipo?:
                   <Truck className="h-3 w-3 mr-1" /> Catálogo Maestro
                 </TabsTrigger>
               )}
-              <TabsTrigger value="tarifas" className="text-xs">
-                <DollarSign className="h-3 w-3 mr-1" /> Tarifas QR
-              </TabsTrigger>
               <TabsTrigger value="trazado" className="text-xs">
                 <Route className="h-3 w-3 mr-1" /> Trazado / Segmentación
               </TabsTrigger>
@@ -165,9 +161,6 @@ export default function PanelConcesionarioForaneo({ tipo = 'foraneo' }: { tipo?:
             {cfg.catalogoMaestro && <RutasMaestrasManager proveedorId={proveedor.id} routeType={cfg.routeType} />}
           </TabsContent>
 
-          <TabsContent value="tarifas" className="space-y-3 mt-4">
-            <ForaneoTarifasManager proveedorId={proveedor.id} routeType={cfg.routeType} />
-          </TabsContent>
 
           <TabsContent value="trazado" className="space-y-3 mt-4">
             <ForaneoTrazadoOverlay proveedorId={proveedor.id} routeType={cfg.routeType} etiqueta={cfg.plural} />
