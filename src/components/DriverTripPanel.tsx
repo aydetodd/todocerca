@@ -746,11 +746,14 @@ export function DriverTripPanel({
                   <p className="text-[10px] text-muted-foreground mb-1">Viaje #{viajeActivo.numero_viaje}</p>
                   {esColectivo ? (
                     <>
-                      <p className="text-[10px] text-muted-foreground uppercase">Pasajeros a bordo</p>
-                      <div className="flex items-center justify-center gap-4 my-1">
-                        <Button size="lg" variant="outline" className="h-14 w-14 text-2xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) <= 0} onClick={() => cambiarAforo(-1)}>−</Button>
-                        <p className="text-4xl font-bold text-foreground">{viajeActivo.pasajeros_a_bordo ?? 0}<span className="text-lg text-muted-foreground"> de 4</span></p>
-                        <Button size="lg" className="h-14 w-14 text-2xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) >= 4} onClick={() => cambiarAforo(1)}>+</Button>
+                      <p className="text-sm font-semibold text-foreground">Pasajeros a bordo</p>
+                      <div className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center gap-2 my-3">
+                        <Button size="icon" variant="outline" aria-label="Bajar un pasajero" className="h-16 w-16 text-4xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) <= 0} onClick={() => cambiarAforo(-1)}>−</Button>
+                        <div aria-live="polite" aria-atomic="true" className="text-center tabular-nums">
+                          <p className="text-6xl leading-none font-bold text-foreground">{viajeActivo.pasajeros_a_bordo ?? 0}</p>
+                          <span className="text-xl font-semibold text-muted-foreground">de 4</span>
+                        </div>
+                        <Button size="icon" aria-label="Subir un pasajero" className="h-16 w-16 text-4xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) >= 4} onClick={() => cambiarAforo(1)}>+</Button>
                       </div>
                       <p className="text-[10px] text-muted-foreground">Toca + cuando sube alguien y − cuando baja · Subieron hoy en este viaje: {viajeActivo.pasajeros_subidos ?? 0}</p>
                     </>

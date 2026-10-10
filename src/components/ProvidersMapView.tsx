@@ -8,6 +8,8 @@ import { useRealtimeLocations } from '@/hooks/useRealtimeLocations';
 import TaxiRequestModal from '@/components/TaxiRequestModal';
 import { AppointmentBooking } from '@/components/AppointmentBooking';
 import { useRouteOverlay } from '@/hooks/useRouteOverlay';
+import { useColectivoAforo } from '@/hooks/useColectivoAforo';
+import { applyColectivoAforo } from '@/lib/colectivoAforo';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -189,6 +191,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapReady, setMapReady] = useState(false);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const aforo = useColectivoAforo();
   const prevPositionsRef = useRef<Map<string, { lat: number; lng: number; rotation: number }>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<{ provider: Provider; product: Provider['productos'][0] } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -461,7 +464,8 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
 
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
 
     // Track current provider IDs
     const currentProviderIds = new Set(validProviders.map(p => p.user_id));
@@ -538,6 +542,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
           }
         }
 
+        applyColectivoAforo(existingMarker, showAsBus && routeType === 'taxi_colectivo' ? aforo[provider.user_id] : undefined);
         return; // Don't recreate marker
       }
 
@@ -545,14 +550,14 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       // Icon depends on search filter: taxi -> taxi icon, ruta -> bus icon, other -> default blue pin
       let marker: L.Marker;
       if (showAsBus) {
-        marker = L.marker(newPos, { icon: createBusIcon(routeName, 0, routeType, isPrivateRoute) }).addTo(mapRef.current!);
+        marker = L.marker(newPos, { icon: createBusIcon(routeName, 0, routeType, isPrivateRoute) }).addTo(map);
         (marker as any)._isBus = true;
       } else if (showAsTaxi) {
-        marker = L.marker(newPos, { icon: createTaxiIcon(providerStatus, 0) }).addTo(mapRef.current!);
+        marker = L.marker(newPos, { icon: createTaxiIcon(providerStatus, 0) }).addTo(map);
         (marker as any)._taxiStatus = providerStatus;
       } else {
         // Default blue location pin for all other categories
-        marker = L.marker(newPos).addTo(mapRef.current!);
+        marker = L.marker(newPos).addTo(map);
       }
       
       // Store initial position
@@ -641,9 +646,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       
       marker.bindPopup(popupContent, { closeButton: true, autoClose: false, closeOnClick: false, maxWidth: 350 });
       markersRef.current.set(provider.user_id, marker);
+      applyColectivoAforo(marker, showAsBus && routeType === 'taxi_colectivo' ? aforo[provider.user_id] : undefined);
       console.log(`✅ Nuevo marcador: ${provider.business_name}`);
     });
-  }, [validProviders]);
+  }, [validProviders, aforo, mapReady, vehicleFilter]);
 
   // Setup global functions
   useEffect(() => {

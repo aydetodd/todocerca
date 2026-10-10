@@ -4,3 +4,4 @@
 - Concesionario: Foráneo, Urbano y Taxi Colectivo comparten PanelConcesionarioForaneo (prop tipo) y el flujo esTrazado de PrivateRouteManagement; productos.route_type distingue foranea/urbana/taxi_colectivo — un solo flujo pulido evita divergencias. Cupos Stripe fijos por tipo vía subscription metadata plan_type.
 - Driver and concessionaire assignment selectors use src/lib/transportRouteTypes.ts and reject out-of-family routes/units; unknown types expose no routes, preventing private-route fallbacks.
 - Driver QR collection uses the same DriverTripPanel/ForaneoScanner flow for foreign, urban, and collective routes, selected only after the driver's matching route loads; this prevents old ticket-reader fallbacks and cross-family maps.
+- Passenger search and driver maps use useColectivoAforo and applyColectivoAforo for occupancy snapshots, live broadcasts and labels, so counts remain consistent without refreshing or recreating maps.
