@@ -119,6 +119,16 @@ export function DriverTripPanel({
     setAforoBusy(false);
     const r = data as any;
     if (error || !r?.ok) { toast.error(r?.error || error?.message || "No se pudo"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const ch = supabase.channel('aforo-colectivo');
+      ch.subscribe((st) => {
+        if (st === 'SUBSCRIBED') {
+          ch.send({ type: 'broadcast', event: 'aforo', payload: { user_id: user.id, a_bordo: r.a_bordo } })
+            .finally(() => setTimeout(() => supabase.removeChannel(ch), 500));
+        }
+      });
+    }
     setViajesHoy(prev => prev.map(v => v.id === viajeActivo.id ? { ...v, pasajeros_a_bordo: r.a_bordo, pasajeros_subidos: (v.pasajeros_subidos ?? 0) + (delta > 0 ? 1 : 0) } as any : v));
   };
   useEffect(() => {

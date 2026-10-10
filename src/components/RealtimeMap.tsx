@@ -53,6 +53,43 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
   const internalMapRef = useRef<L.Map | null>(null);
   const mapRef = externalMapRef || internalMapRef;
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
+  // Aforo de taxis colectivos (user_id del chofer -> pasajeros a bordo, máx 4)
+  const aforoRef = useRef<Record<string, number>>({});
+  const applyAforo = (uid: string) => {
+    const m = markersRef.current[uid];
+    const n = aforoRef.current[uid];
+    if (!m) return;
+    if (n === undefined) { if (m.getTooltip()) m.unbindTooltip(); return; }
+    const lleno = n >= 4;
+    const html = lleno
+      ? '<span style="color:#DC2626;font-weight:800">LLENO 4/4</span>'
+      : `<b>${n}/4</b> · cabe${4 - n === 1 ? '' : 'n'} ${4 - n}`;
+    if (m.getTooltip()) m.setTooltipContent(html);
+    else m.bindTooltip(html, { permanent: true, direction: 'top', offset: [0, -20], className: 'aforo-tooltip' });
+  };
+  useEffect(() => {
+    let alive = true;
+    const cargar = async () => {
+      const { data } = await supabase.rpc('get_aforo_colectivo' as any);
+      if (!alive) return;
+      const next: Record<string, number> = {};
+      ((data as any[]) || []).forEach((r) => { next[r.user_id] = Number(r.a_bordo) || 0; });
+      const prev = aforoRef.current;
+      aforoRef.current = next;
+      new Set([...Object.keys(prev), ...Object.keys(next)]).forEach(applyAforo);
+    };
+    cargar();
+    const ch = supabase.channel('aforo-colectivo')
+      .on('broadcast', { event: 'aforo' }, ({ payload }: any) => {
+        if (!payload?.user_id) return;
+        if (payload.a_bordo === null) delete aforoRef.current[payload.user_id];
+        else aforoRef.current[payload.user_id] = Number(payload.a_bordo) || 0;
+        applyAforo(payload.user_id);
+      })
+      .subscribe();
+    const t = setInterval(cargar, 60000);
+    return () => { alive = false; clearInterval(t); supabase.removeChannel(ch); };
+  }, []);
   const markerStatesRef = useRef<{ [key: string]: string }>({}); // Track composite state for each marker
   const prevPositionsRef = useRef<{ [key: string]: { lat: number; lng: number } }>({});
   const headingsRef = useRef<{ [key: string]: number }>({});
@@ -1099,6 +1136,7 @@ export const RealtimeMap = ({ onOpenChat, filterType, privateRouteUserId, privat
 
       markersRef.current[location.user_id] = marker;
     });
+    Object.keys(markersRef.current).forEach(applyAforo);
   }, [locations, currentUserId, initialLoadDone, mapReady, filterType, privateRouteUserId, privateRouteProductoId, privateRouteNameProp, viewingRouteType, fleetUserIds, fleetTransportType]);
 
   // Add global functions for popup buttons
