@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { getHermosilloToday } from "@/lib/utils";
 import { ForaneoScanner } from "@/components/ForaneoScanner";
+import { AforoTapQueue } from "@/lib/aforoTapQueue";
 
 interface DriverTripPanelProps {
   choferEmpresaId: string;
@@ -111,7 +112,8 @@ export function DriverTripPanel({
   const [viajesHoy, setViajesHoy] = useState<Viaje[]>([]);
   const [cobroDirecto, setCobroDirecto] = useState(false);
   const [esColectivo, setEsColectivo] = useState(false);
-  const [aforoBusy, setAforoBusy] = useState(false);
+  const [aforoLocal, setAforoLocal] = useState<{ viajeId: string; n: number } | null>(null);
+  const aforoQueueRef = useRef<{ viajeId: string; queue: AforoTapQueue } | null>(null);
   const [capacidad, setCapacidad] = useState(4);
   const unidadViajeId = (viajeActivo as any)?.unidad_id as string | undefined;
   useEffect(() => {
@@ -119,25 +121,44 @@ export function DriverTripPanel({
     supabase.from("unidades_empresa").select("capacidad_pasajeros" as any).eq("id", unidadViajeId).maybeSingle()
       .then(({ data }) => setCapacidad(Number((data as any)?.capacidad_pasajeros) || 4));
   }, [unidadViajeId]);
-  const cambiarAforo = async (delta: 1 | -1) => {
-    if (!viajeActivo || aforoBusy) return;
-    setAforoBusy(true);
-    const { data, error } = await supabase.rpc("rpc_aforo_manual" as any, { _viaje_id: viajeActivo.id, _delta: delta });
-    setAforoBusy(false);
-    const r = data as any;
-    if (error || !r?.ok) { toast.error(r?.error || error?.message || "No se pudo"); return; }
-    if (r.capacidad) setCapacidad(Number(r.capacidad));
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const ch = supabase.channel('aforo-colectivo');
-      ch.subscribe((st) => {
-        if (st === 'SUBSCRIBED') {
-          ch.send({ type: 'broadcast', event: 'aforo', payload: { user_id: user.id, a_bordo: r.a_bordo, capacidad: r.capacidad ?? capacidad } })
-            .finally(() => setTimeout(() => supabase.removeChannel(ch), 500));
-        }
+  const pasajerosVisibles = aforoLocal?.viajeId === viajeActivo?.id
+    ? aforoLocal?.n ?? 0 : viajeActivo?.pasajeros_a_bordo ?? 0;
+  const cambiarAforo = (delta: 1 | -1) => {
+    if (!viajeActivo || !esColectivo) return;
+    const viajeId = viajeActivo.id;
+    if (aforoQueueRef.current?.viajeId !== viajeId) {
+      const queue = new AforoTapQueue(async movement => {
+        const { data, error } = await supabase.rpc("rpc_aforo_manual" as any, { _viaje_id: viajeId, _delta: movement });
+        const r = data as { ok?: boolean; error?: string; a_bordo: number; capacidad?: number } | null;
+        if (error || !r?.ok) throw new Error(r?.error || error?.message || "No se pudo guardar el conteo");
+        const cap = Number(r.capacidad) || capacidad;
+        setCapacidad(cap);
+        const update = (v: Viaje): Viaje => v.id === viajeId ? {
+          ...v, pasajeros_a_bordo: r.a_bordo,
+          pasajeros_subidos: (v.pasajeros_subidos ?? 0) + (movement > 0 ? 1 : 0),
+          pasajeros_bajados: (v.pasajeros_bajados ?? 0) + (movement < 0 ? 1 : 0),
+        } : v;
+        setViajeActivo(prev => prev ? update(prev) : prev);
+        setViajesHoy(prev => prev.map(update));
+        // Never delay the next tap/save for auth lookup or broadcast setup.
+        void supabase.auth.getUser().then(({ data: { user } }) => {
+          if (!user) return;
+          const ch = supabase.channel('aforo-colectivo');
+          const cleanup = window.setTimeout(() => { void supabase.removeChannel(ch); }, 5000);
+          ch.subscribe(st => {
+            if (st === 'SUBSCRIBED') {
+              void ch.send({ type: 'broadcast', event: 'aforo', payload: { user_id: user.id, a_bordo: r.a_bordo, capacidad: cap } })
+                .finally(() => { window.clearTimeout(cleanup); void supabase.removeChannel(ch); });
+            }
+          });
+        }).catch(() => {});
+        return { n: Number(r.a_bordo), cap };
+      }, n => setAforoLocal({ viajeId, n }), error => {
+        toast.error(error instanceof Error ? error.message : "No se pudo guardar el conteo");
       });
+      aforoQueueRef.current = { viajeId, queue };
     }
-    setViajesHoy(prev => prev.map(v => v.id === viajeActivo.id ? { ...v, pasajeros_a_bordo: r.a_bordo, pasajeros_subidos: (v.pasajeros_subidos ?? 0) + (delta > 0 ? 1 : 0) } as any : v));
+    aforoQueueRef.current.queue.tap(delta, pasajerosVisibles, capacidad);
   };
   useEffect(() => {
     if (!routeProductId) { setCobroDirecto(false); return; }
@@ -244,6 +265,7 @@ export function DriverTripPanel({
   const endLng = dirActiva === "BA" ? origenLng : destinoLng;
 
   const loadViajes = useCallback(async () => {
+    const aforoRevision = aforoQueueRef.current?.queue.revision;
     setLoading(true);
     let query = supabase
       .from("viajes_realizados")
@@ -265,6 +287,7 @@ export function DriverTripPanel({
       setViajesHoy(list);
       const activo = list.find(v => v.estado === "en_curso") || null;
       setViajeActivo(activo);
+      if (!aforoQueueRef.current?.queue.busy && aforoRevision === aforoQueueRef.current?.queue.revision) setAforoLocal(null);
       // Si no hay viaje activo y no tenemos memoria de la última geocerca,
       // inferirla del último viaje completado de hoy para que el auto-mode
       // pueda arrancar el siguiente al salir de esa geocerca (sobrevive a recargas).
@@ -737,13 +760,13 @@ export function DriverTripPanel({
                   {esColectivo ? (
                     <>
                       <p className="text-sm font-semibold text-foreground">Pasajeros a bordo</p>
-                      <div className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center gap-2 my-3">
-                        <Button size="icon" variant="outline" aria-label="Bajar un pasajero" className="h-16 w-16 text-4xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) <= 0} onClick={() => cambiarAforo(-1)}>−</Button>
+                      <div className="grid grid-cols-[5rem_minmax(0,1fr)_5rem] sm:grid-cols-[6rem_minmax(0,1fr)_6rem] items-center gap-2 my-3">
+                        <Button size="icon" variant="destructive" aria-label="Bajar un pasajero" className="h-20 w-20 sm:h-24 sm:w-24 text-5xl font-bold touch-manipulation active:scale-95 motion-reduce:transform-none" disabled={pasajerosVisibles <= 0} onClick={() => cambiarAforo(-1)}>−</Button>
                         <div aria-live="polite" aria-atomic="true" className="text-center tabular-nums">
-                          <p className="text-6xl leading-none font-bold text-foreground">{viajeActivo.pasajeros_a_bordo ?? 0}</p>
-                          <span className="text-xl font-semibold text-muted-foreground">de 4</span>
+                          <p className="text-6xl leading-none font-bold text-foreground">{pasajerosVisibles}</p>
+                          <span className="text-xl font-semibold text-muted-foreground">de {capacidad}</span>
                         </div>
-                        <Button size="icon" aria-label="Subir un pasajero" className="h-16 w-16 text-4xl" disabled={aforoBusy || (viajeActivo.pasajeros_a_bordo ?? 0) >= 4} onClick={() => cambiarAforo(1)}>+</Button>
+                        <Button size="icon" aria-label="Subir un pasajero" className="h-20 w-20 sm:h-24 sm:w-24 text-5xl font-bold touch-manipulation active:scale-95 motion-reduce:transform-none" disabled={pasajerosVisibles >= capacidad} onClick={() => cambiarAforo(1)}>+</Button>
                       </div>
                       <p className="text-[10px] text-muted-foreground">Toca + cuando sube alguien y − cuando baja · Subieron hoy en este viaje: {viajeActivo.pasajeros_subidos ?? 0}</p>
                     </>
