@@ -5,3 +5,4 @@
 - Driver and concessionaire assignment selectors use src/lib/transportRouteTypes.ts and reject out-of-family routes/units; unknown types expose no routes, preventing private-route fallbacks.
 - Driver QR collection uses the same DriverTripPanel/ForaneoScanner flow for foreign, urban, and collective routes, selected only after the driver's matching route loads; this prevents old ticket-reader fallbacks and cross-family maps.
 - Passenger search and driver maps use useColectivoAforo and applyColectivoAforo for occupancy snapshots, live broadcasts and labels, so counts remain consistent without refreshing or recreating maps.
+- Product route labels and grouping use getRoutePresentation/groupRoutesByType in transportRouteTypes and RouteTypeBadge, separately from driver transport types, to avoid mislabeling collective routes without altering financial or access logic.
