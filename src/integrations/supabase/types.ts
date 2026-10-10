@@ -6011,6 +6011,7 @@ export type Database = {
       unidades_empresa: {
         Row: {
           anio: number | null
+          capacidad_pasajeros: number
           cobro_tipo: string | null
           conteo_subscription_end: string | null
           conteo_subscription_id: string | null
@@ -6046,6 +6047,7 @@ export type Database = {
         }
         Insert: {
           anio?: number | null
+          capacidad_pasajeros?: number
           cobro_tipo?: string | null
           conteo_subscription_end?: string | null
           conteo_subscription_id?: string | null
@@ -6081,6 +6083,7 @@ export type Database = {
         }
         Update: {
           anio?: number | null
+          capacidad_pasajeros?: number
           cobro_tipo?: string | null
           conteo_subscription_end?: string | null
           conteo_subscription_id?: string | null
@@ -7321,6 +7324,7 @@ export type Database = {
         Args: never
         Returns: {
           a_bordo: number
+          capacidad: number
           user_id: string
         }[]
       }
