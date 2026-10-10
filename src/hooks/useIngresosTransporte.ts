@@ -47,7 +47,7 @@ export async function cargarPozoViajes(productoIds: string[]) {
   return { pendientePorViaje, viajeRuta, qvpRows };
 }
 
-const PANEL: Record<string, string> = { urbana: "publico", privada: "privado", foranea: "foraneo" };
+const PANEL: Record<string, string> = { urbana: "urbano", privada: "privado", foranea: "foraneo", taxi_colectivo: "taxi-colectivo" };
 export const panelDeRuta = (r: RutaIngreso) =>
   `/panel-concesionario/${PANEL[r.routeType] ?? "publico"}?ruta=${r.id}`;
 
@@ -60,7 +60,7 @@ export function useIngresosTransporte(userId: string | undefined) {
     if (!prov) { setRutas(null); return; }
     const { data: prods } = await (supabase as any).from("productos")
       .select("id, nombre, route_type").eq("proveedor_id", prov.id)
-      .in("route_type", ["urbana", "privada", "foranea"]).order("nombre");
+      .in("route_type", ["urbana", "privada", "foranea", "taxi_colectivo"]).order("nombre");
     const lista = (prods || []) as { id: string; nombre: string; route_type: string }[];
     if (lista.length === 0) { setRutas(null); return; }
     const ids = lista.map(p => p.id);

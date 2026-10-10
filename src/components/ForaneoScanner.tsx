@@ -20,7 +20,7 @@ interface Props {
 
 type ScanResult = {
   ok: boolean;
-  tipo?: "sube" | "baja";
+  tipo?: "sube" | "baja" | "pago";
   geocerca?: string;
   monto?: number;
   saldo?: number;
@@ -112,6 +112,9 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
       if (!res.ok) {
         beep("error");
         toast.error((res as any).error || "No registrado");
+      } else if (res.tipo === "pago") {
+        beep("sube");
+        toast.success(`PAGADO · $${Number(res.monto ?? 0).toFixed(2)}`);
       } else if (res.tipo === "sube") {
         beep("sube");
         toast.success(`SUBE · ${res.geocerca} · autorizado`);
@@ -261,11 +264,13 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
                       : <ArrowDownCircle className="h-6 w-6" />}
                     <div>
                       <div className="font-bold text-base">
-                        {lastResult.tipo === "sube" ? "SUBE" : "BAJA"} · {lastResult.geocerca}
+                        {lastResult.tipo === "pago" ? "PAGADO" : lastResult.tipo === "sube" ? "SUBE" : "BAJA"} · {lastResult.geocerca}
                       </div>
                       <div className="text-xs opacity-90">
                         {lastResult.tipo === "sube"
                           ? "autorizado"
+                          : lastResult.tipo === "pago"
+                          ? `Cobrado $${Number(lastResult.monto ?? 0).toFixed(2)} · saldo $${Number(lastResult.saldo ?? 0).toFixed(2)}`
                           : `Cobrado $${Number(lastResult.monto ?? 0).toFixed(2)}`}
                       </div>
                     </div>
@@ -291,7 +296,7 @@ export function ForaneoScanner({ viajeId, onClose, embedded = false, initialTab 
               </Button>
             </div>
             <p className="text-[10px] text-white/60 text-center">
-              Al subir: saldo en standby. Al bajar: se cobra la tarifa del tramo.
+              {lastResult?.tipo === "pago" ? "Pago directo al escanear." : "Foráneo: al subir queda en espera, al bajar se cobra el tramo. Urbano y Taxi Colectivo: cobro directo."}
             </p>
           </div>
         </div>
