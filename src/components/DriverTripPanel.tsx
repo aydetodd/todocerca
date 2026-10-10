@@ -710,24 +710,6 @@ export function DriverTripPanel({
             Cobrar QR (sube/baja)
           </Button>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-3xl font-bold text-foreground">{completados}</p>
-              <p className="text-[10px] text-muted-foreground">Viajes hoy</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-3xl font-bold text-primary">
-                {viajeActivo ? `#${viajeActivo.numero_viaje}` : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {viajeActivo ? `En curso (${dirActiva})` : `Sin viaje activo`}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Conteo en vivo:
             - DENTRO de una geocerca (A o B): mostramos DOS tableros idénticos
@@ -848,6 +830,25 @@ export function DriverTripPanel({
             </Card>
           );
         })()}
+
+        <div className="grid grid-cols-2 gap-3">
+          <Card>
+            <CardContent className="p-3 text-center">
+              <p className="text-3xl font-bold text-foreground">{completados}</p>
+              <p className="text-[10px] text-muted-foreground">Viajes hoy</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
+              <p className="text-3xl font-bold text-primary">
+                {viajeActivo ? `#${viajeActivo.numero_viaje}` : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {viajeActivo ? `En curso (${dirActiva})` : `Sin viaje activo`}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Acumulado del día */}
         {viajesHoy.length > 0 && (
