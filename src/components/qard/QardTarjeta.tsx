@@ -33,7 +33,7 @@ export default function QardTarjeta(props: Props) {
           </div>
         </div>
         <Button variant="ghost" className="qard-qr h-auto shrink-0 p-1.5" onClick={props.onQr} title="Agrandar QR" aria-label={`Agrandar QR de ${props.nombre}`}>
-          <QRCodeSVG value={props.numero} size={64} level="H" />
+          <QRCodeSVG value={props.numero} size={64} className="!h-16 !w-16" level="H" />
         </Button>
       </div>
       {props.identidad && <div className="mt-2 flex flex-wrap gap-1">{props.identidad}</div>}
