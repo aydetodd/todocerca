@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Simplificar tarjetas, proteger titular y representar niveles con rayas; imprimir solo activadas y verificar formato.
 - [x] Agregar interruptor principal y tarjetas familiares con estado gris/color; prueba visual gris/color y ancho de teléfono correcta, sin alterar saldos ni comisiones.
 - [ ] Verificar desbloqueo guardado con la cuenta real: Supabase externo sin sesión autenticada disponible.
 - [x] Recuperar mapa y trazos de Trazado / Segmentación en Urbanas, Foráneas y Taxi Colectivo; carga demorada y controles verificados en prueba aislada.
