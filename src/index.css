@@ -292,6 +292,12 @@ Paleta: Azul marino profundo con acentos brillantes
 @layer base {
   :root {
     /* TodoCerca Light */
+    --qard-plastic: linear-gradient(135deg, hsl(215 40% 14%), hsl(215 35% 22%) 45%, hsl(16 100% 38%));
+    --qard-ink: 0 0% 100%;
+    --qard-paper: 0 0% 100%;
+    --qard-off: linear-gradient(135deg, hsl(0 0% 26%), hsl(0 0% 45%));
+    --qard-chip: linear-gradient(135deg, hsl(44 72% 65%), hsl(44 60% 40%), hsl(44 78% 78%));
+    --qard-shadow: 0 12px 24px hsl(215 40% 14% / 0.2);
     --background: 210 40% 96%;        /* #F1F5F9 */
     --foreground: 222 47% 11%;        /* #0F172A */
 
@@ -532,6 +538,20 @@ Paleta: Azul marino profundo con acentos brillantes
   }
 
   /* Monto de saldo grande y verde */
+  .qard-plastic {
+    background: var(--qard-plastic);
+    color: hsl(var(--qard-ink));
+    box-shadow: var(--qard-shadow);
+    border-radius: 16px;
+    padding: 20px;
+    min-height: 230px;
+    aspect-ratio: 1.586;
+  }
+  .qard-plastic-off { background: var(--qard-off); }
+  .qard-plastic-off .qard-logo, .qard-plastic-off .qard-chip { filter: grayscale(1); }
+  .qard-logo, .qard-qr { background: hsl(var(--qard-paper)); }
+  .qard-qr:hover { background: hsl(var(--qard-paper)); }
+  .qard-chip { background: var(--qard-chip); }
   .qard-balance {
     font-size: 42px;
     font-weight: 700;
