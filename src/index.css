@@ -538,15 +538,20 @@ Paleta: Azul marino profundo con acentos brillantes
   }
 
   /* Monto de saldo grande y verde */
+  .qard-card-group { width: 100%; max-width: 400px; margin-inline: auto; }
   .qard-plastic {
     background: var(--qard-plastic);
     color: hsl(var(--qard-ink));
     box-shadow: var(--qard-shadow);
     border-radius: 16px;
-    padding: 20px;
-    min-height: 250px;
-    height: auto;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 85.6 / 53.98;
   }
+  .qard-card-header { position: absolute; inset: 8% 5% auto; }
+  .qard-card-chip { position: absolute; top: 43%; left: 5%; }
+  .qard-card-number { position: absolute; inset: auto 5% 25%; }
+  .qard-card-details { position: absolute; inset: auto 5% 7%; }
   .qard-plastic-off { background: var(--qard-off); }
   .qard-plastic-off .qard-logo, .qard-plastic-off .qard-chip { filter: grayscale(1); }
   .qard-logo, .qard-qr { background: hsl(var(--qard-paper)); }
