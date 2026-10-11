@@ -804,6 +804,13 @@ const Dashboard = () => {
               </div>
             )}
 
+            {/* Fletes: acceso directo a Mis Disponibles */}
+            {activeSection === "productos" && isProvider && (
+              <Button variant="outline" className="w-full mt-3" onClick={() => navigate('/fletes/mis-disponibles')}>
+                Mis Disponibles (Fletes)
+              </Button>
+            )}
+
             {/* Mi Equipo y Terminales: interfaz base (próximamente) */}
             {activeSection === "terminales" && isProvider && (
               <Card>
