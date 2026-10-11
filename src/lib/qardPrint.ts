@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import { protegerNombreQard, rayasNivelQard } from "@/lib/qardCardPresentation";
 const todocercaLogoUrl = "/icon-512.png";
 
 // ISO/IEC 7810 ID-1: 85.60 × 53.98 mm
@@ -79,7 +80,8 @@ async function qrDataUrl(value: string, rotated: boolean) {
       const c = document.createElement("canvas");
       c.width = img.width;
       c.height = img.height;
-      const ctx = c.getContext("2d")!;
+      const ctx = c.getContext("2d");
+      if (!ctx) { resolve(url); return; }
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, c.width, c.height);
       ctx.translate(c.width / 2, c.height / 2);
@@ -116,6 +118,7 @@ async function drawCard(
     vencimiento: string;
     alias?: string | null;
     subtitle?: string;
+    nivel?: number;
     qrFront: string;
     qrBack: string;
     logo: string | null;
@@ -185,11 +188,11 @@ async function drawCard(
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
-  doc.text("Q A R D", txtX, y + px(38));
+  doc.text("QaRd", txtX, y + px(38));
 
   doc.setFontSize(6.4);
   doc.setTextColor(178, 186, 198);
-  doc.text(subtitle, txtX, y + px(51));
+
 
 
   // --- QR pequeño arriba a la derecha (caja blanca con padding 6px) ---
@@ -242,7 +245,7 @@ async function drawCard(
   const clCy = chipY + chipH / 2;
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(0.28);
-  [0, 1, 2].forEach((i) => {
+  Array.from({ length: rayasNivelQard(opts.nivel ?? 0) }, (_, i) => i).forEach((i) => {
     const r = px(5 + i * 4);
     const cx = clX - px(1);
     const segs = 12;
@@ -252,16 +255,6 @@ async function drawCard(
       doc.line(cx + r * Math.cos(a1), clCy + r * Math.sin(a1), cx + r * Math.cos(a2), clCy + r * Math.sin(a2));
     }
   });
-
-  // --- Icono de impresión (derecha, alineado con el chip) ---
-  const prW = px(16);
-  const prX = x + px(340 - 20 - 19) - prW;
-  const prY = clCy - prW / 2;
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.22);
-  doc.rect(prX + prW * 0.22, prY, prW * 0.56, prW * 0.22, "S");
-  doc.rect(prX, prY + prW * 0.26, prW, prW * 0.4, "S");
-  doc.rect(prX + prW * 0.22, prY + prW * 0.62, prW * 0.56, prW * 0.34, "S");
 
   // --- Número 16 dígitos (mono, justificado como en pantalla) ---
   doc.setFont("courier", "normal");
@@ -283,17 +276,26 @@ async function drawCard(
   doc.setTextColor(170, 178, 192);
   const labelY = y + px(188);
   const valueY = y + px(203);
-  doc.text("TITULAR", leftX, labelY);
-  doc.text("VENCE", x + CARD_W / 2, labelY, { align: "center" });
-  doc.text("CVV", rightX, labelY, { align: "right" });
-
+  doc.text("TITULAR", leftX, y + px(176));
+  const nombreProtegido = protegerNombreQard(alias || "");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  let fontSize = 7;
+  doc.setFontSize(fontSize);
+  while (doc.getTextWidth(nombreProtegido) > CARD_W - px(40) && fontSize > 4) {
+    fontSize -= 0.25;
+    doc.setFontSize(fontSize);
+  }
   doc.setTextColor(255, 255, 255);
-  doc.text((alias || "TITULAR QARD").toString().toUpperCase().slice(0, 18), leftX, valueY);
+  doc.text(nombreProtegido || "****", leftX, y + px(186));
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5.2);
+  doc.text("VENCE", leftX, y + px(199));
+  doc.text("CVV", rightX, y + px(199), { align: "right" });
   doc.setFont("courier", "bold");
-  doc.text(vencimiento || "12/99", x + CARD_W / 2, valueY, { align: "center" });
-  doc.text("• • •", rightX, valueY, { align: "right" });
+  doc.setFontSize(7);
+  doc.text(vencimiento || "12/99", leftX, y + px(209));
+  doc.text("***", rightX, y + px(209), { align: "right" });
+
 
 
 
@@ -333,6 +335,8 @@ export type QardCardPrint = {
   subtitle?: string;
   copias?: number;
   saldoUrl?: string;
+  nivel?: number;
+  activada?: boolean;
 };
 
 export async function generarPdfTarjetasQard(
@@ -343,7 +347,7 @@ export async function generarPdfTarjetasQard(
   const cards: QardCardPrint[] =
     typeof input === "string"
       ? [{ qardNumber: input, vencimiento, alias, copias: 4 }]
-      : input;
+      : input.filter(card => card.activada === true);
 
   if (!cards.length) return;
 
@@ -380,7 +384,9 @@ export async function generarPdfTarjetasQard(
     if (!qrCache.has(v)) {
       qrCache.set(v, { front: await qrDataUrl(v, false), back: await qrDataUrl(v, true) });
     }
-    return qrCache.get(v)!;
+    const cached = qrCache.get(v);
+    if (!cached) throw new Error("No se pudo generar el QR");
+    return cached;
   };
 
   for (let i = 0; i < slots.length; i++) {
@@ -403,6 +409,7 @@ export async function generarPdfTarjetasQard(
       vencimiento: card.vencimiento || "12/99",
       alias: card.alias,
       subtitle: card.subtitle,
+      nivel: card.nivel,
       qrFront: front,
       qrBack: back,
       logo,
@@ -425,7 +432,7 @@ export async function generarPdfTarjetasQard(
       const col = i % 3, row = Math.floor(i / 3) % 4;
       if (i > 0 && i % 12 === 0) doc.addPage();
       const x = 20 + col * 60, y = 30 + row * 62;
-      const img = await QRCode.toDataURL(c.saldoUrl!, { errorCorrectionLevel: "M", margin: 1, width: 400 });
+      const img = await QRCode.toDataURL(c.saldoUrl ?? "", { errorCorrectionLevel: "M", margin: 1, width: 400 });
       doc.addImage(img, "PNG", x, y, size, size);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
