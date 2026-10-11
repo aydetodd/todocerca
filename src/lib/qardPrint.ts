@@ -156,7 +156,7 @@ async function drawCard(
   }
 
   // --- Encabezado: logo recortado en círculo (sin aro blanco alrededor) ---
-  const logoD = px(44);
+   const logoD = px(32);
   const logoCx = x + px(20) + logoD / 2;
   const logoCy = y + px(20) + logoD / 2;
   if (logo) {
@@ -184,7 +184,7 @@ async function drawCard(
   }
 
   // Marca "QaRd" (mayúsculas espaciadas) + subtítulo
-  const txtX = x + px(20 + 44 + 8);
+   const txtX = x + px(20 + 32 + 8);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
@@ -192,23 +192,22 @@ async function drawCard(
 
   doc.setFontSize(6.4);
   doc.setTextColor(178, 186, 198);
-
-
-
+   doc.setFontSize(5.2);
+   doc.text(subtitle, txtX, y + px(50));
   // --- QR pequeño arriba a la derecha (caja blanca con padding 6px) ---
-  const qrBox = px(66);
-  const qrImg = px(54);
-  const qrBoxX = x + px(340 - 20 - 66);
+   const qrBox = px(56);
+   const qrImg = px(48);
+   const qrBoxX = x + px(340 - 20 - 56);
   const qrBoxY = y + px(20);
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(qrBoxX, qrBoxY, qrBox, qrBox, px(6), px(6), "F");
-  doc.addImage(qrFront, "PNG", qrBoxX + px(6), qrBoxY + px(6), qrImg, qrImg);
+   doc.addImage(qrFront, "PNG", qrBoxX + px(4), qrBoxY + px(4), qrImg, qrImg);
 
   // --- Chip dorado (44x32 px), sin cruces, con brillo ---
   const chipX = x + px(20);
-  const chipY = y + px(98);
-  const chipW = px(44);
-  const chipH = px(32);
+   const chipY = y + px(92);
+   const chipW = px(36);
+   const chipH = px(24);
   const chipSteps = 24;
   for (let i = 0; i < chipSteps; i++) {
     const t = i / (chipSteps - 1);
@@ -241,7 +240,7 @@ async function drawCard(
   doc.roundedRect(chipX, chipY, chipW, chipH, px(6), px(6), "S");
 
   // --- Contactless: 3 arcos (como el SVG de la app) ---
-  const clX = x + px(20 + 44 + 12);
+   const clX = x + px(20 + 36 + 12);
   const clCy = chipY + chipH / 2;
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(0.28);
@@ -258,7 +257,7 @@ async function drawCard(
 
   // --- Número 16 dígitos (mono, justificado como en pantalla) ---
   doc.setFont("courier", "normal");
-  doc.setFontSize(13.2);
+   doc.setFontSize(11.5);
   doc.setTextColor(255, 255, 255);
   const grupos = formatNumero(qardNumber).split(" ");
   const numY = y + px(161);
@@ -274,27 +273,29 @@ async function drawCard(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.2);
   doc.setTextColor(170, 178, 192);
-  const labelY = y + px(188);
-  const valueY = y + px(203);
-  doc.text("TITULAR", leftX, y + px(176));
+   const labelY = y + px(182);
+   const valueY = y + px(198);
+   const expiryX = x + px(206);
+   const cvvX = x + px(280);
+   doc.text("TITULAR", leftX, labelY);
   const nombreProtegido = protegerNombreQard(alias || "");
   doc.setFont("helvetica", "bold");
   let fontSize = 7;
   doc.setFontSize(fontSize);
-  while (doc.getTextWidth(nombreProtegido) > CARD_W - px(40) && fontSize > 4) {
+   while (doc.getTextWidth(nombreProtegido) > px(176) && fontSize > 1) {
     fontSize -= 0.25;
     doc.setFontSize(fontSize);
   }
   doc.setTextColor(255, 255, 255);
-  doc.text(nombreProtegido || "****", leftX, y + px(186));
+   doc.text(nombreProtegido || "****", leftX, valueY);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.2);
-  doc.text("VENCE", leftX, y + px(199));
-  doc.text("CVV", rightX, y + px(199), { align: "right" });
+   doc.text("VENCE", expiryX, labelY);
+   doc.text("CVV", cvvX, labelY, { align: "center" });
   doc.setFont("courier", "bold");
   doc.setFontSize(7);
-  doc.text(vencimiento || "12/99", leftX, y + px(209));
-  doc.text("***", rightX, y + px(209), { align: "right" });
+   doc.text(vencimiento || "12/99", expiryX, valueY);
+   doc.text("***", cvvX, valueY, { align: "center" });
 
 
 

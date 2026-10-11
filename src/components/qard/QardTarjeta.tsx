@@ -54,7 +54,7 @@ export default function QardTarjeta(props: Props) {
         </div>
       </div>
       <div className="qard-card-number flex justify-between gap-1 font-mono text-lg font-semibold">{grupos.map((grupo, i) => <span key={i}>{grupo}</span>)}</div>
-      <div className="qard-card-details grid grid-cols-[minmax(0,1fr)_42px_32px] items-end gap-2">
+      <div className="qard-card-details grid grid-cols-[minmax(0,1fr)_42px_80px] items-end gap-2">
         <div className="min-w-0"><div className="text-[8px] opacity-70">TITULAR</div><svg className="h-3.5 w-full" viewBox="0 0 190 14" preserveAspectRatio="xMinYMid meet" role="img" aria-label={nombre}><text x="0" y="11" fill="currentColor" fontSize="11" fontWeight="600" textLength={Math.min(190, nombre.length * 6.6)} lengthAdjust="spacingAndGlyphs">{nombre}</text></svg></div>
         <div><div className="text-[8px] opacity-70">VENCE</div><div className="font-mono text-[10px] leading-[14px]">{props.vence ?? "12/99"}</div></div>
         <div className="text-center"><div className="text-[8px] opacity-70">CVV</div><div className="font-mono text-[10px] font-bold leading-[14px]">{props.cvvVisible ? props.cvv ?? "•••" : "•••"}</div></div>
