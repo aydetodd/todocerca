@@ -376,7 +376,7 @@ export async function generarPdfTarjetasQard(
 
   const tituloBase =
     cards.length === 1
-      ? `Tarjetas QaRd${cards[0].alias ? " · " + cards[0].alias : ""}`
+      ? `Tarjetas QaRd${cards[0].alias ? " · " + protegerNombreQard(cards[0].alias) : ""}`
       : `Tarjetas QaRd (${cards.length})`;
 
   const qrCache = new Map<string, { front: string; back: string }>();
