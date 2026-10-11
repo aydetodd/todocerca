@@ -8,5 +8,5 @@
 - Manual occupancy taps use AforoTapQueue for immediate local feedback and sequential confirmed saves; only saved counts are broadcast, preventing lost rapid taps and unconfirmed public occupancy.
 - Product route labels and grouping use getRoutePresentation/groupRoutesByType in transportRouteTypes and RouteTypeBadge, separately from driver transport types, to avoid mislabeling collective routes without altering financial or access logic.
 - The shared trace/segmentation map initializes only after its conditional container mounts and frames route bounds, not GPS, so all transport families display their loaded traces reliably.
-- Principal and family QaRd cards share QardTarjeta; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
+- Principal and family QaRd cards share QardTarjeta including its external control row; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
 - Card screen and PDF share qardCardPresentation for legal-name masking and level indicators; display persisted verification levels only, never infer upgrades from appearance.

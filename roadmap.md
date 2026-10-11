@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [x] Ajustar proporción bancaria, datos en una fila y controles externos de tarjetas principales y familiares; proporción 320/375/escritorio, controles y descarga PDF verificados sin datos personales.
 - [x] Simplificar tarjetas, proteger titular y representar niveles guardados con rayas; pruebas visuales 320/375/escritorio y PDF con tarjetas inactivas excluidas correctas.
 - [x] Agregar interruptor principal y tarjetas familiares con estado gris/color; prueba visual gris/color y ancho de teléfono correcta, sin alterar saldos ni comisiones.
 - [ ] Verificar desbloqueo guardado con la cuenta real: Supabase externo sin sesión autenticada disponible.

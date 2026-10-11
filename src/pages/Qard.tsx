@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, Power, History, Download, Landmark } from "lucide-react";
+import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, EyeOff, RotateCw, Printer, History, Download, Landmark } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,7 +24,6 @@ import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type
 import { groupRoutesByType } from "@/lib/transportRouteTypes";
 import { RouteTypeBadge, RouteTypeIcon } from "@/components/RouteTypeBadge";
 import QardTarjeta from "@/components/qard/QardTarjeta";
-import { Switch } from "@/components/ui/switch";
 
 
 
@@ -413,17 +412,11 @@ export default function Qard() {
               onImprimir={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
               nivel={nivelVerificacion}
               activada={activa && nivelVerificacion > 0}
+              encendida={titular?.estado === "activa"}
+              cambiandoEstado={!!titular && cambiandoEstado === titular.id}
+              powerDisabled={!titular || titular.estado === "cancelada" || cambiandoEstado !== null}
+              onPowerChange={() => { if (titular) void toggleSub(titular); }}
             />
-            <div className="flex items-center justify-between gap-3 py-2">
-              <Label htmlFor="qard-principal-power" className="flex items-center gap-2 text-base">
-                <Power className="h-5 w-5" />
-                {cambiandoEstado === titular?.id ? "Guardando…" : null}
-              </Label>
-              <Switch id="qard-principal-power" aria-label="Encender o apagar QaRd principal"
-                checked={titular?.estado === "activa"}
-                disabled={!titular || titular.estado === "cancelada" || cambiandoEstado !== null}
-                onCheckedChange={() => { if (titular) void toggleSub(titular); }} />
-            </div>
 
             {/* Datos debajo del plástico */}
             <Card className="p-4">
@@ -640,7 +633,11 @@ export default function Qard() {
                 cvvVisible={!!cvvVisible[s.id]}
                 onVerCvv={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}
                 onRotarCvv={() => rotarCvv(s.id)}
-                onQr={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })} />
+                onQr={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })}
+                onImprimir={() => { setPrintSel([s.id]); setPrintOpen(true); }}
+                encendida={s.estado === "activa"} cambiandoEstado={cambiandoEstado === s.id}
+                powerDisabled={s.estado === "cancelada" || cambiandoEstado !== null}
+                onPowerChange={() => void toggleSub(s)} />
               <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -693,14 +690,6 @@ export default function Qard() {
                 <Button size="sm" variant="ghost" title="Ver movimientos" onClick={() => abrirMovsSub(s)}>
                   <History className="h-4 w-4" />
                 </Button>
-                {s.estado !== "cancelada" && (
-                  <Switch
-                    aria-label={`Encender o apagar ${s.alias}`}
-                    checked={s.estado === "activa"}
-                    disabled={cambiandoEstado !== null}
-                    onCheckedChange={() => void toggleSub(s)}
-                  />
-                )}
                 {s.estado !== "cancelada" && (
                   <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)} title="Cancelar definitivamente">
                     <Trash2 className="h-4 w-4 text-red-600" />
