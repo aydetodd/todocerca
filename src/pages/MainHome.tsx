@@ -134,8 +134,8 @@ export default function MainHome() {
               <Search className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">Consultar saldo</h3>
-              <p className="text-sm text-muted-foreground">Escanea el QR de saldo de una tarjeta impresa</p>
+              <h3 className="font-semibold text-lg">Consultar y bloquear QaRd</h3>
+              <p className="text-sm text-muted-foreground">Ver saldo y movimientos, o bloquear una QaRd perdida</p>
             </div>
           </CardContent>
         </Card>
