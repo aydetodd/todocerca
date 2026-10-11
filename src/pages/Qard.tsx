@@ -23,7 +23,8 @@ import { useIngresosTransporte, panelDeRuta } from "@/hooks/useIngresosTransport
 import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type InfoPasaje } from "@/lib/qardEtiquetas";
 import { groupRoutesByType } from "@/lib/transportRouteTypes";
 import { RouteTypeBadge, RouteTypeIcon } from "@/components/RouteTypeBadge";
-const todocercaLogo = "/icon-512.png";
+import QardTarjeta from "@/components/qard/QardTarjeta";
+import { Switch } from "@/components/ui/switch";
 
 
 
@@ -99,6 +100,7 @@ export default function Qard() {
   const [nombrePerfil, setNombrePerfil] = useState("");
   const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [subs, setSubs] = useState<SubQR[]>([]);
+  const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null);
   const [mov, setMov] = useState<Movimiento[]>([]);
   const [qardNumber, setQardNumber] = useState<string>("");
   const [monto, setMonto] = useState<string>("");
@@ -279,13 +281,22 @@ export default function Qard() {
   };
 
   const toggleSub = async (sub: SubQR) => {
+    if (cambiandoEstado || sub.estado === "cancelada") return;
     const nuevo = sub.estado === "activa" ? "apagada" : "activa";
-    const { error } = await supabase.rpc("qard_sub_set_estado" as any, {
-      _sub_qr_id: sub.id, _estado: nuevo,
-    });
-    if (error) return toast({ title: "No se pudo cambiar", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
-    toast({ title: nuevo === "activa" ? "QaRd encendida" : "QaRd apagada" });
-    cargar();
+    setCambiandoEstado(sub.id);
+    try {
+      const { error } = await supabase.rpc("qard_sub_set_estado" as any, {
+        _sub_qr_id: sub.id, _estado: nuevo,
+      });
+      if (error) throw error;
+      setSubs(actuales => actuales.map(s => s.id === sub.id ? { ...s, estado: nuevo } : s));
+      toast({ title: nuevo === "activa" ? "QaRd encendida" : "QaRd apagada" });
+      await cargar();
+    } catch {
+      toast({ title: "No se pudo cambiar", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
+    } finally {
+      setCambiandoEstado(null);
+    }
   };
 
   const recargar = async () => {
@@ -387,123 +398,34 @@ export default function Qard() {
       {/* Tarjeta titular — estilo bancario real */}
       {(() => {
         const titular = subs.find(s => s.sub_index === 0);
-        const digits = (qardNumber || "").replace(/\D/g, "");
-        const grupos = digits.length === 16
-          ? [digits.slice(0,4), digits.slice(4,8), digits.slice(8,12), digits.slice(12,16)]
-          : ["••••","••••","••••","••••"];
         return (
           <div className="space-y-3">
-            {/* Plástico */}
-            <div
-              className="relative overflow-hidden rounded-2xl p-5 text-white shadow-xl"
-              style={{
-                background: "linear-gradient(135deg, hsl(215 40% 14%) 0%, hsl(215 35% 22%) 45%, hsl(16 100% 38%) 100%)",
-                aspectRatio: "1.586 / 1",
-                minHeight: 210,
-              }}
-            >
-              {/* brillo diagonal */}
-              <div className="pointer-events-none absolute -top-16 -left-10 h-48 w-72 rotate-12 rounded-full bg-white/10 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-20 -right-10 h-52 w-72 rounded-full bg-white/5 blur-2xl" />
-
-              <div className="relative flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <img
-                    src={todocercaLogo}
-                    alt="Logotipo TodoCerca"
-                    className="h-11 w-11 rounded-full bg-white object-cover shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
-                  />
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">QaRd</div>
-                    <div className="text-[10px] text-white/50">Tarjeta principal · 00</div>
-                    <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold tracking-widest ${estadoUi.clase}`}>
-                      {estadoUi.label}
-                    </span>
-                    {nivelVerificacion > 0 && (
-                      <span className="mt-1 ml-1 inline-block rounded-full border border-emerald-300/60 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-emerald-100">
-                        NIVEL {nivelVerificacion}
-                      </span>
-                    )}
-
-                  </div>
-                </div>
-
-                {qardNumber && (
-                  <div className="flex flex-col items-center">
-                    <button
-                      className="bg-white p-1.5 rounded-md active:scale-95 transition"
-                      onClick={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
-                      title="Toca para agrandar y pagar"
-                    >
-                      <QRCodeSVG value={qardNumber} size={54} level="H" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-
-              {/* Chip + contactless */}
-              <div className="relative mt-3 flex h-8 items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-8 w-11 rounded-md border border-yellow-200/40"
-                    style={{ background: "linear-gradient(135deg,#e6c565,#b9902f 45%,#f3dc9a 70%,#c9a13f)" }}
-                  >
-                    <div className="h-full w-full rounded-md border-x border-yellow-900/20 opacity-60" />
-                  </div>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="opacity-80">
-                    <path d="M6 8a8 8 0 0 1 0 8M10 6a12 12 0 0 1 0 12M14 4a16 16 0 0 1 0 16" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                </div>
-                {qardNumber && (
-                  <button
-                    className="mr-[19px] rounded-md p-1 text-white/80 hover:text-white active:scale-95 transition"
-                    title="Imprimir tarjetas"
-                    aria-label="Imprimir tarjetas"
-                    onClick={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
-                  >
-                    <Printer className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Número grabado */}
-              <div className="relative mt-3 flex justify-between font-mono text-[19px] tracking-[0.12em] [text-shadow:0_1px_0_rgba(0,0,0,.45)]">
-                {grupos.map((g, i) => <span key={i}>{g}</span>)}
-              </div>
-
-              {/* Pie de tarjeta */}
-              <div className="relative mt-3 flex items-end justify-between">
-                <div>
-                  <div className="text-[8px] uppercase tracking-widest text-white/50">Titular</div>
-                  <div className="text-xs font-semibold uppercase tracking-wide truncate max-w-[150px]">
-                    {nombrePerfil || titular?.alias || "TITULAR QaRd"}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[8px] uppercase tracking-widest text-white/50">Vence</div>
-                  <div className="font-mono text-xs font-semibold">{titular?.fecha_vencimiento ?? "12/99"}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[8px] uppercase tracking-widest text-white/50">CVV</div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-mono text-xs font-bold tracking-widest">
-                      {titular && cvvVisible[titular.id] ? titular.cvv : "•••"}
-                    </span>
-                    {titular && (
-                      <>
-                        <button onClick={() => setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] }))}>
-                          {cvvVisible[titular.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                        <button onClick={() => rotarCvv(titular.id)} title="Cambiar CVV">
-                          <RotateCw className="h-3.5 w-3.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+            <QardTarjeta
+              numero={qardNumber}
+              nombre={nombrePerfil || titular?.alias || "TITULAR QaRd"}
+              indice={0}
+              estado={titular?.estado ?? "apagada"}
+              vence={titular?.fecha_vencimiento}
+              cvv={titular?.cvv}
+              cvvVisible={!!titular && !!cvvVisible[titular.id]}
+              onVerCvv={() => { if (titular) setCvvVisible(v => ({ ...v, [titular.id]: !v[titular.id] })); }}
+              onRotarCvv={() => { if (titular) rotarCvv(titular.id); }}
+              onQr={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
+              onImprimir={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
+              identidad={<>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${estadoUi.clase}`}>{estadoUi.label}</span>
+                {nivelVerificacion > 0 && <span className="text-xs">NIVEL {nivelVerificacion}</span>}
+              </>}
+            />
+            <div className="flex items-center justify-between gap-3 py-2">
+              <Label htmlFor="qard-principal-power" className="flex items-center gap-2 text-base">
+                <Power className="h-5 w-5" />
+                {cambiandoEstado === titular?.id ? "Guardando…" : titular?.estado === "activa" ? "QaRd encendida" : "QaRd apagada"}
+              </Label>
+              <Switch id="qard-principal-power" aria-label="Encender o apagar QaRd principal"
+                checked={titular?.estado === "activa"}
+                disabled={!titular || titular.estado === "cancelada" || cambiandoEstado !== null}
+                onCheckedChange={() => { if (titular) void toggleSub(titular); }} />
             </div>
 
             {/* Datos debajo del plástico */}
@@ -715,24 +637,23 @@ export default function Qard() {
                   ))}
                 </div>
                 {familiares.filter(s => s.estado === filtroGrupo).map(s => (
-            <div key={s.id} className={`flex items-center gap-3 border rounded p-2 ${s.estado === "apagada" ? "opacity-60 bg-muted/40" : ""}`}>
-              <button
-                className="bg-white p-1 rounded cursor-pointer active:scale-95 transition"
-                onClick={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })}
-                title="Toca para agrandar y pagar"
-              >
-                <QRCodeSVG value={s.qard_number} size={56} />
-              </button>
+            <div key={s.id} className="space-y-2 py-3 border-b last:border-b-0">
+              <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || s.alias}
+                indice={s.sub_index} estado={s.estado} vence={s.fecha_vencimiento} cvv={s.cvv}
+                cvvVisible={!!cvvVisible[s.id]}
+                onVerCvv={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}
+                onRotarCvv={() => rotarCvv(s.id)}
+                onQr={() => setQrFullscreen({ value: s.qard_number, label: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}` })} />
+              <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="font-semibold truncate">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="font-semibold break-words">{s.alias} · {String(s.sub_index).padStart(2, "0")}</div>
                   {s.estado === "apagada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">APAGADA</span>}
                   {s.estado === "cancelada" && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-200 text-red-800 font-semibold">CANCELADA</span>}
                   {s.curp_verificada
                     ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">VERIFICADA</span>
                     : <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">SIN VERIFICAR</span>}
                 </div>
-                <div className="font-mono text-xs text-muted-foreground">{formatNumero(s.qard_number)}</div>
                 {s.curp_verificada
                   ? s.nombre_completo && <div className="text-[11px] text-muted-foreground truncate">{s.nombre_completo}</div>
                   : s.estado !== "cancelada" && (
@@ -759,15 +680,6 @@ export default function Qard() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] mt-1 items-center">
-                  <span>Vence <b className="font-mono">{s.fecha_vencimiento ?? "12/99"}</b></span>
-                  <span className="flex items-center gap-1">
-                    <span className="text-muted-foreground">CVV</span>
-                    <b className="font-mono font-bold text-sm text-amber-400 tracking-wider">{cvvVisible[s.id] ? s.cvv : "•••"}</b>
-                    <button onClick={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}>
-                      {cvvVisible[s.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                    <button onClick={() => rotarCvv(s.id)} title="Cambiar CVV"><RotateCw className="h-3.5 w-3.5" /></button>
-                  </span>
                   {s.cvv_dinamico && (
                     <span className="flex items-center gap-1">
                       <span className="text-muted-foreground">CVV transf.</span>
@@ -785,20 +697,19 @@ export default function Qard() {
                   <History className="h-4 w-4" />
                 </Button>
                 {s.estado !== "cancelada" && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    title={s.estado === "activa" ? "Apagar" : "Encender"}
-                    onClick={() => toggleSub(s)}
-                  >
-                    <Power className={`h-4 w-4 ${s.estado === "activa" ? "text-green-600" : "text-red-600"}`} />
-                  </Button>
+                  <Switch
+                    aria-label={`Encender o apagar ${s.alias}`}
+                    checked={s.estado === "activa"}
+                    disabled={cambiandoEstado !== null}
+                    onCheckedChange={() => void toggleSub(s)}
+                  />
                 )}
                 {s.estado !== "cancelada" && (
                   <Button size="sm" variant="ghost" onClick={() => cancelarSub(s.id)} title="Cancelar definitivamente">
                     <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 )}
+              </div>
               </div>
             </div>
           ))}
