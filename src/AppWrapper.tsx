@@ -55,6 +55,8 @@ import QardCobrar from "./pages/QardCobrar";
 import QardRecargar from "./pages/QardRecargar";
 import QardMaestra from "./pages/QardMaestra";
 import ConsultarSaldo from "./pages/ConsultarSaldo";
+import Fletes from "./pages/Fletes";
+import FletesDisponibles from "./pages/FletesDisponibles";
 
 import ComprarBoletos from "./pages/ComprarBoletos";
 // GenerarQr removed - QR codes are now generated automatically on purchase
@@ -243,6 +245,8 @@ export default function AppWrapper() {
           <Route path="/wallet/qr-boletos/historial" element={<HistorialBoletos />} />
           {/* QaRd — Billetera universal */}
           <Route path="/saldo" element={<ConsultarSaldo />} />
+          <Route path="/fletes" element={<Fletes />} />
+          <Route path="/fletes/mis-disponibles" element={<FletesDisponibles />} />
           <Route path="/qard" element={<Qard />} />
           <Route path="/qard/cobrar" element={<QardCobrar />} />
           <Route path="/qard/recargar" element={<QardRecargar />} />
