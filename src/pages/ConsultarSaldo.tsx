@@ -205,7 +205,7 @@ export default function ConsultarSaldo() {
                   ) : (
                     <ul className="divide-y">
                       {movs.map(m => {
-                        const entra = m.direccion === "in";
+                        const entra = m.direccion === "entrada";
                         return (
                           <li key={m.id} className="py-2 flex justify-between gap-2 text-sm">
                             <div>
