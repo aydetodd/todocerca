@@ -1807,6 +1807,117 @@ export type Database = {
           },
         ]
       }
+      fletes_anuncios: {
+        Row: {
+          ciudad_estado: string | null
+          ciudad_municipio: string | null
+          condiciones: string | null
+          created_at: string
+          destino_estado: string | null
+          destino_municipio: string | null
+          destinos_preferidos: string[]
+          dimensiones: string | null
+          disponible: boolean
+          editado_at: string
+          id: string
+          lugar_carga: string | null
+          marca: string | null
+          modelo: number | null
+          nombre_contacto: string | null
+          remolque: string | null
+          tamano: string | null
+          telefono: string | null
+          temperatura: string | null
+          tipo: string
+          tipo_carga: string | null
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ciudad_estado?: string | null
+          ciudad_municipio?: string | null
+          condiciones?: string | null
+          created_at?: string
+          destino_estado?: string | null
+          destino_municipio?: string | null
+          destinos_preferidos?: string[]
+          dimensiones?: string | null
+          disponible?: boolean
+          editado_at?: string
+          id?: string
+          lugar_carga?: string | null
+          marca?: string | null
+          modelo?: number | null
+          nombre_contacto?: string | null
+          remolque?: string | null
+          tamano?: string | null
+          telefono?: string | null
+          temperatura?: string | null
+          tipo: string
+          tipo_carga?: string | null
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ciudad_estado?: string | null
+          ciudad_municipio?: string | null
+          condiciones?: string | null
+          created_at?: string
+          destino_estado?: string | null
+          destino_municipio?: string | null
+          destinos_preferidos?: string[]
+          dimensiones?: string | null
+          disponible?: boolean
+          editado_at?: string
+          id?: string
+          lugar_carga?: string | null
+          marca?: string | null
+          modelo?: number | null
+          nombre_contacto?: string | null
+          remolque?: string | null
+          tamano?: string | null
+          telefono?: string | null
+          temperatura?: string | null
+          tipo?: string
+          tipo_carga?: string | null
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fletes_proveedores: {
+        Row: {
+          created_at: string
+          nombre_negocio: string
+          rfc: string
+          rfc_verificado: boolean
+          updated_at: string
+          user_id: string
+          verificado_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          nombre_negocio: string
+          rfc: string
+          rfc_verificado?: boolean
+          updated_at?: string
+          user_id: string
+          verificado_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          nombre_negocio?: string
+          rfc?: string
+          rfc_verificado?: boolean
+          updated_at?: string
+          user_id?: string
+          verificado_at?: string | null
+        }
+        Relationships: []
+      }
       fotos_listings: {
         Row: {
           alt_text: string | null
@@ -7324,6 +7435,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      fletes_tiene_acceso: { Args: { _uid: string }; Returns: boolean }
       fn_parada_mas_cercana: {
         Args: { _lat: number; _lng: number; _producto_id: string }
         Returns: string
