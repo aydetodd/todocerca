@@ -544,8 +544,8 @@ Paleta: Azul marino profundo con acentos brillantes
     box-shadow: var(--qard-shadow);
     border-radius: 16px;
     padding: 20px;
-    min-height: 230px;
-    aspect-ratio: 1.586;
+    min-height: 250px;
+    height: auto;
   }
   .qard-plastic-off { background: var(--qard-off); }
   .qard-plastic-off .qard-logo, .qard-plastic-off .qard-chip { filter: grayscale(1); }

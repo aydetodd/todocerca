@@ -12,7 +12,7 @@ import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadCSV } from "@/lib/csvExport";
 
-import { useQardIdentidad, ESTADO_UI } from "@/hooks/useQardIdentidad";
+import { useQardIdentidad } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
 import VerificarIdentidadDialog from "@/components/qard/VerificarIdentidadDialog";
 import UpgradeMoralDialog from "@/components/qard/UpgradeMoralDialog";
@@ -139,7 +139,6 @@ export default function Qard() {
   const [moralOpen, setMoralOpen] = useState(false);
   const [verificarOpen, setVerificarOpen] = useState(false);
   const nivelVerificacion = identidad?.verification_level ?? 0;
-  const estadoUi = ESTADO_UI[identidad?.estado ?? "inactive"];
   const pedirActivacion = () => {
     toast({
       title: "Tu QaRd está inactiva",
@@ -402,7 +401,7 @@ export default function Qard() {
           <div className="space-y-3">
             <QardTarjeta
               numero={qardNumber}
-              nombre={nombrePerfil || titular?.alias || "TITULAR QaRd"}
+              nombre={identidad?.nombre_completo || titular?.nombre_completo || ""}
               indice={0}
               estado={titular?.estado ?? "apagada"}
               vence={titular?.fecha_vencimiento}
@@ -412,15 +411,13 @@ export default function Qard() {
               onRotarCvv={() => { if (titular) rotarCvv(titular.id); }}
               onQr={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
               onImprimir={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
-              identidad={<>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${estadoUi.clase}`}>{estadoUi.label}</span>
-                {nivelVerificacion > 0 && <span className="text-xs">NIVEL {nivelVerificacion}</span>}
-              </>}
+              nivel={nivelVerificacion}
+              activada={activa && nivelVerificacion > 0}
             />
             <div className="flex items-center justify-between gap-3 py-2">
               <Label htmlFor="qard-principal-power" className="flex items-center gap-2 text-base">
                 <Power className="h-5 w-5" />
-                {cambiandoEstado === titular?.id ? "Guardando…" : titular?.estado === "activa" ? "QaRd encendida" : "QaRd apagada"}
+                {cambiandoEstado === titular?.id ? "Guardando…" : null}
               </Label>
               <Switch id="qard-principal-power" aria-label="Encender o apagar QaRd principal"
                 checked={titular?.estado === "activa"}
@@ -638,7 +635,7 @@ export default function Qard() {
                 </div>
                 {familiares.filter(s => s.estado === filtroGrupo).map(s => (
             <div key={s.id} className="space-y-2 py-3 border-b last:border-b-0">
-              <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || s.alias}
+              <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || ""} nivel={s.curp_verificada ? 1 : 0} activada={!!s.curp_verificada}
                 indice={s.sub_index} estado={s.estado} vence={s.fecha_vencimiento} cvv={s.cvv}
                 cvvVisible={!!cvvVisible[s.id]}
                 onVerCvv={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}
@@ -916,12 +913,9 @@ export default function Qard() {
             Si eliges una sola, se imprimen 4 copias en la hoja. Si eliges varias, se imprime una copia de cada una (4 por hoja).
           </div>
           <div className="divide-y max-h-[50vh] overflow-y-auto">
-            {[
-              { id: "titular", nombre: subs.find(x => x.sub_index === 0)?.alias || "Titular", term: "00" },
-              ...subs
-                .filter(s => s.estado !== "cancelada")
-                .map(s => ({ id: s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0") })),
-            ].map(op => {
+            {subs.filter(s => s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada)).map(s => ({
+              id: s.sub_index === 0 ? "titular" : s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0"),
+            })).map(op => {
               const checked = printSel.includes(op.id);
               return (
                 <label key={op.id} className="flex items-center gap-3 py-2 cursor-pointer">
@@ -945,23 +939,19 @@ export default function Qard() {
             className="w-full"
             disabled={printSel.length === 0}
             onClick={async () => {
-              const cards = printSel.map(id => {
-                if (id === "titular") {
-                  return {
-                    qardNumber: qardNumber,
-                    vencimiento: subs.find(x => x.sub_index === 0)?.fecha_vencimiento ?? "12/99",
-                    alias: subs.find(x => x.sub_index === 0)?.alias,
-                    subtitle: "Tarjeta principal · 00",
-                  };
-                }
-                const s = subs.find(x => x.id === id)!;
-                return {
+              const cards = subs.filter(s => printSel.includes(s.sub_index === 0 ? "titular" : s.id)
+                && s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada))
+                .map(s => ({
                   qardNumber: s.qard_number,
-                  vencimiento: s.fecha_vencimiento ?? "12/99",
-                  alias: s.alias,
-                  subtitle: `${s.alias} · ${String(s.sub_index).padStart(2, "0")}`,
-                };
-              });
+                  vencimiento: s.fecha_vencimiento,
+                  alias: s.sub_index === 0 ? identidad?.nombre_completo || s.nombre_completo : s.nombre_completo,
+                  nivel: s.sub_index === 0 ? nivelVerificacion : 1,
+                  activada: true,
+                }));
+              if (!cards.length) {
+                toast({ title: "Selecciona una tarjeta activada y encendida" });
+                return;
+              }
               setPrintOpen(false);
               try {
                 const { data } = await supabase.functions.invoke("qard-saldo-publico", { body: { action: "token", numeros: cards.map(c => c.qardNumber) } });
