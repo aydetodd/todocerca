@@ -20,4 +20,7 @@
 - [x] Quitar imágenes estándar del catálogo público y búsqueda; conservar carrito y WhatsApp.
 - [x] Verificar apertura de búsqueda sin errores y compilación correcta.
 - [ ] Probar creación/edición con una cuenta real: sesión autenticada no disponible en este proyecto externo.
-- [ ] Publicar: la configuración impide publicar desde el asistente; requiere Publicar → Actualizar del usuario.
+- [ ] Publicar: la configuración impide publicar desde el asistente; requiere Publicar → Actualizar del usuario.# Fletes
+- [x] Etapa 1: registro con RFC (Verificamex SAT), categoría, formularios, Mis Disponibles, circuito cerrado, WhatsApp, apagado a 30 días.
+- [ ] Etapa 2: Rastreo Efímero $100 y calificaciones bidireccionales — espera confirmación de Martín.
+- [ ] Probar Fletes con cuenta real: Supabase externo sin sesión autenticada disponible.
