@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +43,12 @@ export default function Fletes() {
   const [registro, setRegistro] = useState<{ rfc_verificado: boolean; nombre_negocio: string; rfc: string } | null>(null);
   const [suscripcionOk, setSuscripcionOk] = useState(false);
   const [acceso, setAcceso] = useState(false);
-  const [papel, setPapel] = useState<FleteTipo | null>(null);
+  const [searchParams] = useSearchParams();
+  const busco = searchParams.get("busco");
+  // "Busco transportistas" = soy remitente; "Busco cargas" = soy transportista.
+  const [papel, setPapel] = useState<FleteTipo | null>(busco === "transportistas" ? "remitente" : busco === "cargas" ? "transportista" : null);
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroMunicipio, setFiltroMunicipio] = useState("");
   const [geo, setGeo] = useState<Geo>({});
   const [anuncios, setAnuncios] = useState<FleteAnuncio[]>([]);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -116,7 +121,7 @@ export default function Fletes() {
   return (
     <div className="min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => (papel ? setPapel(null) : navigate(-1))}><ArrowLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => (papel && !busco ? setPapel(null) : navigate(-1))}><ArrowLeft className="h-5 w-5" /></Button>
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="h-5 w-5 text-primary" /> Fletes</h1>
         {acceso && (
           <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate("/fletes/mis-disponibles")}>
@@ -173,8 +178,22 @@ export default function Fletes() {
               onGuardado={() => { setMostrarForm(false); toast({ title: "Anuncio publicado", description: "Lo puedes encender o apagar en Mis Disponibles." }); }} />
           )}
           <h2 className="font-semibold pt-2">{papel === "transportista" ? "Cargas listas para salir" : "Transportistas disponibles"}</h2>
-          {anuncios.length === 0 && <p className="text-sm text-muted-foreground">Por ahora no hay anuncios encendidos.</p>}
-          {anuncios.map((a) => <TarjetaFlete key={a.id} a={a} yoSoy={papel} />)}
+          <LugarSelector geo={geo} estado={filtroEstado} municipio={filtroMunicipio}
+            onChange={(e, m) => { setFiltroEstado(e); setFiltroMunicipio(m); }} />
+          {(() => {
+            const campoE = papel === "transportista" ? "destino_estado" : "ciudad_estado";
+            const campoM = papel === "transportista" ? "destino_municipio" : "ciudad_municipio";
+            const lista = anuncios.filter((a: any) => (!filtroEstado || a[campoE] === filtroEstado) && (!filtroMunicipio || a[campoM] === filtroMunicipio));
+            if (lista.length === 0) return <p className="text-sm text-muted-foreground">Por ahora no hay anuncios encendidos{filtroMunicipio ? ` en ${filtroMunicipio}` : ""}.</p>;
+            const grupos: Record<string, FleteAnuncio[]> = {};
+            lista.forEach((a: any) => { const k = a[campoM] ? `${a[campoM]}, ${a[campoE]}` : "Sin municipio"; (grupos[k] ||= []).push(a); });
+            return Object.entries(grupos).sort(([x], [y]) => x.localeCompare(y)).map(([k, arr]) => (
+              <div key={k} className="space-y-2">
+                <p className="text-sm font-semibold text-primary pt-2">{k} · {arr.length}</p>
+                {arr.map((a) => <TarjetaFlete key={a.id} a={a} yoSoy={papel} />)}
+              </div>
+            ));
+          })()}
         </>
       )}
     </div>
