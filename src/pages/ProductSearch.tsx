@@ -77,6 +77,7 @@ const ProductSearch = () => {
   const [loading, setLoading] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [fletesAbierto, setFletesAbierto] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
   const autoSearchTriggeredRef = useRef(false);
@@ -900,7 +901,20 @@ const ProductSearch = () => {
                   {category.name}
                 </Badge>
               ))}
+              <Badge
+                variant={fletesAbierto ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors px-3 py-1.5"
+                onClick={() => setFletesAbierto((v) => !v)}
+              >
+                🚚 Fletes
+              </Badge>
             </div>
+            {fletesAbierto && (
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <Button className="h-14" onClick={() => navigate("/fletes?busco=transportistas")}>Busco transportistas</Button>
+                <Button className="h-14" variant="secondary" onClick={() => navigate("/fletes?busco=cargas")}>Busco remitente de cargas</Button>
+              </div>
+            )}
           </section>
         )}
 
