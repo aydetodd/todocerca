@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Briefcase, Trash2, LogOut, Map as MapIcon, ShieldAlert, CreditCard, Calendar } from 'lucide-react';
+import { Users, Briefcase, Trash2, LogOut, Map as MapIcon, ShieldAlert, CreditCard, Calendar, Truck } from 'lucide-react';
 import { GlobalHeader } from '@/components/GlobalHeader';
 import { Link } from 'react-router-dom';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -246,6 +246,14 @@ export default function MiPerfil() {
         </div>
 
         <nav aria-label="Servicios del perfil" className="mb-6 grid max-w-2xl grid-cols-2 gap-3">
+          <Button asChild variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4">
+            <Link to="/fletes" title="Fletes">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Truck className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <span className="font-semibold">Fletes</span>
+            </Link>
+          </Button>
           <Link
             to="/eventos"
             className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-4 text-center transition-colors hover:bg-primary/10"

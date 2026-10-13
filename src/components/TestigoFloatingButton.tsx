@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
-import { Scale, X, Loader2 } from "lucide-react";
+import { Scale, X, Loader2, Map as MapIcon, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +17,7 @@ export const TestigoFloatingButton = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lockRef = useRef(false);
@@ -23,7 +25,7 @@ export const TestigoFloatingButton = () => {
 
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !scanning) return;
     lockRef.current = false;
     let cancelled = false;
 
@@ -54,7 +56,7 @@ export const TestigoFloatingButton = () => {
           description: "Revisa los permisos de cámara del navegador.",
           variant: "destructive",
         });
-        setOpen(false);
+        setScanning(false);
       }
     })();
 
@@ -69,7 +71,12 @@ export const TestigoFloatingButton = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, scanning]);
+
+  useEffect(() => {
+    setOpen(false);
+    setScanning(false);
+  }, [location.pathname]);
 
   async function registrarTestigo(text: string) {
     // Acepta cualquier QR: si trae 16 dígitos (tarjeta QaRd) los usamos,
@@ -162,37 +169,48 @@ export const TestigoFloatingButton = () => {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => { setScanning(false); setOpen(true); }}
         aria-label="Testigo virtual"
         title="Testigo virtual"
-        className="fixed left-4 bottom-24 z-[60] h-14 w-14 rounded-full bg-secondary text-secondary-foreground border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        className={`flex flex-col items-center gap-0.5 h-auto py-2 px-1 min-w-0 flex-1 bg-transparent shadow-none ${open ? 'text-primary' : 'text-muted-foreground'}`}
       >
-        <Scale className="h-7 w-7" />
-      </button>
+        <Scale className="h-5 w-5" />
+        <span className="text-[9px] leading-tight truncate max-w-full">Testigo</span>
+      </Button>
 
-      {open && (
-        <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+      {open && createPortal(
+        <div role="dialog" aria-modal="true" aria-label="Testigo virtual" className="fixed inset-0 z-[100] bg-background flex flex-col overflow-y-auto safe-area-bottom">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2 font-semibold">
               <Scale className="h-5 w-5" /> Testigo virtual
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Cerrar">
+            <Button variant="ghost" size="icon" onClick={() => { setOpen(false); setScanning(false); }} aria-label="Cerrar">
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <p className="px-4 py-3 text-sm text-muted-foreground">
-            Escanea el QR de la otra persona para dejar constancia de su presencia con hora y ubicación.
-          </p>
-          <div className="flex-1 relative">
+          <div className="p-4 flex flex-col gap-3 border-b border-border">
+            <Button variant="outline" className="min-h-12 h-auto whitespace-normal" disabled={procesando} onClick={() => { setOpen(false); setScanning(false); navigate('/mi-trazabilidad'); }}>
+              <MapIcon className="h-5 w-5 mr-2 shrink-0" />
+              Ver mi mapa e información de trazabilidad
+            </Button>
+            {!scanning && (
+              <Button className="min-h-12" onClick={() => setScanning(true)}>
+                <ScanLine className="h-5 w-5 mr-2" /> Escanear QR
+              </Button>
+            )}
+          </div>
+          {scanning && <div className="flex-1 min-h-72 relative">
             <div id="testigo-qr-reader" className="w-full h-full" />
             {procesando && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
-          </div>
-        </div>
+          </div>}
+        </div>, document.body
       )}
     </>
   );

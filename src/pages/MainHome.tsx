@@ -128,19 +128,6 @@ export default function MainHome() {
           </CardContent>
         </Card>
 
-        {/* Fletes: circuito cerrado para fleteros con RFC validado y suscripción activa */}
-        <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-lg" onClick={() => navigate('/fletes')}>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Package className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">Fletes</h3>
-              <p className="text-sm text-muted-foreground">Transportistas y remitentes de carga verificados</p>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-lg" onClick={() => navigate('/saldo')}>
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">

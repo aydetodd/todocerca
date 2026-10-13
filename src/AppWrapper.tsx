@@ -78,7 +78,6 @@ import PaseEvento from "./pages/PaseEvento";
 import ValidarEvento from "./pages/ValidarEvento";
 import { NavigationBar } from "@/components/NavigationBar";
 import { AdminFloatingButton } from "@/components/AdminFloatingButton";
-import { TestigoFloatingButton } from "@/components/TestigoFloatingButton";
 import { ClaveUniversalGate } from "@/components/ClaveUniversalGate";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MiTrazabilidad from "./pages/MiTrazabilidad";
@@ -170,7 +169,6 @@ export default function AppWrapper() {
         <AccessGateProvider />
         <NavigationBar />
         <AdminFloatingButton />
-        <TestigoFloatingButton />
         <ClaveUniversalGate />
         {/* Candado global si la cuenta fue bloqueada desde modo rescate */}
         <CuentaBloqueadaGate />
