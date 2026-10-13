@@ -1,5 +1,6 @@
 # Productos estándar sin fotos
-- [ ] Mover Fletes al perfil personal y Testigo a la barra inferior, con acceso a mapa e información de trazabilidad; comprobar navegación.
+- [x] Mover Fletes al perfil personal y Testigo a la barra inferior, con acceso a mapa e información de trazabilidad; inicio sin accesos anteriores verificado y sin errores.
+- [ ] Probar apertura de Testigo y Fletes desde el perfil real: Supabase externo sin sesión autenticada disponible.
 - [x] Ajustar proporción bancaria, datos en una fila y controles externos de tarjetas principales y familiares; proporción 320/375/escritorio, controles y descarga PDF verificados sin datos personales.
 - [x] Simplificar tarjetas, proteger titular y representar niveles guardados con rayas; pruebas visuales 320/375/escritorio y PDF con tarjetas inactivas excluidas correctas.
 - [x] Agregar interruptor principal y tarjetas familiares con estado gris/color; prueba visual gris/color y ancho de teléfono correcta, sin alterar saldos ni comisiones.
