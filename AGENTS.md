@@ -11,3 +11,4 @@
 - Principal and family QaRd cards share QardTarjeta including its external control row; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
 - Card screen and PDF share qardCardPresentation for legal-name masking and level indicators; display persisted verification levels only, never infer upgrades from appearance.
 - Fletes lives in its own tables (fletes_proveedores, fletes_anuncios) instead of productos, so closed-circuit ads can never leak into the public map or general search.
+- Mount the shared Testigo control only in NavigationBar and portal its dialog to document.body; this avoids duplicate scanners and fixed-overlay clipping by the navigation backdrop.
