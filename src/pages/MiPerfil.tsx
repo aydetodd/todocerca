@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import UserRegistryReport from '@/components/UserRegistryReport';
 import ChangePassword from '@/components/ChangePassword';
 import ProveedorTipoSelector, { etiquetaTipoProveedor } from '@/components/ProveedorTipoSelector';
+import DataUsageDialog from '@/components/DataUsageDialog';
 
 export default function MiPerfil() {
   const [profile, setProfile] = useState<any>(null);
@@ -246,6 +247,7 @@ export default function MiPerfil() {
         </div>
 
         <nav aria-label="Servicios del perfil" className="mb-6 grid max-w-2xl grid-cols-2 gap-3">
+          <DataUsageDialog />
           <Button asChild variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4">
             <Link to="/fletes" title="Fletes">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
