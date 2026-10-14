@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Agregar icono de consumo estimado diario/mensual en perfil personal, con medición local y límites claramente indicados; verificar conteos y apertura.
 - [x] Mover Fletes al perfil personal y Testigo a la barra inferior, con acceso a mapa e información de trazabilidad; inicio sin accesos anteriores verificado y sin errores.
 - [ ] Probar apertura de Testigo y Fletes desde el perfil real: Supabase externo sin sesión autenticada disponible.
 - [x] Ajustar proporción bancaria, datos en una fila y controles externos de tarjetas principales y familiares; proporción 320/375/escritorio, controles y descarga PDF verificados sin datos personales.
