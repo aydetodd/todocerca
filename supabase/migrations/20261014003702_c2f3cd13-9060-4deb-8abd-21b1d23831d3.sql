@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_colectivo_reset_aforo_al_cerrar() FROM PUBLIC, anon, authenticated;
