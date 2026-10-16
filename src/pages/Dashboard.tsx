@@ -33,6 +33,7 @@ import {
   Users,
 } from "lucide-react";
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
+import DataUsageDialog from "@/components/DataUsageDialog";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
@@ -505,6 +506,9 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    <nav aria-label="Servicios del perfil" className="grid grid-cols-1 gap-3">
+                      <DataUsageDialog />
+                    </nav>
                     <div>
                       <span className="text-sm font-medium">ID Usuario / QaRd:</span>
                       <p className="text-sm font-mono font-bold text-primary">

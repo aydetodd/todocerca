@@ -13,3 +13,4 @@
 - Fletes lives in its own tables (fletes_proveedores, fletes_anuncios) instead of productos, so closed-circuit ads can never leak into the public map or general search.
 - Mount the shared Testigo control only in NavigationBar and portal its dialog to document.body; this avoids duplicate scanners and fixed-overlay clipping by the navigation backdrop.
 - Data usage is a passive PerformanceObserver-based device/browser estimate with local daily counters in Hermosillo time; never intercept network clients or reduce realtime updates, and disclose unmeasurable traffic rather than invent totals.
+- Both user profile entry points (Dashboard's profile section and MiPerfil) mount the shared DataUsageDialog without provider or admin conditions so all users can find the same meter.
