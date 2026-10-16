@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Revisar y corregir registro de Fletes para que transportistas vean solo cargas y remitentes solo transportistas, conservando sincronización.
 - [x] Incluir el medidor en el apartado Perfil del panel de usuario mostrado por Martín, sin condiciones de rol; compilación correcta. Prueba autenticada pendiente por sesión externa no disponible.
 - [x] Agregar icono de consumo estimado diario/mensual en perfil personal: descargas reales, persistencia, agrupación y diálogo en teléfono verificados; sin errores ni cambios al tiempo real.
 - [ ] Probar el acceso al medidor desde un perfil autenticado: Supabase externo sin sesión disponible; contador y diálogo probados por separado.

@@ -9,6 +9,10 @@ export const TAMANOS = DIMENSIONES;
 
 export type FleteTipo = "transportista" | "remitente";
 
+export function tipoContraparteFlete(tipo: FleteTipo | null): FleteTipo | null {
+  return tipo === "transportista" ? "remitente" : tipo === "remitente" ? "transportista" : null;
+}
+
 export interface FleteAnuncio {
   id: string;
   user_id: string;

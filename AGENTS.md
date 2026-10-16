@@ -11,6 +11,7 @@
 - Principal and family QaRd cards share QardTarjeta including its external control row; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
 - Card screen and PDF share qardCardPresentation for legal-name masking and level indicators; display persisted verification levels only, never infer upgrades from appearance.
 - Fletes lives in its own tables (fletes_proveedores, fletes_anuncios) instead of productos, so closed-circuit ads can never leak into the public map or general search.
+- Fletes listings and publication types follow the persisted participant type in fletes_proveedores; counterpart-only RLS and owner-scoped type registration prevent URL-based role switching while preserving owners' existing ads.
 - Mount the shared Testigo control only in NavigationBar and portal its dialog to document.body; this avoids duplicate scanners and fixed-overlay clipping by the navigation backdrop.
 - Data usage is a passive PerformanceObserver-based device/browser estimate with local daily counters in Hermosillo time; never intercept network clients or reduce realtime updates, and disclose unmeasurable traffic rather than invent totals.
 - Both user profile entry points (Dashboard's profile section and MiPerfil) mount the shared DataUsageDialog without provider or admin conditions so all users can find the same meter.
