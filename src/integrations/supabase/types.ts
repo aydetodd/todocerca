@@ -1894,6 +1894,7 @@ export type Database = {
           nombre_negocio: string
           rfc: string
           rfc_verificado: boolean
+          tipo: string | null
           updated_at: string
           user_id: string
           verificado_at: string | null
@@ -1903,6 +1904,7 @@ export type Database = {
           nombre_negocio: string
           rfc: string
           rfc_verificado?: boolean
+          tipo?: string | null
           updated_at?: string
           user_id: string
           verificado_at?: string | null
@@ -1912,6 +1914,7 @@ export type Database = {
           nombre_negocio?: string
           rfc?: string
           rfc_verificado?: boolean
+          tipo?: string | null
           updated_at?: string
           user_id?: string
           verificado_at?: string | null
@@ -7435,7 +7438,9 @@ export type Database = {
           user_id: string
         }[]
       }
+      fletes_registrar_tipo: { Args: { _tipo: string }; Returns: string }
       fletes_tiene_acceso: { Args: { _uid: string }; Returns: boolean }
+      fletes_tipo_registrado: { Args: never; Returns: string }
       fn_parada_mas_cercana: {
         Args: { _lat: number; _lng: number; _producto_id: string }
         Returns: string
