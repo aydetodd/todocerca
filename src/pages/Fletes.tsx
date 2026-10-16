@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Truck, Package, MessageCircle, ToggleRight, Loader2, ShieldCheck } from "lucide-react";
 import {
   MARCAS_UNIDAD, CONDICIONES, REMOLQUES, DIMENSIONES, LUGARES_CARGA, TEMPERATURAS, TAMANOS,
-  type FleteAnuncio, type FleteTipo, enlaceWhatsAppFlete,
+  type FleteAnuncio, type FleteTipo, enlaceWhatsAppFlete, tipoContraparteFlete,
 } from "@/lib/fletes";
 
 type Geo = Record<string, string[]>;
@@ -40,13 +40,11 @@ export default function Fletes() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [cargando, setCargando] = useState(true);
-  const [registro, setRegistro] = useState<{ rfc_verificado: boolean; nombre_negocio: string; rfc: string } | null>(null);
+  const [registro, setRegistro] = useState<{ rfc_verificado: boolean; nombre_negocio: string; rfc: string; tipo: FleteTipo | null } | null>(null);
   const [suscripcionOk, setSuscripcionOk] = useState(false);
   const [acceso, setAcceso] = useState(false);
-  const [searchParams] = useSearchParams();
-  const busco = searchParams.get("busco");
-  // "Busco transportistas" = soy remitente; "Busco cargas" = soy transportista.
-  const [papel, setPapel] = useState<FleteTipo | null>(busco === "transportistas" ? "remitente" : busco === "cargas" ? "transportista" : null);
+  const papel = registro?.tipo ?? null;
+  const [registrandoTipo, setRegistrandoTipo] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState("");
   const [filtroMunicipio, setFiltroMunicipio] = useState("");
   const [geo, setGeo] = useState<Geo>({});
@@ -61,11 +59,20 @@ export default function Fletes() {
   const cargarEstado = async () => {
     if (!user) return;
     setCargando(true);
-    const [{ data: reg }, { data: perfil }, { data: ok }] = await Promise.all([
-      supabase.from("fletes_proveedores" as any).select("rfc_verificado, nombre_negocio, rfc").eq("user_id", user.id).maybeSingle(),
+    const [regResult, perfilResult, accesoResult] = await Promise.all([
+      supabase.from("fletes_proveedores" as any).select("rfc_verificado, nombre_negocio, rfc, tipo").eq("user_id", user.id).maybeSingle(),
       supabase.from("profiles").select("suscripcion_activa, suscripcion_expira_en").eq("user_id", user.id).maybeSingle(),
       supabase.rpc("fletes_tiene_acceso" as any, { _uid: user.id }),
     ]);
+    const { data: reg } = regResult;
+    const { data: perfil } = perfilResult;
+    const { data: ok } = accesoResult;
+    if (regResult.error || perfilResult.error || accesoResult.error) {
+      setAcceso(false);
+      toast({ title: "No se pudo cargar tu registro", description: "Intenta abrir Fletes nuevamente.", variant: "destructive" });
+      setCargando(false);
+      return;
+    }
     setRegistro((reg as any) ?? null);
     if (reg) { setNombreNegocio((reg as any).nombre_negocio); setRfc((reg as any).rfc); }
     const p: any = perfil;
@@ -78,28 +85,49 @@ export default function Fletes() {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     cargarEstado();
+    const ch = supabase.channel(`fletes-registro-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fletes_proveedores", filter: `user_id=eq.${user.id}` }, () => cargarEstado())
+      .subscribe();
     fetch("/data/estados-municipios-mx.json").then((r) => r.json()).then(setGeo).catch(() => {});
+    return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
   // Listado: el transportista ve cargas; el remitente ve transportistas. En tiempo real.
-  const tipoListado: FleteTipo | null = papel === "transportista" ? "remitente" : papel === "remitente" ? "transportista" : null;
-  const cargarAnuncios = async () => {
-    if (!tipoListado) return;
-    const { data } = await supabase.from("fletes_anuncios" as any).select("*")
-      .eq("tipo", tipoListado).eq("disponible", true).neq("user_id", user!.id)
-      .order("editado_at", { ascending: false }).limit(200);
-    setAnuncios((data as any) ?? []);
-  };
+  const tipoListado = tipoContraparteFlete(papel);
   useEffect(() => {
-    if (!acceso || !tipoListado) return;
+    setAnuncios([]);
+    if (!acceso || !tipoListado || !user) return;
+    let activo = true;
+    let solicitud = 0;
+    const cargarAnuncios = async () => {
+      const actual = ++solicitud;
+      const { data, error } = await supabase.from("fletes_anuncios" as any).select("*")
+        .eq("tipo", tipoListado).eq("disponible", true).neq("user_id", user.id)
+        .order("editado_at", { ascending: false }).limit(200);
+      if (!activo || actual !== solicitud) return;
+      setAnuncios((data as any) ?? []);
+      if (error) toast({ title: "No se pudo cargar el listado", variant: "destructive" });
+    };
     cargarAnuncios();
     const ch = supabase.channel(`fletes-${tipoListado}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fletes_anuncios" }, () => cargarAnuncios())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { activo = false; supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acceso, tipoListado]);
+  }, [acceso, tipoListado, user?.id]);
+
+  const registrarTipo = async (tipo: FleteTipo) => {
+    if (registrandoTipo) return;
+    setRegistrandoTipo(true);
+    const { error } = await supabase.rpc("fletes_registrar_tipo", { _tipo: tipo });
+    setRegistrandoTipo(false);
+    if (error) {
+      toast({ title: "No se pudo guardar tu registro", description: error.message, variant: "destructive" });
+      return;
+    }
+    await cargarEstado();
+  };
 
   const validarRfc = async () => {
     setValidando(true);
@@ -121,7 +149,7 @@ export default function Fletes() {
   return (
     <div className="min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => (papel && !busco ? setPapel(null) : navigate(-1))}><ArrowLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Volver" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="h-5 w-5 text-primary" /> Fletes</h1>
         {acceso && (
           <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate("/fletes/mis-disponibles")}>
@@ -161,20 +189,21 @@ export default function Fletes() {
         </Card>
       )}
 
-      {acceso && !papel && (
+      {registro?.rfc_verificado && !papel && (
         <div className="grid gap-3">
-          <Button className="h-20 text-lg" onClick={() => setPapel("transportista")}><Truck className="h-6 w-6 mr-2" /> Soy Transportista</Button>
-          <Button className="h-20 text-lg" variant="secondary" onClick={() => setPapel("remitente")}><Package className="h-6 w-6 mr-2" /> Soy Remitente de Carga</Button>
+          <h2 className="font-semibold">Mi registro en Fletes</h2>
+          <Button disabled={registrandoTipo} className="h-20 text-lg" onClick={() => registrarTipo("transportista")}><Truck className="h-6 w-6 mr-2" /> Soy Transportista</Button>
+          <Button disabled={registrandoTipo} className="h-20 text-lg" variant="secondary" onClick={() => registrarTipo("remitente")}><Package className="h-6 w-6 mr-2" /> Soy Remitente de Carga</Button>
         </div>
       )}
 
-      {acceso && papel && (
+      {acceso && papel && user && (
         <>
           <Button className="w-full" onClick={() => setMostrarForm((v) => !v)}>
             {mostrarForm ? "Cerrar" : papel === "transportista" ? "Publicar mi unidad en una ciudad" : "Publicar una carga"}
           </Button>
           {mostrarForm && (
-            <FormularioFlete tipo={papel} geo={geo} userId={user!.id}
+            <FormularioFlete tipo={papel} geo={geo} userId={user.id}
               onGuardado={() => { setMostrarForm(false); toast({ title: "Anuncio publicado", description: "Lo puedes encender o apagar en Mis Disponibles." }); }} />
           )}
           <h2 className="font-semibold pt-2">{papel === "transportista" ? "Cargas listas para salir" : "Transportistas disponibles"}</h2>
@@ -183,7 +212,7 @@ export default function Fletes() {
           {(() => {
             const campoE = papel === "transportista" ? "destino_estado" : "ciudad_estado";
             const campoM = papel === "transportista" ? "destino_municipio" : "ciudad_municipio";
-            const lista = anuncios.filter((a: any) => (!filtroEstado || a[campoE] === filtroEstado) && (!filtroMunicipio || a[campoM] === filtroMunicipio));
+            const lista = anuncios.filter((a: any) => a.tipo === tipoListado && (!filtroEstado || a[campoE] === filtroEstado) && (!filtroMunicipio || a[campoM] === filtroMunicipio));
             if (lista.length === 0) return <p className="text-sm text-muted-foreground">Por ahora no hay anuncios encendidos{filtroMunicipio ? ` en ${filtroMunicipio}` : ""}.</p>;
             const grupos: Record<string, FleteAnuncio[]> = {};
             lista.forEach((a: any) => { const k = a[campoM] ? `${a[campoM]}, ${a[campoE]}` : "Sin municipio"; (grupos[k] ||= []).push(a); });

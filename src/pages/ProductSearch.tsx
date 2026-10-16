@@ -31,6 +31,7 @@ import { useCurrentCity } from "@/hooks/useCurrentCity";
 import { useFavoritos } from "@/hooks/useFavoritos";
 import { getTransportLabel } from "@/lib/transportRouteTypes";
 import { cn } from "@/lib/utils";
+import { type FleteTipo } from "@/lib/fletes";
 
 interface Category {
   id: string;
@@ -78,6 +79,24 @@ const ProductSearch = () => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [fletesAbierto, setFletesAbierto] = useState(false);
+  const [fleteTipo, setFleteTipo] = useState<FleteTipo | null>(null);
+  const [cargandoFleteTipo, setCargandoFleteTipo] = useState(false);
+  useEffect(() => {
+    if (!fletesAbierto) return;
+    let activo = true;
+    const cargar = async () => {
+      setCargandoFleteTipo(true);
+      const { data } = await supabase.rpc("fletes_tipo_registrado");
+      if (!activo) return;
+      setFleteTipo(data === "transportista" || data === "remitente" ? data : null);
+      setCargandoFleteTipo(false);
+    };
+    cargar();
+    const canal = supabase.channel("busqueda-fletes-registro")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fletes_proveedores" }, cargar)
+      .subscribe();
+    return () => { activo = false; supabase.removeChannel(canal); };
+  }, [fletesAbierto]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categoryParamProcessed, setCategoryParamProcessed] = useState(false);
   const autoSearchTriggeredRef = useRef(false);
@@ -910,9 +929,10 @@ const ProductSearch = () => {
               </Badge>
             </div>
             {fletesAbierto && (
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <Button className="h-14" onClick={() => navigate("/fletes?busco=transportistas")}>Busco transportistas</Button>
-                <Button className="h-14" variant="secondary" onClick={() => navigate("/fletes?busco=cargas")}>Busco remitente de cargas</Button>
+              <div className="mt-3">
+                <Button className="h-14 w-full" disabled={cargandoFleteTipo} onClick={() => navigate("/fletes")}>
+                  {cargandoFleteTipo ? "Cargando…" : fleteTipo === "transportista" ? "Busco remitente de cargas" : fleteTipo === "remitente" ? "Busco transportistas" : "Registrarme en Fletes"}
+                </Button>
               </div>
             )}
           </section>
