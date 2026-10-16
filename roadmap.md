@@ -1,5 +1,5 @@
 # Productos estándar sin fotos
-- [ ] Corregir acceso al medidor en el apartado Perfil del panel de usuario mostrado por Martín.
+- [x] Incluir el medidor en el apartado Perfil del panel de usuario mostrado por Martín, sin condiciones de rol; compilación correcta. Prueba autenticada pendiente por sesión externa no disponible.
 - [x] Agregar icono de consumo estimado diario/mensual en perfil personal: descargas reales, persistencia, agrupación y diálogo en teléfono verificados; sin errores ni cambios al tiempo real.
 - [ ] Probar el acceso al medidor desde un perfil autenticado: Supabase externo sin sesión disponible; contador y diálogo probados por separado.
 - [x] Mover Fletes al perfil personal y Testigo a la barra inferior, con acceso a mapa e información de trazabilidad; inicio sin accesos anteriores verificado y sin errores.
