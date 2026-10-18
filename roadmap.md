@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Separar gestión de Fletes en perfil personal y búsqueda por renglones con destinos y características compatibles; probar reglas y accesos.
 - [x] Corregir registro persistido y permisos de Fletes: transportistas solo ven cargas y remitentes solo transportistas; enlaces no cambian el tipo, anuncios propios conservados y sincronización activa.
 - [ ] Probar registro y búsqueda de Fletes con transportista/remitente reales: Supabase externo sin sesión autenticada disponible.
 - [x] Incluir el medidor en el apartado Perfil del panel de usuario mostrado por Martín, sin condiciones de rol; compilación correcta. Prueba autenticada pendiente por sesión externa no disponible.
