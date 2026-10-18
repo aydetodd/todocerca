@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Trash2, Truck, Package } from "lucide-react";
-import type { FleteAnuncio } from "@/lib/fletes";
+import { fletesGestionables, type FleteAnuncio, type FleteTipo } from "@/lib/fletes";
 
 export default function FletesDisponibles({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
@@ -18,8 +18,18 @@ export default function FletesDisponibles({ embedded = false }: { embedded?: boo
 
   const cargar = async () => {
     if (!user) return;
-    const { data } = await supabase.from("fletes_anuncios" as any).select("*").eq("user_id", user.id).order("tipo").order("titulo");
-    setLista((data as any) ?? []);
+    const [registro, anuncios] = await Promise.all([
+      supabase.from("fletes_proveedores").select("tipo").eq("user_id", user.id).maybeSingle(),
+      supabase.from("fletes_anuncios" as any).select("*").eq("user_id", user.id).order("tipo").order("titulo"),
+    ]);
+    if (registro.error || anuncios.error) {
+      setLista([]);
+      toast({ title: "No se pudieron cargar tus fletes", variant: "destructive" });
+      return;
+    }
+    const tipo = registro.data?.tipo;
+    const papel: FleteTipo | null = tipo === "transportista" || tipo === "remitente" ? tipo : null;
+    setLista(fletesGestionables(papel, (anuncios.data as unknown as FleteAnuncio[]) ?? []));
   };
 
   useEffect(() => {
@@ -28,6 +38,7 @@ export default function FletesDisponibles({ embedded = false }: { embedded?: boo
     cargar();
     const ch = supabase.channel(`mis-fletes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fletes_anuncios", filter: `user_id=eq.${user.id}` }, () => cargar())
+      .on("postgres_changes", { event: "*", schema: "public", table: "fletes_proveedores", filter: `user_id=eq.${user.id}` }, () => cargar())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

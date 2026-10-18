@@ -1,4 +1,5 @@
 # Productos estándar sin fotos
+- [ ] Filtrar gestión personal de Fletes por tipo registrado: transportistas solo unidades y remitentes solo cargas; conservar búsqueda de contraparte y comprobar pruebas.
 - [x] Separar gestión de Fletes en perfil personal y búsqueda por renglones con destinos y características compatibles; nueve pruebas de reglas y acceso público correctos, sin errores de compilación. Publicación y coincidencias entre cuentas reales pendientes por Supabase externo sin sesión disponible.
 - [x] Corregir registro persistido y permisos de Fletes: transportistas solo ven cargas y remitentes solo transportistas; enlaces no cambian el tipo, anuncios propios conservados y sincronización activa.
 - [ ] Probar registro y búsqueda de Fletes con transportista/remitente reales: Supabase externo sin sesión autenticada disponible.

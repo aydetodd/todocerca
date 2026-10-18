@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { tipoContraparteFlete, buscarFletesCompatibles, fletesCompatibles, type FleteAnuncio } from "./fletes";
+import { tipoContraparteFlete, buscarFletesCompatibles, fletesCompatibles, fletesGestionables, type FleteAnuncio } from "./fletes";
 
 test("un transportista solo busca cargas de remitentes", () => {
   assert.equal(tipoContraparteFlete("transportista"), "remitente");
@@ -16,6 +16,18 @@ test("sin tipo registrado no se muestra ningún tipo de anuncio", () => {
 
 const unidad = { id: "u", user_id: "transportista", tipo: "transportista", disponible: true, destinos_preferidos: ["Juárez, Chihuahua"], remolque: "Caja refrigerada (thermo)", dimensiones: "Caja 48 pies" } as FleteAnuncio;
 const carga = { id: "c", user_id: "remitente", tipo: "remitente", disponible: true, destino_municipio: "Juárez", destino_estado: "Chihuahua", remolque: "Caja refrigerada (thermo)", tamano: "Caja 48 pies", temperatura: "Refrigerado (0 a 8 °C)" } as FleteAnuncio;
+
+test("el transportista gestiona solo unidades aunque conserve cargas anteriores", () => {
+  assert.deepEqual(fletesGestionables("transportista", [unidad, carga]), [unidad]);
+});
+
+test("el remitente gestiona solo cargas aunque conserve unidades anteriores", () => {
+  assert.deepEqual(fletesGestionables("remitente", [unidad, carga]), [carga]);
+});
+
+test("sin registro no se permite gestionar unidades ni cargas", () => {
+  assert.deepEqual(fletesGestionables(null, [unidad, carga]), []);
+});
 
 test("carga a Juárez Chihuahua refrigerada de 48 pies coincide con la unidad", () => {
   assert.equal(fletesCompatibles(unidad, carga), true);
