@@ -60,7 +60,7 @@ export default function FletesDisponibles({ embedded = false }: { embedded?: boo
   };
 
   const grupos: [string, FleteAnuncio[]][] = [
-    ["Mis unidades por ciudad", lista.filter((a) => a.tipo === "transportista")],
+    ["Mi disponibilidad de carga", lista.filter((a) => a.tipo === "transportista")],
     ["Mis cargas", lista.filter((a) => a.tipo === "remitente")],
   ];
 
@@ -76,7 +76,7 @@ export default function FletesDisponibles({ embedded = false }: { embedded?: boo
       )}
       {grupos.map(([titulo, items]) => items.length > 0 && (
         <div key={titulo} className="space-y-2">
-          <h2 className="font-semibold flex items-center gap-2">{titulo.includes("unidades") ? <Truck className="h-4 w-4" /> : <Package className="h-4 w-4" />}{titulo}</h2>
+          <h2 className="font-semibold flex items-center gap-2">{titulo.includes("disponibilidad") ? <Truck className="h-4 w-4" /> : <Package className="h-4 w-4" />}{titulo}</h2>
           {items.map((a) => (
             <Card key={a.id} className={a.disponible ? "" : "opacity-60"}>
               <CardContent className="p-4 flex items-center gap-3">
