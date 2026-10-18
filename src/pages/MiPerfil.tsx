@@ -249,7 +249,7 @@ export default function MiPerfil() {
         <nav aria-label="Servicios del perfil" className="mb-6 grid max-w-2xl grid-cols-2 gap-3">
           <DataUsageDialog />
           <Button asChild variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4">
-            <Link to="/fletes" title="Fletes">
+            <Link to="/dashboard?section=fletes" title="Fletes">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Truck className="h-6 w-6" aria-hidden="true" />
               </span>

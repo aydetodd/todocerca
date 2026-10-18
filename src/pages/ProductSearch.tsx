@@ -930,7 +930,7 @@ const ProductSearch = () => {
             </div>
             {fletesAbierto && (
               <div className="mt-3">
-                <Button className="h-14 w-full" disabled={cargandoFleteTipo} onClick={() => navigate("/fletes")}>
+                <Button className="h-14 w-full" disabled={cargandoFleteTipo} onClick={() => navigate(fleteTipo ? "/fletes?vista=busqueda" : "/dashboard?section=fletes")}>
                   {cargandoFleteTipo ? "Cargando…" : fleteTipo === "transportista" ? "Busco remitente de cargas" : fleteTipo === "remitente" ? "Busco transportistas" : "Registrarme en Fletes"}
                 </Button>
               </div>

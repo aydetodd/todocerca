@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Truck, Package, MessageCircle, ToggleRight, Loader2, ShieldCheck } from "lucide-react";
 import {
   MARCAS_UNIDAD, CONDICIONES, REMOLQUES, DIMENSIONES, LUGARES_CARGA, TEMPERATURAS, TAMANOS,
-  type FleteAnuncio, type FleteTipo, enlaceWhatsAppFlete, tipoContraparteFlete,
+  type FleteAnuncio, type FleteTipo, enlaceWhatsAppFlete, tipoContraparteFlete, buscarFletesCompatibles,
 } from "@/lib/fletes";
+
+import FletesDisponibles from "./FletesDisponibles";
 
 type Geo = Record<string, string[]>;
 const sel = "w-full h-10 rounded-md border border-input bg-background px-3 text-sm";
@@ -35,7 +37,9 @@ function LugarSelector({ geo, estado, municipio, onChange }: { geo: Geo; estado:
   );
 }
 
-export default function Fletes() {
+export default function Fletes({ embedded = false }: { embedded?: boolean }) {
+  const [params] = useSearchParams();
+  const buscando = !embedded && params.get("vista") === "busqueda";
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -48,6 +52,8 @@ export default function Fletes() {
   const [filtroEstado, setFiltroEstado] = useState("");
   const [filtroMunicipio, setFiltroMunicipio] = useState("");
   const [geo, setGeo] = useState<Geo>({});
+  const [propios, setPropios] = useState<FleteAnuncio[]>([]);
+  const [listaCargando, setListaCargando] = useState(false);
   const [anuncios, setAnuncios] = useState<FleteAnuncio[]>([]);
   const [mostrarForm, setMostrarForm] = useState(false);
 
@@ -102,12 +108,17 @@ export default function Fletes() {
     let solicitud = 0;
     const cargarAnuncios = async () => {
       const actual = ++solicitud;
-      const { data, error } = await supabase.from("fletes_anuncios" as any).select("*")
-        .eq("tipo", tipoListado).eq("disponible", true).neq("user_id", user.id)
-        .order("editado_at", { ascending: false }).limit(200);
+      setListaCargando(true);
+      const [otros, mios] = await Promise.all([
+        supabase.from("fletes_anuncios" as any).select("*").eq("tipo", tipoListado).eq("disponible", true).neq("user_id", user.id).order("editado_at", { ascending: false }),
+        supabase.from("fletes_anuncios" as any).select("*").eq("user_id", user.id),
+      ]);
+      const { data, error } = otros;
       if (!activo || actual !== solicitud) return;
-      setAnuncios((data as any) ?? []);
-      if (error) toast({ title: "No se pudo cargar el listado", variant: "destructive" });
+      setPropios(mios.error ? [] : (mios.data as unknown as FleteAnuncio[]) ?? []);
+      setAnuncios(error ? [] : (data as unknown as FleteAnuncio[]) ?? []);
+      setListaCargando(false);
+      if (error || mios.error) toast({ title: "No se pudo cargar el listado", variant: "destructive" });
     };
     cargarAnuncios();
     const ch = supabase.channel(`fletes-${tipoListado}`)
@@ -147,13 +158,13 @@ export default function Fletes() {
   if (cargando) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4">
+    <div className={embedded ? "space-y-4 pb-40" : "min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4"}>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" aria-label="Volver" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
+        {!embedded && <Button variant="ghost" size="icon" aria-label="Volver" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>}
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="h-5 w-5 text-primary" /> Fletes</h1>
-        {acceso && (
-          <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate("/fletes/mis-disponibles")}>
-            <ToggleRight className="h-4 w-4 mr-1" /> Mis Disponibles
+        {acceso && !embedded && (
+          <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate(buscando ? "/dashboard?section=fletes" : "/fletes?vista=busqueda")}>
+            <ToggleRight className="h-4 w-4 mr-1" /> {buscando ? "Mis fletes" : "Buscar fletes"}
           </Button>
         )}
       </div>
@@ -199,21 +210,25 @@ export default function Fletes() {
 
       {acceso && papel && user && (
         <>
-          <Button className="w-full" onClick={() => setMostrarForm((v) => !v)}>
+          {!buscando && <Button className="w-full" onClick={() => setMostrarForm((v) => !v)}>
             {mostrarForm ? "Cerrar" : papel === "transportista" ? "Publicar mi unidad en una ciudad" : "Publicar una carga"}
-          </Button>
-          {mostrarForm && (
+          </Button>}
+          {!buscando && mostrarForm && (
             <FormularioFlete tipo={papel} geo={geo} userId={user.id}
               onGuardado={() => { setMostrarForm(false); toast({ title: "Anuncio publicado", description: "Lo puedes encender o apagar en Mis Disponibles." }); }} />
           )}
+          {!buscando && <FletesDisponibles embedded />}
+          {buscando && <>
           <h2 className="font-semibold pt-2">{papel === "transportista" ? "Cargas listas para salir" : "Transportistas disponibles"}</h2>
           <LugarSelector geo={geo} estado={filtroEstado} municipio={filtroMunicipio}
             onChange={(e, m) => { setFiltroEstado(e); setFiltroMunicipio(m); }} />
           {(() => {
             const campoE = papel === "transportista" ? "destino_estado" : "ciudad_estado";
             const campoM = papel === "transportista" ? "destino_municipio" : "ciudad_municipio";
-            const lista = anuncios.filter((a: any) => a.tipo === tipoListado && (!filtroEstado || a[campoE] === filtroEstado) && (!filtroMunicipio || a[campoM] === filtroMunicipio));
-            if (lista.length === 0) return <p className="text-sm text-muted-foreground">Por ahora no hay anuncios encendidos{filtroMunicipio ? ` en ${filtroMunicipio}` : ""}.</p>;
+            const lista = buscarFletesCompatibles(papel, propios, anuncios).filter((a: any) => a.tipo === tipoListado && (!filtroEstado || a[campoE] === filtroEstado) && (!filtroMunicipio || a[campoM] === filtroMunicipio));
+            if (listaCargando) return <p className="text-sm text-muted-foreground">Buscando coincidencias…</p>;
+            if (!propios.some((a) => a.tipo === papel && (papel === "transportista" || a.disponible))) return <div className="space-y-3"><p className="text-sm text-muted-foreground">{papel === "transportista" ? "Registra tu unidad y destinos en tu perfil." : "Publica una carga disponible en tu perfil."}</p><Button variant="outline" onClick={() => navigate("/dashboard?section=fletes")}>Mis fletes</Button></div>;
+            if (lista.length === 0) return <p className="text-sm text-muted-foreground">Por ahora no hay fletes compatibles disponibles{filtroMunicipio ? ` en ${filtroMunicipio}` : ""}.</p>;
             const grupos: Record<string, FleteAnuncio[]> = {};
             lista.forEach((a: any) => { const k = a[campoM] ? `${a[campoM]}, ${a[campoE]}` : "Sin municipio"; (grupos[k] ||= []).push(a); });
             return Object.entries(grupos).sort(([x], [y]) => x.localeCompare(y)).map(([k, arr]) => (
@@ -223,6 +238,7 @@ export default function Fletes() {
               </div>
             ));
           })()}
+          </>}
         </>
       )}
     </div>
@@ -235,19 +251,19 @@ function TarjetaFlete({ a, yoSoy }: { a: FleteAnuncio; yoSoy: FleteTipo }) {
     ? [a.marca && `${a.marca}${a.modelo ? ` ${a.modelo}` : ""}`, a.remolque, a.dimensiones, a.condiciones && `Condiciones ${a.condiciones}`,
        a.ciudad_municipio && `Disponible en ${a.ciudad_municipio}, ${a.ciudad_estado}`,
        a.destinos_preferidos?.length ? `Prefiere: ${a.destinos_preferidos.join(", ")}` : null]
-    : [a.tipo_carga, a.lugar_carga && `Carga en: ${a.lugar_carga}`, a.temperatura, a.tamano && `Requiere: ${a.tamano}`,
+    : [a.tipo_carga, a.remolque, a.lugar_carga && `Carga en: ${a.lugar_carga}`, a.temperatura, a.tamano && `Requiere: ${a.tamano}`,
        a.destino_municipio && `Destino: ${a.destino_municipio}, ${a.destino_estado}`];
   return (
-    <Card>
-      <CardContent className="p-4 space-y-2">
+    <article className="border-b border-border py-4">
+      <div className="space-y-2">
         <p className="font-semibold">{a.titulo}</p>
         {a.nombre_contacto && <p className="text-xs text-muted-foreground">{a.nombre_contacto}</p>}
         <ul className="text-sm space-y-0.5">{datos.filter(Boolean).map((d, i) => <li key={i}>• {d}</li>)}</ul>
         <Button className="w-full" disabled={!wa} onClick={() => wa && window.open(wa, "_blank")}>
           <MessageCircle className="h-4 w-4 mr-2" /> {wa ? "Contactar por WhatsApp" : "Sin teléfono registrado"}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }
 
@@ -273,7 +289,7 @@ function FormularioFlete({ tipo, geo, userId, onGuardado }: { tipo: FleteTipo; g
       if (!carga || !f.destino_municipio) {
         toast({ title: "Faltan datos", description: "Tipo de carga y destino son obligatorios.", variant: "destructive" }); return;
       }
-      fila = { titulo: `${carga} a ${f.destino_municipio}`, tipo_carga: carga, lugar_carga: f.lugar_carga || null, temperatura: f.temperatura || null,
+      fila = { titulo: `${carga} a ${f.destino_municipio}`, tipo_carga: carga, lugar_carga: f.lugar_carga || null, temperatura: f.temperatura || null, remolque: f.remolque || null,
         tamano: f.tamano || null, destino_estado: f.destino_estado, destino_municipio: f.destino_municipio };
     }
     setGuardando(true);
@@ -299,7 +315,7 @@ function FormularioFlete({ tipo, geo, userId, onGuardado }: { tipo: FleteTipo; g
             <p className="text-xs text-muted-foreground">Haz un anuncio por cada ciudad. Luego enciendes o apagas cada una en Mis Disponibles.</p>
             <Label>Destinos preferidos (puedes elegir varios)</Label>
             <LugarSelector geo={geo} estado={destEstado} municipio=""
-              onChange={(e, m) => { setDestEstado(e); if (m && !destinos.includes(m)) setDestinos([...destinos, m]); }} />
+              onChange={(e, m) => { setDestEstado(e); const destino = `${m}, ${e}`; if (m && !destinos.includes(destino)) setDestinos([...destinos, destino]); }} />
             <div className="flex flex-wrap gap-1">
               {destinos.map((d) => <Badge key={d} variant="secondary" className="cursor-pointer" onClick={() => setDestinos(destinos.filter((x) => x !== d))}>{d} ✕</Badge>)}
             </div>
@@ -308,6 +324,7 @@ function FormularioFlete({ tipo, geo, userId, onGuardado }: { tipo: FleteTipo; g
           <>
             <Label>Tipo de carga</Label><Input maxLength={120} value={f.tipo_carga ?? ""} onChange={(e) => set("tipo_carga")(e.target.value)} placeholder="Ej. Pepino" />
             <Label>Lugar de carga</Label><NativeSelect value={f.lugar_carga ?? ""} onChange={set("lugar_carga")} options={LUGARES_CARGA} placeholder="Elige lugar" />
+            <Label>Remolque requerido</Label><NativeSelect value={f.remolque ?? ""} onChange={set("remolque")} options={REMOLQUES} placeholder="Elige remolque" />
             <Label>Temperatura</Label><NativeSelect value={f.temperatura ?? ""} onChange={set("temperatura")} options={TEMPERATURAS} placeholder="Elige temperatura" />
             <Label>Tamaño requerido</Label><NativeSelect value={f.tamano ?? ""} onChange={set("tamano")} options={TAMANOS} placeholder="Elige tamaño" />
             <Label>Destino</Label>
