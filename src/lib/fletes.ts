@@ -13,6 +13,12 @@ export function tipoContraparteFlete(tipo: FleteTipo | null): FleteTipo | null {
   return tipo === "transportista" ? "remitente" : tipo === "remitente" ? "transportista" : null;
 }
 
+/** La gestión solo incluye publicaciones del tipo registrado por su dueño. */
+export function fletesGestionables(tipo: FleteTipo | null, anuncios: FleteAnuncio[]): FleteAnuncio[] {
+  if (!tipo) return [];
+  return anuncios.filter((anuncio) => anuncio.tipo === tipo);
+}
+
 const normalizar = (valor: string | null | undefined) => (valor ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 
 /** Compatibilidad simétrica: sin destinos preferidos se aceptan todos los destinos. */
