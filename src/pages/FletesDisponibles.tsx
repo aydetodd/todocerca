@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Trash2, Truck, Package } from "lucide-react";
 import type { FleteAnuncio } from "@/lib/fletes";
 
-export default function FletesDisponibles() {
+export default function FletesDisponibles({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { toast } = useToast();
@@ -54,9 +54,9 @@ export default function FletesDisponibles() {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4">
+    <div className={embedded ? "space-y-4" : "min-h-screen bg-background p-4 pb-40 max-w-2xl mx-auto space-y-4"}>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/fletes")}><ArrowLeft className="h-5 w-5" /></Button>
+        {!embedded && <Button variant="ghost" size="icon" onClick={() => navigate("/fletes")}><ArrowLeft className="h-5 w-5" /></Button>}
         <h1 className="text-xl font-bold">Mis Disponibles</h1>
       </div>
       <p className="text-sm text-muted-foreground">Encendido = se ve en Fletes. Apagado = nadie lo ve. Si no lo cambias en 30 días, se apaga solo.</p>

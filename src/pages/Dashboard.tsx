@@ -28,12 +28,14 @@ import {
   ShoppingCart,
   User,
   Briefcase,
+  Truck,
   Trash2,
   ClipboardList,
   Users,
 } from "lucide-react";
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import DataUsageDialog from "@/components/DataUsageDialog";
+import Fletes from "./Fletes";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
@@ -53,6 +55,7 @@ type DashboardSection =
   | "suscripcion"
   | "tracking"
   | "eventos"
+  | "fletes"
   | "productos"
   | "rutas_privadas"
   | "apartados"
@@ -77,7 +80,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','terminales','taxi','empresa'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','terminales','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
@@ -90,7 +93,7 @@ const Dashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','eventos','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
+    if (section && ['perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
       window.history.replaceState({}, '', '/dashboard');
@@ -391,6 +394,7 @@ const Dashboard = () => {
           visible: true,
         },
         // Secciones de proveedor (panel del usuario, no del administrador)
+        { key: "fletes" as const, label: "Fletes", icon: Truck, visible: true },
         { key: "productos" as const, label: "Productos", icon: Package, visible: isProvider },
         { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
         { key: "citas" as const, label: "Citas", icon: ClipboardList, visible: isProvider },
@@ -648,6 +652,8 @@ const Dashboard = () => {
               </Card>
             )}
 
+            {activeSection === "fletes" && <Fletes embedded />}
+
             {activeSection === "productos" && (
               <div>
                 {isProvider && userSpecificData?.id ? (
@@ -806,13 +812,6 @@ const Dashboard = () => {
                   </Card>
                 )}
               </div>
-            )}
-
-            {/* Fletes: acceso directo a Mis Disponibles */}
-            {activeSection === "productos" && isProvider && (
-              <Button variant="outline" className="w-full mt-3" onClick={() => navigate('/fletes/mis-disponibles')}>
-                Mis Disponibles (Fletes)
-              </Button>
             )}
 
             {/* Mi Equipo y Terminales: interfaz base (próximamente) */}
