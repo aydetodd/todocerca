@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { ArrowLeft, Truck, Package, MessageCircle, ToggleRight, Loader2, ShieldCheck } from "lucide-react";
 import {
   MARCAS_UNIDAD, CONDICIONES, REMOLQUES, DIMENSIONES, LUGARES_CARGA, TEMPERATURAS, TAMANOS,
@@ -277,20 +278,26 @@ function FormularioFlete({ tipo, geo, userId, onGuardado }: { tipo: FleteTipo; g
   const anios = useMemo(() => { const y = new Date().getFullYear() + 1; return Array.from({ length: 40 }, (_, i) => String(y - i)); }, []);
 
   const guardar = async () => {
+    const telDigits = (f.telefono ?? "").replace(/\D/g, "");
+    if (telDigits.length < 10) {
+      toast({ title: "Falta tu teléfono", description: "Agrega tu teléfono de contacto para que te escriban por WhatsApp.", variant: "destructive" }); return;
+    }
     let fila: Record<string, unknown>;
     if (tipo === "transportista") {
       if (!f.marca || !f.remolque || !f.dimensiones || !f.ciudad_municipio) {
         toast({ title: "Faltan datos", description: "Marca, remolque, dimensiones y ciudad son obligatorios.", variant: "destructive" }); return;
       }
       fila = { titulo: `Flete ${f.ciudad_municipio}`, marca: f.marca, modelo: f.modelo ? Number(f.modelo) : null, condiciones: f.condiciones || null,
-        remolque: f.remolque, dimensiones: f.dimensiones, ciudad_estado: f.ciudad_estado, ciudad_municipio: f.ciudad_municipio, destinos_preferidos: destinos };
+        remolque: f.remolque, dimensiones: f.dimensiones, ciudad_estado: f.ciudad_estado, ciudad_municipio: f.ciudad_municipio, destinos_preferidos: destinos,
+        telefono: f.telefono, nombre_contacto: (f.nombre_contacto ?? "").trim() || null };
     } else {
       const carga = (f.tipo_carga ?? "").trim().slice(0, 120);
       if (!carga || !f.destino_municipio) {
         toast({ title: "Faltan datos", description: "Tipo de carga y destino son obligatorios.", variant: "destructive" }); return;
       }
       fila = { titulo: `${carga} a ${f.destino_municipio}`, tipo_carga: carga, lugar_carga: f.lugar_carga || null, temperatura: f.temperatura || null, remolque: f.remolque || null,
-        tamano: f.tamano || null, destino_estado: f.destino_estado, destino_municipio: f.destino_municipio };
+        tamano: f.tamano || null, destino_estado: f.destino_estado, destino_municipio: f.destino_municipio,
+        telefono: f.telefono, nombre_contacto: (f.nombre_contacto ?? "").trim() || null };
     }
     setGuardando(true);
     const { error } = await supabase.from("fletes_anuncios" as any).insert({ ...fila, tipo, user_id: userId });
@@ -332,6 +339,11 @@ function FormularioFlete({ tipo, geo, userId, onGuardado }: { tipo: FleteTipo; g
               onChange={(e, m) => setF((p) => ({ ...p, destino_estado: e, destino_municipio: m }))} />
           </>
         )}
+        <Label>Teléfono de contacto (WhatsApp)</Label>
+        <PhoneInput value={f.telefono ?? ""} onChange={set("telefono")} placeholder="Ej. 644 123 4567" />
+        <p className="text-xs text-muted-foreground">Por este teléfono te contactan por WhatsApp para acordar el flete.</p>
+        <Label>Nombre de la persona de contacto (opcional)</Label>
+        <Input maxLength={80} value={f.nombre_contacto ?? ""} onChange={(e) => set("nombre_contacto")(e.target.value)} placeholder="Ej. Juan Pérez" />
         <Button className="w-full" disabled={guardando} onClick={guardar}>{guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publicar"}</Button>
       </CardContent>
     </Card>
