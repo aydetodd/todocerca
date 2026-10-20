@@ -4368,6 +4368,33 @@ export type Database = {
           },
         ]
       }
+      qard_reload_receipts: {
+        Row: {
+          amount_mxn: number
+          created_at: string
+          reference: string
+          result: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_mxn: number
+          created_at?: string
+          reference: string
+          result: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_mxn?: number
+          created_at?: string
+          reference?: string
+          result?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qard_secuencia_municipio: {
         Row: {
           ee: string
@@ -5680,6 +5707,167 @@ export type Database = {
           total_fare?: number
         }
         Relationships: []
+      }
+      terminal_agent_requests: {
+        Row: {
+          biometric_status: string
+          business_name: string
+          created_at: string
+          curp_document: string
+          curp_status: string
+          id: string
+          ine_back_document: string
+          ine_front_document: string
+          review_note: string | null
+          rfc_document: string
+          rfc_status: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          biometric_status?: string
+          business_name: string
+          created_at?: string
+          curp_document: string
+          curp_status?: string
+          id?: string
+          ine_back_document: string
+          ine_front_document: string
+          review_note?: string | null
+          rfc_document: string
+          rfc_status?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          biometric_status?: string
+          business_name?: string
+          created_at?: string
+          curp_document?: string
+          curp_status?: string
+          id?: string
+          ine_back_document?: string
+          ine_front_document?: string
+          review_note?: string | null
+          rfc_document?: string
+          rfc_status?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      terminal_catalog: {
+        Row: {
+          code: string
+          created_at: string
+          name: string
+          operational: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          name: string
+          operational?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          name?: string
+          operational?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      terminal_operations: {
+        Row: {
+          amount_mxn: number
+          created_at: string
+          id: string
+          merchant_commission_mxn: number
+          merchant_user_id: string
+          opening_fee_mxn: number
+          platform_commission_mxn: number
+          request_key: string
+          result: Json
+          target_user_id: string
+          terminal_code: string
+          updated_at: string
+        }
+        Insert: {
+          amount_mxn: number
+          created_at?: string
+          id?: string
+          merchant_commission_mxn?: number
+          merchant_user_id: string
+          opening_fee_mxn?: number
+          platform_commission_mxn?: number
+          request_key: string
+          result: Json
+          target_user_id: string
+          terminal_code: string
+          updated_at?: string
+        }
+        Update: {
+          amount_mxn?: number
+          created_at?: string
+          id?: string
+          merchant_commission_mxn?: number
+          merchant_user_id?: string
+          opening_fee_mxn?: number
+          platform_commission_mxn?: number
+          request_key?: string
+          result?: Json
+          target_user_id?: string
+          terminal_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      terminal_permissions: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invited_by: string
+          status: string
+          terminal_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_by: string
+          status?: string
+          terminal_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_by?: string
+          status?: string
+          terminal_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminal_permissions_terminal_code_fkey"
+            columns: ["terminal_code"]
+            isOneToOne: false
+            referencedRelation: "terminal_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       tracking_devices: {
         Row: {
@@ -7926,6 +8114,23 @@ export type Database = {
         Returns: string[]
       }
       set_tipo_proveedor: { Args: { _tipo: string }; Returns: undefined }
+      terminal_accept: { Args: { _id: string }; Returns: undefined }
+      terminal_has_access: {
+        Args: { _code: string; _user_id: string }
+        Returns: boolean
+      }
+      terminal_invite: {
+        Args: { _code: string; _revoke?: boolean; _user_id: string }
+        Returns: string
+      }
+      terminal_reload: {
+        Args: { _amount: number; _key: string; _number: string }
+        Returns: Json
+      }
+      terminal_submit_request: {
+        Args: { _business_name: string; _documents: Json }
+        Returns: string
+      }
       unaccent: { Args: { "": string }; Returns: string }
       unlink_producto_from_ruta_maestra: {
         Args: { _producto_id: string }
