@@ -8127,6 +8127,10 @@ export type Database = {
         Args: { _amount: number; _key: string; _number: string }
         Returns: Json
       }
+      terminal_review_note: {
+        Args: { _id: string; _note: string }
+        Returns: undefined
+      }
       terminal_submit_request: {
         Args: { _business_name: string; _documents: Json }
         Returns: string
