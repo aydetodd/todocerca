@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import DataUsageDialog from "@/components/DataUsageDialog";
+import TerminalesDialog from "@/components/qard/TerminalesDialog";
 import Fletes from "./Fletes";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
@@ -512,6 +513,7 @@ const Dashboard = () => {
                   <div className="space-y-3">
                     <nav aria-label="Servicios del perfil" className="grid grid-cols-1 gap-3">
                       <DataUsageDialog />
+                      <TerminalesDialog />
                     </nav>
                     <div>
                       <span className="text-sm font-medium">ID Usuario / QaRd:</span>

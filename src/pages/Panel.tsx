@@ -38,6 +38,7 @@ import AdminDescuentos from '@/components/AdminDescuentos';
 import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
+import AdminTerminales from '@/components/qard/AdminTerminales';
 
 import ProviderRegistration from '@/components/ProviderRegistration';
 
@@ -399,6 +400,7 @@ export default function Panel() {
                     </div>
 
                     {/* Gestión de verificaciones de concesionarios */}
+                    <div className="pt-3 border-t"><AdminTerminales /></div>
                     <div className="pt-3 border-t">
                       <AdminVerificaciones />
                     </div>
