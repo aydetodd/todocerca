@@ -13,6 +13,7 @@ import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
 import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { formatHermosillo } from "@/lib/utils";
 import { registrarPuntoTraza, registrarPuntoTrazaDeTercero } from "@/lib/traza";
+import { dynamicCvvValid } from '@/lib/terminales';
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -203,7 +204,7 @@ export default function QardCobrar() {
   };
 
   const confirmarCvvEscaneo = async () => {
-    if (!/^\d{3,4}$/.test(scanCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    if (!dynamicCvvValid(scanCvv)) return toast({ title: "CVV inválido", description: "CVV dinámico de 4 dígitos", variant: "destructive" });
     const m = Number(monto);
     setCvvOpen(false);
     await procesarCobro(pendingQard, m, { cvv: scanCvv });
@@ -214,7 +215,7 @@ export default function QardCobrar() {
     const digits = manualQard.replace(/\D/g, "");
     if (digits.length !== 16) return toast({ title: "El QR debe tener 16 dígitos", variant: "destructive" });
     if (manualVenc !== "12/99") return toast({ title: "Vencimiento inválido", description: "Todas las QaRd vencen 12/99", variant: "destructive" });
-    if (!/^\d{3,4}$/.test(manualCvv)) return toast({ title: "CVV inválido", description: "3 o 4 dígitos", variant: "destructive" });
+    if (!dynamicCvvValid(manualCvv)) return toast({ title: "CVV inválido", description: "CVV dinámico de 4 dígitos", variant: "destructive" });
     const m = Number(monto);
     setManualOpen(false);
     await procesarCobro(digits, m, { cvv: manualCvv, manual: true });
@@ -468,7 +469,7 @@ export default function QardCobrar() {
         onSubmit={confirmarCvvEscaneo}
         value={scanCvv}
         onChange={setScanCvv}
-        title="CVV de la tarjeta"
+        title="CVV dinámico de 4 dígitos"
         subtitle={`Tarjeta •••• ${pendingQard.slice(-4)} · Monto $${Number(monto || 0).toFixed(2)}`}
       />
 
@@ -533,7 +534,7 @@ export default function QardCobrar() {
         onSubmit={cerrarTecladoCvvManual}
         value={manualCvv}
         onChange={setManualCvv}
-        title="CVV de la tarjeta"
+        title="CVV dinámico de 4 dígitos"
       />
 
       <Dialog open={traspasoOpen} onOpenChange={setTraspasoOpen}>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
 import { ExternalLink, ShieldCheck } from "lucide-react";
+import { QARD_FEES } from '@/lib/terminales';
 
 type Props = {
   abierto: boolean;
@@ -16,7 +17,7 @@ type Props = {
   onVerificado: () => void;
 };
 
-const COSTO = 20;
+const COSTO = QARD_FEES.subActivation;
 
 export default function VerificarSubQrDialog({ abierto, onOpenChange, subQr, saldoTitular, onVerificado }: Props) {
   const [nombre, setNombre] = useState("");
@@ -82,7 +83,7 @@ export default function VerificarSubQrDialog({ abierto, onOpenChange, subQr, sal
           <p className="text-sm text-muted-foreground">
             Validamos la CURP de esta persona ante RENAPO. Se descontarán{" "}
             <b className="text-foreground">${COSTO.toFixed(2)}</b> de tu saldo. Solo se cobra una vez y solo si la
-            validación es correcta.
+            validación es correcta. Esta sub-QR queda únicamente en nivel 1 con CURP.
           </p>
 
           <div>

@@ -17,3 +17,6 @@
 - Mount the shared Testigo control only in NavigationBar and portal its dialog to document.body; this avoids duplicate scanners and fixed-overlay clipping by the navigation backdrop.
 - Data usage is a passive PerformanceObserver-based device/browser estimate with local daily counters in Hermosillo time; never intercept network clients or reduce realtime updates, and disclose unmeasurable traffic rather than invent totals.
 - Both user profile entry points (Dashboard's profile section and MiPerfil) mount the shared DataUsageDialog without provider or admin conditions so all users can find the same meter.
+- Digital terminals share TerminalesDialog in both personal profile entries and AdminTerminales in the administrative panel; permissions and agent verification live in separate protected tables so invitations cannot upgrade financial identity.
+- Terminal reloads and merchant collections use atomic, idempotent SQL entry points with locked funds and an immutable operation receipt; never split money writes across browser or edge requests because retries must not double debit or lose credits.
+- Merchant collection consumes only the four-digit dynamic CVV within the successful transaction; transport readers remain separate and unchanged, and the three-digit static CVV never enters a payment request.

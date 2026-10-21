@@ -7907,6 +7907,16 @@ export type Database = {
         Returns: Json
       }
       qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
+      qard_collect_atomic: {
+        Args: {
+          _amount: number
+          _cvv: string
+          _key: string
+          _number: string
+          _terminal?: boolean
+        }
+        Returns: Json
+      }
       qard_comision_retiro: {
         Args: { _clave_rastreo?: string; _monto: number; _user_id: string }
         Returns: number
@@ -8126,6 +8136,10 @@ export type Database = {
       terminal_reload: {
         Args: { _amount: number; _key: string; _number: string }
         Returns: Json
+      }
+      terminal_review_note: {
+        Args: { _id: string; _note: string }
+        Returns: undefined
       }
       terminal_submit_request: {
         Args: { _business_name: string; _documents: Json }
