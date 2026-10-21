@@ -7907,6 +7907,16 @@ export type Database = {
         Returns: Json
       }
       qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
+      qard_collect_atomic: {
+        Args: {
+          _amount: number
+          _cvv: string
+          _key: string
+          _number: string
+          _terminal?: boolean
+        }
+        Returns: Json
+      }
       qard_comision_retiro: {
         Args: { _clave_rastreo?: string; _monto: number; _user_id: string }
         Returns: number
