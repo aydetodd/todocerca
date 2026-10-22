@@ -1,285 +1,39 @@
-// QaRd — Cobro del comercio a un QR
-// Movimientos internos: 0% de comisión. El monto exacto se acredita al comercio.
-// La única comisión de TodoCerca es el 2% al retirar (SPEI/OXXO).
+// Merchant collections are atomic; transport scanners use separate functions.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const COMISION_PCT = 0; // 0% en movimientos internos
-const SALDO_MIN = -50;
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  const supabaseAnon = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
+const Schema = z.object({
+  qard_number: z.string().regex(/^\d{16}$/),
+  monto_mxn: z.number().finite().positive().refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 0.00001),
+  cvv: z.string().regex(/^\d{4}$/, "Se requiere CVV dinámico de 4 dígitos"),
+  request_key: z.string().uuid(),
+  terminal: z.boolean().optional().default(false),
+});
+const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+});
+serve(async req => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return reply({ ok: false, mensaje: "Método no permitido" }, 405);
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) throw new Error("No autenticado");
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseAnon.auth.getUser(token);
-    const comercio = userData.user;
-    if (!comercio) throw new Error("No autenticado");
-
-    const { data: comercioBloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: comercio.id });
-    if (comercioBloq === true) return jsonErr("Tu cuenta está bloqueada por seguridad. Desbloquéala desde tu teléfono.", "bloqueada", { color: "rojo" });
-
-    const body = await req.json();
-    const qardNumberRaw = String(body.qard_number || "").replace(/\D/g, "");
-    const monto = Number(body.monto_mxn);
-    const cvvInput = body.cvv != null ? String(body.cvv).replace(/\D/g, "") : null;
-    const manual = !!body.manual;
-
-    if (qardNumberRaw.length !== 16) {
-      return jsonErr("QR inválido (deben ser 16 dígitos)", "invalido");
-    }
-    if (!monto || monto <= 0) {
-      return jsonErr("Monto inválido", "invalido");
-    }
-    console.log("[QARD-COBRAR] payload", { qard: qardNumberRaw.slice(-4), monto, manual, cvvLen: cvvInput?.length ?? 0 });
-    // Todo cobro de comercio (escaneado o manual) exige CVV. El transporte
-    // (urbano, foráneo, privado y taxi) usa otras funciones y NO pide CVV.
-    if (!cvvInput || cvvInput.length < 3) {
-      return jsonErr("CVV requerido (3 dígitos de la tarjeta)", "cvv_requerido", { color: "rojo" });
-    }
-
-
-    // 0) Topes:
-    //    - El que PAGA: su límite es por transacción (lo define el titular del sub-QR). Puede hacer
-    //      cuantas transacciones quiera; el tope de $10,000 NO le aplica al pagar.
-    //    - El que COBRA (comerciante no aprobado): máximo $10,000 de ENTRADAS acumuladas al mes.
-    {
-      const { data: limRaw } = await admin.rpc("qard_limite_cobros" as any, { _user_id: comercio.id });
-      const lim: any = Array.isArray(limRaw) ? limRaw[0] : limRaw;
-      const tope = lim?.tope == null ? null : Number(lim.tope);
-      const disponible = lim?.disponible == null ? null : Number(lim.disponible);
-      if (tope !== null && disponible !== null && monto > disponible) {
-        return jsonErr(
-          disponible <= 0
-            ? `Alcanzaste tu tope de cobros del mes ($${tope.toLocaleString("es-MX")}). Actualiza a Comerciante para cobrar sin límite.`
-            : `Este cobro supera tu tope mensual. Puedes cobrar hasta $${disponible.toFixed(2)} este mes. Actualiza a Comerciante para cobrar sin límite.`,
-          "tope_comerciante",
-          { color: "naranja", tope, disponible }
-        );
-      }
-    }
-
-
-
-
-    // 1) Buscar sub-QR
-    const { data: sub } = await admin
-      .from("qard_sub_qr")
-      .select("id, wallet_id, titular_user_id, alias, sub_index, estado, saldo_mxn, limite_por_transaccion, horario_inicio, horario_fin, cvv")
-      .eq("qard_number", qardNumberRaw)
-      .maybeSingle();
-
-    if (!sub) return jsonErr("Tarjeta no encontrada", "no_existe");
-    const { data: pagadorBloq } = await admin.rpc("cuenta_esta_bloqueada", { _user_id: sub.titular_user_id });
-    if (pagadorBloq === true) {
-      return jsonErr("CUENTA BLOQUEADA por el titular (teléfono reportado perdido)", "bloqueada", { color: "rojo" });
-    }
-    if (sub.estado === "cancelada") {
-      return jsonErr("TARJETA CANCELADA", "cancelada", { color: "rojo" });
-    }
-    if (sub.estado === "apagada") {
-      return jsonErr("TARJETA APAGADA por el titular", "apagada", { color: "rojo" });
-    }
-
-    // Validación de CVV: si el cliente envía CVV o marca manual, debe coincidir SIEMPRE
-    if (manual || cvvInput) {
-      if (!sub.cvv) {
-        return jsonErr("Esta tarjeta no tiene CVV activo. Pide al titular que lo genere.", "cvv_no_configurado", { color: "rojo" });
-      }
-      // El CVV vive cifrado en la base: lo desciframos con la llave maestra (service_role)
-      const { data: cvvPlano } = await admin.rpc("qard_dec" as any, { _v: sub.cvv });
-      const cvvGuardado = String(cvvPlano ?? "").replace(/\D/g, "").trim();
-      const cvvRecibido = String(cvvInput ?? "").replace(/\D/g, "").trim();
-      if (cvvGuardado !== cvvRecibido) {
-        return jsonErr("CVV incorrecto", "cvv_invalido", { color: "rojo" });
-      }
-    }
-
-    // 2) Reglas del sub-QR
-    if (sub.limite_por_transaccion && monto > Number(sub.limite_por_transaccion)) {
-      return jsonErr(
-        `Excede límite. Máx por transacción: $${Number(sub.limite_por_transaccion).toFixed(2)}`,
-        "excede_limite",
-        { color: "naranja", limite: Number(sub.limite_por_transaccion), intento: monto }
-      );
-    }
-    if (sub.horario_inicio && sub.horario_fin) {
-      const now = new Date();
-      const hhmm = now.toTimeString().slice(0, 5);
-      if (hhmm < String(sub.horario_inicio).slice(0, 5) || hhmm > String(sub.horario_fin).slice(0, 5)) {
-        return jsonErr(
-          `Fuera de horario permitido (${sub.horario_inicio}–${sub.horario_fin}). Ahora: ${hhmm}`,
-          "fuera_horario",
-          { color: "naranja" }
-        );
-      }
-    }
-
-    // 3) Wallet del titular (siempre necesario para movimientos y bloqueo)
-    const { data: wallet } = await admin
-      .from("qard_wallets")
-      .select("id, saldo_mxn, estado")
-      .eq("id", sub.wallet_id)
-      .single();
-
-    if (!wallet) return jsonErr("Billetera no encontrada", "no_existe");
-    if (wallet.estado !== "activa") return jsonErr("BILLETERA BLOQUEADA", "bloqueada", { color: "rojo" });
-
-    // 3.1) Determinar fuente del saldo: titular (sub_index=0) usa wallet; sub-QRs usan su saldo propio
-    const esTitular = sub.sub_index === 0;
-    const saldoActual = esTitular ? Number(wallet.saldo_mxn) : Number(sub.saldo_mxn ?? 0);
-    const minAceptado = esTitular ? SALDO_MIN : 0; // sub-QRs no pueden ir a negativo
-    const saldoDespues = +(saldoActual - monto).toFixed(2);
-
-    if (saldoDespues < minAceptado) {
-      if (saldoActual <= minAceptado) {
-        return jsonErr(
-          `LÍMITE ALCANZADO. Saldo: $${saldoActual.toFixed(2)}`,
-          "limite_alcanzado",
-          { color: "rojo", saldo: saldoActual }
-        );
-      }
-      return jsonErr(
-        `SALDO INSUFICIENTE. Saldo: $${saldoActual.toFixed(2)} · Requerido: $${monto.toFixed(2)}`,
-        "insuficiente",
-        { color: "amarillo", saldo: saldoActual, requerido: monto }
-      );
-    }
-
-    // 4) Descontar del origen correcto (optimistic lock por saldo previo)
-    if (esTitular) {
-      const { error: updErr, data: updRow } = await admin
-        .from("qard_wallets")
-        .update({ saldo_mxn: saldoDespues })
-        .eq("id", wallet.id)
-        .eq("saldo_mxn", saldoActual)
-        .select("id")
-        .maybeSingle();
-      if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
-    } else {
-      const { error: updErr, data: updRow } = await admin
-        .from("qard_sub_qr")
-        .update({ saldo_mxn: saldoDespues })
-        .eq("id", sub.id)
-        .eq("saldo_mxn", saldoActual)
-        .select("id")
-        .maybeSingle();
-      if (updErr || !updRow) return jsonErr("Reintenta, hubo un cambio de saldo concurrente", "reintento");
-    }
-
-    // 5) Sin comisión interna: neto = monto (la comisión solo existe al retirar por SPEI/OXXO)
-    const comision = +(monto * COMISION_PCT).toFixed(2);
-    const neto = +(monto - comision).toFixed(2);
-
-    // Nombre del comercio
-    const { data: comProfile } = await admin
-      .from("profiles").select("apodo, nombre").eq("user_id", comercio.id).maybeSingle();
-    const comercioNombre = comProfile?.apodo || comProfile?.nombre || "Comercio";
-
-    // Nombre de quien paga (para el renglón del comercio)
-    const { data: pagadorNombre } = await admin.rpc("qard_nombre_legal", { _user_id: sub.titular_user_id });
-
-    // 6) LEDGER DE PARTIDA DOBLE
-    // 6.a) CARGO al pagador (su tarjeta o sub-QR)
-    await admin.from("qard_movimientos").insert({
-      wallet_id: wallet.id,
-      titular_user_id: sub.titular_user_id,
-      sub_qr_id: sub.id,
-      tipo: "cobro_comercio",
-      monto_mxn: monto,
-      saldo_despues: saldoDespues,
-      comercio_user_id: comercio.id,
-      comercio_nombre: comercioNombre,
-      comision_mxn: 0,
-      neto_comercio_mxn: 0,
-      descripcion: `Cobro en ${comercioNombre}`,
-      metadata: { sub_index: sub.sub_index, alias: sub.alias, lado: "cargo" },
+    const auth = req.headers.get("Authorization");
+    if (!auth?.startsWith("Bearer ")) return reply({ ok: false, mensaje: "Inicia sesión" }, 401);
+    const client = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: auth } },
     });
-
-    // 6.b) ABONO al comercio: entra a su BOLSA DE COBROS (separada de la cuenta eje).
-    //      Para usarla en la app debe traspasarla a su cuenta eje (gratis) o retirarla.
-    try { await admin.rpc("qard_ensure_wallet", { _user_id: comercio.id }); } catch (_) {}
-    const { data: wCom } = await admin
-      .from("qard_wallets").select("id, saldo_comercio_mxn").eq("titular_user_id", comercio.id).maybeSingle();
-
-    if (wCom) {
-      const saldoComDespues = +(Number((wCom as any).saldo_comercio_mxn ?? 0) + neto).toFixed(2);
-      await admin.from("qard_wallets").update({ saldo_comercio_mxn: saldoComDespues }).eq("id", wCom.id);
-
-      await admin.from("qard_movimientos").insert({
-        wallet_id: wCom.id,
-        titular_user_id: comercio.id,
-        tipo: "cobro_recibido",
-        monto_mxn: neto,
-        saldo_despues: saldoComDespues,
-        comercio_user_id: comercio.id,
-        comercio_nombre: comercioNombre,
-        comision_mxn: 0,
-        neto_comercio_mxn: neto,
-        descripcion: `Cobro recibido de ${pagadorNombre ?? "cliente"}`,
-        metadata: { lado: "abono", bolsa: "comercio", pagador_sub_index: sub.sub_index },
-      });
-    }
-
-
-
-    // 7) La liquidación al CLABE del comercio se calcula por lote diario a partir
-    //    de qard_movimientos.neto_comercio_mxn (job separado — Fase 1 solo acumula).
-
-
-
-    // 8) Notificar al titular vía bandeja de sistema
-    try {
-      const SYSTEM = "00000000-0000-0000-0000-000000000001";
-      await admin.from("messages").insert({
-        sender_id: SYSTEM,
-        receiver_id: sub.titular_user_id,
-        message: `💳 QaRd: se cobraron $${monto.toFixed(2)} en ${comercioNombre} con tu QR ${String(sub.sub_index).padStart(2, "0")} (${sub.alias}).\nSaldo actual: $${saldoDespues.toFixed(2)}`,
-        is_panic: false,
-        is_read: false,
-      });
-    } catch {}
-
-    // Nombre legal del pasajero/titular (contexto financiero: sí se muestra)
-    const { data: nombreLegal } = await admin.rpc("qard_nombre_legal", { _user_id: sub.titular_user_id });
-
-    return new Response(JSON.stringify({
-      ok: true,
-      estado: "cobrado",
-      color: "verde",
-      mensaje: `COBRADO $${monto.toFixed(2)}`,
-      saldo_despues: saldoDespues,
-      comision,
-      neto,
-      alias: sub.alias,
-      sub_index: sub.sub_index,
-      titular_nombre: nombreLegal ?? null,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-  } catch (e) {
-    console.error("[QARD-COBRAR]", e);
-    return jsonErr(e instanceof Error ? e.message : String(e), "error");
+    const { data: { user }, error: authError } = await client.auth.getUser(auth.slice(7));
+    if (authError || !user) return reply({ ok: false, mensaje: "Inicia sesión" }, 401);
+    const parsed = Schema.safeParse(await req.json());
+    if (!parsed.success) return reply({ ok: false, mensaje: "Revisa monto, QaRd y CVV dinámico de 4 dígitos", estado: "invalido" }, 400);
+    const b = parsed.data;
+    const { data, error } = await client.rpc("qard_collect_atomic", {
+      _number: b.qard_number, _amount: b.monto_mxn, _cvv: b.cvv, _key: b.request_key, _terminal: b.terminal,
+    });
+    if (error) return reply({ ok: false, estado: "rechazado", mensaje: error.message, color: "rojo" });
+    return reply(data);
+  } catch {
+    return reply({ ok: false, estado: "error", mensaje: "No se pudo completar; intenta de nuevo" }, 400);
   }
 });
-
-function jsonErr(mensaje: string, codigo: string, extra: Record<string, unknown> = {}) {
-  return new Response(JSON.stringify({ ok: false, estado: codigo, mensaje, ...extra }), {
-    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
