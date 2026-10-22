@@ -27,6 +27,7 @@ export default function TerminalesDialog() {
   const [amount,setAmount]=useState('');
   const [balance,setBalance]=useState<number|null>(null);
   const [result,setResult]=useState<{neto:number;apertura:number;saldo:number}|null>(null);
+  const [quote,setQuote]=useState<{opening:number;net:number}|null>(null);
   const key=useRef<string|null>(null);
   const loadingRef=useRef(false);
   const again=useRef(false);
@@ -76,6 +77,12 @@ export default function TerminalesDialog() {
     if(!t||!terminalEnabled(agent,p,t))throw new Error('Terminal pendiente de autorización');
     const value=Number(amount);if(!/^\d{16}$/.test(number)||!Number.isFinite(value)||value<=15)throw new Error('Revisa la QaRd principal y el monto');
     if(balance===null||balance<value)throw new Error('Saldo insuficiente del comercio');
+    if(!quote){
+      const {data,error}=await supabase.rpc('terminal_reload_quote',{_number:number,_amount:value});
+      if(error)throw error;
+      setQuote(data as unknown as {opening:number;net:number});
+      return;
+    }
     key.current??=crypto.randomUUID();
     const {data,error}=await supabase.rpc('terminal_reload',{_number:number,_amount:value,_key:key.current});
     if(error)throw error;
@@ -95,11 +102,12 @@ export default function TerminalesDialog() {
           <Button variant="ghost" onClick={()=>setReloadOpen(false)}><ArrowLeft className="h-4 w-4 mr-2"/>Terminales</Button>
           <h2 className="font-semibold">Recargar QaRd principal</h2>
           {balance!==null&&<p>Saldo del comercio: ${balance.toFixed(2)}</p>}
-          {result?<div className="space-y-3"><p className="font-semibold text-primary">Recarga confirmada</p><p>Acreditado al cliente: ${Number(result.neto).toFixed(2)}</p><p>Activación: ${Number(result.apertura).toFixed(2)}</p><p>Comisión: $15 · Comercio $5 · TodoCerca $10</p><p>Saldo del cliente: ${Number(result.saldo).toFixed(2)}</p><Button onClick={()=>{setResult(null);setAmount('');setNumber('');key.current=null;}}>Nueva recarga</Button></div>:<>
-            <div><Label htmlFor="terminal-number">QaRd principal del cliente</Label><Input id="terminal-number" inputMode="numeric" maxLength={16} value={number} disabled={busy} onChange={e=>{setNumber(e.target.value.replace(/\D/g,''));key.current=null;}}/></div>
-            <div><Label htmlFor="terminal-amount">Efectivo recibido (MXN)</Label><Input id="terminal-amount" type="number" min="15.01" step="0.01" value={amount} disabled={busy} onChange={e=>{setAmount(e.target.value);key.current=null;}}/></div>
+          {result?<div className="space-y-3"><p className="font-semibold text-primary">Recarga confirmada</p><p>Acreditado al cliente: ${Number(result.neto).toFixed(2)}</p><p>Activación: ${Number(result.apertura).toFixed(2)}</p><p>Comisión: $15 · Comercio $5 · TodoCerca $10</p><p>Saldo del cliente: ${Number(result.saldo).toFixed(2)}</p><Button onClick={()=>{setResult(null);setQuote(null);setAmount('');setNumber('');key.current=null;}}>Nueva recarga</Button></div>:<>
+            <div><Label htmlFor="terminal-number">QaRd principal del cliente</Label><Input id="terminal-number" inputMode="numeric" maxLength={16} value={number} disabled={busy} onChange={e=>{setNumber(e.target.value.replace(/\D/g,''));setQuote(null);key.current=null;}}/></div>
+            <div><Label htmlFor="terminal-amount">Efectivo recibido (MXN)</Label><Input id="terminal-amount" type="number" min="15.01" step="0.01" value={amount} disabled={busy} onChange={e=>{setAmount(e.target.value);setQuote(null);key.current=null;}}/></div>
             <p className="text-sm text-muted-foreground">$15 de comisión: $5 para ti y $10 para TodoCerca. Si falta activar la cuenta, también se descuentan $150. La recarga usa saldo de tu cuenta principal.</p>
-            <Button className="w-full" onClick={reload} disabled={busy||balance===null||Number(amount)>balance||Number(amount)<=15||number.length!==16}>{busy?'Confirmando…':`Confirmar recarga de $${Number(amount||0).toFixed(2)}`}</Button>
+            {quote&&<div className="space-y-1 text-sm border-t border-border pt-3"><p>Cliente recibe: <b>${Number(quote.net).toFixed(2)}</b></p><p>Activación: ${Number(quote.opening).toFixed(2)}</p><p>Comisión: $15 · Tú $5 · TodoCerca $10</p></div>}
+            <Button className="w-full" onClick={reload} disabled={busy||balance===null||Number(amount)>balance||Number(amount)<=15||number.length!==16}>{busy?'Consultando…':quote?`Confirmar recarga de $${Number(amount||0).toFixed(2)}`:'Revisar importe'}</Button>
           </>}
         </div>:<div className="space-y-4">
           {!agent&&!loading?<div className="space-y-3">

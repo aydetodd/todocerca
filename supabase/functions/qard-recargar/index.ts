@@ -1,12 +1,8 @@
-// QaRd — Recarga de saldo vía Stripe Checkout (mín $200 MXN, sin comisiones al usuario)
+// QaRd — Stripe Checkout; comisión $15 y activación principal $150 pendiente.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const MIN_RECARGA = 300;
 
@@ -32,24 +28,26 @@ serve(async (req) => {
 
     const body = await req.json();
     const monto = Number(body.monto_mxn);
-    if (!monto || monto < MIN_RECARGA) {
+    if (!Number.isFinite(monto) || Math.abs(monto * 100 - Math.round(monto * 100)) > 0.00001 || monto < MIN_RECARGA) {
       throw new Error(`El mínimo de recarga es de ${MIN_RECARGA} pesos por ${MIN_RECARGA} QaRd pesos`);
     }
 
     // La tarjeta debe estar activada (identidad financiera verificada)
     const { data: ident } = await admin
       .from("qard_identidad")
-      .select("estado")
+      .select("estado, account_opening_fee_pending")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!ident || ident.estado === "inactive") {
       throw new Error("Primero activa tu QaRd para poder recargar.");
     }
+    const opening = ident.account_opening_fee_pending ? 150 : 0;
+    const net = monto - opening - 15;
 
     // Tope de $10,000 por mes calendario (sin tope para persona moral aprobada)
     const { data: limRaw } = await admin.rpc("qard_limite_recarga", { _user_id: user.id });
     const lim = Array.isArray(limRaw) ? limRaw[0] : limRaw;
-    if (lim && lim.tope !== null && Number(monto) > Number(lim.disponible)) {
+    if (lim && lim.tope !== null && net > Number(lim.disponible)) {
       throw new Error(
         `Este mes solo te quedan $${Number(lim.disponible).toFixed(2)} de recarga. El día 1 se reinicia tu tope.`,
       );
@@ -68,20 +66,20 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email!,
+      customer_email: customerId ? undefined : user.email,
       line_items: [{
         price_data: {
           currency: "mxn",
           product_data: {
             name: `Recarga QaRd`,
-            description: `Saldo recargable universal. Sin comisiones al usuario.`,
+            description: `Comisión de recarga: $15 MXN. Activación pendiente: $${opening} MXN. Saldo a acreditar: $${net.toFixed(2)} MXN.`,
           },
           unit_amount: Math.round(monto * 100),
         },
         quantity: 1,
       }],
       mode: "payment",
-      allow_promotion_codes: true,
+      allow_promotion_codes: false,
       success_url: `${req.headers.get("origin")}/qard?recarga=success&monto=${monto}`,
       cancel_url: `${req.headers.get("origin")}/qard?recarga=cancelled`,
       metadata: {

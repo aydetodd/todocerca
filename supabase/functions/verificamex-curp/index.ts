@@ -96,12 +96,20 @@ serve(async (req) => {
     if (subQrId) {
       // Sub-QR: si ya está verificada, no consultamos ni cobramos de nuevo.
       const { data: subPrevia } = await admin
-        .from("qard_sub_qr").select("id, alias, curp_verificada")
+        .from("qard_sub_qr").select("id, alias, curp_verificada, sub_index, estado")
         .eq("id", subQrId).eq("titular_user_id", userId).maybeSingle();
       if (!subPrevia) return json({ error: "No encontramos esa sub-QR en tu cuenta." }, 404);
+      if(subPrevia.sub_index===0||subPrevia.estado==='cancelada') return json({error:'Usa una sub-QR familiar disponible.'},400);
       if ((subPrevia as any).curp_verificada) {
         return json({ error: `La sub-QR "${(subPrevia as any).alias}" ya estaba verificada. No se cobró nada.` }, 400);
       }
+      const huella=await hashCurp(curp);
+      const [{data:duplicate},{data:wallet}]=await Promise.all([
+        admin.from('qard_sub_qr').select('id').eq('titular_user_id',userId).eq('curp_hash',huella).neq('id',subQrId).maybeSingle(),
+        admin.from('qard_wallets').select('saldo_mxn').eq('titular_user_id',userId).maybeSingle(),
+      ]);
+      if(duplicate) return json({error:'Esa CURP ya está registrada en otra de tus sub-QR.'},400);
+      if(!wallet||Number(wallet.saldo_mxn)<100) return json({error:'Necesitas $100 en tu cuenta principal para activar esta sub-QR.'},400);
     } else {
       // Cuenta principal: si ya tiene CURP verificada, NO volvemos a llamar a RENAPO.
       const { data: previa } = await admin
@@ -215,7 +223,7 @@ serve(async (req) => {
     const { data: curpEnc } = await admin.rpc("qard_enc" as any, { _v: persona.curp });
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
 
-    // ---- Verificación de una sub-QR familiar (Nivel 1, cobra $20 al titular) ----
+    // ---- Activación de sub-QR familiar (solo Nivel 1, cobra $100 al titular) ----
     if (subQrId) {
       const nombreEnviado = String(body?.nombre_completo ?? "").trim();
       if (nombreEnviado.length < 5) {
@@ -245,7 +253,7 @@ serve(async (req) => {
         persona,
         nombre_renapo: nombreCompleto,
         saldo_wallet: Number(fila?.saldo_wallet ?? 0),
-        costo: Number(fila?.costo ?? 20),
+        costo: Number(fila?.costo ?? 100),
       });
     }
 

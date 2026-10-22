@@ -26,6 +26,8 @@ export default function QardCobrar() {
   const [cvvOpen, setCvvOpen] = useState(false);
   const [pendingQard, setPendingQard] = useState("");
   const [scanCvv, setScanCvv] = useState("");
+  const collectionBusy = useRef(false);
+  const collectionRequest = useRef<{ signature: string; key: string } | null>(null);
 
   const [ultimo, setUltimo] = useState<any>(null);
   const [cobros, setCobros] = useState<any[]>([]);
@@ -137,14 +139,19 @@ export default function QardCobrar() {
   };
 
   const procesarCobro = async (qard: string, m: number, opts?: { cvv?: string; manual?: boolean }) => {
+    if (collectionBusy.current) return;
     const clean = qard.replace(/\D/g, "");
     if (clean.length !== 16) {
       setUltimo({ ok: false, mensaje: "QR inválido (no son 16 dígitos)", color: "rojo" });
       return;
     }
+    const signature = `${clean}:${m}`;
+    if (collectionRequest.current?.signature !== signature) collectionRequest.current = { signature, key: crypto.randomUUID() };
+    collectionBusy.current = true;
     const { data, error } = await supabase.functions.invoke("qard-cobrar-comercio", {
-      body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual },
-    });
+      body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual,
+        request_key: collectionRequest.current.key, terminal: new URLSearchParams(window.location.search).get('terminal') === '1' },
+    }).finally(() => { collectionBusy.current = false; });
     if (error) {
       console.error("cobro", error);
       setUltimo({ ok: false, mensaje: "No se pudo completar en este momento; intenta de nuevo", color: "rojo" });
@@ -152,6 +159,9 @@ export default function QardCobrar() {
     }
     setUltimo(data);
     if (data.ok) {
+      collectionRequest.current = null;
+      setManualCvv("");
+      setScanCvv("");
       setMonto("");
       toast({ title: data.mensaje });
       // Punto de trazado del comercio (solo si tiene la trazabilidad activa)

@@ -74,7 +74,7 @@ serve(async (req) => {
         const montoMxn = parseFloat(session.metadata.monto_mxn || "0");
         if (!userId || montoMxn <= 0) throw new Error("QaRd recarga: metadata inválida");
 
-        // Misma lógica de comisiones que SPEI: $20 activación (solo la 1ª) + $5 por recarga
+        // Activación principal pendiente $150 (una vez) + $15 por recarga.
         const { data: res, error: errRec } = await supabaseAdmin.rpc("qard_aplicar_recarga", {
           _user_id: userId,
           _monto: montoMxn,
@@ -83,6 +83,7 @@ serve(async (req) => {
           _metadata: { stripe_payment_id: session.payment_intent, stripe_session_id: session.id },
         });
         if (errRec) throw errRec;
+        if (!res?.ok) throw new Error(`Recarga no acreditada: ${res?.motivo ?? 'sin confirmación'}`);
 
         console.log(`[WEBHOOK-TICKETS] QaRd recarga`, JSON.stringify(res));
         return new Response(JSON.stringify({ received: true, resultado: res }), {

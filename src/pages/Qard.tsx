@@ -529,7 +529,7 @@ export default function Qard() {
       <Card className="p-4 border-primary/40">
         <div className="font-semibold mb-1">Transferir a otra QaRd</div>
         <div className="text-xs text-muted-foreground mb-3">
-          Gratis entre usuarios. Necesitas los 16 dígitos de la QaRd destino + su <b>CVV dinámico de 4 dígitos</b> (el de 3 dígitos es solo para compras). El CVV dinámico se rota tras cada transferencia.
+          Gratis entre usuarios. Necesitas los 16 dígitos de la QaRd destino + su <b>CVV dinámico de 4 dígitos</b>. El CVV de 3 dígitos no se comparte ni se envía para cobrar. El dinámico es de un solo uso.
         </div>
         <div className="space-y-2">
           <div>
@@ -652,7 +652,7 @@ export default function Qard() {
                   ? s.nombre_completo && <div className="text-[11px] text-muted-foreground truncate">{s.nombre_completo}</div>
                   : s.estado !== "cancelada" && (
                     <Button size="sm" variant="outline" className="h-7 px-2 mt-1 text-[11px]" onClick={() => setSubVerificar(s)}>
-                      Verificar ($20)
+                      Activar con CURP ($100)
                     </Button>
                   )}
                 <div className="flex items-center gap-3 mt-1">
