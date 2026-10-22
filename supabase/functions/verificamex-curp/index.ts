@@ -215,7 +215,7 @@ serve(async (req) => {
     const { data: curpEnc } = await admin.rpc("qard_enc" as any, { _v: persona.curp });
     const { data: datosEnc } = await admin.rpc("qard_enc" as any, { _v: JSON.stringify({ persona, raw: data }) });
 
-    // ---- Verificación de una sub-QR familiar (Nivel 1, cobra $20 al titular) ----
+    // ---- Activación de sub-QR familiar (solo Nivel 1, cobra $100 al titular) ----
     if (subQrId) {
       const nombreEnviado = String(body?.nombre_completo ?? "").trim();
       if (nombreEnviado.length < 5) {
@@ -245,7 +245,7 @@ serve(async (req) => {
         persona,
         nombre_renapo: nombreCompleto,
         saldo_wallet: Number(fila?.saldo_wallet ?? 0),
-        costo: Number(fila?.costo ?? 20),
+        costo: Number(fila?.costo ?? 100),
       });
     }
 
