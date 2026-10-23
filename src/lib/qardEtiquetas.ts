@@ -124,6 +124,10 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         push("eje", abs, `Saldo devuelto de ${alias(m.descripcion) || "sub-QR"}`, "-eje");
         break;
       case "transferencia_p2p_in":
+        if (md.terminal === "reload" && Number(md.comision_comercio) === 5) {
+          push("eje", abs, "Comisión por recarga en comercio");
+          break;
+        }
         if (m.comercio_nombre === "Cobro de viajes" || md.bolsa === "rutas") {
           push(esSub ? "sub_qr" : "eje", abs, "Transferencia recibida de rutas", "", esSub ? m.sub_qr_id : null);
           break;
@@ -141,6 +145,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
           break;
         }
         let et = etiquetaMovimiento(amb, m.tipo);
+        if (m.tipo === "transferencia_p2p_out" && md.terminal === "reload") et = "Fondos para recarga de cliente";
         if (m.tipo === "cobro_comercio" && m.comercio_nombre) et = m.comercio_nombre.startsWith("Cobro automático") ? m.comercio_nombre : `${et} · ${m.comercio_nombre}`;
         push(amb, positivo ? abs : -abs, et, "", esSub ? m.sub_qr_id : null);
         break;
