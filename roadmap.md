@@ -1,8 +1,10 @@
 # Productos estándar sin fotos
 ## Terminales digitales
-- [ ] Definir y aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
-- [ ] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
-- [ ] Mantener servicios pendientes sin proveedor; registrar operaciones y reparto en libro inmutable; pruebas de reglas y comprobación real.
+- [x] Aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
+- [x] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
+- [x] Mantener servicios pendientes sin proveedor y registrar operaciones y reparto en libro inmutable; pruebas de precios y permisos correctas.
+- [ ] Validar cobro, recarga e historial desde cuentas reales: Supabase externo sin sesión autenticada disponible.
+- [ ] Habilitar nivel tres y servicios: faltan proveedor biométrico real y proveedor de pagos de servicios contratado.
 
 - [x] Filtrar gestión personal de Fletes por tipo registrado: transportistas solo unidades y remitentes solo cargas; búsqueda de contraparte conservada, doce pruebas correctas y compilación sin errores. Comprobación en cuenta real pendiente por sesión externa no disponible.
 - [x] Separar gestión de Fletes en perfil personal y búsqueda por renglones con destinos y características compatibles; nueve pruebas de reglas y acceso público correctos, sin errores de compilación. Publicación y coincidencias entre cuentas reales pendientes por Supabase externo sin sesión disponible.
