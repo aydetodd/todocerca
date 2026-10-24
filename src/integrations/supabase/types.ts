@@ -5783,6 +5783,53 @@ export type Database = {
         }
         Relationships: []
       }
+      terminal_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invited_user_id: string | null
+          merchant_user_id: string
+          phone: string
+          status: string
+          terminal_code: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_user_id?: string | null
+          merchant_user_id: string
+          phone: string
+          status?: string
+          terminal_code: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_user_id?: string | null
+          merchant_user_id?: string
+          phone?: string
+          status?: string
+          terminal_code?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminal_invites_terminal_code_fkey"
+            columns: ["terminal_code"]
+            isOneToOne: false
+            referencedRelation: "terminal_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       terminal_operations: {
         Row: {
           amount_mxn: number
@@ -8125,13 +8172,19 @@ export type Database = {
       }
       set_tipo_proveedor: { Args: { _tipo: string }; Returns: undefined }
       terminal_accept: { Args: { _id: string }; Returns: undefined }
+      terminal_accept_invite: { Args: { _token: string }; Returns: undefined }
       terminal_has_access: {
         Args: { _code: string; _user_id: string }
         Returns: boolean
       }
-      terminal_invite: {
-        Args: { _code: string; _revoke?: boolean; _user_id: string }
+      terminal_invite_phone: {
+        Args: { _code: string; _phone: string }
         Returns: string
+      }
+      terminal_merchant_valid: { Args: { _user_id: string }; Returns: boolean }
+      terminal_phone_matches: {
+        Args: { _a: string; _b: string }
+        Returns: boolean
       }
       terminal_reload: {
         Args: { _amount: number; _key: string; _number: string }
@@ -8145,6 +8198,7 @@ export type Database = {
         Args: { _id: string; _note: string }
         Returns: undefined
       }
+      terminal_revoke_invite: { Args: { _id: string }; Returns: undefined }
       terminal_submit_request: {
         Args: { _business_name: string; _documents: Json }
         Returns: string
