@@ -12,10 +12,15 @@ export type Agent = {
   curp_document: string; ine_front_document: string; ine_back_document: string; rfc_document: string;
 };
 export type Terminal = { code: string; name: string; operational: boolean };
-export type Permission = { id: string; user_id: string; terminal_code: string; status: string };
-export function terminalEnabled(agent: Agent | null, permission: Permission | undefined, terminal: Terminal) {
-  return !!agent && agent.status === 'approved' && agent.curp_status === 'valid' && agent.rfc_status === 'valid' && agent.biometric_status === 'valid' && permission?.status === 'accepted' && terminal.operational;
+export type Permission = { id: string; user_id: string; terminal_code: string; status: string; invited_by?: string | null };
+export type Invite = { id: string; phone: string; terminal_code: string; status: string; invited_user_id: string | null; token: string };
+export function merchantValid(agent: Agent | null) {
+  return !!agent && agent.status === 'approved' && agent.curp_status === 'valid' && agent.rfc_status === 'valid' && agent.biometric_status === 'valid';
 }
+export function terminalEnabled(agent: Agent | null, permission: Permission | undefined, terminal: Terminal) {
+  return permission?.status === 'accepted' && terminal.operational && (!agent || merchantValid(agent));
+}
+export function terminalInviteLink(token: string) { return `https://todocerca.mx/terminal-invitacion?token=${token}`; }
 export function dynamicCvvValid(value: string) { return /^\d{4}$/.test(value); }
 export function subActivationEligible(curpValid: boolean, level: number) { return curpValid && level === 1; }
 export const documentFields = [

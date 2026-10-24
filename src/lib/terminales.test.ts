@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { QARD_FEES, reloadBreakdown, terminalEnabled, dynamicCvvValid, subActivationEligible, type Agent } from './terminales';
+import { QARD_FEES, reloadBreakdown, terminalEnabled, merchantValid, terminalInviteLink, dynamicCvvValid, subActivationEligible, type Agent } from './terminales';
 test('activación principal única cuesta 150', () => assert.equal(reloadBreakdown(200,true,false).opening,150));
 test('activación ya pagada no se repite', () => assert.equal(reloadBreakdown(200,false,false).opening,0));
 test('cada recarga cuesta 15', () => assert.equal(reloadBreakdown(200,false,false).fee,15));
@@ -20,4 +20,14 @@ test('CURP y RFC pendientes bloquean terminal', () => { assert.equal(terminalEna
 test('revocación bloquea terminal', () => assert.equal(terminalEnabled(agent,{...permission,status:'revoked'},terminal),false));
 test('servicios pendientes no operan ni con agente aprobado', () => assert.equal(terminalEnabled(agent,permission,{...terminal,operational:false}),false));
 test('agente verificado con invitación aceptada opera', () => assert.equal(terminalEnabled(agent,permission,terminal),true));
+test('operador invitado sin solicitud propia opera su terminal aceptada', () => assert.equal(terminalEnabled(null,permission,terminal),true));
+test('operador invitado no opera terminal no operativa', () => assert.equal(terminalEnabled(null,permission,{...terminal,operational:false}),false));
+test('operador invitado no opera invitación pendiente', () => assert.equal(terminalEnabled(null,{...permission,status:'pending'},terminal),false));
+test('comercio válido exige aprobación y tres validaciones', () => {
+  assert.equal(merchantValid(agent),true);
+  assert.equal(merchantValid({...agent,status:'pending'}),false);
+  assert.equal(merchantValid({...agent,biometric_status:'pending'}),false);
+  assert.equal(merchantValid(null),false);
+});
+test('enlace de invitación usa el dominio oficial con token', () => assert.equal(terminalInviteLink('abc'), 'https://todocerca.mx/terminal-invitacion?token=abc'));
 test('monto menor o igual a cargos se rechaza', () => assert.throws(()=>reloadBreakdown(165,true,true)));
