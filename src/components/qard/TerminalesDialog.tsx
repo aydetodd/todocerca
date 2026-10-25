@@ -117,8 +117,8 @@ export default function TerminalesDialog() {
     setResult(response);await load();
   });
   return <>
-    <Button variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4" onClick={()=>setOpen(true)}>
-      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">Terminales digitales</span>
+    <Button variant="outline" className="w-full min-h-14 h-auto gap-2 p-4" onClick={()=>setOpen(true)}>
+      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">Abrir terminales digitales</span>
     </Button>
     <Dialog open={open} onOpenChange={v=>{if(!busy){setOpen(v);if(!v)setReloadOpen(false);}}}>
       <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
