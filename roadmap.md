@@ -3,7 +3,8 @@
 - [x] Aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
 - [x] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
 - [x] Mantener servicios pendientes sin proveedor y registrar operaciones y reparto en libro inmutable; pruebas de precios y permisos correctas.
-- [ ] Validar cobro, recarga e historial desde cuentas reales: Supabase externo sin sesión autenticada disponible.
+- [x] Cambiar invitaciones de terminal a por teléfono hechas por el dueño del comercio (como con chóferes): tabla de invitaciones, enlace/token, aceptación, revocación y dinero a nombre del negocio; 22 pruebas correctas.
+- [ ] Validar cobro, recarga, invitación y aceptación desde cuentas reales: Supabase externo sin sesión autenticada disponible.
 - [ ] Habilitar nivel tres y servicios: faltan proveedor biométrico real y proveedor de pagos de servicios contratado.
 
 - [x] Filtrar gestión personal de Fletes por tipo registrado: transportistas solo unidades y remitentes solo cargas; búsqueda de contraparte conservada, doce pruebas correctas y compilación sin errores. Comprobación en cuenta real pendiente por sesión externa no disponible.

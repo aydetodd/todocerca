@@ -69,6 +69,7 @@ import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
 import PanelConcesionarioForaneo from "./pages/PanelConcesionarioForaneo";
 import FlotaMonitoreo from "./pages/FlotaMonitoreo";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
+import TerminalInvitacion from "./pages/TerminalInvitacion";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
@@ -95,7 +96,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/", "/saldo"];
+const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/terminal-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/", "/saldo"];
 
 const AccessGateProvider = () => {
   const location = useLocation();
@@ -234,6 +235,7 @@ export default function AppWrapper() {
           
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
           <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
+          <Route path="/terminal-invitacion" element={<TerminalInvitacion />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           {/* Wallet QR Boletos */}
           <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
