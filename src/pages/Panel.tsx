@@ -39,6 +39,7 @@ import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
 import AdminTerminales from '@/components/qard/AdminTerminales';
+import TerminalesDialog from '@/components/qard/TerminalesDialog';
 
 import ProviderRegistration from '@/components/ProviderRegistration';
 
@@ -507,7 +508,7 @@ export default function Panel() {
         );
       
       case 'terminales':
-        // Interfaz base: aquí el dueño invitará empleados y les dará permisos
+        // El dueño invita teléfonos (incluido el suyo) para operar terminales
         return (
           <Card>
             <CardHeader>
@@ -517,10 +518,7 @@ export default function Panel() {
               <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-                <p className="font-medium text-foreground">Próximamente</p>
-                <p className="text-sm mt-1">Aquí podrás agregar empleados y sus terminales.</p>
-              </div>
+              <TerminalesDialog />
             </CardContent>
           </Card>
         );

@@ -513,7 +513,6 @@ const Dashboard = () => {
                   <div className="space-y-3">
                     <nav aria-label="Servicios del perfil" className="grid grid-cols-1 gap-3">
                       <DataUsageDialog />
-                      <TerminalesDialog />
                     </nav>
                     <div>
                       <span className="text-sm font-medium">ID Usuario / QaRd:</span>
@@ -826,10 +825,7 @@ const Dashboard = () => {
                   <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-                    <p className="font-medium text-foreground">Próximamente</p>
-                    <p className="text-sm mt-1">Aquí podrás agregar empleados y sus terminales.</p>
-                  </div>
+                  <TerminalesDialog />
                 </CardContent>
               </Card>
             )}
