@@ -825,7 +825,7 @@ const Dashboard = () => {
                   <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <TerminalesDialog />
+                  <TerminalesDialog inline />
                 </CardContent>
               </Card>
             )}
