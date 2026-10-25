@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Store, Check, RefreshCw, LockKeyhole, ArrowLeft, Send, Ban, UserPlus, Copy } from 'lucide-react';
 import { documentFields, terminalEnabled, terminalInviteLink, merchantValid, type Agent, type Terminal, type Permission, type Invite } from '@/lib/terminales';
 
-export default function TerminalesDialog({ inline = false }: { inline?: boolean }) {
+export default function TerminalesDialog() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [open,setOpen]=useState(false);
@@ -117,10 +117,10 @@ export default function TerminalesDialog({ inline = false }: { inline?: boolean 
     setResult(response);await load();
   });
   return <>
-    {!inline&&<Button variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4" onClick={()=>setOpen(true)}>
-      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">Terminales digitales</span>
-    </Button>}
-    <Dialog open={inline||open} onOpenChange={v=>{if(!busy&&!inline){setOpen(v);if(!v)setReloadOpen(false);}}}>
+    <Button variant="outline" className="w-full min-h-14 h-auto gap-2 p-4" onClick={()=>setOpen(true)}>
+      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">Abrir terminales digitales</span>
+    </Button>
+    <Dialog open={open} onOpenChange={v=>{if(!busy){setOpen(v);if(!v)setReloadOpen(false);}}}>
       <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
         <DialogHeader><DialogTitle className="flex items-center justify-between gap-2">Terminales digitales<Button size="icon" variant="ghost" aria-label="Actualizar terminales" onClick={()=>void load()} disabled={loading}><RefreshCw className="h-4 w-4"/></Button></DialogTitle></DialogHeader>
         {loading&&<p className="text-sm text-muted-foreground">Consultando…</p>}

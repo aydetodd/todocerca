@@ -518,7 +518,7 @@ export default function Panel() {
               <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
             </CardHeader>
             <CardContent>
-              <TerminalesDialog inline />
+              <TerminalesDialog />
             </CardContent>
           </Card>
         );
