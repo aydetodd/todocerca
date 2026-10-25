@@ -69,6 +69,7 @@ import PanelConcesionarioPrivado from "./pages/PanelConcesionarioPrivado";
 import PanelConcesionarioForaneo from "./pages/PanelConcesionarioForaneo";
 import FlotaMonitoreo from "./pages/FlotaMonitoreo";
 import AcceptEmployeeInvite from "./pages/AcceptEmployeeInvite";
+import TerminalInvitacion from "./pages/TerminalInvitacion";
 import SolicitudDescuento from "./pages/SolicitudDescuento";
 import TodoCercaTv from "./pages/TodoCercaTv";
 import ReportesCiudadanos from "./pages/ReportesCiudadanos";
@@ -234,6 +235,7 @@ export default function AppWrapper() {
           
           <Route path="/chofer-invitacion" element={<AcceptDriverInvite />} />
           <Route path="/empleado-invitacion" element={<AcceptEmployeeInvite />} />
+          <Route path="/terminal-invitacion" element={<TerminalInvitacion />} />
           <Route path="/proveedor/:proveedorId" element={<ProviderProfile />} />
           {/* Wallet QR Boletos */}
           <Route path="/wallet/qr-boletos" element={<QrBoletos />} />
