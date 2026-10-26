@@ -210,8 +210,9 @@ export default function Qard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { nav("/auth"); return; }
 
-    // Asegura wallet + titular sub-QR
+    // Asegura wallet + titular sub-QR (+ QaRd Empresarial si el comerciante está aprobado)
     await supabase.rpc("qard_ensure_wallet" as any, { _user_id: user.id });
+    await supabase.rpc("qard_ensure_empresarial" as any, { _user_id: user.id });
 
     const [{ data: prof }, { data: w }, { data: s }, { data: m }] = await Promise.all([
       supabase.from("profiles").select("qard_number, nombre").eq("user_id", user.id).maybeSingle(),
@@ -352,9 +353,10 @@ export default function Qard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !wallet) return;
     const usados = subs.map(s => s.sub_index);
-    let idx = 1;
+    // La terminación 01 está reservada para la QaRd Empresarial: las familiares empiezan en 02
+    let idx = 2;
     while (usados.includes(idx) && idx < 100) idx++;
-    if (idx >= 100) return toast({ title: "Máximo 100 sub-QR alcanzado", variant: "destructive" });
+    if (idx >= 100) return toast({ title: "Máximo de sub-QR alcanzado", variant: "destructive" });
 
     const base = qardNumber.slice(0, 14);
     const numero = base + String(idx).padStart(2, "0");
@@ -448,6 +450,43 @@ export default function Qard() {
         );
       })()}
 
+      {/* QaRd Empresarial (Nivel 3) — terminación 01, solo comerciantes aprobados */}
+      {(() => {
+        const emp = subs.find(s => s.sub_index === 1);
+        if (!emp) return null;
+        const empAprobada = identidad?.estado === "moral_approved";
+        return (
+          <div className="space-y-3">
+            <QardTarjeta
+              empresarial
+              numero={emp.qard_number}
+              nombre={emp.alias}
+              indice={1}
+              estado={emp.estado}
+              vence={emp.fecha_vencimiento}
+              cvv={emp.cvv}
+              cvvVisible={!!cvvVisible[emp.id]}
+              onVerCvv={() => setCvvVisible(v => ({ ...v, [emp.id]: !v[emp.id] }))}
+              onRotarCvv={() => rotarCvv(emp.id)}
+              onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial" })}
+              onImprimir={() => { setPrintSel([emp.id]); setPrintOpen(true); }}
+              nivel={3}
+              activada={empAprobada}
+              encendida={emp.estado === "activa"}
+              cambiandoEstado={cambiandoEstado === emp.id}
+              powerDisabled={emp.estado === "cancelada" || cambiandoEstado !== null}
+              onPowerChange={() => void toggleSub(emp)}
+            />
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground">Saldo empresarial</div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className={Number(emp.saldo_mxn) < 0 ? "text-destructive" : "qard-balance"}>${Number(emp.saldo_mxn ?? 0).toFixed(2)}</span>
+                <span className="text-sm font-semibold text-muted-foreground">QaRd pesos</span>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Activación / identidad financiera */}
       {!activa ? (
@@ -600,7 +639,7 @@ export default function Qard() {
         </div>
         <div className="space-y-2">
           {(() => {
-            const familiares = subs.filter(s => s.sub_index > 0);
+            const familiares = subs.filter(s => s.sub_index > 1);
             const counts = {
               activa: familiares.filter(s => s.estado === "activa").length,
               apagada: familiares.filter(s => s.estado === "apagada").length,
@@ -902,7 +941,7 @@ export default function Qard() {
             Si eliges una sola, se imprimen 4 copias en la hoja. Si eliges varias, se imprime una copia de cada una (4 por hoja).
           </div>
           <div className="divide-y max-h-[50vh] overflow-y-auto">
-            {subs.filter(s => s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada)).map(s => ({
+            {subs.filter(s => s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.sub_index === 1 ? identidad?.estado === "moral_approved" : s.curp_verificada)).map(s => ({
               id: s.sub_index === 0 ? "titular" : s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0"),
             })).map(op => {
               const checked = printSel.includes(op.id);
@@ -929,12 +968,12 @@ export default function Qard() {
             disabled={printSel.length === 0}
             onClick={async () => {
               const cards = subs.filter(s => printSel.includes(s.sub_index === 0 ? "titular" : s.id)
-                && s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada))
+                && s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.sub_index === 1 ? identidad?.estado === "moral_approved" : s.curp_verificada))
                 .map(s => ({
                   qardNumber: s.qard_number,
                   vencimiento: s.fecha_vencimiento,
-                  alias: s.sub_index === 0 ? identidad?.nombre_completo || s.nombre_completo : s.nombre_completo,
-                  nivel: s.sub_index === 0 ? nivelVerificacion : 1,
+                  alias: s.sub_index === 0 ? identidad?.nombre_completo || s.nombre_completo : s.sub_index === 1 ? s.alias : s.nombre_completo,
+                  nivel: s.sub_index === 0 ? nivelVerificacion : s.sub_index === 1 ? 3 : 1,
                   activada: true,
                 }));
               if (!cards.length) {
