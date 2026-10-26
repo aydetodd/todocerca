@@ -10,6 +10,7 @@
 - The shared trace/segmentation map initializes only after its conditional container mounts and frames route bounds, not GPS, so all transport families display their loaded traces reliably.
 - Principal and family QaRd cards share QardTarjeta including its external control row; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
 - Card screen and PDF share qardCardPresentation for legal-name masking and level indicators; display persisted verification levels only, never infer upgrades from appearance.
+- Show an unissued Empresarial card through QardTarjeta's pending presentation without a payment number, QR, balance or controls; visibility must not create an account or raise verification levels.
 - Fletes lives in its own tables (fletes_proveedores, fletes_anuncios) instead of productos, so closed-circuit ads can never leak into the public map or general search.
 - Fletes listings and publication types follow the persisted participant type in fletes_proveedores; counterpart-only RLS and owner-scoped type registration prevent URL-based role switching while preserving owners' existing ads.
 - Personal Fletes management filters owned ads through fletesGestionables using the persisted participant type, including on the standalone page; this prevents legacy opposite-type ads from exposing inappropriate management controls without deleting data.
