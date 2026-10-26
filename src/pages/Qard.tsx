@@ -450,6 +450,43 @@ export default function Qard() {
         );
       })()}
 
+      {/* QaRd Empresarial (Nivel 3) — terminación 01, solo comerciantes aprobados */}
+      {(() => {
+        const emp = subs.find(s => s.sub_index === 1);
+        if (!emp) return null;
+        const empAprobada = identidad?.estado === "moral_approved";
+        return (
+          <div className="space-y-3">
+            <QardTarjeta
+              empresarial
+              numero={emp.qard_number}
+              nombre={emp.alias}
+              indice={1}
+              estado={emp.estado}
+              vence={emp.fecha_vencimiento}
+              cvv={emp.cvv}
+              cvvVisible={!!cvvVisible[emp.id]}
+              onVerCvv={() => setCvvVisible(v => ({ ...v, [emp.id]: !v[emp.id] }))}
+              onRotarCvv={() => rotarCvv(emp.id)}
+              onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial" })}
+              onImprimir={() => { setPrintSel([emp.id]); setPrintOpen(true); }}
+              nivel={3}
+              activada={empAprobada}
+              encendida={emp.estado === "activa"}
+              cambiandoEstado={cambiandoEstado === emp.id}
+              powerDisabled={emp.estado === "cancelada" || cambiandoEstado !== null}
+              onPowerChange={() => void toggleSub(emp)}
+            />
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground">Saldo empresarial</div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className={Number(emp.saldo_mxn) < 0 ? "text-destructive" : "qard-balance"}>${Number(emp.saldo_mxn ?? 0).toFixed(2)}</span>
+                <span className="text-sm font-semibold text-muted-foreground">QaRd pesos</span>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Activación / identidad financiera */}
       {!activa ? (
