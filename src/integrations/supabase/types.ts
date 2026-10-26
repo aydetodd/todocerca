@@ -4496,6 +4496,7 @@ export type Database = {
           qard_number: string
           saldo_mxn: number
           sub_index: number
+          tipo: string
           titular_user_id: string
           updated_at: string
           verificacion_costo: number
@@ -4521,6 +4522,7 @@ export type Database = {
           qard_number: string
           saldo_mxn?: number
           sub_index: number
+          tipo?: string
           titular_user_id: string
           updated_at?: string
           verificacion_costo?: number
@@ -4546,6 +4548,7 @@ export type Database = {
           qard_number?: string
           saldo_mxn?: number
           sub_index?: number
+          tipo?: string
           titular_user_id?: string
           updated_at?: string
           verificacion_costo?: number
@@ -7974,6 +7977,10 @@ export type Database = {
       }
       qard_dec: { Args: { _v: string }; Returns: string }
       qard_enc: { Args: { _v: string }; Returns: string }
+      qard_ensure_empresarial: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       qard_ensure_number: { Args: { _user_id: string }; Returns: string }
       qard_ensure_wallet: { Args: { _user_id: string }; Returns: string }
       qard_entradas_mes: { Args: { _user_id: string }; Returns: number }
