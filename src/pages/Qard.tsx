@@ -450,10 +450,29 @@ export default function Qard() {
         );
       })()}
 
-      {/* QaRd Empresarial (Nivel 3) — terminación 01, solo comerciantes aprobados */}
+      {/* Empresarial pendiente visible sin crear una cuenta ni elevar verificaciones. */}
       {(() => {
         const emp = subs.find(s => s.sub_index === 1);
-        if (!emp) return null;
+        if (!emp) return (
+          <div className="space-y-3">
+            <QardTarjeta
+              empresarial
+              pendiente
+              numero=""
+              nombre={identidad?.nombre_completo || ""}
+              indice={1}
+              estado="apagada"
+              nivel={0}
+              activada={false}
+              encendida={false}
+              cvvVisible={false}
+              onVerCvv={() => {}}
+              onRotarCvv={() => {}}
+              onQr={() => {}}
+            />
+            <p className="text-xs text-muted-foreground">INACTIVA · Pendiente de registro y verificación del comercio.</p>
+          </div>
+        );
         const empAprobada = identidad?.estado === "moral_approved";
         return (
           <div className="space-y-3">
@@ -470,7 +489,7 @@ export default function Qard() {
               onRotarCvv={() => rotarCvv(emp.id)}
               onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial" })}
               onImprimir={() => { setPrintSel([emp.id]); setPrintOpen(true); }}
-              nivel={3}
+              nivel={empAprobada ? nivelVerificacion : 0}
               activada={empAprobada}
               encendida={emp.estado === "activa"}
               cambiandoEstado={cambiandoEstado === emp.id}
