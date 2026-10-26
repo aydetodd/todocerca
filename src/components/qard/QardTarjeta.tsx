@@ -22,6 +22,7 @@ type Props = {
   cambiandoEstado?: boolean;
   powerDisabled?: boolean;
   onPowerChange?: () => void;
+  empresarial?: boolean;
 };
 
 export default function QardTarjeta(props: Props) {
