@@ -33,13 +33,15 @@ export default function QardTarjeta(props: Props) {
   const nombre = protegerNombreQard(props.nombre) || "••••";
   return (
     <div className="qard-card-group">
-    <div className={`qard-plastic ${apagada ? "qard-plastic-off" : ""}`} aria-label={`Tarjeta ${props.nombre} ${apagada ? "apagada" : "encendida"}`}>
+    <div className={`qard-plastic ${apagada ? "qard-plastic-off" : ""} ${props.empresarial && !apagada ? "qard-plastic-empresarial" : ""}`} aria-label={`Tarjeta ${props.nombre} ${apagada ? "apagada" : "encendida"}`}>
       <div className="qard-card-header flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <img src="/icon-512.png" alt="TodoCerca" className="qard-logo h-8 w-8 shrink-0 rounded-full object-cover" />
           <div className="min-w-0">
-            <div className="text-lg font-bold">QaRd</div>
-            <div className="text-[10px] opacity-80">{props.indice === 0 ? "Tarjeta principal" : "Tarjeta familiar"} · {String(props.indice).padStart(2, "0")}</div>
+            <div className="qard-marca text-lg font-bold">QaRd</div>
+            {props.empresarial
+              ? <div className="qard-etiqueta-emp text-[10px]">EMPRESARIAL</div>
+              : <div className="text-[10px] opacity-80">{props.indice === 0 ? "Tarjeta principal" : "Tarjeta familiar"} · {String(props.indice).padStart(2, "0")}</div>}
           </div>
         </div>
         <Button variant="ghost" className="qard-qr h-auto shrink-0 p-1" onClick={props.onQr} title="Agrandar QR" aria-label={`Agrandar QR de ${props.nombre}`}>

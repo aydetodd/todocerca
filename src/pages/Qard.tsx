@@ -210,8 +210,9 @@ export default function Qard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { nav("/auth"); return; }
 
-    // Asegura wallet + titular sub-QR
+    // Asegura wallet + titular sub-QR (+ QaRd Empresarial si el comerciante está aprobado)
     await supabase.rpc("qard_ensure_wallet" as any, { _user_id: user.id });
+    await supabase.rpc("qard_ensure_empresarial" as any, { _user_id: user.id });
 
     const [{ data: prof }, { data: w }, { data: s }, { data: m }] = await Promise.all([
       supabase.from("profiles").select("qard_number, nombre").eq("user_id", user.id).maybeSingle(),
@@ -352,9 +353,10 @@ export default function Qard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !wallet) return;
     const usados = subs.map(s => s.sub_index);
-    let idx = 1;
+    // La terminación 01 está reservada para la QaRd Empresarial: las familiares empiezan en 02
+    let idx = 2;
     while (usados.includes(idx) && idx < 100) idx++;
-    if (idx >= 100) return toast({ title: "Máximo 100 sub-QR alcanzado", variant: "destructive" });
+    if (idx >= 100) return toast({ title: "Máximo de sub-QR alcanzado", variant: "destructive" });
 
     const base = qardNumber.slice(0, 14);
     const numero = base + String(idx).padStart(2, "0");
