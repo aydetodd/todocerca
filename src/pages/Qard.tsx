@@ -602,7 +602,7 @@ export default function Qard() {
         </div>
         <div className="space-y-2">
           {(() => {
-            const familiares = subs.filter(s => s.sub_index > 0);
+            const familiares = subs.filter(s => s.sub_index > 1);
             const counts = {
               activa: familiares.filter(s => s.estado === "activa").length,
               apagada: familiares.filter(s => s.estado === "apagada").length,
