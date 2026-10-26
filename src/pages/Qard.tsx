@@ -941,7 +941,7 @@ export default function Qard() {
             Si eliges una sola, se imprimen 4 copias en la hoja. Si eliges varias, se imprime una copia de cada una (4 por hoja).
           </div>
           <div className="divide-y max-h-[50vh] overflow-y-auto">
-            {subs.filter(s => s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada)).map(s => ({
+            {subs.filter(s => s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.sub_index === 1 ? identidad?.estado === "moral_approved" : s.curp_verificada)).map(s => ({
               id: s.sub_index === 0 ? "titular" : s.id, nombre: s.alias, term: String(s.sub_index).padStart(2, "0"),
             })).map(op => {
               const checked = printSel.includes(op.id);
@@ -968,12 +968,12 @@ export default function Qard() {
             disabled={printSel.length === 0}
             onClick={async () => {
               const cards = subs.filter(s => printSel.includes(s.sub_index === 0 ? "titular" : s.id)
-                && s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.curp_verificada))
+                && s.estado === "activa" && (s.sub_index === 0 ? activa && nivelVerificacion > 0 : s.sub_index === 1 ? identidad?.estado === "moral_approved" : s.curp_verificada))
                 .map(s => ({
                   qardNumber: s.qard_number,
                   vencimiento: s.fecha_vencimiento,
-                  alias: s.sub_index === 0 ? identidad?.nombre_completo || s.nombre_completo : s.nombre_completo,
-                  nivel: s.sub_index === 0 ? nivelVerificacion : 1,
+                  alias: s.sub_index === 0 ? identidad?.nombre_completo || s.nombre_completo : s.sub_index === 1 ? s.alias : s.nombre_completo,
+                  nivel: s.sub_index === 0 ? nivelVerificacion : s.sub_index === 1 ? 3 : 1,
                   activada: true,
                 }));
               if (!cards.length) {
