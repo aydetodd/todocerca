@@ -335,7 +335,7 @@ serve(async (req) => {
     }
 
     if (accion === "recuperar") {
-      const { data: val } = await admin.from("ine_validaciones").select("*").eq("user_id", userId).eq("estado", "pendiente").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: val } = await admin.from("ine_validaciones").select("*").eq("user_id", userId).eq("estado", "pendiente").order("ine_fecha_extraccion", { ascending: false }).limit(1).maybeSingle();
       if (!val) return json({ ok: true, pendiente_confirmacion: false });
       const { data: dec } = await admin.rpc("qard_dec", { _v: val.raw_response_enc });
       const stored = dec ? JSON.parse(String(dec)) : null;
