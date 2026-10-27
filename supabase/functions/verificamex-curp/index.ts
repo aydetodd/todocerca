@@ -1,6 +1,7 @@
 // Verificamex — Validación de CURP contra RENAPO (Nivel 1)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { visibleVerificationData } from "../_shared/verificationData.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,6 +91,21 @@ serve(async (req) => {
     const curp = String(body?.curp ?? "").toUpperCase().replace(/[^A-ZÑ0-9]/g, "");
     if (!validarCurp(curp)) return json({ error: "La CURP no tiene un formato válido (18 caracteres)." }, 400);
 
+    let resultadoGuardado: any = null;
+    let resultadoId: string | null = null;
+    if (!body.sub_qr_id && (body.revisar === true || body.accion === "confirmar")) {
+      const huella = await hashCurp(curp);
+      const { data: cache } = await admin.from("qard_verification_results").select("*").eq("user_id", userId).eq("kind", "curp").eq("input_hash", huella).maybeSingle();
+      if (cache) {
+        if (cache.status === "rejected") return json({ error: "Estos datos fueron reportados. Solicita ayuda antes de continuar." }, 400);
+        const { data: dec, error } = await admin.rpc("qard_dec", { _v: cache.response_enc });
+        if (error || !dec) return json({ error: "No pudimos recuperar la consulta guardada." }, 500);
+        resultadoGuardado = JSON.parse(String(dec));
+        resultadoId = cache.id;
+        if (body.revisar === true) return json({ ok: true, persona: resultadoGuardado.persona, datos: visibleVerificationData(resultadoGuardado.raw), validacion_id: cache.id, pendiente_confirmacion: cache.status !== "confirmed" });
+      } else if (body.accion === "confirmar") return json({ error: "Primero consulta y revisa tu CURP." }, 400);
+    }
+
     // ---- Candado anti doble verificación: la CURP solo se consulta a RENAPO una vez ----
     const subQrId = typeof body?.sub_qr_id === "string" ? body.sub_qr_id : null;
 
@@ -117,7 +133,7 @@ serve(async (req) => {
         .select("verification_level, nombre_completo, curp_enc, verificamex_curp_validated, verificamex_data_enc")
         .eq("user_id", userId).maybeSingle();
 
-      if (previa?.verificamex_curp_validated) {
+      if (previa?.verificamex_curp_validated && !resultadoGuardado) {
         const { data: curpGuardada } = await admin.rpc("qard_dec" as any, { _v: (previa as any).curp_enc });
         if (curpGuardada && String(curpGuardada).toUpperCase() !== curp) {
           return json({ error: "Esta cuenta ya tiene otra CURP verificada. Si necesitas corregirla, escríbenos a hola@todocerca.mx." }, 400);
@@ -126,13 +142,14 @@ serve(async (req) => {
         let personaGuardada: Record<string, unknown> | null = null;
         try {
           const { data: datosDec } = await admin.rpc("qard_dec" as any, { _v: (previa as any).verificamex_data_enc });
-          personaGuardada = datosDec ? JSON.parse(String(datosDec)).persona : null;
+          personaGuardada = datosDec ? JSON.parse(String(datosDec)) : null;
         } catch { /* si no se puede leer, devolvemos lo mínimo */ }
         const nivelPrevio = Number((previa as any).verification_level ?? 1);
         return json({
           ok: true,
           ya_verificada: true,
-          persona: personaGuardada ?? { curp, nombres: "", primerApellido: "", segundoApellido: "", sexo: "", fechaNacimiento: "", entidad: "" },
+          datos: visibleVerificationData(personaGuardada?.raw ?? personaGuardada?.persona),
+          persona: personaGuardada?.persona ?? { curp, nombres: "", primerApellido: "", segundoApellido: "", sexo: "", fechaNacimiento: "", entidad: "" },
           verification_level: Math.max(nivelPrevio, 1),
           monthly_limit_udis: nivelPrevio >= 2 ? 3000 : 1000,
         });
@@ -177,20 +194,18 @@ serve(async (req) => {
     const token = Deno.env.get("VERIFICAMEX_BEARER_TOKEN");
     if (!token) return json({ error: "Falta configurar el servicio de verificación." }, 500);
 
-    const res = await fetch(`${base}/v1/scraping/renapo`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ curp }),
+    const res = resultadoGuardado ? null : await fetch(`${base.replace(/\/$/, "").replace(/\/identity$/, "")}/v1/scraping/renapo`, {
+      method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ curp }),
     });
-
-    const texto = await res.text();
-    let data: any = null;
-    try { data = JSON.parse(texto); } catch { data = { raw: texto }; }
+    const texto = res ? await res.text() : "";
+    let data: any = resultadoGuardado?.raw ?? null;
+    if (!resultadoGuardado) { try { data = JSON.parse(texto); } catch { data = { raw: texto }; } }
+    const httpStatus = res?.status ?? 200;
 
     // Verificamex responde anidado: { data: { citizen: { status, codigo, registros: [...] } } }
     const citizen = data?.data?.citizen ?? data?.citizen ?? null;
     const registro = Array.isArray(citizen?.registros) ? citizen.registros[0] : null;
-    const ok = res.ok && (
+    const ok = (res?.ok ?? true) && (
       registro != null ||
       citizen?.status === true || citizen?.status === "true" ||
       data?.status === true || data?.status === "true" || data?.success === true
@@ -198,12 +213,12 @@ serve(async (req) => {
 
     if (!ok) {
       await admin.from("verificamex_logs").insert({
-        user_id: userId, tipo: "curp", exito: false, http_status: res.status,
+        user_id: userId, tipo: "curp", exito: false, http_status: httpStatus,
         mensaje: (data?.message ?? texto).toString().slice(0, 500),
       });
       return json({
         error: data?.message || "No pudimos validar tu CURP en RENAPO. Revisa que esté bien escrita e inténtalo otra vez.",
-        detalle: res.status,
+        detalle: httpStatus,
       }, 400);
     }
 
@@ -217,6 +232,14 @@ serve(async (req) => {
       fechaNacimiento: buscar(fuente, ["fechanacimiento", "fechadenacimiento"]) ?? "",
       entidad: buscar(fuente, ["entidad", "entidadnacimiento", "estadonacimiento"]) ?? "",
     };
+
+    if (!subQrId && body.revisar === true) {
+      const { data: enc, error: encError } = await admin.rpc("qard_enc", { _v: JSON.stringify({ persona, raw: data }) });
+      if (encError || !enc) return json({ error: "No se pudo conservar la consulta." }, 500);
+      const { data: row, error } = await admin.from("qard_verification_results").insert({ user_id: userId, kind: "curp", input_hash: await hashCurp(curp), response_enc: enc }).select("id").single();
+      if (error) return json({ error: "No se pudo conservar la consulta." }, 500);
+      return json({ ok: true, persona, datos: visibleVerificationData(data), validacion_id: row.id, pendiente_confirmacion: true });
+    }
 
     const nombreCompleto = unirNombre([persona.nombres, persona.primerApellido, persona.segundoApellido]);
 
@@ -292,10 +315,14 @@ serve(async (req) => {
 
 
     await admin.from("verificamex_logs").insert({
-      user_id: userId, tipo: "curp", exito: true, http_status: res.status, mensaje: "CURP validada en RENAPO",
+      user_id: userId, tipo: "curp", exito: true, http_status: httpStatus, mensaje: "CURP validada en RENAPO",
     });
 
-    return json({ ok: true, persona, verification_level: nivel, monthly_limit_udis: limite });
+    if (resultadoId) {
+      const { error } = await admin.from("qard_verification_results").update({ status: "confirmed" }).eq("id", resultadoId).eq("user_id", userId);
+      if (error) return json({ error: "No se pudo guardar tu confirmación." }, 500);
+    }
+    return json({ ok: true, persona, datos: visibleVerificationData(data), verification_level: nivel, monthly_limit_udis: limite });
   } catch (e) {
     console.error("verificamex-curp error", e);
     if (userId) {

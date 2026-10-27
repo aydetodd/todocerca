@@ -4565,6 +4565,39 @@ export type Database = {
           },
         ]
       }
+      qard_verification_results: {
+        Row: {
+          created_at: string
+          id: string
+          input_hash: string
+          kind: string
+          response_enc: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_hash: string
+          kind: string
+          response_enc: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_hash?: string
+          kind?: string
+          response_enc?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qard_viajes_pasajero: {
         Row: {
           bajada_at: string | null

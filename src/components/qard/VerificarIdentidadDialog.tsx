@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { AlertCircle, BadgeCheck, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
 import CapturaFotoIne from "./CapturaFotoIne";
+import VerificationData from "./VerificationData";
 
 type Props = {
   open: boolean;
@@ -57,6 +58,8 @@ export default function VerificarIdentidadDialog({
   open, onOpenChange, onVerificada, nivelActual = 0, nombreGuardado, curpGuardada,
 }: Props) {
   const [paso, setPaso] = useState<"curp" | "datos" | "ine" | "procesando" | "revisar" | "nocoincide" | "listo">("curp");
+  const [datosRecibidos, setDatosRecibidos] = useState<unknown>(null);
+  const [datosCurp, setDatosCurp] = useState<unknown>(null);
   const [ocupado, setOcupado] = useState(false);
   const [curp, setCurp] = useState("");
   const [persona, setPersona] = useState<Persona | null>(null);
@@ -79,6 +82,10 @@ export default function VerificarIdentidadDialog({
     setValidacionId(null);
     setLeido(null);
     setCurpsDistintas(null);
+    setDatosRecibidos(null);
+    if (nivelActual === 1) void invocar("verificamex-ine", { accion: "recuperar" }).then(r => {
+      if (r.pendiente_confirmacion) { setValidacionId(r.validacion_id); setLeido(r.datos); setDatosRecibidos(r.datos_recibidos); setPaso("revisar"); }
+    }).catch(() => {});
   }, [open, nivelActual]);
 
 
@@ -90,17 +97,11 @@ export default function VerificarIdentidadDialog({
   };
 
   const validarCurpAhora = () => ejecutar(async () => {
-    const r = await invocar("verificamex-curp", { curp });
+    const r = await invocar("verificamex-curp", { curp, revisar: true });
     setPersona(r.persona as Persona);
+    setDatosCurp(r.datos);
     setNivel(r.verification_level ?? 1);
-    if (r.ya_verificada) {
-      // Candado: la CURP ya estaba validada, no se pagó de nuevo. Vamos directo a la INE.
-      toast({ title: "Tu CURP ya estaba verificada", description: "No se cobró de nuevo. Continúa con la foto de tu INE." });
-      setPaso("ine");
-    } else {
-      setPaso("datos");
-    }
-    onVerificada?.();
+    setPaso("datos");
   });
 
   const validarIneAhora = () => ejecutar(async () => {
@@ -108,6 +109,7 @@ export default function VerificarIdentidadDialog({
     setPaso("procesando");
     try {
       const r = await invocar("verificamex-ine", { frente, reverso });
+      setDatosRecibidos(r.datos_recibidos);
       setValidacionId(r.validacion_id ?? null);
       if (r.coincidencia === false) {
         setCurpsDistintas({ ine: r.curp_ine || "No se pudo leer", renapo: r.curp_renapo || "" });
@@ -168,7 +170,7 @@ export default function VerificarIdentidadDialog({
               </a>
             </div>
             <Button className="w-full" disabled={ocupado || !validarCurp(curp)} onClick={validarCurpAhora}>
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Validar identidad"}
+              {ocupado ? <><Loader2 className="h-4 w-4 animate-spin" />Consultando RENAPO…</> : "Consultar CURP"}
             </Button>
           </div>
         )}
@@ -177,7 +179,7 @@ export default function VerificarIdentidadDialog({
           <div className="space-y-3">
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm space-y-1">
               <div className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
-                <BadgeCheck className="h-4 w-4" /> Cuenta Verificada Nivel 1
+                <BadgeCheck className="h-4 w-4" /> Datos encontrados en RENAPO
               </div>
               <div><span className="text-muted-foreground">Nombre: </span>
                 {[persona.nombres, persona.primerApellido, persona.segundoApellido].filter(Boolean).join(" ")}</div>
@@ -187,12 +189,13 @@ export default function VerificarIdentidadDialog({
               <div><span className="text-muted-foreground">CURP: </span><span className="font-mono">{persona.curp}</span></div>
               <div className="text-xs text-muted-foreground">Límite: 1,000 UDIS al mes</div>
             </div>
+            <VerificationData data={datosCurp ?? persona} source="RENAPO · Verificamex" />
             <p className="text-sm">
               ¿Quieres validar tu INE para subir tu límite a 3,000 UDIS al mes? Es gratis: la activación principal de $150 se cobra una sola vez.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Ahora no</Button>
-              <Button onClick={() => setPaso("ine")}>Sí, validar INE</Button>
+              <Button disabled={ocupado} onClick={() => ejecutar(async () => { const r = await invocar("verificamex-curp", { curp, accion: "confirmar" }); setNivel(r.verification_level ?? 1); setPaso("ine"); })}>Confirmar datos y seguir</Button>
             </div>
           </div>
         )}
@@ -252,7 +255,7 @@ export default function VerificarIdentidadDialog({
         {paso === "revisar" && leido && (
           <div className="space-y-3">
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
-              <BadgeCheck className="h-4 w-4" /> Leímos tu INE correctamente
+              <BadgeCheck className="h-4 w-4" /> Lectura de INE recibida
             </div>
             <p className="text-sm text-muted-foreground">
               Revisa que estos datos sean iguales a los de tu credencial:
@@ -270,6 +273,7 @@ export default function VerificarIdentidadDialog({
                 </div>
               ))}
             </div>
+            <VerificationData data={datosRecibidos ?? leido} source="INE · Lectura de Verificamex" />
             <Button className="w-full" disabled={ocupado} onClick={confirmarDatos}>
               {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar que son correctos"}
             </Button>
@@ -297,6 +301,7 @@ export default function VerificarIdentidadDialog({
                 <div className="font-mono break-all">{curpsDistintas.renapo}</div>
               </div>
             </div>
+            <VerificationData data={datosRecibidos} source="INE · Lectura de Verificamex" />
             <p className="text-sm text-muted-foreground">
               Tu cuenta sigue activa en Nivel 1. Puedes intentar con fotos más claras o escribirnos a hola@todocerca.mx.
             </p>
