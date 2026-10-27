@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Check, ShieldCheck, Loader2, ExternalLink, BadgeCheck, AlertCircle, RefreshCw } from "lucide-react";
 import { validarCurp, MENSAJE_CURP_INVALIDA } from "@/lib/curp";
-import CapturaFotoIne from "./CapturaFotoIne";
+import VerificarIdentidadDialog from "./VerificarIdentidadDialog";
+import VerificationData from "./VerificationData";
 
 type Props = {
   open: boolean;
@@ -61,6 +62,7 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
   const [curp, setCurp] = useState("");
 
   const [validando, setValidando] = useState(false);
+  const [datosCurp, setDatosCurp] = useState<unknown>(null);
   const [persona, setPersona] = useState<Persona | null>(null);
   const [errorCurp, setErrorCurp] = useState<string | null>(null);
 
@@ -93,8 +95,9 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
     setErrorCurp(null);
     setPersona(null);
     try {
-      const res = await invocar("verificamex-curp", { curp: valor, solo_validar: true });
+      const res = await invocar("verificamex-curp", { curp: valor, solo_validar: true, revisar: true });
       const p = res?.persona as Persona;
+      setDatosCurp(res.datos);
       setPersona(p);
       if (!nombre.trim() && nombrePersona(p)) setNombre(nombrePersona(p));
     } catch (e: any) {
@@ -132,24 +135,12 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
     setPaso(5);
   });
 
-  const validarIne = () => ejecutar(async () => {
-    setErrorIne(null);
-    try {
-      await invocar("verificamex-ine", { frente, reverso });
-    } catch (e: any) {
-      setErrorIne(e.message || "No pudimos validar tu INE.");
-      return;
-    }
-    toast({ title: "INE recibida", description: "El nivel y el límite cambian únicamente después de confirmar la validación. Activación principal: $150 una sola vez." });
-    onActivada();
-    onOpenChange(false);
-    navigate("/qard/recargar");
-  });
-
   const totalPasos = 4;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <VerificarIdentidadDialog open={open && paso === 5} onOpenChange={v => { if (!v) onOpenChange(false); }} nivelActual={1} nombreGuardado={nombre} curpGuardada={curp} onVerificada={onActivada} />
+    <Dialog open={open && paso !== 5} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -297,11 +288,12 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
                 <p><span className="text-muted-foreground">Nombre registrado:</span> {nombrePersona(persona) || "—"}</p>
                 <p><span className="text-muted-foreground">Fecha de nacimiento:</span> {persona.fechaNacimiento || "—"}</p>
                 <p><span className="text-muted-foreground">Entidad:</span> {persona.entidad || "—"}</p>
+                <VerificationData data={datosCurp ?? persona} source="RENAPO · Verificamex" />
                 <p className="font-medium pt-1">¿Estos datos son correctos?</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" onClick={() => {
+                  <Button size="sm" disabled={ocupado} onClick={() => {
                     if (nombrePersona(persona)) setNombre(nombrePersona(persona));
-                    setPaso(3);
+                    void ejecutar(async () => { await invocar("verificamex-curp", { curp, accion: "confirmar", solo_validar: true }); setPaso(3); });
                   }}>
                     Sí, son correctos
                   </Button>
@@ -374,50 +366,8 @@ export default function ActivarQardDialog({ open, onOpenChange, emailVerified, o
           </div>
         )}
 
-        {paso === 5 && (
-          <div className="space-y-3 text-sm">
-            <p className="font-semibold">📸 Cuenta Titular: valida tu INE</p>
-            <p className="text-muted-foreground">
-              Necesitamos fotos de tu INE para validar tu identidad. Solo después de confirmar la validación, tu límite sube a
-              3,000 UDIS (~$24,500 pesos al mes).
-            </p>
-            <div className="rounded-lg border p-3 space-y-1">
-              <p className="text-muted-foreground text-xs">Tus datos ya están validados:</p>
-              <p><span className="text-muted-foreground">Nombre:</span> {nombre}</p>
-              <p className="font-mono"><span className="text-muted-foreground font-sans">CURP:</span> {curp}</p>
-            </div>
-
-            <CapturaFotoIne titulo="Paso 1: foto del FRENTE de tu INE" valor={frente} onCambio={setFrente} />
-            <CapturaFotoIne titulo="Paso 2: foto del REVERSO de tu INE" valor={reverso} onCambio={setReverso} />
-            <p className="text-xs text-muted-foreground">Cada foto debe ser JPG o PNG y pesar máximo 5 MB.</p>
-
-            {errorIne && (
-              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
-                <p className="text-sm text-destructive flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {errorIne}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Puedes volver a tomar las fotos (hasta 3 intentos) o continuar con la Cuenta Básica.
-                </p>
-              </div>
-            )}
-
-            <Button type="button" className="w-full" disabled={ocupado || !frente || !reverso} onClick={validarIne}>
-              {ocupado
-                ? (<><Loader2 className="h-4 w-4 animate-spin mr-1" /> Validando tu INE...</>)
-                : "Validar INE (gratis, sin costo extra)"}
-            </Button>
-            <Button type="button" variant="ghost" className="w-full" disabled={ocupado}
-              onClick={() => {
-                toast({ title: "¡Tu QaRd está activa!", description: "Quedaste en Cuenta Básica. Puedes subir después sin costo." });
-                onOpenChange(false);
-                navigate("/qard/recargar");
-              }}>
-              Continuar con Cuenta Básica
-            </Button>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }

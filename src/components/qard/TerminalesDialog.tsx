@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Store, Check, RefreshCw, LockKeyhole, ArrowLeft, Send, Ban, UserPlus, Copy } from 'lucide-react';
+import VerificationData from './VerificationData';
 import { documentFields, terminalEnabled, terminalInviteLink, merchantValid, type Agent, type Terminal, type Permission, type Invite } from '@/lib/terminales';
 
 export default function TerminalesDialog() {
@@ -22,6 +23,9 @@ export default function TerminalesDialog() {
   const [busy,setBusy]=useState(false);
   const [loading,setLoading]=useState(false);
   const [loadError,setLoadError]=useState(false);
+  const [rfc,setRfc]=useState('');
+  const [fiscal,setFiscal]=useState<{id:string;datos:unknown;confirmed:boolean;rejected:boolean}|null>(null);
+  const [fiscalError,setFiscalError]=useState<string|null>(null);
   const [name,setName]=useState('');
   const [files,setFiles]=useState<Record<string,File>>({});
   const [reloadOpen,setReloadOpen]=useState(false);
@@ -67,6 +71,18 @@ export default function TerminalesDialog() {
     return ()=>{void supabase.removeChannel(channel);};
   },[open,user,load]);
   const run=async(fn:()=>Promise<void>)=>{ if(busy)return;setBusy(true);try{await fn();}catch(e){toast({title:'No se pudo completar',description:e instanceof Error?e.message:'Intenta de nuevo',variant:'destructive'});}finally{setBusy(false);}};
+  const verifyRfc=()=>run(async()=>{
+    setFiscalError(null);
+    const {data,error}=await supabase.functions.invoke('qard-verificar-rfc',{body:{rfc,accion:'leer'}});
+    if(error){ const text=error.context?.text?await error.context.text():error.message; let message=text;try{message=JSON.parse(text).error??text;}catch{} setFiscalError(message);throw new Error(message); }
+    setFiscal({id:data.validacion_id,datos:data.datos,confirmed:data.confirmed===true,rejected:data.rechazado===true});
+  });
+  const confirmRfc=(action:string)=>run(async()=>{
+    if(!fiscal)return;
+    const {error}=await supabase.functions.invoke('qard-verificar-rfc',{body:{accion:action,validacion_id:fiscal.id}});
+    if(error)throw error;
+    setFiscal({...fiscal,confirmed:action==='confirmar',rejected:action==='reportar'});
+  });
   const submit=()=>run(async()=>{
     if(!user)throw new Error('Inicia sesión');
     const docs:Record<string,string>={};
@@ -137,12 +153,21 @@ export default function TerminalesDialog() {
             <Button className="w-full" onClick={reload} disabled={busy||number.length!==16||Number(amount)<=15||((user&&permissions.find(p=>p.terminal_code==='reload')?.invited_by===user.id&&balance!==null&&Number(amount)>balance))}>{busy?'Consultando…':quote?`Confirmar recarga de $${Number(amount||0).toFixed(2)}`:'Revisar importe'}</Button>
           </>}
         </div>:<div className="space-y-4">
+          <section className="space-y-3 border-b border-border pb-4">
+            <h2 className="font-semibold">RFC · SAT</h2>
+            <Label htmlFor="verify-rfc">RFC del titular o comercio</Label>
+            <Input id="verify-rfc" maxLength={13} value={rfc} disabled={busy} onChange={e=>{setRfc(e.target.value.toUpperCase());setFiscal(null);}} />
+            <Button disabled={busy||rfc.length<12} onClick={verifyRfc}>{busy?'Consultando o guardando…':'Consultar RFC con Verificamex'}</Button>
+            {fiscalError&&<p className="text-sm text-destructive">{fiscalError}</p>}
+            {fiscal&&<><VerificationData data={fiscal.datos} source="SAT · Verificamex" />{fiscal.confirmed?<p className="text-sm text-primary">Datos fiscales confirmados</p>:fiscal.rejected?<p className="text-sm text-destructive">Datos reportados; solicita revisión.</p>:<div className="flex flex-wrap gap-2"><Button disabled={busy} onClick={()=>confirmRfc('confirmar')}>Confirmar datos fiscales</Button><Button variant="outline" disabled={busy} onClick={()=>confirmRfc('reportar')}>Reportar error</Button></div>}</>}
+            <p className="text-sm text-muted-foreground">Nivel 3 pendiente de comprobación biométrica real. Leer la INE o confirmar el RFC no activa ese nivel.</p>
+          </section>
           {!agent&&!loading&&permissions.length===0?<div className="space-y-3">
             <h2 className="font-semibold">Comercio Afiliado · Nivel Tres</h2>
             <div><Label htmlFor="agent-name">Nombre del comercio</Label><Input id="agent-name" maxLength={120} value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></div>
             {documentFields.map(d=><div key={d.key}><Label htmlFor={`agent-${d.key}`}>{d.label}</Label><Input id={`agent-${d.key}`} type="file" accept="image/jpeg,image/png,application/pdf" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)setFiles(prev=>({...prev,[d.key]:f}));}}/></div>)}
             <p className="text-sm text-muted-foreground">Documentos privados. La solicitud permanecerá pendiente hasta comprobar CURP, RFC e identidad biométrica; subir la INE no activa nivel tres.</p>
-            <Button className="w-full" disabled={busy||name.trim().length<2||documentFields.some(d=>!files[d.key])} onClick={submit}>{busy?'Enviando…':'Solicitar registro'}</Button>
+            <Button className="w-full" disabled={busy||!fiscal?.confirmed||name.trim().length<2||documentFields.some(d=>!files[d.key])} onClick={submit}>{busy?'Enviando…':'Solicitar registro'}</Button>
           </div>:agent&&<section className="space-y-2 border-b border-border pb-3"><h2 className="font-semibold">{agent.business_name}</h2><p className="text-sm">{agent.status==='approved'?'Agente aprobado':'Solicitud pendiente'}</p><p className="text-sm text-muted-foreground">CURP: {agent.curp_status==='valid'?'validada':'pendiente'} · RFC: {agent.rfc_status==='valid'?'validado':'pendiente'}</p><p className="text-sm text-muted-foreground">Biometría: {agent.biometric_status==='valid'?'validada':'pendiente de proveedor'}</p>{agent.review_note&&<p className="text-sm">{agent.review_note}</p>}</section>}
           {(agent||permissions.length>0)&&terminals.map(t=>{const p=permissions.find(p=>p.terminal_code===t.code);const enabled=terminalEnabled(agent,p,t);return <section key={t.code} className="border-b border-border py-3 space-y-2"><h3 className="font-semibold flex items-center gap-2">{enabled?<Check className="h-4 w-4 text-primary"/>:<LockKeyhole className="h-4 w-4 text-muted-foreground"/>}{t.name}</h3><p className="text-sm text-muted-foreground">{!t.operational?'Pendiente de proveedor':p?.status==='accepted'?(enabled?'Activa':'Invitación aceptada · comercio pendiente'):p?.status==='revoked'?'Revocada':p?.status==='pending'?'Invitación pendiente':'Sin invitación'}</p>{p?.status==='pending'&&<Button variant="outline" disabled={busy} onClick={()=>accept(p.id)}>Aceptar invitación</Button>}{enabled&&<Button onClick={()=>{if(t.code==='reload'){setReloadOpen(true);setResult(null);}else{setOpen(false);nav(t.code==='collection'?'/qard/cobrar?terminal=1':'/qard');}}}>Abrir terminal</Button>}
             {merchantValid(agent)&&t.operational&&<>
