@@ -2,6 +2,7 @@
 // Rutas oficiales: POST /v1/ocr/obverse y POST /v1/ocr/reverse (5 tokens cada una)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { visibleVerificationData } from "../_shared/verificationData.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -301,7 +302,7 @@ serve(async (req) => {
         ine_front_image_url: (val as any).ine_front_image_url,
         ine_back_image_url: (val as any).ine_back_image_url,
       };
-      if (aperturaPendienteConf) cambiosConf.account_opening_fee_amount = 20.00;
+      if (aperturaPendienteConf) cambiosConf.account_opening_fee_amount = 150.00;
 
       const { data: identActual, error: errConf } = await admin
         .from("qard_identidad")
@@ -329,8 +330,16 @@ serve(async (req) => {
         verification_level: 2,
         monthly_limit_udis: 3000,
         validation_type: "ocr_full",
-        costo_apertura: aperturaPendienteConf ? 20 : 0,
+        costo_apertura: aperturaPendienteConf ? 150 : 0,
       });
+    }
+
+    if (accion === "recuperar") {
+      const { data: val } = await admin.from("ine_validaciones").select("*").eq("user_id", userId).eq("estado", "pendiente").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!val) return json({ ok: true, pendiente_confirmacion: false });
+      const { data: dec } = await admin.rpc("qard_dec", { _v: val.raw_response_enc });
+      const stored = dec ? JSON.parse(String(dec)) : null;
+      return json({ ok:true, pendiente_confirmacion:true, coincidencia:val.coincidencia, validacion_id:val.id, datos:{ nombre_completo:val.ine_nombre_extraido,curp:val.ine_curp_extraido,numero_credencial:val.ine_numero_credencial,fecha_nacimiento:val.ine_fecha_nacimiento }, datos_recibidos:visibleVerificationData(stored?.crudo) });
     }
 
     const frente = normalizarImagen(body?.frente ?? body?.obverse ?? "");
@@ -514,6 +523,7 @@ serve(async (req) => {
         ok: false,
         coincidencia: false,
         validacion_id: validacion.id,
+        datos_recibidos: visibleVerificationData(crudo),
         curp_ine: curpIne,
         curp_renapo: curpEsperada,
         intentos_restantes: MAX_INTENTOS - (intentos + 1),
@@ -528,6 +538,7 @@ serve(async (req) => {
     return json({
       ok: true,
       coincidencia: true,
+      datos_recibidos: visibleVerificationData(crudo),
       pendiente_confirmacion: true,
       validacion_id: validacion.id,
       datos: {
