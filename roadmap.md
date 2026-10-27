@@ -1,4 +1,7 @@
 # Productos estándar sin fotos
+## Confirmación de identidad
+- [ ] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar.
+- [ ] Comprobar reglas y pantallas; registro real de Martín requiere su sesión y documentos, y nivel tres requiere biometría real.
 ## Terminales digitales
 - [x] Aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
 - [x] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
