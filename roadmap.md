@@ -1,6 +1,6 @@
 # Productos estándar sin fotos
 ## Motor de Formalización y Cumplimiento
-- [x] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina; propuesta entregada sin activar cobros ni modificar transporte. Cómputo al superar 15 minutos pendiente de decisión antes de implementar.
+- [x] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina; sin activar cobros ni modificar transporte. Martín confirmó que al superar 15 minutos se cuenta toda la diferencia (08:16 = 16 minutos); marcas anticipadas y descansos pendientes antes de implementar nómina.
 ## Confirmación de identidad
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
 - [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nivel tres requiere biometría real. Página pública sin errores, compilación correcta.
