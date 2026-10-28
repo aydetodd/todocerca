@@ -1,4 +1,6 @@
 # Productos estándar sin fotos
+## Motor de Formalización y Cumplimiento
+- [ ] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina, precisando tolerancia de 15 minutos; sin activar cobros ni modificar transporte.
 ## Confirmación de identidad
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
 - [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nivel tres requiere biometría real. Página pública sin errores, compilación correcta.
