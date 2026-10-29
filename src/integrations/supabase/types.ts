@@ -1921,6 +1921,42 @@ export type Database = {
         }
         Relationships: []
       }
+      formalization_progress: {
+        Row: {
+          created_at: string
+          evidence_path: string | null
+          guide_version: string
+          id: string
+          note: string
+          status: string
+          step_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evidence_path?: string | null
+          guide_version?: string
+          id?: string
+          note?: string
+          status?: string
+          step_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evidence_path?: string | null
+          guide_version?: string
+          id?: string
+          note?: string
+          status?: string
+          step_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fotos_listings: {
         Row: {
           alt_text: string | null
@@ -3140,6 +3176,51 @@ export type Database = {
           total_reload_fees?: number
           total_withdrawal_fees?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      merchant_tax_profiles: {
+        Row: {
+          activity: string
+          confirmation_status: string
+          confirmed_at: string | null
+          created_at: string
+          evidence_path: string | null
+          id: string
+          legal_name: string
+          postal_code: string
+          rfc: string
+          tax_regime: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity?: string
+          confirmation_status?: string
+          confirmed_at?: string | null
+          created_at?: string
+          evidence_path?: string | null
+          id?: string
+          legal_name?: string
+          postal_code?: string
+          rfc?: string
+          tax_regime?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          confirmation_status?: string
+          confirmed_at?: string | null
+          created_at?: string
+          evidence_path?: string | null
+          id?: string
+          legal_name?: string
+          postal_code?: string
+          rfc?: string
+          tax_regime?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
