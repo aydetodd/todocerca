@@ -1,5 +1,6 @@
 # Productos estándar sin fotos
 ## Motor de Formalización y Cumplimiento
+- [ ] Fase 1 aprobada: guía RESICO y expediente fiscal privado del comercio, con avance guardado; sin cuentas, cobros ni transporte.
 - [x] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina; sin activar cobros ni modificar transporte. Martín confirmó que al superar 15 minutos se cuenta toda la diferencia (08:16 = 16 minutos); marcas anticipadas y descansos pendientes antes de implementar nómina.
 ## Confirmación de identidad
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
