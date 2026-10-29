@@ -36,6 +36,7 @@ import {
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import DataUsageDialog from "@/components/DataUsageDialog";
 import TerminalesDialog from "@/components/qard/TerminalesDialog";
+import FormalizationDialog from "@/components/formalization/FormalizationDialog";
 import Fletes from "./Fletes";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
@@ -513,6 +514,7 @@ const Dashboard = () => {
                   <div className="space-y-3">
                     <nav aria-label="Servicios del perfil" className="grid grid-cols-1 gap-3">
                       <DataUsageDialog />
+                      {isProvider && <FormalizationDialog />}
                     </nav>
                     <div>
                       <span className="text-sm font-medium">ID Usuario / QaRd:</span>
