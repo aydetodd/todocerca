@@ -1,6 +1,7 @@
 # Productos estándar sin fotos
 ## Motor de Formalización y Cumplimiento
-- [ ] Fase 1 aprobada: guía RESICO y expediente fiscal privado del comercio, con avance guardado; sin cuentas, cobros ni transporte.
+- [x] Fase 1: guía RESICO y expediente fiscal privado del comercio en ambas entradas de Mi Perfil, con evidencia privada y avance sincronizado; 25 pruebas correctas y compilación sin errores, sin cobros ni transporte.
+- [ ] Probar guardado, confirmación y documentos de fase 1 desde el perfil real: Supabase externo sin sesión autenticada disponible.
 - [x] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina; sin activar cobros ni modificar transporte. Martín confirmó que al superar 15 minutos se cuenta toda la diferencia (08:16 = 16 minutos); marcas anticipadas y descansos pendientes antes de implementar nómina.
 ## Confirmación de identidad
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
