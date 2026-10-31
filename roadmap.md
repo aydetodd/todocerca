@@ -10,7 +10,7 @@
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
 - [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nivel tres requiere biometría real. Página pública sin errores, compilación correcta.
 ## Terminales digitales
-- [ ] Quitar cobro directo de Mi dinero y conservar acceso exclusivo por terminal invitada, sin cambiar transporte ni cobros.
+- [x] Quitar cobro directo de Mi dinero y conservar entrada por terminal invitada; acceso antiguo redirige al perfil y cobro solicita modo terminal. 22 pruebas correctas; comprobación autenticada sigue pendiente por sesión externa no disponible.
 - [x] Aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
 - [x] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
 - [x] Mantener servicios pendientes sin proveedor y registrar operaciones y reparto en libro inmutable; pruebas de precios y permisos correctas.
