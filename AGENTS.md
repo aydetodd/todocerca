@@ -9,6 +9,7 @@
 - Product route labels and grouping use getRoutePresentation/groupRoutesByType in transportRouteTypes and RouteTypeBadge, separately from driver transport types, to avoid mislabeling collective routes without altering financial or access logic.
 - The shared trace/segmentation map initializes only after its conditional container mounts and frames route bounds, not GPS, so all transport families display their loaded traces reliably.
 - Principal and family QaRd cards share QardTarjeta including its external control row; power controls use the owner-checked qard_sub_set_estado RPC and confirmed state, keeping card appearance consistent with persisted payment availability.
+- Per-card statement shortcuts use QardTarjeta's external controls and the existing scoped ledger dialogs; enterprise dynamic CVV comes only from its own owner-scoped qard_mis_cvv result, never from the principal card or a generated UI value.
 - Card screen and PDF share qardCardPresentation for legal-name masking and level indicators; display persisted verification levels only, never infer upgrades from appearance.
 - Show an unissued Empresarial card through QardTarjeta's pending presentation without a payment number, QR, balance or controls; visibility must not create an account or raise verification levels.
 - QaRd identity review uses the shared VerificationData view and encrypted owner-scoped verification results; reuse saved consultations and require explicit confirmation, while INE OCR and RFC checks never imply biometric Level 3 approval.

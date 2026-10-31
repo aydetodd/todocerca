@@ -1,5 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
-import { Eye, EyeOff, Printer, RotateCw } from "lucide-react";
+import { Eye, EyeOff, History, Printer, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { protegerNombreQard, rayasNivelQard } from "@/lib/qardCardPresentation";
@@ -16,6 +16,8 @@ type Props = {
   onRotarCvv: () => void;
   onQr: () => void;
   onImprimir?: () => void;
+  onEstadoCuenta?: () => void;
+  estadoCuentaLabel?: string;
   nivel?: number;
   activada?: boolean;
   encendida?: boolean;
@@ -68,6 +70,7 @@ export default function QardTarjeta(props: Props) {
       {props.onPowerChange && <Switch className="mr-auto" aria-label={props.indice === 0 ? "Encender o apagar QaRd principal" : `Encender o apagar tarjeta familiar ${props.indice}`} checked={props.encendida} disabled={props.powerDisabled || props.cambiandoEstado} onCheckedChange={props.onPowerChange} />}
       {props.cambiandoEstado && <span className="text-xs text-muted-foreground">Guardando…</span>}
       <div className="ml-auto flex items-center">
+        {props.onEstadoCuenta && <Button variant="ghost" size="icon" onClick={props.onEstadoCuenta} title={props.estadoCuentaLabel ?? "Estado de cuenta"} aria-label={props.estadoCuentaLabel ?? "Estado de cuenta"}><History className="h-4 w-4" /></Button>}
         {props.onImprimir && <Button variant="ghost" size="icon" onClick={props.onImprimir} title="Imprimir tarjetas" aria-label="Imprimir tarjetas"><Printer className="h-4 w-4" /></Button>}
         <Button variant="ghost" size="icon" onClick={props.onVerCvv} title={props.cvvVisible ? "Ocultar CVV" : "Ver CVV"} aria-label={props.cvvVisible ? "Ocultar CVV" : "Ver CVV"}>{props.cvvVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
         {props.estado !== "cancelada" && <Button variant="ghost" size="icon" onClick={props.onRotarCvv} title="Cambiar CVV" aria-label="Cambiar CVV"><RotateCw className="h-4 w-4" /></Button>}
