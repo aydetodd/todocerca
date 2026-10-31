@@ -1101,10 +1101,6 @@ export default function Qard() {
 
       <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
 
-      <Button variant="outline" className="w-full" onClick={() => nav("/qard/cobrar")}>
-        Soy comercio · Cobrar a un QR
-      </Button>
-
     </div>
   );
 }
