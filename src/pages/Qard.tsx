@@ -412,6 +412,8 @@ export default function Qard() {
               onRotarCvv={() => { if (titular) rotarCvv(titular.id); }}
               onQr={() => setQrFullscreen({ value: qardNumber, label: "Tarjeta principal" })}
               onImprimir={() => { setPrintSel(["titular"]); setPrintOpen(true); }}
+              onEstadoCuenta={() => setEjeOpen(true)}
+              estadoCuentaLabel="Estado de cuenta principal"
               nivel={nivelVerificacion}
               activada={activa && nivelVerificacion > 0}
               encendida={titular?.estado === "activa"}
@@ -436,14 +438,18 @@ export default function Qard() {
                     <span className="font-mono font-extrabold text-primary text-2xl tracking-widest">
                       {cvvDinVisible ? wallet.cvv_dinamico : "••••"}
                     </span>
-                    <button onClick={() => setCvvDinVisible(v => !v)}>
+                    <Button variant="ghost" size="icon" aria-label={cvvDinVisible ? "Ocultar CVV dinámico principal" : "Ver CVV dinámico principal"} title={cvvDinVisible ? "Ocultar CVV dinámico" : "Ver CVV dinámico"} onClick={() => setCvvDinVisible(v => !v)}>
                       {cvvDinVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
+                    </Button>
                     <span className="text-[10px] text-muted-foreground">Cambia tras cada transferencia recibida</span>
                   </div>
                 </div>
               )}
-
+              {activa && nivelVerificacion === 1 && (
+                <Button variant="outline" size="sm" className="mt-3 w-full h-auto whitespace-normal py-2" onClick={() => setVerificarOpen(true)}>
+                  Subir a nivel 2 · Límite de 3,000 UDIS (INE)
+                </Button>
+              )}
             </Card>
 
           </div>
@@ -489,6 +495,8 @@ export default function Qard() {
               onRotarCvv={() => rotarCvv(emp.id)}
               onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial" })}
               onImprimir={() => { setPrintSel([emp.id]); setPrintOpen(true); }}
+              onEstadoCuenta={() => setCobrosOpen(true)}
+              estadoCuentaLabel="Estado de cuenta empresarial · Cobros"
               nivel={empAprobada ? nivelVerificacion : 0}
               activada={empAprobada}
               encendida={emp.estado === "activa"}
@@ -502,6 +510,20 @@ export default function Qard() {
                 <span className={Number(emp.saldo_mxn) < 0 ? "text-destructive" : "qard-balance"}>${Number(emp.saldo_mxn ?? 0).toFixed(2)}</span>
                 <span className="text-sm font-semibold text-muted-foreground">QaRd pesos</span>
               </div>
+              {emp.cvv_dinamico && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground">CVV dinámico empresarial (4 dígitos)</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-extrabold text-primary text-2xl tracking-widest">
+                      {cvvVisible[`din-${emp.id}`] ? emp.cvv_dinamico : "••••"}
+                    </span>
+                    <Button variant="ghost" size="icon" aria-label={cvvVisible[`din-${emp.id}`] ? "Ocultar CVV dinámico empresarial" : "Ver CVV dinámico empresarial"} title={cvvVisible[`din-${emp.id}`] ? "Ocultar CVV dinámico" : "Ver CVV dinámico"} onClick={() => setCvvVisible(v => ({ ...v, [`din-${emp.id}`]: !v[`din-${emp.id}`] }))}>
+                      {cvvVisible[`din-${emp.id}`] ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground">De un solo uso; cambia al recibir una transferencia</span>
+                  </div>
+                </div>
+              )}
             </Card>
           </div>
         );
@@ -522,12 +544,6 @@ export default function Qard() {
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Titular (nombre legal)</div>
           <div className="font-semibold">{identidad?.nombre_completo ?? "—"}</div>
-
-          {nivelVerificacion === 1 && (
-            <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setVerificarOpen(true)}>
-              Subir mi límite a 3,000 UDIS (INE)
-            </Button>
-          )}
 
           {identidad?.estado === "moral_review" && (
             <div className="text-xs text-amber-600 mt-2">
@@ -856,7 +872,7 @@ export default function Qard() {
               <div className="font-semibold mb-2">Mi dinero</div>
               <div className="divide-y text-sm">
                 <div className="flex justify-between py-2">
-                  <button className="underline-offset-2 hover:underline" onClick={() => setEjeOpen(true)}>Cuenta eje</button>
+                  <button className="underline-offset-2 hover:underline" onClick={() => setEjeOpen(true)}>Cuenta principal</button>
                   <b>${saldoEje.toFixed(2)}</b>
                 </div>
                 {subsActivas.map(s => (
@@ -866,7 +882,7 @@ export default function Qard() {
                   </div>
                 ))}
                 <div className="flex justify-between py-2">
-                  <button className="underline-offset-2 hover:underline" onClick={() => setCobrosOpen(true)}>Cobros</button>
+                  <button className="underline-offset-2 hover:underline" onClick={() => setCobrosOpen(true)}>Empresarial · Cobros</button>
                   <b>${saldoCobros.toFixed(2)}</b>
                 </div>
                 {rutasIngreso && rutasIngreso.length > 0 && (conDinero.length > 0 || verTodasRutas) && (
@@ -911,28 +927,17 @@ export default function Qard() {
               </div>
             </Card>
 
-            <Card className="p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-semibold">Estados de cuenta</div>
-                <div className="text-xs text-muted-foreground">Cuenta eje y cobros, por separado.</div>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setEjeOpen(true)}><History className="h-4 w-4 mr-1" /> Eje</Button>
-                <Button size="sm" variant="outline" onClick={() => setCobrosOpen(true)}><History className="h-4 w-4 mr-1" /> Cobros</Button>
-              </div>
-            </Card>
-
             <Dialog open={ejeOpen} onOpenChange={setEjeOpen}>
               <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Estado de cuenta · cuenta eje</DialogTitle></DialogHeader>
-                <Estado titulo="cuenta eje" ambito="eje" saldoVivo={saldoEje} periodo={periodoEje} setPeriodo={setPeriodoEje} />
+                <DialogHeader><DialogTitle>Estado de cuenta · Principal</DialogTitle></DialogHeader>
+                <Estado titulo="principal" ambito="eje" saldoVivo={saldoEje} periodo={periodoEje} setPeriodo={setPeriodoEje} />
               </DialogContent>
             </Dialog>
 
             <Dialog open={cobrosOpen} onOpenChange={setCobrosOpen}>
               <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Estado de cuenta · cobros</DialogTitle></DialogHeader>
-                <Estado titulo="cobros" ambito="cobros" saldoVivo={saldoCobros} periodo={periodoCobros} setPeriodo={setPeriodoCobros} />
+                <DialogHeader><DialogTitle>Estado de cuenta · Empresarial · Cobros</DialogTitle></DialogHeader>
+                <Estado titulo="empresarial cobros" ambito="cobros" saldoVivo={saldoCobros} periodo={periodoCobros} setPeriodo={setPeriodoCobros} />
               </DialogContent>
             </Dialog>
 
