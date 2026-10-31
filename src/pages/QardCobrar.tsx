@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet, Banknote, Building2, CreditCard, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
@@ -17,6 +17,8 @@ import { dynamicCvvValid } from '@/lib/terminales';
 
 export default function QardCobrar() {
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const terminalEntry = params.get('terminal') === '1';
   const [monto, setMonto] = useState("");
   const [scanning, setScanning] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -139,6 +141,7 @@ export default function QardCobrar() {
   };
 
   const procesarCobro = async (qard: string, m: number, opts?: { cvv?: string; manual?: boolean }) => {
+    if (!terminalEntry) return;
     if (collectionBusy.current) return;
     const clean = qard.replace(/\D/g, "");
     if (clean.length !== 16) {
@@ -150,7 +153,7 @@ export default function QardCobrar() {
     collectionBusy.current = true;
     const { data, error } = await supabase.functions.invoke("qard-cobrar-comercio", {
       body: { qard_number: clean, monto_mxn: m, cvv: opts?.cvv, manual: !!opts?.manual,
-        request_key: collectionRequest.current.key, terminal: new URLSearchParams(window.location.search).get('terminal') === '1' },
+        request_key: collectionRequest.current.key, terminal: true },
     }).finally(() => { collectionBusy.current = false; });
     if (error) {
       console.error("cobro", error);
@@ -292,11 +295,13 @@ export default function QardCobrar() {
     cargarCobros();
   };
 
+  if (!terminalEntry) return <Navigate to="/dashboard" replace />;
+
   return (
     <div className="p-4 max-w-lg mx-auto pb-40 space-y-4">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => nav(-1)}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><CircleDollarSign className="h-6 w-6" /> COBRAR con QaRd</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><CircleDollarSign className="h-6 w-6" /> Terminal de cobro</h1>
       </div>
 
       <Card className="p-4 space-y-3">
