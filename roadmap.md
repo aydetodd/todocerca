@@ -1,4 +1,6 @@
 # Productos estándar sin fotos
+## Accesos por tarjeta QaRd
+- [ ] Colocar estado principal y estado empresarial de cobros en sus respectivas tarjetas, mover aumento a nivel 2 junto al saldo principal y mostrar CVV dinámico empresarial real; conservar saldos y transporte.
 ## Motor de Formalización y Cumplimiento
 - [x] Fase 1: guía RESICO y expediente fiscal privado del comercio en ambas entradas de Mi Perfil, con evidencia privada y avance sincronizado; 25 pruebas correctas y compilación sin errores, sin cobros ni transporte.
 - [ ] Probar guardado, confirmación y documentos de fase 1 desde el perfil real: Supabase externo sin sesión autenticada disponible.
