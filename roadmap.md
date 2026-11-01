@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Registro de comercio con e.firma
+- [ ] Sustituir INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña con cotejo criptográfico local sin persistir secretos.
+- [ ] Conectar autenticidad/vigencia/no revocación oficial SAT y aprobación protegida de nivel tres; no aprobar con un cotejo local.
+- [ ] Comprobar registro con documentos y sesión reales; no disponibles en el proyecto externo.
 ## Accesos por tarjeta QaRd
 - [x] Colocar estado principal y estado empresarial de cobros en sus respectivas tarjetas, mover aumento a nivel 2 junto al saldo principal y mostrar CVV dinámico empresarial real; tres pruebas del libro correctas e iconos verificados a 375 px sin desbordamiento, sin cambiar saldos ni transporte.
 - [ ] Comprobar estados de cuenta y CVV empresarial desde la cuenta real: Supabase externo sin sesión autenticada disponible.
