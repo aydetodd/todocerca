@@ -10,6 +10,9 @@
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
 - [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nivel tres requiere biometría real. Página pública sin errores, compilación correcta.
 ## Terminales digitales
+- [x] Revisar bloqueos en datos reales: City traffic pendiente de CURP/RFC/biometría y sin invitaciones; cobro atómico abona saldo_comercio_mxn del dueño, no del operador. Tarjeta Empresarial presenta saldo_mxn de otra bolsa; no se ejecutaron cobros ni consultas Verificamex.
+- [ ] Unificar presentación de saldo y uso de cuenta Empresarial con el libro de cobros, completar enlace entre confirmaciones y solicitud de agente y registros visibles por negocio; comprobación autenticada depende de sesión externa, biometría depende de proveedor real.
+- [ ] Después del funcionamiento de terminales, mostrar solo datos importantes reales para cotejar CURP/INE/RFC, sin metadatos técnicos ni consultas repetidas.
 - [x] Quitar cobro directo de Mi dinero y conservar entrada por terminal invitada; acceso antiguo redirige al perfil y cobro solicita modo terminal. 22 pruebas correctas; comprobación autenticada sigue pendiente por sesión externa no disponible.
 - [x] Aplicar terminales por invitación en perfil personal con solicitud de agente pendiente sin biometría real.
 - [x] Cambiar recargas a $15, activación principal a $150 y sub-QR a $100 con CURP/nivel 1; preservar activaciones ya pagadas y transporte.
