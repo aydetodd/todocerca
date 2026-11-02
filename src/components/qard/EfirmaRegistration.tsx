@@ -27,7 +27,8 @@ export default function EfirmaRegistration() {
       const pdfjs = await import('pdfjs-dist');
       const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
       pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-      const document = await pdfjs.getDocument({data: new Uint8Array(await pdf.arrayBuffer()), isEvalSupported: false}).promise;
+      const task = pdfjs.getDocument({data: new Uint8Array(await pdf.arrayBuffer())});
+      const document = await task.promise;
       let text = '';
       try {
         if (document.numPages > 10) throw new Error('La constancia debe tener como máximo 10 páginas.');
@@ -35,7 +36,7 @@ export default function EfirmaRegistration() {
           const content = await (await document.getPage(page)).getTextContent();
           text += content.items.map(item => 'str' in item ? item.str : '').join(' ') + '\n';
         }
-      } finally { await document.destroy(); }
+      } finally { await task.destroy(); }
       keyBytes = new Uint8Array(await key.arrayBuffer());
       const checked = checkEfirma(new Uint8Array(await cer.arrayBuffer()), keyBytes, String(data.get('password') ?? ''), rfc, text);
       if (run === generation.current) setResult(checked);

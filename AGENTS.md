@@ -26,3 +26,4 @@
 - Terminal reloads and merchant collections use atomic, idempotent SQL entry points with locked funds and an immutable operation receipt; never split money writes across browser or edge requests because retries must not double debit or lose credits.
 - Merchant collection consumes only the four-digit dynamic CVV within the successful transaction; transport readers remain separate and unchanged, and the three-digit static CVV never enters a payment request.
 - Open merchant collection only through TerminalesDialog's invited-terminal entry, never from Mi dinero; QardCobrar always requests terminal-mode collection so existing server-side invitation checks apply.
+- Merchant e.firma checks run locally with node-forge and PDF.js; private keys/passwords never enter storage or network, and local matching must never grant approval without server-verified SAT trust, revocation and account-bound proof of possession.
