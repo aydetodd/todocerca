@@ -1,7 +1,7 @@
 # Productos estándar sin fotos
 ## Registro de comercio con e.firma
-- [ ] Sustituir INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña con cotejo criptográfico local sin persistir secretos.
-- [ ] Conectar autenticidad/vigencia/no revocación oficial SAT y aprobación protegida de nivel tres; no aprobar con un cotejo local.
+- [x] Sustituir formulario de terminales INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña; cotejo local sin envío ni persistencia, seis pruebas de reglas y 31 pruebas totales correctas. Se conserva aprobación pendiente, sin crear solicitudes locales.
+- [ ] Conectar autenticidad/vigencia/no revocación oficial SAT y aprobación protegida de nivel tres; bloqueado por falta de consulta oficial automatizada operativa verificada y definición de acreditación del representante. SAT OCSP requiere emisor además de serie; respuestas indeterminadas nunca aprueban.
 - [ ] Comprobar registro con documentos y sesión reales; no disponibles en el proyecto externo.
 ## Accesos por tarjeta QaRd
 - [x] Colocar estado principal y estado empresarial de cobros en sus respectivas tarjetas, mover aumento a nivel 2 junto al saldo principal y mostrar CVV dinámico empresarial real; tres pruebas del libro correctas e iconos verificados a 375 px sin desbordamiento, sin cambiar saldos ni transporte.
@@ -12,7 +12,7 @@
 - [x] Proponer estructura de datos y pantallas para RESICO, facturación, asistencia y nómina; sin activar cobros ni modificar transporte. Martín confirmó que al superar 15 minutos se cuenta toda la diferencia (08:16 = 16 minutos); marcas anticipadas y descansos pendientes antes de implementar nómina.
 ## Confirmación de identidad
 - [x] Mostrar y conservar resultados reales de CURP, INE y RFC con confirmación antes de continuar; consultas desplegadas y 25 pruebas correctas.
-- [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nivel tres requiere biometría real. Página pública sin errores, compilación correcta.
+- [ ] Comprobar el flujo completo y registrar a Martín: su sesión externa y documentos no están disponibles para el asistente; nuevo nivel tres con e.firma espera validación oficial SAT. Página pública sin errores, compilación correcta.
 ## Terminales digitales
 - [x] Revisar bloqueos en datos reales: City traffic pendiente de CURP/RFC/biometría y sin invitaciones; cobro atómico abona saldo_comercio_mxn del dueño, no del operador. Tarjeta Empresarial presenta saldo_mxn de otra bolsa; no se ejecutaron cobros ni consultas Verificamex.
 - [ ] Unificar presentación de saldo y uso de cuenta Empresarial con el libro de cobros, completar enlace entre confirmaciones y solicitud de agente y registros visibles por negocio; comprobación autenticada depende de sesión externa, biometría depende de proveedor real.
@@ -23,7 +23,7 @@
 - [x] Mantener servicios pendientes sin proveedor y registrar operaciones y reparto en libro inmutable; pruebas de precios y permisos correctas.
 - [x] Cambiar invitaciones de terminal a por teléfono hechas por el dueño del comercio (como con chóferes): tabla de invitaciones, enlace/token, aceptación, revocación y dinero a nombre del negocio; 22 pruebas correctas.
 - [ ] Validar cobro, recarga, invitación y aceptación desde cuentas reales: Supabase externo sin sesión autenticada disponible.
-- [ ] Habilitar nivel tres y servicios: faltan proveedor biométrico real y proveedor de pagos de servicios contratado.
+- [ ] Habilitar nivel tres y servicios: falta validación oficial SAT de e.firma y acreditación del comercio; servicios esperan proveedor contratado.
 
 - [x] Filtrar gestión personal de Fletes por tipo registrado: transportistas solo unidades y remitentes solo cargas; búsqueda de contraparte conservada, doce pruebas correctas y compilación sin errores. Comprobación en cuenta real pendiente por sesión externa no disponible.
 - [x] Separar gestión de Fletes en perfil personal y búsqueda por renglones con destinos y características compatibles; nueve pruebas de reglas y acceso público correctos, sin errores de compilación. Publicación y coincidencias entre cuentas reales pendientes por Supabase externo sin sesión disponible.
