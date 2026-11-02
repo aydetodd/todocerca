@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Comparativa pública
+- [ ] Crear /comparativa sin registro y enlace público «¿Por qué TodoCerca?», siete secciones detalladas con fuentes y estados reales.
+- [ ] Descargar PDF carta completo y verificar lectura/descarga en móvil y escritorio.
+- [ ] Publicar la comparativa si lo permite la configuración del proyecto.
 ## Registro de comercio con e.firma
 - [x] Sustituir formulario de terminales INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña; cotejo local sin envío ni persistencia, seis pruebas de reglas y 31 pruebas totales correctas. Se conserva aprobación pendiente, sin crear solicitudes locales.
 - [ ] Conectar autenticidad/vigencia/no revocación oficial SAT y aprobación protegida de nivel tres; bloqueado por falta de consulta oficial automatizada operativa verificada y definición de acreditación del representante. SAT OCSP requiere emisor además de serie; respuestas indeterminadas nunca aprueban.
