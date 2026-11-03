@@ -15,7 +15,7 @@ export default function Index() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      window.location.assign(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -36,10 +36,10 @@ export default function Index() {
           </div>
           <div className="flex gap-2">
             <Button asChild variant="ghost"><Link to="/comparativa">¿Por qué TodoCerca?</Link></Button>
-            <Button variant="outline" onClick={() => navigate('/search')}>
+            <Button variant="outline" onClick={() => window.location.assign('/search')}>
               Buscar
             </Button>
-            <Button onClick={() => navigate('/auth')}>
+            <Button onClick={() => window.location.assign('/auth')}>
               Iniciar Sesión
             </Button>
           </div>
@@ -67,7 +67,7 @@ export default function Index() {
             <Button 
               size="lg" 
               className="text-lg px-8 bg-accent hover:bg-accent/90 text-white w-full sm:w-auto"
-              onClick={() => navigate('/auth')}
+              onClick={() => window.location.assign('/auth')}
             >
               <Package className="mr-2 h-5 w-5" />
               Registrar como Proveedor
@@ -76,7 +76,7 @@ export default function Index() {
               variant="outline" 
               size="lg" 
               className="text-lg px-8 bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto" 
-              onClick={() => navigate('/search')}
+              onClick={() => window.location.assign('/search')}
             >
               <Users className="mr-2 h-5 w-5" />
               Buscar Proveedores
@@ -94,7 +94,7 @@ export default function Index() {
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/search')}>
+              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.assign('/search')}>
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                     <category.icon className="h-8 w-8 text-primary" />
@@ -121,7 +121,7 @@ export default function Index() {
             <p className="text-xl mb-8 opacity-90">
               Únete a nuestra plataforma y llega a más clientes en tu área
             </p>
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth')}>
+            <Button size="lg" className="bg-white text-primary hover:bg-white/90" onClick={() => window.location.assign('/auth')}>
               Registrar mi Negocio
             </Button>
           </div>
