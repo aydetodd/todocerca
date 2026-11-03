@@ -33,7 +33,7 @@ export const NavigationBar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   // Don't show on auth or landing pages
-  const hiddenPaths = ['/auth', '/landing', '/'];
+  const hiddenPaths = ['/auth', '/landing', '/comparativa', '/'];
   if (hiddenPaths.includes(location.pathname)) return null;
 
   return (

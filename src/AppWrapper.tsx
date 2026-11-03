@@ -18,6 +18,7 @@ import Suscripciones from "./pages/Suscripciones";
 import Panel from "./pages/Panel";
 import AdminQuickAccess from "./pages/AdminQuickAccess";
 import Index from "./pages/Index";
+import Comparativa from "./pages/Comparativa";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -96,7 +97,7 @@ const GlobalNotificationsProvider = () => {
 };
 
 // Rutas públicas exentas de verificación de dispositivo
-const PUBLIC_PATHS = ["/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/terminal-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/", "/saldo"];
+const PUBLIC_PATHS = ["/comparativa", "/auth", "/rescate", "/sos/", "/chofer-invitacion", "/empleado-invitacion", "/terminal-invitacion", "/join-group", "/proveedor/", "/privacidad", "/eliminar-cuenta", "/landing", "/como-funciona", "/pase/", "/saldo"];
 
 const AccessGateProvider = () => {
   const location = useLocation();
@@ -180,6 +181,7 @@ export default function AppWrapper() {
           <Route path="/admin" element={<AdminQuickAccess />} />
           <Route path="/beto" element={<AdminQuickAccess />} />
           <Route path="/landing" element={<Index />} />
+          <Route path="/comparativa" element={<Comparativa />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/eventos" element={<Eventos />} />
           <Route path="/pase/:codigo" element={<PaseEvento />} />

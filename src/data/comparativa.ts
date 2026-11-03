@@ -3,7 +3,7 @@ export type ComparisonSection = { id: string; title: string; summary: string; bl
 export const comparisonSources = [
   { id: 'pix', label: 'Banco Central do Brasil · Pix', url: 'https://www.bcb.gov.br/estabilidadefinanceira/pix' },
   { id: 'pix-faq', label: 'Banco Central do Brasil · preguntas sobre Pix', url: 'https://www.bcb.gov.br/meubc/faqs/s/pix' },
-  { id: 'wechat', label: 'Tencent · Weixin Pay para visitantes internacionales', url: 'https://www.tencent.com/en-us/articles/2201793.html' },
+  { id: 'wechat', label: 'Weixin Pay · tarjetas internacionales, requisitos y comisiones', url: 'https://cs.help.wechat.com/hc/en-us/articles/11975770896271-How-to-Set-Up-International-Cards-for-Weixin-Pay' },
   { id: 'privacy', label: 'WeChat · política de privacidad', url: 'https://www.wechat.com/en/privacy_policy.html' },
   { id: 'isr', label: 'Cámara de Diputados · Ley del ISR, artículos 113-E y siguientes', url: 'https://www.diputados.gob.mx/LeyesBiblio/pdf/LISR.pdf' },
   { id: 'iva', label: 'Cámara de Diputados · Ley del IVA, artículo 15, fracción V', url: 'https://www.diputados.gob.mx/LeyesBiblio/pdf/LIVA.pdf' },
