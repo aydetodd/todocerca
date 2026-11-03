@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,7 @@ export default function Index() {
             <span className="text-xl font-bold">ToDoCerca</span>
           </div>
           <div className="flex gap-2">
+            <Button asChild variant="ghost"><Link to="/comparativa">¿Por qué TodoCerca?</Link></Button>
             <Button variant="outline" onClick={() => navigate('/search')}>
               Buscar
             </Button>
@@ -130,6 +131,7 @@ export default function Index() {
       {/* Footer */}
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <Link to="/comparativa" className="block mb-3 text-primary underline">¿Por qué TodoCerca? · Comparativa</Link>
           <p>&copy; 2024 TodoCerca. Conectando comunidades locales.</p>
         </div>
       </footer>

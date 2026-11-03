@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
-import { comparisonSections, comparisonSources } from '@/data/comparativa';
+import { comparisonSections, comparisonSources } from '../data/comparativa';
 
-export function downloadComparisonPdf() {
+export function createComparisonPdf() {
   const doc = new jsPDF({format:'letter',unit:'mm'});
   const width = 175;
   let y = 22;
@@ -32,5 +32,5 @@ export function downloadComparisonPdf() {
   for (const source of comparisonSources) {line(source.label,10,true);line(source.url,9);}
   const pages=doc.getNumberOfPages();
   for(let page=1;page<=pages;page++) {doc.setPage(page);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(`TodoCerca | todocerca.mx/comparativa | ${page} / ${pages}`,20,267);}
-  doc.save('TodoCerca-Analisis-Comparativo.pdf');
+  return doc;
 }
