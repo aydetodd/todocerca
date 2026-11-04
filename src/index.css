@@ -522,6 +522,11 @@ Paleta: Azul marino profundo con acentos brillantes
   small, .text-muted { @apply text-[14px] font-light; color: hsl(var(--text-secondary)); }
 }
 
+.comparison-page section.isolate h1,
+.comparison-page section.isolate p {
+  color: hsl(var(--primary-foreground));
+}
+
 @layer components {
   /* Sombra y radio consistentes en todas las tarjetas shadcn */
   [class*="rounded-lg"].border.bg-card,
