@@ -11,7 +11,6 @@ import { useRegistrationNotifications } from "@/hooks/useRegistrationNotificatio
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useAuth } from "@/hooks/useAuth";
-import Home from "./pages/Home";
 import MainHome from "./pages/MainHome";
 import Proximamente from "./pages/Proximamente";
 import Suscripciones from "./pages/Suscripciones";
@@ -123,24 +122,20 @@ const AccessGateProvider = () => {
   );
 };
 
-// Direct navigation handler - after auth, go straight to main home
-const NavigationHandler = () => {
+// Raíz: con sesión va al home principal; sin sesión muestra la portada pública de inmediato
+const RootGate = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
-    if (!loading && location.pathname === '/') {
-      if (user) {
-        // Ir directamente al home principal (búsqueda, taxi, transporte, etc.)
-        navigate('/home', { replace: true });
-      } else {
-        navigate('/auth', { replace: true });
-      }
+    if (!loading && user) {
+      // Ir directamente al home principal (búsqueda, taxi, transporte, etc.)
+      navigate('/home', { replace: true });
     }
-  }, [loading, user, navigate, location.pathname]);
+  }, [loading, user, navigate]);
 
-  return null;
+  if (loading || user) return null;
+  return <Index />;
 };
 
 export default function AppWrapper() {
@@ -166,7 +161,6 @@ export default function AppWrapper() {
         {/* Escucha global de alertas SOS */}
         <GlobalSOSListener />
         {/* Navigation Handler - redirects root to auth/home */}
-        <NavigationHandler />
         {/* Validación única de acceso (dispositivo + sesión única) por correo */}
         <AccessGateProvider />
         <NavigationBar />
@@ -175,7 +169,7 @@ export default function AppWrapper() {
         {/* Candado global si la cuenta fue bloqueada desde modo rescate */}
         <CuentaBloqueadaGate />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<RootGate />} />
           <Route path="/home" element={<MainHome />} />
           <Route path="/panel" element={<Panel />} />
           <Route path="/admin" element={<AdminQuickAccess />} />
