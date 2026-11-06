@@ -4364,6 +4364,30 @@ export type Database = {
         }
         Relationships: []
       }
+      qard_negocios: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       qard_pagos_servicio: {
         Row: {
           comision_mxn: number
@@ -5931,6 +5955,7 @@ export type Database = {
           id: string
           invited_user_id: string | null
           merchant_user_id: string
+          negocio_id: string | null
           phone: string
           status: string
           terminal_code: string
@@ -5943,6 +5968,7 @@ export type Database = {
           id?: string
           invited_user_id?: string | null
           merchant_user_id: string
+          negocio_id?: string | null
           phone: string
           status?: string
           terminal_code: string
@@ -5955,6 +5981,7 @@ export type Database = {
           id?: string
           invited_user_id?: string | null
           merchant_user_id?: string
+          negocio_id?: string | null
           phone?: string
           status?: string
           terminal_code?: string
@@ -5962,6 +5989,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "terminal_invites_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "qard_negocios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "terminal_invites_terminal_code_fkey"
             columns: ["terminal_code"]
@@ -5978,6 +6012,7 @@ export type Database = {
           id: string
           merchant_commission_mxn: number
           merchant_user_id: string
+          negocio_id: string | null
           opening_fee_mxn: number
           platform_commission_mxn: number
           request_key: string
@@ -5992,6 +6027,7 @@ export type Database = {
           id?: string
           merchant_commission_mxn?: number
           merchant_user_id: string
+          negocio_id?: string | null
           opening_fee_mxn?: number
           platform_commission_mxn?: number
           request_key: string
@@ -6006,6 +6042,7 @@ export type Database = {
           id?: string
           merchant_commission_mxn?: number
           merchant_user_id?: string
+          negocio_id?: string | null
           opening_fee_mxn?: number
           platform_commission_mxn?: number
           request_key?: string
@@ -6014,7 +6051,15 @@ export type Database = {
           terminal_code?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "terminal_operations_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "qard_negocios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       terminal_permissions: {
         Row: {
@@ -6022,6 +6067,7 @@ export type Database = {
           created_at: string
           id: string
           invited_by: string
+          negocio_id: string | null
           status: string
           terminal_code: string
           updated_at: string
@@ -6032,6 +6078,7 @@ export type Database = {
           created_at?: string
           id?: string
           invited_by: string
+          negocio_id?: string | null
           status?: string
           terminal_code: string
           updated_at?: string
@@ -6042,12 +6089,20 @@ export type Database = {
           created_at?: string
           id?: string
           invited_by?: string
+          negocio_id?: string | null
           status?: string
           terminal_code?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "terminal_permissions_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "qard_negocios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "terminal_permissions_terminal_code_fkey"
             columns: ["terminal_code"]
@@ -8095,6 +8150,16 @@ export type Database = {
         Returns: Json
       }
       qard_cobros_mes: { Args: { _user_id: string }; Returns: number }
+      qard_cobros_por_sucursal: {
+        Args: never
+        Returns: {
+          cobrado: number
+          cobros: number
+          hoy: number
+          negocio_id: string
+          nombre: string
+        }[]
+      }
       qard_collect_atomic: {
         Args: {
           _amount: number
@@ -8334,6 +8399,10 @@ export type Database = {
       }
       terminal_invite_phone: {
         Args: { _code: string; _phone: string }
+        Returns: string
+      }
+      terminal_invite_sucursal: {
+        Args: { _negocio: string; _phone: string }
         Returns: string
       }
       terminal_merchant_valid: { Args: { _user_id: string }; Returns: boolean }

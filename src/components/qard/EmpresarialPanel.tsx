@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { BookOpen, Briefcase, QrCode, Zap } from 'lucide-react';
 import EfirmaRegistration from './EfirmaRegistration';
 import TerminalesDialog from './TerminalesDialog';
+import SucursalesPanel from './SucursalesPanel';
 import FormalizationDialog from '@/components/formalization/FormalizationDialog';
 import { merchantValid, type Agent } from '@/lib/terminales';
 
@@ -67,6 +68,7 @@ export default function EmpresarialPanel({ numero, onChanged, onLibro, onQr }: {
         <Button variant="outline" className="min-h-14 h-auto gap-2 p-4" onClick={() => nav('/dashboard')}><Briefcase className="h-6 w-6 text-primary" /><span className="font-semibold">Mis negocios</span></Button>
         <Button variant="outline" className="min-h-14 h-auto gap-2 p-4" onClick={onQr}><QrCode className="h-6 w-6 text-primary" /><span className="font-semibold">Mi QR de cobro</span></Button>
       </div>
+      <SucursalesPanel />
       <FormalizationDialog />
     </Card>
   );
