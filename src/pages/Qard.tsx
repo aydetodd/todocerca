@@ -24,6 +24,7 @@ import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type
 import { groupRoutesByType } from "@/lib/transportRouteTypes";
 import { RouteTypeBadge, RouteTypeIcon } from "@/components/RouteTypeBadge";
 import QardTarjeta from "@/components/qard/QardTarjeta";
+import EmpresarialPanel from "@/components/qard/EmpresarialPanel";
 
 
 
@@ -476,7 +477,7 @@ export default function Qard() {
               onRotarCvv={() => {}}
               onQr={() => {}}
             />
-            <p className="text-xs text-muted-foreground">INACTIVA · Pendiente de registro y verificación del comercio.</p>
+            <EmpresarialPanel onChanged={() => void cargar()} />
           </div>
         );
         const empAprobada = identidad?.estado === "moral_approved";
@@ -525,6 +526,7 @@ export default function Qard() {
                 </div>
               )}
             </Card>
+            <EmpresarialPanel numero={emp.qard_number} onChanged={() => void cargar()} onLibro={() => setCobrosOpen(true)} onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial · Cobro" })} />
           </div>
         );
       })()}

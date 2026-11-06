@@ -9,10 +9,9 @@ import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Store, Check, RefreshCw, LockKeyhole, ArrowLeft, Send, Ban, UserPlus, Copy } from 'lucide-react';
-import EfirmaRegistration from './EfirmaRegistration';
 import { terminalEnabled, terminalInviteLink, merchantValid, type Agent, type Terminal, type Permission, type Invite } from '@/lib/terminales';
 
-export default function TerminalesDialog() {
+export default function TerminalesDialog({ label = 'Abrir terminales digitales' }: { label?: string } = {}) {
   const { user } = useAuth();
   const nav = useNavigate();
   const [open,setOpen]=useState(false);
@@ -106,7 +105,7 @@ export default function TerminalesDialog() {
   });
   return <>
     <Button variant="outline" className="w-full min-h-14 h-auto gap-2 p-4" onClick={()=>setOpen(true)}>
-      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">Abrir terminales digitales</span>
+      <Store className="h-6 w-6 text-primary"/><span className="font-semibold">{label}</span>
     </Button>
     <Dialog open={open} onOpenChange={v=>{if(!busy){setOpen(v);if(!v)setReloadOpen(false);}}}>
       <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
@@ -125,7 +124,7 @@ export default function TerminalesDialog() {
             <Button className="w-full" onClick={reload} disabled={busy||number.length!==16||Number(amount)<=15||((user&&permissions.find(p=>p.terminal_code==='reload')?.invited_by===user.id&&balance!==null&&Number(amount)>balance))}>{busy?'Consultando…':quote?`Confirmar recarga de $${Number(amount||0).toFixed(2)}`:'Revisar importe'}</Button>
           </>}
         </div>:<div className="space-y-4">
-          {!loading && !merchantValid(agent) && <EfirmaRegistration />}
+          {!loading && !merchantValid(agent) && permissions.length===0 && <div className="rounded-md border border-border p-3 space-y-2"><p className="text-sm">Para invitar terminales primero activa tu QaRd Empresarial.</p><Button className="w-full" onClick={()=>{setOpen(false);nav('/qard');}}>Ir a mi QaRd Empresarial</Button></div>}
           {agent&&<section className="space-y-2 border-b border-border pb-3"><h2 className="font-semibold">{agent.business_name}</h2><p className="text-sm">{agent.status==='approved'?'Agente aprobado':'Solicitud pendiente'}</p>{agent.review_note&&<p className="text-sm">{agent.review_note}</p>}</section>}
           {(agent||permissions.length>0)&&terminals.map(t=>{const p=permissions.find(p=>p.terminal_code===t.code);const enabled=terminalEnabled(agent,p,t);return <section key={t.code} className="border-b border-border py-3 space-y-2"><h3 className="font-semibold flex items-center gap-2">{enabled?<Check className="h-4 w-4 text-primary"/>:<LockKeyhole className="h-4 w-4 text-muted-foreground"/>}{t.name}</h3><p className="text-sm text-muted-foreground">{!t.operational?'Pendiente de proveedor':p?.status==='accepted'?(enabled?'Activa':'Invitación aceptada · comercio pendiente'):p?.status==='revoked'?'Revocada':p?.status==='pending'?'Invitación pendiente':'Sin invitación'}</p>{p?.status==='pending'&&<Button variant="outline" disabled={busy} onClick={()=>accept(p.id)}>Aceptar invitación</Button>}{enabled&&<Button onClick={()=>{if(t.code==='reload'){setReloadOpen(true);setResult(null);}else{setOpen(false);nav(t.code==='collection'?'/qard/cobrar?terminal=1':'/qard');}}}>Abrir terminal</Button>}
             {merchantValid(agent)&&t.operational&&<>

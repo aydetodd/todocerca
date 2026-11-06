@@ -30,7 +30,7 @@ function expiryAlert(result: EfirmaResult) {
   return null;
 }
 
-export default function EfirmaRegistration({ tipo: tipoInicial }: { tipo?: TipoPersona } = {}) {
+export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { tipo?: TipoPersona; onSuccess?: () => void } = {}) {
   const [tipo, setTipo] = useState<TipoPersona>(tipoInicial ?? 'moral');
   const [step, setStep] = useState(-1);
   const [razon, setRazon] = useState<string | null>(null);
@@ -101,6 +101,7 @@ export default function EfirmaRegistration({ tipo: tipoInicial }: { tipo?: TipoP
         setResult(checked); setRazon(razonSocial);
         // Éxito: limpiar archivos y contraseña por seguridad.
         element.reset();
+        onSuccess?.();
       }
     } catch (e) {
       console.error('[e.firma] Error durante la validación', e);

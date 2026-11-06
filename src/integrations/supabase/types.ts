@@ -5833,6 +5833,7 @@ export type Database = {
           curp_document: string | null
           curp_status: string
           efirma_nombre: string | null
+          efirma_rfc: string | null
           efirma_validada: boolean
           efirma_vence: string | null
           empresa_validada: boolean
@@ -5856,6 +5857,7 @@ export type Database = {
           curp_document?: string | null
           curp_status?: string
           efirma_nombre?: string | null
+          efirma_rfc?: string | null
           efirma_validada?: boolean
           efirma_vence?: string | null
           empresa_validada?: boolean
@@ -5879,6 +5881,7 @@ export type Database = {
           curp_document?: string | null
           curp_status?: string
           efirma_nombre?: string | null
+          efirma_rfc?: string | null
           efirma_validada?: boolean
           efirma_vence?: string | null
           empresa_validada?: boolean
