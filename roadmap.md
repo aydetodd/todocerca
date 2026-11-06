@@ -7,7 +7,8 @@
 - [ ] Publicar la comparativa: la preferencia del proyecto deshabilita la publicación desde el asistente; Martín debe usar Publicar → Actualizar.
 ## Registro de comercio con e.firma
 - [x] Sustituir formulario de terminales INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña; cotejo local sin envío ni persistencia, seis pruebas de reglas y 31 pruebas totales correctas. Se conserva aprobación pendiente, sin crear solicitudes locales.
-- [ ] Conectar autenticidad/vigencia/no revocación oficial SAT y aprobación protegida de nivel tres; bloqueado por falta de consulta oficial automatizada operativa verificada y definición de acreditación del representante. SAT OCSP requiere emisor además de serie; respuestas indeterminadas nunca aprueban.
+- [ ] Validación local completa de e.firma con aprobación de Nivel 3 (Martín, 6 nov 2026): pasos A–E con vigencia, cotejo RFC (PDF opcional), alertas de vencimiento (90/30/7 días y gracia 60), guardar solo RFC/nombre/fechaFin/efirma_validada, corregir error `undefined is not a function`, try/catch con console.log, no limpiar archivos en fallo (solo contraseña), botón «Cotejando documentos…».
+- [ ] SEO: única falla es sitemap faltante; presentar hallazgos y crear sitemap/robots si Martín aprueba (quedó en pausa por e.firma).
 - [ ] Comprobar registro con documentos y sesión reales; no disponibles en el proyecto externo.
 ## Accesos por tarjeta QaRd
 - [x] Colocar estado principal y estado empresarial de cobros en sus respectivas tarjetas, mover aumento a nivel 2 junto al saldo principal y mostrar CVV dinámico empresarial real; tres pruebas del libro correctas e iconos verificados a 375 px sin desbordamiento, sin cambiar saldos ni transporte.
