@@ -67,6 +67,7 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
   const ensure = (height: number) => { if (y+height>bottom) newPage(); };
   const paragraph = (value: string, color = ink.text) => {
     const lines=wrap(value,width,11); const leading=5.25;
+    ensure(lines.length*leading+3.5);
     for (const valueLine of lines) { ensure(leading); text(valueLine,left,y+3.8,11,color); y+=leading; }
     y+=3.5;
   };
@@ -75,11 +76,13 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
     rect(left,y,width,h,bg); rect(left,y,1.2,h,color); icon(kind,left+5,y+6,7,color);
     lines.forEach((v,i)=>text(v,left+17,y+8.5+i*5.2,11,ink.text)); y+=h+6;
   };
-  const blockHeading = (value: string) => {
+  const blockHeading = (value: string, firstParagraph?: string) => {
     const color=value.startsWith('TodoCerca')?ink.orange:ink.navy;
     const bg=value.startsWith('TodoCerca')?ink.orangePale:value.startsWith('Pix')?ink.bluePale:ink.pale;
     const lines=wrap(value,width-18,18,true); const h=lines.length*7.8+10;
-    ensure(h+22); rect(left,y,width,h,bg);
+    const isCallout=firstParagraph?.startsWith('A favor:') || firstParagraph?.startsWith('Límites:');
+    const followingHeight=firstParagraph ? wrap(firstParagraph,width-(isCallout?23:0),11).length*5.25+(isCallout?18:4) : 22;
+    ensure(h+5+followingHeight); rect(left,y,width,h,bg);
     icon(value.startsWith('TodoCerca')?'bus':value.startsWith('Pix')?'bank':value.startsWith('WeChat')?'chat':'chart',left+4,y+5,7,color);
     lines.forEach((v,i)=>text(v,left+15,y+8.7+i*7.8,18,color,true)); y+=h+5;
   };
@@ -134,15 +137,15 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
     titleLines.forEach((v,i)=>text(v,left,y+6+i*8.4,20,ink.navy,true)); y+=titleLines.length*8.4+9;
     rect(left,y,width,1,ink.orange); y+=8;
     box(section.summary,ink.yellowPale,ink.yellow,'warning');
+    table(index);
     for (const block of section.blocks) {
-      blockHeading(block.title);
+      blockHeading(block.title,block.paragraphs[0]);
       for (const p of block.paragraphs) {
         if (p.startsWith('A favor:')) box(p,ink.greenPale,ink.green,'check');
         else if (p.startsWith('Límites:')) box(p,ink.redPale,ink.red,'cross');
         else paragraph(p);
       }
     }
-    table(index);
     paragraph(`Referencias: ${section.sources.map(id=>comparisonSources.find(s=>s.id===id)?.label).filter(Boolean).join('; ')}`,ink.muted);
   }
   runningTitle='Fuentes y metodología'; newPage();
@@ -166,12 +169,12 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
     {name:'WeChat Pay',color:ink.muted,bg:ink.pale,kind:'chat' as Icon,pros:['Pagos integrados','Comercio y servicios','Experiencia consolidada','Visitantes con tarjetas internacionales bajo condiciones'],cons:['Reglas de plataforma','Verificación y cobertura variables','Costos según contexto','Revisión del tratamiento de datos','No solución nativa RESICO, nómina o SAT']},
   ];
   balances.forEach((b,c)=>{
-    const x=left+c*(col+gap); rect(x,top,col,187,b.bg); rect(x,top,col,2,b.color);
+    const x=left+c*(col+gap); rect(x,top,col,bottom-top,b.bg); rect(x,top,col,2,b.color);
     icon(b.kind,x+5,top+7,9,b.color); text(b.name,x+5,top+25,13,b.color,true);
     let cy=top+34;
     const list=(label:string,values:string[],color:string,kind:Icon)=>{
       text(label,x+5,cy,12,color,true); cy+=7;
-      values.forEach(v=>{ const lines=wrap(v,col-15,11); icon(kind,x+4,cy-2.5,3.5,color); lines.forEach((line,i)=>text(line,x+10,cy+i*5.1,11,ink.text)); cy+=lines.length*5.1+4; }); cy+=4;
+      values.forEach(v=>{ const lines=wrap(v,col-15,11); icon(kind,x+4,cy-2.5,3.5,color); lines.forEach((line,i)=>text(line,x+10,cy+i*4.7,11,ink.text)); cy+=lines.length*4.7+2; }); cy+=3;
     };
     list('Pros',b.pros,ink.green,'check'); list('Límites',b.cons,ink.red,'cross');
   });

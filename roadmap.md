@@ -1,6 +1,6 @@
 # Productos estándar sin fotos
 ## Comparativa pública
-- [ ] Rediseñar PDF sin eliminar texto: portada de la web, colores, iconos, tablas, balance visual y revisión de cada página; sustituir descarga pública.
+- [x] Rediseñar PDF sin eliminar texto: portada de la web, colores, iconos vectoriales, siete tablas y balance visual; 23 páginas carta revisadas, 86 párrafos/resúmenes/URLs conservados y descarga pública comprobada. Corregidos párrafos partidos, títulos aislados y fondo final que invadía el pie; requiere Publicar → Actualizar para el dominio público.
 - [x] Crear /comparativa fuera de la aplicación privada, sin registro, con enlace público «¿Por qué TodoCerca?», siete secciones detalladas y fuentes; propuestas separadas de servicios activos.
 - [x] Descargar PDF carta completo de ocho páginas, comprobar texto y descarga pública, acordeones y ancho de 390 px sin desbordamiento.
 - [ ] Publicar la comparativa: la preferencia del proyecto deshabilita la publicación desde el asistente; Martín debe usar Publicar → Actualizar.
