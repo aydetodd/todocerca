@@ -1,138 +1,91 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { ArrowRight, Search, Users, ShoppingCart, Package, Wrench } from 'lucide-react';
+import { Users, ShoppingCart, Package, Wrench } from 'lucide-react';
 import heroBackground from '@/assets/hero-gradient-background.jpg';
 import { BrandIcon } from '@/components/BrandIcon';
 
 export default function Index() {
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      window.location.assign(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-    }
-  };
-
   const categories = [
-    { name: "Servicios", icon: Wrench, color: "bg-blue-100 text-blue-800", count: "120+" },
-    { name: "Productos", icon: Package, color: "bg-green-100 text-green-800", count: "250+" },
-    { name: "Comercios", icon: ShoppingCart, color: "bg-purple-100 text-purple-800", count: "85+" },
+    { name: "Servicios", icon: Wrench, count: "120+" },
+    { name: "Productos", icon: Package, count: "250+" },
+    { name: "Comercios", icon: ShoppingCart, count: "85+" },
   ];
+  const go = (p: string) => window.location.assign(p);
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <BrandIcon className="h-9 w-9" />
-            <span className="text-xl font-bold">ToDoCerca</span>
+    <div className="landing-premium min-h-screen">
+      <header className="sticky top-0 z-20 bg-secondary text-secondary-foreground shadow-md">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <BrandIcon className="h-9 w-9 shrink-0" />
+            <span className="text-lg sm:text-xl font-bold tracking-tight">ToDoCerca</span>
           </div>
-          <div className="flex gap-2">
-            <Button asChild variant="ghost"><Link to="/comparativa">¿Por qué TodoCerca?</Link></Button>
-            <Button variant="outline" onClick={() => window.location.assign('/search')}>
-              Buscar
-            </Button>
-            <Button onClick={() => window.location.assign('/auth')}>
+          <div className="flex items-center gap-1 sm:gap-3">
+            <Link to="/comparativa" className="text-xs sm:text-sm text-secondary-foreground/85 hover:text-secondary-foreground transition-colors duration-300 px-2 whitespace-nowrap">
+              <span className="sm:hidden">¿Por qué?</span><span className="hidden sm:inline">¿Por qué TodoCerca?</span>
+            </Link>
+            <Button size="sm" className="lp-btn-primary rounded-full px-4" onClick={() => go('/auth')}>
               Iniciar Sesión
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section with Background */}
-      <section 
-        className="relative text-center py-32 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroBackground})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/80 to-primary/80"></div>
+      <section className="relative text-center py-28 md:py-36 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackground})` }}>
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/60 to-secondary/10" />
         <div className="relative z-10 container mx-auto px-4">
-          <Badge variant="secondary" className="mb-4 bg-white/20 text-white border-white/30">
+          <span className="inline-block mb-5 rounded-full border border-secondary-foreground/30 bg-secondary-foreground/10 px-4 py-1 text-sm text-secondary-foreground backdrop-blur">
             Conectando productores locales con consumidores
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
-            Conectamos con
-          </h1>
-          <p className="text-xl text-white mb-8 max-w-2xl mx-auto">
+          </span>
+          <h1 className="lp-hero-text text-4xl md:text-6xl font-bold mb-6 text-secondary-foreground tracking-tight">Conectamos con</h1>
+          <p className="lp-hero-text text-lg md:text-xl text-secondary-foreground/95 mb-10 max-w-2xl mx-auto">
             La plataforma líder para encontrar proveedores confiables y hacer crecer tu negocio
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-3xl mx-auto">
-            <Button 
-              size="lg" 
-              className="text-lg px-8 bg-accent hover:bg-accent/90 text-white w-full sm:w-auto"
-              onClick={() => window.location.assign('/auth')}
-            >
-              <Package className="mr-2 h-5 w-5" />
-              Registrar como Proveedor
+          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-xl mx-auto">
+            <Button size="lg" className="lp-btn-primary rounded-xl text-base px-8 w-full sm:w-auto" onClick={() => go('/auth')}>
+              <Package className="mr-2 h-5 w-5" /> Registrar como Proveedor
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="text-lg px-8 bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto" 
-              onClick={() => window.location.assign('/search')}
-            >
-              <Users className="mr-2 h-5 w-5" />
-              Buscar Proveedores
+            <Button size="lg" variant="outline" className="rounded-xl text-base px-8 w-full sm:w-auto bg-card border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300" onClick={() => go('/search')}>
+              <Users className="mr-2 h-5 w-5" /> Buscar Proveedores
             </Button>
           </div>
         </div>
       </section>
 
-      <div className="container mx-auto px-4">
-
-        {/* Categories */}
-        <section className="py-16">
-          <h3 className="text-3xl font-bold text-center mb-12">
-            Explora por Categorías
-          </h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.assign('/search')}>
-                <CardHeader className="text-center">
-                  <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <category.icon className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">{category.name}</CardTitle>
-                  <CardDescription>
-                    Encuentra los mejores {category.name.toLowerCase()} cerca de ti
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Badge variant="secondary" className={category.color}>
-                    {category.count} opciones
-                  </Badge>
-                </CardContent>
-              </Card>
+      <section className="py-16 md:py-20 border-b border-border">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-3 text-[hsl(var(--lp-heading))]">Explora por Categorías</h2>
+          <p className="text-center mb-12 text-[hsl(var(--lp-text))]">Todo lo que necesitas, cerca de ti</p>
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+            {categories.map((c) => (
+              <button key={c.name} type="button" className="lp-card p-8 text-center" onClick={() => go('/search')}>
+                <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <c.icon className="lp-icon h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-[hsl(var(--lp-sub))]">{c.name}</h3>
+                <p className="text-sm mb-4 text-[hsl(var(--lp-text))]">Encuentra los mejores {c.name.toLowerCase()} cerca de ti</p>
+                <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium text-[hsl(var(--lp-heading))]">{c.count} opciones</span>
+              </button>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* CTA Section */}
-        <section className="py-16 bg-gradient-to-r from-secondary to-primary text-white rounded-lg">
-          <div className="text-center px-8">
-            <h3 className="text-3xl font-bold mb-4">¿Eres proveedor?</h3>
-            <p className="text-xl mb-8 opacity-90">
-              Únete a nuestra plataforma y llega a más clientes en tu área
-            </p>
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90" onClick={() => window.location.assign('/auth')}>
-              Registrar mi Negocio
-            </Button>
+      <section className="py-16 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="lp-card text-center px-6 py-14 hover:transform-none">
+            <h2 className="text-3xl font-bold mb-4 text-[hsl(var(--lp-heading))]">¿Eres proveedor?</h2>
+            <p className="text-lg mb-8 text-[hsl(var(--lp-text))]">Únete a nuestra plataforma y llega a más clientes en tu área</p>
+            <Button size="lg" className="lp-btn-primary rounded-xl px-8" onClick={() => go('/auth')}>Registrar mi Negocio</Button>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      {/* Footer */}
-      <footer className="border-t py-8 mt-16">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <Link to="/comparativa" className="block mb-3 text-primary underline">¿Por qué TodoCerca? · Comparativa</Link>
-          <p>&copy; 2024 TodoCerca. Conectando comunidades locales.</p>
+      <footer className="bg-secondary py-10">
+        <div className="container mx-auto px-4 text-center text-[hsl(var(--lp-footer-text))]">
+          <Link to="/comparativa" className="block mb-3 text-secondary-foreground hover:underline">¿Por qué TodoCerca? · Comparativa</Link>
+          <p className="text-sm text-[hsl(var(--lp-footer-text))]">&copy; 2024 TodoCerca. Conectando comunidades locales.</p>
         </div>
       </footer>
     </div>

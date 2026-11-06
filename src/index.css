@@ -765,3 +765,32 @@ Paleta: Azul marino profundo con acentos brillantes
     padding-bottom: 24px;
   }
 }
+
+/* Landing pública premium: tokens propios de la portada */
+.landing-premium {
+  --background: 210 17% 98%;
+  --foreground: 215 28% 17%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 28% 17%;
+  --primary: 18 100% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 212 52% 25%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 46%;
+  --border: 220 13% 91%;
+  --lp-heading: 212 52% 25%;
+  --lp-sub: 217 19% 27%;
+  --lp-text: 215 14% 34%;
+  --lp-footer-text: 218 12% 83%;
+  --lp-shadow: 0 4px 20px hsl(0 0% 0% / 0.08);
+  --lp-shadow-hover: 0 12px 32px hsl(212 52% 25% / 0.14);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.landing-premium .lp-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 16px; box-shadow: var(--lp-shadow); transition: transform .3s ease, box-shadow .3s ease; }
+.landing-premium .lp-card:hover { transform: translateY(-4px); box-shadow: var(--lp-shadow-hover); }
+.landing-premium .lp-card .lp-icon { color: hsl(var(--primary)); transition: color .3s ease; }
+.landing-premium .lp-card:hover .lp-icon { color: hsl(var(--secondary)); }
+.landing-premium .lp-btn-primary { box-shadow: 0 6px 18px hsl(18 100% 60% / 0.35); transition: all .3s ease; }
+.landing-premium .lp-hero-text { text-shadow: 0 2px 12px hsl(212 60% 12% / 0.55); }
