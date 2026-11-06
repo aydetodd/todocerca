@@ -29,5 +29,11 @@ test('comercio válido exige aprobación y tres validaciones', () => {
   assert.equal(merchantValid({...agent,biometric_status:'pending'}),false);
   assert.equal(merchantValid(null),false);
 });
+test('e.firma validada aprueba el comercio sin CURP ni biometría', () => {
+  const efirmaAgent={ status:'approved',curp_status:'not_required',rfc_status:'valid',biometric_status:'not_required',efirma_validada:true } as Agent;
+  assert.equal(merchantValid(efirmaAgent),true);
+  assert.equal(merchantValid({...efirmaAgent,efirma_validada:false}),false);
+  assert.equal(merchantValid({...efirmaAgent,status:'pending'}),false);
+});
 test('enlace de invitación usa el dominio oficial con token', () => assert.equal(terminalInviteLink('abc'), 'https://todocerca.mx/terminal-invitacion?token=abc'));
 test('monto menor o igual a cargos se rechaza', () => assert.throws(()=>reloadBreakdown(165,true,true)));

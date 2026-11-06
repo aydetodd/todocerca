@@ -5830,11 +5830,14 @@ export type Database = {
           biometric_status: string
           business_name: string
           created_at: string
-          curp_document: string
+          curp_document: string | null
           curp_status: string
+          efirma_nombre: string | null
+          efirma_validada: boolean
+          efirma_vence: string | null
           id: string
-          ine_back_document: string
-          ine_front_document: string
+          ine_back_document: string | null
+          ine_front_document: string | null
           review_note: string | null
           rfc_document: string
           rfc_status: string
@@ -5846,11 +5849,14 @@ export type Database = {
           biometric_status?: string
           business_name: string
           created_at?: string
-          curp_document: string
+          curp_document?: string | null
           curp_status?: string
+          efirma_nombre?: string | null
+          efirma_validada?: boolean
+          efirma_vence?: string | null
           id?: string
-          ine_back_document: string
-          ine_front_document: string
+          ine_back_document?: string | null
+          ine_front_document?: string | null
           review_note?: string | null
           rfc_document: string
           rfc_status?: string
@@ -5862,11 +5868,14 @@ export type Database = {
           biometric_status?: string
           business_name?: string
           created_at?: string
-          curp_document?: string
+          curp_document?: string | null
           curp_status?: string
+          efirma_nombre?: string | null
+          efirma_validada?: boolean
+          efirma_vence?: string | null
           id?: string
-          ine_back_document?: string
-          ine_front_document?: string
+          ine_back_document?: string | null
+          ine_front_document?: string | null
           review_note?: string | null
           rfc_document?: string
           rfc_status?: string

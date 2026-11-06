@@ -7,7 +7,7 @@
 - [ ] Publicar la comparativa: la preferencia del proyecto deshabilita la publicación desde el asistente; Martín debe usar Publicar → Actualizar.
 ## Registro de comercio con e.firma
 - [x] Sustituir formulario de terminales INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña; cotejo local sin envío ni persistencia, seis pruebas de reglas y 31 pruebas totales correctas. Se conserva aprobación pendiente, sin crear solicitudes locales.
-- [ ] Validación local completa de e.firma con aprobación de Nivel 3 (Martín, 6 nov 2026): pasos A–E con vigencia, cotejo RFC (PDF opcional), alertas de vencimiento (90/30/7 días y gracia 60), guardar solo RFC/nombre/fechaFin/efirma_validada, corregir error `undefined is not a function`, try/catch con console.log, no limpiar archivos en fallo (solo contraseña), botón «Cotejando documentos…».
+- [x] Validación local completa de e.firma con aprobación de Nivel 3 (Martín, 6 nov 2026): pasos A–E con vigencia, PDF opcional, alertas de vencimiento (90/30/7 días y gracia 60), guarda solo RFC/nombre/vencimiento/efirma_validada en terminal_agent_requests (migración aplicada), try/catch con console.log por paso, fallo conserva archivos y RFC (solo limpia contraseña), botón «Cotejando documentos…»; 33 pruebas correctas y compilación sin errores. Pendiente: probar con e.firma real de Martín.
 - [ ] SEO: única falla es sitemap faltante; presentar hallazgos y crear sitemap/robots si Martín aprueba (quedó en pausa por e.firma).
 - [ ] Comprobar registro con documentos y sesión reales; no disponibles en el proyecto externo.
 ## Accesos por tarjeta QaRd
