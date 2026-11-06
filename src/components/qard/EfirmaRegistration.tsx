@@ -135,6 +135,10 @@ export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { t
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {result && <div className="space-y-2 text-sm">
       <p className="font-semibold text-primary">✅ Registro empresarial completado</p>
+      <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1">
+        <p className="font-semibold">Tus datos fiscales coinciden</p>
+        <p className="text-muted-foreground">Revisamos tu RFC, tu certificado (.cer) y tu llave (.key){razon ? ' y tu Constancia de Situación Fiscal' : ''}: todo pertenece a la misma persona y la e.firma está vigente. Con esta comprobación tu QaRd Empresarial quedó activada y ya puedes invitar terminales.</p>
+      </div>
       <dl className="space-y-2">
         {razon && <div><dt className="text-muted-foreground">📋 Empresa</dt><dd className="break-words">{razon}</dd></div>}
         <div><dt className="text-muted-foreground">👤 {tipo === 'moral' ? 'Representante legal / titular del certificado' : 'Titular'}</dt><dd className="break-words">{result.name}</dd></div>
