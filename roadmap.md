@@ -4,6 +4,7 @@
 - [x] Rediseñar PDF sin eliminar texto: portada de la web, colores, iconos vectoriales, siete tablas y balance visual; 23 páginas carta revisadas, 86 párrafos/resúmenes/URLs conservados y descarga pública comprobada. Corregidos párrafos partidos, títulos aislados y fondo final que invadía el pie; requiere Publicar → Actualizar para el dominio público.
 - [x] Crear /comparativa fuera de la aplicación privada, sin registro, con enlace público «¿Por qué TodoCerca?», siete secciones detalladas y fuentes; propuestas separadas de servicios activos.
 - [x] Descargar PDF carta completo de ocho páginas, comprobar texto y descarga pública, acordeones y ancho de 390 px sin desbordamiento.
+- [x] Portada: título completo «Conectamos con tu comunidad», enlace «¿Por qué elegir TodoCerca?» subrayado arriba y abajo con «Comparativa», pie con © 2026; header móvil en dos filas sin encimarse, comprobado en 390px y escritorio.
 - [ ] Publicar la comparativa: la preferencia del proyecto deshabilita la publicación desde el asistente; Martín debe usar Publicar → Actualizar.
 ## Registro de comercio con e.firma
 - [x] Sustituir formulario de terminales INE/selfie por RFC, constancia PDF, certificado .cer, llave .key y contraseña; cotejo local sin envío ni persistencia, seis pruebas de reglas y 31 pruebas totales correctas. Se conserva aprobación pendiente, sin crear solicitudes locales.

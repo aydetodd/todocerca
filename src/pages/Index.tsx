@@ -16,14 +16,14 @@ export default function Index() {
   return (
     <div className="landing-premium min-h-screen">
       <header className="sticky top-0 z-20 bg-secondary text-secondary-foreground shadow-md">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center gap-2">
+        <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
           <div className="flex items-center gap-2 min-w-0">
             <BrandIcon className="h-9 w-9 shrink-0" />
             <span className="text-lg sm:text-xl font-bold tracking-tight">ToDoCerca</span>
           </div>
-          <div className="flex items-center gap-1 sm:gap-3">
-            <Link to="/comparativa" className="text-xs sm:text-sm text-secondary-foreground/85 hover:text-secondary-foreground transition-colors duration-300 px-2 whitespace-nowrap">
-              <span className="sm:hidden">¿Por qué?</span><span className="hidden sm:inline">¿Por qué TodoCerca?</span>
+          <div className="flex items-center gap-1 sm:gap-3 ml-auto">
+            <Link to="/comparativa" className="text-xs sm:text-sm font-semibold text-secondary-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-4 hover:text-primary transition-all duration-300 px-1 sm:px-2 whitespace-nowrap">
+              ¿Por qué elegir TodoCerca?
             </Link>
             <Button size="sm" className="lp-btn-primary rounded-full px-4" onClick={() => go('/auth')}>
               Iniciar Sesión
@@ -38,7 +38,9 @@ export default function Index() {
           <span className="inline-block mb-5 rounded-full border border-secondary-foreground/30 bg-secondary-foreground/10 px-4 py-1 text-sm text-secondary-foreground backdrop-blur">
             Conectando productores locales con consumidores
           </span>
-          <h1 className="lp-hero-text text-4xl md:text-6xl font-bold mb-6 text-secondary-foreground tracking-tight">Conectamos con</h1>
+          <h1 className="lp-hero-text text-4xl md:text-6xl font-bold mb-6 text-secondary-foreground tracking-tight">
+            Conectamos con tu comunidad
+          </h1>
           <p className="lp-hero-text text-lg md:text-xl text-secondary-foreground/95 mb-10 max-w-2xl mx-auto">
             La plataforma líder para encontrar proveedores confiables y hacer crecer tu negocio
           </p>
@@ -84,8 +86,11 @@ export default function Index() {
 
       <footer className="bg-secondary py-10">
         <div className="container mx-auto px-4 text-center text-[hsl(var(--lp-footer-text))]">
-          <Link to="/comparativa" className="block mb-3 text-secondary-foreground hover:underline">¿Por qué TodoCerca? · Comparativa</Link>
-          <p className="text-sm text-[hsl(var(--lp-footer-text))]">&copy; 2024 TodoCerca. Conectando comunidades locales.</p>
+          <div className="mb-3 flex flex-col gap-1">
+            <Link to="/comparativa" className="text-secondary-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-4 hover:text-primary transition-all duration-300">¿Por qué elegir TodoCerca?</Link>
+            <Link to="/comparativa" className="text-secondary-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-4 hover:text-primary transition-all duration-300">Comparativa</Link>
+          </div>
+          <p className="text-sm text-[hsl(var(--lp-footer-text))]">&copy; 2026 TodoCerca. Conectando comunidades locales.</p>
         </div>
       </footer>
     </div>
