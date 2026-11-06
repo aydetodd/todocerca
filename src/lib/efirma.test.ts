@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import forge from 'node-forge';
-import { checkEfirma, matchFiscalRfc, validateEfirmaFile, EFIRMA_GRACE_DAYS } from './efirma';
+import { checkEfirma, extractRazonSocial, matchFiscalRfc, validateEfirmaFile, EFIRMA_GRACE_DAYS } from './efirma';
 
 const rfc = 'AAA010101AAA';
 const text = `CONSTANCIA DE SITUACIÓN FISCAL RFC: ${rfc}`;
@@ -31,8 +31,8 @@ test('la constancia es opcional: sin PDF solo se coteja RFC manual contra certif
 });
 test('contraseña incorrecta no abre la llave', () => {const f=fixtures();assert.throws(()=>checkEfirma(f.cer,f.key,'incorrect',rfc,text),/contraseña no es correcta/);});
 test('otra llave es rechazada aunque su contraseña sea correcta', () => {const f=fixtures(forge.pki.rsa.generateKeyPair(1024).privateKey);assert.throws(()=>checkEfirma(f.cer,f.key,'fixture-password',rfc,text),/no corresponde/);});
-test('certificado vencido hace más de 60 días es rechazado',()=>{const f=fixtures(pair.privateKey,new Date('2021-01-01'));assert.throws(()=>checkEfirma(f.cer,f.key,'fixture-password',rfc,text),/más de 60 días/);});
-test('certificado aún no vigente es rechazado',()=>{const f=fixtures(pair.privateKey,new Date('2040-01-01'),new Date('2030-01-01'));assert.throws(()=>checkEfirma(f.cer,f.key,'fixture-password',rfc,text),/aún no vigente/);});
+test('certificado vencido hace más de 60 días es rechazado',()=>{const f=fixtures(pair.privateKey,new Date('2021-01-01'));assert.throws(()=>checkEfirma(f.cer,f.key,'fixture-password',rfc,text),/venció el .*renovar tu e.firma ante el SAT/);});
+test('certificado aún no vigente es rechazado',()=>{const f=fixtures(pair.privateKey,new Date('2040-01-01'),new Date('2030-01-01'));assert.throws(()=>checkEfirma(f.cer,f.key,'fixture-password',rfc,text),/aún no está vigente/);});
 test('e.firma vencida dentro de los 60 días de gracia aprueba con aviso',()=>{
   const notAfter=new Date(Date.now()-30*DAY);
   const f=fixtures(pair.privateKey,notAfter);
@@ -57,3 +57,6 @@ test('días restantes se calculan hasta el vencimiento',()=>{
   assert.ok(result.daysLeft>=44&&result.daysLeft<=45);
 });
 test('selección de archivos rechaza extensión falsa y límites',()=>{assert.throws(()=>validateEfirmaFile({name:'firma.key.pdf',size:10},'key'));assert.throws(()=>validateEfirmaFile({name:'firma.key',size:65537},'key'));assert.throws(()=>validateEfirmaFile({name:'constancia.pdf',size:5242881},'pdf'));});
+
+test('razón social se lee de la constancia', () => { assert.equal(extractRazonSocial('CONSTANCIA Denominación/Razón Social: CITY TRAFFIC SA DE CV Régimen Capital: SA'), 'CITY TRAFFIC SA DE CV'); });
+test('persona moral exige RFC de 12 caracteres', () => { assert.throws(() => matchFiscalRfc('VIAM800101AB1', 'VIAM800101AB1', null, 'moral'), /12 caracteres/); });

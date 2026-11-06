@@ -5835,13 +5835,17 @@ export type Database = {
           efirma_nombre: string | null
           efirma_validada: boolean
           efirma_vence: string | null
+          empresa_validada: boolean
           id: string
           ine_back_document: string | null
           ine_front_document: string | null
+          razon_social: string | null
+          representante_nombre: string | null
           review_note: string | null
           rfc_document: string
           rfc_status: string
           status: string
+          tipo_persona: string | null
           updated_at: string
           user_id: string
         }
@@ -5854,13 +5858,17 @@ export type Database = {
           efirma_nombre?: string | null
           efirma_validada?: boolean
           efirma_vence?: string | null
+          empresa_validada?: boolean
           id?: string
           ine_back_document?: string | null
           ine_front_document?: string | null
+          razon_social?: string | null
+          representante_nombre?: string | null
           review_note?: string | null
           rfc_document: string
           rfc_status?: string
           status?: string
+          tipo_persona?: string | null
           updated_at?: string
           user_id: string
         }
@@ -5873,13 +5881,17 @@ export type Database = {
           efirma_nombre?: string | null
           efirma_validada?: boolean
           efirma_vence?: string | null
+          empresa_validada?: boolean
           id?: string
           ine_back_document?: string | null
           ine_front_document?: string | null
+          razon_social?: string | null
+          representante_nombre?: string | null
           review_note?: string | null
           rfc_document?: string
           rfc_status?: string
           status?: string
+          tipo_persona?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -8172,6 +8184,16 @@ export type Database = {
       }
       qard_rate_limit_purge: { Args: never; Returns: undefined }
       qard_recargas_mes: { Args: { _user_id: string }; Returns: number }
+      qard_registrar_empresa_efirma: {
+        Args: {
+          _razon_social: string
+          _representante: string
+          _rfc: string
+          _tipo: string
+          _vence: string
+        }
+        Returns: undefined
+      }
       qard_revertir_pago_servicio: {
         Args: { _motivo: string; _pago_id: string }
         Returns: Json

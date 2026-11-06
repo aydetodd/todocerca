@@ -79,7 +79,11 @@ export default function Index() {
           <div className="lp-card text-center px-6 py-14 hover:transform-none">
             <h2 className="text-3xl font-bold mb-4 text-[hsl(var(--lp-heading))]">¿Eres proveedor?</h2>
             <p className="text-lg mb-8 text-[hsl(var(--lp-text))]">Únete a nuestra plataforma y llega a más clientes en tu área</p>
-            <Button size="lg" className="lp-btn-primary rounded-xl px-8" onClick={() => go('/auth')}>Registrar mi Negocio</Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button size="lg" className="lp-btn-primary rounded-xl px-8" onClick={() => go('/auth')}>Registrar mi empresa (Persona Moral)</Button>
+              <Button size="lg" variant="outline" className="rounded-xl px-8 border-primary text-primary" onClick={() => go('/auth')}>Registrarme como persona física</Button>
+            </div>
+            <p className="mt-4 text-sm text-[hsl(var(--lp-text))]">Empresa: RFC + e.firma del representante legal. Persona física: CURP e INE.</p>
           </div>
         </div>
       </section>
