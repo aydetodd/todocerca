@@ -28,5 +28,6 @@
 - Open merchant collection only through TerminalesDialog's invited-terminal entry, never from Mi dinero; QardCobrar always requests terminal-mode collection so existing server-side invitation checks apply.
 - Merchant e.firma checks run locally with node-forge and PDF.js; private keys/passwords never enter storage or network, and local matching must never grant approval without server-verified SAT trust, revocation and account-bound proof of possession.
 - Public comparison content is shared between the accordion page and a prebuilt Letter PDF; regenerate the same-origin download after content changes, and keep roadmap capabilities distinct from operational claims.
+- Comparison web infographics live in a presentation-only module with page-scoped CSS tokens; preserve the shared narrative and PDF, and never derive financial approvals or real account data from decorative graphics.
 - Comparison PDF artwork uses vector icons and a centralized print palette with explicit image inputs; preserve every shared paragraph and validate all rendered pages before replacing the public download.
 - Public landing/comparison boot outside the private wrapper so session gates, location tracking and private imports cannot block visitors; navigate across this boundary with document links.
