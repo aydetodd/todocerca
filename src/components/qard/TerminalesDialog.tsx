@@ -64,7 +64,8 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
       .subscribe();
     return ()=>{void supabase.removeChannel(channel);};
   },[open,user,load]);
-  const run=async(fn:()=>Promise<void>)=>{ if(busy)return;setBusy(true);try{await fn();}catch(e){toast({title:'No se pudo completar',description:e instanceof Error?e.message:'Intenta de nuevo',variant:'destructive'});}finally{setBusy(false);}};
+  const [actionError,setActionError]=useState<string|null>(null);
+  const run=async(fn:()=>Promise<void>)=>{ if(busy)return;setBusy(true);setActionError(null);try{await fn();}catch(e){setActionError(typeof (e as {message?:unknown})?.message==='string'?(e as {message:string}).message:'Intenta de nuevo');toast({title:'No se pudo completar',description:e instanceof Error?e.message:'Intenta de nuevo',variant:'destructive'});}finally{setBusy(false);}};
   const accept=(id:string)=>run(async()=>{const {error}=await supabase.rpc('terminal_accept',{_id:id});if(error)throw error;await load();});
   const invite=(code:string)=>run(async()=>{
     if(!invitePhone.trim())throw new Error('Escribe el teléfono que invitarás');
@@ -111,6 +112,7 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
       <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
         <DialogHeader><DialogTitle className="flex items-center justify-between gap-2">Terminales digitales<Button size="icon" variant="ghost" aria-label="Actualizar terminales" onClick={()=>void load()} disabled={loading}><RefreshCw className="h-4 w-4"/></Button></DialogTitle></DialogHeader>
         {loading&&<p className="text-sm text-muted-foreground">Consultando…</p>}
+        {actionError&&<p role="alert" className="text-sm font-medium text-destructive border border-destructive/40 rounded-md p-3">No se pudo completar: {actionError}</p>}
         {loadError?<p className="text-sm text-destructive">No se pudieron consultar las terminales. Intenta de nuevo.</p>:reloadOpen?<div className="space-y-4">
           <Button variant="ghost" onClick={()=>setReloadOpen(false)}><ArrowLeft className="h-4 w-4 mr-2"/>Terminales</Button>
           <h2 className="font-semibold">Recargar QaRd principal</h2>
