@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import DriverProfilePanel from '@/components/DriverProfilePanel';
 import { BrandIcon } from '@/components/BrandIcon';
+import HomeTerminalPanel from '@/components/qard/HomeTerminalPanel';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -67,6 +68,9 @@ export default function MainHome() {
 
         {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
         <DriverProfilePanel />
+
+        {/* Terminal de cobro invitada (auto-oculta si no hay invitación) */}
+        <HomeTerminalPanel />
 
         {/* === Protocolo 1: Solo movilidad === */}
         {/* Protocolo 2: Taxi oculto */}
