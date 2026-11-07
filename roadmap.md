@@ -1,4 +1,7 @@
 # Productos estándar sin fotos
+## Consulta pública de colectivos
+- [x] Permitir búsqueda y mapa de colectivos desde la landing sin registro mediante consultas públicas existentes, sin ampliar permisos; corregir filtro que descartaba productos distintos de la misma ruta y sembrar el mapa de ubicaciones para actualizaciones inmediatas.
+- [x] Comprobar portada → Buscar transporte → Ver mapa sin sesión: dos unidades reales, siete pruebas, móvil sin desbordamiento y sin errores. Consultas actualizadas cada tres segundos; no se observó cambio de coordenadas durante la comprobación, por lo que desplazamiento real sigue sin comprobar. Falta Publicar → Actualizar.
 ## Desglose empresarial conciliado
 - [x] Presentar sucursales e importes en filas desplegables como el dibujo de Martín, terminales indentadas y registros reales sin cobros a cero; nueve pruebas correctas y compilación correcta. Vista en cuenta real no comprobada: sesión externa no disponible.
 - [x] Mostrar cobros reales por periodo, sucursal y terminal con sumas exactas en centavos, saldo disponible separado y movimientos sin asignación identificados; nombres guardados por registro y captura de identidad en nuevos cobros.

@@ -10,6 +10,7 @@ import { AppointmentBooking } from '@/components/AppointmentBooking';
 import { useRouteOverlay } from '@/hooks/useRouteOverlay';
 import { useColectivoAforo } from '@/hooks/useColectivoAforo';
 import { applyColectivoAforo } from '@/lib/colectivoAforo';
+import { matchesScopedRouteUnit } from '@/lib/publicTransport';
 
 // Fix for default marker icon in React-Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -393,10 +394,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
     if (vehicleFilter !== 'ruta' || !routeProductoId) return mappedProviders;
 
     const routeUnits = realtimeLocations
-      .filter((loc) => {
-        if (loc.route_producto_id === routeProductoId) return true;
-        return false;
-      })
+      .filter((loc) => matchesScopedRouteUnit(loc, routeProductoId, routeType))
       .filter((loc) => !mappedProviders.some(provider => provider.user_id === loc.user_id))
       .map((loc) => buildProviderFromRealtime(loc, byUserId.get(loc.user_id) || null))
       .filter((p): p is NonNullable<typeof p> => p !== null);

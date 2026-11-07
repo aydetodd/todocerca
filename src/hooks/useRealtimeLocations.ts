@@ -114,6 +114,17 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     if (!isMounted.current) return;
     
     console.log('🔄 [fetchFullData] Carga completa iniciando...');
+    const isSpecificRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
+    if (isSpecificRouteView) {
+      const routeUnits = await fetchRouteLiveUnits();
+      if (!isMounted.current) return;
+      locationsMapRef.current = new Map(routeUnits.map(unit => [unit.user_id, unit]));
+      routeUnitIdsRef.current = new Set(routeUnits.map(unit => unit.user_id));
+      setLocations(routeUnits);
+      setLoading(false);
+      setInitialLoadDone(true);
+      return;
+    }
     
     // Phase 1: Fetch profiles + categories + route live units in parallel (no dependencies)
     const [profilesResult, taxiCatResult, rutaCatResult, routeUnits] = await Promise.all([
@@ -133,18 +144,6 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     ]);
 
     const activeProfiles = profilesResult.data;
-    const isSpecificRouteView = !!publicRouteProductoId && ['urbana', 'foranea', 'privada', 'taxi_colectivo'].includes(viewingRouteType || '');
-
-    // En vista de una ruta específica, la única fuente válida son las unidades reales
-    // devueltas por get_route_live_units. No mezclar ubicaciones genéricas de proveedores,
-    // porque eso crea "unidades fantasma" sobre rutas del catálogo.
-    if (isSpecificRouteView) {
-      setLocations(routeUnits);
-      setLoading(false);
-      setInitialLoadDone(true);
-      return;
-    }
-
     if (profilesResult.error || !activeProfiles?.length) {
       console.log('⚠️ No hay proveedores activos');
       setLocations(routeUnits);
@@ -510,7 +509,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     }
     
     console.log(`✅ [fetchFullData] ${newLocationsMap.size} proveedores cargados`);
-  }, [fetchRouteLiveUnits]);
+  }, [fetchRouteLiveUnits, publicRouteProductoId, viewingRouteType]);
 
   // Actualización rápida SOLO de coordenadas (para movimiento fluido)
   const updateLocationOnly = useCallback((userId: string, lat: number, lng: number) => {
@@ -533,7 +532,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     if (!isMounted.current) return;
     
     const [{ data: locationsData }, routeUnits] = await Promise.all([
-      supabase
+      publicRouteProductoId ? Promise.resolve({ data: [] }) : supabase
       .from('proveedor_locations')
       .select('user_id, latitude, longitude, updated_at'),
       fetchRouteLiveUnits(),
@@ -578,7 +577,7 @@ export const useRealtimeLocations = (publicRouteProductoId?: string | null, view
     if (hasChanges && isMounted.current) {
       setLocations(Array.from(locationsMapRef.current.values()));
     }
-  }, [fetchRouteLiveUnits]);
+  }, [fetchRouteLiveUnits, publicRouteProductoId]);
 
   useEffect(() => {
     isMounted.current = true;

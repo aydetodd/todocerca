@@ -48,8 +48,8 @@ export default function Index() {
             <Button size="lg" className="lp-btn-primary rounded-xl text-base px-8 w-full sm:w-auto" onClick={() => go('/auth')}>
               <Package className="mr-2 h-5 w-5" /> Registrar como Proveedor
             </Button>
-            <Button size="lg" variant="outline" className="rounded-xl text-base px-8 w-full sm:w-auto bg-card border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300" onClick={() => go('/search')}>
-              <Users className="mr-2 h-5 w-5" /> Buscar Proveedores
+            <Button size="lg" variant="outline" className="rounded-xl text-base px-8 w-full sm:w-auto bg-card border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300" onClick={() => go('/buscar-transporte')}>
+              <Users className="mr-2 h-5 w-5" /> Buscar transporte
             </Button>
           </div>
         </div>
