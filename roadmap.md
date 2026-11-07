@@ -1,5 +1,6 @@
 # Productos estándar sin fotos
 ## Desglose empresarial conciliado
+- [x] Presentar sucursales e importes en filas desplegables como el dibujo de Martín, terminales indentadas y registros reales sin cobros a cero; nueve pruebas correctas y compilación correcta. Vista en cuenta real no comprobada: sesión externa no disponible.
 - [x] Mostrar cobros reales por periodo, sucursal y terminal con sumas exactas en centavos, saldo disponible separado y movimientos sin asignación identificados; nombres guardados por registro y captura de identidad en nuevos cobros.
 - [x] Validar conciliación con datos reales: libro y recibos coinciden en 2 cobros por $1,360.44; 35 pruebas correctas, incluyendo diferencias de un centavo.
 - [ ] Verificar despliegue y expansión desde la cuenta real: sesión Supabase externa no disponible para el asistente.

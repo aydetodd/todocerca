@@ -7,9 +7,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Store, Plus, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getHermosilloToday } from '@/lib/utils';
-import { formatCents, reconcileCollections, type CollectionReport, type CollectionDetail } from '@/lib/collectionReport';
+import { collectionDisplayBranches, formatCents, reconcileCollections, type CollectionReport, type CollectionDetail } from '@/lib/collectionReport';
 
-type NamedTerminal = { id: string; phone: string; terminal_name: string | null };
+type NamedTerminal = { id: string; phone: string; terminal_name: string | null; negocio_id: string | null };
 function TerminalReceipts({ branch, terminal, start, end, count, revision }: { branch: string; terminal: string; start: string; end: string; count: number; revision: number }) {
   const [rows,setRows]=useState<CollectionDetail[]>([]);
   const [busy,setBusy]=useState(false);
@@ -54,7 +54,7 @@ export default function SucursalesPanel() {
     const [r,b,t]=await Promise.all([
       supabase.rpc('qard_collection_report',{_start:start||undefined,_end:end||undefined}),
       supabase.from('qard_negocios').select('id,nombre').eq('owner_id',user.id).order('nombre'),
-      supabase.from('terminal_invites').select('id,phone,terminal_name').eq('merchant_user_id',user.id).eq('terminal_code','collection').neq('status','revoked'),
+      supabase.from('terminal_invites').select('id,phone,terminal_name,negocio_id').eq('merchant_user_id',user.id).eq('terminal_code','collection').neq('status','revoked'),
     ]);
     if(version!==request.current)return;
     setLoading(false);
@@ -82,16 +82,34 @@ export default function SucursalesPanel() {
     if(error)return toast.error('No se pudo guardar el nombre');setNames(previous=>{const next={...previous};delete next[t.id];return next;});void load();
   };
   const reconciled=report&&reconcileCollections(report);
+  const displayBranches=report?collectionDisplayBranches(report,branches,terminals):[];
   return <section className="space-y-4">
     <div className="flex items-center justify-between"><h3 className="font-semibold flex items-center gap-2"><Store className="h-5 w-5 text-primary"/>Cobros por sucursal y terminal</h3><Button size="icon" variant="ghost" aria-label="Actualizar desglose" disabled={loading} onClick={()=>void load()}><RefreshCw className="h-4 w-4"/></Button></div>
-    <div className="flex flex-wrap gap-2">{[['today','Hoy'],['month','Este mes'],['all','Todo'],['custom','Fechas']].map(([value,label])=><Button key={value} variant={period===value?'default':'outline'} size="sm" onClick={()=>setPeriod(value)}>{label}</Button>)}</div>
+    <div className="grid grid-cols-4 gap-1 border-b pb-2">{[['today','Hoy'],['month','Este mes'],['all','Todo'],['custom','Fechas']].map(([value,label])=><Button key={value} variant="ghost" aria-pressed={period===value} className={`min-h-11 px-1 rounded-none border-b-2 ${period===value?'border-primary text-primary bg-accent font-semibold':'border-transparent text-muted-foreground'}`} size="sm" onClick={()=>setPeriod(value)}>{label}</Button>)}</div>
     {period==='custom'&&<div className="grid grid-cols-2 gap-2"><label className="text-sm">Desde<Input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label className="text-sm">Hasta<Input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label></div>}
     {error&&<p role="alert" className="text-destructive text-sm">{error}</p>}
     {loading&&<p role="status" className="text-sm text-muted-foreground">Consultando cobros…</p>}
     {report&&!loading&&<>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-y py-4"><div><div className="text-sm text-muted-foreground">Cobrado en el periodo · {report.count} cobros</div><div className="text-2xl font-bold tabular-nums break-words">{formatCents(report.total_cents)}</div></div><div><div className="text-sm text-muted-foreground">Saldo Empresarial disponible ahora</div><div className="text-xl font-semibold tabular-nums break-words">{formatCents(report.balance_cents)}</div></div></div>
       <p role={reconciled?'status':'alert'} className={`text-sm flex items-start gap-2 ${reconciled?'text-foreground':'text-destructive'}`}>{reconciled&&<CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5"/>}{reconciled?'Conciliado al centavo · sucursales, terminales y recibos coinciden.':`No conciliado: recibos ${formatCents(report.operations_cents)} (${report.operations_count}); libro ${formatCents(report.total_cents)} (${report.count}).`}</p>
-      <Accordion type="multiple">{report.branches.map(branch=><AccordionItem key={branch.id} value={branch.id}><AccordionTrigger className="text-left gap-3"><span className="min-w-0 break-words">{branch.name}<span className="block text-xs font-normal text-muted-foreground">{branch.count} cobros</span></span><span className="ml-auto tabular-nums whitespace-nowrap">{formatCents(branch.cents)}</span></AccordionTrigger><AccordionContent><Accordion type="multiple">{branch.terminals.map(terminal=><AccordionItem key={terminal.id} value={terminal.id}><AccordionTrigger className="text-left gap-2"><span className="min-w-0 break-words">{terminal.name}<span className="block text-xs text-muted-foreground">{terminal.count} cobros</span></span><span className="ml-auto tabular-nums whitespace-nowrap">{formatCents(terminal.cents)}</span></AccordionTrigger><AccordionContent><TerminalReceipts branch={branch.id} terminal={terminal.id} count={terminal.count} start={start} end={end} revision={revision}/></AccordionContent></AccordionItem>)}</Accordion></AccordionContent></AccordionItem>)}</Accordion>
+      <Accordion type="multiple" className="border-t border-border">{displayBranches.map(branch=><AccordionItem key={branch.id} value={branch.id}>
+        <AccordionTrigger className="grid grid-cols-[minmax(0,1fr)_auto_1rem] text-left gap-2 text-sm hover:no-underline min-h-14">
+          <span className="min-w-0 break-words font-semibold">{branch.name}</span>
+          <span className="text-right font-semibold tabular-nums whitespace-nowrap">{formatCents(branch.cents)}</span>
+        </AccordionTrigger>
+        <AccordionContent className="pl-3 sm:pl-5 pb-3">
+          <Accordion type="multiple" className="border-l border-border pl-3">{branch.terminals.map(terminal=><AccordionItem key={terminal.id} value={terminal.id} className="border-0">
+            {terminal.count>0?<>
+              <AccordionTrigger className="grid grid-cols-[minmax(0,1fr)_auto_1rem] text-left gap-2 py-2 min-h-11 font-normal hover:no-underline">
+                <span className="min-w-0 break-words">{terminal.name}</span>
+                <span className="text-right tabular-nums whitespace-nowrap">{formatCents(terminal.cents)}</span>
+              </AccordionTrigger>
+              <AccordionContent className="pl-2 pb-2"><TerminalReceipts branch={branch.id} terminal={terminal.id} count={terminal.count} start={start} end={end} revision={revision}/></AccordionContent>
+            </>:<div className="grid grid-cols-[minmax(0,1fr)_auto_1rem] items-center gap-2 py-2 min-h-11 text-sm"><span className="min-w-0 break-words text-muted-foreground">{terminal.name}</span><span className="text-right tabular-nums whitespace-nowrap">{formatCents(terminal.cents)}</span></div>}
+          </AccordionItem>)}</Accordion>
+          {!branch.terminals.length&&<p className="text-xs text-muted-foreground py-2">Sin terminales de cobro.</p>}
+        </AccordionContent>
+      </AccordionItem>)}</Accordion>
       {!report.count&&<p className="text-sm text-muted-foreground">Sin cobros en este periodo.</p>}
     </>}
     <Accordion type="single" collapsible><AccordionItem value="names"><AccordionTrigger>Sucursales y nombres de terminales</AccordionTrigger><AccordionContent><div className="space-y-3">

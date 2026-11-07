@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { formatCents, reconcileCollections, type CollectionReport } from './collectionReport';
+import { collectionDisplayBranches, formatCents, reconcileCollections, type CollectionReport } from './collectionReport';
 const report: CollectionReport = {
   total_cents:'365485487',operations_cents:'365485487',balance_cents:'0',count:5,operations_count:5,
   branches:[
@@ -16,3 +16,16 @@ test('operaciones con un centavo de diferencia no concilian',()=>assert.equal(re
 test('saldo disponible no se usa como total cobrado',()=>assert.equal(reconcileCollections({...report,balance_cents:'123'}),true));
 test('sin sucursal participa en la suma, no se descarta',()=>assert.equal(reconcileCollections({...report,branches:report.branches.slice(0,2)}),false));
 test('formato no pierde centavos con importes grandes',()=>assert.equal(formatCents('900719925474099301'),'$9,007,199,254,740,993.01'));
+test('sucursal y terminal registradas sin cobros aparecen en cero sin cambiar la conciliación',()=>{
+  const branches=collectionDisplayBranches(report,[{id:'south',nombre:'Sucursal Sur'}],[{id:'pedro',phone:'+526621234567',terminal_name:'Terminal Pedro',negocio_id:'x'}]);
+  assert.equal(branches.find(b=>b.id==='south')?.cents,'0');
+  assert.equal(branches.find(b=>b.id==='x')?.terminals.find(t=>t.id==='pedro')?.cents,'0');
+  assert.equal(reconcileCollections({...report,branches}),true);
+  assert.equal(report.branches[0].terminals.length,3);
+});
+test('terminal registrada no duplica ni reasigna cobros históricos',()=>{
+  const branches=collectionDisplayBranches(report,[{id:'x',nombre:'Nombre nuevo'}],[{id:'a',phone:'+526621234567',terminal_name:'Nombre nuevo',negocio_id:'x'}]);
+  assert.equal(branches.find(b=>b.id==='x')?.terminals.length,3);
+  assert.equal(branches.find(b=>b.id==='x')?.terminals.find(t=>t.id==='a')?.cents,'34264365');
+  assert.equal(reconcileCollections({...report,branches}),true);
+});

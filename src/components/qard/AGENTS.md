@@ -1,1 +1,2 @@
 - Enterprise collection reports use owner-scoped SQL with integer cents and independent operation totals/counts; preserve unassigned receipts and capture terminal/branch names at insertion without modifying payment authorization or amounts.
+- Collection display supplements the receipt report with existing owner-scoped registrations at zero; never move historical receipts or change the reconciled totals to populate empty rows.
