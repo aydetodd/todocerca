@@ -35,7 +35,6 @@ import {
 } from "lucide-react";
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import DataUsageDialog from "@/components/DataUsageDialog";
-import TerminalesDialog from "@/components/qard/TerminalesDialog";
 import FormalizationDialog from "@/components/formalization/FormalizationDialog";
 import Fletes from "./Fletes";
 import ProductManagement from "@/components/ProductManagement";
@@ -95,6 +94,7 @@ const Dashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
+    if (section === 'terminales') { navigate('/qard?empresa=1', { replace: true }); return; }
     if (section && ['perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
@@ -401,7 +401,7 @@ const Dashboard = () => {
         { key: "apartados" as const, label: "Apartados", icon: ShoppingCart, visible: isProvider },
         { key: "citas" as const, label: "Citas", icon: ClipboardList, visible: isProvider },
         { key: "horarios" as const, label: "Horarios", icon: Clock, visible: isProvider },
-        { key: "terminales" as const, label: "Mi Equipo y Terminales", icon: Users, visible: isProvider },
+
         // Protocolo 2: Taxi oculto
         // {
         //   key: "taxi" as const,
@@ -815,21 +815,6 @@ const Dashboard = () => {
                   </Card>
                 )}
               </div>
-            )}
-
-            {/* Mi Equipo y Terminales: interfaz base (próximamente) */}
-            {activeSection === "terminales" && isProvider && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Mi Equipo y Terminales
-                  </CardTitle>
-                  <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TerminalesDialog />
-                </CardContent>
-              </Card>
             )}
 
             {activeSection === "taxi" && (

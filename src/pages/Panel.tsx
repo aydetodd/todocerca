@@ -39,7 +39,6 @@ import AdminRutasMaestras from '@/components/AdminRutasMaestras';
 import AdminSolicitudesCambioRutas from '@/components/AdminSolicitudesCambioRutas';
 import AdminSolicitudesMoral from '@/components/qard/AdminSolicitudesMoral';
 import AdminTerminales from '@/components/qard/AdminTerminales';
-import TerminalesDialog from '@/components/qard/TerminalesDialog';
 
 import ProviderRegistration from '@/components/ProviderRegistration';
 
@@ -508,20 +507,7 @@ export default function Panel() {
         );
       
       case 'terminales':
-        // El dueño invita teléfonos (incluido el suyo) para operar terminales
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> Mi Equipo y Terminales
-              </CardTitle>
-              <CardDescription>Invita empleados y asígnales permisos para cobrar en tu negocio.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TerminalesDialog />
-            </CardContent>
-          </Card>
-        );
+        return <Button onClick={() => navigate('/qard?empresa=1')}>Gestionar mi empresa</Button>;
 
       case 'taxi':
         return <TaxiDriverRequests />;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { QARD_FEES, reloadBreakdown, terminalEnabled, merchantValid, terminalInviteLink, dynamicCvvValid, paymentCvvValid, businessBalance, subActivationEligible, type Agent } from './terminales';
+import { QARD_FEES, reloadBreakdown, terminalEnabled, merchantValid, terminalInviteLink, dynamicCvvValid, paymentCvvValid, businessBalance, subActivationEligible, acceptedTerminalRegistrations, type Invite, type Agent } from './terminales';
 test('activación principal única cuesta 150', () => assert.equal(reloadBreakdown(200,true,false).opening,150));
 test('activación ya pagada no se repite', () => assert.equal(reloadBreakdown(200,false,false).opening,0));
 test('cada recarga cuesta 15', () => assert.equal(reloadBreakdown(200,false,false).fee,15));
@@ -42,3 +42,13 @@ test('pagos exigen tres dígitos y rechazan CVV de recepción', () => { assert.e
 test('terminal aceptada pero apagada no opera', () => assert.equal(terminalEnabled(agent,{...permission,active:false},terminal),false));
 
 test('terminal muestra empresarial cero aunque personal tenga 2687.06', () => { const snapshot={saldo_empresarial:0,saldo_mxn:2687.06}; assert.equal(businessBalance(snapshot),0); });
+
+test('mismo teléfono conserva controles en dos sucursales aunque una esté apagada', () => {
+  const base = {phone:'526624124381',terminal_code:'collection',status:'accepted',invited_user_id:'operador',token:'test',merchant_user_id:'negocio'};
+  const rows: Invite[] = [{...base,id:'norte',negocio_id:'norte',active:true},{...base,id:'centro',negocio_id:'centro',active:false}];
+  assert.deepEqual(acceptedTerminalRegistrations(rows,'collection').map(i=>i.id),['norte','centro']);
+});
+test('registros revocados y de recargas no aparecen como cobros aceptados', () => {
+  const base = {phone:'526624124381',terminal_code:'collection',status:'accepted',invited_user_id:'operador',token:'test'};
+  assert.deepEqual(acceptedTerminalRegistrations([{...base,id:'revocado',status:'revoked'},{...base,id:'recargas',terminal_code:'reload'}],'collection'),[]);
+});

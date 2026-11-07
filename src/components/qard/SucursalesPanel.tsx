@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PhoneInput } from '@/components/ui/phone-input';
-import { Store, Plus, UserPlus } from 'lucide-react';
+import { Store, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Fila = { negocio_id: string | null; nombre: string; cobrado: number; cobros: number; hoy: number };
@@ -15,12 +14,13 @@ export default function SucursalesPanel() {
   const { user } = useAuth();
   const [filas, setFilas] = useState<Fila[]>([]);
   const [nombre, setNombre] = useState('');
-  const [invitar, setInvitar] = useState<string | null>(null);
-  const [tel, setTel] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const { data } = await (supabase.rpc as any)('qard_cobros_por_sucursal');
+    const { data, error } = await (supabase.rpc as any)('qard_cobros_por_sucursal');
+    if (error) { setError('No se pudieron consultar las sucursales'); return; }
+    setError('');
     setFilas(((data || []) as Fila[]).filter(f => f.negocio_id || Number(f.cobros) > 0));
   }, []);
 
@@ -28,6 +28,7 @@ export default function SucursalesPanel() {
     if (!user) return;
     void load();
     const ch = supabase.channel(`suc-${user.id}-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qard_negocios', filter: `owner_id=eq.${user.id}` }, () => void load())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_operations', filter: `merchant_user_id=eq.${user.id}` }, () => void load())
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
@@ -42,16 +43,9 @@ export default function SucursalesPanel() {
     setNombre(''); void load();
   };
 
-  const enviar = async (id: string) => {
-    setBusy(true);
-    const { error } = await (supabase.rpc as any)('terminal_invite_sucursal', { _phone: tel, _negocio: id });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success('Invitación enviada'); setInvitar(null); setTel('');
-  };
-
   return (
     <div className="space-y-2">
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="font-semibold flex items-center gap-2"><Store className="h-5 w-5 text-primary" />Mis sucursales</div>
       {filas.map(f => (
         <div key={f.negocio_id ?? 'sin'} className="rounded-lg border p-3 space-y-2">
@@ -62,17 +56,7 @@ export default function SucursalesPanel() {
             </div>
             <div className="text-right"><div className="text-xs text-muted-foreground">Cobrado</div><div className="font-bold text-lg">{mxn(f.cobrado)}</div></div>
           </div>
-          {f.negocio_id && (invitar === f.negocio_id ? (
-            <div className="space-y-2">
-              <PhoneInput value={tel} onChange={setTel} />
-              <div className="flex gap-2">
-                <Button size="sm" disabled={busy || !tel.trim()} onClick={() => f.negocio_id && enviar(f.negocio_id)}>Invitar terminal</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setInvitar(null); setTel(''); }}>Cancelar</Button>
-              </div>
-            </div>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => { setInvitar(f.negocio_id); setTel(''); }}><UserPlus className="h-4 w-4 mr-1" />Invitar terminal de cobro</Button>
-          ))}
+
         </div>
       ))}
       <div className="flex gap-2">

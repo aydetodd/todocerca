@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Gestión empresarial de sucursales y terminales
+- [x] Unificar sucursales, invitaciones e interruptores en Gestionar mi empresa; retirar gestión del perfil personal y redirigir enlaces antiguos.
+- [x] Registrar el mismo teléfono por sucursal; mostrar controles por registro, cambiar automáticamente la terminal activa y preservar sucursal ante triggers. Eliminación de registro inactivo no afecta otra sucursal.
+- [ ] Comprobar invitación y cambio de terminal en cuenta real: sesión externa no disponible; acceso local lleva a iniciar sesión.
 ## QaRd: pruebas de usuario del 7 noviembre
 - [x] Separar saldo empresarial y personal en terminales, pagos y estados de cuenta; instantánea de terminal solo devuelve fondos empresariales, espejo tarjeta 01 y libros coherentes.
 - [x] CVV-3 para ambos pagos con QR; CVV-4 obligatorio y rotativo para transferencias recibidas, sin revelar el nuevo código al remitente.

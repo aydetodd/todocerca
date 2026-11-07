@@ -14,7 +14,7 @@ export type Agent = {
 };
 export type Terminal = { code: string; name: string; operational: boolean };
 export type Permission = { id: string; user_id: string; terminal_code: string; status: string; active?: boolean; invited_by?: string | null };
-export type Invite = { id: string; phone: string; terminal_code: string; status: string; invited_user_id: string | null; token: string; active?: boolean; merchant_user_id?: string };
+export type Invite = { id: string; phone: string; terminal_code: string; status: string; invited_user_id: string | null; token: string; active?: boolean; merchant_user_id?: string; negocio_id?: string | null };
 export function merchantValid(agent: Agent | null) {
   return !!agent && agent.status === 'approved' && (agent.efirma_validada === true || (agent.curp_status === 'valid' && agent.rfc_status === 'valid' && agent.biometric_status === 'valid'));
 }
@@ -34,3 +34,7 @@ export const documentFields = [
 export function paymentCvvValid(value: string) { return /^\d{3}$/.test(value); }
 
 export function businessBalance(snapshot: { saldo_empresarial?: number | null } | null) { return Number(snapshot?.saldo_empresarial ?? 0); }
+
+export function acceptedTerminalRegistrations(invites: Invite[], code: string) {
+  return invites.filter(invite => invite.terminal_code === code && invite.status === 'accepted');
+}

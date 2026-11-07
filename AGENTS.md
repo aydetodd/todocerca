@@ -21,7 +21,7 @@
 - Mount the shared Testigo control only in NavigationBar and portal its dialog to document.body; this avoids duplicate scanners and fixed-overlay clipping by the navigation backdrop.
 - Data usage is a passive PerformanceObserver-based device/browser estimate with local daily counters in Hermosillo time; never intercept network clients or reduce realtime updates, and disclose unmeasurable traffic rather than invent totals.
 - Both user profile entry points (Dashboard's profile section and MiPerfil) mount the shared DataUsageDialog without provider or admin conditions so all users can find the same meter.
-- Digital terminals share TerminalesDialog in both personal profile entries and AdminTerminales in the administrative panel; permissions and agent verification live in separate protected tables so invitations cannot upgrade financial identity.
+- Digital terminal management mounts inline in EmpresarialPanel beside SucursalesPanel; personal-profile legacy links redirect there, while AdminTerminales stays administrative and operator invites remain usable without merchant registration.
 - Terminal invitations are phone-based and owner-driven (terminal_invites + terminal_invite_phone/terminal_accept_invite/terminal_revoke_invite), mirroring the driver invite flow; TodoCerca/admin no longer invites terminals, only reviews the agent request. An invited operator runs the terminal on behalf of the merchant: terminal_reload and qard_collect_atomic resolve the merchant from the permission's invited_by and debit/credit the merchant's wallet, keeping funds and commissions with the business.
 - Terminal reloads and merchant collections use atomic, idempotent SQL entry points with locked funds and an immutable operation receipt; never split money writes across browser or edge requests because retries must not double debit or lose credits.
 - Merchant QR payments require payer CVV3; incoming P2P transfers require destination CVV4 and rotate it atomically without exposing the replacement to the sender. Transport readers stay separate.
@@ -33,5 +33,5 @@
 - Public landing/comparison boot outside the private wrapper so session gates, location tracking and private imports cannot block visitors; navigate across this boundary with document links.
 
 - Enterprise funds use qard_wallets.saldo_comercio_mxn, mirrored into its sub-index 1 card; terminal snapshots return only the invited merchant business ledger and funds.
-- Terminal activation is serialized per invited account, checked server-side on every operation, with only one active permission; invite rows retain registrations across merchants.
+- Terminal activation is serialized per invited account with branch-scoped registrations; set the active invite before its permission so branch triggers preserve the selected branch, and revoke/deactivate only the matching active registration.
 - Enterprise activation dialogs remain mounted through success and require acknowledgment; refresh identity and card data immediately without unmounting the page.
