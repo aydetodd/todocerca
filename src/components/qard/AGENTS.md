@@ -1,0 +1,1 @@
+- Enterprise collection reports use owner-scoped SQL with integer cents and independent operation totals/counts; preserve unassigned receipts and capture terminal/branch names at insertion without modifying payment authorization or amounts.

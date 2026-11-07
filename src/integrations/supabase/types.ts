@@ -5960,6 +5960,7 @@ export type Database = {
           phone: string
           status: string
           terminal_code: string
+          terminal_name: string | null
           token: string
           updated_at: string
         }
@@ -5974,6 +5975,7 @@ export type Database = {
           phone: string
           status?: string
           terminal_code: string
+          terminal_name?: string | null
           token?: string
           updated_at?: string
         }
@@ -5988,6 +5990,7 @@ export type Database = {
           phone?: string
           status?: string
           terminal_code?: string
+          terminal_name?: string | null
           token?: string
           updated_at?: string
         }
@@ -8176,6 +8179,20 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_collection_details: {
+        Args: {
+          _branch: string
+          _end: string
+          _offset?: number
+          _start: string
+          _terminal: string
+        }
+        Returns: Json
+      }
+      qard_collection_report: {
+        Args: { _end?: string; _start?: string }
+        Returns: Json
+      }
       qard_comision_retiro: {
         Args: { _clave_rastreo?: string; _monto: number; _user_id: string }
         Returns: number
@@ -8442,6 +8459,10 @@ export type Database = {
       terminal_revoke_invite: { Args: { _id: string }; Returns: undefined }
       terminal_set_active: {
         Args: { _active: boolean; _invite_id: string }
+        Returns: undefined
+      }
+      terminal_set_name: {
+        Args: { _id: string; _name: string }
         Returns: undefined
       }
       terminal_submit_request: {

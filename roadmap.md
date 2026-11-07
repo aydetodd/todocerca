@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Desglose empresarial conciliado
+- [x] Mostrar cobros reales por periodo, sucursal y terminal con sumas exactas en centavos, saldo disponible separado y movimientos sin asignación identificados; nombres guardados por registro y captura de identidad en nuevos cobros.
+- [x] Validar conciliación con datos reales: libro y recibos coinciden en 2 cobros por $1,360.44; 35 pruebas correctas, incluyendo diferencias de un centavo.
+- [ ] Verificar despliegue y expansión desde la cuenta real: sesión Supabase externa no disponible para el asistente.
 ## Gestión empresarial de sucursales y terminales
 - [x] Unificar sucursales, invitaciones e interruptores en Gestionar mi empresa; retirar gestión del perfil personal y redirigir enlaces antiguos.
 - [x] Registrar el mismo teléfono por sucursal; mostrar controles por registro, cambiar automáticamente la terminal activa y preservar sucursal ante triggers. Eliminación de registro inactivo no afecta otra sucursal.
