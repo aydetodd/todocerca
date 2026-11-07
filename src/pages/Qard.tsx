@@ -24,6 +24,8 @@ import { construirLibro, estadoDeCuenta, MENSAJE_ERROR_AMABLE, type Ambito, type
 import { groupRoutesByType } from "@/lib/transportRouteTypes";
 import { RouteTypeBadge, RouteTypeIcon } from "@/components/RouteTypeBadge";
 import QardTarjeta from "@/components/qard/QardTarjeta";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import BusinessPayment from "@/components/qard/BusinessPayment";
 import EmpresarialPanel from "@/components/qard/EmpresarialPanel";
 
 
@@ -207,7 +209,6 @@ export default function Qard() {
   };
 
   const cargar = async () => {
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { nav("/auth"); return; }
 
@@ -328,13 +329,13 @@ export default function Qard() {
     if (desde.length !== 16) return toast({ title: "Selecciona la cuenta origen", variant: "destructive" });
     if (hacia.length !== 16) return toast({ title: "El número destino debe tener 16 dígitos", variant: "destructive" });
     if (desde === hacia) return toast({ title: "Origen y destino son la misma cuenta", variant: "destructive" });
-    if (!mismoDueno && cvv.length !== 4) return toast({ title: "CVV dinámico de 4 dígitos requerido", variant: "destructive" });
+    if (!/^\d{4}$/.test(cvv)) return toast({ title: "CVV dinámico de 4 dígitos requerido", variant: "destructive" });
     if (!m || m <= 0) return toast({ title: "Monto inválido", variant: "destructive" });
     const label = mismoDueno ? "una cuenta tuya" : `la QaRd terminada en ${hacia.slice(-4)}`;
     if (!confirm(`¿Enviar $${m.toFixed(2)} MXN a ${label}?\n\nEs gratis y no se puede revertir.`)) return;
     setP2pEnviando(true);
     const { data, error } = await supabase.rpc("qard_transfer_p2p" as any, {
-      _from_numero16: desde, _to_numero16: hacia, _cvv: mismoDueno ? "" : cvv, _monto: m,
+      _from_numero16: desde, _to_numero16: hacia, _cvv: cvv, _monto: m,
     });
     setP2pEnviando(false);
     if (error) return toast({ title: "Error", description: MENSAJE_ERROR_AMABLE, variant: "destructive" });
@@ -477,7 +478,6 @@ export default function Qard() {
               onRotarCvv={() => {}}
               onQr={() => {}}
             />
-            <EmpresarialPanel onChanged={() => void cargar()} />
           </div>
         );
         const empAprobada = identidad?.estado === "moral_approved";
@@ -526,10 +526,11 @@ export default function Qard() {
                 </div>
               )}
             </Card>
-            <EmpresarialPanel numero={emp.qard_number} onChanged={() => void cargar()} onLibro={() => setCobrosOpen(true)} onQr={() => setQrFullscreen({ value: emp.qard_number, label: "QaRd Empresarial · Cobro" })} />
           </div>
         );
       })()}
+
+      <EmpresarialPanel numero={subs.find(s => s.sub_index === 1)?.qard_number} onChanged={() => { void recargarDatos(); void cargar(); }} onLibro={() => setCobrosOpen(true)} onQr={() => { const emp = subs.find(s => s.sub_index === 1); if (emp) setQrFullscreen({ value: emp.qard_number, label: 'QaRd Empresarial · Cobro' }); }} />
 
       {/* Activación / identidad financiera */}
       {!activa ? (
@@ -543,13 +544,13 @@ export default function Qard() {
           <Button className="w-full" onClick={() => setActivarOpen(true)}>Activar mi QaRd</Button>
         </Card>
       ) : (
-        <Card className="p-4">
+        <div className="hidden">
           <div className="text-xs text-muted-foreground">Titular (nombre legal)</div>
           <div className="font-semibold">{identidad?.nombre_completo ?? "—"}</div>
 
           {identidad?.estado === "moral_review" && (
             <div className="text-xs text-amber-600 mt-2">
-              Tu solicitud de empresa está en revisión (24 a 48 horas).
+              QaRd Empresarial pendiente de revalidación con e.firma.
             </div>
           )}
           {identidad?.estado === "moral_approved" ? (
@@ -561,10 +562,11 @@ export default function Qard() {
               Convertir mi cuenta a Persona Moral / Proveedor
             </Button>
           ) : null}
-        </Card>
+        </div>
       )}
 
 
+      <Accordion type="single" collapsible><AccordionItem value="recarga"><AccordionTrigger>📥 Recargar saldo</AccordionTrigger><AccordionContent>
       {/* Recargar */}
       <Card className="p-4">
         <div className="font-semibold mb-2">Recargar QaRd pesos</div>
@@ -601,6 +603,9 @@ export default function Qard() {
       </Card>
 
 
+      </AccordionContent></AccordionItem></Accordion>
+
+      <Accordion type="single" collapsible><AccordionItem value="transferencias"><AccordionTrigger>💸 Transferencias</AccordionTrigger><AccordionContent>
       {/* Transferir a otra QaRd (P2P gratis) */}
       <Card className="p-4 border-primary/40">
         <div className="font-semibold mb-1">Transferir a otra QaRd</div>
@@ -660,6 +665,10 @@ export default function Qard() {
       </Card>
 
 
+      <BusinessPayment accounts={subs.filter(s => s.estado === "activa").map(s => ({ number: s.qard_number, name: s.sub_index === 0 ? "QaRd Personal" : s.alias }))} onPaid={() => void cargar()} />
+      </AccordionContent></AccordionItem></Accordion>
+
+      <Accordion type="single" collapsible><AccordionItem value="familiares"><AccordionTrigger>👨‍👩‍👧 Sub-QR familiares</AccordionTrigger><AccordionContent>
       {/* Sub-QR familiares */}
       <Card className="p-4">
         <div className="font-semibold mb-3">Sub-QR familiares</div>
@@ -784,6 +793,8 @@ export default function Qard() {
         </div>
       </Card>
 
+      </AccordionContent></AccordionItem></Accordion>
+
       <VerificarSubQrDialog
         abierto={!!subVerificar}
         onOpenChange={(v) => { if (!v) setSubVerificar(null); }}
@@ -797,7 +808,7 @@ export default function Qard() {
         const libro = construirLibro(mov as any, titularId, pasajes);
         const saldoEje = Number(wallet?.saldo_mxn ?? 0);
         const saldoCobros = Number((wallet as any)?.saldo_comercio_mxn ?? 0);
-        const subsActivas = subs.filter(s => s.sub_index > 0 && s.estado === "activa");
+        const subsActivas = subs.filter(s => s.sub_index > 1 && s.estado !== "cancelada");
         const pozoRutas = (rutasIngreso || []).reduce((a, r) => a + r.pozo, 0);
         const total = saldoEje + saldoCobros + subsActivas.reduce((a, s) => a + Number(s.saldo_mxn ?? 0), 0) + pozoRutas;
         const rutasOrden = [...(rutasIngreso || [])].sort((a, b) => b.pozo + b.standN - (a.pozo + a.standN));
@@ -869,6 +880,7 @@ export default function Qard() {
 
         return (
           <>
+            <Accordion type="single" collapsible><AccordionItem value="dinero"><AccordionTrigger>💰 Mi dinero</AccordionTrigger><AccordionContent>
             {/* Mi dinero: saldos vivos de cada cubeta */}
             <Card className="p-4">
               <div className="font-semibold mb-2">Mi dinero</div>
@@ -928,6 +940,9 @@ export default function Qard() {
                 </div>
               </div>
             </Card>
+
+            </AccordionContent></AccordionItem></Accordion>
+            {subs.some(s => s.sub_index === 1 && s.estado === "activa") && <Accordion type="single" collapsible><AccordionItem value="libro"><AccordionTrigger>📊 Libro de cobros</AccordionTrigger><AccordionContent><Estado titulo="empresarial cobros" ambito="cobros" saldoVivo={saldoCobros} periodo={periodoCobros} setPeriodo={setPeriodoCobros} /></AccordionContent></AccordionItem></Accordion>}
 
             <Dialog open={ejeOpen} onOpenChange={setEjeOpen}>
               <DialogContent className="max-w-md">

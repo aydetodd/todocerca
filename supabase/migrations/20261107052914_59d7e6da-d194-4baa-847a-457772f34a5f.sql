@@ -1,0 +1,3 @@
+REVOKE ALL ON FUNCTION public.terminal_perm_negocio() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.terminal_invite_negocio_sync() FROM PUBLIC,anon,authenticated;
+COMMENT ON FUNCTION public.qard_pay_business(text,text,numeric,text,uuid) IS 'Intentional authenticated SECURITY DEFINER: owns payer source via auth.uid, requires payer CVV3, verified active business QR, atomic funds and immutable idempotent receipt. No anonymous access.';

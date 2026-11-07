@@ -1,4 +1,12 @@
 # Productos estándar sin fotos
+## QaRd: pruebas de usuario del 7 noviembre
+- [x] Separar saldo empresarial y personal en terminales, pagos y estados de cuenta; instantánea de terminal solo devuelve fondos empresariales, espejo tarjeta 01 y libros coherentes.
+- [x] CVV-3 para ambos pagos con QR; CVV-4 obligatorio y rotativo para transferencias recibidas, sin revelar el nuevo código al remitente.
+- [x] Carpetas expandibles en QaRd y confirmación e.firma persistente antes de regresar; actualizar identidad y tarjeta sin desmontar el mensaje.
+- [x] Terminales con activación exclusiva por teléfono, eliminación confirmada e invitación WhatsApp/app; aceptación no reemplaza una terminal activa.
+- [x] Apagar Empresarial de Martín para revalidación sin borrar saldos; consulta confirmó Empresarial $0.00, Personal $2,687.06 y estado revalidation. 44 pruebas correctas y compilación correcta.
+- [ ] Probar pagos, terminales, coincidencia RFC y presentación móvil con sesión/documentos reales: Supabase externo sin sesión disponible; la visita local no mostró la pantalla privada. No se ejecutaron pagos reales ni se provocó un error artificial.
+- [ ] Revisar avisos de seguridad anteriores a esta petición (354 hallazgos): fuera del alcance de estos cambios.
 ## Comparativa pública
 - [x] Rediseñar /comparativa como presentación ejecutiva con siete infografías, iconos SVG propios, niveles, costos, seguridad local y matriz; texto compartido y PDF conservados. Siete acordeones, 23 bloques, tooltips y descarga comprobados; escritorio y móviles de 390/320px sin desbordamiento ni errores. Falta Publicar → Actualizar.
 - [x] Rediseñar PDF sin eliminar texto: portada de la web, colores, iconos vectoriales, siete tablas y balance visual; 23 páginas carta revisadas, 86 párrafos/resúmenes/URLs conservados y descarga pública comprobada. Corregidos párrafos partidos, títulos aislados y fondo final que invadía el pie; requiere Publicar → Actualizar para el dominio público.

@@ -11,7 +11,7 @@ const corsHeaders = {
 const Schema = z.object({
   qard_number: z.string().regex(/^\d{16}$/),
   monto_mxn: z.number().finite().positive().refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 0.00001),
-  cvv: z.string().regex(/^\d{4}$/, "Se requiere CVV dinámico de 4 dígitos"),
+  cvv: z.string().regex(/^\d{3}$/, "Se requiere CVV de 3 dígitos del pagador"),
   request_key: z.string().uuid(),
   terminal: z.boolean().optional().default(false),
 });
@@ -30,7 +30,7 @@ serve(async req => {
     const { data: { user }, error: authError } = await client.auth.getUser(auth.slice(7));
     if (authError || !user) return reply({ ok: false, mensaje: "Inicia sesión" }, 401);
     const parsed = Schema.safeParse(await req.json());
-    if (!parsed.success) return reply({ ok: false, mensaje: "Revisa monto, QaRd y CVV dinámico de 4 dígitos", estado: "invalido" }, 400);
+    if (!parsed.success) return reply({ ok: false, mensaje: "Revisa monto, QaRd y CVV de 3 dígitos del pagador", estado: "invalido" }, 400);
     const b = parsed.data;
     const { data, error } = await client.rpc("qard_collect_atomic", {
       _number: b.qard_number, _amount: b.monto_mxn, _cvv: b.cvv, _key: b.request_key, _terminal: b.terminal,

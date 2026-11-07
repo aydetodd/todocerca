@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { etiquetaMovimiento } from "@/lib/qardEtiquetas";
+import { construirLibro, estadoDeCuenta } from "@/lib/qardEtiquetas";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet, Banknote, Building2, CreditCard, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, ScanLine, CircleDollarSign, RefreshCw, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { NumericKeypadScreen } from "@/components/qard/NumericKeypadScreen";
-import { RETIROS_STP_ENABLED, MENSAJE_RETIRO_PROXIMAMENTE } from "@/lib/featureFlags";
 import { formatHermosillo } from "@/lib/utils";
 import { registrarPuntoTraza, registrarPuntoTrazaDeTercero } from "@/lib/traza";
-import { dynamicCvvValid } from '@/lib/terminales';
+import { paymentCvvValid, businessBalance } from '@/lib/terminales';
 
 export default function QardCobrar() {
   const nav = useNavigate();
@@ -25,6 +24,7 @@ export default function QardCobrar() {
   const [manualQard, setManualQard] = useState("");
   const [manualVenc, setManualVenc] = useState("12/99");
   const [manualCvv, setManualCvv] = useState("");
+  const [manualCvvKeypadOpen, setManualCvvKeypadOpen] = useState(false);
   const [cvvOpen, setCvvOpen] = useState(false);
   const [pendingQard, setPendingQard] = useState("");
   const [scanCvv, setScanCvv] = useState("");
@@ -35,62 +35,25 @@ export default function QardCobrar() {
   const [cobros, setCobros] = useState<any[]>([]);
   const [totalNeto, setTotalNeto] = useState(0);
   const [totalBruto, setTotalBruto] = useState(0);
-  const [totalComision, setTotalComision] = useState(0);
-  const [totalRetirado, setTotalRetirado] = useState(0);
-  const [saldoEje, setSaldoEje] = useState(0);
-
-  // Traspaso de la bolsa de cobros a la cuenta eje (gratis)
-  const [traspasoOpen, setTraspasoOpen] = useState(false);
-  const [traspasoMonto, setTraspasoMonto] = useState("");
-  const [traspasoLoading, setTraspasoLoading] = useState(false);
-  const [retiroOrigen, setRetiroOrigen] = useState<"comercio" | "eje">("comercio");
-
-  // Retiro
-  const [retiroOpen, setRetiroOpen] = useState(false);
-  const [retiroMetodo, setRetiroMetodo] = useState<"oxxo" | "spei" | "qard">("oxxo");
-  const [retiroMonto, setRetiroMonto] = useState("");
-  const [retiroDestino, setRetiroDestino] = useState("");
-  const [retiroCvv, setRetiroCvv] = useState("");
-  const [retiroLoading, setRetiroLoading] = useState(false);
-
-  const [manualCvvKeypadOpen, setManualCvvKeypadOpen] = useState(false);
-  const [retiroCvvKeypadOpen, setRetiroCvvKeypadOpen] = useState(false);
-
   const cargarCobros = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [{ data }, { data: w }] = await Promise.all([
-      supabase
-        .from("qard_movimientos" as any)
-        .select("*")
-        .eq("comercio_user_id", user.id)
-        .in("tipo", ["cobro_recibido", "retiro_oxxo", "retiro_spei", "retiro_qard", "traspaso_cobros_out"])
-        .order("created_at", { ascending: false })
-        .limit(80),
-      supabase.from("qard_wallets" as any).select("saldo_mxn, saldo_comercio_mxn").eq("titular_user_id", user.id).maybeSingle(),
-    ]);
-    // Las salidas del pozo de rutas no son de "Mis cobros" (solo comercio)
-    const rows = ((data as any[]) ?? []).filter(r => !(r.metadata?.bolsa === "rutas" || r.metadata?.batch_id));
+    const { data: snapshot, error } = await supabase.rpc('terminal_business_snapshot', { _code: 'collection' });
+    if (error) { setCobros([]); setTotalNeto(0); setUltimo({ ok: false, mensaje: error.message }); return; }
+    const business = snapshot as { saldo_empresarial: number; movimientos: any[] } | null;
+    const rows = business?.movimientos ?? [];
     setCobros(rows);
-    const soloCobros = rows.filter(r => r.tipo === "cobro_recibido");
-    const soloRetiros = rows.filter(r => String(r.tipo).startsWith("retiro_"));
-    // Los cobros internos NO llevan comisión: siempre vale el monto completo.
-    const bruto = soloCobros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
-    const retirado = soloRetiros.reduce((s, r) => s + Math.abs(Number(r.monto_mxn ?? 0)), 0);
-    setTotalBruto(bruto);
-    setTotalComision(0);
-    setTotalRetirado(retirado);
-    // Disponible = bolsa de COBROS (separada de la cuenta eje)
-    setTotalNeto(Number((w as any)?.saldo_comercio_mxn ?? 0));
-    setSaldoEje(Number((w as any)?.saldo_mxn ?? 0));
+    setTotalBruto(rows.filter(r => r.tipo === 'cobro_recibido').reduce((n, r) => n + Number(r.monto_mxn), 0));
+    setTotalNeto(businessBalance(business));
   }, []);
 
 
   useEffect(() => {
     cargarCobros();
-    const ch = supabase.channel("qard-cobros-comercio")
+    const ch = supabase.channel(`qard-cobros-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos" }, () => cargarCobros())
       .on("postgres_changes", { event: "*", schema: "public", table: "qard_wallets" }, () => cargarCobros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "terminal_permissions" }, () => cargarCobros())
       .subscribe();
 
     return () => { supabase.removeChannel(ch); };
@@ -195,16 +158,6 @@ export default function QardCobrar() {
     setManualOpen(true);
   };
 
-  const abrirTecladoCvvRetiro = () => {
-    setRetiroOpen(false);
-    setRetiroCvvKeypadOpen(true);
-  };
-
-  const cerrarTecladoCvvRetiro = () => {
-    setRetiroCvvKeypadOpen(false);
-    setRetiroOpen(true);
-  };
-
   const formatQardInput = (v: string) => {
     const d = v.replace(/\D/g, "").slice(0, 16);
     return d.replace(/(.{4})/g, "$1 ").trim();
@@ -217,7 +170,7 @@ export default function QardCobrar() {
   };
 
   const confirmarCvvEscaneo = async () => {
-    if (!dynamicCvvValid(scanCvv)) return toast({ title: "CVV inválido", description: "CVV dinámico de 4 dígitos", variant: "destructive" });
+    if (!paymentCvvValid(scanCvv)) return toast({ title: "CVV inválido", description: "CVV de 3 dígitos del pagador", variant: "destructive" });
     const m = Number(monto);
     setCvvOpen(false);
     await procesarCobro(pendingQard, m, { cvv: scanCvv });
@@ -228,71 +181,10 @@ export default function QardCobrar() {
     const digits = manualQard.replace(/\D/g, "");
     if (digits.length !== 16) return toast({ title: "El QR debe tener 16 dígitos", variant: "destructive" });
     if (manualVenc !== "12/99") return toast({ title: "Vencimiento inválido", description: "Todas las QaRd vencen 12/99", variant: "destructive" });
-    if (!dynamicCvvValid(manualCvv)) return toast({ title: "CVV inválido", description: "CVV dinámico de 4 dígitos", variant: "destructive" });
+    if (!paymentCvvValid(manualCvv)) return toast({ title: "CVV inválido", description: "CVV de 3 dígitos del pagador", variant: "destructive" });
     const m = Number(monto);
     setManualOpen(false);
     await procesarCobro(digits, m, { cvv: manualCvv, manual: true });
-  };
-
-  const abrirRetiro = (metodo: "oxxo" | "spei" | "qard") => {
-    if (!RETIROS_STP_ENABLED && (metodo === "oxxo" || metodo === "spei")) {
-      return toast({ title: "Próximamente", description: MENSAJE_RETIRO_PROXIMAMENTE });
-    }
-    if (totalNeto <= 0 && saldoEje <= 0) return toast({ title: "Sin saldo disponible", variant: "destructive" });
-    setRetiroOrigen(totalNeto > 0 ? "comercio" : "eje");
-    setRetiroMetodo(metodo);
-    setRetiroMonto("");
-    setRetiroDestino("");
-    setRetiroCvv("");
-    setRetiroOpen(true);
-  };
-
-  const confirmarRetiro = async () => {
-    const m = Number(retiroMonto);
-    if (!m || m < 20) return toast({ title: "Monto mínimo $20", variant: "destructive" });
-    const disponibleOrigen = retiroOrigen === "eje" ? saldoEje : totalNeto;
-    if (m > disponibleOrigen) return toast({ title: "Excede el saldo de esa bolsa", variant: "destructive" });
-    if (retiroMetodo === "qard") {
-      const d = retiroDestino.replace(/\D/g, "");
-      if (d.length !== 16) {
-        return toast({ title: "Ingresa los 16 dígitos de la QaRd destino", variant: "destructive" });
-      }
-      if (retiroCvv && retiroCvv.length !== 4) {
-        return toast({ title: "El CVV dinámico debe tener 4 dígitos", variant: "destructive" });
-      }
-    }
-    if (retiroMetodo === "spei" && retiroDestino) {
-      const d = retiroDestino.replace(/\D/g, "");
-      if (d.length !== 18) return toast({ title: "CLABE debe tener 18 dígitos", variant: "destructive" });
-    }
-    setRetiroLoading(true);
-    const { data, error } = await supabase.functions.invoke("qard-retirar", {
-      body: { metodo: retiroMetodo, monto_mxn: m, destino: retiroDestino, cvv: retiroCvv, origen: retiroOrigen },
-    });
-    setRetiroLoading(false);
-    if (error || !data?.ok) {
-      return toast({ title: "No se pudo retirar", description: (data?.error || error?.message) ?? "", variant: "destructive" });
-    }
-    setRetiroOpen(false);
-    toast({ title: data.mensaje, description: `Saldo restante $${Number(data.saldo_despues).toFixed(2)}${data.simulado ? " · Simulado" : ""}` });
-    cargarCobros();
-  };
-
-  const confirmarTraspaso = async () => {
-    const m = Number(traspasoMonto);
-    if (!m || m <= 0) return toast({ title: "Escribe un monto", variant: "destructive" });
-    if (m > totalNeto) return toast({ title: "Excede tu saldo de cobros", variant: "destructive" });
-    setTraspasoLoading(true);
-    const { data, error } = await supabase.rpc("qard_pasar_cobros_a_eje" as any, { _monto: m });
-    setTraspasoLoading(false);
-    const res: any = data;
-    if (error || !res?.ok) {
-      return toast({ title: "No se pudo traspasar", description: res?.error || "No se pudo completar en este momento; intenta de nuevo", variant: "destructive" });
-    }
-    setTraspasoOpen(false);
-    setTraspasoMonto("");
-    toast({ title: `Pasaste $${m.toFixed(2)} a tu cuenta eje`, description: "Sin comisión" });
-    cargarCobros();
   };
 
   if (!terminalEntry) return <Navigate to="/dashboard" replace />;
@@ -313,7 +205,7 @@ export default function QardCobrar() {
             className="text-2xl h-14"
             disabled={scanning}
           />
-          <p className="text-xs text-muted-foreground mt-1">Recibes el monto completo. Transferir a otra QaRd es gratis; solo SPEI y OXXO cobran 2%.</p>
+          <p className="text-xs text-muted-foreground mt-1">El cliente autoriza el pago con su CVV de 3 dígitos.</p>
         </div>
 
         {!scanning ? (
@@ -356,76 +248,21 @@ export default function QardCobrar() {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 font-semibold text-foreground">
-            <Wallet className="h-5 w-5 text-primary" /> Mis cobros recibidos
+            <Wallet className="h-5 w-5 text-primary" /> Libro de cobros empresarial
           </div>
           <Button variant="ghost" size="icon" onClick={cargarCobros} title="Actualizar">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+        <div className="grid grid-cols-2 gap-2 text-center mb-3">
           <div className="rounded bg-muted p-2">
             <div className="text-[10px] text-muted-foreground uppercase">Cobrado</div>
             <div className="font-bold text-foreground">${totalBruto.toFixed(2)}</div>
           </div>
           <div className="rounded-xl bg-primary p-2 shadow-[var(--shadow-button)]">
-            <div className="text-[10px] text-primary-foreground/90 uppercase">En cobros</div>
+            <div className="text-[10px] text-primary-foreground/90 uppercase">Saldo Empresarial</div>
             <div className="font-bold text-primary-foreground text-[20px] leading-tight">${totalNeto.toFixed(2)}</div>
           </div>
-          <div className="rounded bg-muted p-2">
-            <div className="text-[10px] text-muted-foreground uppercase">Cuenta eje</div>
-            <div className="font-bold text-foreground">${saldoEje.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <Button
-          variant="secondary"
-          className="w-full mb-3"
-          onClick={() => {
-            if (totalNeto <= 0) return toast({ title: "No tienes saldo en cobros", variant: "destructive" });
-            setTraspasoMonto(String(totalNeto.toFixed(2)));
-            setTraspasoOpen(true);
-          }}
-        >
-          <ArrowRightLeft className="h-4 w-4 mr-2" /> Pasar cobros a mi cuenta eje (gratis)
-        </Button>
-
-
-        <div className="rounded-lg bg-muted p-3 mb-3">
-          <div className="text-xs font-semibold mb-2 text-foreground">Retirar saldo</div>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              size="sm" variant="outline"
-              className={`h-auto py-2 flex-col gap-1 relative ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
-              onClick={() => abrirRetiro("oxxo")}
-            >
-              <Banknote className="h-4 w-4" />
-              <span className="text-[11px]">OXXO efectivo</span>
-              {!RETIROS_STP_ENABLED && <span className="text-[9px] text-muted-foreground">Próximamente</span>}
-            </Button>
-            <Button
-              size="sm" variant="outline"
-              className={`h-auto py-2 flex-col gap-1 relative ${!RETIROS_STP_ENABLED ? "opacity-50 grayscale" : ""}`}
-              onClick={() => abrirRetiro("spei")}
-            >
-              <Building2 className="h-4 w-4" />
-              <span className="text-[11px]">SPEI a mi banco</span>
-              {!RETIROS_STP_ENABLED && <span className="text-[9px] text-muted-foreground">Próximamente</span>}
-            </Button>
-            <Button size="sm" variant="outline" className="h-auto py-2 flex-col gap-1" onClick={() => abrirRetiro("qard")}>
-              <CreditCard className="h-4 w-4" />
-              <span className="text-[11px]">A otra QaRd</span>
-            </Button>
-          </div>
-          {!RETIROS_STP_ENABLED && (
-            <div className="text-[10px] text-muted-foreground mt-2">
-              Transferir a otra QaRd es gratis. SPEI y OXXO cobran 2% (y en OXXO la tienda puede cobrar aparte); estarán disponibles al activar el nuevo proveedor de pagos.
-            </div>
-          )}
-          {totalRetirado > 0 && (
-            <div className="text-[10px] text-muted-foreground mt-2">
-              Retirado acumulado: ${totalRetirado.toFixed(2)}
-            </div>
-          )}
         </div>
 
         <div className="text-[11px] text-muted-foreground mb-2">
@@ -436,22 +273,16 @@ export default function QardCobrar() {
         ) : (
           <div className="space-y-1 max-h-72 overflow-y-auto">
             {(() => {
-              // Saldo acumulado desde cero: recorremos del más viejo al más nuevo
-              const saldos = new Map<string, number>();
-              let acumulado = 0;
-              [...cobros].reverse().forEach((m) => {
-                const esRet = String(m.tipo).startsWith("retiro_") || m.tipo === "traspaso_cobros_out";
-                const imp = Math.abs(Number(m.monto_mxn ?? 0));
-                acumulado = +(acumulado + (esRet ? -imp : imp)).toFixed(2);
-                saldos.set(m.id, acumulado);
-              });
+              const ledger = estadoDeCuenta(construirLibro(cobros, null), 'cobros', totalNeto);
+              const balances = new Map(ledger.map(r => [r.r.key, r]));
               return cobros.map((m) => {
-                const esRetiro = String(m.tipo).startsWith("retiro_") || m.tipo === "traspaso_cobros_out";
+                const entry = balances.get(m.id);
+                const esRetiro = (entry?.monto ?? 0) < 0;
                 const importe = Math.abs(Number(m.monto_mxn ?? 0));
                 return (
                   <div key={m.id} className="flex justify-between items-center text-sm border-b border-border pb-1">
                     <div className="min-w-0 pr-2">
-                      <div className="font-medium truncate text-foreground">{etiquetaMovimiento("cobros", m.tipo)}</div>
+                      <div className="font-medium truncate text-foreground">{entry?.r.etiqueta ?? "Movimiento empresarial"}</div>
                       <div className="text-[11px] text-muted-foreground">
                         {formatHermosillo(m.created_at)}
                       </div>
@@ -461,7 +292,7 @@ export default function QardCobrar() {
                         {esRetiro ? "−" : "+"}${importe.toFixed(2)}
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        Saldo ${(saldos.get(m.id) ?? 0).toFixed(2)}
+                        Saldo ${(entry?.saldoDespues ?? m.saldo_despues).toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -484,7 +315,8 @@ export default function QardCobrar() {
         onSubmit={confirmarCvvEscaneo}
         value={scanCvv}
         onChange={setScanCvv}
-        title="CVV dinámico de 4 dígitos"
+        maxLength={3}
+        title="CVV de 3 dígitos del pagador"
         subtitle={`Tarjeta •••• ${pendingQard.slice(-4)} · Monto $${Number(monto || 0).toFixed(2)}`}
       />
 
@@ -549,162 +381,10 @@ export default function QardCobrar() {
         onSubmit={cerrarTecladoCvvManual}
         value={manualCvv}
         onChange={setManualCvv}
-        title="CVV dinámico de 4 dígitos"
+        maxLength={3}
+        title="CVV de 3 dígitos del pagador"
       />
 
-      <Dialog open={traspasoOpen} onOpenChange={setTraspasoOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Pasar cobros a mi cuenta eje</DialogTitle>
-            <DialogDescription>
-              Sin comisión. En cobros tienes <b>${totalNeto.toFixed(2)}</b>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Monto a pasar (MXN)</label>
-              <Input
-                type="number" step="0.01" min="1"
-                value={traspasoMonto}
-                onChange={e => setTraspasoMonto(e.target.value)}
-                className="text-xl h-12"
-                autoFocus
-              />
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setTraspasoMonto(String(totalNeto.toFixed(2)))}>
-              Pasar todo
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTraspasoOpen(false)} disabled={traspasoLoading}>Cancelar</Button>
-            <Button onClick={confirmarTraspaso} disabled={traspasoLoading}>
-              {traspasoLoading ? "Procesando…" : "Pasar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={retiroOpen} onOpenChange={setRetiroOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-
-            <DialogTitle>
-              {retiroMetodo === "oxxo" && "Retirar efectivo en OXXO"}
-              {retiroMetodo === "spei" && "Enviar SPEI a mi banco"}
-              {retiroMetodo === "qard" && "Transferir a otra QaRd"}
-            </DialogTitle>
-            <DialogDescription>
-              Disponible: <b>${(retiroOrigen === "eje" ? saldoEje : totalNeto).toFixed(2)}</b>{retiroMetodo !== "qard" ? " · Simulación (sin dinero real)." : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">¿De cuál bolsa?</label>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <Button
-                  type="button"
-                  variant={retiroOrigen === "comercio" ? "default" : "outline"}
-                  className="h-auto py-2 flex-col gap-0.5"
-                  onClick={() => setRetiroOrigen("comercio")}
-                >
-                  <span className="text-[11px]">Mis cobros</span>
-                  <span className="text-sm font-bold">${totalNeto.toFixed(2)}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={retiroOrigen === "eje" ? "default" : "outline"}
-                  className="h-auto py-2 flex-col gap-0.5"
-                  onClick={() => setRetiroOrigen("eje")}
-                >
-                  <span className="text-[11px]">Cuenta eje</span>
-                  <span className="text-sm font-bold">${saldoEje.toFixed(2)}</span>
-                </Button>
-              </div>
-            </div>
-            <div>
-
-              <label className="text-sm font-medium">Monto (MXN)</label>
-              <Input
-                type="number" step="0.01" min="20"
-                value={retiroMonto}
-                onChange={e => setRetiroMonto(e.target.value)}
-                
-                className="text-xl h-12"
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Mínimo $20. {retiroMetodo === "qard" ? "Sin comisión (0%)." : "Comisión 2% al retirar por este medio."}
-              </p>
-            </div>
-
-            {retiroMetodo === "spei" && (
-              <div>
-                <label className="text-sm font-medium">CLABE destino (opcional)</label>
-                <Input
-                  inputMode="numeric"
-                  value={retiroDestino}
-                  onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  
-                  maxLength={18}
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">Si la dejas vacía, usa la CLABE de tu cuenta de cobros.</p>
-              </div>
-            )}
-
-            {retiroMetodo === "qard" && (
-              <>
-                <div>
-                  <label className="text-sm font-medium">QaRd destino (16 dígitos)</label>
-                  <Input
-                    inputMode="numeric"
-                    value={retiroDestino}
-                    onChange={e => setRetiroDestino(e.target.value.replace(/\D/g, "").slice(0, 16))}
-                    
-                    maxLength={16}
-                    className="tracking-widest"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">CVV dinámico del destino (4 dígitos)</label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start h-11"
-                     onClick={abrirTecladoCvvRetiro}
-                  >
-                     <span className={retiroCvv ? "text-lg tracking-[0.5em]" : "text-sm whitespace-nowrap"}>
-                      {retiroCvv ? "•".repeat(retiroCvv.length) : "Escribir CVV"}
-                    </span>
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Si mandas a otra persona, pide su CVV dinámico de 4 dígitos. Si es tu propia QaRd, puedes dejarlo vacío.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {retiroMetodo === "oxxo" && (
-              <div className="text-xs bg-muted rounded p-2">
-                Se generará una referencia de 14 dígitos válida 72 h en cualquier OXXO.
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRetiroOpen(false)} disabled={retiroLoading}>Cancelar</Button>
-            <Button onClick={confirmarRetiro} disabled={retiroLoading}>
-              {retiroLoading ? "Procesando…" : "Retirar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <NumericKeypadScreen
-        open={retiroCvvKeypadOpen}
-        onClose={cerrarTecladoCvvRetiro}
-        onSubmit={cerrarTecladoCvvRetiro}
-        value={retiroCvv}
-        onChange={setRetiroCvv}
-        title="CVV dinámico del destino"
-      />
     </div>
   );
 }

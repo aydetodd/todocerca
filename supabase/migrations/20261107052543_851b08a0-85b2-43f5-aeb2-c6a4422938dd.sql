@@ -1,0 +1,6 @@
+REVOKE ALL ON FUNCTION public.qard_sync_empresarial_saldo() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.qard_sync_empresarial_saldo() TO service_role;
+COMMENT ON FUNCTION public.terminal_set_active(uuid,boolean) IS 'Intentional authenticated SECURITY DEFINER entry point: auth.uid must be invited operator or merchant; phone activation is serialized and only an approved active enterprise can operate.';
+COMMENT ON FUNCTION public.terminal_business_snapshot(text) IS 'Intentional authenticated SECURITY DEFINER entry point: only an active accepted terminal reads its inviting merchant business balance and ledger; no personal balance is returned.';
+COMMENT ON FUNCTION public.qard_transfer_p2p(text,text,text,numeric) IS 'Intentional authenticated SECURITY DEFINER entry point: authenticated source owner, locked active accounts, mandatory destination CVV4 and encrypted rotation; no next CVV returned.';
+COMMENT ON FUNCTION public.qard_collect_atomic(text,numeric,text,uuid,boolean) IS 'Intentional authenticated SECURITY DEFINER entry point: active invited terminal, locked balances, payer CVV3, idempotent receipt; business credits never touch personal funds.';

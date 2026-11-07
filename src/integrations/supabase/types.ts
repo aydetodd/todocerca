@@ -5951,6 +5951,7 @@ export type Database = {
       terminal_invites: {
         Row: {
           accepted_at: string | null
+          active: boolean
           created_at: string
           id: string
           invited_user_id: string | null
@@ -5964,6 +5965,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          active?: boolean
           created_at?: string
           id?: string
           invited_user_id?: string | null
@@ -5977,6 +5979,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          active?: boolean
           created_at?: string
           id?: string
           invited_user_id?: string | null
@@ -6064,6 +6067,7 @@ export type Database = {
       terminal_permissions: {
         Row: {
           accepted_at: string | null
+          active: boolean
           created_at: string
           id: string
           invited_by: string
@@ -6075,6 +6079,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          active?: boolean
           created_at?: string
           id?: string
           invited_by: string
@@ -6086,6 +6091,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          active?: boolean
           created_at?: string
           id?: string
           invited_by?: string
@@ -8240,6 +8246,16 @@ export type Database = {
         Returns: Json
       }
       qard_pasar_cobros_a_eje: { Args: { _monto: number }; Returns: Json }
+      qard_pay_business: {
+        Args: {
+          _amount: number
+          _cvv: string
+          _from: string
+          _key: string
+          _merchant: string
+        }
+        Returns: Json
+      }
       qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
       qard_rate_limit_check: {
         Args: {
@@ -8393,6 +8409,7 @@ export type Database = {
       set_tipo_proveedor: { Args: { _tipo: string }; Returns: undefined }
       terminal_accept: { Args: { _id: string }; Returns: undefined }
       terminal_accept_invite: { Args: { _token: string }; Returns: undefined }
+      terminal_business_snapshot: { Args: { _code?: string }; Returns: Json }
       terminal_has_access: {
         Args: { _code: string; _user_id: string }
         Returns: boolean
@@ -8423,6 +8440,10 @@ export type Database = {
         Returns: undefined
       }
       terminal_revoke_invite: { Args: { _id: string }; Returns: undefined }
+      terminal_set_active: {
+        Args: { _active: boolean; _invite_id: string }
+        Returns: undefined
+      }
       terminal_submit_request: {
         Args: { _business_name: string; _documents: Json }
         Returns: string

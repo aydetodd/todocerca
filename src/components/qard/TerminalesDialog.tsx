@@ -6,9 +6,10 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Store, Check, RefreshCw, LockKeyhole, ArrowLeft, Send, Ban, UserPlus, Copy } from 'lucide-react';
+import { Store, Check, RefreshCw, LockKeyhole, ArrowLeft, Send, Ban, UserPlus, Trash2 } from 'lucide-react';
 import { terminalEnabled, terminalInviteLink, merchantValid, type Agent, type Terminal, type Permission, type Invite } from '@/lib/terminales';
 
 export default function TerminalesDialog({ label = 'Abrir terminales digitales' }: { label?: string } = {}) {
@@ -44,12 +45,12 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
         const [a,t,p,i,w]=await Promise.all([
           supabase.from('terminal_agent_requests').select('*').eq('user_id',user.id).maybeSingle(),
           supabase.from('terminal_catalog').select('code,name,operational').order('created_at'),
-          supabase.from('terminal_permissions').select('id,user_id,terminal_code,status,invited_by').eq('user_id',user.id),
-          supabase.from('terminal_invites').select('id,phone,terminal_code,status,invited_user_id,token').eq('merchant_user_id',user.id),
-          supabase.from('qard_wallets').select('saldo_mxn').eq('titular_user_id',user.id).maybeSingle(),
+          supabase.from('terminal_permissions').select('id,user_id,terminal_code,status,invited_by,active').eq('user_id',user.id),
+          supabase.from('terminal_invites').select('id,phone,terminal_code,status,invited_user_id,token,active,merchant_user_id').or(`merchant_user_id.eq.${user.id},invited_user_id.eq.${user.id}`),
+          supabase.from('qard_wallets').select('saldo_comercio_mxn').eq('titular_user_id',user.id).maybeSingle(),
         ]);
         if(a.error||t.error||p.error||i.error||w.error) throw new Error('No se pudieron consultar las terminales');
-        setAgent(a.data as Agent|null);setTerminals(t.data??[]);setPermissions(p.data??[]);setInvites(i.data??[]);setBalance(w.data?Number(w.data.saldo_mxn):null);setLoadError(false);
+        setAgent(a.data as Agent|null);setTerminals(t.data??[]);setPermissions(p.data??[]);setInvites(i.data??[]);setBalance(w.data?Number(w.data.saldo_comercio_mxn):null);setLoadError(false);
       } while(again.current);
     } catch { setLoadError(true); } finally {loadingRef.current=false;setLoading(false);}
   },[user]);
@@ -59,7 +60,7 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
     const channel=supabase.channel(`terminales-${user.id}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'terminal_agent_requests',filter:`user_id=eq.${user.id}`},()=>void load())
       .on('postgres_changes',{event:'*',schema:'public',table:'terminal_permissions',filter:`user_id=eq.${user.id}`},()=>void load())
-      .on('postgres_changes',{event:'*',schema:'public',table:'terminal_invites',filter:`merchant_user_id=eq.${user.id}`},()=>void load())
+      .on('postgres_changes',{event:'*',schema:'public',table:'terminal_invites',},()=>void load())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'qard_wallets',filter:`titular_user_id=eq.${user.id}`},()=>void load())
       .subscribe();
     return ()=>{void supabase.removeChannel(channel);};
@@ -75,15 +76,12 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
     setInvitePhone('');setInviteCode(null);
     await load();
   });
-  const revoke=(id:string)=>run(async()=>{const {error}=await supabase.rpc('terminal_revoke_invite',{_id:id});if(error)throw error;await load();});
+  const setActive=(id:string,value:boolean)=>run(async()=>{const {error}=await supabase.rpc('terminal_set_active',{_invite_id:id,_active:value});if(error)throw error;await load();});
+  const revoke=(id:string)=>run(async()=>{if(!confirm('¿Eliminar este teléfono? Perderá acceso inmediato'))return;const {error}=await supabase.rpc('terminal_revoke_invite',{_id:id});if(error)throw error;await load();});
   const sendWhatsapp=(inv:{phone:string;token:string})=>{
     const clean=inv.phone.replace(/[^0-9]/g,'');
     const msg=encodeURIComponent(`Te invitaron a operar una terminal de TodoCerca. Acepta tu invitación aquí: ${terminalInviteLink(inv.token)}\n\n⚠️ Este enlace es personal e intransferible.`);
     window.open(`https://wa.me/${clean}?text=${msg}`,'_blank');
-  };
-  const copyLink=async(inv:{token:string})=>{
-    try{ await navigator.clipboard.writeText(terminalInviteLink(inv.token)); toast({title:'Enlace copiado'});}
-    catch{ toast({title:'No se pudo copiar',description:terminalInviteLink(inv.token)}); }
   };
   const reload=()=>run(async()=>{
     const t=terminals.find(t=>t.code==='reload');const p=permissions.find(p=>p.terminal_code==='reload');
@@ -116,7 +114,7 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
         {loadError?<p className="text-sm text-destructive">No se pudieron consultar las terminales. Intenta de nuevo.</p>:reloadOpen?<div className="space-y-4">
           <Button variant="ghost" onClick={()=>setReloadOpen(false)}><ArrowLeft className="h-4 w-4 mr-2"/>Terminales</Button>
           <h2 className="font-semibold">Recargar QaRd principal</h2>
-          {user&&permissions.find(p=>p.terminal_code==='reload')?.invited_by===user.id&&balance!==null&&<p>Saldo del comercio: ${balance.toFixed(2)}</p>}
+          {user&&permissions.find(p=>p.terminal_code==='reload')?.invited_by===user.id&&balance!==null&&<p>Saldo Empresarial: ${balance.toFixed(2)}</p>}
           {!(user&&permissions.find(p=>p.terminal_code==='reload')?.invited_by===user.id)&&<p className="text-sm text-muted-foreground">La recarga usa el saldo del negocio, no el tuyo.</p>}
           {result?<div className="space-y-3"><p className="font-semibold text-primary">Recarga confirmada</p><p>Acreditado al cliente: ${Number(result.neto).toFixed(2)}</p><p>Activación: ${Number(result.apertura).toFixed(2)}</p><p>Comisión: $15 · Comercio $5 · TodoCerca $10</p><p>Saldo del cliente: ${Number(result.saldo).toFixed(2)}</p><Button onClick={()=>{setResult(null);setQuote(null);setAmount('');setNumber('');key.current=null;}}>Nueva recarga</Button></div>:<>
             <div><Label htmlFor="terminal-number">QaRd principal del cliente</Label><Input id="terminal-number" inputMode="numeric" maxLength={16} value={number} disabled={busy} onChange={e=>{setNumber(e.target.value.replace(/\D/g,''));setQuote(null);key.current=null;}}/></div>
@@ -128,11 +126,12 @@ export default function TerminalesDialog({ label = 'Abrir terminales digitales' 
         </div>:<div className="space-y-4">
           {!loading && !merchantValid(agent) && permissions.length===0 && <div className="rounded-md border border-border p-3 space-y-2"><p className="text-sm">Para invitar terminales primero activa tu QaRd Empresarial.</p><Button className="w-full" onClick={()=>{setOpen(false);nav('/qard');}}>Ir a mi QaRd Empresarial</Button></div>}
           {agent&&<section className="space-y-2 border-b border-border pb-3"><h2 className="font-semibold">{agent.business_name}</h2><p className="text-sm">{agent.status==='approved'?'Agente aprobado':'Solicitud pendiente'}</p>{agent.review_note&&<p className="text-sm">{agent.review_note}</p>}</section>}
-          {(agent||permissions.length>0)&&terminals.map(t=>{const p=permissions.find(p=>p.terminal_code===t.code);const enabled=terminalEnabled(agent,p,t);return <section key={t.code} className="border-b border-border py-3 space-y-2"><h3 className="font-semibold flex items-center gap-2">{enabled?<Check className="h-4 w-4 text-primary"/>:<LockKeyhole className="h-4 w-4 text-muted-foreground"/>}{t.name}</h3><p className="text-sm text-muted-foreground">{!t.operational?'Pendiente de proveedor':p?.status==='accepted'?(enabled?'Activa':'Invitación aceptada · comercio pendiente'):p?.status==='revoked'?'Revocada':p?.status==='pending'?'Invitación pendiente':'Sin invitación'}</p>{p?.status==='pending'&&<Button variant="outline" disabled={busy} onClick={()=>accept(p.id)}>Aceptar invitación</Button>}{enabled&&<Button onClick={()=>{if(t.code==='reload'){setReloadOpen(true);setResult(null);}else{setOpen(false);nav(t.code==='collection'?'/qard/cobrar?terminal=1':'/qard');}}}>Abrir terminal</Button>}
+          {(agent||permissions.length>0)&&terminals.map(t=>{const p=permissions.find(p=>p.terminal_code===t.code);const enabled=terminalEnabled(p?.invited_by===user?.id?agent:null,p,t);return <section key={t.code} className="border-b border-border py-3 space-y-2"><h3 className="font-semibold flex items-center gap-2">{enabled?<Check className="h-4 w-4 text-primary"/>:<LockKeyhole className="h-4 w-4 text-muted-foreground"/>}{t.name}</h3><p className="text-sm text-muted-foreground">{!t.operational?'Pendiente de proveedor':p?.status==='accepted'?(enabled?'Activa':'Invitación aceptada · comercio pendiente'):p?.status==='revoked'?'Revocada':p?.status==='pending'?'Invitación pendiente':'Sin invitación'}</p>{p?.status==='pending'&&<Button variant="outline" disabled={busy} onClick={()=>accept(p.id)}>Aceptar invitación</Button>}{enabled&&<Button onClick={()=>{if(t.code==='reload'){setReloadOpen(true);setResult(null);}else{setOpen(false);nav(t.code==='collection'?'/qard/cobrar?terminal=1':'/qard');}}}>Abrir terminal</Button>}
+            {t.operational&&invites.filter(i=>i.terminal_code===t.code&&i.status==='accepted').map(i=><div key={i.id} className="border border-border rounded-md p-3 space-y-2"><div className="flex items-center justify-between gap-2"><span className="font-mono text-sm">{i.phone}</span><Switch checked={i.active===true} disabled={busy} aria-label={`Activar teléfono ${i.phone} en ${t.name}`} onCheckedChange={v=>void setActive(i.id,v)}/></div><p className="text-xs text-muted-foreground">{i.active?'Teléfono activo en esta terminal':'Teléfono desactivado'}</p>{i.merchant_user_id===user?.id&&<Button variant="outline" size="sm" className="h-auto whitespace-normal" disabled={busy} onClick={()=>revoke(i.id)}><Trash2 className="h-4 w-4 mr-1"/>Eliminar teléfono de terminal</Button>}</div>)}
             {merchantValid(agent)&&t.operational&&<>
-              {invites.filter(i=>i.terminal_code===t.code).map(i=><div key={i.id} className="flex items-center justify-between gap-2 text-sm"><span className="font-mono">{i.phone}</span><span className="text-muted-foreground">{i.status==='pending'?'Pendiente de aceptar':i.status==='accepted'?'Aceptada':'Revocada'}</span>{i.status!=='revoked'&&<Button size="icon" variant="ghost" aria-label={`Revocar invitación de ${i.phone}`} disabled={busy} onClick={()=>revoke(i.id)}><Ban className="h-4 w-4"/></Button>}</div>)}
-              {lastInvite?.code===t.code&&<div className="rounded-md border border-border p-2 text-xs space-y-2"><p className="break-all">{terminalInviteLink(lastInvite.token)}</p><div className="flex gap-2"><Button size="sm" variant="outline" onClick={()=>sendWhatsapp(lastInvite)}><Send className="h-3 w-3 mr-1"/>WhatsApp</Button><Button size="sm" variant="outline" onClick={()=>void copyLink(lastInvite)}><Copy className="h-3 w-3 mr-1"/>Copiar enlace</Button></div></div>}
-              {inviteCode===t.code?<div className="space-y-2"><PhoneInput value={invitePhone} onChange={setInvitePhone}/><div className="flex gap-2"><Button size="sm" disabled={busy||!invitePhone.trim()} onClick={()=>invite(t.code)}>Invitar</Button><Button size="sm" variant="ghost" disabled={busy} onClick={()=>{setInviteCode(null);setInvitePhone('');}}>Cancelar</Button></div><p className="text-xs text-muted-foreground">Puedes invitarte a ti mismo con tu propio teléfono: quedará aceptada al instante.</p></div>:<Button size="sm" variant="outline" onClick={()=>{setInviteCode(t.code);setLastInvite(null);setInvitePhone('');}}><UserPlus className="h-4 w-4 mr-1"/>Invitar por teléfono</Button>}
+              {invites.filter(i=>i.terminal_code===t.code&&i.status==='pending'&&i.merchant_user_id===user?.id).map(i=><div key={i.id} className="flex flex-wrap items-center gap-2 text-sm"><span>{i.phone} · Pendiente</span><Button size="sm" variant="outline" onClick={()=>sendWhatsapp(i)}>WhatsApp</Button><Button size="sm" variant="ghost" onClick={()=>revoke(i.id)}>Eliminar teléfono de terminal</Button></div>)}
+              {lastInvite?.code===t.code&&<div className="rounded-md border border-border p-2 text-xs space-y-2"><p>Invitación registrada. El aviso interno se envía si el teléfono tiene cuenta.</p><Button size="sm" variant="outline" onClick={()=>sendWhatsapp(lastInvite)}><Send className="h-3 w-3 mr-1"/>WhatsApp</Button></div>}
+              {inviteCode===t.code?<div className="space-y-2"><PhoneInput value={invitePhone} onChange={setInvitePhone}/><div className="flex gap-2"><Button size="sm" disabled={busy||!invitePhone.trim()} onClick={()=>invite(t.code)}>Invitar</Button><Button size="sm" variant="ghost" disabled={busy} onClick={()=>{setInviteCode(null);setInvitePhone('');}}>Cancelar</Button></div><p className="text-xs text-muted-foreground">Puedes invitarte a ti mismo con tu propio teléfono: quedará aceptada al instante.</p></div>:<Button size="sm" variant="outline" onClick={()=>{setInviteCode(t.code);setLastInvite(null);setInvitePhone('');}}><UserPlus className="h-4 w-4 mr-1"/>Invitar terminal</Button>}
             </>}
           </section>;})}
         </div>}

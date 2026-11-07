@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { QARD_FEES, reloadBreakdown, terminalEnabled, merchantValid, terminalInviteLink, dynamicCvvValid, subActivationEligible, type Agent } from './terminales';
+import { QARD_FEES, reloadBreakdown, terminalEnabled, merchantValid, terminalInviteLink, dynamicCvvValid, paymentCvvValid, businessBalance, subActivationEligible, type Agent } from './terminales';
 test('activación principal única cuesta 150', () => assert.equal(reloadBreakdown(200,true,false).opening,150));
 test('activación ya pagada no se repite', () => assert.equal(reloadBreakdown(200,false,false).opening,0));
 test('cada recarga cuesta 15', () => assert.equal(reloadBreakdown(200,false,false).fee,15));
@@ -13,7 +13,7 @@ test('sub QR requiere CURP nivel 1 sin nivel 2', () => { assert.equal(subActivat
 test('CVV estático de tres cifras es rechazado', () => { assert.equal(dynamicCvvValid('123'),false); assert.equal(dynamicCvvValid('1234'),true); });
 const agent={ status:'approved',curp_status:'valid',rfc_status:'valid',biometric_status:'valid' } as Agent;
 const terminal={ code:'reload',name:'Recargas',operational:true };
-const permission={ id:'1',user_id:'1',terminal_code:'reload',status:'accepted' };
+const permission={ id:'1',user_id:'1',terminal_code:'reload',status:'accepted',active:true };
 test('agente pendiente no opera aunque acepte invitación', () => assert.equal(terminalEnabled({...agent,status:'pending'},permission,terminal),false));
 test('biometría pendiente bloquea terminal', () => assert.equal(terminalEnabled({...agent,biometric_status:'pending'},permission,terminal),false));
 test('CURP y RFC pendientes bloquean terminal', () => { assert.equal(terminalEnabled({...agent,curp_status:'pending'},permission,terminal),false); assert.equal(terminalEnabled({...agent,rfc_status:'pending'},permission,terminal),false); });
@@ -37,3 +37,8 @@ test('e.firma validada aprueba el comercio sin CURP ni biometría', () => {
 });
 test('enlace de invitación usa el dominio oficial con token', () => assert.equal(terminalInviteLink('abc'), 'https://todocerca.mx/terminal-invitacion?token=abc'));
 test('monto menor o igual a cargos se rechaza', () => assert.throws(()=>reloadBreakdown(165,true,true)));
+
+test('pagos exigen tres dígitos y rechazan CVV de recepción', () => { assert.equal(paymentCvvValid('123'),true); assert.equal(paymentCvvValid('1234'),false); assert.equal(paymentCvvValid(''),false); });
+test('terminal aceptada pero apagada no opera', () => assert.equal(terminalEnabled(agent,{...permission,active:false},terminal),false));
+
+test('terminal muestra empresarial cero aunque personal tenga 2687.06', () => { const snapshot={saldo_empresarial:0,saldo_mxn:2687.06}; assert.equal(businessBalance(snapshot),0); });

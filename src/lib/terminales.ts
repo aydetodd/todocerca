@@ -13,13 +13,13 @@ export type Agent = {
   efirma_validada?: boolean; efirma_nombre?: string | null; efirma_vence?: string | null;
 };
 export type Terminal = { code: string; name: string; operational: boolean };
-export type Permission = { id: string; user_id: string; terminal_code: string; status: string; invited_by?: string | null };
-export type Invite = { id: string; phone: string; terminal_code: string; status: string; invited_user_id: string | null; token: string };
+export type Permission = { id: string; user_id: string; terminal_code: string; status: string; active?: boolean; invited_by?: string | null };
+export type Invite = { id: string; phone: string; terminal_code: string; status: string; invited_user_id: string | null; token: string; active?: boolean; merchant_user_id?: string };
 export function merchantValid(agent: Agent | null) {
   return !!agent && agent.status === 'approved' && (agent.efirma_validada === true || (agent.curp_status === 'valid' && agent.rfc_status === 'valid' && agent.biometric_status === 'valid'));
 }
 export function terminalEnabled(agent: Agent | null, permission: Permission | undefined, terminal: Terminal) {
-  return permission?.status === 'accepted' && terminal.operational && (!agent || merchantValid(agent));
+  return permission?.status === 'accepted' && permission.active === true && terminal.operational && (!agent || merchantValid(agent));
 }
 export function terminalInviteLink(token: string) { return `https://todocerca.mx/terminal-invitacion?token=${token}`; }
 export function dynamicCvvValid(value: string) { return /^\d{4}$/.test(value); }
@@ -30,3 +30,7 @@ export const documentFields = [
   { key: 'ine_back', field: 'ine_back_document', label: 'INE · reverso' },
   { key: 'rfc', field: 'rfc_document', label: 'RFC · constancia fiscal' },
 ] as const;
+
+export function paymentCvvValid(value: string) { return /^\d{3}$/.test(value); }
+
+export function businessBalance(snapshot: { saldo_empresarial?: number | null } | null) { return Number(snapshot?.saldo_empresarial ?? 0); }

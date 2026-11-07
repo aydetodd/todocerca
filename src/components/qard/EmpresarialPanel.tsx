@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BookOpen, Briefcase, QrCode, Zap } from 'lucide-react';
 import EfirmaRegistration from './EfirmaRegistration';
 import TerminalesDialog from './TerminalesDialog';
@@ -42,21 +43,15 @@ export default function EmpresarialPanel({ numero, onChanged, onLibro, onQr }: {
   if (!loaded) return null;
   const valida = merchantValid(agent) && !!numero;
 
-  if (!valida) return <>
-    <Button className="w-full min-h-16 h-auto text-lg font-bold gap-2 py-4" onClick={() => setOpen(true)}>
-      <Zap className="h-6 w-6" />Activar mi QaRd Empresarial
-    </Button>
-    <p className="text-xs text-muted-foreground text-center">Con tu e.firma del SAT. Tu llave y contraseña nunca salen de tu teléfono.</p>
+
+  return <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>Activar QaRd Empresarial</DialogTitle></DialogHeader>
-        <EfirmaRegistration onSuccess={() => { void load(); onChanged(); }} />
+        <EfirmaRegistration onVerified={() => { void load(); onChanged(); }} onSuccess={() => { setOpen(false); void load(); onChanged(); }} />
       </DialogContent>
     </Dialog>
-  </>;
-
-  return (
-    <Card className="p-4 space-y-3">
+    {!valida ? <div className="space-y-2"><Button className="w-full min-h-16 h-auto text-lg font-bold gap-2 py-4" onClick={() => setOpen(true)}><Zap className="h-6 w-6" />Activar mi QaRd Empresarial</Button><p className="text-xs text-muted-foreground">Tu llave y contraseña nunca salen de tu teléfono.</p></div> : <Accordion type="single" collapsible><AccordionItem value="gestion"><AccordionTrigger>Gestionar mi empresa</AccordionTrigger><AccordionContent><Card className="p-4 space-y-3">
       <div>
         <div className="text-xs text-muted-foreground">Mi negocio</div>
         <div className="font-bold text-lg leading-tight">{agent?.razon_social || agent?.business_name}</div>
@@ -70,6 +65,6 @@ export default function EmpresarialPanel({ numero, onChanged, onLibro, onQr }: {
       </div>
       <SucursalesPanel />
       <FormalizationDialog />
-    </Card>
-  );
+    </Card></AccordionContent></AccordionItem></Accordion>}
+  </>;
 }

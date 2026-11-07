@@ -67,6 +67,9 @@ const ETIQUETAS: Record<Ambito, Record<string, string>> = {
   },
   cobros: {
     cobro_recibido: "Cobro recibido",
+    transferencia_p2p_in: "Transferencia recibida",
+    transferencia_p2p_out: "Transferencia enviada",
+    cobro_comercio: "Pago en comercio",
     traspaso_cobros_out: "Traspaso a mi cuenta eje",
     retiro_qard: "Retiro a otra QaRd",
     retiro_oxxo: "Retiro en OXXO",
@@ -124,7 +127,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         push("eje", abs, `Saldo devuelto de ${alias(m.descripcion) || "sub-QR"}`, "-eje");
         break;
       case "transferencia_p2p_in":
-        if (md.terminal === "reload" && Number(md.comision_comercio) === 5) {
+        if (md.bolsa !== "comercio" && md.terminal === "reload" && Number(md.comision_comercio) === 5) {
           push("eje", abs, "Comisión por recarga en comercio");
           break;
         }
@@ -137,7 +140,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
       case "cobro_comercio":
       case "devolucion": {
         const positivo = m.tipo === "transferencia_p2p_in" || m.tipo === "devolucion";
-        const amb: Ambito = esSub ? "sub_qr" : "eje";
+        const amb: Ambito = md.bolsa === "comercio" ? "cobros" : esSub ? "sub_qr" : "eje";
         const pj = m.tipo === "cobro_comercio" ? pasajes?.get(m.id) : undefined;
         if (pj) {
           const { etiqueta, detalle } = etiquetaPasaje(pj, m.created_at);

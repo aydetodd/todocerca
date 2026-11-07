@@ -66,7 +66,7 @@ export default function SucursalesPanel() {
             <div className="space-y-2">
               <PhoneInput value={tel} onChange={setTel} />
               <div className="flex gap-2">
-                <Button size="sm" disabled={busy || !tel.trim()} onClick={() => enviar(f.negocio_id!)}>Invitar cajero</Button>
+                <Button size="sm" disabled={busy || !tel.trim()} onClick={() => f.negocio_id && enviar(f.negocio_id)}>Invitar terminal</Button>
                 <Button size="sm" variant="ghost" onClick={() => { setInvitar(null); setTel(''); }}>Cancelar</Button>
               </div>
             </div>

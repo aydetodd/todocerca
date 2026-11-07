@@ -30,9 +30,10 @@ function expiryAlert(result: EfirmaResult) {
   return null;
 }
 
-export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { tipo?: TipoPersona; onSuccess?: () => void } = {}) {
+export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess, onVerified }: { tipo?: TipoPersona; onSuccess?: () => void; onVerified?: () => void } = {}) {
   const [tipo, setTipo] = useState<TipoPersona>(tipoInicial ?? 'moral');
   const [step, setStep] = useState(-1);
+  const [pdfVerified, setPdfVerified] = useState(false);
   const [razon, setRazon] = useState<string | null>(null);
   const [rfc, setRfc] = useState('');
   const [busy, setBusy] = useState(false);
@@ -98,10 +99,10 @@ export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { t
 
       console.log('[e.firma] Validación completa: Nivel 3 aprobado');
       if (run === generation.current) {
-        setResult(checked); setRazon(razonSocial);
+        setResult(checked); setRazon(razonSocial); setPdfVerified(hasPdf);
         // Éxito: limpiar archivos y contraseña por seguridad.
         element.reset();
-        onSuccess?.();
+        onVerified?.();
       }
     } catch (e) {
       console.error('[e.firma] Error durante la validación', e);
@@ -137,7 +138,7 @@ export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { t
       <p className="font-semibold text-primary">✅ Registro empresarial completado</p>
       <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1">
         <p className="font-semibold">Tus datos fiscales coinciden</p>
-        <p className="text-muted-foreground">Revisamos tu RFC, tu certificado (.cer) y tu llave (.key){razon ? ' y tu Constancia de Situación Fiscal' : ''}: todo pertenece a la misma persona y la e.firma está vigente. Con esta comprobación tu QaRd Empresarial quedó activada y ya puedes invitar terminales.</p>
+        <p className="text-muted-foreground">✅ e.firma cotejada localmente con archivo .cer{pdfVerified ? ', constancia fiscal' : ''} y RFC proporcionado. La llave corresponde al certificado. Tu QaRd Empresarial quedó activada; este cotejo no confirma la identidad de quien opera ni la revocación ante el SAT.</p>
       </div>
       <dl className="space-y-2">
         {razon && <div><dt className="text-muted-foreground">📋 Empresa</dt><dd className="break-words">{razon}</dd></div>}
@@ -146,6 +147,7 @@ export default function EfirmaRegistration({ tipo: tipoInicial, onSuccess }: { t
         {result.representativeRfc && <div><dt className="text-muted-foreground">RFC del representante legal</dt><dd>{result.representativeRfc}</dd></div>}
         <div><dt className="text-muted-foreground">📅 e.firma vigente hasta</dt><dd>{formatFechaMx(result.expiresAt)}</dd></div>
       </dl>
+      <Button className="w-full" onClick={onSuccess}>Ver mi QaRd Empresarial</Button>
       {alert && <p role="status" className={`text-sm ${alert.tone}`}>{alert.text}</p>}
     </div>}
   </section>;
