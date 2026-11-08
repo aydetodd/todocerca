@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Protecciones adicionales de devoluciones
+- [ ] Vencimiento de 72 horas, cancelación por cliente y disputa revisada por admin con fondos retenidos.
+- [ ] Avisos automáticos por el sistema existente; parciales múltiples con numeración y restante.
+- [ ] Pruebas de límites, fondos, idempotencia, dueño exclusivo y conservación del cobro; verificar acceso disponible.
 ## Devoluciones autorizadas por el negocio
 - [x] Solicitud desde el pago original con motivo; autorización completa/parcial o rechazo del dueño; inicio directo desde el cobro y revisión en Gestionar mi empresa.
 - [x] Dinero empresarial a la tarjeta pagadora original; límites acumulados, operación indivisible e idempotente, folios originales e historial conservados. Prueba SQL sobre pagos reales revierte sus movimientos; comprueba Personal/Familiar, propietario, falta de fondos y reintentos.

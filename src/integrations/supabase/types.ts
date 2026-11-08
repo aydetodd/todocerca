@@ -4473,12 +4473,65 @@ export type Database = {
           },
         ]
       }
+      qard_refund_notifications: {
+        Row: {
+          attempts: number
+          created_at: string
+          event: string
+          id: string
+          last_error: string | null
+          message: string
+          provider_id: string | null
+          recipient_id: string
+          request_id: string
+          updated_at: string
+          whatsapp_status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event: string
+          id?: string
+          last_error?: string | null
+          message: string
+          provider_id?: string | null
+          recipient_id: string
+          request_id: string
+          updated_at?: string
+          whatsapp_status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event?: string
+          id?: string
+          last_error?: string | null
+          message?: string
+          provider_id?: string | null
+          recipient_id?: string
+          request_id?: string
+          updated_at?: string
+          whatsapp_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_refund_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "qard_refund_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qard_refund_requests: {
         Row: {
           approved_amount: number | null
           created_at: string
           decided_at: string | null
           decision_reason: string | null
+          dispute_reason: string | null
+          disputed_at: string | null
+          expires_at: string
           id: string
           initiated_by: string
           merchant_movement_id: string
@@ -4491,6 +4544,7 @@ export type Database = {
           reason: string
           request_key: string
           requested_amount: number
+          resolved_by: string | null
           source_ambito: string
           source_sub_qr_id: string
           status: string
@@ -4501,6 +4555,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decision_reason?: string | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          expires_at?: string
           id?: string
           initiated_by: string
           merchant_movement_id: string
@@ -4513,6 +4570,7 @@ export type Database = {
           reason: string
           request_key: string
           requested_amount: number
+          resolved_by?: string | null
           source_ambito: string
           source_sub_qr_id: string
           status?: string
@@ -4523,6 +4581,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decision_reason?: string | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          expires_at?: string
           id?: string
           initiated_by?: string
           merchant_movement_id?: string
@@ -4535,6 +4596,7 @@ export type Database = {
           reason?: string
           request_key?: string
           requested_amount?: number
+          resolved_by?: string | null
           source_ambito?: string
           source_sub_qr_id?: string
           status?: string
@@ -8354,6 +8416,16 @@ export type Database = {
       }
       qard_rate_limit_purge: { Args: never; Returns: undefined }
       qard_recargas_mes: { Args: { _user_id: string }; Returns: number }
+      qard_refund_action: {
+        Args: {
+          _action: string
+          _amount?: number
+          _approve?: boolean
+          _reason?: string
+          _request: string
+        }
+        Returns: Json
+      }
       qard_refund_context: { Args: { _movement: string }; Returns: Json }
       qard_refund_decide: {
         Args: {
@@ -8364,6 +8436,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_refund_disputes: { Args: { _offset?: number }; Returns: Json }
       qard_refund_list: {
         Args: { _ambito: string; _offset?: number; _sub?: string }
         Returns: Json
