@@ -75,9 +75,9 @@ export const comparisonSections: ComparisonSection[] = [
   {
     id:'formalizacion',title:'El diferencial: formalización fiscal y laboral',summary:'Una hoja de ruta mexicana que va más allá del pago, con una primera fase disponible y automatizaciones todavía pendientes.',sources:['isr','iva','sat','pac'],
     blocks:[
-      {title:'Disponible · guía RESICO y expediente fiscal privado',paragraphs:[
-        'La primera fase de TodoCerca reúne una guía en seis pasos: revisar elegibilidad, reunir documentos, inscripción o actualización de RFC, credenciales fiscales y Buzón Tributario, expediente fiscal y revisión de obligaciones. El usuario puede guardar evidencia privada y marcar avances.',
-        'El expediente incluye RFC, nombre fiscal, régimen, código postal y actividad. La confirmación es del usuario: no equivale a alta ante el SAT ni a aprobación de una autoridad. Adjuntar una constancia no cambia el régimen fiscal automáticamente.',
+      {title:'Disponible · guía de formalización: de cero a RESICO',paragraphs:[
+        'TodoCerca ofrece una guía de solo lectura en cuatro pasos: CURP, inscripción al RFC, obtención de e.firma y alta en RESICO para quien cumpla sus requisitos, con enlaces oficiales. No contiene formularios, notas, evidencias ni seguimiento de avances.',
+        'La guía no guarda datos. Leerla no equivale a alta ante el SAT, no modifica el régimen fiscal y no cambia el nivel QaRd. El registro empresarial con e.firma es un proceso separado.',
         'RESICO para personas físicas contempla tasas de ISR de 1% a 2.5% conforme a bases, rangos y requisitos de la Ley del ISR. No todos califican; existen topes de ingresos, exclusiones y obligaciones. La tasa no es una promesa del total de impuestos ni de deducibilidad.',
         'No se encontró respaldo oficial suficiente para anunciar un IVA simplificado del 7% en 2027. Esa afirmación queda fuera de la oferta. Un cambio solo puede comunicarse como vigente cuando exista publicación normativa y se confirme su aplicabilidad.',
       ]},
@@ -105,7 +105,7 @@ export const comparisonSections: ComparisonSection[] = [
       {title:'Comparación justa con Pix y WeChat',paragraphs:[
         'Pix es infraestructura brasileña y no tiene como objeto formalizar un negocio mexicano ante el SAT. Sus participantes y aplicaciones pueden ofrecer servicios contables adicionales: no se afirma que todo su ecosistema carezca de ellos.',
         'WeChat permite servicios y miniaplicaciones de terceros, por lo que tampoco se afirma que ninguna herramienta fiscal o laboral exista en su ecosistema. La oportunidad de TodoCerca es adaptar una experiencia integrada al contexto mexicano, no negar capacidades de otros países.',
-        'El diferencial hoy verificable es la orientación local, la guía y el expediente privado. El diferencial completo de facturación, asistencia y nómina es una hoja de ruta, no un producto terminado.',
+        'El diferencial hoy verificable es la orientación local y la guía estática de formalización. El diferencial completo de facturación, asistencia y nómina es una hoja de ruta, no un producto terminado.',
       ]},
     ],
   },
@@ -145,7 +145,7 @@ export const comparisonSections: ComparisonSection[] = [
     id:'balance',title:'Pros, límites y decisiones estratégicas',summary:'Una recomendación sólida explica cuándo elegir cada modelo y qué falta para cumplir sus promesas.',sources:['pix','wechat','sat'],
     blocks:[
       {title:'TodoCerca · ventajas y tareas pendientes',paragraphs:[
-        'A favor: orientación a movilidad y comunidad mexicana; consultas por cuenta; control de tarjetas adicionales; equipo por invitación; libro protegido; guía RESICO y expediente privado. La e.firma se coteja sin transferir llave o contraseña.',
+        'A favor: orientación a movilidad y comunidad mexicana; consultas por cuenta; control de tarjetas adicionales; equipo por invitación; libro protegido; guía estática de formalización. La e.firma se coteja sin transferir llave o contraseña.',
         'Límites: menor efecto de red; dependencia de adopción territorial; nivel empresarial y validación SAT pendientes; unificación del saldo empresarial pendiente de verificación; custodia regulada e integración Transfer.com no acreditadas aquí; CFDI, asistencia y nómina todavía propuestos.',
         'Decisión para un visitante: evaluar primero el servicio disponible en su localidad y los costos reales. Para un inversionista: exigir métricas comprobables de adopción y retención, contratos y controles. Para una autoridad: revisar entidad responsable, custodia, consentimientos, fiscalidad y protección del usuario.',
       ]},

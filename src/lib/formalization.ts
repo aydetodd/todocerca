@@ -1,39 +1,6 @@
-import { z } from 'zod';
-
-export const GUIDE_VERSION = 'v1';
-export const FISCAL_BUCKET = 'formalizacion-documentos';
 export const formalizationSteps = [
-  { key: 'eligibility', title: 'Revisar si RESICO corresponde', detail: 'Revisa tus actividades, ingresos y las exclusiones con el SAT o tu contador. RESICO no corresponde automáticamente a todos los negocios.', link: 'https://sat.gob.mx/ordenamiento/18355/ley-del-impuesto-sobre-la-renta', linkLabel: 'Requisitos en la ley' },
-  { key: 'documents', title: 'Reunir documentos', detail: 'Ten a mano tu identificación, CURP, RFC si ya lo tienes y comprobante de domicilio. Confirma los requisitos del trámite que realizarás.', link: 'https://www.sat.gob.mx/portal/public/tramites/inscripcion-y-aviso-al-rfc', linkLabel: 'Documentos y trámites SAT' },
-  { key: 'rfc', title: 'Inscripción o actualización del RFC', detail: 'Si aún no tienes RFC, solicita la inscripción. Si ya lo tienes, revisa la actualización de actividades y obligaciones. Conserva el acuse real del SAT.', link: 'https://www.sat.gob.mx/portal/public/tramites/inscripcion-y-aviso-al-rfc', linkLabel: 'Inscripción y avisos al RFC' },
-  { key: 'credentials', title: 'e.firma, sello digital y Buzón', detail: 'Revisa las obligaciones que te corresponden. La e.firma y el certificado de sello digital no son lo mismo. No compartas contraseñas ni archivos de llaves privadas aquí.', link: 'https://wwwmat.sat.gob.mx/aplicacion/16660/genera-y-descarga-tus-archivos-a-traves-de-la-aplicacion-certifica', linkLabel: 'e.firma y sello digital', extraLink: 'https://www.sat.gob.mx/minisitio/BuzonTributario/quienes_deben_habilitarlo.html', extraLabel: 'Buzón Tributario' },
-  { key: 'fiscal_profile', title: 'Confirmar expediente fiscal', detail: 'Copia los datos de tu constancia de situación fiscal en la pestaña Expediente. Confirmarlos aquí no verifica ni modifica tu registro en el SAT.', link: 'https://www.sat.gob.mx/portal/public/tramites/inscripcion-y-aviso-al-rfc', linkLabel: 'Consultar trámites fiscales' },
-  { key: 'obligations', title: 'Revisar próximos pendientes', detail: 'Anota tus obligaciones y próximos pendientes según tu situación real. Confirma con el SAT o tu contador las fechas aplicables; no se crean plazos automáticos.', link: 'https://www.sat.gob.mx/portal/public/tramites', linkLabel: 'Trámites oficiales SAT' },
+  { key: 'curp', title: 'Tu base es la CURP', detail: 'Antes que nada, necesitas tu CURP actualizada. Es gratis y es la base de todos tus trámites en México.', link: 'https://www.gob.mx/curp/', linkLabel: 'Consultar mi CURP' },
+  { key: 'rfc', title: 'Saca tu RFC por primera vez (Es gratis)', detail: 'El RFC es tu registro ante el SAT. Puedes iniciar tu inscripción en línea o acudir a una oficina del SAT con tu INE y CURP. Confirma los documentos y si necesitas cita. No cuesta nada.', link: 'https://www.sat.gob.mx/tramites/operacion/22912/inscripci%C3%B3n-al-rfc-de-personas-f%C3%ADsicas-con-actividad-empresarial-y-profesional', linkLabel: 'Inscribirme en el RFC' },
+  { key: 'efirma', title: 'Obtén tu e.firma (Tu llave digital)', detail: 'La e.firma es como tu firma autógrafa, pero digital. Te permite hacer trámites en línea y cumplir los requisitos del RESICO. Inicia la solicitud y agenda tu cita en el portal del SAT; se obtiene en una oficina.', link: 'https://www.sat.gob.mx/tramites/operacion/22920/obt%C3%A9n-tus-credenciales-fiscales-para-acceder-al-sat', linkLabel: 'Obtener mi e.firma' },
+  { key: 'resico', title: 'Date de alta en RESICO', detail: '¡Ya tienes tus herramientas! Si cumples los requisitos, avísale al SAT que quieres entrar al Régimen Simplificado de Confianza. Puedes presentar el aviso en línea con tu e.firma. El tiempo depende de tu situación y de los requisitos del SAT.', link: 'https://www.sat.gob.mx/tramites/operacion/22944/presenta-el-aviso-para-actualizar-actividades-y-obligaciones', linkLabel: 'Actualizar mis actividades y obligaciones' },
 ] as const;
-
-export const fiscalDraftSchema = z.object({
-  rfc: z.string().trim().toUpperCase().refine(v => !v || /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(v), 'Revisa el RFC: debe tener 12 o 13 caracteres.'),
-  legal_name: z.string().trim().max(250),
-  tax_regime: z.string().trim().refine(v => !v || /^\d{3}$/.test(v), 'El código del régimen debe tener 3 dígitos.'),
-  postal_code: z.string().trim().refine(v => !v || /^\d{5}$/.test(v), 'El código postal debe tener 5 dígitos.'),
-  activity: z.string().trim().max(1000),
-});
-export type FiscalDraft = z.infer<typeof fiscalDraftSchema>;
-export const emptyFiscalDraft: FiscalDraft = { rfc: '', legal_name: '', tax_regime: '', postal_code: '', activity: '' };
-export function canConfirmFiscalProfile(draft: FiscalDraft) {
-  return fiscalDraftSchema.safeParse(draft).success && Object.values(draft).every(value => value.trim().length > 0);
-}
-export function validateFiscalEvidence(file: Pick<File, 'size' | 'type' | 'name'>) {
-  if (file.size > 5 * 1024 * 1024) return 'El archivo debe pesar como máximo 5 MB.';
-  const ext = file.name.split('.').pop()?.toLowerCase();
-  if (!ext || !['pdf', 'jpg', 'jpeg', 'png'].includes(ext) || !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) return 'Selecciona un PDF o una imagen JPG/PNG; no subas llaves ni contraseñas.';
-  return null;
-}
-export function formalizationSummary(rows: ReadonlyArray<{step_key: string; status: string}>) {
-  const current = new Map(rows.map(row => [row.step_key, row.status]));
-  return {
-    completed: formalizationSteps.filter(step => current.get(step.key) === 'completed').length,
-    notApplicable: formalizationSteps.filter(step => current.get(step.key) === 'not_applicable').length,
-    total: formalizationSteps.length,
-  };
-}

@@ -1,0 +1,24 @@
+import { ArrowLeft, ArrowUpRight, BadgePercent, Banknote, BookOpen, Fingerprint, KeyRound, ReceiptText, Building2, Lightbulb, AlertTriangle } from 'lucide-react';
+import { formalizationSteps } from '@/lib/formalization';
+
+const stepIcons = [Fingerprint, ReceiptText, KeyRound, Building2];
+const benefits = [
+  { icon: BadgePercent, title: 'Pagas muy poco', text: 'Solo del 1% al 2.5% de ISR sobre lo que realmente cobras, si eres persona física y cumples los requisitos del RESICO.' },
+  { icon: BookOpen, title: 'Sin contabilidad complicada', text: 'El cálculo de ISR es más sencillo: no deduces gastos para calcularlo. Debes conservar tus comprobantes y cumplir tus obligaciones fiscales.' },
+  { icon: ReceiptText, title: 'Puedes facturar', text: 'Atrae a clientes y empresas que antes no te compraban por no dar factura.' },
+  { icon: Banknote, title: 'Acceso a créditos', text: 'Al estar formal, los bancos y proveedores pueden confiar más en ti. La aprobación de un crédito depende de sus requisitos.' },
+];
+
+export default function FormalizationGuide() {
+  return <div className="formalization-guide min-h-screen bg-background text-foreground">
+    <header className="border-b border-border bg-card"><div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 px-5 py-5"><a href="/landing" className="flex items-center gap-2 font-semibold"><img src="/icon-512.png" alt="" className="h-9 w-9" />TodoCerca</a><a href="/qard" className="flex items-center gap-2 text-sm text-muted-foreground underline underline-offset-4"><ArrowLeft className="h-4 w-4" />Volver a QaRd</a></div></header>
+    <main className="mx-auto max-w-3xl px-5 pt-10 pb-40 sm:px-8 sm:pt-14">
+      <div className="mb-12 space-y-5"><p className="text-sm font-semibold uppercase text-primary">Un paso a la vez</p><h1 className="text-3xl font-bold leading-tight sm:text-4xl">Guía de formalización:<br />de cero a RESICO</h1><p className="text-lg leading-relaxed">¿No tienes RFC ni e.firma? No te preocupes. Aquí te explicamos paso a paso cómo obtenerlos gratis y entrar al régimen que menos impuestos cobra.</p><p className="text-sm leading-relaxed text-muted-foreground">RESICO puede ser una opción de ISR bajo para personas físicas que cumplen sus requisitos. No todos califican y no sustituye los demás impuestos.</p></div>
+      <section aria-label="Pasos para formalizarte" className="space-y-10">
+        {formalizationSteps.map((step, index) => { const Icon = stepIcons[index] ?? BookOpen; return <article key={step.key} className="border-b border-border pb-10 last:border-b-0"><div className="mb-4 flex items-start gap-3"><Icon className="mt-1 h-6 w-6 shrink-0 text-primary" aria-hidden="true" /><h2 className="text-xl font-semibold leading-snug">Paso {index + 1}: {step.title}</h2></div><p className="mb-5 leading-relaxed text-muted-foreground">{step.detail}</p><a href={step.link} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-2 font-semibold text-primary underline underline-offset-4"><span>{step.linkLabel}</span><ArrowUpRight className="h-5 w-5 shrink-0" aria-label="Abrir en nueva pestaña" /></a></article>; })}
+      </section>
+      <section className="mt-12 border-t border-border pt-10" aria-labelledby="resico-benefits"><h2 id="resico-benefits" className="mb-6 flex items-center gap-3 text-2xl font-semibold"><Lightbulb className="h-6 w-6 shrink-0 text-primary" />¿Por qué te conviene el RESICO?</h2><div className="grid gap-4 sm:grid-cols-2">{benefits.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-lg border border-border bg-card p-6"><Icon className="mb-4 h-7 w-7 text-primary" aria-hidden="true" /><h3 className="mb-2 text-lg font-semibold">{title}</h3><p className="text-sm leading-relaxed text-muted-foreground">{text}</p></article>)}</div></section>
+      <aside className="mt-12 border-t border-border pt-8"><h2 className="mb-5 flex items-center gap-3 text-xl font-semibold"><AlertTriangle className="h-6 w-6 shrink-0 text-primary" />Notas importantes</h2><ul className="list-disc space-y-4 pl-5 leading-relaxed text-muted-foreground"><li>Estos trámites ante el SAT son <strong className="text-foreground">100% gratuitos</strong>. Desconfía de quien te diga que el SAT cobra por realizarlos. La ayuda de un profesional independiente sí puede tener un costo.</li><li>El beneficio del RESICO es en el ISR. El IVA conserva sus reglas: la tasa general es 16%; el 8% en frontera requiere cumplir las condiciones del estímulo. También existen operaciones con tasa 0% o exentas.</li><li>Si tienes dudas, busca “RESICO SAT” en Google o acude a una oficina del SAT. Revisa que el sitio sea oficial antes de ingresar tus datos.</li></ul><p className="mt-6 text-sm text-muted-foreground">Esta guía es informativa. Leerla no te inscribe en el SAT ni cambia tu nivel QaRd.</p></aside>
+    </main>
+  </div>;
+}

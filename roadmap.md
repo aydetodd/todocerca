@@ -1,7 +1,8 @@
 # Productos estándar sin fotos
 ## Guía fiscal de solo lectura
-- [ ] Retirar expediente, checklist y almacenamiento del módulo; sustituir por cuatro pasos y beneficios con enlaces oficiales.
-- [ ] Comprobar guía en móvil y escritorio, actualizar referencias y solicitar publicación tras revisión de seguridad.
+- [x] Retirar expediente, checklist y almacenamiento del módulo; sustituir por cuatro pasos y beneficios con enlaces oficiales. Tablas y documentos históricos quedan ignorados, sin lecturas ni escrituras de la guía; e.firma y terminales intactas.
+- [x] Comprobar guía pública en 1280/390/320px, cuatro pasos y cuatro beneficios, sin formularios, solicitudes fiscales, desbordamiento ni errores; prueba de aislamiento correcta. Referencias web y PDF actualizadas; 23 páginas revisadas y compilación correcta. Accesos privados existentes conservados; sesión externa no disponible para probarlos.
+- [ ] Publicación pausada por decisión de Martín: ocho avisos críticos previos; revisión profunda solicitada antes de publicar.
 ## Consulta pública de colectivos
 - [x] Permitir búsqueda y mapa de colectivos desde la landing sin registro mediante consultas públicas existentes, sin ampliar permisos; corregir filtro que descartaba productos distintos de la misma ruta y sembrar el mapa de ubicaciones para actualizaciones inmediatas.
 - [x] Comprobar portada → Buscar transporte → Ver mapa sin sesión: dos unidades reales, siete pruebas, móvil sin desbordamiento y sin errores. Consultas actualizadas cada tres segundos; no se observó cambio de coordenadas durante la comprobación, por lo que desplazamiento real sigue sin comprobar. Falta Publicar → Actualizar.

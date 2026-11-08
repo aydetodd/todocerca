@@ -91,7 +91,7 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
     [['TodoCerca','Plataforma local','México'],['PIX','Riel interoperable','Brasil'],['WeChat Pay','Ecosistema Tencent','China']],
     [['TodoCerca','CURP / INE / e.firma','Según nivel'],['PIX','Cuenta participante','Banco o entidad de pago'],['WeChat Pay','Identificación y tarjeta','Según producto y país']],
     [['TodoCerca','Recarga: $15 MXN','Activación principal: $150'],['PIX','Gratuidad con excepciones','Tarifas empresariales'],['WeChat Pay','Costos variables','Según tarjeta y contexto']],
-    [['TodoCerca','Guía y expediente','CFDI y nómina pendientes'],['PIX','Infraestructura brasileña','No formaliza ante SAT'],['WeChat Pay','Servicios de terceros','No solución nativa SAT']],
+    [['TodoCerca','Guía estática RESICO','CFDI y nómina pendientes'],['PIX','Infraestructura brasileña','No formaliza ante SAT'],['WeChat Pay','Servicios de terceros','No solución nativa SAT']],
     [['TodoCerca','Llave y contraseña locales','Validación SAT pendiente'],['PIX','Identidad y transacciones','Controles institucionales'],['WeChat Pay','Políticas de datos','Alcance según producto']],
     [['TodoCerca','Movilidad y QaRd','Orientación local'],['PIX','Múltiples participantes','Interoperabilidad'],['WeChat Pay','Pagos y comunicación','Servicios y miniapps']],
     [['TodoCerca','Integración local','Completar y verificar'],['PIX','Interoperabilidad','Cuenta participante'],['WeChat Pay','Ecosistema integrado','Condiciones variables']],
@@ -164,7 +164,7 @@ export function createComparisonPdf(assets: ComparisonPdfAssets = {}) {
   paragraph('Pros y límites: una lectura visual del análisis completo.');
   const gap=4, col=(width-gap*2)/3, top=y;
   const balances=[
-    {name:'TodoCerca',color:ink.orange,bg:ink.orangePale,kind:'bus' as Icon,pros:['Movilidad y comunidad mexicana','Control de tarjetas adicionales','Equipo por invitación','Guía RESICO y expediente privado','e.firma sin transferir llave o contraseña'],cons:['Menor efecto de red','Validación SAT pendiente','Saldo empresarial pendiente de verificación','Custodia regulada no acreditada','CFDI, asistencia y nómina propuestos']},
+    {name:'TodoCerca',color:ink.orange,bg:ink.orangePale,kind:'bus' as Icon,pros:['Movilidad y comunidad mexicana','Control de tarjetas adicionales','Equipo por invitación','Guía estática de formalización','e.firma sin transferir llave o contraseña'],cons:['Menor efecto de red','Validación SAT pendiente','Saldo empresarial pendiente de verificación','Custodia regulada no acreditada','CFDI, asistencia y nómina propuestos']},
     {name:'PIX',color:ink.navy,bg:ink.bluePale,kind:'bank' as Icon,pros:['Infraestructura del Banco Central','Interoperabilidad','Operación continua','Alcance consolidado en Brasil','Gratuidad habitual para personas físicas'],cons:['Exige cuenta participante','No resuelve obligaciones fiscales mexicanas','Posibles tarifas empresariales','Límites y riesgo de fraude']},
     {name:'WeChat Pay',color:ink.muted,bg:ink.pale,kind:'chat' as Icon,pros:['Pagos integrados','Comercio y servicios','Experiencia consolidada','Visitantes con tarjetas internacionales bajo condiciones'],cons:['Reglas de plataforma','Verificación y cobertura variables','Costos según contexto','Revisión del tratamiento de datos','No solución nativa RESICO, nómina o SAT']},
   ];
