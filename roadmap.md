@@ -1,4 +1,9 @@
 # Productos estándar sin fotos
+## Estados de cuenta: prioridades de Martín
+- [ ] 1. Exigir referencia original persistida para nuevas devoluciones, importe negativo y estado Completado en los tres libros; preservar historial y transporte.
+- [ ] 2. Encabezado compartido con QaRd enmascarada, periodo, generación y resumen exacto sin descontar comisiones dos veces.
+- [ ] 3. Tras confirmar prioridades 1 y 2, añadir PDF profesional con encabezado, movimientos completos y pie Libro Inmutable.
+- [ ] Verificar pruebas y presentación; cuenta real depende de sesión externa disponible.
 ## Guía fiscal de solo lectura
 - [x] Retirar expediente, checklist y almacenamiento del módulo; sustituir por cuatro pasos y beneficios con enlaces oficiales. Tablas y documentos históricos quedan ignorados, sin lecturas ni escrituras de la guía; e.firma y terminales intactas.
 - [x] Comprobar guía pública en 1280/390/320px, cuatro pasos y cuatro beneficios, sin formularios, solicitudes fiscales, desbordamiento ni errores; prueba de aislamiento correcta. Referencias web y PDF actualizadas; 23 páginas revisadas y compilación correcta. Accesos privados existentes conservados; sesión externa no disponible para probarlos.
