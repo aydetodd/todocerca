@@ -2,3 +2,4 @@
 - Collection display supplements the receipt report with existing owner-scoped registrations at zero; never move historical receipts or change the reconciled totals to populate empty rows.
 - All account statements share QardStatement and cent-based qardStatement summaries across screen, CSV and PDF; negative refund reference amounts remain separate from real incoming/outgoing funds to preserve reconciliation.
 - New refunds use the database archive-aware original-reference validator; preserve immutable history and never infer missing historical folios or receipt names.
+- Merchant refund requests use owner-checked private atomic functions behind public invoker RPCs; authorization returns funds only to the original card bucket and never changes gross collection reports.

@@ -4473,6 +4473,75 @@ export type Database = {
           },
         ]
       }
+      qard_refund_requests: {
+        Row: {
+          approved_amount: number | null
+          created_at: string
+          decided_at: string | null
+          decision_reason: string | null
+          id: string
+          initiated_by: string
+          merchant_movement_id: string
+          merchant_refund_id: string | null
+          merchant_user_id: string
+          original_folio: string
+          payer_movement_id: string
+          payer_refund_id: string | null
+          payer_user_id: string
+          reason: string
+          request_key: string
+          requested_amount: number
+          source_ambito: string
+          source_sub_qr_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_amount?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          initiated_by: string
+          merchant_movement_id: string
+          merchant_refund_id?: string | null
+          merchant_user_id: string
+          original_folio: string
+          payer_movement_id: string
+          payer_refund_id?: string | null
+          payer_user_id: string
+          reason: string
+          request_key: string
+          requested_amount: number
+          source_ambito: string
+          source_sub_qr_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_amount?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          initiated_by?: string
+          merchant_movement_id?: string
+          merchant_refund_id?: string | null
+          merchant_user_id?: string
+          original_folio?: string
+          payer_movement_id?: string
+          payer_refund_id?: string | null
+          payer_user_id?: string
+          reason?: string
+          request_key?: string
+          requested_amount?: number
+          source_ambito?: string
+          source_sub_qr_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       qard_reload_receipts: {
         Row: {
           amount_mxn: number
@@ -8285,6 +8354,32 @@ export type Database = {
       }
       qard_rate_limit_purge: { Args: never; Returns: undefined }
       qard_recargas_mes: { Args: { _user_id: string }; Returns: number }
+      qard_refund_context: { Args: { _movement: string }; Returns: Json }
+      qard_refund_decide: {
+        Args: {
+          _amount?: number
+          _approve: boolean
+          _reason?: string
+          _request: string
+        }
+        Returns: Json
+      }
+      qard_refund_list: {
+        Args: { _ambito: string; _offset?: number; _sub?: string }
+        Returns: Json
+      }
+      qard_refund_original: { Args: { _id: string }; Returns: Json }
+      qard_refund_pair: { Args: { _id: string }; Returns: Json }
+      qard_refund_remaining: { Args: { _id: string }; Returns: number }
+      qard_refund_submit: {
+        Args: {
+          _amount: number
+          _key: string
+          _movement: string
+          _reason: string
+        }
+        Returns: string
+      }
       qard_registrar_empresa_efirma: {
         Args: {
           _razon_social: string

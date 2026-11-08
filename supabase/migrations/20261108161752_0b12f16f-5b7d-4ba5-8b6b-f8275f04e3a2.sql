@@ -1,0 +1,15 @@
+CREATE SCHEMA IF NOT EXISTS qard_private;
+REVOKE ALL ON SCHEMA qard_private FROM PUBLIC,anon;
+GRANT USAGE ON SCHEMA qard_private TO authenticated,service_role;
+ALTER POLICY refund_participants_read ON public.qard_refund_requests USING (auth.uid() IS NOT NULL AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false AND auth.uid() IN (payer_user_id,merchant_user_id));
+ALTER FUNCTION public.qard_refund_context(uuid) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_refund_submit(uuid,numeric,text,uuid) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_refund_decide(uuid,boolean,numeric,text) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_refund_list(text,uuid,integer) SET SCHEMA qard_private;
+DO $$ DECLARE f record; body text; BEGIN FOR f IN SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='qard_private' AND p.proname IN ('qard_refund_context','qard_refund_submit','qard_refund_decide','qard_refund_list') LOOP body:=pg_get_functiondef(f.oid); body:=replace(body,E'BEGIN\n',E'BEGIN\n IF auth.uid() IS NULL OR coalesce((auth.jwt()->>''is_anonymous'')::boolean,false) THEN RAISE EXCEPTION ''Inicia sesión con tu cuenta''; END IF;\n'); EXECUTE body; END LOOP; END $$;
+CREATE FUNCTION public.qard_refund_context(_movement uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_refund_context(_movement) $$;
+CREATE FUNCTION public.qard_refund_submit(_movement uuid,_amount numeric,_reason text,_key uuid) RETURNS uuid LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_refund_submit(_movement,_amount,_reason,_key) $$;
+CREATE FUNCTION public.qard_refund_decide(_request uuid,_approve boolean,_amount numeric DEFAULT NULL,_reason text DEFAULT NULL) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_refund_decide(_request,_approve,_amount,_reason) $$;
+CREATE FUNCTION public.qard_refund_list(_ambito text,_sub uuid DEFAULT NULL,_offset integer DEFAULT 0) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_refund_list(_ambito,_sub,_offset) $$;
+REVOKE ALL ON FUNCTION public.qard_refund_context(uuid),public.qard_refund_submit(uuid,numeric,text,uuid),public.qard_refund_decide(uuid,boolean,numeric,text),public.qard_refund_list(text,uuid,integer) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.qard_refund_context(uuid),public.qard_refund_submit(uuid,numeric,text,uuid),public.qard_refund_decide(uuid,boolean,numeric,text),public.qard_refund_list(text,uuid,integer) TO authenticated,service_role;

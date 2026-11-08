@@ -826,9 +826,9 @@ export default function Qard() {
         const conDinero = rutasOrden.filter(r => r.pozo > 0 || r.standN > 0 || r.sinSaldoN > 0);
         const rutasVisibles = verTodasRutas ? rutasOrden : conDinero;
 
-        const Estado = (props: { titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void }) => {
+        const estadoProps = (props: { titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void }) => {
           const numero = props.ambito === "eje" ? qardNumber : props.ambito === "cobros" ? subs.find(s => s.sub_index === 1)?.qard_number ?? "" : subs.find(s => s.id === props.subId)?.qard_number ?? "";
-          return <QardStatement {...props} numero={numero} libro={libro} />;
+          return { ...props, numero, libro, onChanged: () => void cargar() };
         };
 
         return (
@@ -895,19 +895,19 @@ export default function Qard() {
             </Card>
 
             </AccordionContent></AccordionItem></Accordion>
-            {subs.some(s => s.sub_index === 1 && s.estado === "activa") && <Accordion type="single" collapsible><AccordionItem value="libro"><AccordionTrigger>📊 Libro de cobros</AccordionTrigger><AccordionContent><Estado titulo="empresarial cobros" ambito="cobros" saldoVivo={saldoCobros} periodo={periodoCobros} setPeriodo={setPeriodoCobros} /></AccordionContent></AccordionItem></Accordion>}
+            {subs.some(s => s.sub_index === 1 && s.estado === "activa") && <Accordion type="single" collapsible><AccordionItem value="libro"><AccordionTrigger>📊 Libro de cobros</AccordionTrigger><AccordionContent><QardStatement {...estadoProps({ titulo: "empresarial cobros", ambito: "cobros", saldoVivo: saldoCobros, periodo: periodoCobros, setPeriodo: setPeriodoCobros })} /></AccordionContent></AccordionItem></Accordion>}
 
             <Dialog open={ejeOpen} onOpenChange={setEjeOpen}>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>Estado de cuenta · Principal</DialogTitle></DialogHeader>
-                <Estado titulo="principal" ambito="eje" saldoVivo={saldoEje} periodo={periodoEje} setPeriodo={setPeriodoEje} />
+                <QardStatement {...estadoProps({ titulo: "principal", ambito: "eje", saldoVivo: saldoEje, periodo: periodoEje, setPeriodo: setPeriodoEje })} />
               </DialogContent>
             </Dialog>
 
             <Dialog open={cobrosOpen} onOpenChange={setCobrosOpen}>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>Estado de cuenta · Empresarial · Cobros</DialogTitle></DialogHeader>
-                <Estado titulo="empresarial cobros" ambito="cobros" saldoVivo={saldoCobros} periodo={periodoCobros} setPeriodo={setPeriodoCobros} />
+                <QardStatement {...estadoProps({ titulo: "empresarial cobros", ambito: "cobros", saldoVivo: saldoCobros, periodo: periodoCobros, setPeriodo: setPeriodoCobros })} />
               </DialogContent>
             </Dialog>
 
@@ -915,9 +915,9 @@ export default function Qard() {
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>Estado de cuenta · {subMovOpen?.alias}</DialogTitle></DialogHeader>
                 {subMovOpen && (
-                  <Estado titulo={`sub-qr ${subMovOpen.alias}`} ambito="sub_qr" subId={subMovOpen.id}
-                    saldoVivo={Number(subs.find(s => s.id === subMovOpen.id)?.saldo_mxn ?? subMovOpen.saldo_mxn ?? 0)}
-                    periodo={periodoSub} setPeriodo={setPeriodoSub} />
+                  <QardStatement {...estadoProps({ titulo: `sub-qr ${subMovOpen.alias}`, ambito: "sub_qr", subId: subMovOpen.id,
+                    saldoVivo: Number(subs.find(s => s.id === subMovOpen.id)?.saldo_mxn ?? subMovOpen.saldo_mxn ?? 0),
+                    periodo: periodoSub, setPeriodo: setPeriodoSub })} />
                 )}
               </DialogContent>
             </Dialog>

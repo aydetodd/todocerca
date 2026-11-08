@@ -1,4 +1,9 @@
 # Productos estándar sin fotos
+## Devoluciones autorizadas por el negocio
+- [x] Solicitud desde el pago original con motivo; autorización completa/parcial o rechazo del dueño; inicio directo desde el cobro y revisión en Gestionar mi empresa.
+- [x] Dinero empresarial a la tarjeta pagadora original; límites acumulados, operación indivisible e idempotente, folios originales e historial conservados. Prueba SQL sobre pagos reales revierte sus movimientos; comprueba Personal/Familiar, propietario, falta de fondos y reintentos.
+- [x] Solicitudes sincronizadas, 23 pruebas correctas de importes/retorno/estados/PDF/conciliación; sin nuevos avisos de seguridad. Reportes siguen mostrando cobros brutos, no saldo disponible.
+- [ ] Comprobar solicitud/autorización en pantalla desde cuenta real: Supabase externo sin sesión disponible. Avisos de seguridad previos y publicación siguen pendientes.
 ## Estados de cuenta: prioridades de Martín
 - [x] 1. Referencia original exigida por servidor, validada también contra archivo histórico; guarda importe negativo, texto original y estado completed. Abono recibido se suma en Entradas separado del importe de referencia por elección de Martín. Prueba de servidor rechaza referencia ausente y revierte sus datos de comprobación.
 - [x] 2. Encabezado compartido en las tres cuentas con QaRd enmascarada, periodo Hermosillo, generación, cero explícito y resumen en centavos sin doble descuento de comisiones.

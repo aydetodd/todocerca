@@ -30,6 +30,7 @@ export type RenglonLibro = {
   importeReferencia?: number;
   estado?: "Completado";
   esComision?: boolean;
+  refundMovementId?: string;
 };
 
 /** Datos para cotejar un movimiento. Nunca incluye CVV ni números completos. */
@@ -137,7 +138,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
     const folio = folioMovimiento(m);
     const comprobante = comprobanteMovimiento(m);
     const push = (ambito: Ambito, monto: number, etiqueta: string, sufijo = "", subQrId: string | null = null) =>
-      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at, folio, comprobante, estado: "Completado", esComision: m.tipo === "comision" || sufijo === "-ap" || sufijo === "-fee" });
+      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at, folio, comprobante, estado: "Completado", esComision: m.tipo === "comision" || sufijo === "-ap" || sufijo === "-fee", refundMovementId: ["cobro_comercio", "cobro_recibido"].includes(m.tipo) && typeof md.operation_key === "string" && (md.terminal === "collection" || md.flujo === "payer_qr") ? m.id : undefined });
 
     switch (m.tipo) {
       case "recarga": {
@@ -202,7 +203,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         const received = md.refund_received === true || (md.refund_received === undefined && m.direccion !== "salida");
         out.push({ key: m.id, ambito: amb, subQrId: amb === "sub_qr" ? m.sub_qr_id : null,
           monto: received ? abs : -abs, importeReferencia: -abs, etiqueta: "Devolución",
-          detalle: original ? `Devolución del folio original: ${original}` : "Folio original no registrado en este movimiento histórico",
+          detalle: (original ? `Devolución del folio original: ${original}` : "Folio original no registrado en este movimiento histórico") + (txt(md.reason) ? ` · Motivo: ${txt(md.reason)}` : "") + (txt(md.decision_reason) ? ` · Respuesta: ${txt(md.decision_reason)}` : ""),
           created_at: m.created_at, folio, comprobante, estado: "Completado" });
         break;
       }
