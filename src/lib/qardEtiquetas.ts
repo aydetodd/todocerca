@@ -27,6 +27,9 @@ export type RenglonLibro = {
   created_at: string;
   folio?: string;
   comprobante?: Comprobante;
+  importeReferencia?: number;
+  estado?: "Completado";
+  esComision?: boolean;
 };
 
 /** Datos para cotejar un movimiento. Nunca incluye CVV ni números completos. */
@@ -134,7 +137,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
     const folio = folioMovimiento(m);
     const comprobante = comprobanteMovimiento(m);
     const push = (ambito: Ambito, monto: number, etiqueta: string, sufijo = "", subQrId: string | null = null) =>
-      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at, folio, comprobante });
+      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at, folio, comprobante, estado: "Completado", esComision: m.tipo === "comision" || sufijo === "-ap" || sufijo === "-fee" });
 
     switch (m.tipo) {
       case "recarga": {
@@ -176,9 +179,8 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         }
       // falls through
       case "transferencia_p2p_out":
-      case "cobro_comercio":
-      case "devolucion": {
-        const positivo = m.tipo === "transferencia_p2p_in" || m.tipo === "devolucion";
+      case "cobro_comercio": {
+        const positivo = m.tipo === "transferencia_p2p_in";
         const amb: Ambito = md.bolsa === "comercio" ? "cobros" : esSub ? "sub_qr" : "eje";
         const pj = m.tipo === "cobro_comercio" ? pasajes?.get(m.id) : undefined;
         if (pj) {
@@ -190,6 +192,18 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         if (m.tipo === "transferencia_p2p_out" && md.terminal === "reload") et = "Fondos para recarga de cliente";
         if (m.tipo === "cobro_comercio" && m.comercio_nombre) et = m.comercio_nombre.startsWith("Cobro automático") ? m.comercio_nombre : `${et} · ${m.comercio_nombre}`;
         push(amb, positivo ? abs : -abs, et, "", esSub ? m.sub_qr_id : null);
+        break;
+      }
+      case "devolucion":
+      case "reembolso":
+      case "refund": {
+        const amb: Ambito = m.ambito === "cobros" || md.bolsa === "comercio" ? "cobros" : esSub ? "sub_qr" : "eje";
+        const original = txt(md.original_folio);
+        const received = md.refund_received === true || (md.refund_received === undefined && m.direccion !== "salida");
+        out.push({ key: m.id, ambito: amb, subQrId: amb === "sub_qr" ? m.sub_qr_id : null,
+          monto: received ? abs : -abs, importeReferencia: -abs, etiqueta: "Devolución",
+          detalle: original ? `Devolución del folio original: ${original}` : "Folio original no registrado en este movimiento histórico",
+          created_at: m.created_at, folio, comprobante, estado: "Completado" });
         break;
       }
       case "cobro_recibido":

@@ -1,9 +1,9 @@
 # Productos estándar sin fotos
 ## Estados de cuenta: prioridades de Martín
-- [ ] 1. Exigir referencia original persistida para nuevas devoluciones, importe negativo y estado Completado en los tres libros; preservar historial y transporte.
-- [ ] 2. Encabezado compartido con QaRd enmascarada, periodo, generación y resumen exacto sin descontar comisiones dos veces.
-- [ ] 3. Tras confirmar prioridades 1 y 2, añadir PDF profesional con encabezado, movimientos completos y pie Libro Inmutable.
-- [ ] Verificar pruebas y presentación; cuenta real depende de sesión externa disponible.
+- [x] 1. Referencia original exigida por servidor, validada también contra archivo histórico; guarda importe negativo, texto original y estado completed. Abono recibido se suma en Entradas separado del importe de referencia por elección de Martín. Prueba de servidor rechaza referencia ausente y revierte sus datos de comprobación.
+- [x] 2. Encabezado compartido en las tres cuentas con QaRd enmascarada, periodo Hermosillo, generación, cero explícito y resumen en centavos sin doble descuento de comisiones.
+- [x] 3. Confirmadas prioridades 1 y 2 antes del PDF; PDF con membrete, encabezado, movimientos, referencias originales y pie Libro Inmutable, mismo periodo que CSV y pantalla. Quince pruebas correctas; PDF multipágina inspeccionado.
+- [ ] Verificar pantalla y descarga desde cuenta real: Supabase externo sin sesión disponible; no se ejecutaron devoluciones reales. Avisos de seguridad previos no corregidos en esta tarea.
 ## Guía fiscal de solo lectura
 - [x] Retirar expediente, checklist y almacenamiento del módulo; sustituir por cuatro pasos y beneficios con enlaces oficiales. Tablas y documentos históricos quedan ignorados, sin lecturas ni escrituras de la guía; e.firma y terminales intactas.
 - [x] Comprobar guía pública en 1280/390/320px, cuatro pasos y cuatro beneficios, sin formularios, solicitudes fiscales, desbordamiento ni errores; prueba de aislamiento correcta. Referencias web y PDF actualizadas; 23 páginas revisadas y compilación correcta. Accesos privados existentes conservados; sesión externa no disponible para probarlos.

@@ -10,7 +10,7 @@ import { CreditCard, Plus, Minus, RefreshCw, Trash2, ArrowLeft, Wallet, Eye, Eye
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generarPdfTarjetasQard } from "@/lib/qardPrint";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { downloadCSV } from "@/lib/csvExport";
+import QardStatement from "@/components/qard/QardStatement";
 
 import { useQardIdentidad } from "@/hooks/useQardIdentidad";
 import ActivarQardDialog from "@/components/qard/ActivarQardDialog";
@@ -220,7 +220,18 @@ export default function Qard() {
       supabase.from("profiles").select("qard_number, nombre").eq("user_id", user.id).maybeSingle(),
       supabase.from("qard_wallets" as any).select("*").eq("titular_user_id", user.id).maybeSingle(),
       supabase.from("qard_sub_qr" as any).select("*").eq("titular_user_id", user.id).order("sub_index"),
-      supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id).gte("created_at", new Date(Date.now() - 62 * 24 * 3600 * 1000).toISOString()).order("created_at", { ascending: false }).limit(500),
+      (async () => {
+        const data: Movimiento[] = [];
+        for (let offset = 0; ; offset += 500) {
+          const result = await supabase.from("qard_movimientos" as any).select("*").eq("titular_user_id", user.id)
+            .gte("created_at", new Date(Date.now() - 63 * 24 * 3600 * 1000).toISOString())
+            .order("created_at", { ascending: false }).order("id", { ascending: false }).range(offset, offset + 499);
+          if (result.error) { toast({ title: "No se pudo cargar el estado de cuenta completo", variant: "destructive" }); return { data: [] }; }
+          const page = (result.data ?? []) as unknown as Movimiento[];
+          data.push(...page);
+          if (page.length < 500) return { data };
+        }
+      })(),
     ]);
     setQardNumber((prof as any)?.qard_number ?? "");
     setNombrePerfil((prof as any)?.nombre ?? "");
@@ -815,78 +826,9 @@ export default function Qard() {
         const conDinero = rutasOrden.filter(r => r.pozo > 0 || r.standN > 0 || r.sinSaldoN > 0);
         const rutasVisibles = verTodasRutas ? rutasOrden : conDinero;
 
-        const Estado = ({ titulo, ambito, saldoVivo, subId, periodo, setPeriodo }: {
-          titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void;
-        }) => {
-          const desde = Date.now() - periodo * 24 * 3600 * 1000;
-          const filas = estadoDeCuenta(libro, ambito, saldoVivo, subId).filter(f => new Date(f.r.created_at).getTime() >= desde);
-          const mesLabel = (d: string) =>
-            new Date(d).toLocaleDateString("es-MX", { month: "long", year: "numeric", timeZone: "America/Hermosillo" });
-          const meses: { label: string; filas: typeof filas }[] = [];
-          filas.forEach(f => {
-            const lbl = mesLabel(f.r.created_at);
-            const last = meses[meses.length - 1];
-            if (last && last.label === lbl) last.filas.push(f); else meses.push({ label: lbl, filas: [f] });
-          });
-          const exportar = (label: string, fs: typeof filas) => downloadCSV(
-            `qard-${titulo.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${label.replace(/\s+/g, "-")}.csv`,
-            ["Folio", "Fecha (Hermosillo)", "Concepto", "Contraparte", "Sucursal", "Terminal", "Método", "Comisión", "Ingreso", "Egreso", "Saldo", "Estado"],
-            (() => {
-              const ini = fs[fs.length - 1]?.saldoAntes ?? saldoVivo;
-              const ent = fs.reduce((a, f) => a + (f.monto > 0 ? f.monto : 0), 0);
-              const sal = fs.reduce((a, f) => a + (f.monto < 0 ? -f.monto : 0), 0);
-              const fin = fs[0]?.saldoDespues ?? saldoVivo;
-              return [
-                ["", "", `Estado de cuenta · ${titulo}`, `Periodo: ${label}`, "", "", "", "", "", "", "", ""],
-                ["", "", `Resumen: inicial ${ini.toFixed(2)} + entradas ${ent.toFixed(2)} − salidas ${sal.toFixed(2)} = final ${fin.toFixed(2)}`, `Generado: ${formatHermosillo(new Date().toISOString())}`, "", "", "", "", "", "", "", ""],
-                ...fs.map(f => { const c = f.r.comprobante ?? {}; return [f.r.folio ?? "", formatHermosillo(f.r.created_at), f.r.etiqueta,
-                  c.contraparte ?? "", c.sucursal ?? "", c.terminal ?? "", c.metodo ?? "", c.comision ? c.comision.toFixed(2) : "",
-                  f.monto > 0 ? f.monto.toFixed(2) : "", f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "", f.saldoDespues.toFixed(2), "Completado"]; }),
-                ["", "", "Saldo inicial del periodo", "", "", "", "", "", "", "", ini.toFixed(2), ""],
-              ];
-            })(),
-          );
-          return (
-            <>
-              <PeriodoSelector valor={periodo} onChange={setPeriodo} />
-              <div className="max-h-[60vh] overflow-y-auto">
-                {filas.length === 0 && <div className="text-xs text-muted-foreground">Sin movimientos en este periodo. Saldo ${saldoVivo.toFixed(2)}</div>}
-                {meses.map(mes => (
-                  <div key={mes.label} className="mb-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-semibold capitalize">{mes.label}</div>
-                      <Button size="sm" variant="outline" onClick={() => exportar(mes.label, mes.filas)}>
-                        <Download className="h-4 w-4 mr-1" /> CSV
-                      </Button>
-                    </div>
-                    <div className="divide-y">
-                      {mes.filas.map(f => (
-                        <div key={f.r.key} className="flex justify-between items-center gap-2 py-2">
-                          <div className="min-w-0">
-                            <div className="font-medium text-sm truncate">{f.r.etiqueta}</div>
-                            {f.r.detalle && <div className="text-xs text-muted-foreground">{f.r.detalle}</div>}
-                            <div className="text-xs text-muted-foreground">{formatHermosillo(f.r.created_at)}</div>
-                            {f.r.folio && <div className="text-[11px] font-mono text-muted-foreground select-all">Folio {f.r.folio}</div>}
-                            {(() => { const c = f.r.comprobante; const t = [c?.contraparte, [c?.sucursal, c?.terminal].filter(Boolean).join(" / "), c?.metodo, c?.comision ? `comisión $${c.comision.toFixed(2)}` : ""].filter(Boolean).join(" · "); return t ? <div className="text-[11px] text-muted-foreground truncate">{t}</div> : null; })()}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>
-                              {f.monto > 0 ? "+" : "−"}${Math.abs(f.monto).toFixed(2)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">Saldo ${f.saldoDespues.toFixed(2)}</div>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="flex justify-between items-center py-2 text-sm">
-                        <div className="text-muted-foreground">Saldo inicial</div>
-                        <div className="font-semibold">${(mes.filas[mes.filas.length - 1]?.saldoAntes ?? 0).toFixed(2)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          );
+        const Estado = (props: { titulo: string; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void }) => {
+          const numero = props.ambito === "eje" ? qardNumber : props.ambito === "cobros" ? subs.find(s => s.sub_index === 1)?.qard_number ?? "" : subs.find(s => s.id === props.subId)?.qard_number ?? "";
+          return <QardStatement {...props} numero={numero} libro={libro} />;
         };
 
         return (
