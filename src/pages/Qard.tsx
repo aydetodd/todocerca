@@ -830,12 +830,21 @@ export default function Qard() {
           });
           const exportar = (label: string, fs: typeof filas) => downloadCSV(
             `qard-${titulo.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${label.replace(/\s+/g, "-")}.csv`,
-            ["Fecha", "Concepto", "Ingreso", "Egreso", "Saldo"],
-            [
-              ...fs.map(f => [formatHermosillo(f.r.created_at), f.r.etiqueta,
-                f.monto > 0 ? f.monto.toFixed(2) : "", f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "", f.saldoDespues.toFixed(2)]),
-              ["", "Saldo inicial del periodo", "", "", (fs[fs.length - 1]?.saldoAntes ?? saldoVivo).toFixed(2)],
-            ],
+            ["Folio", "Fecha (Hermosillo)", "Concepto", "Contraparte", "Sucursal", "Terminal", "Método", "Comisión", "Ingreso", "Egreso", "Saldo", "Estado"],
+            (() => {
+              const ini = fs[fs.length - 1]?.saldoAntes ?? saldoVivo;
+              const ent = fs.reduce((a, f) => a + (f.monto > 0 ? f.monto : 0), 0);
+              const sal = fs.reduce((a, f) => a + (f.monto < 0 ? -f.monto : 0), 0);
+              const fin = fs[0]?.saldoDespues ?? saldoVivo;
+              return [
+                ["", "", `Estado de cuenta · ${titulo}`, `Periodo: ${label}`, "", "", "", "", "", "", "", ""],
+                ["", "", `Resumen: inicial ${ini.toFixed(2)} + entradas ${ent.toFixed(2)} − salidas ${sal.toFixed(2)} = final ${fin.toFixed(2)}`, `Generado: ${formatHermosillo(new Date().toISOString())}`, "", "", "", "", "", "", "", ""],
+                ...fs.map(f => { const c = f.r.comprobante ?? {}; return [f.r.folio ?? "", formatHermosillo(f.r.created_at), f.r.etiqueta,
+                  c.contraparte ?? "", c.sucursal ?? "", c.terminal ?? "", c.metodo ?? "", c.comision ? c.comision.toFixed(2) : "",
+                  f.monto > 0 ? f.monto.toFixed(2) : "", f.monto < 0 ? Math.abs(f.monto).toFixed(2) : "", f.saldoDespues.toFixed(2), "Completado"]; }),
+                ["", "", "Saldo inicial del periodo", "", "", "", "", "", "", "", ini.toFixed(2), ""],
+              ];
+            })(),
           );
           return (
             <>
@@ -857,6 +866,8 @@ export default function Qard() {
                             <div className="font-medium text-sm truncate">{f.r.etiqueta}</div>
                             {f.r.detalle && <div className="text-xs text-muted-foreground">{f.r.detalle}</div>}
                             <div className="text-xs text-muted-foreground">{formatHermosillo(f.r.created_at)}</div>
+                            {f.r.folio && <div className="text-[11px] font-mono text-muted-foreground select-all">Folio {f.r.folio}</div>}
+                            {(() => { const c = f.r.comprobante; const t = [c?.contraparte, [c?.sucursal, c?.terminal].filter(Boolean).join(" / "), c?.metodo, c?.comision ? `comisión $${c.comision.toFixed(2)}` : ""].filter(Boolean).join(" · "); return t ? <div className="text-[11px] text-muted-foreground truncate">{t}</div> : null; })()}
                           </div>
                           <div className="text-right shrink-0">
                             <div className={`font-semibold text-sm ${f.monto > 0 ? "text-green-600" : "text-red-600"}`}>

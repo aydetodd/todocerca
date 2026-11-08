@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { construirLibro, type MovBase } from './qardEtiquetas';
+import { folioMovimiento, construirLibro, type MovBase } from './qardEtiquetas';
 
 const base: MovBase = { id: '1', tipo: 'recarga', monto_mxn: 35, descripcion: null, created_at: '2026-10-22T12:00:00Z', sub_qr_id: null };
 test('recarga inicial de 200 deja 35 en el libro eje y cero en cobros', () => {
@@ -30,3 +30,10 @@ test('pago empresarial de 50 no entra en estado personal ni familiar', () => {
 });
 
 test('recarga del negocio 200 menos comisión propia 5 solo va al libro empresarial', () => { const rows=construirLibro([{...base,tipo:'transferencia_p2p_out',monto_mxn:200,metadata:{terminal:'reload',bolsa:'comercio'}},{...base,id:'2',tipo:'transferencia_p2p_in',monto_mxn:5,metadata:{terminal:'reload',bolsa:'comercio',comision_comercio:5}}],null); assert.equal(rows.every(r=>r.ambito==='cobros'),true); assert.equal(rows.reduce((n,r)=>n+r.monto,0),-195); });
+
+test('folio compartido por ambos lados de una operación', () => {
+  const a={...base,id:'a',created_at:'2026-11-07T16:46:04Z',metadata:{operation_key:'5eaf31bb-faea'}};
+  const b={...a,id:'b'};
+  assert.equal(folioMovimiento(a), 'QRD-20261107-5EAF31');
+  assert.equal(folioMovimiento(a), folioMovimiento(b));
+});

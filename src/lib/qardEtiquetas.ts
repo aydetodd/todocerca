@@ -14,6 +14,7 @@ export type MovBase = {
   metadata?: Record<string, unknown> | null;
   ambito?: string | null;
   direccion?: string | null;
+  comision_mxn?: number | null;
 };
 
 export type RenglonLibro = {
@@ -24,7 +25,43 @@ export type RenglonLibro = {
   etiqueta: string;
   detalle?: string;
   created_at: string;
+  folio?: string;
+  comprobante?: Comprobante;
 };
+
+/** Datos para cotejar un movimiento. Nunca incluye CVV ni números completos. */
+export type Comprobante = {
+  contraparte?: string;
+  sucursal?: string;
+  terminal?: string;
+  metodo?: string;
+  comision?: number;
+};
+
+/** Folio legible: QRD-AAAAMMDD-XXXXXX (fecha Hermosillo). Ambos lados de una misma operación comparten folio. */
+export function folioMovimiento(m: Pick<MovBase, "id" | "created_at" | "metadata">): string {
+  const md = (m.metadata ?? {}) as Record<string, unknown>;
+  const base = String(md.operation_key || m.id || "").replace(/-/g, "");
+  const f = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Hermosillo", year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(m.created_at)).replace(/-/g, "");
+  return `QRD-${f}-${base.slice(0, 6).toUpperCase()}`;
+}
+
+const txt = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+
+export function comprobanteMovimiento(m: MovBase): Comprobante {
+  const md = (m.metadata ?? {}) as Record<string, unknown>;
+  const flujo = txt(md.flujo);
+  const metodo = flujo === "payer_qr" ? "QR del cliente" : md.terminal === "collection" ? "Terminal de cobro" : md.terminal === "reload" ? "Recarga en comercio" : flujo === "manual" ? "Captura manual" : undefined;
+  const com = Number(m.comision_mxn ?? md.comision_recarga ?? 0);
+  return {
+    contraparte: txt(m.comercio_nombre) && m.comercio_nombre !== "Cobro de viajes" ? txt(m.comercio_nombre) : undefined,
+    sucursal: txt(md.sucursal_nombre),
+    terminal: txt(md.terminal_nombre),
+    metodo,
+    comision: com > 0 ? com : undefined,
+  };
+}
 
 export type InfoPasaje = { ruta: string; viajeAt: string | null; auto: boolean };
 
@@ -94,8 +131,10 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
     const abs = Math.abs(Number(m.monto_mxn ?? 0));
     const md = (m.metadata ?? {}) as Record<string, unknown>;
     const esSub = !!m.sub_qr_id && m.sub_qr_id !== titularSubId;
+    const folio = folioMovimiento(m);
+    const comprobante = comprobanteMovimiento(m);
     const push = (ambito: Ambito, monto: number, etiqueta: string, sufijo = "", subQrId: string | null = null) =>
-      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at });
+      out.push({ key: m.id + sufijo, ambito, subQrId, monto, etiqueta, created_at: m.created_at, folio, comprobante });
 
     switch (m.tipo) {
       case "recarga": {
@@ -144,7 +183,7 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         const pj = m.tipo === "cobro_comercio" ? pasajes?.get(m.id) : undefined;
         if (pj) {
           const { etiqueta, detalle } = etiquetaPasaje(pj, m.created_at);
-          out.push({ key: m.id, ambito: amb, subQrId: esSub ? m.sub_qr_id : null, monto: -abs, etiqueta, detalle, created_at: m.created_at });
+          out.push({ key: m.id, ambito: amb, subQrId: esSub ? m.sub_qr_id : null, monto: -abs, etiqueta, detalle, created_at: m.created_at, folio, comprobante });
           break;
         }
         let et = etiquetaMovimiento(amb, m.tipo);
