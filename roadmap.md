@@ -1,4 +1,8 @@
 # Productos estándar sin fotos
+## Reclamaciones: ventana y consultas
+- [ ] 1. Exigir 48 horas desde el cobro en servidor y pantalla; excepción admin con motivo auditado y una reclamación por folio.
+- [ ] 2. Reclamar una devolución en panel personal: folio/lista 30 días, validación, motivo y confirmación; retirar accesos de movimientos y mostrar decisiones del dueño.
+- [ ] 3. Revisar pendientes cada hora, detener tras vaciar; validar reglas y conservar saldos.
 ## Protecciones adicionales de devoluciones
 - [x] Vencimiento de 72 horas, cancelación por cliente y disputa revisada por rol admin con fondos retenidos; revisión cada minuto mientras existan pendientes.
 - [x] Avisos de buzón existentes y numeración de parciales con restante en pantalla, CSV y PDF.
