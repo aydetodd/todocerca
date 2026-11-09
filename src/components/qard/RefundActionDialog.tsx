@@ -20,12 +20,14 @@ export default function RefundActionDialog({ request, action, onClose, onChanged
   const submit = async () => {
     if (busy || !confirmed || !valid) return;
     setBusy(true); setError("");
-    const { data, error: failure } = await supabase.rpc("qard_refund_action", { _request: request.id, _action: action, _reason: reason.trim() || undefined, _approve: action === "resolve" ? approve : undefined, _amount: action === "resolve" && approve ? value ?? undefined : undefined });
-    setBusy(false);
-    if (failure) { setError(failure.message); return; }
-    const result = data as { status?: RefundRequest["status"] };
-    if (!result.status || !(result.status in refundStatus)) { setError("No se recibió confirmación; consulta el estado antes de reintentar."); return; }
-    setSuccess(refundStatus[result.status]); onChanged();
+    try {
+      const { data, error: failure } = await supabase.rpc("qard_refund_action", { _request: request.id, _action: action, _reason: reason.trim() || undefined, _approve: action === "resolve" ? approve : undefined, _amount: action === "resolve" && approve ? value ?? undefined : undefined });
+      if (failure) throw new Error(failure.message);
+      const result = data as { status?: RefundRequest["status"] };
+      if (!result.status || !(result.status in refundStatus)) throw new Error("No se recibió confirmación; consulta el estado antes de reintentar.");
+      setSuccess(refundStatus[result.status]); onChanged();
+    } catch (e) { setError(e instanceof Error ? e.message : "No se pudo confirmar. Consulta el estado antes de reintentar."); }
+    finally { setBusy(false); }
   };
   return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent className="max-w-md max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>{action === "cancel" ? "Cancelar solicitud" : action === "dispute" ? "Abrir disputa" : "Resolver disputa"}</DialogTitle></DialogHeader>
     <p className="font-mono text-xs break-all">{request.original_folio}</p><p>{money(Number(request.requested_amount))} · {request.reason}</p>

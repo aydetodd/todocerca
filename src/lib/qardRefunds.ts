@@ -3,10 +3,10 @@ import type { MovBase } from "./qardEtiquetas";
 export type RefundRequest = {
   id: string; original_folio: string; requested_amount: number; approved_amount: number | null;
   reason: string; decision_reason: string | null; status: "pending" | "completed" | "rejected" | "timed_out" | "cancelled" | "disputed" | "dispute_rejected";
-  created_at: string; expires_at: string; dispute_reason?: string; can_authorize?: boolean;
+  created_at: string; expires_at: string; dispute_reason?: string; remaining?: number; can_authorize?: boolean;
 };
 export type RefundContext = {
-  original_folio: string; original_amount: number; remaining: number; can_authorize: boolean;
+  original_folio: string; original_amount: number; remaining: number; frozen?: boolean; can_authorize: boolean;
   requests: RefundRequest[];
 };
 export const refundStatus = { pending: "Pendiente de autorización", completed: "Completado", rejected: "Rechazado", timed_out: "Rechazada por timeout", cancelled: "Cancelada por el cliente", disputed: "Disputa activa · importe congelado", dispute_rejected: "Disputa resuelta sin devolución" };

@@ -7,12 +7,14 @@ import { useState, useEffect } from 'react';
 import DriverProfilePanel from '@/components/DriverProfilePanel';
 import { BrandIcon } from '@/components/BrandIcon';
 import HomeTerminalPanel from '@/components/qard/HomeTerminalPanel';
+import RefundRequests from '@/components/qard/RefundRequests';
 
 export default function MainHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isEmpresaTransporte, setIsEmpresaTransporte] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRefundAdmin, setIsRefundAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -36,6 +38,7 @@ export default function MainHome() {
     };
     checkEmpresaTransporte();
     checkAdmin();
+    void supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').then(({ data }) => setIsRefundAdmin((data?.length ?? 0) > 0));
   }, [user]);
 
   return (
@@ -67,6 +70,7 @@ export default function MainHome() {
         )}
 
         {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
+        {isRefundAdmin && <RefundRequests ambito="cobros" admin />}
         <DriverProfilePanel />
 
         {/* Terminal de cobro invitada (auto-oculta si no hay invitación) */}

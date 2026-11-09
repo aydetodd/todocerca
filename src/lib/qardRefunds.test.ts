@@ -1,9 +1,27 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { refundAmount, refundableMovement } from "./qardRefunds";
+import { refundActions, refundAmount, refundableMovement } from "./qardRefunds";
 import { construirLibro, type MovBase } from "./qardEtiquetas";
 
 const payment: MovBase = { id: "original", tipo: "cobro_comercio", monto_mxn: 500, sub_qr_id: "personal", descripcion: null, created_at: "2026-11-08T16:15:00Z", metadata: { operation_key: "abc", terminal: "collection" } };
+const expiry = "2026-11-11T16:15:00Z";
+test("antes de 72 horas el cliente puede cancelar y el dueño decidir", () => {
+  const before = Date.parse(expiry) - 1;
+  assert.equal(refundActions({ status: "pending", expires_at: expiry, can_authorize: false }, before).cancel, true);
+  assert.equal(refundActions({ status: "pending", expires_at: expiry, can_authorize: true }, before).decide, true);
+});
+test("a las 72 horas solo queda disputa para el cliente, no decisión tardía", () => {
+  assert.equal(Date.parse(expiry) - Date.parse(payment.created_at), 72 * 60 * 60 * 1000);
+  assert.deepEqual(refundActions({ status: "pending", expires_at: expiry, can_authorize: false }, Date.parse(expiry)), { cancel: false, dispute: true, decide: false });
+  assert.equal(refundActions({ status: "pending", expires_at: expiry, can_authorize: true }, Date.parse(expiry)).decide, false);
+});
+test("rechazo permite disputa, cancelación y devolución completada no", () => {
+  assert.equal(refundActions({ status: "rejected", expires_at: expiry }).dispute, true);
+  for (const status of ["cancelled", "completed", "disputed"] as const) assert.deepEqual(refundActions({ status, expires_at: expiry }), { cancel: false, dispute: false, decide: false });
+});
+test("al devolver los 500 completos no queda ni un centavo disponible", () => {
+  assert.equal(refundAmount("0.01", 500 - 200 - 100 - 200), null);
+});
 test("500 cobrados, 200 devueltos: solo quedan 300, ni un centavo más", () => {
   assert.equal(refundAmount("300", 500 - 200), 300);
   assert.equal(refundAmount("300.01", 500 - 200), null);

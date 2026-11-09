@@ -131,6 +131,12 @@ const alias = (d: string | null) =>
  */
 export function construirLibro(movs: MovBase[], titularSubId: string | null | undefined, pasajes?: Map<string, InfoPasaje>): RenglonLibro[] {
   const out: RenglonLibro[] = [];
+  const partialTotals = new Map<string, number>();
+  for (const m of movs) {
+    const original = txt(m.metadata?.original_movimiento_id);
+    const index = Number(m.metadata?.partial_index ?? 0);
+    if (original && index > 0) partialTotals.set(original, Math.max(partialTotals.get(original) ?? 0, index));
+  }
   for (const m of movs) {
     const abs = Math.abs(Number(m.monto_mxn ?? 0));
     const md = (m.metadata ?? {}) as Record<string, unknown>;
@@ -201,9 +207,13 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         const amb: Ambito = m.ambito === "cobros" || md.bolsa === "comercio" ? "cobros" : esSub ? "sub_qr" : "eje";
         const original = txt(md.original_folio);
         const received = md.refund_received === true || (md.refund_received === undefined && m.direccion !== "salida");
+        const partialIndex = Number(md.partial_index ?? 0);
+        const partialTotal = partialTotals.get(txt(md.original_movimiento_id) ?? "") ?? partialIndex;
+        const partialDetail = partialIndex > 0 && Number(md.original_amount ?? abs) > abs
+          ? ` · Devolución parcial (${partialIndex} de ${partialTotal}) del folio ${original} · Restante tras esta devolución: $${Number(md.remaining_after ?? 0).toFixed(2)}` : "";
         out.push({ key: m.id, ambito: amb, subQrId: amb === "sub_qr" ? m.sub_qr_id : null,
           monto: received ? abs : -abs, importeReferencia: -abs, etiqueta: "Devolución",
-          detalle: (original ? `Devolución del folio original: ${original}` : "Folio original no registrado en este movimiento histórico") + (txt(md.reason) ? ` · Motivo: ${txt(md.reason)}` : "") + (txt(md.decision_reason) ? ` · Respuesta: ${txt(md.decision_reason)}` : ""),
+          detalle: (original ? `Devolución del folio original: ${original}` : "Folio original no registrado en este movimiento histórico") + partialDetail + (txt(md.reason) ? ` · Motivo: ${txt(md.reason)}` : "") + (txt(md.decision_reason) ? ` · Respuesta: ${txt(md.decision_reason)}` : ""),
           created_at: m.created_at, folio, comprobante, estado: "Completado" });
         break;
       }
