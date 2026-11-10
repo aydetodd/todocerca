@@ -8,25 +8,27 @@ import type { Ambito } from "@/lib/qardEtiquetas";
 import RefundDialog from "./RefundDialog";
 import RefundActionDialog from "./RefundActionDialog";
 
-export default function RefundRequests({ ambito, subId, onChanged, admin = false }: { ambito: Ambito; subId?: string | null; onChanged?: () => void; admin?: boolean }) {
+export default function RefundRequests({ ambito, subId, onChanged, admin = false, allPersonal = false }: { ambito: Ambito; subId?: string | null; onChanged?: () => void; admin?: boolean; allPersonal?: boolean }) {
   const [requests, setRequests] = useState<RefundRequest[]>([]);
-  const [selected, setSelected] = useState<RefundRequest | null>(null);
+  const [selected, setSelected] = useState<{ request: RefundRequest; mode: "approve" | "partial" | "reject" } | null>(null);
   const [error, setError] = useState("");
   const [action, setAction] = useState<{ request: RefundRequest; action: "cancel" | "dispute" | "resolve" } | null>(null);
   const [now, setNow] = useState(Date.now());
   const load = useCallback(async () => {
     const all: RefundRequest[] = [];
+    for (const scope of allPersonal ? ["eje", "sub_qr"] : [ambito]) {
     for (let offset = 0; ; offset += 100) {
       const { data, error: failure } = admin
         ? await supabase.rpc("qard_refund_disputes", { _offset: offset })
-        : await supabase.rpc("qard_refund_list", { _ambito: ambito, _sub: subId ?? undefined, _offset: offset });
+        : await supabase.rpc("qard_refund_list", { _ambito: scope, _sub: subId ?? undefined, _offset: offset });
       if (failure) { setError("No se pudieron consultar las devoluciones."); return; }
       const page = (data ?? []) as unknown as RefundRequest[];
       all.push(...page);
       if (page.length < 100) break;
     }
+    }
     setRequests(all); setError("");
-  }, [ambito, subId, admin]);
+  }, [ambito, subId, admin, allPersonal]);
   useEffect(() => {
     void load();
     const channel = supabase.channel(`refunds-${ambito}-${crypto.randomUUID()}`)
@@ -35,7 +37,7 @@ export default function RefundRequests({ ambito, subId, onChanged, admin = false
   }, [load, ambito]);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer); }, []);
   return <section aria-label="Devoluciones" className="space-y-2">
-    <h3 className="text-sm font-semibold">{admin ? "Disputas de devoluciones" : "Devoluciones"}</h3>
+    <h3 className="text-sm font-semibold">{admin ? "Disputas de devoluciones" : ambito === "cobros" ? "Solicitudes de devolución" : "Mis reclamaciones"}</h3>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {!requests.length && !error && <p className="text-xs text-muted-foreground">Sin solicitudes de devolución.</p>}
     <div className="divide-y max-h-64 overflow-y-auto">{requests.map(r => { const actions = refundActions(r, now); return <article key={r.id} className="py-2 space-y-1 text-xs">
@@ -45,15 +47,15 @@ export default function RefundRequests({ ambito, subId, onChanged, admin = false
       {r.dispute_reason && <p className="break-words">Disputa: {r.dispute_reason}</p>}
       {r.remaining !== undefined && <p>Restante del cobro: {money(Number(r.remaining))}</p>}
       <p className="text-muted-foreground">{formatHermosillo(r.created_at)}</p>
-      {r.status === "pending" && <p>Vence: {formatHermosillo(r.expires_at)}</p>}
+      {r.status === "pending" && <p>Tiempo restante: {Math.max(0, Math.ceil((Date.parse(r.expires_at) - now) / 60000)) >= 60 ? `${Math.floor(Math.max(0, Date.parse(r.expires_at) - now) / 3600000)} h ` : ""}{Math.max(0, Math.ceil((Date.parse(r.expires_at) - now) / 60000)) % 60} min · Vence: {formatHermosillo(r.expires_at)}</p>}
       <div className="flex flex-wrap gap-2">
-        {!admin && actions.decide && <Button size="sm" variant="outline" onClick={() => setSelected(r)}>Revisar solicitud</Button>}
+        {!admin && actions.decide && <><Button size="sm" onClick={() => setSelected({ request: r, mode: "approve" })}>Autorizar</Button><Button size="sm" variant="outline" onClick={() => setSelected({ request: r, mode: "partial" })}>Autorizar parcial</Button><Button size="sm" variant="outline" onClick={() => setSelected({ request: r, mode: "reject" })}>Rechazar</Button></>}
         {!admin && actions.cancel && <Button size="sm" variant="outline" onClick={() => setAction({ request: r, action: "cancel" })}>Cancelar solicitud</Button>}
         {!admin && actions.dispute && <Button size="sm" variant="outline" onClick={() => setAction({ request: r, action: "dispute" })}>Abrir disputa</Button>}
         {admin && r.status === "disputed" && <Button size="sm" variant="outline" onClick={() => setAction({ request: r, action: "resolve" })}>Revisar disputa</Button>}
       </div>
     </article>; })}</div>
-    {selected && <RefundDialog request={selected} onClose={() => setSelected(null)} onChanged={() => { void load(); onChanged?.(); }} />}
+    {selected && <RefundDialog request={selected.request} mode={selected.mode} onClose={() => setSelected(null)} onChanged={() => { void load(); onChanged?.(); }} />}
     {action && <RefundActionDialog {...action} onClose={() => setAction(null)} onChanged={() => { void load(); onChanged?.(); }} />}
   </section>;
 }

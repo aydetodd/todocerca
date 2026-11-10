@@ -248,6 +248,7 @@ export default function MiPerfil() {
         </div>
 
         <nav aria-label="Servicios del perfil" className="mb-6 grid max-w-2xl grid-cols-2 gap-3">
+          <Button asChild variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4"><Link to="/dashboard?section=devoluciones"><CreditCard className="h-6 w-6" /><span className="font-semibold">Reclamar una devolución</span></Link></Button>
           <DataUsageDialog />
           {isProvider && <FormalizationDialog />}
           <Button asChild variant="outline" className="min-h-28 h-auto flex-col gap-2 p-4">

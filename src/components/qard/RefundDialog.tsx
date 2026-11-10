@@ -8,11 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { money } from "@/lib/qardStatement";
 import { refundAmount, refundStatus, type RefundContext, type RefundRequest } from "@/lib/qardRefunds";
 
-export default function RefundDialog({ movementId, request, onClose, onChanged }: {
-  movementId?: string; request?: RefundRequest; onClose: () => void; onChanged: () => void;
+export default function RefundDialog({ movementId, request, mode, onClose, onChanged }: {
+  movementId?: string; request?: RefundRequest; mode?: "approve" | "partial" | "reject"; onClose: () => void; onChanged: () => void;
 }) {
   const [context, setContext] = useState<RefundContext | null>(null);
-  const [amount, setAmount] = useState(request ? String(request.requested_amount) : "");
+  const [amount, setAmount] = useState(mode === "partial" ? "" : request ? String(request.requested_amount) : "");
   const [reason, setReason] = useState("");
   const [decisionReason, setDecisionReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -74,11 +74,11 @@ export default function RefundDialog({ movementId, request, onClose, onChanged }
       {context && <p className="text-sm">Cobro original: {money(Number(context.original_amount))}<br />Disponible para devolver: {money(Number(context.remaining))}</p>}
       {pending && <div className="space-y-1 text-sm"><p>{refundStatus[pending.status]} · Solicitado: {money(Number(pending.requested_amount))}</p><p>Motivo: {pending.reason}</p></div>}
       {context?.frozen ? <p role="status">Este cobro está congelado por una disputa activa. Solo TodoCerca puede resolverla.</p> : ready && pending && pending.status !== "pending" ? <p className="text-sm">{pending.decision_reason}</p> : ready && (!pending || authorize) && maximum > 0 ? <>
-        <div className="space-y-1"><Label htmlFor="refund-amount">{authorize ? "Monto a devolver" : "Monto solicitado"}</Label><Input id="refund-amount" inputMode="decimal" value={amount} disabled={busy || !!confirm} onChange={e => setAmount(e.target.value)} /></div>
+        {mode !== "reject" && <div className="space-y-1"><Label htmlFor="refund-amount">{authorize ? "Monto a devolver" : "Monto solicitado"}</Label><Input id="refund-amount" inputMode="decimal" value={amount} disabled={busy || !!confirm || mode === "approve"} onChange={e => setAmount(e.target.value)} /></div>}
         {!pending && <div className="space-y-1"><Label htmlFor="refund-reason">Motivo</Label><select id="refund-reason" className="w-full rounded-md border border-input bg-background p-2 text-sm" value={["Cobro duplicado","Monto incorrecto","Producto devuelto","Servicio cancelado","Otro"].includes(reason) ? reason : ""} disabled={busy || !!confirm} onChange={e => setReason(e.target.value)}><option value="">Seleccionar motivo</option>{["Cobro duplicado","Monto incorrecto","Producto devuelto","Servicio cancelado","Otro"].map(r => <option key={r}>{r}</option>)}</select><Textarea aria-label="Detalle del motivo" maxLength={500} value={reason} disabled={busy || !!confirm} onChange={e => setReason(e.target.value)} /></div>}
         {authorize && <div className="space-y-1"><Label htmlFor="refund-decision">Explicación {partial ? "(obligatoria para devolución parcial)" : "(obligatoria para rechazar)"}</Label><Textarea id="refund-decision" maxLength={500} value={decisionReason} disabled={busy || !!confirm} onChange={e => setDecisionReason(e.target.value)} /></div>}
         {confirm ? <div className="space-y-3 border-t pt-3"><p className="text-sm">{confirm === "approve" ? `¿Devolver ${money(amountValue ?? 0)} del saldo Empresarial a la misma tarjeta que pagó?` : "¿Rechazar esta solicitud sin devolver dinero?"}</p><div className="flex gap-2"><Button variant="outline" disabled={busy} onClick={() => setConfirm(null)}>Volver</Button><Button disabled={busy} onClick={() => void execute()}>{busy ? "Procesando…" : "Confirmar"}</Button></div></div> : <div className="flex flex-wrap gap-2">
-          {authorize ? <><Button disabled={busy || amountValue === null || (!pending && reason.trim().length < 3) || (partial && decisionReason.trim().length < 3)} onClick={() => setConfirm("approve")}>Devolver dinero</Button>{pending && <Button variant="outline" disabled={busy || decisionReason.trim().length < 3} onClick={() => setConfirm("reject")}>Rechazar</Button>}</> : <Button disabled={busy || amountValue === null || reason.trim().length < 3} onClick={() => void execute()}>{busy ? "Enviando…" : "Enviar solicitud"}</Button>}
+          {authorize ? <>{mode !== "reject" && <Button disabled={busy || amountValue === null || (mode === "partial" && !partial) || (!pending && reason.trim().length < 3) || (partial && decisionReason.trim().length < 3)} onClick={() => setConfirm("approve")}>Devolver dinero</Button>}{pending && mode !== "approve" && mode !== "partial" && <Button variant="outline" disabled={busy || decisionReason.trim().length < 3} onClick={() => setConfirm("reject")}>Rechazar</Button>}</> : <Button disabled={busy || amountValue === null || reason.trim().length < 3} onClick={() => void execute()}>{busy ? "Enviando…" : "Enviar solicitud"}</Button>}
         </div>}
       </> : ready && !pending ? <p>Este cobro ya fue devuelto por completo.</p> : null}
       {!ready && !error && <p className="text-sm text-muted-foreground">Cotejando cobro original…</p>}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csvExport";
@@ -6,12 +6,9 @@ import { estadoDeCuenta, type Ambito, type RenglonLibro } from "@/lib/qardEtique
 import { formatHermosillo, getHermosilloToday } from "@/lib/utils";
 import { maskedQard, money, statementSummary, summaryText } from "@/lib/qardStatement";
 import { downloadStatementPdf } from "@/lib/qardStatementPdf";
-import RefundDialog from "./RefundDialog";
-import RefundRequests from "./RefundRequests";
 
 type Props = { titulo: string; numero: string; libro: RenglonLibro[]; ambito: Ambito; saldoVivo: number; subId?: string | null; periodo: number; setPeriodo: (d: number) => void; onChanged?: () => void };
 export default function QardStatement({ titulo, numero, libro, ambito, saldoVivo, subId, periodo, setPeriodo, onChanged }: Props) {
-  const [refundId, setRefundId] = useState<string | null>(null);
   const generated = useMemo(() => new Date().toISOString(), [libro, periodo, saldoVivo]);
   const end = getHermosilloToday();
   const startDate = new Date(`${end}T00:00:00-07:00`);
@@ -50,11 +47,8 @@ export default function QardStatement({ titulo, numero, libro, ambito, saldoVivo
         {f.r.comprobante?.comision && <div className="text-xs text-muted-foreground">Comisión informada: {money(f.r.comprobante.comision)}</div>}
         {f.r.importeReferencia !== undefined && <div className="text-xs">{f.monto > 0 ? "Entrada" : "Salida"}: {money(Math.abs(f.monto))}</div>}
         <div className="text-xs text-muted-foreground">Saldo {money(f.saldoDespues)}</div>
-        {f.r.refundMovementId && <Button size="sm" variant="outline" onClick={() => setRefundId(f.r.refundMovementId ?? null)}>{f.r.monto > 0 ? "Devolver / Revisar solicitud" : "Solicitar devolución"}</Button>}
       </article>)}
       <div className="flex justify-between gap-2 py-3 text-sm"><span>Saldo inicial</span><strong>{money(summary.initial)}</strong></div>
     </div>
-    <RefundRequests ambito={ambito} subId={subId} onChanged={onChanged} />
-    {refundId && <RefundDialog movementId={refundId} onClose={() => setRefundId(null)} onChanged={() => onChanged?.()} />}
   </section>;
 }

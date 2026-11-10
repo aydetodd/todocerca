@@ -36,6 +36,7 @@ import {
 import ProveedorTipoSelector from "@/components/ProveedorTipoSelector";
 import DataUsageDialog from "@/components/DataUsageDialog";
 import FormalizationDialog from "@/components/formalization/FormalizationDialog";
+import RefundClaim from "@/components/qard/RefundClaim";
 import Fletes from "./Fletes";
 import ProductManagement from "@/components/ProductManagement";
 import { StatusControl } from "@/components/StatusControl";
@@ -52,6 +53,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 type DashboardSection =
+  | "devoluciones"
   | "perfil"
   | "suscripcion"
   | "tracking"
@@ -81,7 +83,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<DashboardSection>(() => {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section && ['perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','terminales','taxi','empresa'].includes(section)) {
+    if (section && ['devoluciones','perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','terminales','taxi','empresa'].includes(section)) {
       return section as DashboardSection;
     }
     return 'perfil';
@@ -95,7 +97,7 @@ const Dashboard = () => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
     if (section === 'terminales') { navigate('/qard?empresa=1', { replace: true }); return; }
-    if (section && ['perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
+    if (section && ['devoluciones','perfil','suscripcion','tracking','eventos','fletes','productos','rutas_privadas','apartados','citas','horarios','taxi','empresa'].includes(section)) {
       setActiveSection(section as DashboardSection);
       // Clean URL
       window.history.replaceState({}, '', '/dashboard');
@@ -362,6 +364,7 @@ const Dashboard = () => {
     () =>
       [
         { key: "perfil" as const, label: "Perfil", icon: User, visible: true },
+        { key: "devoluciones" as const, label: "Reclamar una devolución", icon: ClipboardList, visible: true },
         // Protocolo 1: Suscripción de bienes/servicios oculta (transportes tienen su propia suscripción)
         // {
         //   key: "suscripcion" as const,
@@ -504,6 +507,7 @@ const Dashboard = () => {
 
           {/* Contenido */}
           <section className="flex-1 min-w-0">
+            {activeSection === "devoluciones" && <RefundClaim />}
             {activeSection === "perfil" && (
               <Card>
                 <CardHeader>

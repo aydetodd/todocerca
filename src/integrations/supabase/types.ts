@@ -4523,6 +4523,41 @@ export type Database = {
           },
         ]
       }
+      qard_refund_override_log: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          original_folio: string
+          reason: string
+          request_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          original_folio: string
+          reason: string
+          request_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          original_folio?: string
+          reason?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_refund_override_log_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "qard_refund_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qard_refund_requests: {
         Row: {
           approved_amount: number | null
@@ -4538,6 +4573,8 @@ export type Database = {
           merchant_refund_id: string | null
           merchant_user_id: string
           original_folio: string
+          override_by: string | null
+          override_reason: string | null
           payer_movement_id: string
           payer_refund_id: string | null
           payer_user_id: string
@@ -4564,6 +4601,8 @@ export type Database = {
           merchant_refund_id?: string | null
           merchant_user_id: string
           original_folio: string
+          override_by?: string | null
+          override_reason?: string | null
           payer_movement_id: string
           payer_refund_id?: string | null
           payer_user_id: string
@@ -4590,6 +4629,8 @@ export type Database = {
           merchant_refund_id?: string | null
           merchant_user_id?: string
           original_folio?: string
+          override_by?: string | null
+          override_reason?: string | null
           payer_movement_id?: string
           payer_refund_id?: string | null
           payer_user_id?: string
@@ -8426,6 +8467,15 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_refund_admin_force: {
+        Args: {
+          _amount: number
+          _key: string
+          _movement: string
+          _reason: string
+        }
+        Returns: Json
+      }
       qard_refund_context: { Args: { _movement: string }; Returns: Json }
       qard_refund_decide: {
         Args: {
@@ -8443,6 +8493,10 @@ export type Database = {
       }
       qard_refund_original: { Args: { _id: string }; Returns: Json }
       qard_refund_pair: { Args: { _id: string }; Returns: Json }
+      qard_refund_payments: {
+        Args: { _folio?: string; _offset?: number }
+        Returns: Json
+      }
       qard_refund_remaining: { Args: { _id: string }; Returns: number }
       qard_refund_submit: {
         Args: {

@@ -7,8 +7,23 @@ export type RefundRequest = {
 };
 export type RefundContext = {
   original_folio: string; original_amount: number; remaining: number; frozen?: boolean; can_authorize: boolean;
+  original_created_at: string; request_deadline: string;
   requests: RefundRequest[];
 };
+export type RefundPayment = { movement_id: string; original_folio: string; amount: number; created_at: string; source_ambito: string; source_sub_qr_id: string };
+export const refundReasons = ["Producto devuelto", "Monto incorrecto", "Servicio cancelado", "Cobro duplicado", "Otro"];
+export const refundExpiredMessage = "El plazo de 48 horas para solicitar una devolución sobre este cobro ha vencido. Para dudas, contacta directamente al comercio.";
+export function withinRefundWindow(createdAt: string, now = Date.now()): boolean {
+  const timestamp = Date.parse(createdAt);
+  return Number.isFinite(timestamp) && timestamp <= now && now - timestamp <= 48 * 60 * 60 * 1000;
+}
+export function claimIneligibility(context: RefundContext, now = Date.now()): string | null {
+  if (!withinRefundWindow(context.original_created_at, now)) return refundExpiredMessage;
+  if (context.requests.length) return "Este cobro no es elegible porque ya tiene una reclamación registrada.";
+  if (context.frozen) return "Este cobro no es elegible porque tiene una disputa activa.";
+  if (Number(context.remaining) <= 0) return "Este cobro no es elegible porque ya se devolvió por completo.";
+  return null;
+}
 export const refundStatus = { pending: "Pendiente de autorización", completed: "Completado", rejected: "Rechazado", timed_out: "Rechazada por timeout", cancelled: "Cancelada por el cliente", disputed: "Disputa activa · importe congelado", dispute_rejected: "Disputa resuelta sin devolución" };
 export function refundActions(r: Pick<RefundRequest, "status" | "expires_at" | "can_authorize">, now = Date.now()) {
   const expired = r.status === "pending" && new Date(r.expires_at).getTime() <= now;

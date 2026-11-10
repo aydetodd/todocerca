@@ -1,10 +1,23 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { refundActions, refundAmount, refundableMovement } from "./qardRefunds";
+import { claimIneligibility, withinRefundWindow, refundActions, refundAmount, refundableMovement, type RefundContext } from "./qardRefunds";
 import { construirLibro, type MovBase } from "./qardEtiquetas";
 
 const payment: MovBase = { id: "original", tipo: "cobro_comercio", monto_mxn: 500, sub_qr_id: "personal", descripcion: null, created_at: "2026-11-08T16:15:00Z", metadata: { operation_key: "abc", terminal: "collection" } };
 const expiry = "2026-11-11T16:15:00Z";
+test("48 horas exactas permiten reclamar; un milisegundo después no", () => {
+  const boundary = Date.parse(payment.created_at) + 48 * 60 * 60 * 1000;
+  assert.equal(withinRefundWindow(payment.created_at, boundary), true);
+  assert.equal(withinRefundWindow(payment.created_at, boundary + 1), false);
+});
+test("una reclamación registrada bloquea otra incluso cancelada o parcial", () => {
+  const context: RefundContext = { original_folio: "QRD-20261108-ABC123", original_amount: 500, remaining: 300, can_authorize: false, original_created_at: payment.created_at, request_deadline: "2026-11-10T16:15:00Z", requests: [] };
+  const now = Date.parse(payment.created_at) + 1000;
+  assert.equal(claimIneligibility(context, now), null);
+  for (const status of ["pending", "completed", "cancelled", "rejected"] as const) {
+    assert.match(claimIneligibility({ ...context, requests: [{ id: "request", original_folio: context.original_folio, requested_amount: 500, approved_amount: status === "completed" ? 200 : null, reason: "Producto devuelto", decision_reason: null, status, created_at: payment.created_at, expires_at: expiry }] }, now) ?? "", /reclamación registrada/);
+  }
+});
 test("antes de 72 horas el cliente puede cancelar y el dueño decidir", () => {
   const before = Date.parse(expiry) - 1;
   assert.equal(refundActions({ status: "pending", expires_at: expiry, can_authorize: false }, before).cancel, true);

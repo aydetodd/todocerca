@@ -8,6 +8,7 @@ import DriverProfilePanel from '@/components/DriverProfilePanel';
 import { BrandIcon } from '@/components/BrandIcon';
 import HomeTerminalPanel from '@/components/qard/HomeTerminalPanel';
 import RefundRequests from '@/components/qard/RefundRequests';
+import RefundClaim from '@/components/qard/RefundClaim';
 
 export default function MainHome() {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ export default function MainHome() {
         )}
 
         {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
-        {isRefundAdmin && <RefundRequests ambito="cobros" admin />}
+        {isRefundAdmin && <><RefundRequests ambito="cobros" admin /><details><summary className="cursor-pointer text-sm font-semibold">Devolución excepcional</summary><RefundClaim admin /></details></>}
         <DriverProfilePanel />
 
         {/* Terminal de cobro invitada (auto-oculta si no hay invitación) */}
