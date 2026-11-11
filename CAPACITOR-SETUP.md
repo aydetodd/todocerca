@@ -1,117 +1,73 @@
-# 📱 Guía de Configuración de Capacitor para todocerca
+# Aplicación móvil TodoCerca
 
-## ✅ Lo que ya está hecho en Lovable
+## Preparación incluida
 
-- ✅ Capacitor instalado y configurado
-- ✅ Plugin de Geolocation instalado
-- ✅ Código de tracking GPS preparado
-- ✅ Permisos configurados
+Capacitor ya estaba configurado para Android. Ahora incluye también iPhone y la herramienta de desarrollo está en las dependencias de desarrollo. Se conserva la configuración de ubicación existente; esta tarea no modifica transporte, pagos, comisiones ni tarjetas impresas.
 
-## 🚀 Pasos que debes seguir en tu computadora
+Identificador: `app.lovable.p85760625b6da43c890e2846dd01fbbe3`.
 
-### 1. Exportar proyecto a GitHub
+No ejecutar `cap init` otra vez: el proyecto ya tiene configuración. Cambiar este identificador en una aplicación previamente instalada crea una identidad distinta; no es una actualización de una aplicación anterior con otro identificador.
 
-1. En Lovable, haz clic en el botón **GitHub** (arriba a la derecha)
-2. Conecta tu cuenta de GitHub si no lo has hecho
-3. Crea un repositorio nuevo o usa uno existente
+## Instalar desde tu computadora
 
-### 2. Clonar proyecto en tu computadora
-
-```bash
-git clone https://github.com/TU-USUARIO/TU-REPOSITORIO.git
-cd TU-REPOSITORIO
-```
-
-### 3. Instalar dependencias
-
-```bash
-npm install
-```
-
-### 4. Agregar plataforma Android
+1. Conecta/exporta el proyecto a tu repositorio de GitHub y descarga la versión más reciente.
+2. Instala las dependencias con `npm install`.
+3. Crea las plataformas que usarás, una sola vez:
 
 ```bash
 npx cap add android
+npx cap add ios
 ```
 
-### 5. Sincronizar código con Android
+Android requiere Android Studio. iPhone requiere una Mac con Xcode; la preparación aquí no compila ni firma aplicaciones nativas.
+
+4. Actualiza las plataformas:
+
+```bash
+npx cap update android
+npx cap update ios
+```
+
+5. Prepara los archivos y sincroniza:
 
 ```bash
 npm run build
-npx cap sync android
+npx cap sync
 ```
 
-### 6. Abrir proyecto en Android Studio
+6. Ejecuta en teléfono o emulador:
 
 ```bash
-npx cap open android
+npx cap run android
+npx cap run ios
 ```
 
-### 7. Configurar permisos de Android
+**Después de cada cambio:** primero actualiza tu copia desde el repositorio conectado y después ejecuta `npm run build` y `npx cap sync`.
 
-El archivo `AndroidManifest.xml` necesitará estos permisos (Capacitor los agrega automáticamente, pero verifica):
+## Desarrollo frente a aplicación empaquetada
 
-```xml
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+La configuración normal abre la vista remota de Lovable para probar cambios. **Esta vista necesita internet y no sirve para probar arranque sin conexión ni para publicar en tiendas.**
+
+Para copiar la aplicación compilada al teléfono sin usar la vista remota:
+
+```bash
+npm run build
+CAPACITOR_BUNDLED=1 npx cap sync
+CAPACITOR_BUNDLED=1 npx cap run android
+# O, en Mac:
+CAPACITOR_BUNDLED=1 npx cap run ios
 ```
 
-### 8. Compilar y probar
+En PowerShell, define primero `$env:CAPACITOR_BUNDLED="1"` y luego ejecuta los comandos sin el prefijo. Conserva esa variable para todas las operaciones de Capacitor de la versión empaquetada. Si vuelves a sincronizar sin ella, regresarás a la vista remota.
 
-En Android Studio:
-1. Conecta un celular Android con USB debugging activado
-2. O usa un emulador de Android
-3. Presiona el botón ▶️ (Run) para instalar la app
+Arrancar desde archivos locales no hace que los pagos actuales funcionen sin internet. La conexión y todos los controles actuales siguen siendo obligatorios.
 
-### 9. Probar en tu celular
+## Antes de publicar
 
-La app se instalará automáticamente. Al abrir:
-1. Dará permisos de ubicación cuando se soliciten
-2. Para tracking GPS, pedirá "Permitir siempre" (necesario para segundo plano)
+Comprobar en teléfonos reales inicio de sesión, sesión única, cámara QR, permisos de ubicación y flujos actuales. Revisar los permisos de cada plataforma; no se han verificado aquí. Se requieren las cuentas de desarrollador correspondientes, firma y revisión de las tiendas. No se ha generado APK, AAB ni aplicación iOS.
 
-## 📦 Para publicar en Google Play (cuando estés listo)
+## TCB
 
-### Requisitos:
-1. Cuenta de Google Play Developer ($25 USD, una sola vez)
-2. App firmada (Android Studio te guiará)
-3. Iconos y screenshots de la app
-4. Descripción y política de privacidad
+El diseño y sus condiciones de seguridad están en `TCB-ARCHITECTURE.md`. No hay archivo `.tcb` activo, reservas de saldo ni pagos sin conexión implementados todavía.
 
-### Pasos:
-1. En Android Studio: Build → Generate Signed Bundle / APK
-2. Crear keystore (archivo de firma)
-3. Subir a Google Play Console
-4. Completar información de la app
-5. Enviar a revisión
-
-**Tiempo de revisión:** 1-3 días típicamente
-
-## 🆘 Problemas comunes
-
-**Error: "SDK not found"**
-- Instala Android SDK desde Android Studio
-
-**Error: "Gradle build failed"**
-- Ejecuta `npx cap sync` de nuevo
-- Limpia caché: `cd android && ./gradlew clean`
-
-**No se actualiza la ubicación en segundo plano:**
-- Verifica que diste permiso "Permitir siempre"
-- Ve a Ajustes → Apps → todocerca → Permisos → Ubicación → Permitir siempre
-
-## 📚 Recursos útiles
-
-- [Documentación de Capacitor](https://capacitorjs.com/docs)
-- [Geolocation Plugin](https://capacitorjs.com/docs/apis/geolocation)
-- [Publicar en Google Play](https://developer.android.com/distribute/googleplay/start)
-
-## 💡 Próximos pasos (iOS)
-
-Cuando quieras agregar iOS:
-1. Necesitarás una Mac
-2. `npx cap add ios`
-3. `npx cap open ios` (abre Xcode)
-4. Similar proceso pero en Xcode
+Lee también el blog de Lovable sobre aplicaciones móviles: https://lovable.dev/blog (busca Capacitor), y la guía oficial: https://capacitorjs.com/docs.

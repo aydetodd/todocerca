@@ -1,4 +1,9 @@
 # Productos estándar sin fotos
+## Aplicación móvil y TCB
+- [x] Preparar Capacitor para Android/iPhone y separar vista de desarrollo de aplicación empaquetada; conservar pagos, saldos, transporte y tarjetas impresas.
+- [x] Documentar el diseño TCB para teléfonos, sus riesgos y las protecciones necesarias sin activar dinero sin conexión.
+- [ ] Instalar y comprobar en dos teléfonos reales: requiere computadora con Android Studio y/o Mac con Xcode, dispositivos y firma de aplicación.
+- [ ] Implementar y activar TCB financiero: bloqueado por definición de límites, responsabilidad del riesgo y recuperación de fondos, además de validación de almacenamiento seguro y pruebas en dispositivos reales.
 ## Reclamaciones: ventana y consultas
 - [x] 1. Exigir 48 horas desde el cobro en servidor y pantalla; excepción admin con motivo auditado y una reclamación por folio; límites y reintentos probados en SQL con reversión.
 - [x] 2. Reclamar una devolución en panel personal: folio/lista 30 días, validación, motivo y confirmación; retirar accesos de movimientos y mostrar decisiones del dueño. Prueba completa en cuenta real bloqueada por sesión externa no disponible, registrada abajo.
