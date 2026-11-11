@@ -1,10 +1,10 @@
 # Productos estándar sin fotos
 ## Reclamaciones: ventana y consultas
-- [ ] 1. Exigir 48 horas desde el cobro en servidor y pantalla; excepción admin con motivo auditado y una reclamación por folio.
-- [ ] 2. Reclamar una devolución en panel personal: folio/lista 30 días, validación, motivo y confirmación; retirar accesos de movimientos y mostrar decisiones del dueño.
-- [ ] 3. Revisar pendientes cada hora, detener tras vaciar; validar reglas y conservar saldos.
+- [x] 1. Exigir 48 horas desde el cobro en servidor y pantalla; excepción admin con motivo auditado y una reclamación por folio; límites y reintentos probados en SQL con reversión.
+- [x] 2. Reclamar una devolución en panel personal: folio/lista 30 días, validación, motivo y confirmación; retirar accesos de movimientos y mostrar decisiones del dueño. Prueba completa en cuenta real bloqueada por sesión externa no disponible, registrada abajo.
+- [x] 3. Revisar pendientes cada hora, detener tras vaciar; 27 pruebas correctas, compilación correcta, ningún registro de prueba ni tarea activa tras reversión.
 ## Protecciones adicionales de devoluciones
-- [x] Vencimiento de 72 horas, cancelación por cliente y disputa revisada por rol admin con fondos retenidos; revisión cada minuto mientras existan pendientes.
+- [x] Vencimiento de 72 horas, cancelación por cliente y disputa revisada por rol admin con fondos retenidos; revisión cada hora mientras existan pendientes.
 - [x] Avisos de buzón existentes y numeración de parciales con restante en pantalla, CSV y PDF.
 - [x] 25 pruebas locales y comprobación SQL sobre cobros reales con reversión completa: cancelación, timeout, disputa, retención, admin, límites, fondos, idempotencia y cobro intacto.
 - [ ] Push con app cerrada: falta conectar/configurar Firebase web; el sistema actual solo avisa mientras la app permanece abierta.
