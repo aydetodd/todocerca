@@ -1,5 +1,6 @@
 # Productos estándar sin fotos
 ## Aplicación móvil y TCB
+- [x] Continuación: formato binario cifrado TCB aislado, 10 pruebas nuevas y 26 de QaRd correctas; sin conexión a saldos ni almacenamiento. Persistencia nativa pendiente de validación en teléfonos.
 - [x] Preparar Capacitor para Android/iPhone y separar vista de desarrollo de aplicación empaquetada; conservar pagos, saldos, transporte y tarjetas impresas.
 - [x] Documentar el diseño TCB para teléfonos, sus riesgos y las protecciones necesarias sin activar dinero sin conexión.
 - [ ] Instalar y comprobar en dos teléfonos reales: requiere computadora con Android Studio y/o Mac con Xcode, dispositivos y firma de aplicación.

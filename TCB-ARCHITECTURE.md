@@ -2,6 +2,14 @@
 
 Estado: diseño, no operativo. La preparación de Capacitor no habilita cobros sin conexión ni reemplaza las tarjetas impresas actuales. TCB usará teléfonos en ambos extremos; los lectores de transporte permanecen fuera del protocolo.
 
+### Avance: formato cifrado aislado
+
+`src/lib/tcbCodec.ts` implementa un formato binario de 139 bytes: cabecera TCB/version y nonce aleatorio de 12 bytes, contenido fijo de 106 bytes y etiqueta AES-256-GCM de 16 bytes. El contenido contiene versión, identificador de 16 dígitos, centavos, instante UTC en milisegundos, secuencia y dos hashes SHA-256. La cabecera también se autentica. Los enteros se codifican big-endian y se restringen al rango entero seguro; el hash se calcula sobre los primeros 74 bytes del contenido, con codificación fija.
+
+No crea llaves, archivos en dispositivos, controles en tarjetas ni movimientos. Recibe una llave no exportable proporcionada por el llamador: esa propiedad Web Crypto NO acredita protección por Keystore/Keychain. No usarlo como sustituto de una bóveda nativa validada. La comparación de sucesores exige un punto anterior confiable y no impide que un teléfono manipulado presente una copia antigua completa. El cifrado protege integridad/confidencialidad, no acredita saldo.
+
+Pruebas locales: ida y vuelta exacta en centavos, nonce distinto, alteración de cada byte, llaves/tarjetas incorrectas, tamaño, campos inválidos y secuencia contra un punto de referencia. Persistencia atómica, recuperación, sincronización real y pruebas en teléfonos siguen pendientes.
+
 ## 1. Respaldo local
 
 Un archivo binario cifrado por tarjeta emitida, llamado exactamente `[16 dígitos].tcb`, en almacenamiento privado persistente de la aplicación, nunca caché, descargas ni almacenamiento del navegador. No ofrecer apertura ni exportación. El nombre contiene un identificador sensible: excluirlo de registros y copias de seguridad públicas.
