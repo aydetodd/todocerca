@@ -1,0 +1,11 @@
+{
+  "name": "@todocerca/tcb-vault",
+  "version": "0.1.0",
+  "description": "Private native TCB backup vault; not a payment engine",
+  "license": "UNLICENSED",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": ["index.js", "index.d.ts", "android", "ios", "TcbVault.podspec", "Package.swift"],
+  "peerDependencies": { "@capacitor/core": ">=7.0.0" },
+  "capacitor": { "android": { "src": "android" }, "ios": { "src": "ios" } }
+}

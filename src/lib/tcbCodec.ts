@@ -86,14 +86,42 @@ export async function assertTcbSuccessor(previous: TcbSnapshot, next: TcbSnapsho
 }
 
 /** No persistence, export, network or financial operation is performed here. */
-export async function encryptTcb(snapshot: TcbSnapshot, key: CryptoKey): Promise<Uint8Array<ArrayBuffer>> {
-  requireKey(key, "encrypt");
+export async function encodeTcbPayload(snapshot: TcbSnapshot): Promise<Uint8Array<ArrayBuffer>> {
   const checked = await createTcbSnapshot(snapshot);
   if (snapshot.version !== 1 || checked.currentHash !== snapshot.currentHash) {
     throw new Error("Invalid TCB snapshot hash");
   }
   const content = encodeContent(snapshot);
   content.set(hashBytes(snapshot.currentHash), HASH_OFFSET);
+  return content;
+}
+
+/** For native vaults: plaintext crosses the local bridge, but keys never do. */
+export async function decodeTcbPayload(payload: Uint8Array, expectedCardId: string): Promise<TcbSnapshot> {
+  requireCard(expectedCardId);
+  if (payload.length !== CONTENT_LENGTH) throw new Error("Invalid TCB payload size");
+  const content = Uint8Array.from(payload);
+  const view = new DataView(content.buffer);
+  const snapshot: TcbSnapshot = {
+    version: 1,
+    cardId: new TextDecoder("utf-8", { fatal: true }).decode(content.slice(2, 18)),
+    balanceCents: Number(view.getBigUint64(18)),
+    timestampMs: Number(view.getBigUint64(26)),
+    sequence: Number(view.getBigUint64(34)),
+    previousHash: hex(content.slice(42, HASH_OFFSET).buffer),
+    currentHash: hex(content.slice(HASH_OFFSET).buffer),
+  };
+  if (view.getUint16(0) !== 1 || snapshot.cardId !== expectedCardId) {
+    throw new Error("TCB version or card mismatch");
+  }
+  const checked = await createTcbSnapshot(snapshot);
+  if (checked.currentHash !== snapshot.currentHash) throw new Error("Invalid TCB snapshot hash");
+  return snapshot;
+}
+
+export async function encryptTcb(snapshot: TcbSnapshot, key: CryptoKey): Promise<Uint8Array<ArrayBuffer>> {
+  requireKey(key, "encrypt");
+  const content = await encodeTcbPayload(snapshot);
   const header = new Uint8Array(HEADER_LENGTH);
   header.set(MAGIC);
   header[4] = 1;
@@ -125,21 +153,5 @@ export async function decryptTcb(file: Uint8Array, key: CryptoKey, expectedCardI
   } catch {
     throw new Error("TCB authentication failed");
   }
-  const view = new DataView(plaintext);
-  const content = new Uint8Array(plaintext);
-  const snapshot: TcbSnapshot = {
-    version: 1,
-    cardId: new TextDecoder("utf-8", { fatal: true }).decode(content.slice(2, 18)),
-    balanceCents: Number(view.getBigUint64(18)),
-    timestampMs: Number(view.getBigUint64(26)),
-    sequence: Number(view.getBigUint64(34)),
-    previousHash: hex(content.slice(42, HASH_OFFSET).buffer),
-    currentHash: hex(content.slice(HASH_OFFSET).buffer),
-  };
-  if (view.getUint16(0) !== 1 || snapshot.cardId !== expectedCardId) {
-    throw new Error("TCB version or card mismatch");
-  }
-  const checked = await createTcbSnapshot(snapshot);
-  if (checked.currentHash !== snapshot.currentHash) throw new Error("Invalid TCB snapshot hash");
-  return snapshot;
+  return decodeTcbPayload(new Uint8Array(plaintext), expectedCardId);
 }
