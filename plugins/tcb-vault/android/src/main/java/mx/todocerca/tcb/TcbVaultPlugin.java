@@ -29,6 +29,9 @@ public class TcbVaultPlugin extends Plugin {
     private static final long MAX_SAFE = 9007199254740991L;
 
     private String validate(PluginCall call) throws Exception {
+        String url = getBridge().getWebView().getUrl();
+        String host = url == null ? null : android.net.Uri.parse(url).getHost();
+        if (!"localhost".equals(host) && !"127.0.0.1".equals(host)) throw new Exception();
         String scope = call.getString("scope", "");
         String card = call.getString("cardId", "");
         if (!scope.matches("[0-9a-f]{64}") || !card.matches("[0-9]{16}")) throw new Exception();

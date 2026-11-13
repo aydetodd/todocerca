@@ -42,6 +42,7 @@
         "@supabase/supabase-js": "^2.57.2",
         "@tanstack/react-query": "^5.83.0",
         "@tmcw/togeojson": "^7.1.2",
+        "@todocerca/tcb-vault": "file:./plugins/tcb-vault",
         "@types/leaflet": "^1.9.20",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -477,6 +478,8 @@
     "@tanstack/react-query": ["@tanstack/react-query@5.83.0", "", { "dependencies": { "@tanstack/query-core": "5.83.0" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-/XGYhZ3foc5H0VM2jLSD/NyBRIOK4q9kfeml4+0x2DlL6xVuAcVEW+hTlTapAmejObg0i3eNqhkr2dT+eciwoQ=="],
 
     "@tmcw/togeojson": ["@tmcw/togeojson@7.1.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@tmcw/togeojson/-/togeojson-7.1.2.tgz", {}, "sha512-QKnFs9DAuqqBVj4d6c69tV1Dj2TspSBTqffivoN0YoBCVdP/JY1+WaYCJbzU49RkoU5NOSOJ3jtFHCdEUVh21A=="],
+
+    "@todocerca/tcb-vault": ["@todocerca/tcb-vault@file:plugins/tcb-vault", { "peerDependencies": { "@capacitor/core": ">=7.0.0" } }],
 
     "@types/d3-array": ["@types/d3-array@3.2.1", "", {}, "sha512-Y2Jn2idRrLzUfAKV2LyRImR+y4oa2AntrgID95SHJxuMUrkNXmanDSed71sRNZysveJVt1hLLemQZIady0FpEg=="],
 

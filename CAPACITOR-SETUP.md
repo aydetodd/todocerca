@@ -68,6 +68,12 @@ Comprobar en teléfonos reales inicio de sesión, sesión única, cámara QR, pe
 
 ## TCB
 
-El diseño y sus condiciones de seguridad están en `TCB-ARCHITECTURE.md`. No hay archivo `.tcb` activo, reservas de saldo ni pagos sin conexión implementados todavía.
+El diseño y sus condiciones de seguridad están en `TCB-ARCHITECTURE.md`. El proyecto incluye el plugin local `@todocerca/tcb-vault` para archivos privados cifrados en Android/iPhone. `npm install` y `npx cap sync` incorporan el plugin a las plataformas creadas; no requiere copiar manualmente código Java/Swift.
+
+Primero descarga la última versión del repositorio conectado y ejecuta `npm install`, `npm run build` y `CAPACITOR_BUNDLED=1 npx cap sync`. La bóveda solo se admite en la aplicación empaquetada, no en la vista remota ni en el navegador. En PowerShell usa la variable indicada arriba.
+
+No se han compilado ni probado aquí las implementaciones nativas. Antes de conectar a cuentas reales, probar lectura tras reinicio, cierre durante escritura, dispositivo bloqueado, cambio de cuenta, llave ausente y reinstalación en Android/iPhone. No asumir recuperación del respaldo tras pérdida del teléfono: archivos y llaves están excluidos de copias migrables.
+
+No hay archivo `.tcb` activo en las cuentas, reservas de saldo ni pagos sin conexión. La bóveda aún no se conecta a QaRd porque faltan puntos de referencia confirmados por servidor y las pruebas nativas; no sustituye el saldo del servidor.
 
 Lee también el blog de Lovable sobre aplicaciones móviles: https://lovable.dev/blog (busca Capacitor), y la guía oficial: https://capacitorjs.com/docs.

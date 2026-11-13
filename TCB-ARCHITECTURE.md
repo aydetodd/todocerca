@@ -1,14 +1,27 @@
 # TCB: diseño para pagos entre teléfonos
 
-Estado: diseño, no operativo. La preparación de Capacitor no habilita cobros sin conexión ni reemplaza las tarjetas impresas actuales. TCB usará teléfonos en ambos extremos; los lectores de transporte permanecen fuera del protocolo.
+Estado: formato y bóveda nativa implementados, sin activar en cuentas ni pagos. La preparación de Capacitor no habilita cobros sin conexión ni reemplaza las tarjetas impresas actuales. TCB usará teléfonos en ambos extremos; los lectores de transporte permanecen fuera del protocolo.
 
 ### Avance: formato cifrado aislado
 
 `src/lib/tcbCodec.ts` implementa un formato binario de 139 bytes: cabecera TCB/version y nonce aleatorio de 12 bytes, contenido fijo de 106 bytes y etiqueta AES-256-GCM de 16 bytes. El contenido contiene versión, identificador de 16 dígitos, centavos, instante UTC en milisegundos, secuencia y dos hashes SHA-256. La cabecera también se autentica. Los enteros se codifican big-endian y se restringen al rango entero seguro; el hash se calcula sobre los primeros 74 bytes del contenido, con codificación fija.
 
-No crea llaves, archivos en dispositivos, controles en tarjetas ni movimientos. Recibe una llave no exportable proporcionada por el llamador: esa propiedad Web Crypto NO acredita protección por Keystore/Keychain. No usarlo como sustituto de una bóveda nativa validada. La comparación de sucesores exige un punto anterior confiable y no impide que un teléfono manipulado presente una copia antigua completa. El cifrado protege integridad/confidencialidad, no acredita saldo.
+El codec aislado no crea llaves, archivos en dispositivos, controles en tarjetas ni movimientos. Recibe una llave no exportable proporcionada por el llamador: esa propiedad Web Crypto NO acredita protección por Keystore/Keychain. La bóveda nativa descrita abajo cifra sin pasar llaves a JavaScript. La comparación de sucesores exige un punto anterior confiable y no impide que un teléfono manipulado presente una copia antigua completa. El cifrado protege integridad/confidencialidad, no acredita saldo.
 
-Pruebas locales: ida y vuelta exacta en centavos, nonce distinto, alteración de cada byte, llaves/tarjetas incorrectas, tamaño, campos inválidos y secuencia contra un punto de referencia. Persistencia atómica, recuperación, sincronización real y pruebas en teléfonos siguen pendientes.
+Pruebas locales: ida y vuelta exacta en centavos, nonce distinto, alteración de cada byte, llaves/tarjetas incorrectas, tamaño, campos inválidos y secuencia contra un punto de referencia. Las pruebas del coordinador usan un adaptador en memoria exclusivamente en tests; no acreditan funcionamiento nativo. Compilación nativa, persistencia atómica ante cierre, recuperación, sincronización real y pruebas en teléfonos siguen pendientes.
+
+### Avance: bóveda nativa y coordinación del respaldo
+
+`plugins/tcb-vault` es un plugin local Capacitor 7 para Android/iPhone, instalado como dependencia del proyecto. No usa servidor adicional ni servicios de pago.
+
+- Android: AES-256-GCM con llave no exportable de Android Keystore, IV generado por Keystore, archivo en `noBackupFilesDir` y actualización recuperable con `AtomicFile`. No se afirma que todos los teléfonos tengan respaldo de hardware.
+- iPhone: AES-256-GCM con CryptoKit, llave de 32 bytes en Keychain `WhenUnlockedThisDeviceOnly` sin sincronización iCloud, Application Support excluido de copias, protección completa del archivo y reemplazo atómico. La llave pasa por memoria nativa para cifrar; **no** es una llave AES no exportable de Secure Enclave.
+- En ambos: archivo `[16 dígitos].tcb` de 139 bytes, mismo formato que el codec, una carpeta por hash de cuenta/proyecto y una llave por tarjeta. Lectura ausente devuelve `null`; corrupción o llave perdida fallan sin regenerar sobre el archivo. Los errores no incluyen identificadores, saldos ni rutas.
+- Cada escritura verifica hash anterior, secuencia, fecha y tarjeta dentro del código nativo; serializa operaciones, rechaza conflictos y vuelve a leer antes de confirmar. Esto evita sobrescrituras accidentales, **no** restauraciones maliciosas ni falsificación por un dispositivo comprometido.
+- `src/lib/tcbBackup.ts` coordina snapshots confirmados por el servidor, reintentos idempotentes, separación de saldos y cierre de sesión. No crea cargos, reserva fondos ni transmite datos. El contexto de cuenta delimita archivos, no sustituye autorización del servidor.
+- `src/lib/tcbNative.ts` solo permite crear el coordinador desde la aplicación nativa empaquetada en origen local con plugin disponible, sin alternativa web/PWA. El constructor no se monta en pantallas actuales: no se muestran archivos ficticios.
+
+**Pendiente antes de conectar a QaRd:** punto de referencia ordenado y fecha confirmados por el servidor para cada saldo emitido, recuperación de conflictos desde ese punto, vinculación al ciclo de sesión y prueba Android/iPhone con reinicio, fallo de escritura, bloqueo, reinstalación, cambio de cuenta y ausencia de llaves. No usar la hora del teléfono ni el orden de llegada de Realtime como secuencia financiera. La bóveda no es una aprobación de seguridad ni una activación del pago offline.
 
 ## 1. Respaldo local
 

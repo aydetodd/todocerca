@@ -17,6 +17,11 @@ public class TcbVaultPlugin: CAPPlugin, CAPBridgedPlugin {
     private enum Failure: Error { case invalid }
 
     private func identity(_ call: CAPPluginCall) throws -> (String, String) {
+        var localOrigin = false
+        DispatchQueue.main.sync {
+            localOrigin = ["localhost", "127.0.0.1"].contains(self.bridge?.webView?.url?.host ?? "")
+        }
+        guard localOrigin else { throw Failure.invalid }
         guard let scope = call.getString("scope"), let card = call.getString("cardId"),
               scope.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
               card.range(of: "^[0-9]{16}$", options: .regularExpression) != nil else { throw Failure.invalid }
