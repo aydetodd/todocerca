@@ -125,7 +125,7 @@ export default function CoinChallenge({ onVerified }: Props) {
       </div>
       <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
         {status === 'ready' && 'Espera a que la moneda vaya lenta y atrápala.'}
-        {status === 'running' && (phase === 'fast' ? 'Fase rápida · Espera' : 'Fase lenta · Atrapa la moneda')}
+        {status === 'running' && (phase === 'fast' ? 'Moneda rápida, espera' : 'Atrápala ahora')}
         {status === 'passed' && 'Moneda atrapada. Puedes continuar.'}
         {status === 'blocked' && 'Intento bloqueado: captura en fase rápida. Vuelve a abrir esta pantalla para intentarlo de nuevo.'}
       </p>

@@ -1,5 +1,7 @@
 # Productos estándar sin fotos
 ## Atrapa la Moneda
+- [x] Cambiar mensajes de fases a «Moneda rápida, espera» y «Atrápala ahora».
+- [ ] Validación de token temporal en servidor y límite por teléfono/IP: espera aceptación del límite ad hoc (no existe una protección estándar disponible); debe impedir también el acceso directo a Supabase Auth, no solo el envío del formulario. No afirmar que una captura local prueba humanidad.
 - [x] Integrar reto compartido en inicio/registro y registro de proveedor: fases rápida/lenta, recorrido aleatorio y estela; bloquear solo el intento ante captura rápida, sin cambios a cuentas ni permisos.
 - [x] Seis pruebas correctas; captura lenta con puntero, bloqueo rápido, entrada de proveedor desde portada y teclado/movimiento reducido comprobados en 1280/375px sin errores. No sustituye protección del servidor; registro empresarial autenticado no comprobable por sesión externa no disponible.
 ## Aplicación móvil y TCB
