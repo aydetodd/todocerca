@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Upload, ArrowLeft, ArrowRight } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { trackProviderRegistration, trackConversion } from '@/lib/analytics';
+import CoinChallenge from '@/components/CoinChallenge';
 
 interface Product {
   id: string;
@@ -81,6 +82,7 @@ const SUBSCRIPTION_PLANS: PlanInfo[] = [
 const TAXI_RUTA_MAX_PRODUCTS = 2;
 
 export default function ProviderRegistration({ onComplete, userData }: ProviderRegistrationProps) {
+  const [coinVerified, setCoinVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [couponCode, setCouponCode] = useState('');
@@ -127,9 +129,10 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   }]);
 
   useEffect(() => {
+    if (!coinVerified) return;
     fetchCategories();
     getCurrentLocation();
-  }, []);
+  }, [coinVerified]);
 
   const getCurrentLocation = () => {
     // NO obtener ubicación GPS automáticamente
@@ -210,6 +213,7 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
   };
 
   const handleSubmit = async () => {
+    if (!coinVerified) return;
     console.log('🚀 Starting handleSubmit...');
     trackProviderRegistration('started');
     
@@ -704,8 +708,17 @@ export default function ProviderRegistration({ onComplete, userData }: ProviderR
     </div>
   );
 
+  if (!coinVerified) {
+    return (
+      <div className="max-w-md mx-auto p-6 pb-40 space-y-6">
+        <h1 className="text-xl font-semibold">Registrar como Proveedor</h1>
+        <CoinChallenge onVerified={() => setCoinVerified(true)} />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-6 pb-40 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Registro de Proveedor</CardTitle>

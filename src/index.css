@@ -805,3 +805,25 @@ Paleta: Azul marino profundo con acentos brillantes
   --border: 210 16% 88%;
   color-scheme: light;
 }
+
+/* Shared coin challenge: theme-aware artwork, native canvas motion. */
+.coin-challenge {
+  --coin-gold: 44 88% 55%;
+  --coin-light: 49 100% 85%;
+  --coin-ink: 34 77% 18%;
+}
+.coin-arena {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 208px;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted));
+  touch-action: manipulation;
+  cursor: crosshair;
+  transition: none;
+}
+.coin-arena:hover { background: hsl(var(--muted)); }

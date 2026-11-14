@@ -18,6 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import UbicacionSelector, { UbicacionValue } from "@/components/UbicacionSelector";
 import { CLAVE_LENGTH, claveToPassword, esClaveUniversal, passwordVariants } from "@/lib/claveUniversal";
+import CoinChallenge from '@/components/CoinChallenge';
 
 const Auth = () => {
   const [telefono, setTelefono] = useState("");
@@ -27,7 +28,8 @@ const Auth = () => {
   const [nombre, setNombre] = useState("");
   const [apodo, setApodo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(() => new URLSearchParams(window.location.search).get('mode') !== 'register');
+  const [coinVerified, setCoinVerified] = useState(false);
   // Todos se registran como cliente, upgrade a proveedor desde perfil
   const userType = 'cliente';
   const [showProviderRegistration, setShowProviderRegistration] = useState(false);
@@ -81,6 +83,7 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!coinVerified) return;
     console.log('🚀 handleAuth called!');
     console.log('📋 Form state:', { 
       isLogin, 
@@ -648,7 +651,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 pb-40">
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
@@ -699,6 +702,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!coinVerified ? <CoinChallenge onVerified={() => setCoinVerified(true)} /> : (
             <form onSubmit={handleAuth} className="space-y-4">
               {!isLogin && (
                 <>
@@ -962,6 +966,7 @@ const Auth = () => {
                 )}
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
         <Button

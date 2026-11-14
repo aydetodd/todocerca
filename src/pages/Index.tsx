@@ -45,7 +45,7 @@ export default function Index() {
             La plataforma líder para encontrar proveedores confiables y hacer crecer tu negocio
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-xl mx-auto">
-            <Button size="lg" className="lp-btn-primary rounded-xl text-base px-8 w-full sm:w-auto" onClick={() => go('/auth')}>
+            <Button size="lg" className="lp-btn-primary rounded-xl text-base px-8 w-full sm:w-auto" onClick={() => go('/auth?mode=register')}>
               <Package className="mr-2 h-5 w-5" /> Registrar como Proveedor
             </Button>
             <Button size="lg" variant="outline" className="rounded-xl text-base px-8 w-full sm:w-auto bg-card border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300" onClick={() => go('/buscar-transporte')}>

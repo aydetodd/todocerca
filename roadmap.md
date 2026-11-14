@@ -1,4 +1,7 @@
 # Productos estándar sin fotos
+## Atrapa la Moneda
+- [x] Integrar reto compartido en inicio/registro y registro de proveedor: fases rápida/lenta, recorrido aleatorio y estela; bloquear solo el intento ante captura rápida, sin cambios a cuentas ni permisos.
+- [x] Seis pruebas correctas; captura lenta con puntero, bloqueo rápido, entrada de proveedor desde portada y teclado/movimiento reducido comprobados en 1280/375px sin errores. No sustituye protección del servidor; registro empresarial autenticado no comprobable por sesión externa no disponible.
 ## Aplicación móvil y TCB
 - [x] Continuar entorno .tcb: plugin privado Android/iPhone, llaves nativas, escritura recuperable y coordinación de versiones implementados; 40 pruebas locales correctas y acceso web rechazado, sin convertir respaldos en saldo gastable. No compilado ni probado en teléfonos.
 - [ ] Conectar respaldos reales a QaRd: requiere punto de referencia ordenado por servidor y validar primero compilación/persistencia/recuperación nativa en teléfonos; no se muestran archivos ni se cambian cobros actuales.

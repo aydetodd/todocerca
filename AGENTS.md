@@ -35,3 +35,4 @@
 - Enterprise funds use qard_wallets.saldo_comercio_mxn, mirrored into its sub-index 1 card; terminal snapshots return only the invited merchant business ledger and funds.
 - Terminal activation is serialized per invited account with branch-scoped registrations; set the active invite before its permission so branch triggers preserve the selected branch, and revoke/deactivate only the matching active registration.
 - Enterprise activation dialogs remain mounted through success and require acknowledgment; refresh identity and card data immediately without unmounting the page.
+- CoinChallenge is local friction, not server proof.
