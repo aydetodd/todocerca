@@ -3459,6 +3459,7 @@ export type Database = {
       pagos_config: {
         Row: {
           created_at: string
+          despensa_habilitada: boolean
           id: boolean
           notas: string | null
           proveedor_activo: string
@@ -3468,6 +3469,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          despensa_habilitada?: boolean
           id?: boolean
           notas?: string | null
           proveedor_activo?: string
@@ -3477,6 +3479,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          despensa_habilitada?: boolean
           id?: boolean
           notas?: string | null
           proveedor_activo?: string
@@ -4119,6 +4122,131 @@ export type Database = {
           longitude?: number | null
           nombre?: string
           telefono?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qard_bono_entregas: {
+        Row: {
+          created_at: string
+          empleado_user_id: string
+          empresa_user_id: string
+          id: string
+          lote_id: string
+          monto: number
+          operation_key: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_user_id: string
+          empresa_user_id: string
+          id?: string
+          lote_id: string
+          monto: number
+          operation_key: string
+        }
+        Update: {
+          created_at?: string
+          empleado_user_id?: string
+          empresa_user_id?: string
+          id?: string
+          lote_id?: string
+          monto?: number
+          operation_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_bono_entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "qard_bono_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qard_bono_lotes: {
+        Row: {
+          categoria: string
+          creado_por: string
+          created_at: string
+          empresa_user_id: string
+          folio_factura: string
+          id: string
+          monto_total: number
+          saldo_disponible: number
+        }
+        Insert: {
+          categoria: string
+          creado_por: string
+          created_at?: string
+          empresa_user_id: string
+          folio_factura: string
+          id?: string
+          monto_total: number
+          saldo_disponible: number
+        }
+        Update: {
+          categoria?: string
+          creado_por?: string
+          created_at?: string
+          empresa_user_id?: string
+          folio_factura?: string
+          id?: string
+          monto_total?: number
+          saldo_disponible?: number
+        }
+        Relationships: []
+      }
+      qard_comercio_bonos: {
+        Row: {
+          categoria: string
+          saldo_mxn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categoria: string
+          saldo_mxn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categoria?: string
+          saldo_mxn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qard_comercio_giro: {
+        Row: {
+          created_at: string
+          estado: string
+          giro: string
+          revisado_at: string | null
+          revisado_por: string | null
+          sellos: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          giro: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          sellos?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          giro?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          sellos?: string[]
           updated_at?: string
           user_id?: string
         }
@@ -4841,6 +4969,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      qard_tcb_cadena: {
+        Row: {
+          created_at: string
+          hash: string
+          movimiento_id: string
+          prev_hash: string
+          seq: number
+          titular_user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          created_at?: string
+          hash: string
+          movimiento_id: string
+          prev_hash: string
+          seq?: number
+          titular_user_id: string
+          wallet_id: string
+        }
+        Update: {
+          created_at?: string
+          hash?: string
+          movimiento_id?: string
+          prev_hash?: string
+          seq?: number
+          titular_user_id?: string
+          wallet_id?: string
+        }
+        Relationships: []
       }
       qard_verification_results: {
         Row: {
@@ -8305,6 +8463,31 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_bono_convertir: { Args: { _key: string }; Returns: Json }
+      qard_bono_emitir_lote: {
+        Args: {
+          _categoria: string
+          _folio: string
+          _monto: number
+          _telefono: string
+        }
+        Returns: string
+      }
+      qard_bono_entregar: {
+        Args: { _key: string; _lote: string; _monto: number; _telefono: string }
+        Returns: Json
+      }
+      qard_bono_indice: { Args: { _cat: string }; Returns: number }
+      qard_bono_pagar: {
+        Args: {
+          _amount: number
+          _cvv: string
+          _from: string
+          _key: string
+          _merchant: string
+        }
+        Returns: Json
+      }
       qard_bucket_for_user: {
         Args: { _user_id: string }
         Returns: {
@@ -8374,7 +8557,44 @@ export type Database = {
         Returns: boolean
       }
       qard_dec: { Args: { _v: string }; Returns: string }
+      qard_despensa_on: { Args: never; Returns: boolean }
+      qard_despensa_switch: { Args: { _on: boolean }; Returns: boolean }
       qard_enc: { Args: { _v: string }; Returns: string }
+      qard_ensure_bono: {
+        Args: { _cat: string; _wallet: string }
+        Returns: {
+          alias: string
+          created_at: string
+          curp_enc: string | null
+          curp_hash: string | null
+          curp_verificada: boolean
+          cvv: string
+          cvv_dinamico: string | null
+          cvv_updated_at: string
+          estado: string
+          fecha_vencimiento: string
+          horario_fin: string | null
+          horario_inicio: string | null
+          id: string
+          limite_por_transaccion: number | null
+          nombre_completo: string | null
+          qard_number: string
+          saldo_mxn: number
+          sub_index: number
+          tipo: string
+          titular_user_id: string
+          updated_at: string
+          verificacion_costo: number
+          verificada_at: string | null
+          wallet_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "qard_sub_qr"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       qard_ensure_empresarial: {
         Args: { _user_id: string }
         Returns: undefined
@@ -8386,6 +8606,12 @@ export type Database = {
         Args: { _nivel2_id: string }
         Returns: string
       }
+      qard_giro_bonos: { Args: { _giro: string }; Returns: string[] }
+      qard_giro_revisar: {
+        Args: { _aprobar: boolean; _user: string }
+        Returns: Json
+      }
+      qard_giro_solicitar: { Args: { _giro: string }; Returns: Json }
       qard_limite_cobros: {
         Args: { _user_id: string }
         Returns: {
@@ -8520,6 +8746,17 @@ export type Database = {
       qard_revertir_pago_servicio: {
         Args: { _motivo: string; _pago_id: string }
         Returns: Json
+      }
+      qard_sello_set: {
+        Args: { _categoria: string; _on: boolean }
+        Returns: string[]
+      }
+      qard_sellos_publicos: {
+        Args: { _ids: string[] }
+        Returns: {
+          sellos: string[]
+          user_id: string
+        }[]
       }
       qard_sub_qr_rotar_cvv: {
         Args: { _nuevo_cvv?: string; _sub_qr_id: string }
