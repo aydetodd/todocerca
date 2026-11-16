@@ -1,0 +1,4 @@
+REVOKE EXECUTE ON FUNCTION public.qard_bono_guard(), public.qard_despensa_al_nacer(), public.tg_qard_tcb_hash(), public.qard_ensure_bono(uuid,text), public.qard_despensa_on(), public.qard_giro_solicitar(text), public.qard_giro_revisar(uuid,boolean), public.qard_sello_set(text,boolean), public.qard_despensa_switch(boolean), public.qard_bono_emitir_lote(text,text,numeric,text), public.qard_bono_entregar(uuid,text,numeric,uuid), public.qard_bono_pagar(text,text,numeric,text,uuid), public.qard_bono_convertir(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.qard_bono_guard(), public.qard_despensa_al_nacer(), public.tg_qard_tcb_hash() FROM authenticated;
+DROP POLICY "Partes ven entregas" ON public.qard_bono_entregas;
+CREATE POLICY "Partes ven entregas" ON public.qard_bono_entregas FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND (empresa_user_id=auth.uid() OR empleado_user_id=auth.uid() OR public.has_role(auth.uid(),'admin')));
