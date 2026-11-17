@@ -1,3 +1,5 @@
+import BonosUsuario from "@/components/qard/BonosUsuario";
+import { siguienteFamiliar } from "@/lib/qardBonos";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -366,9 +368,8 @@ export default function Qard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !wallet) return;
     const usados = subs.map(s => s.sub_index);
-    // La terminación 01 está reservada para la QaRd Empresarial: las familiares empiezan en 02
-    let idx = 2;
-    while (usados.includes(idx) && idx < 100) idx++;
+    // 00 eje, 01 empresarial, 02-10 bonos/reservadas: las familiares empiezan en 11
+    const idx = siguienteFamiliar(usados) ?? 100;
     if (idx >= 100) return toast({ title: "Máximo de sub-QR alcanzado", variant: "destructive" });
 
     const base = qardNumber.slice(0, 14);
@@ -541,6 +542,7 @@ export default function Qard() {
         );
       })()}
 
+      <BonosUsuario subs={subs as any} onChanged={() => void cargar()} />
       <EmpresarialPanel numero={subs.find(s => s.sub_index === 1)?.qard_number} onChanged={() => { void recargarDatos(); void cargar(); }} onLibro={() => setCobrosOpen(true)} onQr={() => { const emp = subs.find(s => s.sub_index === 1); if (emp) setQrFullscreen({ value: emp.qard_number, label: 'QaRd Empresarial · Cobro' }); }} />
 
       {/* Activación / identidad financiera */}
@@ -632,7 +634,7 @@ export default function Qard() {
               onChange={e => setP2pFromId(e.target.value)}
             >
               <option value={qardNumber}>Principal (00) · {formatNumero(qardNumber)}</option>
-              {subs.filter(s => s.sub_index > 0 && s.estado === "activa").map(s => (
+              {subs.filter(s => s.sub_index > 0 && s.estado === "activa" && !(s.sub_index >= 2 && s.sub_index <= 10)).map(s => (
                 <option key={s.id} value={s.qard_number}>
                   {s.alias} · {String(s.sub_index).padStart(2,"0")} · saldo ${Number(s.saldo_mxn).toFixed(2)}
                 </option>
@@ -676,7 +678,7 @@ export default function Qard() {
       </Card>
 
 
-      <BusinessPayment accounts={subs.filter(s => s.estado === "activa").map(s => ({ number: s.qard_number, name: s.sub_index === 0 ? "QaRd Personal" : s.alias }))} onPaid={() => void cargar()} />
+      <BusinessPayment accounts={subs.filter(s => s.estado === "activa" && !(s.sub_index >= 2 && s.sub_index <= 10)).map(s => ({ number: s.qard_number, name: s.sub_index === 0 ? "QaRd Personal" : s.alias }))} onPaid={() => void cargar()} />
       </AccordionContent></AccordionItem></Accordion>
 
       <Accordion type="single" collapsible><AccordionItem value="familiares"><AccordionTrigger>👨‍👩‍👧 Sub-QR familiares</AccordionTrigger><AccordionContent>
@@ -696,7 +698,7 @@ export default function Qard() {
         </div>
         <div className="space-y-2">
           {(() => {
-            const familiares = subs.filter(s => s.sub_index > 1);
+            const familiares = subs.filter(s => s.sub_index >= 11);
             const counts = {
               activa: familiares.filter(s => s.estado === "activa").length,
               apagada: familiares.filter(s => s.estado === "apagada").length,
@@ -819,7 +821,7 @@ export default function Qard() {
         const libro = construirLibro(mov as any, titularId, pasajes);
         const saldoEje = Number(wallet?.saldo_mxn ?? 0);
         const saldoCobros = Number((wallet as any)?.saldo_comercio_mxn ?? 0);
-        const subsActivas = subs.filter(s => s.sub_index > 1 && s.estado !== "cancelada");
+        const subsActivas = subs.filter(s => s.sub_index >= 11 && s.estado !== "cancelada");
         const pozoRutas = (rutasIngreso || []).reduce((a, r) => a + r.pozo, 0);
         const total = saldoEje + saldoCobros + subsActivas.reduce((a, s) => a + Number(s.saldo_mxn ?? 0), 0) + pozoRutas;
         const rutasOrden = [...(rutasIngreso || [])].sort((a, b) => b.pozo + b.standN - (a.pozo + a.standN));

@@ -1,3 +1,4 @@
+import { bonoPorCat } from '@/lib/qardBonos';
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -23,6 +24,11 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
   shadowUrl: markerShadow,
 });
+
+const sellosHtml = (cats?: string[]) => (cats ?? []).map(c => {
+  const b = bonoPorCat(c); if (!b) return '';
+  return `<span class="sello-bono">${b.emoji} Acepta ${b.nombre}</span>`;
+}).join('');
 
 interface Provider {
   id: string;
@@ -460,6 +466,16 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldInit]);
 
+  // Sellos "Acepta Bono X" de comercios con giro aprobado
+  const sellosRef = useRef<Record<string, string[]>>({});
+  const sellosIds = validProviders.map(p => p.user_id).sort().join(',');
+  useEffect(() => {
+    if (!sellosIds || vehicleFilter === 'ruta' || vehicleFilter === 'taxi') return;
+    void supabase.rpc('qard_sellos_publicos' as any, { _ids: sellosIds.split(',').slice(0, 500) }).then(({ data }) => {
+      sellosRef.current = Object.fromEntries(((data ?? []) as { user_id: string; sellos: string[] }[]).map(r => [r.user_id, r.sellos]));
+    });
+  }, [sellosIds, vehicleFilter]);
+
   // Update markers when providers change - smooth movement like TrackingMap
   useEffect(() => {
     const map = mapRef.current;
@@ -632,6 +648,7 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
         <div style="padding: 12px; min-width: 250px; background: hsl(215, 30%, 22%); border-radius: 8px; position: relative;">
           ${providerFavBtn}
           <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 12px; color: #f8fafc; padding-right: 30px;">${provider.business_name}</h3>
+          <div data-sellos></div>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <button onclick='window.makeCall(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: hsl(215, 70%, 48%); color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">📞</button>
             <button onclick='window.openWhatsApp(${JSON.stringify(provider.business_phone || "")})' style="flex: 1; background-color: #22c55e; color: white; padding: 8px; border-radius: 6px; border: none; cursor: pointer;">💬</button>
@@ -643,6 +660,10 @@ function ProvidersMap({ providers, onOpenChat, vehicleFilter = 'all', routeOverl
       `;
       
       marker.bindPopup(popupContent, { closeButton: true, autoClose: false, closeOnClick: false, maxWidth: 350 });
+      marker.on('popupopen', (e: L.PopupEvent) => {
+        const el = e.popup.getElement()?.querySelector('[data-sellos]');
+        if (el) el.innerHTML = sellosHtml(sellosRef.current[provider.user_id]);
+      });
       markersRef.current.set(provider.user_id, marker);
       applyColectivoAforo(marker, showAsBus && routeType === 'taxi_colectivo' ? aforo[provider.user_id] : undefined);
       console.log(`✅ Nuevo marcador: ${provider.business_name}`);

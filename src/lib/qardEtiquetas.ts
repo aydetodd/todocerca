@@ -112,6 +112,7 @@ const ETIQUETAS: Record<Ambito, Record<string, string>> = {
     transferencia_p2p_out: "Transferencia enviada",
     cobro_comercio: "Pago en comercio",
     traspaso_cobros_out: "Traspaso a mi cuenta eje",
+    bono_conversion_in: "Bonos convertidos a saldo general",
     retiro_qard: "Retiro a otra QaRd",
     retiro_oxxo: "Retiro en OXXO",
     retiro_spei: "Envío SPEI",
@@ -140,6 +141,8 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
   for (const m of movs) {
     const abs = Math.abs(Number(m.monto_mxn ?? 0));
     const md = (m.metadata ?? {}) as Record<string, unknown>;
+    // Los bonos viven en su propio libro (Mis bonos); solo su conversión entra a cobros.
+    if ((m.ambito === "bonos" || md.bolsa === "bono" || md.bolsa === "bono_comercio") && m.tipo !== "bono_conversion_in") continue;
     const esSub = !!m.sub_qr_id && m.sub_qr_id !== titularSubId;
     const folio = folioMovimiento(m);
     const comprobante = comprobanteMovimiento(m);
@@ -222,6 +225,9 @@ export function construirLibro(movs: MovBase[], titularSubId: string | null | un
         break;
       case "traspaso_cobros_out":
         push("cobros", -abs, ETIQUETAS.cobros.traspaso_cobros_out);
+        break;
+      case "bono_conversion_in":
+        push("cobros", abs, ETIQUETAS.cobros.bono_conversion_in);
         break;
       case "traspaso_cobros_in":
         push("eje", abs, ETIQUETAS.eje.traspaso_cobros_in);

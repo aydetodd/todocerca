@@ -1,3 +1,4 @@
+import AdminBonos from '@/components/qard/AdminBonos';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bus, Ticket, Building2, ShieldCheck, Search, Package } from 'lucide-react';
@@ -71,6 +72,7 @@ export default function MainHome() {
         )}
 
         {/* Panel de chofer (auto-oculto si el usuario no es chofer activo) */}
+        {isRefundAdmin && <AdminBonos />}
         {isRefundAdmin && <><RefundRequests ambito="cobros" admin /><details><summary className="cursor-pointer text-sm font-semibold">Devolución excepcional</summary><RefundClaim admin /></details></>}
         <DriverProfilePanel />
 
