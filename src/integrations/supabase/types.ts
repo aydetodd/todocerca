@@ -4127,6 +4127,44 @@ export type Database = {
         }
         Relationships: []
       }
+      qard_bolsillos: {
+        Row: {
+          concepto: string
+          created_at: string
+          id: string
+          saldo_mxn: number
+          titular_user_id: string
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          concepto: string
+          created_at?: string
+          id: string
+          saldo_mxn?: number
+          titular_user_id: string
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          concepto?: string
+          created_at?: string
+          id?: string
+          saldo_mxn?: number
+          titular_user_id?: string
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_bolsillos_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "qard_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qard_bono_entregas: {
         Row: {
           created_at: string
@@ -8461,6 +8499,22 @@ export type Database = {
           _referencia?: string
           _user_id: string
         }
+        Returns: Json
+      }
+      qard_bolsillo_create: {
+        Args: { _amount: number; _concepto: string; _id: string; _pin: string }
+        Returns: Json
+      }
+      qard_bolsillo_read: {
+        Args: { _id: string; _token: string }
+        Returns: Json
+      }
+      qard_bolsillo_return: {
+        Args: { _amount: number; _id: string; _key: string; _token: string }
+        Returns: Json
+      }
+      qard_bolsillo_unlock: {
+        Args: { _id: string; _pin: string }
         Returns: Json
       }
       qard_bono_convertir: { Args: { _key: string }; Returns: Json }

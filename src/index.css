@@ -702,6 +702,11 @@ Paleta: Azul marino profundo con acentos brillantes
   .qard-card-number { position: absolute; inset: auto 5% 25%; }
   .qard-card-details { position: absolute; inset: auto 5% 7%; }
   .qard-plastic-off { background: var(--qard-off); }
+  .qard-plastic { transition: filter .5s ease, opacity .5s ease; }
+  .qard-without-funds { filter: grayscale(1); opacity: .7; }
+  .qard-deposit-glow { animation: qard-funds-glow 1.2s ease-out; }
+  @keyframes qard-funds-glow { 40% { box-shadow: 0 0 22px hsl(var(--primary) / .55); } }
+  @media (prefers-reduced-motion: reduce) { .qard-deposit-glow { animation: none; } .qard-plastic { transition: none; } }
   .qard-plastic-off .qard-logo, .qard-plastic-off .qard-chip { filter: grayscale(1); }
   .qard-plastic-empresarial { background: var(--qard-plastic-empresarial); }
   .qard-plastic-empresarial .qard-marca { color: var(--qard-empresarial-gold); letter-spacing: 0.12em; }

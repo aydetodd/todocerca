@@ -1,4 +1,5 @@
 import BonosUsuario from "@/components/qard/BonosUsuario";
+import Bolsillos from "@/components/qard/Bolsillos";
 import { siguienteFamiliar } from "@/lib/qardBonos";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -263,14 +264,24 @@ export default function Qard() {
       toast({ title: "Recarga exitosa", description: `+$${params.get("monto")} MXN acreditados` });
     }
     // realtime
-    const ch = supabase.channel("qard-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "qard_wallets" }, () => cargar())
-      .on("postgres_changes", { event: "*", schema: "public", table: "qard_sub_qr" }, () => cargar())
-      .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos" }, () => cargar())
+    if (!authUser) return;
+    const ch = supabase.channel(`qard-realtime-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_wallets", filter: `titular_user_id=eq.${authUser.id}` }, payload => {
+        const row = payload.new as WalletRow;
+        if (row.id) setWallet(current => current ? { ...current, ...row, cvv_dinamico: current.cvv_dinamico } : current);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_sub_qr", filter: `titular_user_id=eq.${authUser.id}` }, payload => {
+        if (payload.eventType === 'UPDATE') {
+          const row = payload.new as SubQR;
+          setSubs(current => current.map(sub => sub.id === row.id ? { ...sub, ...row, cvv: sub.cvv, cvv_dinamico: sub.cvv_dinamico } : sub));
+        }
+        void cargar();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "qard_movimientos", filter: `titular_user_id=eq.${authUser.id}` }, () => cargar())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
-  }, []);
+  }, [authUser?.id]);
 
   const transferirSub = (sub: SubQR, signo: 1 | -1) => {
     setSubTransferTarget(sub);
@@ -418,6 +429,7 @@ export default function Qard() {
               numero={qardNumber}
               nombre={identidad?.nombre_completo || titular?.nombre_completo || ""}
               indice={0}
+              saldo={saldo}
               estado={titular?.estado ?? "apagada"}
               vence={titular?.fecha_vencimiento}
               cvv={titular?.cvv}
@@ -498,6 +510,7 @@ export default function Qard() {
             <QardTarjeta
               empresarial
               numero={emp.qard_number}
+              saldo={Number(emp.saldo_mxn)}
               nombre={emp.alias}
               indice={1}
               estado={emp.estado}
@@ -543,6 +556,13 @@ export default function Qard() {
       })()}
 
       <BonosUsuario subs={subs as any} onChanged={() => void cargar()} />
+      <div className="space-y-4">
+        {subs.filter(s => s.sub_index >= 11).map(s => <div key={s.id} className="space-y-2">
+          <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || ''} indice={s.sub_index} estado={s.estado} saldo={Number(s.saldo_mxn)} activada={!!s.curp_verificada} nivel={s.curp_verificada ? 1 : 0} vence={s.fecha_vencimiento} cvv={s.cvv} cvvVisible={false} compactControls onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => setQrFullscreen({ value: s.qard_number, label: s.alias })} onEstadoCuenta={() => abrirMovsSub(s)} />
+          <div className="flex justify-between text-sm"><span>{s.alias}</span><b>${Number(s.saldo_mxn).toFixed(2)}</b></div>
+        </div>)}
+      </div>
+      <Bolsillos onChanged={() => void cargar()} />
       <EmpresarialPanel numero={subs.find(s => s.sub_index === 1)?.qard_number} onChanged={() => { void recargarDatos(); void cargar(); }} onLibro={() => setCobrosOpen(true)} onQr={() => { const emp = subs.find(s => s.sub_index === 1); if (emp) setQrFullscreen({ value: emp.qard_number, label: 'QaRd Empresarial · Cobro' }); }} />
 
       {/* Activación / identidad financiera */}
@@ -727,7 +747,7 @@ export default function Qard() {
                 {familiares.filter(s => s.estado === filtroGrupo).map(s => (
             <div key={s.id} className="space-y-2 py-3 border-b last:border-b-0">
               <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || ""} nivel={s.curp_verificada ? 1 : 0} activada={!!s.curp_verificada}
-                indice={s.sub_index} estado={s.estado} vence={s.fecha_vencimiento} cvv={s.cvv}
+                indice={s.sub_index} estado={s.estado} saldo={Number(s.saldo_mxn)} vence={s.fecha_vencimiento} cvv={s.cvv}
                 cvvVisible={!!cvvVisible[s.id]}
                 onVerCvv={() => setCvvVisible(v => ({ ...v, [s.id]: !v[s.id] }))}
                 onRotarCvv={() => rotarCvv(s.id)}

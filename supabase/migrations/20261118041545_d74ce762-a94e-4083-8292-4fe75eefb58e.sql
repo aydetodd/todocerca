@@ -1,0 +1,14 @@
+ALTER FUNCTION public.qard_bolsillo_create(uuid,text,text,numeric) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_bolsillo_unlock(uuid,text) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_bolsillo_read(uuid,text) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_bolsillo_return(uuid,text,numeric,uuid) SET SCHEMA qard_private;
+GRANT USAGE ON SCHEMA qard_private TO authenticated;
+CREATE FUNCTION public.qard_bolsillo_create(_id uuid,_concepto text,_pin text,_amount numeric) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_bolsillo_create(_id,_concepto,_pin,_amount) WHERE auth.uid() IS NOT NULL AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false $$;
+CREATE FUNCTION public.qard_bolsillo_unlock(_id uuid,_pin text) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_bolsillo_unlock(_id,_pin) WHERE auth.uid() IS NOT NULL AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false $$;
+CREATE FUNCTION public.qard_bolsillo_read(_id uuid,_token text) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_bolsillo_read(_id,_token) WHERE auth.uid() IS NOT NULL AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false $$;
+CREATE FUNCTION public.qard_bolsillo_return(_id uuid,_token text,_amount numeric,_key uuid) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_bolsillo_return(_id,_token,_amount,_key) WHERE auth.uid() IS NOT NULL AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false $$;
+REVOKE ALL ON FUNCTION public.qard_bolsillo_create(uuid,text,text,numeric),public.qard_bolsillo_unlock(uuid,text),public.qard_bolsillo_read(uuid,text),public.qard_bolsillo_return(uuid,text,numeric,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.qard_bolsillo_create(uuid,text,text,numeric),public.qard_bolsillo_unlock(uuid,text),public.qard_bolsillo_read(uuid,text),public.qard_bolsillo_return(uuid,text,numeric,uuid) TO authenticated;
+ALTER POLICY bolsillo_owner_read ON public.qard_bolsillos USING(titular_user_id=auth.uid() AND coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false);
+CREATE INDEX qard_bolsillos_owner ON public.qard_bolsillos(titular_user_id);
+CREATE INDEX qard_bolsillos_wallet ON public.qard_bolsillos(wallet_id);

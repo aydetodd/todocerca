@@ -1,5 +1,5 @@
 // QaRd — Retiro del saldo de cobros del comercio
-// - oxxo / spei: simulados (pendiente STP)
+// - Bank withdrawals remain unavailable until a real provider is integrated.
 // - qard: transferencia REAL a otra QaRd (16 díg), requiere CVV dinámico de 4 díg del destino
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -42,6 +42,7 @@ serve(async (req) => {
     const origen = String(body.origen || "comercio").toLowerCase() === "eje" ? "eje" : "comercio";
 
     if (!["oxxo", "spei", "qard"].includes(metodo)) return err("Método inválido");
+    if (metodo === "spei") return err("Retiro bancario pendiente de conexión con Transfer.com. No se descontó dinero ni comisión.");
     if (!RETIROS_STP_ENABLED && METODOS_RETIRO_BLOQUEADOS.includes(metodo)) {
       return err(MENSAJE_RETIRO_BLOQUEADO);
     }
@@ -228,8 +229,8 @@ serve(async (req) => {
       metadata.referencia = referencia;
     }
 
-    // Comisión: 2% solo al sacar dinero de la bóveda (SPEI / OXXO). Transferencias QaRd: 0%.
-    const comisionRetiro = metodo === "qard" ? 0 : +(monto * 0.02).toFixed(2);
+    // TodoCerca 2% applies exclusively to real SPEI withdrawals, never internal conversion or QaRd.
+    const comisionRetiro = metodo === "spei" ? +(monto * 0.02).toFixed(2) : 0;
     const recibe = +(monto - comisionRetiro).toFixed(2);
     const saldoDespues = +(disponible - monto).toFixed(2);
 

@@ -71,7 +71,9 @@ export default function BonosComercio({ onChanged }: { onChanged: () => void }) 
       <Button className="w-full min-h-12" disabled={busy || totalBonos <= 0} onClick={async () => { if (await rpc('qard_bono_convertir', { _key: convKey.current }, 'Bonos convertidos a saldo general')) convKey.current = crypto.randomUUID(); }}>
         Convertir bonos a saldo general (${totalBonos.toFixed(2)})
       </Button>
-      <p className="text-xs text-muted-foreground">El dinero pasa a tu saldo Empresarial, listo para enviarse a tu banco por SPEI.</p>
+      <p className="text-xs text-muted-foreground">Conversión interna a Cuenta 01: gratis, comisión $0.00. El 100% pasa a tu saldo Empresarial.</p>
+      <Button variant="outline" className="w-full" disabled>Retirar a mi banco</Button>
+      <p className="text-xs text-muted-foreground">Solo el retiro bancario SPEI cobra 2% de TodoCerca. Transfer.com pendiente de conexión; no se descuenta ninguna comisión mientras el retiro no esté disponible.</p>
     </div>
 
     {lotes.length > 0 && <div className="space-y-2">

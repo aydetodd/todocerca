@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { bonoPorIndice } from '@/lib/qardBonos';
+import QardTarjeta from './QardTarjeta';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { QRCodeSVG } from 'qrcode.react';
 
 type Sub = { id: string; sub_index: number; qard_number: string; alias: string; estado: string; saldo_mxn: number };
 type Mov = { id: string; tipo: string; monto_mxn: number; created_at: string; descripcion: string | null; sub_qr_id: string | null };
@@ -18,6 +21,7 @@ export default function BonosUsuario({ subs, onChanged }: { subs: Sub[]; onChang
   const [movs, setMovs] = useState<Mov[]>([]);
   const [hashes, setHashes] = useState<Record<string, string>>({});
   const [pagar, setPagar] = useState<string | null>(null);
+  const [qr, setQr] = useState<Sub | null>(null);
   const [comercio, setComercio] = useState(''); const [monto, setMonto] = useState(''); const [cvv, setCvv] = useState('');
   const [busy, setBusy] = useState(false);
   const key = useRef<string>(crypto.randomUUID());
@@ -50,7 +54,8 @@ export default function BonosUsuario({ subs, onChanged }: { subs: Sub[]; onChang
     <h3 className="font-bold text-lg">Mis bonos</h3>
     {bonos.map(b => {
       const info = bonoPorIndice(b.sub_index); const apagada = b.estado !== 'activa';
-      return <div key={b.id} className={`rounded-xl border p-4 space-y-2 ${apagada ? 'opacity-60' : ''}`}>
+      return <div key={b.id} className="space-y-2 border-b pb-4">
+        <QardTarjeta numero={b.qard_number} nombre="" indice={b.sub_index} estado={b.estado} saldo={Number(b.saldo_mxn)} activada={!apagada} cvvVisible={false} compactControls onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => setQr(b)} />
         <div className="flex items-center justify-between gap-2">
           <div><div className="font-semibold">{info?.emoji} {b.alias} · {String(b.sub_index).padStart(2, '0')}</div><div className="text-xs font-mono text-muted-foreground">{fmt(b.qard_number)}</div></div>
           <div className="text-right"><div className="text-xl font-bold">${Number(b.saldo_mxn).toFixed(2)}</div>{apagada && <div className="text-xs">Apagada</div>}</div>
@@ -64,6 +69,7 @@ export default function BonosUsuario({ subs, onChanged }: { subs: Sub[]; onChang
           </div> : <Button variant="outline" className="w-full" disabled={Number(b.saldo_mxn) <= 0} onClick={() => setPagar(b.id)}>Pagar en comercio</Button>}
       </div>;
     })}
+    <Dialog open={!!qr} onOpenChange={open => { if (!open) setQr(null); }}><DialogContent><DialogHeader><DialogTitle>{qr?.alias}</DialogTitle></DialogHeader>{qr && <div className="flex justify-center"><QRCodeSVG value={qr.qard_number} size={240} /></div>}</DialogContent></Dialog>
     {movs.length > 0 && <div className="rounded-xl border p-3 space-y-2">
       <div className="text-sm font-semibold">Movimientos de bonos</div>
       {movs.map(m => <div key={m.id} className="flex justify-between gap-2 text-sm border-b last:border-0 pb-1">

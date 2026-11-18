@@ -1,4 +1,9 @@
 # Productos estándar sin fotos
+## Tarjetas y Bolsillos
+- [ ] Mostrar tarjetas emitidas, iconos, número copiable y color por saldo confirmado sin eliminar bloqueos de seguridad.
+- [ ] Bolsillos protegidos con PIN validado en servidor, depósito desde 00 y retorno exclusivo a 00, movimientos atómicos e idempotentes.
+- [ ] Conversión gratuita y comisión de 2% exclusivamente SPEI; retiro real pendiente de contrato/documentación Transfer.com.
+- [ ] Pruebas de reglas y revisión de pantalla; cuenta real depende de sesión externa disponible.
 ## Atrapa la Moneda
 - [x] Cambiar mensajes de fases a «Moneda rápida, espera» y «Atrápala ahora».
 - [ ] Validación de token temporal en servidor: pendiente de habilitar una validación obligatoria también en Supabase Auth; un control solo del formulario sería evadible. No implementado ni verificado; una captura local no prueba humanidad.
