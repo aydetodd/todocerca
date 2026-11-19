@@ -1,0 +1,8 @@
+CREATE FUNCTION qard_private.qard_prepare_cards() RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE w uuid; c text; BEGIN IF auth.uid() IS NULL OR coalesce((auth.jwt()->>'is_anonymous')::boolean,false) THEN RAISE EXCEPTION 'Inicia sesión'; END IF; SELECT id INTO w FROM public.qard_wallets WHERE titular_user_id=auth.uid(); IF w IS NULL THEN RETURN; END IF; PERFORM pg_advisory_xact_lock(hashtextextended(w::text||'cards',23)); FOREACH c IN ARRAY ARRAY['alimentos','despensa','gasolina','farmacia','papeleria'] LOOP PERFORM public.qard_ensure_bono(w,c); END LOOP; END $$;
+REVOKE ALL ON FUNCTION qard_private.qard_prepare_cards() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION qard_private.qard_prepare_cards() TO authenticated;
+CREATE FUNCTION public.qard_prepare_cards() RETURNS void LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_prepare_cards() $$;
+REVOKE ALL ON FUNCTION public.qard_prepare_cards() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.qard_prepare_cards() TO authenticated;
+CREATE FUNCTION qard_private.bolsillo_validate() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF NEW.concepto NOT IN ('Renta','Útiles','Vacaciones','Emergencias','Salud','Otro') OR NEW.concepto IS NULL OR NEW.saldo_mxn<0 THEN RAISE EXCEPTION 'Bolsillo inválido'; END IF; NEW.updated_at=now(); RETURN NEW; END $$;
+CREATE TRIGGER bolsillo_validate BEFORE INSERT OR UPDATE ON public.qard_bolsillos FOR EACH ROW EXECUTE FUNCTION qard_private.bolsillo_validate();

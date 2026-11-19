@@ -218,6 +218,8 @@ export default function Qard() {
     // Asegura wallet + titular sub-QR (+ QaRd Empresarial si el comerciante está aprobado)
     await supabase.rpc("qard_ensure_wallet" as any, { _user_id: user.id });
     await supabase.rpc("qard_ensure_empresarial" as any, { _user_id: user.id });
+    const prepared = await supabase.rpc('qard_prepare_cards');
+    if (prepared.error) toast({ title: 'No se pudieron preparar todas las tarjetas de bono', variant: 'destructive' });
 
     const [{ data: prof }, { data: w }, { data: s }, { data: m }] = await Promise.all([
       supabase.from("profiles").select("qard_number, nombre").eq("user_id", user.id).maybeSingle(),

@@ -8725,6 +8725,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qard_prepare_cards: { Args: never; Returns: undefined }
       qard_purge_movimientos_antiguos: { Args: never; Returns: undefined }
       qard_rate_limit_check: {
         Args: {
