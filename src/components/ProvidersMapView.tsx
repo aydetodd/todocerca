@@ -14,9 +14,9 @@ import { applyColectivoAforo } from '@/lib/colectivoAforo';
 import { matchesScopedRouteUnit } from '@/lib/publicTransport';
 
 // Fix for default marker icon in React-Leaflet
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png?url';
+import markerIcon from 'leaflet/dist/images/marker-icon.png?url';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png?url';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
