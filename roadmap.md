@@ -4,8 +4,8 @@
 - [x] Bolsillos protegidos con PIN validado en servidor, depósito desde 00 y retorno exclusivo a 00, movimientos atómicos e idempotentes. Prueba SQL con reversión pasó; corregidos permisos amplios heredados, saldo directo inaccesible confirmado.
 - [x] Conversión gratuita y comisión de 2% exclusivamente SPEI; Martín confirmó que Transfer.com no está contratado: retiro bloqueado sin cobro.
 - [x] 24 pruebas de reglas y libros pasaron; compilación correcta y prueba financiera con reversión completa.
-- [ ] Corregir carga privada: tres imágenes de Leaflet importadas sin URL impedían cargar el módulo completo; repetir acceso móvil/escritorio claro/oscuro.
-- [ ] Revisión visual y depósito desde cuenta real: sesión Supabase externa no disponible; navegación privada local quedó vacía, sin errores reportados, no se verificó captura ni cambio visual.
+- [x] Corregida carga privada: tres imágenes de Leaflet importadas sin URL impedían cargar el módulo completo; acceso a /qard móvil/escritorio claro/oscuro ahora redirige correctamente a /auth sin errores de consola.
+- [ ] Revisión visual de cada tarjeta y depósito desde cuenta real: sesión Supabase externa no disponible; acceso sin sesión comprobado, no se verificaron tarjetas privadas ni cambio visual con depósito real.
 ## Atrapa la Moneda
 - [x] Cambiar mensajes de fases a «Moneda rápida, espera» y «Atrápala ahora».
 - [ ] Validación de token temporal en servidor: pendiente de habilitar una validación obligatoria también en Supabase Auth; un control solo del formulario sería evadible. No implementado ni verificado; una captura local no prueba humanidad.
