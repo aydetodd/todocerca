@@ -9,10 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from '@/hooks/use-toast';
 import { validPocketPin } from '@/lib/qardCardState';
 import QardTypeIcon from './QardTypeIcon';
+import QardTarjeta from './QardTarjeta';
 
 type Pocket = { id: string; concepto: string };
 type Response = { ok: boolean; error?: string; token?: string; saldo?: number };
-export default function Bolsillos({ onChanged }: { onChanged: () => void }) {
+export default function Bolsillos({ onChanged, numeroEje, nombre }: { onChanged: () => void; numeroEje?: string; nombre?: string }) {
+  const eje = (numeroEje ?? '').replace(/\D/g, '');
+  const numeroAhorro = eje.length === 16 ? eje.slice(0, 14) + '10' : '';
   const { user } = useAuth();
   const [items, setItems] = useState<Pocket[]>([]);
   const [error, setError] = useState(false);
@@ -49,7 +52,10 @@ export default function Bolsillos({ onChanged }: { onChanged: () => void }) {
     } finally { setBusy(false); }
   };
   return <section className="space-y-3 border-t pt-4">
-    <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-bold text-lg"><QardTypeIcon pocket />Bolsillos</h2><Button variant="outline" size="icon" title="Nuevo Bolsillo" aria-label="Nuevo Bolsillo" onClick={() => { close(); setCreating(true); }}><Plus className="h-4 w-4" /></Button></div>
+    <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-bold text-lg"><QardTypeIcon pocket />Ahorro · 10</h2><Button variant="outline" size="icon" title="Nuevo Bolsillo" aria-label="Nuevo Bolsillo" onClick={() => { close(); setCreating(true); }}><Plus className="h-4 w-4" /></Button></div>
+    <QardTarjeta numero={numeroAhorro} nombre={nombre ?? ''} indice={10} estado="activa" saldo={0} pendiente={!numeroAhorro} sinQr cvvVisible={false} onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => {}} compactControls />
+    <p className="text-xs text-muted-foreground">Dinero sellado: no paga ni transfiere. Solo regresa a tu Cuenta 00.</p>
+    <h3 className="font-semibold">Mis Bolsillos</h3>
     {error ? <p className="text-sm text-destructive">No se pudieron consultar tus Bolsillos.</p> : items.length === 0 ? <p className="text-sm text-muted-foreground">Sin Bolsillos</p> : items.map(item => <div key={item.id} className="flex items-center justify-between border rounded-lg p-3"><span className="flex items-center gap-2"><QardTypeIcon pocket />{item.concepto}</span><Button variant="outline" onClick={() => { close(); setSelected(item); }}><LockKeyhole className="h-4 w-4 mr-2" />Abrir</Button></div>)}
     <Dialog open={creating || !!selected} onOpenChange={open => { if (!open && !busy) close(); }}><DialogContent><DialogHeader><DialogTitle>{creating ? 'Nuevo Bolsillo' : selected?.concepto}</DialogTitle></DialogHeader>
       {creating ? <form className="space-y-4" onSubmit={async e => {

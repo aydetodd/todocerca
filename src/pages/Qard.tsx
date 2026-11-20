@@ -564,7 +564,7 @@ export default function Qard() {
           <div className="flex justify-between text-sm"><span>{s.alias}</span><b>${Number(s.saldo_mxn).toFixed(2)}</b></div>
         </div>)}
       </div>
-      <Bolsillos onChanged={() => void cargar()} />
+      <Bolsillos numeroEje={qardNumber} nombre={identidad?.nombre_completo ?? ''} onChanged={() => void cargar()} />
       <EmpresarialPanel numero={subs.find(s => s.sub_index === 1)?.qard_number} onChanged={() => { void recargarDatos(); void cargar(); }} onLibro={() => setCobrosOpen(true)} onQr={() => { const emp = subs.find(s => s.sub_index === 1); if (emp) setQrFullscreen({ value: emp.qard_number, label: 'QaRd Empresarial · Cobro' }); }} />
 
       {/* Activación / identidad financiera */}

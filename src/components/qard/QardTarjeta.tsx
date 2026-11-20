@@ -33,6 +33,7 @@ type Props = {
   pendiente?: boolean;
   saldo?: number;
   compactControls?: boolean;
+  sinQr?: boolean;
 };
 
 export default function QardTarjeta(props: Props) {
@@ -48,7 +49,7 @@ export default function QardTarjeta(props: Props) {
     const timeout = setTimeout(() => setGlow(false), 1200);
     return () => clearTimeout(timeout);
   }, [saldo, apagada]);
-  const label = props.indice === 0 ? 'Personal' : props.indice === 1 ? 'Empresarial' : bonoPorIndice(props.indice)?.nombre ?? 'Familiar';
+  const label = props.indice === 0 ? 'Personal' : props.indice === 1 ? 'Empresarial' : props.indice === 10 ? 'Ahorro' : bonoPorIndice(props.indice)?.nombre ?? 'Familiar';
   const rayas = rayasNivelQard(props.nivel ?? 0);
   const numero = props.numero.replace(/\D/g, "");
   const grupos = numero.length === 16 ? numero.match(/.{4}/g) ?? [] : ["••••", "••••", "••••", "••••"];
@@ -65,8 +66,8 @@ export default function QardTarjeta(props: Props) {
             {!props.pendiente && saldo === 0 && <div className="text-[10px]">Inactiva</div>}
           </div>
         </div>
-        <Button variant="ghost" className="qard-qr h-auto shrink-0 p-1" onClick={props.onQr} disabled={props.pendiente} title="Agrandar QR" aria-label={`Agrandar QR de ${props.nombre}`}>
-          {props.pendiente ? <span className="flex h-12 w-12 items-center justify-center text-[10px]">—</span> : <QRCodeSVG value={props.numero} size={48} className="!h-12 !w-12" level="H" />}
+        <Button variant="ghost" className="qard-qr h-auto shrink-0 p-1" onClick={props.onQr} disabled={props.pendiente || props.sinQr} title="Agrandar QR" aria-label={`Agrandar QR de ${props.nombre}`}>
+          {props.pendiente || props.sinQr ? <span className="flex h-12 w-12 items-center justify-center text-[10px]">—</span> : <QRCodeSVG value={props.numero} size={48} className="!h-12 !w-12" level="H" />}
         </Button>
       </div>
       <div className="qard-card-chip flex items-center">
