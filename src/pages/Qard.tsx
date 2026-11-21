@@ -558,11 +558,8 @@ export default function Qard() {
       })()}
 
       <BonosUsuario subs={subs as any} onChanged={() => void cargar()} />
-      <div className="space-y-4">
-        {subs.filter(s => s.sub_index >= 11).map(s => <div key={s.id} className="space-y-2">
-          <QardTarjeta numero={s.qard_number} nombre={s.nombre_completo || ''} indice={s.sub_index} estado={s.estado} saldo={Number(s.saldo_mxn)} activada={!!s.curp_verificada} nivel={s.curp_verificada ? 1 : 0} vence={s.fecha_vencimiento} cvv={s.cvv} cvvVisible={false} compactControls onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => setQrFullscreen({ value: s.qard_number, label: s.alias })} onEstadoCuenta={() => abrirMovsSub(s)} />
-          <div className="flex justify-between text-sm"><span>{s.alias}</span><b>${Number(s.saldo_mxn).toFixed(2)}</b></div>
-        </div>)}
+      <div className="divide-y border-y">
+        {[7, 8, 9].map(index => <div key={index} className="py-3 text-sm text-muted-foreground">QaRd · {String(index).padStart(2, '0')} · Reservada</div>)}
       </div>
       <Bolsillos numeroEje={qardNumber} nombre={identidad?.nombre_completo ?? ''} onChanged={() => void cargar()} />
       <EmpresarialPanel numero={subs.find(s => s.sub_index === 1)?.qard_number} onChanged={() => { void recargarDatos(); void cargar(); }} onLibro={() => setCobrosOpen(true)} onQr={() => { const emp = subs.find(s => s.sub_index === 1); if (emp) setQrFullscreen({ value: emp.qard_number, label: 'QaRd Empresarial · Cobro' }); }} />

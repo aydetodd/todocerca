@@ -1,5 +1,6 @@
 # Productos estándar sin fotos
 ## Tarjetas y Bolsillos
+- [ ] Secuencia principal sin familiares 11+, Bolsillos sin conceptos repetidos y un único PIN de Ahorro 10 validado por servidor; conservar fondos e historial existentes.
 - [x] Mostrar tarjetas emitidas, iconos, número copiable y color por saldo confirmado sin eliminar bloqueos de seguridad; bonos 02–06 preparados por función del dueño y canales únicos filtrados.
 - [x] Bolsillos protegidos con PIN validado en servidor, depósito desde 00 y retorno exclusivo a 00, movimientos atómicos e idempotentes. Prueba SQL con reversión pasó; corregidos permisos amplios heredados, saldo directo inaccesible confirmado.
 - [x] Conversión gratuita y comisión de 2% exclusivamente SPEI; Martín confirmó que Transfer.com no está contratado: retiro bloqueado sin cobro.

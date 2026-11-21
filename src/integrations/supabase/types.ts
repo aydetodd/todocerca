@@ -8491,6 +8491,26 @@ export type Database = {
         Args: { _proveedor_id: string }
         Returns: boolean
       }
+      qard_ahorro_create: {
+        Args: {
+          _amount: number
+          _concepto: string
+          _id: string
+          _token: string
+        }
+        Returns: Json
+      }
+      qard_ahorro_read: { Args: { _token: string }; Returns: Json }
+      qard_ahorro_return: {
+        Args: {
+          _amount: number
+          _concepto: string
+          _key: string
+          _token: string
+        }
+        Returns: Json
+      }
+      qard_ahorro_unlock: { Args: { _pin: string }; Returns: Json }
       qard_aplicar_recarga: {
         Args: {
           _metadata?: Json
