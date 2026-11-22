@@ -8551,6 +8551,10 @@ export type Database = {
         Args: { _key: string; _lote: string; _monto: number; _telefono: string }
         Returns: Json
       }
+      qard_bono_entregar_qard: {
+        Args: { _key: string; _lote: string; _monto: number; _qard: string }
+        Returns: Json
+      }
       qard_bono_indice: { Args: { _cat: string }; Returns: number }
       qard_bono_pagar: {
         Args: {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { tipoPorTerminacion, bonosDelGiro, transferenciaPermitida, siguienteFamiliar, bonoPorIndice } from './qardBonos';
+import { tipoPorTerminacion, bonosDelGiro, transferenciaPermitida, siguienteFamiliar, bonoPorIndice, qaRdEmpleadoValida, normalizarQaRdEmpleado } from './qardBonos';
 
 test('00 eje, 01 empresarial, 02-06 bonos, 07-10 reservadas, 11+ familiares', () => {
   assert.equal(tipoPorTerminacion(0), 'eje');
@@ -13,6 +13,12 @@ test('00 eje, 01 empresarial, 02-06 bonos, 07-10 reservadas, 11+ familiares', ()
 test('la primera familiar es 11 aunque 02 esté libre', () => {
   assert.equal(siguienteFamiliar([0, 1, 3]), 11);
   assert.equal(siguienteFamiliar([0, 11, 12]), 13);
+});
+test('entrega identifica al empleado con QaRd Personal 00 de 16 dígitos, también espaciada', () => {
+  assert.equal(qaRdEmpleadoValida('5226030000000100'), true);
+  assert.equal(qaRdEmpleadoValida('5226 0300 0000 0100'), true);
+  assert.equal(normalizarQaRdEmpleado('5226 0300 0000 0100'), '5226030000000100');
+  for (const value of ['6621234567', '5226030000000101', '5226030000000102', '5226030000000111', '522603000000100', '5226x030000000100']) assert.equal(qaRdEmpleadoValida(value), false);
 });
 test('el giro define qué sellos puede prender', () => {
   assert.deepEqual(bonosDelGiro('comida'), ['alimentos', 'despensa']);

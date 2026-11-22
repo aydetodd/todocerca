@@ -31,6 +31,14 @@ export function tipoPorTerminacion(n: number): "eje" | "empresarial" | "bono" | 
 export const bonoPorIndice = (n: number) => BONOS.find(b => b.indice === n);
 export const bonoPorCat = (c: string) => BONOS.find(b => b.cat === c);
 
+/** The Personal 00 identifies the owner; the lot selects the credited voucher. */
+export function normalizarQaRdEmpleado(value: string): string {
+  return value.replace(/\s/g, '');
+}
+export function qaRdEmpleadoValida(value: string): boolean {
+  return /^\d{14}00$/.test(normalizarQaRdEmpleado(value));
+}
+
 /** Mismo criterio que el servidor (qard_giro_bonos). */
 export function bonosDelGiro(g: Giro | string | null | undefined): BonoCat[] {
   switch (g) {

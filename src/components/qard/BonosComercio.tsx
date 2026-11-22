@@ -4,9 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { PhoneInput } from '@/components/ui/phone-input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { BONOS, GIROS, bonosDelGiro, bonoPorCat } from '@/lib/qardBonos';
+import { BONOS, GIROS, bonosDelGiro, bonoPorCat, qaRdEmpleadoValida, normalizarQaRdEmpleado } from '@/lib/qardBonos';
 
 type GiroRow = { giro: string; estado: string; sellos: string[] };
 type Lote = { id: string; categoria: string; monto_total: number; saldo_disponible: number; folio_factura: string };
@@ -20,7 +20,7 @@ export default function BonosComercio({ onChanged }: { onChanged: () => void }) 
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [elegido, setElegido] = useState('comida');
   const [busy, setBusy] = useState(false);
-  const [ent, setEnt] = useState<{ lote: string; tel: string; monto: string }>({ lote: '', tel: '', monto: '' });
+  const [ent, setEnt] = useState<{ lote: string; qard: string; monto: string }>({ lote: '', qard: '', monto: '' });
   const convKey = useRef(crypto.randomUUID()); const entKey = useRef(crypto.randomUUID());
 
   const load = useCallback(async () => {
@@ -58,7 +58,7 @@ export default function BonosComercio({ onChanged }: { onChanged: () => void }) 
 
     {permitidos.length > 0 && <div className="space-y-2">
       <div className="text-sm font-semibold">Sellos en el mapa</div>
-      {permitidos.map(c => { const b = bonoPorCat(c)!; const on = giro!.sellos.includes(c);
+      {permitidos.map(c => { const b = bonoPorCat(c); if (!b) return null; const on = giro?.sellos.includes(c) ?? false;
         return <label key={c} className="flex items-center justify-between gap-2 rounded-lg border p-3">
           <span>{b.emoji} Acepta {b.nombre}</span>
           <Switch checked={on} disabled={busy} onCheckedChange={v => void rpc('qard_sello_set', { _categoria: c, _on: v }, v ? 'Sello encendido' : 'Sello apagado')} />
@@ -83,10 +83,14 @@ export default function BonosComercio({ onChanged }: { onChanged: () => void }) 
         <option value="">Elige un lote</option>
         {lotes.filter(l => Number(l.saldo_disponible) > 0).map(l => <option key={l.id} value={l.id}>{bonoPorCat(l.categoria)?.nombre} · ${Number(l.saldo_disponible).toFixed(2)}</option>)}
       </select>
-      <PhoneInput id="tel-empleado" label="Teléfono del empleado" value={ent.tel} onChange={v => setEnt({ ...ent, tel: v })} />
-      <Input inputMode="decimal" placeholder="Monto" value={ent.monto} onChange={e => setEnt({ ...ent, monto: e.target.value })} />
-      <Button className="w-full" disabled={busy || !ent.lote || !ent.tel || !ent.monto} onClick={async () => {
-        if (await rpc('qard_bono_entregar', { _lote: ent.lote, _telefono: ent.tel, _monto: Number(ent.monto), _key: entKey.current }, 'Bono entregado')) { entKey.current = crypto.randomUUID(); setEnt({ lote: ent.lote, tel: '', monto: '' }); }
+      <Label htmlFor="qard-empleado">QaRd Personal del empleado · 00</Label>
+      <Input id="qard-empleado" inputMode="numeric" autoComplete="off" placeholder="16 dígitos, terminación 00" value={ent.qard} onChange={e => setEnt({ ...ent, qard: e.target.value })} />
+      {ent.qard && !qaRdEmpleadoValida(ent.qard) && <p className="text-xs text-destructive">Debe tener 16 dígitos y terminar en 00.</p>}
+      {ent.lote && <p className="text-sm text-muted-foreground">Destino: {bonoPorCat(lotes.find(l => l.id === ent.lote)?.categoria ?? '')?.nombre}. No se abona al saldo Personal 00.</p>}
+      <Label htmlFor="bono-monto">Monto del bono</Label>
+      <Input id="bono-monto" type="number" min="0.01" step="0.01" inputMode="decimal" placeholder="Monto" value={ent.monto} onChange={e => setEnt({ ...ent, monto: e.target.value })} />
+      <Button className="w-full" disabled={busy || !ent.lote || !qaRdEmpleadoValida(ent.qard) || !Number.isFinite(Number(ent.monto)) || Number(ent.monto) <= 0 || Number(ent.monto) > Number(lotes.find(l => l.id === ent.lote)?.saldo_disponible ?? 0)} onClick={async () => {
+        if (await rpc('qard_bono_entregar_qard', { _lote: ent.lote, _qard: normalizarQaRdEmpleado(ent.qard), _monto: Number(ent.monto), _key: entKey.current }, 'Bono entregado')) { entKey.current = crypto.randomUUID(); setEnt({ lote: ent.lote, qard: '', monto: '' }); }
       }}>Regalar bono</Button>
     </div>}
   </div>;
