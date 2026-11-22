@@ -1,7 +1,8 @@
 # Productos estándar sin fotos
 ## Entrega de bonos por QaRd
-- [ ] Sustituir teléfono por número QaRd Personal 00, resolver al titular en servidor y acreditar el bono correspondiente sin cambiar comisiones ni duplicar entregas.
-- [ ] Probar validación, destino, saldo e idempotencia; revisión en cuenta real sujeta a disponibilidad de sesión.
+- [x] Sustituir teléfono por número QaRd Personal 00, resolver al titular en servidor y acreditar el bono correspondiente; entrega propia permitida, vía telefónica cerrada, comisiones intactas.
+- [x] 26 pruebas locales y prueba financiera SQL revertida: entrega propia/a empleado, tipo correcto, saldos generales intactos, límites del lote, dueño, idempotencia por destinatario, recibos y huellas. Compilación correcta.
+- [ ] Comprobar entrega desde la pantalla con cuenta real: Supabase externo sin sesión administrada disponible; no se conservaron entregas de prueba.
 ## Tarjetas y Bolsillos
 - [x] Secuencia principal 00–10 sin familiares 11+, Bolsillos agrupados por concepto y un único PIN de Ahorro 10 (el del primer Bolsillo existente); pruebas SQL revertidas y 25 pruebas locales correctas. Fondos e historial conservados; revisión dentro de la cuenta pendiente por sesión externa no disponible.
 - [x] Mostrar tarjetas emitidas, iconos, número copiable y color por saldo confirmado sin eliminar bloqueos de seguridad; bonos 02–06 preparados por función del dueño y canales únicos filtrados.
