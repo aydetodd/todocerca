@@ -1,0 +1,13 @@
+ALTER FUNCTION public.qard_domicilio_guardar(text,jsonb) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_documento_fuente(text,integer,text) SET SCHEMA qard_private;
+ALTER FUNCTION public.qard_documento_verificar(text) SET SCHEMA qard_private;
+GRANT USAGE ON SCHEMA qard_private TO anon,authenticated;
+CREATE FUNCTION public.qard_domicilio_guardar(_qard text,_address jsonb) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_domicilio_guardar(_qard,_address) $$;
+CREATE FUNCTION public.qard_documento_fuente(_qard text,_days integer,_savings_token text DEFAULT NULL) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_documento_fuente(_qard,_days,_savings_token) $$;
+CREATE FUNCTION public.qard_documento_verificar(_hash text) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT qard_private.qard_documento_verificar(_hash) $$;
+REVOKE ALL ON FUNCTION public.qard_domicilio_guardar(text,jsonb),public.qard_documento_fuente(text,integer,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.qard_domicilio_guardar(text,jsonb),public.qard_documento_fuente(text,integer,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.qard_documento_verificar(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.qard_documento_verificar(text) TO anon,authenticated;
+CREATE INDEX qard_documentos_domicilio_idx ON public.qard_documentos(domicilio_id);
+CREATE INDEX qard_documentos_owner_idx ON public.qard_documentos(owner_id);

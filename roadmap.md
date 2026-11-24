@@ -1,4 +1,9 @@
 # Productos estándar sin fotos
+## Documento QaRd y domicilio
+- [ ] Revisar disponibilidad y documentación de prueba de vida en Verificamex sin efectuar consultas pagadas; Martín prefiere usar el mismo servicio si la ofrece.
+- [ ] Añadir acceso al documento concentrado separado del reporte detallado, con saldos reales por tarjeta, PDF A4 y sello verificable sin publicar datos privados.
+- [ ] Captura estructurada de domicilio y estado 0/3 real; protocolo 3x3 y herencia/endoso solo con pruebas confiables, sin elevar niveles financieros.
+- [ ] Probar reglas, PDF y verificación pública; revisión privada requiere sesión real y presencia reforzada requiere proveedor de prueba de vida.
 ## Entrega de bonos por QaRd
 - [x] Sustituir teléfono por número QaRd Personal 00, resolver al titular en servidor y acreditar el bono correspondiente; entrega propia permitida, vía telefónica cerrada, comisiones intactas.
 - [x] 26 pruebas locales y prueba financiera SQL revertida: entrega propia/a empleado, tipo correcto, saldos generales intactos, límites del lote, dueño, idempotencia por destinatario, recibos y huellas. Compilación correcta.

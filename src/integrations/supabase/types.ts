@@ -4290,6 +4290,107 @@ export type Database = {
         }
         Relationships: []
       }
+      qard_documentos: {
+        Row: {
+          address_verified: boolean
+          created_at: string
+          domicilio_id: string | null
+          domicilio_version: number | null
+          id: string
+          owner_id: string
+          pdf_hash: string
+          period_end: string
+          period_start: string
+          source_hash: string
+        }
+        Insert: {
+          address_verified?: boolean
+          created_at?: string
+          domicilio_id?: string | null
+          domicilio_version?: number | null
+          id: string
+          owner_id: string
+          pdf_hash: string
+          period_end: string
+          period_start: string
+          source_hash: string
+        }
+        Update: {
+          address_verified?: boolean
+          created_at?: string
+          domicilio_id?: string | null
+          domicilio_version?: number | null
+          id?: string
+          owner_id?: string
+          pdf_hash?: string
+          period_end?: string
+          period_start?: string
+          source_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qard_documentos_domicilio_id_fkey"
+            columns: ["domicilio_id"]
+            isOneToOne: false
+            referencedRelation: "qard_domicilios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qard_domicilios: {
+        Row: {
+          calle: string
+          colonia: string
+          cp: string
+          created_at: string
+          estado: string
+          id: string
+          municipio: string
+          numero: string
+          owner_id: string
+          progress: number
+          qard_number: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          calle: string
+          colonia: string
+          cp: string
+          created_at?: string
+          estado: string
+          id?: string
+          municipio: string
+          numero: string
+          owner_id: string
+          progress?: number
+          qard_number: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          calle?: string
+          colonia?: string
+          cp?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          municipio?: string
+          numero?: string
+          owner_id?: string
+          progress?: number
+          qard_number?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       qard_identidad: {
         Row: {
           account_opening_fee_amount: number
@@ -8637,6 +8738,15 @@ export type Database = {
       qard_dec: { Args: { _v: string }; Returns: string }
       qard_despensa_on: { Args: never; Returns: boolean }
       qard_despensa_switch: { Args: { _on: boolean }; Returns: boolean }
+      qard_documento_fuente: {
+        Args: { _days: number; _qard: string; _savings_token?: string }
+        Returns: Json
+      }
+      qard_documento_verificar: { Args: { _hash: string }; Returns: Json }
+      qard_domicilio_guardar: {
+        Args: { _address: Json; _qard: string }
+        Returns: Json
+      }
       qard_enc: { Args: { _v: string }; Returns: string }
       qard_ensure_bono: {
         Args: { _cat: string; _wallet: string }
