@@ -19,7 +19,7 @@ export function renderConcentratedPdf(doc: Canvas, source: DocumentSource, sourc
   };
   text('TODOCERCA', 15, 23, 20, true, p.blue);
   text('Estado de Cuenta QaRd', 195, 21, 14, true, p.ink, 'right');
-  text(source.address?.status === 'valid' ? 'Domicilio verificado por presencia reforzada' : 'Documento digital · Domicilio pendiente', 195, 28, 8, false, p.muted, 'right');
+  text(source.address?.status === 'valid' ? 'Comprobante Digital Oficial · Presencia reforzada' : 'Comprobante Digital · Domicilio pendiente', 195, 28, 8, false, p.muted, 'right');
   doc.setDrawColor(...p.blue); doc.line(15, 33, 195, 33);
   let y = 42;
   const field = (label: string, value: string) => {
@@ -56,8 +56,10 @@ export function renderConcentratedPdf(doc: Canvas, source: DocumentSource, sourc
   });
   doc.setDrawColor(...p.line); doc.line(15, 254, 195, 254);
   doc.setFont('courier', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...p.ink);
-  doc.text(doc.splitTextToSize(sourceHash, 140), 15, 262);
+  const sealLines = sourceHash.match(/.{1,78}/g) ?? [sourceHash];
+  doc.text(sealLines, 15, 262);
+  doc.setDrawColor(...p.line); doc.rect(168, 256, 27, 27);
   doc.addImage(qr, 'PNG', 169, 257, 25, 25);
-  text('Escanear para verificar', 181.5, 286, 6.5, false, p.muted, 'center');
+  text('Escanear para verificar', 181.5, 287, 6.5, false, p.muted, 'center');
   return statement;
 }

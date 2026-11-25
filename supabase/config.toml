@@ -144,3 +144,6 @@ verify_jwt = false
 
 [functions.verify-slot-payment]
 verify_jwt = false
+
+[functions.qard-documento]
+verify_jwt = false

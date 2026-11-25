@@ -28,9 +28,10 @@ Deno.serve(async req => {
     if (!source || !Array.isArray(source.movements)) return response('No se pudo consultar el libro', 502);
     const id = await hash(crypto.getRandomValues(new Uint8Array(32)));
     const sourceHash = await hash(new TextEncoder().encode(JSON.stringify(source)), 'SHA-512');
+    const sealText = `${sourceHash}${id}`;
     const qr = await QRCode.toDataURL(`https://todocerca.mx/verificar/${id}`, { width: 240, margin: 1, errorCorrectionLevel: 'M' });
     const doc = new jsPDF({ format: 'a4', unit: 'mm', orientation: 'portrait' });
-    renderConcentratedPdf(doc, source, sourceHash, qr);
+    renderConcentratedPdf(doc, source, sealText, qr);
     doc.setProperties({ title: 'Estado de Cuenta QaRd', subject: 'Documento concentrado emitido por TodoCerca', author: 'TodoCerca', keywords: id });
     const bytes = new Uint8Array(doc.output('arraybuffer'));
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
