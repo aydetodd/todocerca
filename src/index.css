@@ -292,6 +292,8 @@ Paleta: Azul marino profundo con acentos brillantes
 @layer base {
   :root {
     /* TodoCerca Light */
+    --qard-document-green: 137 66% 30%;
+    --qard-document-orange: 28 85% 42%;
     --qard-plastic: linear-gradient(135deg, hsl(215 40% 14%), hsl(215 35% 22%) 45%, hsl(16 100% 38%));
     --qard-plastic-empresarial: linear-gradient(135deg, #1E3A5F, #2C5F7C 55%, #1E3A5F);
     --qard-empresarial-gold: hsl(44 72% 65%);
@@ -688,6 +690,8 @@ Paleta: Azul marino profundo con acentos brillantes
 
   /* Monto de saldo grande y verde */
   .qard-card-group { width: 100%; max-width: 400px; margin-inline: auto; }
+  .qard-document-verified { color: hsl(var(--qard-document-green)); }
+  .qard-document-pending { color: hsl(var(--qard-document-orange)); }
   .qard-plastic {
     background: var(--qard-plastic);
     color: hsl(var(--qard-ink));

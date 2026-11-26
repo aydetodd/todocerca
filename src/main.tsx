@@ -6,6 +6,7 @@ import Comparativa from './pages/Comparativa';
 import Index from './pages/Index';
 import PublicTransport from './pages/PublicTransport';
 import FormalizationGuide from './pages/FormalizationGuide';
+import VerificarDocumento from './pages/VerificarDocumento';
 import { applyTheme, getStoredTheme } from "./hooks/useTheme";
 import "./index.css";
 import { startDataUsageMeter } from "./lib/dataUsage";
@@ -15,13 +16,13 @@ applyTheme(getStoredTheme());
 startDataUsageMeter();
 
 const AppWrapper = lazy(() => import('./AppWrapper'));
-const publicDocument = ['/comparativa', '/landing', '/buscar-transporte', '/guia-formalizacion'].includes(window.location.pathname.replace(/\/$/, ''));
+const publicDocument = ['/comparativa', '/landing', '/buscar-transporte', '/guia-formalizacion'].includes(window.location.pathname.replace(/\/$/, '')) || window.location.pathname.startsWith('/verificar/');
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Root element not found");
 
 createRoot(rootElement).render(
   <StrictMode>
-    {publicDocument ? <BrowserRouter><Routes><Route path="/comparativa" element={<Comparativa/>}/><Route path="/landing" element={<Index/>}/><Route path="/buscar-transporte" element={<PublicTransport/>}/><Route path="/guia-formalizacion" element={<FormalizationGuide/>}/></Routes></BrowserRouter> : <Suspense fallback={null}><AppWrapper /></Suspense>}
+    {publicDocument ? <BrowserRouter><Routes><Route path="/comparativa" element={<Comparativa/>}/><Route path="/landing" element={<Index/>}/><Route path="/buscar-transporte" element={<PublicTransport/>}/><Route path="/guia-formalizacion" element={<FormalizationGuide/>}/><Route path="/verificar/:hash" element={<VerificarDocumento/>}/></Routes></BrowserRouter> : <Suspense fallback={null}><AppWrapper /></Suspense>}
   </StrictMode>
 );

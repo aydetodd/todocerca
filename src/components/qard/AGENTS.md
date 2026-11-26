@@ -7,3 +7,5 @@
 - Voucher movements use ambito 'bonos' and are hash-chained per wallet in qard_tcb_cadena; only bono_conversion_in enters the enterprise cobros ledger.
 - Employee voucher delivery resolves a Personal card owner server-side and credits only the lot's voucher category; bind idempotency to owner, lot, recipient and amount, and keep phone-based delivery inaccessible.
 - Savings uses one owner-scoped private PIN/session; group legacy pockets by concept without rewriting balances or history, and return grouped funds atomically through the existing Account 00 ledger function.
+- Concentrated documents are server-issued from an owner-scoped consistent snapshot using the unchanged shared ledger core; preserve detailed reports, require the savings token for 10, seal exact PDF bytes, and expose only non-PII verification metadata publicly.
+- Address verification stays separate from financial identity; user edits reset its version and progress, and browser GPS/selfies cannot grant verified status without trusted provider evidence.

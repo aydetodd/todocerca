@@ -74,7 +74,7 @@ export default function Bolsillos({ onChanged, numeroEje, nombre }: { onChanged:
   const available = POCKET_CONCEPTS.filter(value => !concepts.includes(value));
   return <section className="space-y-3 border-t pt-4">
     <h2 className="flex items-center gap-2 font-bold text-lg"><QardTypeIcon pocket />Ahorro · 10</h2>
-    <QardTarjeta numero={numeroAhorro} nombre={nombre ?? ''} indice={10} estado="activa" saldo={0} pendiente={!numeroAhorro} sinQr cvvVisible={false} onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => {}} compactControls />
+    <QardTarjeta numero={numeroAhorro} nombre={nombre ?? ''} indice={10} estado="activa" saldo={0} pendiente={!numeroAhorro} sinQr cvvVisible={false} onVerCvv={() => {}} onRotarCvv={() => {}} onQr={() => {}} compactControls documentSavingsToken={token} />
     <p className="text-xs text-muted-foreground">Dinero sellado: solo regresa a tu Cuenta 00.</p>
     {token ? <>
       <div className="flex items-center justify-between"><h3 className="font-semibold">Mis Bolsillos</h3><div className="flex gap-2"><Button variant="outline" size="icon" title="Cerrar Ahorro" aria-label="Cerrar Ahorro" onClick={lock}><LockKeyhole className="h-4 w-4" /></Button><Button variant="outline" size="icon" title="Nuevo Bolsillo" aria-label="Nuevo Bolsillo" disabled={available.length === 0 || error} onClick={() => { closeDialog(); setConcept(available[0] ?? 'Renta'); setCreating(true); }}><Plus className="h-4 w-4" /></Button></div></div>

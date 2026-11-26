@@ -30,6 +30,7 @@ import QardTarjeta from "@/components/qard/QardTarjeta";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BusinessPayment from "@/components/qard/BusinessPayment";
 import EmpresarialPanel from "@/components/qard/EmpresarialPanel";
+import { QardDocumentProvider } from '@/components/qard/QardDocument';
 
 
 
@@ -415,6 +416,7 @@ export default function Qard() {
   const saldoColor = saldo < 0 ? "text-destructive" : "qard-balance";
 
   return (
+    <QardDocumentProvider userId={authUser?.id}>
     <div className="p-4 max-w-3xl mx-auto pb-40 space-y-4">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => nav(-1)}><ArrowLeft className="h-5 w-5" /></Button>
@@ -1093,5 +1095,6 @@ export default function Qard() {
       <UpgradeMoralDialog open={moralOpen} onOpenChange={setMoralOpen} onEnviada={recargarDatos} />
 
     </div>
+    </QardDocumentProvider>
   );
 }

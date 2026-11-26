@@ -8,6 +8,7 @@ import QardTypeIcon from "./QardTypeIcon";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { protegerNombreQard, rayasNivelQard } from "@/lib/qardCardPresentation";
+import { QardDocumentControl } from './QardDocument';
 
 type Props = {
   numero: string;
@@ -34,6 +35,7 @@ type Props = {
   saldo?: number;
   compactControls?: boolean;
   sinQr?: boolean;
+  documentSavingsToken?: string | null;
 };
 
 export default function QardTarjeta(props: Props) {
@@ -91,6 +93,7 @@ export default function QardTarjeta(props: Props) {
       {props.cambiandoEstado && <span className="text-xs text-muted-foreground">Guardando…</span>}
       <div className="ml-auto flex items-center">
         {numero.length === 16 && <Button variant="ghost" size="icon" aria-label={`Copiar número ${label}`} title="Copiar número" onClick={async () => { try { await navigator.clipboard.writeText(numero); toast({ title: 'Número copiado' }); } catch { toast({ title: 'No se pudo copiar', variant: 'destructive' }); } }}><Copy className="h-4 w-4" /></Button>}
+        <QardDocumentControl number={numero} token={props.documentSavingsToken} />
         {props.onEstadoCuenta && <Button variant="ghost" size="icon" onClick={props.onEstadoCuenta} title={props.estadoCuentaLabel ?? "Estado de cuenta"} aria-label={props.estadoCuentaLabel ?? "Estado de cuenta"}><History className="h-4 w-4" /></Button>}
         {props.onImprimir && <Button variant="ghost" size="icon" onClick={props.onImprimir} title="Imprimir tarjetas" aria-label="Imprimir tarjetas"><Printer className="h-4 w-4" /></Button>}
         {!props.compactControls && <Button variant="ghost" size="icon" onClick={props.onVerCvv} title={props.cvvVisible ? "Ocultar CVV" : "Ver CVV"} aria-label={props.cvvVisible ? "Ocultar CVV" : "Ver CVV"}>{props.cvvVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>}
