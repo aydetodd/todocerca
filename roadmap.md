@@ -1,9 +1,11 @@
 # Productos estándar sin fotos
 ## Documento QaRd y domicilio
-- [ ] Revisar disponibilidad y documentación de prueba de vida en Verificamex sin efectuar consultas pagadas; Martín prefiere usar el mismo servicio si la ofrece.
-- [ ] Añadir acceso al documento concentrado separado del reporte detallado, con saldos reales por tarjeta, PDF A4 y sello verificable sin publicar datos privados.
-- [ ] Captura estructurada de domicilio y estado 0/3 real; protocolo 3x3 y herencia/endoso solo con pruebas confiables, sin elevar niveles financieros.
-- [ ] Probar reglas, PDF y verificación pública; revisión privada requiere sesión real y presencia reforzada requiere proveedor de prueba de vida.
+- [x] Confirmada prueba de vida independiente V3 de Verificamex en documentación pública; no se ejecutaron consultas pagadas. Acceso/costo de Identidad V3 no confirmados por el token OCR existente.
+- [x] Acceso compartido en tarjetas emitidas al PDF concentrado A4, consulta consistente por dueño, PIN para Ahorro 10, sello SHA-512 de fuente y SHA-256 del PDF; verificación pública sin datos personales y comprobación local del archivo. Reporte detallado sin cambios de presentación ni reglas.
+- [x] Captura privada estructurada de domicilio, progreso real sin autoaprobación, cambios reinician versión y progreso, emisiones inmutables y anteriores pierden acreditación de domicilio al editar; permisos heredados cerrados y prueba SQL revertida correcta sin datos de prueba retenidos.
+- [x] 30 pruebas correctas; PDFs normal y denso A4 de una página inspeccionados sin recortes ni superposiciones; verificación pública 1280/375/320px sin errores ni desbordamiento, emisor sin sesión devuelve 401 y compilación correcta.
+- [ ] Lectura de INE sin guardar imagen, prueba de vida Verificamex, ubicación confiable, registro 3x3 operativo, herencia de menores/endoso de mayores y domicilio fiscal/RFC: requieren acceso y costo V3 confirmados, cotejo documental y evidencia real; las reglas probadas no equivalen a integración ni aprobación. No se elevaron niveles financieros.
+- [ ] Descargar/comprobar PDF y editar domicilio desde cuenta real: sesión Supabase externa no disponible; ruta privada redirige a iniciar sesión. El PDF exige acortar periodo si supera una hoja, nunca elimina renglones. Publicación pendiente del usuario.
 ## Entrega de bonos por QaRd
 - [x] Sustituir teléfono por número QaRd Personal 00, resolver al titular en servidor y acreditar el bono correspondiente; entrega propia permitida, vía telefónica cerrada, comisiones intactas.
 - [x] 26 pruebas locales y prueba financiera SQL revertida: entrega propia/a empleado, tipo correcto, saldos generales intactos, límites del lote, dueño, idempotencia por destinatario, recibos y huellas. Compilación correcta.
